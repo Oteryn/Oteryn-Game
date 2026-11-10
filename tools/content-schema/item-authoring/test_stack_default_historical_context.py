@@ -17,14 +17,21 @@ def closed_owner_fixture(relative):
     """The historical owner negatives exercise their exact pre-integration view."""
     if relative == world_context.MARKER:
         marker = json.loads(world_context.original_marker(check.ROOT))
-        marker['notes'] += world_context.NOTE + world_context.SOULPIT_NOTE + world_context.sugar_owner()[0]
-        raw = (json.dumps(marker, indent=2, ensure_ascii=False) + '\n').encode()
-        if world_context.sha(raw) != '0549b3567749436b9e6f91f79751d32d9ea4431fe6b1be7505566d50b797e27d':
-            raise ValueError('closed owner fixture marker drift')
+        marker["notes"] += (
+            world_context.NOTE
+            + world_context.SOULPIT_NOTE
+            + world_context.sugar_owner()[0]
+        )
+        raw = (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
+        if (
+            world_context.sha(raw)
+            != "0549b3567749436b9e6f91f79751d32d9ea4431fe6b1be7505566d50b797e27d"
+        ):
+            raise ValueError("closed owner fixture marker drift")
         return raw
     if relative == world_context.HIT_PACKET:
         return check.frozen_archive()[relative]
-    if relative == 'content/world/terrain/' + world_context.SOULPIT:
+    if relative == "content/world/terrain/" + world_context.SOULPIT:
         return world_context.original_soulpit(check.ROOT)
     return (check.ROOT / relative).read_bytes()
 

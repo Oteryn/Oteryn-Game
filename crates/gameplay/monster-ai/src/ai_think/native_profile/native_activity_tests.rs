@@ -540,3 +540,48 @@ fn srx3_native_cross_floor_target_list_keeps_thinks_without_attack_target() -> R
         Ok(())
     })
 }
+
+#[test]
+fn bloodjaw_source_retarget_keeps_a_player_nine_tiles_north() -> Result<(), String> {
+    run(|native, mut runtime| {
+        const KEY: &str = "oteryn:creature.elder_bloodjaw";
+        let bloodjaw = actor(&mut runtime, KEY, at(100, 100))?;
+        let mut players = Vec::new();
+        for (seed, position) in [(4, at(101, 100)), (5, at(100, 91))] {
+            let session = crate::foundation::GameSessionId::decode(&uuid(seed))
+                .map_err(|e| format!("{e:?}"))?;
+            let reserved = runtime
+                .reserve_fresh_session(session)
+                .map_err(|e| format!("{e:?}"))?;
+            let player = runtime
+                .commit_fresh_session(reserved)
+                .map_err(|e| format!("{e:?}"))?;
+            runtime
+                .initialize_pinned_test_position(player, position)
+                .map_err(|e| format!("{e:?}"))?;
+            players.push(player);
+        }
+        let mut table = CreatureAiTable::default();
+        table
+            .admit_native_creature(&runtime, native, bloodjaw, &reference(native, KEY)?, 0)
+            .map_err(|e| format!("{e:?}"))?;
+        let stamp = runtime.issue_owner_work().map_err(|e| format!("{e:?}"))?;
+        assert!(
+            table
+                .set_current_bloodjaw_target(&runtime, stamp, bloodjaw, players[0], 0)
+                .map_err(|e| format!("{e:?}"))?
+        );
+        // Crystal 201189f8 Creature::setAttackedCreature uses its eleven-tile view.
+        assert!(!super::super::targeting::sees(at(100, 91), at(100, 100)));
+        assert!(
+            table
+                .set_current_bloodjaw_target(&runtime, stamp, bloodjaw, players[1], 1)
+                .map_err(|e| format!("{e:?}"))?
+        );
+        assert_eq!(
+            table.state(bloodjaw).and_then(|state| state.target()),
+            Some(players[1])
+        );
+        Ok(())
+    })
+}

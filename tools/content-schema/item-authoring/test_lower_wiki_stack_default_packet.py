@@ -12,7 +12,9 @@ from check_stack_default_historical_context import qualification_context
 class QualificationTests(unittest.TestCase):
     def test_later_cake_binding_requires_exact_historical_table(self):
         records = json.loads((lower.ROOT / lower.BINDINGS).read_bytes())["bindings"]
-        revisions = sorted({r["source_revision"] for r in records if r["external_id"] != "48227"})
+        revisions = sorted(
+            {r["source_revision"] for r in records if r["external_id"] != "48227"}
+        )
         bound = lower.exact_bindings(records, revisions)
         self.assertEqual(len(bound), len(records) - 1)
         self.assertNotIn("oteryn:item.tibia.i48227", bound)

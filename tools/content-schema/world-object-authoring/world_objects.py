@@ -504,24 +504,53 @@ def validate_record(record):
     if errors:
         return errors
     import activity_static
-    if record["provenance"]["source"].get("profile") == 'OTERYN_ACTIVITY_STATIC_GEOMETRY_201189F/v1':
-        registry = json.loads(activity_static.outputs()[activity_static.REGISTRY])["records"]
-        expected = next((row['catalogue_record'] for row in registry
-                         if row['identity'] == record['identity']), None)
-        return [] if record == expected else ["static activity geometry differs from its qualified source"]
+
+    if (
+        record["provenance"]["source"].get("profile")
+        == "OTERYN_ACTIVITY_STATIC_GEOMETRY_201189F/v1"
+    ):
+        registry = json.loads(activity_static.outputs()[activity_static.REGISTRY])[
+            "records"
+        ]
+        expected = next(
+            (
+                row["catalogue_record"]
+                for row in registry
+                if row["identity"] == record["identity"]
+            ),
+            None,
+        )
+        return (
+            []
+            if record == expected
+            else ["static activity geometry differs from its qualified source"]
+        )
     if "item_pointer" not in record["provenance"]:
         import feroxa_static
 
-        if (record["provenance"]["source"].get("profile") == feroxa_static.PROFILE
-                or record["provenance"]["source_item_id"] == feroxa_static.IDENTIFIER):
-            return ([] if record in feroxa_static.records()
-                    else ["Feroxa scenery differs from its pinned source map and official appearance"])
+        if (
+            record["provenance"]["source"].get("profile") == feroxa_static.PROFILE
+            or record["provenance"]["source_item_id"] == feroxa_static.IDENTIFIER
+        ):
+            return (
+                []
+                if record in feroxa_static.records()
+                else [
+                    "Feroxa scenery differs from its pinned source map and official appearance"
+                ]
+            )
         import engnpc2_ram_world
 
-        if (record["provenance"]["source_item_id"] == engnpc2_ram_world.IDENTIFIER
-                or record["provenance"]["source"].get("profile") == engnpc2_ram_world.PROFILE):
-            return ([] if record == engnpc2_ram_world.record()
-                    else ["Reliable Ram differs from its qualified official source"])
+        if (
+            record["provenance"]["source_item_id"] == engnpc2_ram_world.IDENTIFIER
+            or record["provenance"]["source"].get("profile")
+            == engnpc2_ram_world.PROFILE
+        ):
+            return (
+                []
+                if record == engnpc2_ram_world.record()
+                else ["Reliable Ram differs from its qualified official source"]
+            )
         import soulpit_static
 
         if (
@@ -607,6 +636,7 @@ def validate_record(record):
         errors.extend(official_corpses.validate_record(record))
     if record["provenance"]["source_item_id"] == 17970:
         import qm50_ground
+
         if record != qm50_ground.record():
             errors.append("M50 ground differs from its qualified source")
     for field in known_fields(record):

@@ -392,14 +392,18 @@ def outputs(
         ).encode()
     if include_qualified:
         import activity_static
+
         static_files = activity_static.outputs()
         for name in activity_static.SHARDS.values():
             files[name] = static_files[name]
         files[activity_static.REGISTRY] = static_files[activity_static.REGISTRY]
         for directory in ["terrain", "objects"]:
             name = f"content/world/{directory}/index.json"
-            index = json.loads(files[name]); index["notes"] += activity_static.NOTE
-            files[name] = (json.dumps(index, indent=2, ensure_ascii=False)+"\n").encode()
+            index = json.loads(files[name])
+            index["notes"] += activity_static.NOTE
+            files[name] = (
+                json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+            ).encode()
         import soulpit_static
 
         files[soulpit_static.SHARD] = soulpit_static.outputs()[soulpit_static.SHARD]
@@ -433,21 +437,29 @@ def outputs(
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += elemental_ground.NOTE
-        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
+        files[index_path] = (
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        ).encode()
         import feroxa_static
 
         files[feroxa_static.SHARD] = feroxa_static.outputs()[feroxa_static.SHARD]
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += feroxa_static.NOTE
-        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
+        files[index_path] = (
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        ).encode()
         import engnpc2_ram_world
 
-        files[engnpc2_ram_world.SHARD] = engnpc2_ram_world.outputs()[engnpc2_ram_world.SHARD]
+        files[engnpc2_ram_world.SHARD] = engnpc2_ram_world.outputs()[
+            engnpc2_ram_world.SHARD
+        ]
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += engnpc2_ram_world.NOTE
-        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
+        files[index_path] = (
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        ).encode()
     return files, world_objects.census_document_bytes(result)
 
 

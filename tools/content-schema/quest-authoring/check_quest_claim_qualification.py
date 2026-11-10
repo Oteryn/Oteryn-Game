@@ -16,12 +16,20 @@ LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
 # claim keeps its per-World qualification hold.
 # Batch 3 qualified the three independent Demon Helmet claims through the
 # existing USE/MINT/replay owner; this does not qualify its access mechanisms.
-ITEMHOLD_ADMISSIONS = frozenset({
-    "oteryn:reward-claim.kv.ornamentedshield",
-    "oteryn:reward-claim.kv.powerring2",
-})
+ITEMHOLD_ADMISSIONS = frozenset(
+    {
+        "oteryn:reward-claim.kv.ornamentedshield",
+        "oteryn:reward-claim.kv.powerring2",
+        # M35's source-pinned filled-container projections resolve Item holds;
+        # exact World USE/replay qualification remains blocked for each selector.
+        "oteryn:reward-claim.kv.draconia1",
+        "oteryn:reward-claim.kv.fireaxe1",
+        "oteryn:reward-claim.kv.goblintemple2",
+        "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine",
+    }
+)
 # Triangle now has the canonical source-placement PG reward witness and leaves
-# this pending-route inventory; the two remaining ITEMHOLD routes stay blocked.
+# this pending-route inventory; every remaining Item-admitted route stays blocked.
 EXPECTED_DENOMINATOR = 297 + len(ITEMHOLD_ADMISSIONS)
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
@@ -78,7 +86,9 @@ def inventory(coverage_path=COVERAGE, root=ROOT):
 
 def expected_record(key, row, definition):
     placements = []
-    for authored, covered in zip(definition["placements"], row["coverage"]["placements"]):
+    for authored, covered in zip(
+        definition["placements"], row["coverage"]["placements"]
+    ):
         selector = {
             "position": authored["source_binding"]["project_position"],
             "appearance_tibia_id": authored["appearance_tibia_id"],
@@ -86,11 +96,13 @@ def expected_record(key, row, definition):
         }
         if "action_id" in authored["source_binding"]:
             selector["action_id"] = authored["source_binding"]["action_id"]
-        placements.append({
-            "selector": selector,
-            "source_witnesses": covered["sources"],
-            "expected_reward": authored["reward"],
-        })
+        placements.append(
+            {
+                "selector": selector,
+                "source_witnesses": covered["sources"],
+                "expected_reward": authored["reward"],
+            }
+        )
     return {
         "quest": row["quest"],
         "placements": placements,
@@ -103,20 +115,22 @@ def generated_ledger(coverage_path=COVERAGE, root=ROOT):
     claims = {}
     for key in sorted(rows):
         record = expected_record(key, rows[key], definitions[key])
-        record.update({
-            "disposition": "blocked",
-            "dependency": "QUEST-QUAL-1",
-            "evidence": {
-                "kind": "blocked",
-                "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
-                "blocked_on": "QUEST-QUAL-1",
-                "missing_prerequisite": (
-                    "No named production Use-route PostgreSQL test or retained scenario proves this "
-                    "exact World selector, native reward mint, durable once-only receipt, reconnect "
-                    "replay, and a second new-command refusal."
-                ),
-            },
-        })
+        record.update(
+            {
+                "disposition": "blocked",
+                "dependency": "QUEST-QUAL-1",
+                "evidence": {
+                    "kind": "blocked",
+                    "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+                    "blocked_on": "QUEST-QUAL-1",
+                    "missing_prerequisite": (
+                        "No named production Use-route PostgreSQL test or retained scenario proves this "
+                        "exact World selector, native reward mint, durable once-only receipt, reconnect "
+                        "replay, and a second new-command refusal."
+                    ),
+                },
+            }
+        )
         claims[key] = record
     return {
         "schema_version": 1,
@@ -143,7 +157,9 @@ def _validate_locator(key, record, root):
         owner = evidence.get("blocked_on")
         if blocker not in BLOCKERS or BLOCKERS.get(blocker) != owner:
             return "invalid blocker type/task ownership"
-        if record.get("dependency") != owner or not evidence.get("missing_prerequisite"):
+        if record.get("dependency") != owner or not evidence.get(
+            "missing_prerequisite"
+        ):
             return "blocked record lacks matching dependency or missing prerequisite"
         return None
     if disposition == "test":
@@ -152,8 +168,10 @@ def _validate_locator(key, record, root):
         scenario = evidence.get("asserted_scenario")
         target_name = evidence.get("crate_or_target")
         observed = evidence.get("observed_result")
-        if not all(isinstance(value, str) and value for value in
-                   (path, name, scenario, target_name, observed)):
+        if not all(
+            isinstance(value, str) and value
+            for value in (path, name, scenario, target_name, observed)
+        ):
             return "malformed test locator"
         target = root / path
         leaf = re.escape(name.rsplit("::", 1)[-1])
@@ -164,10 +182,16 @@ def _validate_locator(key, record, root):
     if disposition == "scenario":
         path = evidence.get("fixture")
         expected_hash = evidence.get("artifact_sha256")
-        if not all(evidence.get(field) for field in ("scenario_id", "runner_command", "expected_receipt")):
+        if not all(
+            evidence.get(field)
+            for field in ("scenario_id", "runner_command", "expected_receipt")
+        ):
             return "malformed scenario locator"
         target = root / str(path)
-        if not target.is_file() or hashlib.sha256(target.read_bytes()).hexdigest() != expected_hash:
+        if (
+            not target.is_file()
+            or hashlib.sha256(target.read_bytes()).hexdigest() != expected_hash
+        ):
             return "unresolved scenario artifact or hash"
         return None
     return "unknown disposition"
@@ -181,14 +205,20 @@ def validate(ledger_path=LEDGER, coverage_path=COVERAGE, root=ROOT):
     except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
         return [str(exc)], Counter()
     if coverage.get("counts", {}).get("supported_unqualified") != EXPECTED_DENOMINATOR:
-        errors.append(f"coverage denominator drift (expected {EXPECTED_DENOMINATOR} supported_unqualified)")
+        errors.append(
+            f"coverage denominator drift (expected {EXPECTED_DENOMINATOR} supported_unqualified)"
+        )
     if ledger.get("denominator") != EXPECTED_DENOMINATOR:
         errors.append("ledger denominator drift")
-    if ledger.get("source_revisions") != coverage.get("source_revisions") or ledger.get("source_sha256") != coverage.get("source_sha256"):
+    if ledger.get("source_revisions") != coverage.get("source_revisions") or ledger.get(
+        "source_sha256"
+    ) != coverage.get("source_sha256"):
         errors.append("stale pinned source witness")
     claims = ledger.get("claims")
     if not isinstance(claims, dict):
-        return errors + ["claims must be an object keyed by canonical claim key"], Counter()
+        return errors + [
+            "claims must be an object keyed by canonical claim key"
+        ], Counter()
     missing, stale = sorted(set(rows) - set(claims)), sorted(set(claims) - set(rows))
     errors.extend(f"missing claim: {key}" for key in missing)
     errors.extend(f"stale claim: {key}" for key in stale)
@@ -204,7 +234,9 @@ def validate(ledger_path=LEDGER, coverage_path=COVERAGE, root=ROOT):
             errors.append(f"{key}: {issue}")
         disposition = record.get("disposition", "malformed")
         if disposition == "blocked" and isinstance(record.get("evidence"), dict):
-            counts[f"blocked:{record['evidence'].get('blocker_type', 'malformed')}"] += 1
+            counts[
+                f"blocked:{record['evidence'].get('blocker_type', 'malformed')}"
+            ] += 1
         else:
             counts[disposition] += 1
     reported = {
@@ -212,7 +244,8 @@ def validate(ledger_path=LEDGER, coverage_path=COVERAGE, root=ROOT):
         "scenario": counts.get("scenario", 0),
         "blocked": {
             name.removeprefix("blocked:"): count
-            for name, count in sorted(counts.items()) if name.startswith("blocked:")
+            for name, count in sorted(counts.items())
+            if name.startswith("blocked:")
         },
     }
     if ledger.get("disposition_totals") != reported:
@@ -222,10 +255,14 @@ def validate(ledger_path=LEDGER, coverage_path=COVERAGE, root=ROOT):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="validate the checked-in ledger")
+    parser.add_argument(
+        "--check", action="store_true", help="validate the checked-in ledger"
+    )
     args = parser.parse_args(argv)
     if not args.check:
-        LEDGER.write_text(json.dumps(generated_ledger(), indent=2, sort_keys=True) + "\n")
+        LEDGER.write_text(
+            json.dumps(generated_ledger(), indent=2, sort_keys=True) + "\n"
+        )
         return 0
     errors, counts = validate()
     print("quest claim qualification totals:")

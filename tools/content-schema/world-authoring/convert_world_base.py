@@ -1204,7 +1204,9 @@ def build(
         last_creep_arena.overlay_outputs(out, ROOT)
     import m01c_key_doors
 
-    m01c_key_doors.overlay_outputs(out, capture_bytes=blobs.get(m01c_key_doors.CAPTURE.as_posix()))
+    m01c_key_doors.overlay_outputs(
+        out, capture_bytes=blobs.get(m01c_key_doors.CAPTURE.as_posix())
+    )
     return out
 
 
@@ -1254,9 +1256,9 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     rework = summary.get("edron", {})
     drafted = summary.get("draft", {})
     authored = summary.get("source", {}).get("last_creep_native", {})
-    from qready1_clock_landmarks import donor_delta
     from engclaim_placements import donor_delta as engclaim_delta
     from npcfix2_shared_sources import donor_delta as shared_source_delta
+    from qready1_clock_landmarks import donor_delta
 
     authored_clock_items = donor_delta(summary)
 

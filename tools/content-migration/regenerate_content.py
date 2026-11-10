@@ -462,7 +462,6 @@ def materialize_world() -> None:
                 "cargo",
                 "run",
                 "--locked",
-                "-q",
                 "-p",
                 "oteryn-game-server",
                 "--example",

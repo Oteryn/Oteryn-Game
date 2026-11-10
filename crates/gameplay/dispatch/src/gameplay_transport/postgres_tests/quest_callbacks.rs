@@ -211,6 +211,7 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
         .ok_or("quests")?
         .iter()
         .flat_map(|quest| quest["chests"].as_array().into_iter().flatten())
+        .chain(manifest["native_authored_claims"].as_array().into_iter().flatten())
         .filter(|chest| chest["status"] != "not_playable")
         .map(|chest| chest["claim"].as_str().ok_or("claim"))
         .collect::<Result<_, _>>()?;

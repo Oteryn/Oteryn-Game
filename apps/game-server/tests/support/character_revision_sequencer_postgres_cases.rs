@@ -786,10 +786,13 @@ where
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
+    // Keep the executor's stack frame and monomorphization independent of the
+    // scenario's future size. Every scenario still runs to completion here.
+    let future: std::pin::Pin<Box<dyn Future<Output = TestResult> + '_>> = Box::pin(body(admin));
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
-        .block_on(body(admin))
+        .block_on(future)
 }
 
 async fn revision(pool: &sqlx::PgPool) -> TestResult<u64> {

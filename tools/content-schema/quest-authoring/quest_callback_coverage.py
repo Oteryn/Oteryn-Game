@@ -3,6 +3,7 @@
 This reports implementation coverage, not admission of a deployed World. A candidate
 still needs the exact map binding and an admitted native reward/backpack generation.
 """
+
 import argparse
 import hashlib
 import json
@@ -42,19 +43,27 @@ ACCEPTED_OVERRIDES = {
     6218: "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
     6226: "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
     6335: "PR2770 Q6/A: retain Item9238 at32994,32405,12 over donor9237 at32629,32446,10",
-    **{uid: "PR2770 Q3/A: retain accepted24hour repeat despite absent donor timerStorage"
-       for uid in range(6105, 6111)},
+    **{
+        uid: "PR2770 Q3/A: retain accepted24hour repeat despite absent donor timerStorage"
+        for uid in range(6105, 6111)
+    },
 }
 
 
 def source(root, pack):
     path = f"{pack}/startup/tables/chest.lua"
     data = (root / path).read_bytes()
-    fields = lua_tables.assignments(data.decode(), {"ChestUnique"})["ChestUnique"]["fields"]
-    return path, hashlib.sha256(data).hexdigest(), {
-        field["key"]: (field["line"], lua_tables.as_python(field["value"]))
-        for field in fields
-    }
+    fields = lua_tables.assignments(data.decode(), {"ChestUnique"})["ChestUnique"][
+        "fields"
+    ]
+    return (
+        path,
+        hashlib.sha256(data).hexdigest(),
+        {
+            field["key"]: (field["line"], lua_tables.as_python(field["value"]))
+            for field in fields
+        },
+    )
 
 
 def coverage(canary, crystal):
@@ -63,32 +72,55 @@ def coverage(canary, crystal):
         "crystalserver": source(crystal, "data-global"),
     }
     if {server: digest for server, (_, digest, _) in sources.items()} != SOURCE_SHA256:
-        raise ValueError("reference chest tables differ from the task's pinned revisions")
+        raise ValueError(
+            "reference chest tables differ from the task's pinned revisions"
+        )
     quests = defaultdict(list)
-    for path in sorted((ROOT / "content/interactions/reward_claims").glob("reward-claim*.json")):
+    native_authored_claims = []
+    claim_directory = ROOT / "content/interactions/reward_claims"
+    paths = [
+        *claim_directory.glob("reward-claim*.json"),
+        claim_directory / "engclaim-native.json",
+    ]
+    for path in sorted(paths):
         for record in json.loads(path.read_text())["records"]:
             definition = record["definition"]
             key = definition["identity"]["key"]
             variant = definition.get("source_variant", {})
-            pending = variant.get("native_lowering", {}).get("pending_implementation", [])
+            pending = variant.get("native_lowering", {}).get(
+                "pending_implementation", []
+            )
             native = definition.get("native_contents", {})
-            supported = definition.get("readiness") == "ready" or (
-                pending == [KEY_LOWERING] and not definition.get("data_holds")
-                and not variant.get("achievement_grants")
-                and not variant.get("charge_dispositions")
-                and variant.get("source_data", {}).get("status") == "COMPLETE"
-                and all(p["reward"].get("key_binding", "").startswith("canary:door-key/")
-                        for p in definition["placements"])
-            ) or (
-                native.get("schema") == "OTERYN_NATIVE_CONTAINER_REWARD/v1"
-                and native.get("source_sha256") == CONTAINER_SOURCE
-                and native.get("revision") == "201189f871d23597b82caf88fd611454a2ddefb8"
-                and not definition.get("data_holds")
-                and len(native.get("placements", [])) == len(definition["placements"])
+            supported = (
+                definition.get("readiness") == "ready"
+                or (
+                    pending == [KEY_LOWERING]
+                    and not definition.get("data_holds")
+                    and not variant.get("achievement_grants")
+                    and not variant.get("charge_dispositions")
+                    and variant.get("source_data", {}).get("status") == "COMPLETE"
+                    and all(
+                        p["reward"]
+                        .get("key_binding", "")
+                        .startswith("canary:door-key/")
+                        for p in definition["placements"]
+                    )
+                )
+                or (
+                    native.get("schema") == "OTERYN_NATIVE_CONTAINER_REWARD/v1"
+                    and native.get("source_sha256") == CONTAINER_SOURCE
+                    and native.get("revision")
+                    == "201189f871d23597b82caf88fd611454a2ddefb8"
+                    and not definition.get("data_holds")
+                    and len(native.get("placements", []))
+                    == len(definition["placements"])
+                )
             )
             status = "supported_unqualified" if supported else "not_playable"
-            reason = "requires exact World binding and native Item admission" if supported else (
-                ", ".join(pending) or definition["readiness"]
+            reason = (
+                "requires exact World binding and native Item admission"
+                if supported
+                else (", ".join(pending) or definition["readiness"])
             )
             if key in QUALIFIED:
                 status = "dispatch_pg_qualified"
@@ -96,7 +128,13 @@ def coverage(canary, crystal):
             placements = []
             for placement in definition["placements"]:
                 witnesses = []
-                for legacy in placement["source_binding"]["legacy_unique_ids"]:
+                binding = placement["source_binding"]
+                legacy_ids = (
+                    []
+                    if definition.get("definition_profile") == "native_authored_v1"
+                    else binding["legacy_unique_ids"]
+                )
+                for legacy in legacy_ids:
                     server = legacy["server"]
                     src_path, _, entries = sources[server]
                     found = entries.get(legacy["unique_id"])
@@ -106,40 +144,81 @@ def coverage(canary, crystal):
                         prefix = "canary" if server == "canary" else "crystal"
                         witness["citation"] = f"{prefix}:{src_path}:{line}"
                         authored = placement["reward"].get("items", [])
-                        pairs = [[int(item["item"]["key"].rsplit(".i", 1)[1]), item["count"]]
-                                 for item in authored]
-                        witness["reward_matches_current_source"] = value.get("reward") == pairs
-                        if server == "crystalserver" and legacy["unique_id"] in ACCEPTED_OVERRIDES:
-                            witness["accepted_override"] = ACCEPTED_OVERRIDES[legacy["unique_id"]]
+                        pairs = [
+                            [int(item["item"]["key"].rsplit(".i", 1)[1]), item["count"]]
+                            for item in authored
+                        ]
+                        witness["reward_matches_current_source"] = (
+                            value.get("reward") == pairs
+                        )
+                        if (
+                            server == "crystalserver"
+                            and legacy["unique_id"] in ACCEPTED_OVERRIDES
+                        ):
+                            witness["accepted_override"] = ACCEPTED_OVERRIDES[
+                                legacy["unique_id"]
+                            ]
                     else:
                         witness["missing_in_current_source"] = True
                     witnesses.append(witness)
-                placements.append({"position": placement["source_binding"]["project_position"],
-                                   "sources": witnesses})
+                placements.append(
+                    {
+                        "position": placement["source_binding"]["project_position"],
+                        "sources": witnesses,
+                    }
+                )
             inventory = {
-                "claim": key, "status": status, "reason": reason, "placements": placements,
+                "claim": key,
+                "status": status,
+                "reason": reason,
+                "placements": placements,
             }
-            if native and any(p['reward'].get('written_text') for p in definition['placements']):
+            if definition.get("definition_profile") == "native_authored_v1":
+                inventory["authored_source"] = definition["provenance"]
+                for authored, captured in zip(
+                    definition["placements"], placements, strict=True
+                ):
+                    captured["native_entry_ordinal"] = authored["source_binding"][
+                        "native_entry_ordinal"
+                    ]
+            if native and any(
+                p["reward"].get("written_text") for p in definition["placements"]
+            ):
                 inventory["qualification_limit"] = (
                     "Reward-grant support includes durable authored book text; "
                     "ordinary carried-book READ/TextWindow transport is not implemented. "
                     "LOOK and distance-reading admission are not changed. "
                     "Text retains the established source author's outer-LF normalization."
                 )
-            quests[definition.get("quest", {}).get("key", "unlinked")].append(inventory)
+            if definition.get("definition_profile") == "native_authored_v1":
+                native_authored_claims.append(inventory)
+            else:
+                quests[definition.get("quest", {}).get("key", "unlinked")].append(
+                    inventory
+                )
     counts = Counter(row["status"] for rows in quests.values() for row in rows)
     return {
         "task": "PARITY-QUEST-CALLBACKS-1+W15b",
-        "source_revisions": {"canary": "47dfd51f", "crystalserver": "201189f871d23597b82caf88fd611454a2ddefb8"},
+        "source_revisions": {
+            "canary": "47dfd51f",
+            "crystalserver": "201189f871d23597b82caf88fd611454a2ddefb8",
+        },
         "source_sha256": {server: digest for server, (_, digest, _) in sources.items()},
         "scope": "Once-only leaf/key/text chests and exact filled-container/shared-storage-choice recipes; levers and step-in scripts are separate owners.",
         "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. "
-                         "That status certifies reward granting, not every later Item consumer. "
-                         "Other supported shapes need per-World binding, Item admission and qualification. "
-                         "No deployed World or full-quest completion is certified.",
+        "That status certifies reward granting, not every later Item consumer. "
+        "Other supported shapes need per-World binding, Item admission and qualification. "
+        "No deployed World or full-quest completion is certified.",
+        # Native authored allocations are not donor Source quest completion.
+        # Retain the historical Source audit's exact denominator separately.
+        "native_authored_claims": sorted(
+            native_authored_claims, key=lambda row: row["claim"]
+        ),
         "counts": dict(sorted(counts.items())),
-        "quests": [{"quest": quest, "chests": sorted(rows, key=lambda row: row["claim"])}
-                   for quest, rows in sorted(quests.items())],
+        "quests": [
+            {"quest": quest, "chests": sorted(rows, key=lambda row: row["claim"])}
+            for quest, rows in sorted(quests.items())
+        ],
     }
 
 
@@ -149,7 +228,9 @@ def main():
     parser.add_argument("--crystal", type=Path, required=True)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    text = json.dumps(coverage(args.canary, args.crystal), indent=2, sort_keys=True) + "\n"
+    text = (
+        json.dumps(coverage(args.canary, args.crystal), indent=2, sort_keys=True) + "\n"
+    )
     if args.check:
         if OUTPUT.read_text() != text:
             raise SystemExit("quest callback coverage is stale")

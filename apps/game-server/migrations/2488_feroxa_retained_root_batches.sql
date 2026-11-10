@@ -42,6 +42,10 @@ GRANT EXECUTE ON FUNCTION game_feroxa_retained_root_proven(game_spell_item_lines
 
 CREATE OR REPLACE FUNCTION game_spell_item_line_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+ IF NEW.operation_kind=7 THEN
+  IF NOT (game_rotten_move_transform_line_complete(NEW) OR game_w01_death_transform_line_complete(NEW)) THEN RAISE EXCEPTION 'source transform exact physical successor missing' USING ERRCODE='23514'; END IF;
+  RETURN NULL;
+ END IF;
     IF NEW.operation_kind IN(5,6) THEN
       IF NOT EXISTS(SELECT 1 FROM game_spell_item_source_custody c WHERE c.transaction_id=NEW.transaction_id AND c.item_instance_id=NEW.item_instance_id
         AND c.quantity_before=NEW.quantity_before AND c.state_revision_before=NEW.state_revision_before
@@ -51,7 +55,7 @@ BEGIN
       END IF;
       IF NOT EXISTS(SELECT 1 FROM game_spell_item_receipts r JOIN game_item_instances i ON i.item_instance_id=NEW.item_instance_id
         WHERE r.transaction_id=NEW.transaction_id AND r.created_xact_id=pg_current_xact_id() AND NEW.created_xact_id=pg_current_xact_id()
-         AND NEW.ordinal<=r.operation_count AND (NEW.world_id,NEW.channel_id)=(r.world_id,r.channel_id)
+         AND NEW.ordinal<=r.operation_count AND (NEW.world_id,NEW.runtime_scope_kind,coalesce(NEW.channel_id,NEW.instance_id))=(r.world_id,r.runtime_scope_kind,coalesce(r.channel_id,r.instance_id))
          AND (i.world_id,i.definition_family,i.definition_production_key,i.definition_revision_ref)=(NEW.world_id,NEW.definition_family,NEW.definition_production_key,NEW.definition_revision)
          AND i.last_transaction_id=NEW.transaction_id AND i.state_revision=NEW.state_revision_before+1 AND i.quantity=NEW.quantity_after
          AND i.lifecycle=CASE WHEN NEW.quantity_after=0 THEN 2 ELSE 1 END
@@ -83,8 +87,8 @@ BEGIN
          SELECT 1 FROM game_spell_item_lines root LEFT JOIN game_item_mint_receipts m ON m.item_instance_id=root.item_instance_id
           WHERE root.transaction_id=NEW.transaction_id AND root.item_instance_id=NEW.source_corpse_root AND root.operation_kind IN(2,3)
            AND root.created_xact_id=pg_current_xact_id() AND (m.loot_purpose_key='CORPSE_MATERIALIZATION' OR (root.operation_kind=2 AND EXISTS(SELECT 1 FROM game_spell_item_receipts event WHERE event.transaction_id=NEW.transaction_id AND event.cause_kind=2 AND event.created_xact_id=pg_current_xact_id())))
-           AND (root.world_id,root.channel_id,root.spatial_position,root.map_revision,root.content_revision,root.placement_context)
-             =(NEW.world_id,NEW.channel_id,NEW.spatial_position,NEW.map_revision,NEW.content_revision,NEW.placement_context)
+           AND (root.world_id,root.runtime_scope_kind,coalesce(root.channel_id,root.instance_id),root.spatial_position,root.map_revision,root.content_revision,root.placement_context)
+             =(NEW.world_id,NEW.runtime_scope_kind,coalesce(NEW.channel_id,NEW.instance_id),NEW.spatial_position,NEW.map_revision,NEW.content_revision,NEW.placement_context)
            AND (NEW.source_parent_item_instance_id=root.item_instance_id OR EXISTS(SELECT 1 FROM game_spell_item_lines parent WHERE parent.transaction_id=NEW.transaction_id AND parent.operation_kind=6 AND parent.item_instance_id=NEW.source_parent_item_instance_id AND parent.source_corpse_root=NEW.source_corpse_root AND parent.created_xact_id=pg_current_xact_id()))) THEN
         RAISE EXCEPTION 'contained retirement requires its same-cast real corpse root/ancestor chain' USING ERRCODE='23514';
       END IF;
@@ -94,13 +98,13 @@ BEGIN
     IF NOT EXISTS(SELECT 1 FROM game_spell_item_receipts r JOIN game_item_instances i ON i.item_instance_id=NEW.item_instance_id
         WHERE r.transaction_id=NEW.transaction_id AND r.created_xact_id=pg_current_xact_id()
           AND NEW.created_xact_id=pg_current_xact_id() AND NEW.ordinal<=r.operation_count
-          AND (NEW.world_id,NEW.channel_id)=(r.world_id,r.channel_id)
+          AND (NEW.world_id,NEW.runtime_scope_kind,coalesce(NEW.channel_id,NEW.instance_id))=(r.world_id,r.runtime_scope_kind,coalesce(r.channel_id,r.instance_id))
           AND (i.world_id,i.definition_family,i.definition_production_key,i.definition_revision_ref)=(NEW.world_id,NEW.definition_family,NEW.definition_production_key,NEW.definition_revision)
           AND ((NEW.operation_kind=1 AND i.lifecycle=1 AND i.quantity=NEW.quantity_after
                 AND i.minted_transaction_id=NEW.transaction_id AND i.state_revision=1
                 AND ((NEW.destination_parent_item_instance_id IS NULL AND EXISTS(SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id
-                    AND (g.world_id,g.channel_id,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context)
-                      =(NEW.world_id,NEW.channel_id,NEW.spatial_position,NEW.map_revision,NEW.content_revision,NEW.placement_context)
+                    AND (g.world_id,g.scope_kind,coalesce(g.channel_id,g.instance_id),g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context)
+                      =(NEW.world_id,NEW.runtime_scope_kind,coalesce(NEW.channel_id,NEW.instance_id),NEW.spatial_position,NEW.map_revision,NEW.content_revision,NEW.placement_context)
                     AND g.runtime_scope_ownership_generation=r.ownership_generation AND g.stack_ordinal IS NOT NULL))
                   OR (NEW.destination_parent_item_instance_id IS NOT NULL AND EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id AND e.character_id=r.character_id AND e.parent_item_instance_id=NEW.destination_parent_item_instance_id AND e.placement_ordinal=NEW.destination_ordinal AND e.placed_transaction_id=NEW.transaction_id)))
                 AND NOT (EXISTS(SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id) AND EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id)))
@@ -122,7 +126,8 @@ BEGIN
     END IF;
     IF NEW.operation_kind=3 AND NOT EXISTS(SELECT 1 FROM game_spell_companion_acquisition_receipts c WHERE c.transaction_id=NEW.transaction_id AND c.corpse_item_instance_id=NEW.item_instance_id AND c.corpse_state_revision=NEW.state_revision_before AND c.created_xact_id=pg_current_xact_id()) THEN RAISE EXCEPTION 'corpse consumption requires its prepared actual companion acquisition receipt' USING ERRCODE='23514'; END IF;
     RETURN NULL;
-END $$;
+END
+$$;
 
 CREATE OR REPLACE FUNCTION game_feroxa_clear_ground_batch(
  p_firing uuid,p_world uuid,p_channel uuid,p_generation numeric,p_phase smallint,p_now bigint,
@@ -314,3 +319,9 @@ DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_spell_item_line_proven() SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
 REVOKE ALL ON FUNCTION game_spell_item_line_proven() FROM PUBLIC;
+
+-- Preserve the installed guards' restricted schema resolution.
+DO $migration$
+BEGIN
+ EXECUTE format('ALTER FUNCTION game_spell_item_line_proven() SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $migration$;

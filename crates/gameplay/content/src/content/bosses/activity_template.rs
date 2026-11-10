@@ -1161,7 +1161,9 @@ mod tests {
         let candidates = captured_boss_levers().map_err(debug)?;
         let first = candidates
             .iter()
-            .find(|candidate| candidate.complete_literal_layout)
+            // Selected authored rooms share this registry; inspect the original Lua capture.
+            .find(|candidate| candidate.complete_literal_layout
+                && candidate.path.starts_with("data-global/scripts/actions/bosses_levers/"))
             .ok_or("complete captured room")?;
         assert_eq!(
             first.path,

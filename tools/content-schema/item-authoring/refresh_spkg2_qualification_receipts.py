@@ -113,9 +113,12 @@ def digest(data):
 def refresh_pin(root, path, previous):
     raw = (root / current_path(path)).read_bytes()
     actual = digest(raw)
-    if actual != previous and path not in ALLOWED:
-        if read_pinned(root, path, previous) != raw:
-            raise ValueError(f"unqualified input change: {path}")
+    if (
+        actual != previous
+        and path not in ALLOWED
+        and read_pinned(root, path, previous) != raw
+    ):
+        raise ValueError(f"unqualified input change: {path}")
     return actual, len(raw)
 
 

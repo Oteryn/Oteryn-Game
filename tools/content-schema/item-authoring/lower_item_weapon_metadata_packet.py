@@ -2,8 +2,8 @@
 
 import argparse
 import json
-import sys
 import re
+import sys
 from collections import Counter
 
 import appearance_membership
@@ -189,6 +189,7 @@ def pre_overlay_definitions(root, current):
     # Reuse their exact source-qualified, nonmaterializable references.
     sys.path.insert(0, str(root / "tools/content-migration"))
     from tree_item_references import extend_records
+
     qualified = list(definitions.values())
     extend_records(qualified, root)
     definitions = {row["identity"]["key"]: row for row in qualified}

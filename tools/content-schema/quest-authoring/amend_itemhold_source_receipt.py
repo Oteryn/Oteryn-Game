@@ -9,8 +9,8 @@ import quest_tree_authoring as tree
 import source_fix_guard as guard
 
 COMPILER = 'tools/content-schema/quest-authoring/quest_tree_authoring.py'
-# QMINT3 refresh: remove the duplicate Draconia live hold; SOURCE cores stay exact.
-PREVIOUS = 'cb2c59f5fc1c3ea2a549e39a8c7764c7dfd25df200986a5d11c5191b62484aae'
+# Restore the exact historical charged-item view; frozen SOURCE cores are verified.
+PREVIOUS = '45d5840880648a7e94551ddcb67f6cdf3e0550937a0856a51ab2e95bb338d9fb'
 
 
 def verify_source_view(root):

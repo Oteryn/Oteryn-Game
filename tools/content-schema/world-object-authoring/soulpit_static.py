@@ -219,24 +219,39 @@ def records(root=ROOT):
     # leaves may gain an independently source-qualified fact; no Known fact,
     # identity, ordinal or source geometry is replaced.
     import activity_static
+
     _, qualified, _ = activity_static.source_records(root)
-    activity = {row['identity']['key']: row['catalogue_record']
-                for row in qualified if row['identity']['family'] == 'Terrain'}
+    activity = {
+        row["identity"]["key"]: row["catalogue_record"]
+        for row in qualified
+        if row["identity"]["family"] == "Terrain"
+    }
     shared = 0
     for row in result:
-        source = activity.get(row['identity']['key'])
+        source = activity.get(row["identity"]["key"])
         if source is None:
             continue
         shared += 1
         for field in sorted(row.keys() | source.keys()):
-            if field == 'provenance' or row.get(field) == source.get(field):
+            if field == "provenance" or row.get(field) == source.get(field):
                 continue
-            if field not in ('blocks_projectile', 'blocks_sight') or row[field] != {'state': 'UNKNOWN'} or source[field].get('state') != 'KNOWN':
-                raise ValueError('SOULPIT_ACTIVITY_KNOWN_FACT_CONFLICT:' + row['identity']['key'] + '/' + field)
+            if (
+                field not in ("blocks_projectile", "blocks_sight")
+                or row[field] != {"state": "UNKNOWN"}
+                or source[field].get("state") != "KNOWN"
+            ):
+                raise ValueError(
+                    "SOULPIT_ACTIVITY_KNOWN_FACT_CONFLICT:"
+                    + row["identity"]["key"]
+                    + "/"
+                    + field
+                )
             row[field] = source[field].copy()
-            row['provenance']['fields'][field] = source['provenance']['fields'].get(field, source['provenance']['fields']['blocks_sight'])
+            row["provenance"]["fields"][field] = source["provenance"]["fields"].get(
+                field, source["provenance"]["fields"]["blocks_sight"]
+            )
     if shared != 8:
-        raise ValueError('SOULPIT_ACTIVITY_SHARED_SET_CHANGED')
+        raise ValueError("SOULPIT_ACTIVITY_SHARED_SET_CHANGED")
     return result
 
 
@@ -245,6 +260,7 @@ def outputs(root=ROOT):
     index_path = "content/world/placements/index.json"
     index = json.loads((root / index_path).read_bytes())
     import activity_static
+
     _, registry, _ = activity_static.source_records(root)
     activity_static.compose_placement_palette(index, registry, rows, root)
     marker_path = "content/world/terrain/index.json"

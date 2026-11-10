@@ -2676,7 +2676,13 @@ mod tests {
             temporal.duration,
             F::Known(super::super::ReferenceMilliseconds(3_600_000))
         );
-        assert_eq!(temporal.consumption_mode, F::NotApplicable);
+        // Crystal 201189f8 items.xml:42586-42590 declares a one-hour duration.
+        // This is the admitted clock representation, not an instantiated Item deadline.
+        assert_eq!(
+            temporal.consumption_mode,
+            F::Known(super::super::ReferenceTemporalMode::DurableAbsoluteDeadline)
+        );
+        assert_eq!(temporal.stop_duration, F::Known(false));
         assert_eq!(temporal.decay_target, F::NotApplicable);
     }
 

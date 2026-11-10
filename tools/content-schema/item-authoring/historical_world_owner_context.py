@@ -57,28 +57,29 @@ def sha(raw):
 
 
 def original_soulpit(root):
-    raw = (Path(root) / 'content/world/terrain' / SOULPIT).read_bytes()
+    raw = (Path(root) / "content/world/terrain" / SOULPIT).read_bytes()
     if sha(raw) == SOULPIT_SHA:
         return raw
     document = json.loads(raw)
-    if (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode() != raw:
-        raise ValueError('source digest drift: Soulpit serialization')
+    if (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode() != raw:
+        raise ValueError("source digest drift: Soulpit serialization")
     shared = {43516, 46629, 46630, 46631, 46632, 46633, 46634, 48236}
     changed = set()
-    for row in document['records']:
-        iid = row['provenance']['source_item_id']
+    for row in document["records"]:
+        iid = row["provenance"]["source_item_id"]
         if iid not in shared:
             continue
-        for field in ('blocks_projectile', 'blocks_sight'):
-            if (row[field] != {'state': 'KNOWN', 'value': iid == 43516}
-                    or row['provenance']['fields'].get(field) != ['appearance:flags.unsight']):
-                raise ValueError('source digest drift: joint Soulpit sight witness')
-            row[field] = {'state': 'UNKNOWN'}
-            del row['provenance']['fields'][field]
+        for field in ("blocks_projectile", "blocks_sight"):
+            if row[field] != {"state": "KNOWN", "value": iid == 43516} or row[
+                "provenance"
+            ]["fields"].get(field) != ["appearance:flags.unsight"]:
+                raise ValueError("source digest drift: joint Soulpit sight witness")
+            row[field] = {"state": "UNKNOWN"}
+            del row["provenance"]["fields"][field]
         changed.add(iid)
-    predecessor = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    predecessor = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
     if changed != shared or sha(predecessor) != SOULPIT_SHA:
-        raise ValueError('source digest drift: historical Soulpit witness')
+        raise ValueError("source digest drift: historical Soulpit witness")
     return predecessor
 
 
@@ -90,30 +91,42 @@ def original_marker(root):
     # to the end. Recover only the frozen receipt's annotation order; the hash
     # checks below still require every byte of the original marker.
     marker = json.loads(raw)
-    if (json.dumps(marker, indent=2, ensure_ascii=False) + '\n').encode() != raw:
-        raise ValueError('source digest drift: terrain marker serialization')
+    if (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw:
+        raise ValueError("source digest drift: terrain marker serialization")
     for note in (
-        ' Additionally M49 Earth altar ground7748 retains its canonical Item identity.',
-        ' Additionally one source-qualified Rafzan elevator ground; total 8694 Terrain records.',
-        ' Additionally one source-qualified Reliable Ram static appearance; total 8694 Terrain records.',
-        ' Additionally SRX-3 pinned activity static geometry: 61 Terrain and 177 WorldObject records; no Item aliases.',
+        " Additionally M49 Earth altar ground7748 retains its canonical Item identity.",
+        " Additionally one source-qualified Rafzan elevator ground; total 8694 Terrain records.",
+        " Additionally one source-qualified Reliable Ram static appearance; total 8694 Terrain records.",
+        " Additionally SRX-3 pinned activity static geometry: 61 Terrain and 177 WorldObject records; no Item aliases.",
     ):
-        marker['notes'] = marker['notes'].replace(note, '')
-    if SOULPIT_NOTE in marker['notes']:
-        marker['notes'] = marker['notes'].replace(SOULPIT_NOTE, '')
-        marker['notes'] = marker['notes'].replace(NOTE, NOTE + SOULPIT_NOTE)
-    raw = (json.dumps(marker, indent=2, ensure_ascii=False) + '\n').encode()
+        marker["notes"] = marker["notes"].replace(note, "")
+    if SOULPIT_NOTE in marker["notes"]:
+        marker["notes"] = marker["notes"].replace(SOULPIT_NOTE, "")
+        marker["notes"] = marker["notes"].replace(NOTE, NOTE + SOULPIT_NOTE)
+    raw = (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
     feroxa = root / "content/world/terrain" / FEROXA_STATIC
     if feroxa.exists():
-        path = Path(__file__).resolve().parents[1] / "world-object-authoring/feroxa_static.py"
+        path = (
+            Path(__file__).resolve().parents[1]
+            / "world-object-authoring/feroxa_static.py"
+        )
         spec = importlib.util.spec_from_file_location("historical_feroxa_static", path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        expected = (json.dumps({'family': 'Terrain', 'records': module.records(root)},
-                               sort_keys=True, separators=(',', ':')) + '\n').encode()
+        expected = (
+            json.dumps(
+                {"family": "Terrain", "records": module.records(root)},
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n"
+        ).encode()
         marker = json.loads(raw)
-        if (feroxa.read_bytes() != expected or not marker["notes"].endswith(module.NOTE)
-                or (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw):
+        if (
+            feroxa.read_bytes() != expected
+            or not marker["notes"].endswith(module.NOTE)
+            or (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw
+        ):
             raise ValueError("source digest drift: Feroxa static World witness")
         marker["notes"] = marker["notes"].removesuffix(module.NOTE)
         raw = (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
@@ -127,7 +140,9 @@ def original_marker(root):
         try:
             soulpit_digest = sha(original_soulpit(root))
         except ValueError as error:
-            raise ValueError('source digest drift: unrecognized Soulpit World owner inputs') from error
+            raise ValueError(
+                "source digest drift: unrecognized Soulpit World owner inputs"
+            ) from error
         if sha(raw) != SOULPIT_MARKER_SHA or soulpit_digest != SOULPIT_SHA:
             raise ValueError(
                 "source digest drift: unrecognized Soulpit World owner inputs"
@@ -159,20 +174,23 @@ def original_marker(root):
 def link_world(root, target, detached=()):
     """Replay the closed World input set; current-owner validation stays separate."""
     from check_stack_default_historical_context import frozen_archive
+
     original = original_marker(root)
     archived = frozen_archive()
     if archived[MARKER] != original:
-        raise ValueError('source digest drift: historical World marker')
+        raise ValueError("source digest drift: historical World marker")
     target.mkdir(parents=True)
     for source in (root / "content/world").iterdir():
         if source.name in detached:
             continue
         destination = target / source.name
-        if source.name not in {'terrain', 'objects'}:
-            destination.symlink_to(source.resolve(), target_is_directory=source.is_dir())
+        if source.name not in {"terrain", "objects"}:
+            destination.symlink_to(
+                source.resolve(), target_is_directory=source.is_dir()
+            )
             continue
         destination.mkdir()
-        prefix = f'content/world/{source.name}/'
+        prefix = f"content/world/{source.name}/"
         for name, raw in archived.items():
             if name.startswith(prefix):
                 (destination / Path(name).name).write_bytes(raw)
@@ -195,19 +213,29 @@ def original_hit_packet(root):
     # Later map owners may change only the receipt's input footprint. Reprove
     # its complete live footprint and every frozen Hit fact before replaying
     # the independently hash-pinned historical receipt.
-    current_inputs = {str(path.relative_to(root)): sha(path.read_bytes())
-                      for family in ('objects', 'terrain')
-                      for path in (root / 'content/world' / family).glob('*.json')}
-    if packet['sources']['world_owner_inputs'] == current_inputs:
+    current_inputs = {
+        str(path.relative_to(root)): sha(path.read_bytes())
+        for family in ("objects", "terrain")
+        for path in (root / "content/world" / family).glob("*.json")
+    }
+    if packet["sources"]["world_owner_inputs"] == current_inputs:
         from check_stack_default_historical_context import frozen_archive
+
         frozen_raw = frozen_archive()[HIT_PACKET]
         if sha(frozen_raw) != HIT_SHA:
-            raise ValueError('source digest drift: frozen historical Hit packet')
+            raise ValueError("source digest drift: frozen historical Hit packet")
         frozen = json.loads(frozen_raw)
-        packet['sources']['world_owner_inputs'] = frozen['sources']['world_owner_inputs']
-        candidate = (json.dumps(packet, sort_keys=True, ensure_ascii=False, separators=(',', ':')) + '\n').encode()
+        packet["sources"]["world_owner_inputs"] = frozen["sources"][
+            "world_owner_inputs"
+        ]
+        candidate = (
+            json.dumps(
+                packet, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+            )
+            + "\n"
+        ).encode()
         if sha(candidate) != HIT_SHA:
-            raise ValueError('source digest drift: historical Hit facts')
+            raise ValueError("source digest drift: historical Hit facts")
         return frozen_raw
     inputs = packet["sources"]["world_owner_inputs"]
     ground = "content/world/terrain/" + GROUND

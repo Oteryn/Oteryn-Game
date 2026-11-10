@@ -3,7 +3,9 @@
 -- unambiguous over the complete unsigned CommandId domain.
 CREATE OR REPLACE FUNCTION game_quest_reward_mint_claim_key(v_character UUID,v_cause UUID,v_ordinal NUMERIC,
     v_transition TEXT,v_plan JSONB) RETURNS TEXT LANGUAGE SQL IMMUTABLE AS $function$
-    SELECT CASE WHEN ((jsonb_array_length(v_plan->'storage')=0
+    SELECT CASE WHEN game_quest_native_claim_plan(v_plan)
+    THEN v_plan #>> '{world_claim,key}'
+    WHEN ((jsonb_array_length(v_plan->'storage')=0
         AND jsonb_array_length(coalesce(v_plan->'state_ops','[]'::jsonb))=0)
         OR (jsonb_typeof(v_plan->'recipe_source')='string'
             AND jsonb_typeof(v_plan->'carried_target')='string'

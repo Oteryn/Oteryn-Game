@@ -269,11 +269,19 @@ def epoch2_committed_output() -> None:
     # A12 §4.2: every emitted row is EXACT to the Tibia key of its own external id; the
     # D149 rows (no CipSoft appearance) and the held donor ids emit no binding.
     bindings = output["bindings"]
-    historical = [row for row in bindings if row['external_id'] != '48227']
+    historical = [row for row in bindings if row["external_id"] != "48227"]
     assert len(historical) == MODULE.EXPECTED_BOUND == 33_971
     assert len(bindings) == len(historical) + 1
-    approved, = [row for row in bindings if row['external_id'] == '48227']
-    assert approved == __import__('json').loads((MODULE.ROOT / 'tools/content-schema/native-gameplay/cake-bridge-identity.json').read_bytes())['binding']
+    (approved,) = [row for row in bindings if row["external_id"] == "48227"]
+    assert (
+        approved
+        == __import__("json").loads(
+            (
+                MODULE.ROOT
+                / "tools/content-schema/native-gameplay/cake-bridge-identity.json"
+            ).read_bytes()
+        )["binding"]
+    )
     assert bindings == sorted(bindings, key=MODULE.canonical_bytes)
     for row in bindings:
         assert row["disposition"] == "EXACT", row

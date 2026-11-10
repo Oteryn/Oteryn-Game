@@ -35,8 +35,7 @@ impl CreatureAiTable {
             return Err(CarrierError::InvalidCreatureTarget);
         }
         let position = runtime.read_actor_position(target)?.position();
-        let visible = position.floor == creature.position.floor
-            && targeting::sees(position, creature.position);
+        let visible = targeting::sees_native(creature.position, position);
         let entry = self
             .entry_mut(actor)
             .ok_or(CarrierError::InvalidCreatureTarget)?;

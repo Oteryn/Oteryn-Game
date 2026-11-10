@@ -18,7 +18,13 @@ import validate_world_base as validate
 import world_region_codec as codec
 
 
-def outputs(items_xml: Path, root: Path = base.ROOT, *, refresh_summary=False, refresh_palette=False) -> dict[str, bytes]:
+def outputs(
+    items_xml: Path,
+    root: Path = base.ROOT,
+    *,
+    refresh_summary=False,
+    refresh_palette=False,
+) -> dict[str, bytes]:
     path = "tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
     summary = json.loads((root / path).read_bytes())
     expected = next(
@@ -39,7 +45,9 @@ def outputs(items_xml: Path, root: Path = base.ROOT, *, refresh_summary=False, r
         if index["source"]["files"] != summary["source"]["files"]:
             raise ValueError("summary capture donor input pins differ from the index")
         validate._init(
-            str(root), (summary["map"]["width"], summary["map"]["height"]), len(index["palette"])
+            str(root),
+            (summary["map"]["width"], summary["map"]["height"]),
+            len(index["palette"]),
         )
     for region in index["regions"]:
         if refresh_summary:
@@ -49,10 +57,12 @@ def outputs(items_xml: Path, root: Path = base.ROOT, *, refresh_summary=False, r
             used.update(result["palette"])
             attributes.update(result["attributes"])
             floors[result["z"]] += result["tiles"]
-            totals.update({
-                key: result[key]
-                for key in ("sectors", "tiles", "items", "houses", "zones")
-            })
+            totals.update(
+                {
+                    key: result[key]
+                    for key in ("sectors", "tiles", "items", "houses", "zones")
+                }
+            )
             totals.update(regions=1, bytes=result["size"])
             continue
         raw = (root / region["path"]).read_bytes()
@@ -69,13 +79,18 @@ def outputs(items_xml: Path, root: Path = base.ROOT, *, refresh_summary=False, r
         bindings = bindings_path.read_bytes()
         if hashlib.sha256(bindings).hexdigest() != index["item_bindings"]["sha256"]:
             raise ValueError("palette capture Item binding pin differs")
-        occurrences = Counter({
-            row["source_item_id"]: used[slot]
-            for slot, row in enumerate(index["palette"]) if used[slot]
-        })
+        occurrences = Counter(
+            {
+                row["source_item_id"]: used[slot]
+                for slot, row in enumerate(index["palette"])
+                if used[slot]
+            }
+        )
         index["palette"] = base.build_palette(
-            base.bound_keys(bindings, base.defined_item_keys(root)), occurrences,
-            previous=index["palette"], terrain=base.terrain_keys(root),
+            base.bound_keys(bindings, base.defined_item_keys(root)),
+            occurrences,
+            previous=index["palette"],
+            terrain=base.terrain_keys(root),
             world_object=base.world_object_keys(root),
         )
         generated["content/world/placements/index.json"] = base.canonical(index)
@@ -88,7 +103,9 @@ def outputs(items_xml: Path, root: Path = base.ROOT, *, refresh_summary=False, r
         summary["bytes_on_disk"] = totals["bytes"]
         summary["tiles_with_house"] = totals["houses"]
         summary["tiles_with_zone"] = totals["zones"]
-        summary["tiles_by_floor"] = {str(z): count for z, count in sorted(floors.items())}
+        summary["tiles_by_floor"] = {
+            str(z): count for z, count in sorted(floors.items())
+        }
         attributes.pop("depth", None)
         summary["item_attributes"] = dict(sorted(attributes.items()))
     families = {
@@ -131,14 +148,16 @@ def outputs(items_xml: Path, root: Path = base.ROOT, *, refresh_summary=False, r
 def binding_pin_outputs(root=base.ROOT):
     """Refresh provenance only after proving the exact approved additive binding."""
     import sys
-    sys.path.insert(0, str(root / 'tools/content-schema/native-gameplay'))
+
+    sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
     from build_spell_item_identities import historical_binding_bytes
-    name = 'content/world/placements/index.json'
+
+    name = "content/world/placements/index.json"
     index = json.loads((root / name).read_bytes())
-    descriptor = index['item_bindings']
-    raw = (root / descriptor['path']).read_bytes()
-    historical_binding_bytes(raw, descriptor['sha256'])
-    descriptor['sha256'] = hashlib.sha256(raw).hexdigest()
+    descriptor = index["item_bindings"]
+    raw = (root / descriptor["path"]).read_bytes()
+    historical_binding_bytes(raw, descriptor["sha256"])
+    descriptor["sha256"] = hashlib.sha256(raw).hexdigest()
     return {name: base.canonical(index)}
 
 
@@ -147,20 +166,27 @@ def main() -> int:
     parser.add_argument("--items-xml", type=Path)
     parser.add_argument("--binding-pin", action="store_true")
     parser.add_argument("--check", action="store_true")
-    parser.add_argument("--palette", action="store_true", help="refresh stable palette entries from current Item and World catalogues")
     parser.add_argument(
-        "--summary", action="store_true",
+        "--palette",
+        action="store_true",
+        help="refresh stable palette entries from current Item and World catalogues",
+    )
+    parser.add_argument(
+        "--summary",
+        action="store_true",
         help="recount merged region facts and copy their source provenance; retain donor-only facts",
     )
     args = parser.parse_args()
     if args.binding_pin:
         if args.items_xml or args.summary or args.palette:
-            parser.error('--binding-pin is a provenance-only operation')
+            parser.error("--binding-pin is a provenance-only operation")
         generated = binding_pin_outputs()
     else:
         if args.items_xml is None:
-            parser.error('--items-xml is required for palette/summary recapture')
-        generated = outputs(args.items_xml, refresh_summary=args.summary, refresh_palette=args.palette)
+            parser.error("--items-xml is required for palette/summary recapture")
+        generated = outputs(
+            args.items_xml, refresh_summary=args.summary, refresh_palette=args.palette
+        )
     for name, data in generated.items():
         path = base.ROOT / name
         if args.check:

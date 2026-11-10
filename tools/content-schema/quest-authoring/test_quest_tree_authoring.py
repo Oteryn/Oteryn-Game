@@ -70,6 +70,13 @@ class QuestTreeTests(unittest.TestCase):
                     'item': 'oteryn:item.tibia.i3083', 'placement_index': 0,
                     'reason': 'waiting', 'reward_field': 'items', 'reward_index': 0,
                 }])
+            elif key.endswith('.draconia1'):
+                # The frozen charged-axe observation remains distinct from live admission.
+                self.assertEqual(source[key]['data_holds'], [{
+                    'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
+                    'item': 'oteryn:item.tibia.i3284', 'placement_index': 0,
+                    'reason': 'waiting', 'reward_field': 'items', 'reward_index': 0,
+                }])
             else:
                 self.assertEqual(source[key]['data_holds'], live[key]['data_holds'])
             self.assertEqual(source[key].get('native_contents'), live[key].get('native_contents'))

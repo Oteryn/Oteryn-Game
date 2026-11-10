@@ -90,8 +90,14 @@ def build(root=ROOT):
     # Reconstruct its exact historical table; never admit a new source revision
     # into this physical-fact proof merely because it has an exact identity.
     sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
-    from build_spell_item_identities import PRE_CAKE_BINDINGS_SHA, historical_binding_bytes
-    historical = historical_binding_bytes((root / BINDINGS).read_bytes(), PRE_CAKE_BINDINGS_SHA)
+    from build_spell_item_identities import (
+        PRE_CAKE_BINDINGS_SHA,
+        historical_binding_bytes,
+    )
+
+    historical = historical_binding_bytes(
+        (root / BINDINGS).read_bytes(), PRE_CAKE_BINDINGS_SHA
+    )
     for b in json.loads(historical)["bindings"]:
         if b["disposition"] != "EXACT":
             continue

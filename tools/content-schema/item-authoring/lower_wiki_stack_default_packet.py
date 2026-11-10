@@ -40,16 +40,19 @@ def checked(root, path, digest):
         if path == BINDINGS:
             sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
             from build_spell_item_identities import historical_binding_bytes
+
             return historical_binding_bytes(data, digest)
         if path == WIKI:
             sys.path.insert(0, str(root / "tools/content-migration"))
             from source_relocations import read_pinned
+
             pinned = read_pinned(root, path, digest)
             if pinned is not None:
                 return pinned
             raise ValueError(f"source digest drift: {path}")
         sys.path.insert(0, str(root / "tools/content-migration"))
         from source_relocations import read_pinned
+
         pinned = read_pinned(root, path, digest)
         if pinned is not None:
             return pinned
@@ -184,16 +187,33 @@ def reasons(source, definition, binding, obj, routed, observations, page_ids, cu
 
 
 def exact_bindings(records, revisions):
-    if any(b.get("external_id") == "48227" and b.get("source_revision") not in revisions
-           for b in records):
+    if any(
+        b.get("external_id") == "48227" and b.get("source_revision") not in revisions
+        for b in records
+    ):
         # Closed promotion cohorts cannot inherit facts for a later identity.
         # Qualify the complete predecessor, including the exact additive row,
         # before selecting the historical cohort.
         sys.path.insert(0, str(ROOT / "tools/content-schema/native-gameplay"))
-        from build_spell_item_identities import PRE_CAKE_BINDINGS_SHA, historical_binding_bytes
-        document = {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Item", "bindings": records}
-        raw = (json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n").encode()
-        records = json.loads(historical_binding_bytes(raw, PRE_CAKE_BINDINGS_SHA))["bindings"]
+        from build_spell_item_identities import (
+            PRE_CAKE_BINDINGS_SHA,
+            historical_binding_bytes,
+        )
+
+        document = {
+            "schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1",
+            "family": "Item",
+            "bindings": records,
+        }
+        raw = (
+            json.dumps(
+                document, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            )
+            + "\n"
+        ).encode()
+        records = json.loads(historical_binding_bytes(raw, PRE_CAKE_BINDINGS_SHA))[
+            "bindings"
+        ]
     bound, external_ids = {}, set()
     for b in records:
         if b["disposition"] != "EXACT":

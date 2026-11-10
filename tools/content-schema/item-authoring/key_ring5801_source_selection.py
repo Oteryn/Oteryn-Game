@@ -186,44 +186,77 @@ def select(record, field_path, context=None):
 
 def refresh_input_pins(root):
     """Retain the exact5801 observation pair across reviewed snapshot re-keying."""
-    import sys
     import re
-    sys.path.insert(0, str(root / 'tools/content-migration'))
-    sys.path.insert(0, str(root / 'tools/content-schema/native-gameplay'))
-    from source_relocations import read_pinned
+    import sys
+
+    sys.path.insert(0, str(root / "tools/content-migration"))
+    sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
     from build_spell_item_identities import historical_binding_bytes
+    from source_relocations import read_pinned
+
     path = root / MANIFEST
     original = path.read_bytes()
-    require(hashlib.sha256(original).hexdigest() == MANIFEST_SHA256, 'manifest digest')
+    require(hashlib.sha256(original).hexdigest() == MANIFEST_SHA256, "manifest digest")
     manifest = json.loads(original)
-    inputs = manifest['source_inputs']
-    snapshot_raw = (root / inputs['snapshot_path']).read_bytes()
-    require(read_pinned(root, inputs['snapshot_path'], '24e3e57fddc6c14f00aa5c4976e91117d31bc2102bd3835b3d7891d9e41fbeae') == snapshot_raw,
-            'unreviewed snapshot change')
+    inputs = manifest["source_inputs"]
+    snapshot_raw = (root / inputs["snapshot_path"]).read_bytes()
+    require(
+        read_pinned(
+            root,
+            inputs["snapshot_path"],
+            "24e3e57fddc6c14f00aa5c4976e91117d31bc2102bd3835b3d7891d9e41fbeae",
+        )
+        == snapshot_raw,
+        "unreviewed snapshot change",
+    )
     snapshot = json.loads(snapshot_raw)
-    record, = [r for r in snapshot['records'].values() if r['item_id'] == 5801]
-    require(record['observations'] == manifest['expected_snapshot_observations'], '5801 observations changed')
-    binding_raw = (root / inputs['binding_path']).read_bytes()
-    historical_binding_bytes(binding_raw, inputs['binding_sha256'])
-    selected = [row for row in json.loads(binding_raw)['bindings'] if row['external_id'] == '5801']
-    require(selected == [manifest['exact_binding']], '5801 exact binding changed')
-    require(hashlib.sha256((root / inputs['client_path']).read_bytes()).hexdigest() == inputs['client_sha256'], 'client digest')
-    records_digest = hashlib.sha256(json.dumps(snapshot['records'], sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
-    require(records_digest == snapshot['snapshot_sha256'], 'snapshot records digest')
-    inputs['snapshot_sha256'] = records_digest
-    inputs['binding_sha256'] = hashlib.sha256(binding_raw).hexdigest()
-    output = (json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False) + '\n').encode()
+    (record,) = [r for r in snapshot["records"].values() if r["item_id"] == 5801]
+    require(
+        record["observations"] == manifest["expected_snapshot_observations"],
+        "5801 observations changed",
+    )
+    binding_raw = (root / inputs["binding_path"]).read_bytes()
+    historical_binding_bytes(binding_raw, inputs["binding_sha256"])
+    selected = [
+        row
+        for row in json.loads(binding_raw)["bindings"]
+        if row["external_id"] == "5801"
+    ]
+    require(selected == [manifest["exact_binding"]], "5801 exact binding changed")
+    require(
+        hashlib.sha256((root / inputs["client_path"]).read_bytes()).hexdigest()
+        == inputs["client_sha256"],
+        "client digest",
+    )
+    records_digest = hashlib.sha256(
+        json.dumps(
+            snapshot["records"],
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    require(records_digest == snapshot["snapshot_sha256"], "snapshot records digest")
+    inputs["snapshot_sha256"] = records_digest
+    inputs["binding_sha256"] = hashlib.sha256(binding_raw).hexdigest()
+    output = (
+        json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    ).encode()
     path.write_bytes(output)
     selector = Path(__file__)
-    text, count = re.subn(r'(?m)^MANIFEST_SHA256 = "[0-9a-f]+"',
-                          'MANIFEST_SHA256 = "' + hashlib.sha256(output).hexdigest() + '"', selector.read_text())
-    require(count == 1, 'selector pin anchor')
+    text, count = re.subn(
+        r'(?m)^MANIFEST_SHA256 = "[0-9a-f]+"',
+        'MANIFEST_SHA256 = "' + hashlib.sha256(output).hexdigest() + '"',
+        selector.read_text(),
+    )
+    require(count == 1, "selector pin anchor")
     selector.write_text(text)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--refresh-input-pins', action='store_true', required=True)
+    parser.add_argument("--refresh-input-pins", action="store_true", required=True)
     parser.parse_args()
     refresh_input_pins(Path(__file__).resolve().parents[3])

@@ -231,9 +231,7 @@ fn boss_slot_loot_fixture_compiles_kneebiter_row() {
 fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability()
 -> Result<(), String> {
     use crate::content::creature_reward::{LootTablesSection, NoSettlementReason};
-    use oteryn_gameplay_domain::domain::loot_data::{
-        GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, LootDefinitionRef, LootSelectionAlgorithm,
-    };
+    use oteryn_gameplay_domain::domain::loot_data::{LootDefinitionRef, LootSelectionAlgorithm};
     let supplied = manifest_input();
     let loot: LootTablesSection = serde_json::from_slice(
         &supplied
@@ -253,8 +251,8 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         .filter(|policy| policy.reward_boss == Some(true))
         .collect::<Vec<_>>();
     assert!(!bosses.is_empty());
-    // Exact native corpse/yield producer admission qualifies twenty-five source
-    // reward bosses. Eleven further admitted corpses retain unresolved loot yields;
+    // Exact native corpse/yield producer admission qualifies thirty-one source
+    // reward bosses. Eighteen further admitted corpses retain unresolved loot yields;
     // those rows must remain refused rather than silently dropping their Items.
     // Shared demon, vampire and dragon bodies retain independent loot qualification.
     // Keep each exact admission reason:
@@ -285,20 +283,9 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     && facts.item.key == corpse.key
                     && facts.item.revision == corpse.revision
                     && facts.materializable
-                    && facts.container_capacity.is_some_and(|capacity| {
-                        (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u32).contains(&capacity)
-                            || (capacity == 48
-                                && matches!(
-                                    policy.definition_key.as_str(),
-                                    "oteryn:creature.goshnar_s_cruelty"
-                                        | "oteryn:creature.goshnar_s_greed"
-                                        | "oteryn:creature.goshnar_s_spite"
-                                        | "oteryn:creature.goshnar_s_malice"
-                                        | "oteryn:creature.goshnar_s_hatred"
-                                        | "oteryn:creature.goshnar_s_megalomania_blue"
-                                        | "oteryn:creature.goshnar_s_megalomania_green"
-                                ))
-                    })
+                    // Reward-boss Ground bodies use their exact positive source capacity,
+                    // independently of the portable container-entry admission limit.
+                    && facts.container_capacity.is_some_and(|capacity| capacity > 0)
             })
         });
         if materializable_corpse.is_some()
@@ -317,14 +304,21 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             && matches!(
                 policy.definition_key.as_str(),
                 "oteryn:creature.an_observer_eye"
-                    | "oteryn:creature.orshabaal"
-                    | "oteryn:creature.the_weakened_count"
-                    | "oteryn:creature.gravelord_oshuran"
                     | "oteryn:creature.bazir"
+                    | "oteryn:creature.demodras"
+                    | "oteryn:creature.earth_overlord"
+                    | "oteryn:creature.energy_overlord"
+                    | "oteryn:creature.fire_overlord"
+                    | "oteryn:creature.gelidrazah_the_frozen"
+                    | "oteryn:creature.gravelord_oshuran"
                     | "oteryn:creature.infernatil"
                     | "oteryn:creature.irgix_the_flimsy"
+                    | "oteryn:creature.orshabaal"
+                    | "oteryn:creature.soul_of_dragonking_zyrtarch"
+                    | "oteryn:creature.spirit_overlord"
                     | "oteryn:creature.the_enraged_thorn_knight"
                     | "oteryn:creature.the_souldespoiler"
+                    | "oteryn:creature.the_weakened_count"
                     | "oteryn:creature.unaz_the_mean"
                     | "oteryn:creature.vok_the_freakish"
             )
@@ -450,16 +444,18 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     admitted.sort_unstable();
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 299, 11, 25)
+        (52, 287, 18, 31)
     );
     assert_eq!(
         admitted,
         [
+            "oteryn:creature.ahau",
             "oteryn:creature.anomaly",
             "oteryn:creature.armenius_creature",
             "oteryn:creature.bakragore",
             "oteryn:creature.chagorz",
             "oteryn:creature.chayenne",
+            "oteryn:creature.dragonking_zyrtarch",
             "oteryn:creature.dreadful_disruptor",
             "oteryn:creature.eradicator",
             "oteryn:creature.eradicator2",
@@ -472,11 +468,15 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.goshnar_s_megalomania_purple",
             "oteryn:creature.goshnar_s_spite",
             "oteryn:creature.grand_mother_foulscale",
+            "oteryn:creature.ice_overlord",
             "oteryn:creature.ichgahal",
+            "oteryn:creature.mitmah_vanguard",
             "oteryn:creature.murcion",
             "oteryn:creature.outburst",
             "oteryn:creature.rupture",
             "oteryn:creature.sugar_daddy",
+            "oteryn:creature.tazhadur",
+            "oteryn:creature.the_first_dragon",
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.the_scion_of_havoc",
             "oteryn:creature.vemiath",
@@ -493,7 +493,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_weakened_count",
         ]
     );
-    assert_eq!(bosses.len(), 387);
+    assert_eq!(bosses.len(), 388);
     let before = source.reward_table().row("oteryn:creature.rat").unwrap();
     let before_policy = source
         .policies()

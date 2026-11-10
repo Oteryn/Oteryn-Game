@@ -42,13 +42,216 @@ BEGIN
  INSERT INTO game_spell_item_source_custody(transaction_id,item_instance_id,quantity_before,state_revision_before,source_parent,source_ordinal,source_slot)
  VALUES(l.transaction_id,OLD.item_instance_id,OLD.quantity,OLD.state_revision,l.source_parent_item_instance_id,l.source_placement_ordinal,l.source_equipment_slot);
  RETURN NEW;
-END $$;
+END
+$$;
 
 
 
 CREATE OR REPLACE FUNCTION game_item_nested_entry_proven() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
+
+   IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_elemental_loot_retire_receipts r
+     WHERE r.created_xact_id=pg_current_xact_id() AND r.entry_kind=2 AND r.entry_before=to_jsonb(OLD)) THEN
+     PERFORM game_elemental_loot_retire_complete(OLD.item_instance_id); RETURN NULL;
+   END IF;
+
+
+    IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_carried_step_receipts r JOIN game_item_instances i
+      ON i.item_instance_id=(r.input_before->>'item_instance_id')::uuid
+      WHERE r.created_xact_id=pg_current_xact_id() AND r.location_before=to_jsonb(OLD)
+       AND i.quantity=0 AND i.lifecycle=2 AND i.last_transaction_id=r.transaction_id) THEN
+     RETURN NULL;
+    END IF;
+
+ IF TG_OP='DELETE' AND game_house_disposition_native_removal_proven(to_jsonb(OLD)) AND NOT EXISTS(SELECT 1 FROM game_house_nested_reclaim_provenance WHERE item_instance_id=OLD.item_instance_id) THEN RETURN NULL; END IF;
+
+   IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_item_consume_transform_records r JOIN game_item_instances i ON i.item_instance_id=r.source_item_instance_id
+    WHERE r.source_kind=5 AND r.effects->>'kind'='house_decoration' AND r.consume_source
+     AND r.created_xact_id=pg_current_xact_id() AND r.source_location->'custody'=to_jsonb(OLD)
+     AND i.quantity=0 AND i.lifecycle=2 AND i.last_transaction_id=r.transaction_id) THEN RETURN NULL; END IF;
+
+    IF TG_OP='INSERT' THEN
+        IF EXISTS(SELECT 1 FROM game_character_starter_grants g
+            WHERE g.kit_destination=3 AND g.item_instance_id=NEW.item_instance_id
+              AND g.kit_parent=NEW.parent_item_instance_id AND g.kit_ordinal=NEW.placement_ordinal
+              AND g.world_id=NEW.world_id AND g.transaction_id=NEW.placed_transaction_id
+              AND g.outcome=1 AND g.created_xact_id=pg_current_xact_id()) THEN RETURN NULL; END IF;
+    END IF;
+
+ IF TG_OP='DELETE' THEN
+  IF game_starting_item_current(OLD.item_instance_id) THEN RETURN OLD; END IF;
+ ELSE
+  IF game_starting_item_current(NEW.item_instance_id) THEN RETURN NEW; END IF;
+ END IF;
+
+
+   IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_house_furniture_destroy_receipts r,
+    jsonb_array_elements(r.children) c WHERE c->'entry'=to_jsonb(OLD)
+     AND r.outcome='COMMITTED' AND r.created_xact_id=pg_current_xact_id()) THEN RETURN NULL; END IF;
+
+
+  IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts r JOIN game_spell_field_temporal_schedules p USING(item_instance_id)
+      JOIN game_item_instances i USING(item_instance_id)
+     WHERE r.custody_kind=2 AND r.item_instance_id=OLD.item_instance_id AND r.world_id=OLD.world_id
+      AND r.source_parent=OLD.parent_item_instance_id AND r.source_ordinal=OLD.placement_ordinal
+      AND r.created_xact_id=pg_current_xact_id() AND p.target_family IS NULL
+      AND i.last_transaction_id=r.transaction_id AND i.lifecycle=2 AND i.quantity=0) THEN RETURN NULL; END IF;
+
+
+  IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts r JOIN game_spell_item_temporal_schedules p USING(item_instance_id)
+      JOIN game_item_instances i USING(item_instance_id)
+     WHERE r.custody_kind=2 AND r.item_instance_id=OLD.item_instance_id AND r.world_id=OLD.world_id
+      AND r.source_parent=OLD.parent_item_instance_id AND r.source_ordinal=OLD.placement_ordinal
+      AND r.created_xact_id=pg_current_xact_id() AND p.target_family IS NULL
+      AND i.last_transaction_id=r.transaction_id AND i.lifecycle=2 AND i.quantity=0) THEN RETURN NULL; END IF;
+
+
+    IF TG_OP='DELETE' AND EXISTS (
+        SELECT 1 FROM game_item_craft_records r JOIN game_item_instances i
+            ON i.item_instance_id=r.source_item_instance_id
+        WHERE r.source_item_instance_id=OLD.item_instance_id
+            AND r.event_source_location=to_jsonb(OLD) AND r.world_id=OLD.world_id
+            AND i.quantity=0 AND i.lifecycle=2 AND i.last_transaction_id=r.transaction_id
+            AND r.created_xact_id=pg_current_xact_id())
+    THEN RETURN NULL; END IF;
+
+
+   IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_item_consume_transform_records r,
+     LATERAL jsonb_array_elements(r.extra_inputs) e,game_item_instances i
+     WHERE (e->>'source_kind')::integer=4 AND
+  ((e->>'count')::integer=1 OR (r.recipe='oteryn:cake.baker-substances'
+   AND game_cake_donation_shape(r)
+   AND (e->>'count')::bigint=(e->'before'->>'quantity')::bigint))
+      AND (e->>'item')::uuid=OLD.item_instance_id AND (e->>'parent')::uuid=OLD.parent_item_instance_id
+      AND (e->>'ordinal')::numeric=OLD.placement_ordinal AND r.world_id=OLD.world_id
+      AND i.item_instance_id=OLD.item_instance_id AND i.quantity=0 AND i.lifecycle=2
+      AND i.last_transaction_id=r.transaction_id AND r.created_xact_id=pg_current_xact_id()) THEN RETURN NULL; END IF;
+
+
+    IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_item_consume_transform_records r JOIN game_item_instances i
+       ON i.item_instance_id=r.source_item_instance_id WHERE r.source_kind=4 AND r.source_item_instance_id=OLD.item_instance_id
+        AND r.source_location=to_jsonb(OLD) AND r.created_xact_id=pg_current_xact_id()
+        AND i.last_transaction_id=r.transaction_id AND i.quantity=0 AND i.lifecycle=2) THEN RETURN NULL; END IF;
+    IF TG_OP='INSERT' AND EXISTS(SELECT 1 FROM game_item_consume_transform_records r,LATERAL jsonb_array_elements(r.outputs) o
+       WHERE r.source_kind=4 AND (o->>'item')::uuid=NEW.item_instance_id AND (o->>'ordinal')::numeric=NEW.placement_ordinal
+        AND r.parent_item_instance_id=NEW.parent_item_instance_id AND r.world_id=NEW.world_id
+        AND r.transaction_id=NEW.placed_transaction_id AND r.created_xact_id=pg_current_xact_id()) THEN RETURN NULL; END IF;
+
+    IF TG_OP = 'INSERT' AND game_reward_claim_container_item_proven(
+        NEW.item_instance_id,NEW.placed_transaction_id) THEN RETURN NULL; END IF;
+
+ -- Atelier carried fragment output: fresh nested placement belongs to the same receipt.
+ IF TG_OP='INSERT' AND EXISTS(SELECT 1 FROM game_atelier_item_records a,LATERAL jsonb_array_elements(a.outputs) l
+   WHERE a.transaction_id=NEW.placed_transaction_id AND a.created_xact_id=pg_current_xact_id() AND a.world_id=NEW.world_id
+    AND l->>'location'='nested' AND NOT l ? 'before' AND (l->>'item')::uuid=NEW.item_instance_id
+    AND (l->>'parent')::uuid=NEW.parent_item_instance_id AND (l->>'ordinal')::numeric=NEW.placement_ordinal) THEN
+  PERFORM game_atelier_item_complete(NEW.placed_transaction_id); RETURN NULL;
+ END IF;
+
+
+ IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_atelier_fee_coin_records r,LATERAL jsonb_array_elements(r.inputs) l
+  WHERE r.created_xact_id=pg_current_xact_id() AND r.world_id=OLD.world_id AND (l->>'surface')::int=2 AND (l->>'item')::uuid=OLD.item_instance_id
+   AND (l->>'parent')::uuid=OLD.parent_item_instance_id AND (l->>'ordinal')::numeric=OLD.placement_ordinal AND (l->>'burned')::bigint=(l->'before'->>'quantity')::bigint) THEN
+  PERFORM game_atelier_coin_complete(r.transaction_id) FROM game_atelier_fee_coin_records r,LATERAL jsonb_array_elements(r.inputs) l
+   WHERE r.created_xact_id=pg_current_xact_id() AND (l->>'item')::uuid=OLD.item_instance_id; RETURN NULL;
+ END IF;
+
+
+ IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_atelier_item_records a, LATERAL jsonb_array_elements(a.inputs) l
+   WHERE a.created_xact_id=pg_current_xact_id() AND a.world_id=OLD.world_id AND l->>'location'='nested'
+    AND (l->>'item')::uuid=OLD.item_instance_id AND (l->>'parent')::uuid=OLD.parent_item_instance_id
+    AND (l->>'ordinal')::numeric=OLD.placement_ordinal AND (l->'before'->>'quantity')::bigint=(l->>'count')::bigint) THEN
+  PERFORM game_atelier_item_complete(a.transaction_id) FROM game_atelier_item_records a,LATERAL jsonb_array_elements(a.inputs) l
+   WHERE a.created_xact_id=pg_current_xact_id() AND (l->>'item')::uuid=OLD.item_instance_id;
+  RETURN NULL;
+ END IF;
+
+
+   IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_forge_operations p,jsonb_array_elements(p.inputs) l
+     JOIN game_item_instances i ON i.item_instance_id=(l->>'item')::uuid
+     WHERE p.transaction_id=i.last_transaction_id AND p.created_xact_id=pg_current_xact_id() AND p.applied
+       AND i.item_instance_id=OLD.item_instance_id AND i.quantity=0 AND i.lifecycle=2
+       AND (l->'location'->>'kind')::int=2 AND (l->'location'->>'parent')::uuid=OLD.parent_item_instance_id
+       AND (l->'location'->>'ordinal')::numeric=OLD.placement_ordinal) THEN RETURN NULL; END IF;
+   IF TG_OP='INSERT' AND EXISTS(SELECT 1 FROM game_forge_operations p,jsonb_array_elements(p.outputs) l
+     WHERE p.transaction_id=NEW.placed_transaction_id AND p.created_xact_id=pg_current_xact_id() AND p.applied
+       AND (l->>'item')::uuid=NEW.item_instance_id AND (l->'location'->>'kind')::int=2
+       AND (l->'location'->>'parent')::uuid=NEW.parent_item_instance_id AND (l->'location'->>'ordinal')::numeric=NEW.placement_ordinal)
+   THEN PERFORM game_forge_complete(NEW.placed_transaction_id); RETURN NULL; END IF;
+ IF TG_OP='INSERT' AND EXISTS(SELECT 1 FROM game_hireling_package_lines l WHERE l.item_instance_id=NEW.item_instance_id AND l.transaction_id=NEW.placed_transaction_id AND game_hireling_package_current(l.transaction_id)) THEN RETURN NULL; END IF;
+
+    IF TG_OP='DELETE' AND EXISTS (SELECT 1 FROM game_item_instances item
+        JOIN game_item_craft_records receipt ON receipt.transaction_id=item.last_transaction_id,
+        LATERAL jsonb_array_elements(receipt.soul_core_proof->'inputs') input
+        WHERE item.item_instance_id=OLD.item_instance_id AND item.quantity=0 AND item.lifecycle=2
+            AND receipt.created_xact_id=pg_current_xact_id() AND receipt.world_id=OLD.world_id
+            AND (input->>'item')::uuid=OLD.item_instance_id
+            AND (input->>'parent')::uuid=OLD.parent_item_instance_id
+            AND (input->>'ordinal')::numeric=OLD.placement_ordinal
+            AND (input->>'nested')::boolean=(TG_TABLE_NAME='game_item_nested_entries')
+            AND (input->'before'->>'quantity')::int=(input->>'consume')::int)
+    THEN RETURN NULL; END IF;
+
+    IF TG_OP='INSERT' AND EXISTS (SELECT 1 FROM game_item_craft_records receipt
+        WHERE receipt.transaction_id=NEW.placed_transaction_id AND receipt.soul_core_proof IS NOT NULL
+            AND receipt.created_xact_id=pg_current_xact_id()
+            AND (receipt.outputs->0->>'item')::uuid=NEW.item_instance_id)
+    THEN PERFORM game_soul_core_craft_complete(NEW.placed_transaction_id); RETURN NULL; END IF;
+
+
+            IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_quest_callback_consumptions c
+                JOIN game_item_instances i USING(item_instance_id) WHERE c.item_instance_id=OLD.item_instance_id
+                  AND c.location_kind='depot_nested' AND c.before_location=to_jsonb(OLD) AND c.created_xact_id=pg_current_xact_id()
+                  AND c.transition_key='oteryn:taskboard/weekly/advance' AND c.task_board_item_id IS NOT NULL
+                  AND i.quantity=0 AND i.lifecycle=2 AND game_quest_callback_after(c,i)) THEN
+                IF TG_WHEN='BEFORE' THEN RETURN OLD; END IF; RETURN NULL;
+            END IF;
+
+ IF TG_OP='INSERT' AND EXISTS(SELECT 1 FROM game_character_equipment_receipts r
+  WHERE r.transaction_id=NEW.placed_transaction_id AND r.item_instance_id=NEW.item_instance_id
+   AND r.backpack_item_instance_id=NEW.parent_item_instance_id AND r.world_id=NEW.world_id
+   AND r.backpack_ordinal=NEW.placement_ordinal AND game_equipment_managed_placement(r))
+ THEN RETURN NULL; END IF;
+
+ IF TG_OP='DELETE' AND EXISTS (
+  SELECT 1 FROM game_equipment_nested_removals e
+   JOIN game_character_equipment_receipts r USING(transaction_id)
+   JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id
+   JOIN game_character_equipment_slots s ON s.item_instance_id=e.item_instance_id
+  WHERE e.item_instance_id=OLD.item_instance_id AND e.parent_item_instance_id=OLD.parent_item_instance_id
+   AND e.world_id=OLD.world_id AND e.placement_ordinal=OLD.placement_ordinal
+   AND e.created_xact_id=pg_current_xact_id() AND r.created_xact_id=e.created_xact_id
+   AND r.item_instance_id=e.item_instance_id AND r.nested_source_parent_item_instance_id=e.parent_item_instance_id
+   AND r.character_id=e.character_id AND r.world_id=e.world_id AND r.backpack_ordinal=e.placement_ordinal
+   AND r.operation=1 AND r.to_slot=s.slot AND s.character_id=e.character_id
+   AND s.placed_transaction_id=r.transaction_id AND i.lifecycle=1 AND i.world_id=e.world_id
+   AND i.last_transaction_id=r.transaction_id AND i.state_revision=r.state_revision_before+1
+ ) THEN RETURN NULL; END IF;
+
+    IF TG_OP = 'INSERT' AND game_kill_nested_loot_mint_proven(NEW.item_instance_id) THEN
+        RETURN NULL;
+    END IF;
+
+
+    IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_coin_exchange_receipts r, LATERAL jsonb_array_elements(r.inputs) l WHERE r.result=1 AND (l->>'item')::uuid=OLD.item_instance_id AND r.world_id=OLD.world_id AND (l->>'parent')::uuid=OLD.parent_item_instance_id AND (l->>'ordinal')::numeric=OLD.placement_ordinal AND ((l->>'nested')::boolean)=(TG_TABLE_NAME='game_item_nested_entries') AND r.created_xact_id=pg_current_xact_id()) THEN
+     PERFORM game_coin_exchange_complete(r.transaction_id) FROM game_coin_exchange_receipts r WHERE r.created_xact_id=pg_current_xact_id() AND r.result=1 AND r.inputs @> jsonb_build_array(jsonb_build_object('item',OLD.item_instance_id::text)); RETURN NULL;
+    END IF;
+
+    IF TG_OP='INSERT' AND EXISTS(SELECT 1 FROM game_coin_exchange_receipts r, LATERAL jsonb_array_elements(r.outputs) l WHERE r.result=1 AND r.transaction_id=NEW.placed_transaction_id AND (l->>'item')::uuid=NEW.item_instance_id AND (l->>'parent')::uuid=NEW.parent_item_instance_id AND (l->>'ordinal')::numeric=NEW.placement_ordinal AND l->>'nested'='true' AND r.world_id=NEW.world_id AND r.created_xact_id=pg_current_xact_id()) THEN PERFORM game_coin_exchange_complete(NEW.placed_transaction_id); RETURN NULL; END IF;
+
+
+    IF TG_OP='DELETE' AND TG_TABLE_NAME='game_item_nested_entries' THEN
+    IF EXISTS(SELECT 1 FROM game_quest_callback_consumptions r
+      JOIN game_item_instances i USING(item_instance_id)
+      WHERE r.location_kind='nested' AND r.before_location=to_jsonb(OLD)
+        AND r.item_instance_id=OLD.item_instance_id AND r.created_xact_id=pg_current_xact_id()
+        AND i.quantity=0 AND i.lifecycle=2 AND game_quest_callback_after(r,i)) THEN
+      IF TG_WHEN='BEFORE' THEN RETURN OLD; END IF;
+      RETURN NULL;
+    END IF;
+    END IF;
+
     IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_spell_item_lines l
         JOIN game_spell_item_receipts r USING(transaction_id) JOIN game_item_instances i ON i.item_instance_id=l.item_instance_id
         JOIN game_spell_item_source_custody c ON c.transaction_id=l.transaction_id AND c.item_instance_id=i.item_instance_id
@@ -255,3 +458,10 @@ DO $$ DECLARE n text; BEGIN
   EXECUTE format('REVOKE ALL ON FUNCTION %I() FROM PUBLIC',n);
  END LOOP;
 END $$;
+
+-- Preserve the installed guards' restricted schema resolution.
+DO $migration$
+BEGIN
+ EXECUTE format('ALTER FUNCTION game_spell_item_capture_custody() SET search_path=pg_catalog,%I,pg_temp',current_schema());
+ EXECUTE format('ALTER FUNCTION game_item_nested_entry_proven() SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $migration$;
