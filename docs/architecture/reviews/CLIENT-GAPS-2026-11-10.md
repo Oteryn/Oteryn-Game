@@ -1,25 +1,51 @@
-# Client gaps still open (2026-11-10)
+# Client gaps: verified implementation scope (2026-11-10)
 
 Source: the open rows of the Tibia client parity audit (`TIBIA-CLIENT-PARITY-2026-11-09`, 25 PARTIAL + 5 MISSING) and the
 OTClient parity audit (`OTCLIENT-PARITY-2026-11-09`, 2 PARTIAL), checked against the code at `origin/main` `4f0b6c62a`.
-This was a code-reading check only; no tests or client runs were done.
-Of 32 open rows, 22 are already done on main. The 10 rows below (8 gaps: T153+T154 and T188+T197 are one gap each) are still to do.
-Scope follows the owner's rule: Crystal / current Tibia.
+The original report was a code-reading check only. A second trace at its exact
+head `61c632f4db19a6f199c6cb448a90f5e1288dece7` found that three reported gaps
+and the reset half of T187 already have production paths. The original list
+therefore must not be used as eight missing implementations.
+The owner subsequently requested implementation in PR #3091. Scope follows
+the owner's rule: Crystal / current Tibia. Status below distinguishes source
+tracing, changes under construction and executed validation.
 
-## To do
+## Verified disposition
 
-| # | Row | Gap | What to build | Where it is today |
-|---|-----|-----|---------------|-------------------|
-| 1 | T153, T154 | Crash report and survey answers are sent but nothing on the server receives them | A server handler for the support delivery command (crash report with consent, survey answers), its persistence, and a test through the client path | `apps/client/src/support_delivery.rs:23-36`, `apps/client/src/play/session_loop.rs:54-61`; no handler under `crates/` or `apps/game-server` |
-| 2 | T176 | Special Conditions grouping | Add Mana Shield (and the other grouped conditions) to the special-condition key list so the two checkboxes, the shared order and the grouping cover them | `apps/client/src/features/local-reference-preferences/status_order.rs:63-66`, `condition_matrix_controls.rs:61,125` |
-| 3 | T182 | Use at cursor position | Cursor mode must use the object or rune at the cursor position at once, without waiting for a target; check the battle-list and run cases | `apps/client/src/features/local-spell-action-bar/item_actions.rs:37-70` |
-| 4 | T185 | Echo Raids: Echo Warden progress | A progress display (bar and count) for Echo Warden like Animus Mastery, not only the text "complete/incomplete"; server data if missing | `apps/client/src/features/0067-bestiary-charm-progression/input/catalogue.rs:180-184` |
-| 5 | T187 | Cyclopedia map: POI reset and discovery banner | A real POI reset (server command; today "Reset POIs" only hides them in the client) and a discovery banner instead of text feedback; the speed tooltip 100-195 is done | `apps/client/src/features/0057-cyclopedia-map/view.rs:154`, `protocol.rs:118`; `crates/client-ui/src/features/0057-cyclopedia-map/view.rs:96-103` |
-| 6 | T188, T197 | Boss Difficulty and Archfoe: pity tracker | The bad-luck (pity) tracker: server figures in the reply, then the client display in the 0225 window and the Archfoe browser; personal highest and unlocks are done | `crates/protocol-oteryn/src/boss_difficulty.rs:165` ("no pity figures"), `crates/client-ui/src/features/0225-boss-difficulty/view.rs:18-33`, `crates/client-ui/src/features/0117-boss-encounter/view/browser.rs:9-27` |
-| 7 | T195 | Free reroll on the Bounty Board | Remove the free timed reroll (action 11, `FREE_REROLL_SECONDS`) from the Bounty Board; rerolls come only from the Reroll Token given by Daily, which is done | `crates/gameplay/quests/src/quest/task_board_full.rs:236-237,574-589`, `apps/client/src/features/0072-task-board/native.rs:167,249` |
-| 8 | O040 | Server modal dialogs | A general, rules-driven source of server modal dialogs with choices; today only the hireling store and the MOTD notice (no choices) send them. `CLIENT-GAPS-2026-11-08` marks this DONE, which is wrong | `crates/gameplay/dispatch/src/gameplay_transport/server_modal.rs:43-59`, `server_modal/store.rs:61`, `apps/client/src/features/0450-server-modal/view/native.rs:107` |
+| # | Row | Status | Verified path / remaining work |
+|---|-----|--------|--------------------------------|
+| 1 | T153, T154 | EXISTING; source trace verified | `support_delivery.rs` -> `5132-support_intake.mechanic` commands 6144/6145 -> `gameplay_transport/support_intake.rs` -> `durability/support_intake.rs::submit_support_evidence`, migration 2712. Consent, current-session checks, deduplication and commit-before-ACK exist. The PostgreSQL real-dispatch test is `support_intake_postgres_real_dispatch_consent_replay_and_fences`; it was not rerun during the trace. |
+| 2 | T176 | EXISTING; source trace verified | `local-reference-preferences/status_order.rs` includes icons 1..=27, including `condition_status::icon_key(17)` = Mana Shield, plus Resting Area/Soul War/Rotten Blood. `play/resource_hud.rs::special_condition_rows` applies the independent HUD/status filters and shared order. Existing test: `t176_condition_matrix_persists_independent_columns_and_shared_group_order`. |
+| 3 | T182 | EXISTING; source trace verified | `local-spell-action-bar/item_actions.rs::use_item` distinguishes crosshair `Cursor` from immediate `CursorPosition`, using the current map/battle selection. Existing client-path tests cover immediate use, hovered battle entity/generation and rune cooldown fallback. |
+| 4 | T185 | IMPLEMENTED; broader validation pending | Native catalogue progress bar and count use the confirmed card's optional per-species first-defeat fact: 0/1 or 1/1. Missing data stays unknown, and another species/logout cannot inherit it. Extended `t185_echo_warden_progress_survives_real_play_queue`; focused actual-code decoder/UI check passed. |
+| 5 | T187 | RESET EXISTING; banner in authoring | Reset button 10 sends `Intent::Shuffle` / operation 2 to the server, whose `MapAction::Shuffle` persists the reset. Button 25 separately toggles visibility. The missing work is a banner from the authoritative discovery event, including when the map window is closed. |
+| 6 | T188, T197 | BLOCKED: rule/source gap | Personal highest/unlocks exist, but there is no authoritative pity producer. `boss-difficulty-v1.md` explicitly excludes inferred pity parameters. See the bounded source finding below; do not display a synthetic zero, test percentage or kill count as a drop bonus. |
+| 7 | T195 | IN AUTHORING | Remove the free timed path and its UI/deadline projection; every reroll uses the existing Daily Reroll Token owner. Preserve immutable operation numbers and replay semantics. |
+| 8 | O040 | IN AUTHORING | Add the sourced bed-use skill-selection dialog as a rule-owned producer, using the existing sleep owner and generic modal transport. Choices/cancel/retry remain bound to the exact session and bed; House permission, Premium, distance and logout stay with the existing owners. |
 
-Corrections to `CLIENT-GAPS-2026-11-08`: T153, T154 and O040 are marked DONE there but are still open (rows 1 and 8).
+T153/T154 must not be reopened solely because this report originally missed
+their receiver. O040 still needs a real general rule source beyond MOTD/store.
+
+## Pity source finding
+
+The official [Make Believe teaser](https://www.tibia.com/news/?id=8847&subtopic=newsarchive)
+confirms a per-character, per-boss bonus that increases after an eligible victory
+without Moonsilver gear and resets after a qualifying item. The official
+[11 August fixes](https://www.tibia.com/news/?id=8925&subtopic=newsarchive)
+also confirm the Phosphorus reset behavior. Neither located text specifies the
+initial bonus, the increment formula or its dependence on difficulty.
+
+At pinned Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`src/server/network/protocol/protocolgame.cpp::sendBossDifficultySelection`
+serializes a bad-luck number supplied by its caller. The located caller in
+`data/scripts/talkactions/god/boss_difficulty_test.lua` supplies a demonstration
+value; it does not implement a combat/reward progression owner. A serializer
+and a test constant are not evidence for a player's statistic.
+
+Required to close T188/T197: a sourced or explicitly accepted initial value,
+per-boss/per-difficulty update rule and qualifying reward set, then a durable
+atomic reward-outcome producer and negotiated client projection. Until then the
+tracker remains explicitly incomplete; no invented economy rule is introduced.
 
 ## Done on main (audit out of date)
 
