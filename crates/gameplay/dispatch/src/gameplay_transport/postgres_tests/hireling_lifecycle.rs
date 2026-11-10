@@ -289,8 +289,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             }).collect()
         }).as_slice()
     } else { OFFERS };
+    let declared: &[u32] = if matches!(case, Case::BedRest) { &[11, 18] } else { &[] };
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-        &[],crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id,deps.admitted.channel_id),1,"policy-1",boot_offers,
+        declared,crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id,deps.admitted.channel_id),1,"policy-1",boot_offers,
     ).map_err(debug)?;
 
     deps.initialize(&owner).await;
