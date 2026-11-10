@@ -818,91 +818,132 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    // Keep each route's future state out of this shared dispatcher's inline state.
     if name.starts_with("qengine-rewards-fibula-completion") {
-        return super::questpc6_fibula_completion::exercise(owner, admitted, h, name).await;
+        return Box::pin(super::questpc6_fibula_completion::exercise(
+            owner, admitted, h, name,
+        ))
+        .await;
     }
     if name == "qengine-rewards-fibula-native-goals" {
-        return super::questpc6_native_goals::exercise(owner, admitted, h).await;
+        return Box::pin(super::questpc6_native_goals::exercise(owner, admitted, h)).await;
     }
     if name.starts_with("qengine-rewards-fibula-key-") {
-        return super::questpc6_fibula_purchase::exercise(owner, admitted, h, name).await;
+        return Box::pin(super::questpc6_fibula_purchase::exercise(
+            owner, admitted, h, name,
+        ))
+        .await;
     }
     if name == "qengine-rewards-l2-white-raven" {
-        return questl2_passages::white_raven(owner, admitted, h).await;
+        return Box::pin(questl2_passages::white_raven(owner, admitted, h)).await;
     }
     if name.starts_with("qengine-rewards-l2-djinn-") {
-        return questl2_djinn_journeys::exercise(owner, admitted, h, name).await;
+        return Box::pin(questl2_djinn_journeys::exercise(owner, admitted, h, name)).await;
     }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
-        return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::l6_paradox_upper::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
     }
     if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
-        return super::l6_paradox_story::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::l6_paradox_story::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
     }
     if name.starts_with("qengine-rewards-questpc4-native-tower-") {
-        return super::l6_paradox_native::exercise(owner, admitted, h, name).await;
+        return Box::pin(super::l6_paradox_native::exercise(owner, admitted, h, name)).await;
     }
     if name.starts_with("qengine-rewards-questpc4-admission-") {
-        return super::l6_world_admission::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::l6_world_admission::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
     }
     if name.starts_with("qengine-rewards-questpc4-puzzle-") {
-        return super::l6_world_puzzles::exercise(owner, admitted, h, name).await;
+        return Box::pin(super::l6_world_puzzles::exercise(owner, admitted, h, name)).await;
     }
     if name.starts_with("qengine-rewards-questpc4-paradox") {
-        return super::l6_paradox::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::l6_paradox::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
     }
     if name == "qengine-rewards-questpc4-spirit" {
-        return super::l6_spirit::exercise(owner, admitted, h, authority).await;
+        return Box::pin(super::l6_spirit::exercise(owner, admitted, h, authority)).await;
     }
     if name.starts_with("qengine-rewards-world-clock") {
-        return super::world_callback_clocks::exercise(owner, admitted, h, name.ends_with("-full"))
-            .await;
+        return Box::pin(super::world_callback_clocks::exercise(
+            owner,
+            admitted,
+            h,
+            name.ends_with("-full"),
+        ))
+        .await;
     }
     if name == "qengine-rewards-authored-native-admission" {
-        return super::authored_world_rewards::exercise_native_admission(owner, admitted, h).await;
+        return Box::pin(super::authored_world_rewards::exercise_native_admission(
+            owner, admitted, h,
+        ))
+        .await;
     }
     if matches!(
         name,
         "qengine-rewards-authored-world-rewards" | "qengine-rewards-authored-world-rewards-full"
     ) {
-        return super::authored_world_rewards::exercise(
+        return Box::pin(super::authored_world_rewards::exercise(
             owner,
             admitted,
             h,
             name.ends_with("-full"),
-        )
+        ))
         .await;
     }
     if matches!(
         name,
         "qengine-rewards-authored-kills" | "qengine-rewards-authored-kills-burst"
     ) {
-        return super::authored_kill_bindings::exercise(
+        return Box::pin(super::authored_kill_bindings::exercise(
             owner,
             admitted,
             h,
             name.ends_with("-burst"),
-        )
+        ))
         .await;
     }
     if name == "qengine-rewards-authored-bindings" {
-        return super::authored_quest_bindings::exercise(owner, admitted, h).await;
+        return Box::pin(super::authored_quest_bindings::exercise(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-l13-rift-story" {
-        return super::qengine_endgame_stories::rift(owner, admitted, h, authority).await;
+        return Box::pin(super::qengine_endgame_stories::rift(
+            owner, admitted, h, authority,
+        ))
+        .await;
     }
     if name.starts_with("qengine-rewards-l12-") {
-        return super::qengine_kill_stories::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::qengine_kill_stories::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
     }
     if name.starts_with("qengine-rewards-l11-") {
-        return super::qengine_level_stories::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::qengine_level_stories::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
     }
     if name.starts_with("qengine-rewards-l10-documents-") {
-        return super::qengine_document_stories::exercise(owner, admitted, h, authority, name)
-            .await;
+        return Box::pin(super::qengine_document_stories::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
     }
     if name.starts_with("qengine-rewards-l9-") {
-        return super::qengine_voucher_stories::exercise(owner, admitted, h, name).await;
+        return Box::pin(super::qengine_voucher_stories::exercise(
+            owner, admitted, h, name,
+        ))
+        .await;
     }
     if name.starts_with("qengine-rewards-l10-")
         || name.starts_with("qengine-rewards-l8-")
@@ -913,10 +954,13 @@ pub(super) async fn exercise(
         || name.starts_with("qengine-rewards-l5-")
         || name.starts_with("qengine-rewards-l6-")
     {
-        return super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::qengine_outfit_stories::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
     }
     if name == "qengine-rewards-l1-legacy-decaying" {
-        return legacy_decaying(owner, admitted, h).await;
+        return Box::pin(legacy_decaying(owner, admitted, h)).await;
     }
     let key = match name {
         "qengine-rewards-l1-warmaster-tribal" => "l1-warmaster-tribal",

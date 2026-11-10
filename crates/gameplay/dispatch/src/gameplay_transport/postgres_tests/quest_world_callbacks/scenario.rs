@@ -1665,13 +1665,14 @@ fn scenario_case(
             )
             .await?;
         } else if shared_rewards {
-            super::super::qengine_rewards::exercise(
+            // The reward dispatcher owns many nested scenario futures.
+            Box::pin(super::super::qengine_rewards::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &authority,
                 name,
-            )
+            ))
             .await?;
         } else if name == "authored-magic-sword" {
             super::super::questpc8_magic_sword::exercise(&mut owner, &mut admitted, &h).await?;
