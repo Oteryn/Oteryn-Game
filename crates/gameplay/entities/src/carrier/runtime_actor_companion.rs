@@ -68,7 +68,9 @@ pub struct PreparedCreatureProfileTransformation {
     replacement: Box<CompanionState>,
     target_identity: Arc<[u8]>,
     health_metadata: PreparedNativeHealthMetadata,
-    registered_megalomania: bool,
+    registered_source: bool,
+    splinter_due_us: Option<u64>,
+    restored_splinter_death: Option<Arc<super::native_xml_spawns::RestoredSplinterDeath>>,
 }
 impl ChannelRuntimeV1 {
     fn creature_transform_content_binding(&self) -> (WorldId, u64, [[u8; 32]; 4], LocalPosition) {
@@ -135,14 +137,14 @@ impl ChannelRuntimeV1 {
         &self,
         expected: &CompanionSnapshot,
         new_definition_key: &str,
-        registered_megalomania: bool,
+        registered_source: bool,
     ) -> Result<PreparedCreatureProfileTransformation, CarrierError> {
         self.assert_actor_spell_unreserved(expected.actor)?;
         self.validate_companion_snapshot(expected)?;
         let old_policy = self.companion_policy(&expected.state.policy.definition_key)?;
         let policy = self.companion_policy(new_definition_key)?;
         if old_policy.as_ref() != expected.state.policy.as_ref()
-            || (!registered_megalomania
+            || (!registered_source
                 && !self.matches_live_creature_identity(
                     expected.actor,
                     old_policy.definition_key.as_bytes(),
@@ -151,7 +153,7 @@ impl ChannelRuntimeV1 {
             || expected.state.policy.is_familiar
             || policy.is_familiar
             || expected.health < 0
-            || (!registered_megalomania && expected.health == 0)
+            || (!registered_source && expected.health == 0)
             || expected.health > policy.maximum_health
         {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
@@ -173,7 +175,9 @@ impl ChannelRuntimeV1 {
             resulting,
             target_identity,
             health_metadata,
-            registered_megalomania,
+            registered_source,
+            splinter_due_us: None,
+            restored_splinter_death: None,
         })
     }
     /// Soul War's queued source phase may still find a registered HP-zero
@@ -239,6 +243,36 @@ impl ChannelRuntimeV1 {
         prepared.replacement.creation_speed_delta = 0;
         Ok(prepared)
     }
+    /// Crystal Lesser onSpawn schedules this one exact ID after 120s. Its
+    /// setType(true) restores 4000 HP but never calls Greater's onSpawn.
+    pub fn prepare_soul_war_splinter_profile_change(
+        &self,
+        expected: &CompanionSnapshot,
+        due_us: u64,
+    ) -> Result<PreparedCreatureProfileTransformation, CarrierError> {
+        if expected.state.policy.definition_key != "oteryn:creature.lesser_splinter_of_madness"
+            || expected.state.master.is_some()
+            || expected.maximum_health != 4000
+            || self.soul_war_splinter_due_us(expected.actor)? != Some(due_us)
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let restored = self.prepare_restored_splinter_death(expected, due_us)?;
+        let mut prepared = self.prepare_creature_profile_transformation_inner(
+            expected,
+            "oteryn:creature.greater_splinter_of_madness",
+            true,
+        )?;
+        if prepared.resulting.maximum_health != 4000 {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        prepared.resulting.health = 4000;
+        prepared.resulting.state.creation_speed_delta = 0;
+        prepared.replacement.creation_speed_delta = 0;
+        prepared.splinter_due_us = Some(due_us);
+        prepared.restored_splinter_death = restored;
+        Ok(prepared)
+    }
     pub fn commit_creature_profile_transformation(
         &mut self,
         prepared: PreparedCreatureProfileTransformation,
@@ -250,8 +284,14 @@ impl ChannelRuntimeV1 {
             );
         }
         self.validate_companion_snapshot(&prepared.expected)?;
-        if prepared.registered_megalomania
+        if prepared.registered_source
             && !self.source_creature_is_registered(prepared.expected.actor)?
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        if let Some(due_us) = prepared.splinter_due_us
+            && self.prepare_restored_splinter_death(&prepared.expected, due_us)?
+                != prepared.restored_splinter_death
         {
             return Err(CarrierError::PlanConflict);
         }
@@ -281,6 +321,9 @@ impl ChannelRuntimeV1 {
         spell_combat.soul_war_health = prepared.health_metadata.health_callback;
         spell_combat.mirror_births = prepared.health_metadata.mirror_births;
         spell_combat.native_death_events = prepared.health_metadata.death_events;
+        if let Some(original) = prepared.restored_splinter_death {
+            spell_combat.restored_splinter_death = Some(original);
+        }
         Ok(prepared.resulting)
     }
 }

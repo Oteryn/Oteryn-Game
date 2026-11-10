@@ -1668,6 +1668,7 @@ impl ChannelRuntimeV1 {
                             }
                         };
                         self.bind_spawned_creature_policy(actor);
+                        self.stamp_soul_war_xml_birth(point, actor, now_micros)?;
                         report.admitted.push(actor);
                     }
                     self.spawn_schedule

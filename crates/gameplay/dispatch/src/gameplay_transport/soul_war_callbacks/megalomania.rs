@@ -6,6 +6,7 @@ use oteryn_gameplay_entities::carrier::soul_war::SoulWarSpawnSource;
 use std::sync::Arc;
 pub(in crate::gameplay_transport) mod phases;
 pub(in crate::gameplay_transport) mod sanity;
+pub(in crate::gameplay_transport) mod splinter;
 const PURPLE: &str = "oteryn:creature.goshnar_s_megalomania_purple";
 const FORMS: [&str; 3] = [
     PURPLE,
@@ -82,6 +83,11 @@ pub(super) async fn drive(
 ) -> Result<(), ()> {
     if states.soul_war_callbacks.sanity.pending.is_some() {
         return Ok(());
+    }
+    if splinter::next_due_us(runtime, native)?.is_some_and(|due| due <= now) {
+        // The detached timer owner publishes this original XML occurrence
+        // before the regular Think pass; no first-Think birth clock is invented.
+        return Err(());
     }
     let owner = states.soul_war_callbacks.megalomania.as_ref().ok_or(())?;
     if !qualifies_source(runtime, native)

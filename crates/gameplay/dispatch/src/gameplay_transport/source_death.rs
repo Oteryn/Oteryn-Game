@@ -116,6 +116,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .next_due_time()
                 .into_iter()
                 .chain(states.soul_war_callbacks.next_native_due_without_malice())
+                .chain(
+                    states
+                        .soul_war_callbacks
+                        .next_splinter_due(&runtime, native)?,
+                )
                 .chain(states.primal_callbacks.next_due_us())
                 .chain(states.rotten_blood_callbacks.next_due_time())
                 .any(|other| other <= due && other <= now)
@@ -299,6 +304,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(false);
         };
         let cutoff = notice.enqueued_at_us().ok_or(())?;
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .ok_or(())?;
+        let splinter = states
+            .soul_war_callbacks
+            .next_splinter_due(runtime, native)?;
         Ok(!states
             .soul_war_callbacks
             .next_native_due()
@@ -307,6 +319,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain(states.primal_callbacks.next_due_us())
             .chain(states.rotten_blood_callbacks.next_due_time())
             .chain(states.native_callbacks.next_due_time())
+            .chain(splinter)
             .any(|due| due <= cutoff && due <= now))
     }
 
@@ -478,6 +491,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .soul_war_callbacks
             .next_native_due_without_taint_one()
             .into_iter()
+            .chain(
+                states
+                    .soul_war_callbacks
+                    .next_splinter_due(runtime, native)?,
+            )
             .chain(states.spite_global.next_due_us())
             .chain(states.primal_callbacks.next_due_us())
             .chain(states.rotten_blood_callbacks.next_due_time())

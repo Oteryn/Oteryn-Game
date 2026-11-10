@@ -9,6 +9,8 @@ use crate::gameplay_transport::capabilities::{
 };
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+mod splinter;
+
 #[test]
 fn srx3_megalomania_actual_source_entry_and_initial_aspect_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -117,6 +119,7 @@ fn srx3_megalomania_actual_source_entry_and_initial_aspect_postgres() -> TestRes
                 );
             }
             drop(runtime);
+            splinter::actual_xml_growth(&view).await?;
             drop(view);
             drop(owner);
             drop(authority);

@@ -597,7 +597,11 @@ impl ChannelRuntimeV1 {
         } else {
             None
         };
-        let native_death = if matches!(&original_slot, Slot::CreatureOccupied { spell_combat, .. } if spell_combat.native_death_events.is_some() && !spell_combat.source_death_completed)
+        let native_death = if matches!(&original_slot, Slot::CreatureOccupied { spell_combat, .. }
+            if spell_combat.native_death_events.is_some()
+                && !spell_combat.source_death_completed
+                && !spell_combat.restored_splinter_death.as_ref().is_some_and(|original|
+                    original.current_for(self) && original.projection(before.actor).is_some()))
         {
             lethal_record
                 .as_ref()

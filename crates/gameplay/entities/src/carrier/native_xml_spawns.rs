@@ -3,6 +3,9 @@
 use super::*;
 use oteryn_gameplay_content::content::bosses::activity_template::QualifiedAmbientXmlSpawns;
 
+mod splinter;
+pub(super) use splinter::RestoredSplinterDeath;
+
 impl ChannelRuntimeV1 {
     pub(super) fn current_xml_spawn(&self, point: spawn::SpawnPoint) -> Result<bool, CarrierError> {
         let definition = &self
@@ -202,6 +205,297 @@ mod tests {
         assert!(third.admitted.is_empty());
         let born = runtime.drive_spawn_respawns(19_200_000, |_, _| false)?;
         assert_eq!(born.admitted.len(), 3);
+        Ok(())
+    }
+
+    const LESSER: &str = "oteryn:creature.lesser_splinter_of_madness";
+    const GREATER: &str = "oteryn:creature.greater_splinter_of_madness";
+    fn actual_splinter()
+    -> Result<(ChannelRuntimeV1, ExactActorRef, u64), Box<dyn std::error::Error>> {
+        let world = WorldId::decode(&id(84)).map_err(|e| format!("{e:?}"))?;
+        let (controller, pin) = activated_with_loot_tables(world, None);
+        let active = controller.active().ok_or("actual Content activation")?;
+        let room = active
+            .qualify_activity_source_room(
+                pin.qualified_room(),
+                PinnedActivitySourceRoom::GoshnarsMegalomania,
+            )
+            .map_err(|e| format!("actual Megalomania source map: {e:?}"))?;
+        let policy = active
+            .qualify_ambient_xml_spawn_policy(&room)
+            .map_err(|e| format!("actual Megalomania XML: {e:?}"))?;
+        assert_eq!(
+            policy.sources().len(),
+            3,
+            "two Focus and one actual Lesser XML point"
+        );
+        let [server, client, frame, map] = policy.pins();
+        let pin = ChannelContentPin::from_activation(
+            world,
+            policy.activation_sequence(),
+            server,
+            client,
+            frame,
+            map,
+            (33710, 31639, 14),
+        );
+        let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
+            RuntimeScopeRefV1::instance(world, id(85)).map_err(|e| format!("{e:?}"))?,
+            NodeId::decode(&id(86)).map_err(|e| format!("{e:?}"))?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            32,
+            pin,
+        )?;
+        runtime.install_companion_policies(
+            active
+                .native_gameplay()
+                .ok_or("native closure")?
+                .policies()
+                .clone(),
+        )?;
+        assert_eq!(
+            runtime.register_empty_ambient_xml_spawns(&policy, 5_000_000)?,
+            3
+        );
+        for at in [15_000_000, 16_400_000, 17_800_000] {
+            let report = runtime.drive_spawn_respawns(at, |_, _| false)?;
+            assert_eq!(report.warnings.len(), 3);
+            assert!(report.admitted.is_empty());
+        }
+        let birth = 19_250_123;
+        let born = runtime.drive_spawn_respawns(birth, |_, _| false)?;
+        assert_eq!(born.admitted.len(), 3);
+        let lesser = born
+            .admitted
+            .iter()
+            .copied()
+            .find(|actor| runtime.matches_live_creature_identity(*actor, LESSER.as_bytes()))
+            .ok_or("actual XML Lesser")?;
+        assert_eq!(
+            runtime.companion_snapshot(lesser)?.state.created_at_us,
+            Some(birth)
+        );
+        assert_eq!(
+            runtime.soul_war_splinter_due_us(lesser)?,
+            Some(birth + 120_000_000)
+        );
+        for actor in born.admitted.into_iter().filter(|actor| *actor != lesser) {
+            assert!(
+                runtime
+                    .companion_snapshot(actor)?
+                    .state
+                    .created_at_us
+                    .is_none()
+            );
+            assert_eq!(runtime.soul_war_splinter_due_us(actor)?, None);
+        }
+        Ok((runtime, lesser, birth + 120_000_000))
+    }
+
+    #[test]
+    fn srx3_xml_lesser_uses_actual_birth_and_restores_once_without_greater_on_spawn()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (mut runtime, actor, due) = actual_splinter()?;
+        let index = runtime.carrier.validate_ref(&runtime.continuity, actor.0)?;
+        let Slot::CreatureOccupied {
+            companion: Some(state),
+            ..
+        } = &mut runtime.carrier.slots[index]
+        else {
+            return Err("actual Lesser companion".into());
+        };
+        let birth = state.created_at_us.take();
+        assert!(
+            runtime.soul_war_splinter_due_us(actor).is_err(),
+            "missing source epoch is not zero"
+        );
+        let Slot::CreatureOccupied {
+            companion: Some(state),
+            ..
+        } = &mut runtime.carrier.slots[index]
+        else {
+            return Err("actual Lesser companion".into());
+        };
+        state.created_at_us = birth;
+        runtime
+            .borrow_exact_actor_commit_at_us(due - 1)
+            .commit_damage(
+                actor,
+                OwnerDamageCommand {
+                    target: LESSER.as_bytes(),
+                    occurrence: b"splinter-injury",
+                    binding: b"splinter-injury\0real",
+                    damage: 1,
+                },
+            )?;
+        let before = runtime.companion_snapshot(actor)?;
+        assert_eq!(before.health, 3999);
+        assert!(
+            runtime
+                .prepare_soul_war_splinter_profile_change(&before, due - 1)
+                .is_err()
+        );
+        let change = runtime.prepare_soul_war_splinter_profile_change(&before, due)?;
+        let after = runtime.commit_creature_profile_transformation(change)?;
+        assert_eq!(after.actor, actor);
+        assert_eq!(after.health, 4000);
+        assert_eq!(after.maximum_health, 4000);
+        assert_eq!(after.state.policy.definition_key, GREATER);
+        assert_eq!(after.state.created_at_us, birth);
+        assert!(
+            runtime
+                .prepare_soul_war_splinter_profile_change(&before, due)
+                .is_err()
+        );
+        assert_eq!(runtime.soul_war_splinter_due_us(actor)?, None);
+        runtime.drive_spawn_respawns(due + 120_000_000, |_, _| false)?;
+        assert!(
+            runtime.matches_live_creature_identity(actor, GREATER.as_bytes()),
+            "setType never calls Greater onSpawn to schedule Mighty"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn srx3_xml_lesser_restore_preserves_original_queued_death_after_later_hits()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for second_hits in [false, true] {
+            let (mut runtime, actor, due) = actual_splinter()?;
+            runtime
+                .borrow_exact_actor_commit_at_us(due + 1_000_000)
+                .commit_damage(
+                    actor,
+                    OwnerDamageCommand {
+                        target: LESSER.as_bytes(),
+                        occurrence: b"splinter-original-death",
+                        binding: b"splinter-original-death\0real",
+                        damage: 4000,
+                    },
+                )?;
+            let original = runtime
+                .borrow_combat_death()
+                .committed_lethal_receipt(actor)?;
+            let original_projection = original.projection.clone();
+            let notice = runtime
+                .next_source_creature_death()?
+                .ok_or("actual queued source death")?;
+            assert_eq!(notice.death_key(), original.statistics_death_key()?);
+            let before = runtime.companion_snapshot_including_dead(actor)?;
+            assert_eq!(before.health, 0);
+            assert!(
+                runtime
+                    .prepare_creature_profile_transformation(&before, GREATER)
+                    .is_err(),
+                "ordinary transformation does not gain HP-zero authority"
+            );
+            let change = runtime.prepare_soul_war_splinter_profile_change(&before, due)?;
+            let restored = runtime.commit_creature_profile_transformation(change)?;
+            assert_eq!(restored.health, 4000);
+            if second_hits {
+                for (ordinal, damage) in [(1, 100), (2, 3900)] {
+                    let occurrence = format!("splinter-later-{ordinal}");
+                    let binding = format!("{occurrence}\0real");
+                    runtime
+                        .borrow_exact_actor_commit_at_us(due + 2_000_000 + ordinal)
+                        .commit_damage(
+                            actor,
+                            OwnerDamageCommand {
+                                target: GREATER.as_bytes(),
+                                occurrence: occurrence.as_bytes(),
+                                binding: binding.as_bytes(),
+                                damage,
+                            },
+                        )?;
+                }
+                assert_eq!(runtime.companion_snapshot_including_dead(actor)?.health, 0);
+            }
+            assert_eq!(runtime.next_source_creature_death()?, Some(notice.clone()));
+            assert_eq!(
+                runtime.carrier.native_deaths.len(),
+                1,
+                "a second lethal hit cannot enqueue another source death"
+            );
+            let retained = runtime
+                .borrow_combat_death()
+                .committed_lethal_receipt(actor)?;
+            assert_eq!(
+                retained.projection, original_projection,
+                "original death key, position and owner clock survive restore and later hits"
+            );
+            runtime
+                .borrow_combat_death()
+                .project_committed_lethal(original)?;
+            let begin = runtime.begin_source_creature_death(&notice)?;
+            assert_eq!(
+                begin.definition_key(),
+                GREATER,
+                "only actual BEGIN freezes the current drop profile"
+            );
+            assert_eq!(begin.death_key(), notice.death_key());
+            let copied = begin.clone();
+            for event in begin.events() {
+                assert!(runtime.acknowledge_source_creature_death_event(&begin, event)?);
+            }
+            let completed = runtime.finish_source_creature_death_task(&begin)?;
+            assert_eq!(
+                completed.begin(),
+                &copied,
+                "copied callback vector and profile are immutable"
+            );
+            assert_eq!(completed.death_key(), notice.death_key());
+            assert!(runtime.next_source_creature_death()?.is_none());
+            assert!(!runtime.source_creature_is_registered(actor)?);
+            assert!(
+                !runtime.contains_live_creature(actor),
+                "completed source object is not actionable while SQL retains its slot"
+            );
+            assert_eq!(
+                runtime
+                    .borrow_combat_death()
+                    .committed_lethal_receipt(actor)?
+                    .projection,
+                original_projection
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn srx3_xml_lesser_cannot_rewrite_an_already_started_source_death()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (mut runtime, actor, due) = actual_splinter()?;
+        runtime
+            .borrow_exact_actor_commit_at_us(due + 1)
+            .commit_damage(
+                actor,
+                OwnerDamageCommand {
+                    target: LESSER.as_bytes(),
+                    occurrence: b"splinter-started-death",
+                    binding: b"splinter-started-death\0real",
+                    damage: 4000,
+                },
+            )?;
+        let notice = runtime
+            .next_source_creature_death()?
+            .ok_or("actual queued death")?;
+        runtime.set_test_creature_health(actor, 4000)?;
+        assert!(
+            runtime.begin_source_creature_death(&notice).is_err(),
+            "positive HP without the closed restore marker never gains death authority"
+        );
+        runtime.set_test_creature_health(actor, 0)?;
+        let begin = runtime.begin_source_creature_death(&notice)?;
+        assert_eq!(begin.definition_key(), LESSER);
+        let before = runtime.companion_snapshot_including_dead(actor)?;
+        assert!(
+            runtime
+                .prepare_soul_war_splinter_profile_change(&before, due)
+                .is_err()
+        );
+        assert_eq!(runtime.begin_source_creature_death(&notice)?, begin);
         Ok(())
     }
 }

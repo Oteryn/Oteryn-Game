@@ -85,6 +85,8 @@ pub struct ActorCombatState {
     /// Queued native onDeath completed; SQL drop settlement may still retain this slot.
     pub(super) source_death_completed: bool,
     pub(super) source_death_begin: Option<Arc<super::native_source_death::SourceCreatureDeathSeal>>,
+    /// Exact pre-BEGIN Lesser restoration retains its original queued death.
+    pub(super) restored_splinter_death: Option<Arc<super::native_xml_spawns::RestoredSplinterDeath>>,
     /// Offset into the task's copied event vector, advanced only on known completion.
     pub(super) source_death_event_cursor: u8,
     /// Immutable current-type registrations; the deferred phase copies them at BEGIN.
