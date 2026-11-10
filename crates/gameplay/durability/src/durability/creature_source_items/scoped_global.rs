@@ -272,8 +272,17 @@ impl<'a> ScopedGroundCauseRef<'a> {
                     && c.client != [0; 32]
                     && c.actor.runtime_scope() == c.scope
                     && c.actor.scope_generation().get() == c.generation
-                    && c.fence.runtime_scope == c.scope
-                    && c.fence.scope_ownership_generation.get() == c.generation
+                    && match &c.subject {
+                        super::source_step::SourceGroundSubject::Player(fence) => {
+                            fence.runtime_scope == c.scope
+                                && fence.scope_ownership_generation.get() == c.generation
+                        }
+                        super::source_step::SourceGroundSubject::Creature(policy) => {
+                            c.source_items[0].production_key == "oteryn:item.tibia.i33949"
+                                && policy.definition_key.starts_with("oteryn:creature.")
+                                && !policy.definition_revision.is_empty()
+                        }
+                    }
                     && c.movement.last_translation_revision() != 0
                     && c.movement.revision() == c.movement.last_translation_revision()
                     && c.committed.mover() == c.actor
@@ -333,19 +342,30 @@ impl<'a> ScopedGroundCauseRef<'a> {
                 "global_event":{"name":"CreateGoshnarSpiteFire","action":cause.action.key(),"registration_scope":hex(&cause.identity.scope_identity),"node":hex(&cause.identity.node),"node_registration_revision":cause.identity.node_registration_revision.to_string(),"assignment_revision":cause.identity.assignment_revision.to_string(),"work_ordinal":cause.identity.stamp.ordinal().get().to_string()},
                 "content":hex(&cause.content),"client_content":hex(&cause.client),"activation_sequence":cause.activation.to_string(),"map":hex(&cause.map),"frame":hex(&cause.frame),"source_body":hex(&cause.body),"source_cast":hex(&cause.cast),"operations":operations,
             }),
-            Self::SourceStep(cause) => serde_json::json!({
-                "schema":"OTERYN_SOURCE_GROUND_STEP/v1", "player":null,"cost":null,"caster_origin":null,"creature":null,
-                "world":hex(&world),"channel":self.channel_bytes().as_ref().map(|value|hex(value)),"instance":self.instance_bytes().as_ref().map(|value|hex(value)),"runtime_scope_kind":self.scope_kind(),
-                "ownership_generation":ownership_generation.to_string(),"ability":reference(&cause.definition),"occurrence":cause.occurrence,
-                "source_step":{"actor_kind":"player","actor":hex(&cause.placement),"actor_generation":cause.actor.actor_local_generation().to_string(),
-                    "character":hex(cause.fence.character_id.as_bytes()),"session":hex(cause.fence.game_session_id.as_bytes()),"connection":cause.fence.connection_generation.get().to_string(),"lease":cause.fence.character_lease_generation.to_string(),
+            Self::SourceStep(cause) => {
+                let fence = cause.subject.player();
+                let mut step = serde_json::json!({
+                    "actor_kind":if fence.is_some() {"player"} else {"creature"},
+                    "actor":hex(&cause.placement),"actor_generation":cause.actor.actor_local_generation().to_string(),
+                    "character":fence.map(|f|hex(f.character_id.as_bytes())),"session":fence.map(|f|hex(f.game_session_id.as_bytes())),
+                    "connection":fence.map(|f|f.connection_generation.get().to_string()),"lease":fence.map(|f|f.character_lease_generation.to_string()),
                     "movement_revision":cause.movement.revision().to_string(),"translation_revision":cause.movement.last_translation_revision().to_string(),
                     "movement_binding":hex(&cause.committed.binding()),"previous_revision":cause.committed.before().revision().to_string(),
                     "node":hex(&cause.node),"node_registration_revision":cause.node_revision.to_string(),"assignment_revision":cause.assignment_revision.to_string(),
                     "item":hex(&cause.item),"definition":reference(&cause.source_items[0]),"epoch":cause.reset_epoch.to_string(),
-                    "position":cause.target.spatial_position,"map_revision":cause.target.map_revision,"content_revision":cause.target.content_revision,"placement_context":cause.target.placement_context},
+                    "position":cause.target.spatial_position,"map_revision":cause.target.map_revision,"content_revision":cause.target.content_revision,"placement_context":cause.target.placement_context,
+                });
+                if let super::source_step::SourceGroundSubject::Creature(policy) = &cause.subject {
+                    step["creature_subject"] = serde_json::json!({"family":"Creature","key":policy.definition_key,"revision":policy.definition_revision});
+                }
+                serde_json::json!({
+                "schema":"OTERYN_SOURCE_GROUND_STEP/v1", "player":null,"cost":null,"caster_origin":null,"creature":null,
+                "world":hex(&world),"channel":self.channel_bytes().as_ref().map(|value|hex(value)),"instance":self.instance_bytes().as_ref().map(|value|hex(value)),"runtime_scope_kind":self.scope_kind(),
+                "ownership_generation":ownership_generation.to_string(),"ability":reference(&cause.definition),"occurrence":cause.occurrence,
+                "source_step":step,
                 "content":hex(&cause.content),"client_content":hex(&cause.client),"activation_sequence":cause.activation.to_string(),"map":hex(&cause.map),"frame":hex(&cause.frame),"source_body":hex(&cause.body),"source_cast":hex(&cause.cast),"operations":operations,
-            }),
+                })
+            }
         }
     }
 }

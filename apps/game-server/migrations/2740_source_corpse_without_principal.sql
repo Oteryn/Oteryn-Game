@@ -157,8 +157,9 @@ BEGIN
  PERFORM 1 FROM game_content_activations c WHERE c.world_id=r.death_world_id AND c.channel_id=source_channel
   AND c.server_artifact_digest=decode(p->>'content','hex') AND c.client_artifact_digest=decode(p->>'client','hex')
   AND (r.death_scope_kind=2 OR c.frame_binding_digest=decode(p->>'frame','hex') OR EXISTS(
-   -- Bundle Channels retain the same activation through their independently
-   -- current reset map; the copied corpse frame alone cannot authorize it.
+   -- A World source death retains the actual published bundle frame, while
+   -- activation issuance may retain the distinct native-entry frame. Only
+   -- the independently current reset map can prove this second representation.
    SELECT 1 FROM game_world_reset_active active JOIN game_world_reset_epochs epoch USING(world_id,reset_epoch)
    WHERE active.world_id=r.death_world_id AND game_world_reset_map_epoch_current(active.world_id,active.reset_epoch)
     AND epoch.server_digest=decode(p->>'content','hex') AND epoch.client_digest=decode(p->>'client','hex')

@@ -566,6 +566,159 @@ mod tests {
     use crate::map::boot::BundleCollisionIndexExt;
 
     #[test]
+    fn srx3_soul_war_actual_content_qualifies_five_recipes_and_keeps_greed_closed()
+    -> Result<(), String> {
+        std::thread::Builder::new()
+            .name("srx3-soul-war-entry-content".into())
+            .stack_size(64 * 1024 * 1024)
+            .spawn(exercise_soul_war_entry)
+            .map_err(|error| error.to_string())?
+            .join()
+            .map_err(|_| "actual Soul War content qualification panicked".to_owned())?
+    }
+
+    fn exercise_soul_war_entry() -> Result<(), String> {
+        use crate::content::bosses::activity_template::{
+            ActivityTemplateRefusal, PinnedActivitySourceRoom as Room,
+        };
+        use crate::content::native_gameplay::{
+            NativeGameplayInput, test_support::try_activate_input,
+        };
+
+        fn debug(error: impl std::fmt::Debug) -> String {
+            format!("{error:?}")
+        }
+        let mut world_bytes = [89; 16];
+        world_bytes[6] = 0x70;
+        world_bytes[8] = 0x80;
+        let world = oteryn_protocol_oteryn::WorldId::decode(&world_bytes).map_err(debug)?;
+        let mut channel_bytes = world_bytes;
+        channel_bytes[0] = 90;
+        let channel = ChannelId::decode(&channel_bytes).map_err(debug)?;
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
+            if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+                "../../content/spells.manifest.json"
+            } else {
+                "../../../content/spells.manifest.json"
+            },
+        );
+        // Keep the actual source world, profiles, source witnesses and reward rows.
+        // No test policy or handwritten callback grant replaces their qualification.
+        let input = NativeGameplayInput::from_manifest(&manifest).map_err(debug)?;
+        let (controller, pin) = try_activate_input(world, &input).map_err(debug)?;
+        let active = controller.active().ok_or("actual native activation")?;
+        let native = active.native_gameplay().ok_or("actual native gameplay")?;
+        let revision = native
+            .training_formula()
+            .ok_or("actual content revision")?
+            .content_revision();
+        assert!(native.qualifies_soul_war_callbacks(active.identity().server_artifact_digest()));
+
+        // Crystal201189f lib/quests/soul_war.lua:286-478. Each role must reach its
+        // own dedicated recipe, including Purple rather than a generic Mego alias.
+        for (source, boss, creature, position, cooldown) in [
+            (
+                Room::GoshnarsMalice,
+                "oteryn:boss.goshnar_s_malice",
+                "oteryn:creature.goshnar_s_malice",
+                [33709, 31599, 14],
+                72_000,
+            ),
+            (
+                Room::GoshnarsSpite,
+                "oteryn:boss.goshnar_s_spite",
+                "oteryn:creature.goshnar_s_spite",
+                [33743, 31632, 14],
+                72_000,
+            ),
+            (
+                Room::GoshnarsHatred,
+                "oteryn:boss.goshnar_s_hatred",
+                "oteryn:creature.goshnar_s_hatred",
+                [33744, 31599, 14],
+                72_000,
+            ),
+            (
+                Room::GoshnarsCruelty,
+                "oteryn:boss.goshnar_s_cruelty",
+                "oteryn:creature.goshnar_s_cruelty",
+                [33856, 31866, 7],
+                72_000,
+            ),
+            (
+                Room::GoshnarsMegalomania,
+                "oteryn:boss.goshnar_s_megalomania",
+                "oteryn:creature.goshnar_s_megalomania_purple",
+                [33710, 31634, 14],
+                259_200,
+            ),
+        ] {
+            let captured = active
+                .qualify_activity_source_room(pin.qualified_room(), source)
+                .map_err(|error| format!("actual {source:?} source room: {error:?}"))?;
+            // The production entry qualifier receives physical Bundle coordinates.
+            // Use its existing codec/Map owner, including the source-z conversion.
+            let room = qualify(&captured, source, active, world, channel)
+                .map_err(|_| format!("actual {source:?} source bundle"))?;
+            let template = active
+                .qualify_soul_war_activity_template(&room, revision, source)
+                .map_err(|error| format!("actual {source:?} dedicated recipe: {error:?}"))?;
+            assert_eq!(template.boss_key(), boss);
+            assert_eq!(template.creature_key(), creature);
+            let [x, y, z] = position;
+            assert_eq!(template.boss_position(), LogicalCell { x, y, z });
+            assert_eq!(template.room().pinned_activity_source_room(), Some(source));
+            assert_eq!(template.cooldown_seconds(), cooldown);
+            assert_eq!(
+                (
+                    template.minimum_level(),
+                    template.minimum_players(),
+                    template.maximum_players(),
+                    template.time_limit_seconds(),
+                    template.after_kill_seconds(),
+                ),
+                (250, 1, 5, 1200, 60)
+            );
+            let runtime_pin = template.issue_runtime_pin(active).map_err(debug)?;
+            assert_eq!(
+                runtime_pin.server_artifact_digest(),
+                active.identity().server_artifact_digest()
+            );
+            assert_eq!(
+                runtime_pin.frame_binding_digest(),
+                room.frame_binding().digest()
+            );
+            assert_eq!(
+                runtime_pin.map_revision_digest(),
+                room.map_revision_digest()
+            );
+
+            assert!(matches!(
+                active.qualify_soul_war_activity_template(&room, revision, Room::GoshnarsGreed),
+                Err(ActivityTemplateRefusal::SourceMapUnavailable)
+            ));
+        }
+
+        let greed_source = active
+            .qualify_activity_source_room(pin.qualified_room(), Room::GoshnarsGreed)
+            .map_err(debug)?;
+        let greed_room = qualify(&greed_source, Room::GoshnarsGreed, active, world, channel)
+            .map_err(|_| "actual Greed source bundle")?;
+        assert!(
+            matches!(
+                active.qualify_soul_war_activity_template(
+                    &greed_room,
+                    revision,
+                    Room::GoshnarsGreed
+                ),
+                Err(ActivityTemplateRefusal::SourceHookUnavailable)
+            ),
+            "actual Greed recipe must retain the unresolved Sphere15/10000/15000 health hold"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn srx3_pinned_activity_bundle_preserves_real_tiles_and_decodes_map_window()
     -> Result<(), String> {
         let id = |seed| {

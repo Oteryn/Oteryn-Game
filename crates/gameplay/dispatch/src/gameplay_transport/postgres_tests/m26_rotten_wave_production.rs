@@ -103,7 +103,7 @@ pub(super) async fn check(
         let names = owner
             .seal_native_health_names(&runtime, read_names)
             .map_err(|_| "seal names")?;
-        let (_, reported) = owner
+        let (_, reported, _) = owner
             .drive_monster_profiles(
                 &mut runtime,
                 &mut states,

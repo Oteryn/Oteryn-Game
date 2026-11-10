@@ -27,7 +27,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(|active| active.native_gameplay())
             .ok_or(())?;
-        let (notice, timer, map_plan, names_plan, scope, generation) = {
+        let (notice, profile, step, timer, map_plan, names_plan, scope, generation) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.try_lock().map_err(|_| ())?;
             let Some(owner) = states.soul_war_callbacks.megalomania.as_ref() else {
@@ -58,18 +58,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(false);
             };
             let notice = runtime.next_source_creature_death().map_err(|_| ())?;
-            let cutoff = notice
-                .as_ref()
-                .map(|notice| notice.enqueued_at_us().ok_or(()))
-                .transpose()?
-                .unwrap_or(now);
+            let profile = if notice.is_none() {
+                states.native_profile_pass.pending()
+            } else {
+                None
+            };
+            let step = if notice.is_none() && profile.is_none() {
+                states.spite_steps.creatures.front().map_err(|_| ())?
+            } else {
+                None
+            };
+            let cutoff =
+                crate::gameplay_transport::source_death::source_work_cutoff(&runtime, &states)?
+                    .unwrap_or(now);
             if due_us > cutoff
                 || due_us > now
                 || (matches!(&timer, PreparedTimer::Phase(_))
                     && (owner.phases.aspect.is_some()
                         || states.soul_war_callbacks.sanity.pending.is_some()))
-                || ((notice.is_some() || states.native_profile_pass.has_pending())
-                    && states
+                || states
                         .native_callbacks
                         .next_source_due_time()?
                         .into_iter()
@@ -80,13 +87,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .chain(states.spite_global.next_due_us())
                         .chain(states.primal_callbacks.next_source_due_time()?)
+                        .chain(states.spite_steps.creatures.next_due_us(&runtime).map_err(|_| ())?)
                         .chain(crate::gameplay_transport::monster_profile_cycle::physical_spell::next_source_due_time(&runtime, &states)?)
                         .chain(
                             states
                                 .rotten_blood_callbacks
                                 .next_source_due_time(&runtime)?,
                         )
-                        .any(|other| other <= due_us && other <= now))
+                        .any(|other| other <= due_us && other <= now)
                 || states
                     .native_profile_pass
                     .next_due(&runtime)?
@@ -108,6 +116,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let names_plan = self.prepare_source_names(&runtime, &[NAME])?;
             (
                 notice,
+                profile,
+                step,
                 timer,
                 map_plan,
                 names_plan,
@@ -122,6 +132,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map_plan,
             Some(names),
             notice,
+            profile,
+            step,
             timer,
             room,
             native,
@@ -132,7 +144,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.root.try_issue_semantic_pass().map_err(|_| ())?
             .run_with_context(&mut context, |holder, deadline, context| {
                 Box::pin(async move {
-                    let (owner, permit, plan, names, notice, timer, room, native, scope, generation, now) = context;
+                    let (owner, permit, plan, names, notice, profile, step, timer, room, native, scope, generation, now) = context;
                     let refuse = || crate::durability::DurabilityError::Unavailable;
                     let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(holder, deadline).await?;
                     let authority = crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
@@ -143,7 +155,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let mut runtime = owner.runtime.lock().await;
                         let mut states = owner.states.spell_states.try_lock().map_err(|_| refuse())?;
                         let objects = owner.door.try_lock().map_err(|_| refuse())?;
-                        if runtime.next_source_creature_death().map_err(|_| refuse())?.as_ref() != notice.as_ref() {
+                        if runtime.next_source_creature_death().map_err(|_| refuse())?.as_ref() != notice.as_ref()
+                            || profile.as_ref().is_some_and(|original| states.native_profile_pass.pending()
+                                .as_ref().is_none_or(|current| !std::sync::Arc::ptr_eq(original,current)))
+                            || step.as_ref().is_some_and(|original| !states.spite_steps.creatures
+                                .retains_head(&runtime, original).unwrap_or(false)) {
                             return Err(refuse());
                         }
                         let map = read.into_current_view(&runtime, room, &objects, native).ok_or_else(refuse)?;

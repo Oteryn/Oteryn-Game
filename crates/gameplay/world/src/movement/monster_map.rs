@@ -3,6 +3,10 @@
 mod movement_script_tests;
 mod prepared;
 mod source_close_spawn;
+mod source_ground_step;
+pub use source_ground_step::{
+    PendingSourceCreatureStep, SourceCreatureStepParent, SourceCreatureStepQueue,
+};
 #[cfg(test)]
 mod source_solid_tests;
 #[cfg(test)]
@@ -54,8 +58,17 @@ pub struct MonsterMap {
     frame: [u8; 32],
     map: [u8; 32],
     tiles: BTreeMap<(i32, i32, i16), Option<Tile>>,
+    source_steps: source_ground_step::SourceStepTiles,
 }
 impl MonsterMap {
+    /// A real committed STEP owns its original Item continuation. The movement
+    /// driver must retain later due inputs until this queue has reconciled.
+    pub fn source_ground_step_pending(&self) -> bool {
+        self.source_steps
+            .binding
+            .as_ref()
+            .is_some_and(|(queue, _)| queue.is_pending())
+    }
     pub fn matches(&self, runtime: &ChannelRuntimeV1) -> bool {
         self.valid
             && runtime
@@ -197,6 +210,9 @@ impl MonsterMap {
         if !self.matches(runtime) || before.context() != runtime.pinned_movement_context() {
             return Err(MovementError::ContextMismatch);
         }
+        if self.source_ground_step_pending() {
+            return Err(MovementError::Actor(CarrierError::PlanConflict));
+        }
         if runtime
             .native_callback_movement_locked(actor)
             .map_err(|_| MovementError::NotQualified)?
@@ -207,16 +223,27 @@ impl MonsterMap {
             owner_context: self.context,
             content_scope: cells.scope(),
         };
-        let mut owner = runtime.borrow_movement_position();
-        let mut decision = MovementDecision::begin(&owner, actor, before, &selection, direction)?;
+        let mut decision = MovementDecision::begin(
+            &runtime.borrow_movement_position(),
+            actor,
+            before,
+            &selection,
+            direction,
+        )?;
         if !self.admits(decision.destination) {
             return Err(MovementError::NotQualified);
         }
         decision.attempted = 1;
         decision.real_content_lookups = 1;
         decision.qualified = true;
-        let moved = decision.commit(&mut owner)?;
-        special_movement::step_in(runtime, cells, actor, moved.position());
+        let source_step =
+            self.prepare_source_ground_step(runtime, cells, actor, before, decision.destination)?;
+        let moved = decision.commit(&mut runtime.borrow_movement_position())?;
+        if let Some(source_step) = source_step {
+            source_step.publish(runtime);
+        } else {
+            special_movement::step_in(runtime, cells, actor, moved.position());
+        }
         if let NativeMovementCollisionIndex::Bundle(collision) = cells.index() {
             collision
                 .map()
@@ -378,6 +405,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                 frame: runtime.content_pin().frame_binding_digest(),
                 map: runtime.content_pin().map_revision_digest(),
                 tiles: BTreeMap::new(),
+                source_steps: Default::default(),
             },
         }
     }
@@ -953,6 +981,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         at: MovementLocalPosition,
     ) -> Option<Tile> {
         let items = self.read_items(runtime, at).await.ok()?;
+        self.capture_source_ground_tile(runtime, at, &items).await?;
         let static_owner =
             crate::native_world_read::qualified_static_owner(self.room, runtime, self.objects)
                 .ok()?;

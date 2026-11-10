@@ -20,7 +20,7 @@ impl ChannelSpellStates {
             source,
             now.get(),
         )?;
-        self.apply_retained_soul_war_torment_pulse(runtime, native, &prepared, target, session)
+        self.apply_retained_soul_war_torment_pulse(runtime, native, &prepared, target, session, now)
     }
 
     pub(in crate::gameplay_transport) fn apply_retained_soul_war_torment_pulse(
@@ -30,13 +30,18 @@ impl ChannelSpellStates {
         prepared: &super::super::soul_war_callbacks::torment::PreparedPulse,
         target: ExactActorRef,
         session: GameSessionId,
+        execution_now: crate::foundation::owner_timer::SemanticTimeMicros,
     ) -> Option<Pulse> {
         use oteryn_gameplay_encounters::bosses::soul_war_torment::{IconChange, PlayerCounter};
-        if !prepared.current_target(runtime, native, target, session) {
+        if execution_now.get() < prepared.now()
+            || !prepared.current_target(runtime, native, target, session)
+        {
             return None;
         }
         let source = prepared.source();
-        let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(prepared.now());
+        // The original source occurrence deduplicates this pulse independently
+        // of the current physical HP/condition clock, including a later retry.
+        let occurrence = (source.placement_identity(), prepared.now());
         let state = self.get(runtime, target, session)?;
         let mut counter = PlayerCounter::from_current(state.soul_war_torment_count())?;
         let pulse = counter.pulse(prepared.maximum(), prepared.megalomania_present());
@@ -54,7 +59,7 @@ impl ChannelSpellStates {
             let next = state.stage_soul_war_torment_counter_on_dead_player(
                 counter.value(),
                 visible,
-                (source.placement_identity(), now.get()),
+                occurrence,
             )?;
             return self.commit(runtime, target, session, next).then_some(pulse);
         }
@@ -70,9 +75,9 @@ impl ChannelSpellStates {
                 state.stage_soul_war_torment_pulse(
                     counter.value(),
                     visible,
-                    (source.placement_identity(), now.get()),
+                    occurrence,
                     pulse.damage,
-                    now.get(),
+                    execution_now.get(),
                 )
             },
         )?;
@@ -95,25 +100,61 @@ mod tests {
     }
     #[test]
     fn srx3_soul_war_torment_native_player_hp_and_counter_publish_together() -> TestResult {
-        exercise_native_pulse(false, false)
+        exercise_native_pulse(false, false, false)
     }
     #[test]
     fn srx3_torment_visible_dead_player_updates_counter_without_reviving_or_second_death()
     -> TestResult {
-        exercise_native_pulse(true, false)
+        exercise_native_pulse(true, false, false)
     }
     #[test]
     fn srx3_torment_retained_pulse_outlives_source_without_admitting_later_players() -> TestResult {
-        exercise_native_pulse(false, true)
+        exercise_native_pulse(false, true, false)
     }
-    fn exercise_native_pulse(dead: bool, retained: bool) -> TestResult {
+    #[test]
+    fn srx3_torment_retained_pulse_uses_current_hp_clock_without_replaying_original() -> TestResult
+    {
+        exercise_native_pulse(false, true, true)
+    }
+    fn exercise_native_pulse(dead: bool, retained: bool, delayed: bool) -> TestResult {
         let world = WorldId::decode(&id(90)).map_err(|e| format!("{e:?}"))?;
         let (controller, pin) = activated_with_loot_tables(world, None);
-        let native = controller
-            .active()
-            .and_then(|a| a.native_gameplay())
-            .ok_or("native generation")?;
+        let active = controller.active().ok_or("active native generation")?;
+        let native = active.native_gameplay().ok_or("native generation")?;
         let scope = RuntimeScopeRefV1::instance(world, id(91)).map_err(|e| format!("{e:?}"))?;
+        let position = MovementLocalPosition {
+            x: 33711,
+            y: 31636,
+            floor: 14,
+        };
+        let source_room = if delayed {
+            use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
+            let source = PinnedActivitySourceRoom::GoshnarsMegalomania;
+            let room = active
+                .qualify_activity_source_room(pin.qualified_room(), source)
+                .map_err(|error| format!("actual Megalomania source capture: {error:?}"))?;
+            Some(
+                crate::gameplay_transport::activity_runtime::source_bundle::qualify_for_scope(
+                    &room, source, active, scope,
+                )
+                .map_err(|()| "actual Megalomania map for condition tick")?,
+            )
+        } else {
+            None
+        };
+        let runtime_pin = if let Some(room) = &source_room {
+            crate::foundation::ChannelContentPin::from_activation(
+                world,
+                active.activation_sequence(),
+                active.identity().server_artifact_digest(),
+                active.identity().client_artifact_digest(),
+                room.frame_binding().digest(),
+                room.map_revision_digest(),
+                (position.x, position.y, position.floor),
+            )
+        } else {
+            pin.into_channel_pin()
+        };
         let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
             scope,
             NodeId::decode(&id(92)).map_err(|e| format!("{e:?}"))?,
@@ -122,17 +163,12 @@ mod tests {
             1,
             "runtime-scope-assignment:1",
             8,
-            pin.into_channel_pin(),
+            runtime_pin,
         )?;
         runtime.install_companion_policies(native.policies().clone())?;
         let session = GameSessionId::decode(&id(93)).map_err(|e| format!("{e:?}"))?;
         let reservation = runtime.reserve_fresh_session(session)?;
         let player = runtime.commit_fresh_session(reservation)?;
-        let position = MovementLocalPosition {
-            x: 33711,
-            y: 31636,
-            floor: 14,
-        };
         runtime.initialize_pinned_test_position(player, position)?;
         let source = runtime
             .spawn_arena_opponent(
@@ -240,6 +276,7 @@ mod tests {
                         &prepared,
                         late_player,
                         late_session,
+                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(10_000_000),
                     )
                     .is_none()
             );
@@ -251,9 +288,56 @@ mod tests {
         } else {
             None
         };
+        let execution_us = if delayed { 12_000_000 } else { 10_000_000 };
+        if delayed {
+            let prepared = prepared.as_ref().ok_or("original retained pulse")?;
+            assert_eq!(prepared.now(), 10_000_000);
+            // Advance the actual Channel Player condition owner after capture.
+            // Keeping the old pulse time as the HP clock would refuse forever.
+            let room = source_room
+                .as_ref()
+                .ok_or("actual retained Player source map")?;
+            assert!(
+                qualified_protection_zone(&mut runtime, room.movement_cells(), player).is_some()
+            );
+            let _ = states.tick_in_environment(
+                &mut runtime,
+                room.movement_cells(),
+                player,
+                session,
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(execution_us),
+            );
+            let current = states
+                .get(&runtime, player, session)
+                .ok_or("current condition owner")?;
+            assert!(!current.conditions.accepts_time(prepared.now()));
+            assert!(current.conditions.accepts_time(execution_us));
+            let before_refusal = current.clone();
+            assert!(
+                states
+                    .apply_retained_soul_war_torment_pulse(
+                        &runtime,
+                        native,
+                        prepared,
+                        player,
+                        session,
+                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                            prepared.now()
+                        ),
+                    )
+                    .is_none()
+            );
+            assert_eq!(states.get(&runtime, player, session), Some(&before_refusal));
+        }
         let pulse = if let Some(prepared) = &prepared {
-            states
-                .apply_retained_soul_war_torment_pulse(&runtime, native, prepared, player, session)
+            states.apply_retained_soul_war_torment_pulse(
+                &runtime,
+                native,
+                prepared,
+                player,
+                session,
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(execution_us),
+            )
         } else {
             states.apply_soul_war_torment_pulse(
                 &runtime,
@@ -294,8 +378,21 @@ mod tests {
         assert_eq!(after.vitals().mana, 1_000);
         let before_replay = after.clone();
         let replay = if let Some(prepared) = &prepared {
-            states
-                .apply_retained_soul_war_torment_pulse(&runtime, native, prepared, player, session)
+            assert_eq!(
+                prepared.now(),
+                10_000_000,
+                "the original pulse identity is immutable"
+            );
+            states.apply_retained_soul_war_torment_pulse(
+                &runtime,
+                native,
+                prepared,
+                player,
+                session,
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                    execution_us + 1_000_000,
+                ),
+            )
         } else {
             states.apply_soul_war_torment_pulse(
                 &runtime,

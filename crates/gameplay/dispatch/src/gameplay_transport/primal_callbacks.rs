@@ -336,7 +336,97 @@ impl PrimalCallbacks {
     }
 }
 
+fn selected_primal_source_due(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    native: &NativeGameplayState,
+    now: u64,
+) -> Result<Option<u64>, ()> {
+    if let Some(pending) = states.primal_callbacks.normal_pending() {
+        if !pending.batch().current_for(runtime) {
+            return Err(());
+        }
+        // This is the continuation of an actual reserved Think. Its existing
+        // source preparation must finish before standalone callbacks can run.
+        if !pending.source_ready() {
+            return Ok(None);
+        }
+    }
+    let Some(due) = states.primal_callbacks.next_source_due_time()? else {
+        return Ok(None);
+    };
+    if due > now
+        || super::source_death::source_work_cutoff(runtime, states)?
+            .is_some_and(|cutoff| due > cutoff)
+        || super::source_death::next_source_work(runtime, states, native)?
+            != Some((super::source_death::SourceWorkFamily::Detached, due))
+    {
+        return Ok(None);
+    }
+    Ok(Some(due))
+}
+
 impl super::ComposedFreshAdmission<'_, '_, '_> {
+    /// Run only an actual retained Primal deadline selected by the shared
+    /// source arbiter. A fresh turn needs no synthetic native Think reservation.
+    pub(in crate::gameplay_transport) async fn drain_selected_primal_source_work(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        now: u64,
+    ) -> Result<bool, ()> {
+        let room = self.rooms().gate_monster_ai().ok_or(())?;
+        if room.pinned_activity_source_room()
+            != Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal)
+        {
+            return Ok(false);
+        }
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .ok_or(())?;
+        let (due, step) = {
+            let runtime = self.runtime.lock().await;
+            runtime.owner_fence().map_err(|_| ())?;
+            if native.source_digest() != runtime.content_pin().server_artifact_digest()
+                || room.compiled().server_digest() != native.source_digest()
+                || !native.qualifies_primal_callbacks(native.source_digest())
+            {
+                return Err(());
+            }
+            let states = self.states.spell_states.try_lock().map_err(|_| ())?;
+            if states.source_death_action.is_some()
+                || self
+                    .states
+                    .attack
+                    .try_lock()
+                    .map_err(|_| ())?
+                    .kills()
+                    .core_head()?
+                    .is_some()
+            {
+                return Ok(false);
+            }
+            let Some(due) = selected_primal_source_due(&runtime, &states, native, now)? else {
+                return Ok(false);
+            };
+            let step = states
+                .primal_callbacks
+                .steps
+                .iter()
+                .find(|step| step.observed_us == due)
+                .map(std::sync::Arc::clone);
+            (due, step)
+        };
+        if let Some(step) = step {
+            self.resolve_one_primal_pod_step(permit, &step, now, Some(due))
+                .await?;
+        } else {
+            self.drain_primal_retained_through(permit, None, due, now)
+                .await?;
+        }
+        Ok(true)
+    }
+
     /// A sealed immutable callback crosses SQL. Native runtime/spell guards are
     /// released before the writer independently proves the current Node/scope.
     pub(super) async fn drain_primal_pod_callbacks(&self) {
@@ -350,7 +440,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         };
         for _ in 0..4 {
             if self
-                .drain_primal_pod_creates_with_permit(&permit, cutoff)
+                .drain_primal_pod_creates_with_permit(&permit, cutoff, self.owner_now().get())
                 .await
                 .is_err()
             {
@@ -361,16 +451,16 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
     #[cfg(test)]
     pub(super) async fn drain_primal_pod_creates_through(&self, cutoff: u64) -> Result<(), ()> {
         let permit = self.spell_lane_permit().await.ok_or(())?;
-        self.drain_primal_pod_creates_with_permit(&permit, cutoff)
+        self.drain_primal_pod_creates_with_permit(&permit, cutoff, self.owner_now().get())
             .await
     }
     async fn drain_primal_pod_creates_with_permit(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         cutoff: u64,
+        now: u64,
     ) -> Result<(), ()> {
         for _ in 0..1 {
-            let now = self.owner_now().get();
             let pending = {
                 let runtime = self.runtime.lock().await;
                 let mut states = self.states.spell_states.lock().await;
@@ -483,14 +573,15 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
     }
     async fn drain_primal_expiry_through(&self, cutoff: u64) -> Result<(), ()> {
         let permit = self.spell_lane_permit().await.ok_or(())?;
-        self.drain_primal_expiry_with_permit(&permit, cutoff).await
+        self.drain_primal_expiry_with_permit(&permit, cutoff, self.owner_now().get())
+            .await
     }
     async fn drain_primal_expiry_with_permit(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         cutoff: u64,
+        now: u64,
     ) -> Result<(), ()> {
-        let now = self.owner_now().get();
         let selected = {
             let states = self.states.spell_states.lock().await;
             states
@@ -676,88 +767,126 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             let Some(pending) = pending else {
                 return true;
             };
-            let result = self
-                .root
-                .commit_primal_pod_step(permit, self.character, self.holder, &pending.source)
-                .await;
-            let receipt = match result {
-                Ok(receipt) => receipt,
-                Err(_) => return false,
-            };
-            self.states.loop_ground.invalidate();
-            let runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
-            let Some(index) = states
-                .primal_callbacks
-                .steps
-                .iter()
-                .position(|step| std::sync::Arc::ptr_eq(step, &pending))
-            else {
-                continue;
-            };
-            // Removing the pending marker and installing the effect share the
-            // same held physical owners; no heal, handoff or successor intervenes.
-            states.primal_callbacks.steps.remove(index);
-            let Some(receipt) = receipt else {
-                continue;
-            };
-            let step_unix_ms = receipt.step_unix_ms;
-            let applied = pending
-                .applied_events
-                .load(std::sync::atomic::Ordering::Relaxed);
-            for (event, timer) in std::iter::once(receipt.source_timer_unix_ms)
-                .chain(receipt.additional_source_timers_unix_ms)
-                .enumerate()
-                .skip(applied)
+            if self
+                .resolve_one_primal_pod_step(permit, &pending, self.owner_now().get(), None)
+                .await
+                .is_err()
             {
-                use oteryn_gameplay_encounters::bosses::hazard_primal::primal_pod::{
-                    PodStep, step_in,
-                };
-                if let PodStep::DamageAndRemove { life_drain } = step_in(
-                    timer,
-                    step_unix_ms,
-                    u64::from(pending.maximum_health),
-                    pending.hazard,
-                    true,
-                ) {
-                    let Ok(damage) = u32::try_from(life_drain) else {
-                        states.primal_callbacks.steps.insert(index, pending.clone());
-                        return false;
-                    };
-                    let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
-                        self.owner_now().get(),
-                    );
-                    let hit = states.apply_creature_damage_kind(
-                        &runtime,
-                        pending.actor,
-                        pending.session,
-                        damage,
-                        crate::player_lethal::PlayerHitKind::LifeDrain,
-                        now,
-                        oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
-                    );
-                    if hit.is_none() && !states.is_dead(pending.actor) {
-                        states.primal_callbacks.steps.insert(index, pending.clone());
-                        return false;
-                    }
-                    if let Some(room) = self.effective_rooms().gate_field_step_ingress()
-                        && let Ok(at) = runtime.read_actor_position(pending.actor)
-                    {
-                        emit_pod_damage_effects(room, at.position());
-                    }
-                    self.states.server_messages.send_current(
-                        pending.session,
-                        oteryn_protocol_oteryn::zones_nologout::ServerMessage::StatusText(
-                            "You stepped too late on the primal pod and it explodes.".into(),
-                        ),
-                    );
-                }
-                pending
-                    .applied_events
-                    .store(event + 1, std::sync::atomic::Ordering::Relaxed);
+                return false;
             }
         }
         true
+    }
+
+    async fn resolve_one_primal_pod_step(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        pending: &std::sync::Arc<PendingPodStep>,
+        execution_now: u64,
+        selected_due: Option<u64>,
+    ) -> Result<(), ()> {
+        let receipt = self
+            .root
+            .commit_primal_pod_step(permit, self.character, self.holder, &pending.source)
+            .await
+            .map_err(|_| ())?;
+        self.states.loop_ground.invalidate();
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if let Some(due) = selected_due {
+            runtime.owner_fence().map_err(|_| ())?;
+            let native = self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .ok_or(())?;
+            if states.source_death_action.is_some()
+                || self
+                    .states
+                    .attack
+                    .try_lock()
+                    .map_err(|_| ())?
+                    .kills()
+                    .core_head()?
+                    .is_some()
+                || selected_primal_source_due(&runtime, &states, native, execution_now)?
+                    != Some(due)
+            {
+                return Err(());
+            }
+        }
+        let Some(index) = states
+            .primal_callbacks
+            .steps
+            .iter()
+            .position(|step| std::sync::Arc::ptr_eq(step, pending))
+        else {
+            return Ok(());
+        };
+        // Removing the pending marker and installing the effect share the
+        // same held physical owners; no heal, handoff or successor intervenes.
+        states.primal_callbacks.steps.remove(index);
+        let Some(receipt) = receipt else {
+            return Ok(());
+        };
+        let step_unix_ms = receipt.step_unix_ms;
+        let applied = pending
+            .applied_events
+            .load(std::sync::atomic::Ordering::Relaxed);
+        for (event, timer) in std::iter::once(receipt.source_timer_unix_ms)
+            .chain(receipt.additional_source_timers_unix_ms)
+            .enumerate()
+            .skip(applied)
+        {
+            use oteryn_gameplay_encounters::bosses::hazard_primal::primal_pod::{PodStep, step_in};
+            if let PodStep::DamageAndRemove { life_drain } = step_in(
+                timer,
+                step_unix_ms,
+                u64::from(pending.maximum_health),
+                pending.hazard,
+                true,
+            ) {
+                let Ok(damage) = u32::try_from(life_drain) else {
+                    states
+                        .primal_callbacks
+                        .steps
+                        .insert(index, std::sync::Arc::clone(pending));
+                    return Err(());
+                };
+                let now =
+                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(execution_now);
+                let hit = states.apply_creature_damage_kind(
+                    &runtime,
+                    pending.actor,
+                    pending.session,
+                    damage,
+                    crate::player_lethal::PlayerHitKind::LifeDrain,
+                    now,
+                    oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+                );
+                if hit.is_none() && !states.is_dead(pending.actor) {
+                    states
+                        .primal_callbacks
+                        .steps
+                        .insert(index, std::sync::Arc::clone(pending));
+                    return Err(());
+                }
+                if let Some(room) = self.effective_rooms().gate_field_step_ingress()
+                    && let Ok(at) = runtime.read_actor_position(pending.actor)
+                {
+                    emit_pod_damage_effects(room, at.position());
+                }
+                self.states.server_messages.send_current(
+                    pending.session,
+                    oteryn_protocol_oteryn::zones_nologout::ServerMessage::StatusText(
+                        "You stepped too late on the primal pod and it explodes.".into(),
+                    ),
+                );
+            }
+            pending
+                .applied_events
+                .store(event + 1, std::sync::atomic::Ordering::Relaxed);
+        }
+        Ok(())
     }
 }
 fn emit_pod_damage_effects(room: &QualifiedNativeEntryRoom, position: MovementLocalPosition) {
@@ -805,7 +934,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             return Err(());
         }
         if self
-            .drain_primal_retained_through(permit, Some(expected), cutoff)
+            .drain_primal_retained_through(permit, Some(expected), cutoff, self.owner_now().get())
             .await?
         {
             Ok(())
@@ -822,6 +951,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             Option<oteryn_simulation_determinism::SemanticTimeMicros>,
         )>,
         cutoff: u64,
+        now: u64,
     ) -> Result<bool, ()> {
         let room = self.rooms().gate_monster_ai().ok_or(())?;
         if room.pinned_activity_source_room()
@@ -833,7 +963,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(|active| active.native_gameplay())
             .ok_or(())?;
-        let now = self.owner_now().get();
         if self.states.attack.lock().await.kills().core_head()? != expected_head {
             return Err(());
         }
@@ -872,9 +1001,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 drop(owner);
                 drop(states);
                 drop(runtime);
-                self.drain_primal_expiry_with_permit(permit, expiry.expiry_us)
+                self.drain_primal_expiry_with_permit(permit, expiry.expiry_us, now)
                     .await?;
-                self.publish_primal_expiry_native_with_permit(permit, expiry.source)
+                self.publish_primal_expiry_native_with_permit(permit, expiry.source, now)
                     .await?;
                 return Ok(false);
             }
@@ -885,7 +1014,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 drop(owner);
                 drop(states);
                 drop(runtime);
-                self.drain_primal_pod_creates_with_permit(permit, due)
+                self.drain_primal_pod_creates_with_permit(permit, due, now)
                     .await?;
                 return Ok(false); // re-read exact core head and all original deadlines
             }
@@ -1138,13 +1267,13 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         source: [u8; 16],
+        now: u64,
     ) -> Result<(), ()> {
         let room = self.rooms().gate_monster_ai().ok_or(())?;
         let native = self
             .active_generation
             .and_then(|active| active.native_gameplay())
             .ok_or(())?;
-        let now = self.owner_now().get();
         let (expiry, execution, map_plan, scope, generation) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.try_lock().map_err(|_| ())?;

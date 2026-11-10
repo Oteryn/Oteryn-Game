@@ -60,6 +60,7 @@ mod tests {
             frame: pin.frame_binding_digest(),
             map: pin.map_revision_digest(),
             tiles: BTreeMap::new(),
+            source_steps: Default::default(),
         };
         let at = MovementLocalPosition {
             x: 100,

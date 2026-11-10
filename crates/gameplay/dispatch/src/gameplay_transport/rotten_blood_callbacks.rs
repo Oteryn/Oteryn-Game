@@ -37,9 +37,14 @@ enum SourceDueKind {
 
 #[derive(Debug, Clone)]
 enum SourcePrefixBoundary {
+    Timer(SourceDue),
     Death(oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathNotice),
     Profile {
         original: Arc<super::monster_profile_cycle::retained::PendingProfilePass>,
+        due: u64,
+    },
+    CreatureStep {
+        original: crate::movement::monster_map::PendingSourceCreatureStep,
         due: u64,
     },
 }
@@ -51,6 +56,11 @@ struct SourcePrefix {
 impl SourcePrefix {
     fn current(&self, runtime: &ChannelRuntimeV1, states: &ChannelSpellStates) -> bool {
         match &self.boundary {
+            SourcePrefixBoundary::Timer(original) => {
+                runtime.next_source_creature_death().ok() == Some(None)
+                    && states.rotten_blood_callbacks.next_source_due(runtime).ok()
+                        == Some(Some(*original))
+            }
             SourcePrefixBoundary::Death(notice) => {
                 runtime.next_source_creature_death().ok().flatten().as_ref() == Some(notice)
             }
@@ -63,6 +73,15 @@ impl SourcePrefix {
                     // next_due validates the original batch's current owner
                     // and every content/frame pin before exposing its clock.
                     && states.native_profile_pass.next_due(runtime).ok() == Some(Some(*due))
+            }
+            SourcePrefixBoundary::CreatureStep { original, due } => {
+                runtime.next_source_creature_death().ok() == Some(None)
+                    && states
+                        .spite_steps
+                        .creatures
+                        .retains_head(runtime, original)
+                        .unwrap_or(false)
+                    && states.spite_steps.creatures.next_due_us(runtime).ok() == Some(Some(*due))
             }
         }
     }
@@ -78,15 +97,45 @@ fn source_prefix(
     now: u64,
 ) -> Result<Option<SourcePrefix>, ()> {
     let Some(notice) = runtime.next_source_creature_death().map_err(|_| ())? else {
-        let Some(profile) = states.native_profile_pass.next_due(runtime)? else {
-            return Ok(None);
-        };
-        let selected = states
-            .rotten_blood_callbacks
-            .next_source_due(runtime)?
-            .ok_or(())?;
+        let profile = states.native_profile_pass.next_due(runtime)?;
+        let step = states
+            .spite_steps
+            .creatures
+            .next_due_us(runtime)
+            .map_err(|_| ())?;
+        let selected = states.rotten_blood_callbacks.next_source_due(runtime)?;
+        let (boundary, cutoff) =
+            if let Some(due) = profile.filter(|due| step.is_none_or(|step| *due <= step)) {
+                (
+                    SourcePrefixBoundary::Profile {
+                        original: states.native_profile_pass.pending().ok_or(())?,
+                        due,
+                    },
+                    due,
+                )
+            } else if let Some(due) = step {
+                (
+                    SourcePrefixBoundary::CreatureStep {
+                        original: states
+                            .spite_steps
+                            .creatures
+                            .front()
+                            .map_err(|_| ())?
+                            .ok_or(())?,
+                        due,
+                    },
+                    due,
+                )
+            } else if let Some(original) = selected {
+                // The actual original timer also bounds a fresh owner turn.
+                // This is not a synthetic Profile or a scheduler retry clock.
+                (SourcePrefixBoundary::Timer(original), now)
+            } else {
+                return Ok(None);
+            };
+        let selected = selected.ok_or(())?;
         if selected.kind != SourceDueKind::Advanced(kind)
-            || selected.at > profile
+            || selected.at > cutoff
             || selected.at > now
             || super::source_death::next_source_work(runtime, states, native)?
                 != Some((
@@ -96,12 +145,8 @@ fn source_prefix(
         {
             return Err(());
         }
-        let original = states.native_profile_pass.pending().ok_or(())?;
         return Ok(Some(SourcePrefix {
-            boundary: SourcePrefixBoundary::Profile {
-                original,
-                due: profile,
-            },
+            boundary,
             through: selected.at,
         }));
     };
@@ -126,6 +171,13 @@ fn source_prefix(
         )
         .chain(states.spite_global.next_due_us())
         .chain(states.primal_callbacks.next_source_due_time()?)
+        .chain(
+            states
+                .spite_steps
+                .creatures
+                .next_due_us(runtime)
+                .map_err(|_| ())?,
+        )
         .chain(states.native_profile_pass.next_due(runtime)?)
         .any(|due| due < selected.at && due <= now)
     {
@@ -153,11 +205,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let kind = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.try_lock().map_err(|_| ())?;
-            if !runtime.has_pending_source_creature_deaths()
-                && !states.native_profile_pass.has_pending()
-            {
-                return Ok(false);
-            }
             let Some(SourceDue {
                 kind: SourceDueKind::Advanced(kind),
                 at,

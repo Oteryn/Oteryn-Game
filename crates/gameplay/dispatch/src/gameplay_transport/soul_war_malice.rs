@@ -139,6 +139,7 @@ fn cage(runtime: &ChannelRuntimeV1, native: &NativeGameplayState) -> Option<Exac
             .then_some(actor)
         })
 }
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn drive(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
@@ -146,7 +147,8 @@ pub(super) async fn drive(
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
     occurrences: &[ThinkOccurrence],
-    now: u64,
+    through: u64,
+    execution_now: u64,
 ) -> Result<(), ()> {
     if !shared::qualifies_source(runtime, native) || !map.validate_transaction(runtime).await {
         return Err(());
@@ -157,12 +159,23 @@ pub(super) async fn drive(
     }
     let boss = owner.boss;
     let mut next = owner.clock.clone();
-    let effects = next.advance(
-        now / 1_000,
+    let effects = next.advance_through(
+        through / 1_000,
+        execution_now / 1_000,
         cage(runtime, native).is_some(),
         runtime.contains_live_creature(boss),
     );
-    apply(runtime, states, room, native, map, &effects, now, 0).await?;
+    apply(
+        runtime,
+        states,
+        room,
+        native,
+        map,
+        &effects,
+        execution_now,
+        0,
+    )
+    .await?;
     states.soul_war_callbacks.malice.as_mut().ok_or(())?.clock = next;
     for &occurrence in occurrences
         .iter()
@@ -175,7 +188,7 @@ pub(super) async fn drive(
             .ok_or(())?
             .clock
             .clone();
-        let effects = next.on_think(occurrence, 1_000, now / 1_000);
+        let effects = next.on_think(occurrence, 1_000, execution_now / 1_000);
         apply(
             runtime,
             states,
@@ -183,7 +196,7 @@ pub(super) async fn drive(
             native,
             map,
             &effects,
-            now,
+            execution_now,
             occurrence.sequence,
         )
         .await?;
@@ -296,7 +309,12 @@ pub(super) fn publish_due_timer(
     let named_cage = super::source_names::creature_named(names, "Soul Cage")?;
     let named_boss = super::source_names::creature_named(names, "Goshnar's Malice")?;
     let mut next = prepared.clock.clone();
-    let effects = next.advance(now / 1_000, named_cage.is_some(), named_boss.is_some());
+    let effects = next.advance_through(
+        prepared.clock.next_due_ms().ok_or(())?,
+        now / 1_000,
+        named_cage.is_some(),
+        named_boss.is_some(),
+    );
     // Player/NPC aliases require their real removal owner. Retain this timer
     // rather than forging a creature removal or silently skipping precedence.
     if effects.contains(&MaliceEffect::RemoveCage)

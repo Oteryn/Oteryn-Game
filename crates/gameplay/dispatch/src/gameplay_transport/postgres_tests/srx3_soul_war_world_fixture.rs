@@ -5,6 +5,18 @@ use super::srx3_activity_source_fixture::SourceScene;
 use crate::foundation::{ChannelContentPin, MovementLocalPosition};
 
 pub(super) fn source_world(origin: MovementLocalPosition) -> TestResult<SourceScene> {
+    source_world_with_bundle(origin).map(|(scene, _, _)| scene)
+}
+
+/// Keep the actual decoded spawn family and original entry activation available
+/// to World source regressions without manufacturing a second map or catalogue.
+pub(super) fn source_world_with_bundle(
+    origin: MovementLocalPosition,
+) -> TestResult<(
+    SourceScene,
+    crate::map::boot::BundleWorld,
+    ChannelContentPin,
+)> {
     let world = super::fixture::fence(1)?.runtime_scope.world_id();
     let channel = super::fixture::fence(1)?
         .runtime_scope
@@ -140,11 +152,15 @@ pub(super) fn source_world(origin: MovementLocalPosition) -> TestResult<SourceSc
         context.matches(&room, &pin),
         "entry conversion preserves the exact current World proof"
     );
-    Ok(SourceScene {
-        controller,
-        room,
-        pin,
-    })
+    Ok((
+        SourceScene {
+            controller,
+            room,
+            pin,
+        },
+        boot,
+        baseline.into_channel_pin(),
+    ))
 }
 
 #[test]

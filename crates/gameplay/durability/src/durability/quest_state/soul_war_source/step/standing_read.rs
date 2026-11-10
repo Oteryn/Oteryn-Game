@@ -1,7 +1,7 @@
 //! Adapt the existing SQL-fenced standing-tile read; detached Item names or
 //! client handles cannot construct this bridge's actual Ground selection.
 use super::*;
-use crate::durability::creature_source_items::SourceGroundStep;
+use crate::durability::creature_source_items::{SourceGroundStep, SourceGroundStepKind};
 use crate::durability::spell_item_transaction::StandingTileRead;
 use crate::durability::spell_items_abi::DurableTileItem;
 use oteryn_gameplay_entities::{SourceActorReservationProof, source_reservation_seal};
@@ -102,18 +102,14 @@ impl PreparedSpiteStep {
             })
             .map(|item| item.item_instance_id)
             .collect();
-        let weeping_items: Vec<_> = read
+        let ground_items: Vec<_> = read
             .into_iter()
             .flat_map(|read| read.items())
-            .filter(|item| {
-                item.definition.family == "Item"
-                    && item.definition.production_key == "oteryn:item.tibia.i33876"
-                    && item.definition.revision_ref == "definition-r1"
-            })
+            .filter(|item| SourceGroundStepKind::from_definition(&item.definition).is_some())
             .map(|item| item.item_instance_id)
             .collect();
         if (remorse_items.is_empty()
-            && weeping_items.is_empty()
+            && ground_items.is_empty()
             && ![
                 (33743, 31628, 14),
                 (33736, 31632, 14),
@@ -154,7 +150,7 @@ impl PreparedSpiteStep {
         {
             return None;
         }
-        let ground_steps = weeping_items
+        let ground_steps = ground_items
             .into_iter()
             .map(|item| {
                 SourceGroundStep::from_current_player_step(

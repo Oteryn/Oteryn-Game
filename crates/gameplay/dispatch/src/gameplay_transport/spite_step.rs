@@ -3,6 +3,8 @@
 //! These use the existing atomic Quest/Ground owner. Weeping's Item-only
 //! callback uses the physical Item ledger and the same movement reservation.
 //! SQL uncertainty retains that original translation and its exact Items.
+mod creature;
+mod megalomania;
 mod weeping;
 use super::{ComposedFreshAdmission, actor_spell::ChannelSpellStates};
 use crate::durability::character_progression::{
@@ -26,6 +28,7 @@ use std::sync::Arc;
 
 #[derive(Debug, Default)]
 pub(super) struct SpiteStepState {
+    pub(super) creatures: Arc<crate::movement::monster_map::SourceCreatureStepQueue>,
     pending: Vec<PendingStep>,
     completed: Vec<(ExactActorRef, GameSessionId, u64)>,
     recovery: Vec<(ExactActorRef, GameSessionId, u64)>,
@@ -40,6 +43,7 @@ struct PendingStep {
     fire_finished: bool,
     quest_finished: bool,
     weeping: Option<weeping::PendingWeeping>,
+    megalomania: Option<megalomania::PendingMegalomania>,
 }
 
 impl SpiteStepState {
@@ -150,6 +154,7 @@ fn stage_with_items(
         fire_finished: false,
         quest_finished: false,
         weeping: None,
+        megalomania: None,
     });
     states.owner_wake.notify_one();
     Ok(())
@@ -231,7 +236,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(());
         };
         if pending.quest_finished {
-            return self.resolve_one_weeping_step(permit, pending).await;
+            let selected = pending
+                .movement
+                .source_ground_steps()
+                .iter()
+                .find(|input| !pending.completed_items.contains(&input.item_instance_id()))
+                .map(|input| input.kind());
+            return match selected {
+                Some(crate::durability::creature_source_items::SourceGroundStepKind::Weeping) => {
+                    self.resolve_one_weeping_step(permit, pending).await
+                }
+                Some(_) => self.resolve_one_megalomania_step(permit, pending).await,
+                None => {
+                    let mut runtime = self.runtime.lock().await;
+                    let mut states = self.states.spell_states.lock().await;
+                    finish(&mut runtime, &mut states, &pending)
+                }
+            };
         }
         if pending.selected.is_none() {
             let fence = self

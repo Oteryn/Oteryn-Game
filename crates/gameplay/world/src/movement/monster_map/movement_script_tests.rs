@@ -146,6 +146,7 @@ fn wolf_step(item: u16, key: &str, reward: u16, captures: bool) -> TestResult {
         frame: [3; 32],
         map: booted.map_revision_digest(),
         tiles: BTreeMap::new(),
+        source_steps: Default::default(),
     };
     map.tiles.insert(
         (6, 0, 7),

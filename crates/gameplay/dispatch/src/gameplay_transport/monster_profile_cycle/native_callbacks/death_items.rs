@@ -264,16 +264,12 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                     Ok(None) => return true,
                     Err(_) => return false,
                 };
-                if runtime.has_pending_source_creature_deaths()
-                    || states.native_profile_pass.has_pending()
-                {
-                    match crate::gameplay_transport::source_death::next_source_work(
-                        &runtime, &states, native,
-                    ) {
-                        Ok(Some((_, due))) if due < callback.due_us() && due <= now => return true,
-                        Ok(_) => {}
-                        Err(()) => return false,
-                    }
+                match crate::gameplay_transport::source_death::next_source_work(
+                    &runtime, &states, native,
+                ) {
+                    Ok(Some((_, due))) if due < callback.due_us() && due <= now => return true,
+                    Ok(_) => {}
+                    Err(()) => return false,
                 }
                 (callbacks, callback)
             };

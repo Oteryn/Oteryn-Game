@@ -8,6 +8,24 @@ use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementPositionSnapshot, RuntimeScopeRefV1,
 };
 use oteryn_gameplay_entities::carrier::native_translation_events::CommittedMovementOccurrence;
+mod creature;
+pub use creature::{
+    PreparedSourceCreatureItem, SourceCreatureGroundStep, SourceCreatureGroundTile,
+};
+
+#[derive(Debug, Clone)]
+pub(super) enum SourceGroundSubject {
+    Player(CurrentCharacterItemFence),
+    Creature(std::sync::Arc<crate::content::creature_policy::CompiledCreaturePolicy>),
+}
+impl SourceGroundSubject {
+    pub(super) fn player(&self) -> Option<&CurrentCharacterItemFence> {
+        match self {
+            Self::Player(fence) => Some(fence),
+            Self::Creature(_) => None,
+        }
+    }
+}
 
 pub(super) const SOURCE_STEP_CAUSE: i16 = 6;
 pub(super) const SOURCE_BODY: [u8; 32] = [
@@ -54,7 +72,7 @@ pub(super) struct SourceGroundCause {
     pub(super) cast: [u8; 32],
     pub(super) actor: ExactActorRef,
     pub(super) placement: [u8; 16],
-    pub(super) fence: CurrentCharacterItemFence,
+    pub(super) subject: SourceGroundSubject,
     pub(super) movement: MovementPositionSnapshot,
     pub(super) committed: CommittedMovementOccurrence,
     pub(super) reset_epoch: u64,
@@ -196,7 +214,7 @@ impl SourceGroundStep {
                 cast,
                 actor,
                 placement: actor.placement_identity(),
-                fence: *read.fence(),
+                subject: SourceGroundSubject::Player(*read.fence()),
                 movement,
                 committed,
                 reset_epoch,
@@ -235,12 +253,23 @@ impl SourceGroundStep {
                 .ok()
                 .flatten()
                 == Some(c.committed)
-            && runtime
-                .bound_attacker_lease(c.actor, c.fence.game_session_id)
-                .is_ok_and(|lease| {
-                    lease.character_id().as_bytes() == c.fence.character_id.as_bytes()
-                        && lease.generation() == c.fence.character_lease_generation
-                })
+            && match &c.subject {
+                SourceGroundSubject::Player(fence) => runtime
+                    .bound_attacker_lease(c.actor, fence.game_session_id)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    }),
+                SourceGroundSubject::Creature(policy) => {
+                    self.kind == SourceGroundStepKind::DeadAspect
+                        && runtime
+                            .companion_snapshot(c.actor)
+                            .is_ok_and(|subject| subject.state.policy == *policy)
+                        && runtime
+                            .companion_policy(&policy.definition_key)
+                            .is_ok_and(|current| current == *policy)
+                }
+            }
     }
 }
 
@@ -273,9 +302,10 @@ async fn execute(
     {
         return result(tx, receipt).await;
     }
-    if crate::durability::character_progression::assert_item_only_fence(tx, &step.cause.fence, node)
-        .await?
-        .is_err()
+    if let Some(fence) = step.cause.subject.player()
+        && crate::durability::character_progression::assert_item_only_fence(tx, fence, node)
+            .await?
+            .is_err()
     {
         return Err(SpellItemError::Rejected("source STEP current Player fence"));
     }

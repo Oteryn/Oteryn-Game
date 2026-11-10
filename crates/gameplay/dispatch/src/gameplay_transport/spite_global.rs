@@ -323,11 +323,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|active| active.native_gameplay())
                 .ok_or(())?;
             let due = registration.next_due_us();
-            if (runtime.has_pending_source_creature_deaths()
-                || states.native_profile_pass.has_pending())
-                && super::source_death::next_source_work(&runtime, &states, native)?
-                    .is_some_and(|(_, earlier)| earlier < due && earlier <= now_us)
-            {
+            if super::source_death::next_source_work(&runtime, &states, native)?.is_some_and(
+                |(family, earlier)| {
+                    earlier <= now_us
+                        && (earlier < due
+                            || (earlier == due
+                                && family != super::source_death::SourceWorkFamily::Detached))
+                },
+            ) {
                 return Ok(true);
             }
             states

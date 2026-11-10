@@ -349,7 +349,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<(), ()> {
         for _ in 0..256 {
             if self
-                .drain_primal_retained_through(permit, None, pending.batch().observed_at_us())
+                .drain_primal_retained_through(
+                    permit,
+                    None,
+                    pending.batch().observed_at_us(),
+                    self.owner_now().get(),
+                )
                 .await?
             {
                 pending.due_known.store(true, Ordering::Release);

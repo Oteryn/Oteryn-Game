@@ -165,6 +165,7 @@ impl TormentCallbacks {
         room: &QualifiedNativeEntryRoom,
         native: &NativeGameplayState,
         messages: &ServerMessageHub,
+        execution_now: u64,
     ) -> Result<(), ()> {
         let Some(pending) = &mut self.pending else {
             return Ok(());
@@ -181,6 +182,9 @@ impl TormentCallbacks {
                         &pending.pulse,
                         actor,
                         session,
+                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                            execution_now,
+                        ),
                     )
                     .ok_or(())?;
                 if pulse.effect
@@ -226,6 +230,7 @@ pub(super) async fn drive(
     occurrences: &[ThinkOccurrence],
     messages: &ServerMessageHub,
     now: u64,
+    execution_now: u64,
 ) -> Result<(), ()> {
     use crate::content::bosses::activity_template::PinnedActivitySourceRoom as Role;
     if !matches!(
@@ -250,7 +255,7 @@ pub(super) async fn drive(
         return Err(());
     }
     states.soul_war_callbacks.torment.binding = Some(binding(runtime));
-    finish_pending(runtime, states, room, native, messages)?;
+    finish_pending(runtime, states, room, native, messages, execution_now)?;
     for &occurrence in occurrences {
         if states
             .soul_war_callbacks
@@ -297,7 +302,7 @@ pub(super) async fn drive(
             cursor: 0,
         });
         states.soul_war_callbacks.torment.clock = clock;
-        finish_pending(runtime, states, room, native, messages)?;
+        finish_pending(runtime, states, room, native, messages, execution_now)?;
     }
     Ok(())
 }
@@ -308,10 +313,11 @@ fn finish_pending(
     room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
     messages: &ServerMessageHub,
+    execution_now: u64,
 ) -> Result<(), ()> {
     // This temporary extraction contains no await or early return before restore.
     let mut owner = std::mem::take(&mut states.soul_war_callbacks.torment);
-    let result = owner.finish(runtime, states, room, native, messages);
+    let result = owner.finish(runtime, states, room, native, messages, execution_now);
     states.soul_war_callbacks.torment = owner;
     result
 }

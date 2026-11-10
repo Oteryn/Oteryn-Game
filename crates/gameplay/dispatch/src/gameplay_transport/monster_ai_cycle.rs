@@ -69,6 +69,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.drain_uncredited_source_corpse(&permit).await {
             return;
         }
+        match self
+            .drain_selected_creature_source_step(&permit, now.get())
+            .await
+        {
+            Ok(true) | Err(()) => return,
+            Ok(false) => {}
+        }
         if !self
             .drive_spite_global_due(&permit, now.get())
             .await
@@ -124,16 +131,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if primal_source_pending && self.finish_primal_normal_source(&permit).await.is_err() {
             return;
         }
+        match self
+            .drain_selected_primal_source_work(&permit, now.get())
+            .await
+        {
+            Ok(true) | Err(()) => return,
+            Ok(false) => {}
+        }
         let health_names = match self.read_native_health_names(&permit).await {
             Ok(names) => names,
             Err(()) => return,
         };
+        let Some(content) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return;
+        };
         let mut runtime = self.runtime.lock().await;
-        let retained_work = {
+        let (retained_work, source_due) = {
             let Ok(states) = self.states.spell_states.try_lock() else {
                 return;
             };
-            runtime.has_pending_source_creature_deaths() || states.native_profile_pass.has_pending()
+            let Ok(next) = super::source_death::next_source_work(&runtime, &states, content) else {
+                return;
+            };
+            let source_due = next.is_some_and(|(_, due)| due <= now.get());
+            (
+                source_due
+                    || runtime.has_pending_source_creature_deaths()
+                    || states.native_profile_pass.has_pending()
+                    || states.spite_steps.creatures.is_pending(),
+                source_due,
+            )
         };
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.
@@ -145,12 +175,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // BUNDLE-MONSTER-AI-1: the pass reads the combat room, the entry room on the fixture
         // World and its bundle view (bundle cells and map revision) on a bundle World.
         let Some(room) = self.rooms().gate_monster_ai() else {
-            return;
-        };
-        let Some(content) = self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
-        else {
             return;
         };
         // Qualification binds these immutable cells to the compiled artifact.
@@ -212,6 +236,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             super::encounter_phases::tick(&mut runtime, &states);
         }
         if !periodic_pass
+            && !source_due
             && !states
                 .monster_melee
                 .creature_ai
@@ -221,6 +246,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !states.native_callbacks.has_native_due(now.get())
             && !states.rotten_blood_callbacks.has_native_due(now.get())
             && !states.native_profile_pass.has_pending()
+            && !states.spite_steps.creatures.is_pending()
             && !states.rotten_area.pending()
             && !runtime.has_pending_source_creature_deaths()
         {
@@ -274,6 +300,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !states.native_callbacks.has_native_work()
             && !states.rotten_blood_callbacks.has_native_work()
             && !states.native_profile_pass.has_pending()
+            && !states.spite_steps.creatures.is_pending()
             && !states.rotten_area.pending()
             && !runtime.has_pending_source_creature_deaths()
         {
@@ -329,11 +356,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.monster_melee.creature_ai.forget_dead(&runtime);
         }
         if states.monster_melee.creature_ai.is_empty()
+            && !source_due
             && !states.primal_callbacks.has_native_work()
             && !states.soul_war_callbacks.has_native_work()
             && !states.native_callbacks.has_native_work()
             && !states.rotten_blood_callbacks.has_native_work()
             && !states.native_profile_pass.has_pending()
+            && !states.spite_steps.creatures.is_pending()
             && !runtime.has_pending_source_creature_deaths()
         {
             return;
@@ -355,12 +384,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Crystal monster.cpp searchTarget reads current player health. The admitted content
         // describes the strategy; the held player-state owner supplies its live input.
         let candidates = think_candidates(&runtime, &states, &targets);
-        let (next_think, thought_actors) = if periodic_pass
+        let (next_think, thought_actors, ran_profile) = if periodic_pass
+            || source_due
             || states.primal_callbacks.has_native_due(now.get())
             || states.soul_war_callbacks.has_native_due(now.get())
             || states.native_callbacks.has_native_due(now.get())
             || states.rotten_blood_callbacks.has_native_due(now.get())
             || states.native_profile_pass.has_pending()
+            || states.spite_steps.creatures.is_pending()
             || states.rotten_area.pending()
             || runtime.has_pending_source_creature_deaths()
         {
@@ -392,7 +423,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         } else {
-            (None, Vec::new())
+            (None, Vec::new(), true)
         };
         if states
             .primal_callbacks
@@ -420,7 +451,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.finish_rotten_area(&permit).await;
             return;
         }
-        if retained_work && thought_actors.is_empty() {
+        if !ran_profile || (retained_work && thought_actors.is_empty()) {
             let source_action = states.source_death_action_ready;
             drop(attack);
             drop(states);

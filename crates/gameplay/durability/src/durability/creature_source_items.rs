@@ -14,7 +14,10 @@ mod source_step;
 mod spite_global;
 mod w01_death;
 use scoped_global::{ScopedGroundCauseRef, ScopedGroundPreparedRef};
-pub use source_step::{SourceGroundStep, SourceGroundStepKind, SourceGroundStepReceipt};
+pub use source_step::{
+    PreparedSourceCreatureItem, SourceCreatureGroundStep, SourceCreatureGroundTile,
+    SourceGroundStep, SourceGroundStepKind, SourceGroundStepReceipt,
+};
 pub use spite_global::{
     PreparedSpiteGlobalWrite, SpiteGlobalFireCallback, SpiteGlobalFireOutcome,
     SpiteGlobalFireReceipt, execute_spite_global_fire_in_transaction,
