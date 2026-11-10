@@ -883,7 +883,7 @@ enum CharacterAuthorityCheck {
 }
 
 impl CharacterAuthorityCheck {
-    const fn as_str(self) -> &'static str {
+    const fn as_str(&self) -> &'static str {
         match self {
             Self::RecoveryFence => "recovery_fence",
             Self::OfflineTraining => "offline_training",
