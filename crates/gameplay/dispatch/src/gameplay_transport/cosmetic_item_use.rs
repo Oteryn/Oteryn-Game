@@ -710,8 +710,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if bound.is_empty() {
             return Ok(None);
         }
+        // A Ground corpse is a quest operand, not a carried recipe ingredient.
+        // Its exact provenance and freshness remain checked under the Item owner below.
+        let ground_corpse_target = recipe_target.is_none()
+            && matches!(target, Some(ItemKey::Instance(_)))
+            && bound
+                .iter()
+                .any(|callback| callback.fresh_corpse || callback.corpse_target.is_some());
         if (intent.use_with_map_item.is_some()
-            && !(recipe_target.is_some()
+            && !((recipe_target.is_some() || ground_corpse_target)
                 && matches!(
                     intent.use_with_map_item.as_ref(),
                     Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
