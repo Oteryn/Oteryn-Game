@@ -1,0 +1,368 @@
+{
+  "programme": "OTERYN-FULL-CODEBASE-AUDIT",
+  "base_sha": "e2e5ced306040113dc9c395251a802f50eb5776a",
+  "status": "PARTIAL_AUDIT",
+  "baseline_observed_at_utc": "2026-11-10T09:11:53Z",
+  "main_rechecked_at_utc": "2026-11-10T09:50:51Z",
+  "main_recheck_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "coordination_issue": "https://github.com/Oteryn/Oteryn-Game/issues/3088",
+  "counts_confirmed": {
+    "P0": 0,
+    "P1": 3,
+    "P2": 3,
+    "P3": 0
+  },
+  "findings_awaiting_verification": 2,
+  "false_positives": 4,
+  "notes": [
+    "CONFIRMED means the stated source or isolated-model defect is proven, not that production was exercised.",
+    "SEC-002 retains a confirmed isolated P2 defect; its rejected production P1 premise is not counted as a separate finding or whole false positive.",
+    "Untriaged bank/other-source hypotheses are remaining scope, not confirmed findings.",
+    "No source repair, game test edit, PR, merge, deployment or production mutation was performed."
+  ],
+  "findings": [
+    {
+      "id": "DUR-003",
+      "severity": "P1",
+      "status": "CONFIRMED",
+      "evidence": "Static production-path and SQL-predicate proof; independently confirmed. Native PostgreSQL reproduction not run.",
+      "title": "Supported nested inventory prevents committed death from reaching playable respawn",
+      "modules": [
+        "oteryn-gameplay-durability",
+        "oteryn-gameplay-dispatch",
+        "oteryn-gameplay-domain",
+        "oteryn-game-server"
+      ],
+      "restricted": false,
+      "locations": [
+        {
+          "path": "crates/gameplay/durability/src/durability/player_death_items.rs",
+          "lines": [
+            365,
+            370
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/gameplay/durability/src/durability/player_death_items.rs#L365-L370"
+        },
+        {
+          "path": "apps/game-server/migrations/0531_player_death_item_primitives.sql",
+          "lines": [
+            73,
+            78
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/apps/game-server/migrations/0531_player_death_item_primitives.sql#L73-L78"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/death.rs",
+          "lines": [
+            521,
+            527
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/gameplay/dispatch/src/gameplay_transport/composed_admission/death.rs#L521-L527"
+        }
+      ],
+      "trigger": "Ordinary nonexempt character above level 8 with a vocation, no Adventurer protection, no regular blessings and no Amulet of Loss dies carrying main backpack -> bag -> item.",
+      "impact": "The death and pending respawn have committed, but selected backpack loss cannot finish. Fresh admission, reconnect and departed-owner recovery repeat the refusal. No duplication or irreversible loss of contents is established.",
+      "proof": "Death selection includes the main container independently of tree shape; zero-blessing container loss is 1000/1000. A subsequent writer rejects nested descendants before its terminal receipt. Admission and the pending-respawn deletion guard require all such receipts. SQL0531 mirrors the restriction; SQL0630 does not remove it.",
+      "reproduction": "Specified native SQL fixture: create supported nested tree through real owner, commit unprotected death, observe selected root and failed item receipt, pending respawn and both admission refusals; compare flat control. Not executed.",
+      "proposed_fix": "Support the full legal tree in both death custody writer and SQL proofs, retaining frozen selection and idempotency. Include recovery of existing incomplete receipts; do not clear or skip obligations.",
+      "verification": "Primary durability-economy auditor; independent gameplay auditor in verification-dur-003.md; lead reread the refusal, selection, retry and admission chain.",
+      "detailed_report": "verification-dur-003.md",
+      "base_sha": "e2e5ced306040113dc9c395251a802f50eb5776a",
+      "classification": "PROVEN",
+      "production_runtime_observed": false
+    },
+    {
+      "id": "SEC-001",
+      "severity": "P1",
+      "status": "CONFIRMED",
+      "evidence": "Static lifetime and production configuration proof; independent second auditor. Deployment configuration and live outage unknown.",
+      "title": "Conditional admission availability defect; private evidence retained",
+      "modules": [
+        "oteryn-gameplay-dispatch",
+        "oteryn-game-server"
+      ],
+      "restricted": true,
+      "locations": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "trigger": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "impact": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "proof": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "reproduction": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "proposed_fix": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "verification": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "detailed_report": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "base_sha": "e2e5ced306040113dc9c395251a802f50eb5776a",
+      "classification": "PROVEN",
+      "production_runtime_observed": false
+    },
+    {
+      "id": "GP-001",
+      "severity": "P1",
+      "status": "CONFIRMED",
+      "evidence": "Static caller, qualification and gate mismatch proof; independent second auditor. Native integration test not run.",
+      "title": "Loyalty or proficiency magic bonuses reject otherwise valid self/native/conjure casts",
+      "modules": [
+        "oteryn-gameplay-spell",
+        "oteryn-gameplay-dispatch"
+      ],
+      "restricted": false,
+      "locations": [
+        {
+          "path": "crates/gameplay/spell/src/spell/owned_cast_facts.rs",
+          "lines": [
+            394,
+            397
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/gameplay/spell/src/spell/owned_cast_facts.rs#L394-L397"
+        },
+        {
+          "path": "crates/gameplay/spell/src/spell/actor_conditions.rs",
+          "lines": [
+            1619,
+            1622
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/gameplay/spell/src/spell/actor_conditions.rs#L1619-L1622"
+        },
+        {
+          "path": "crates/gameplay/spell/src/spell/cast/gate.rs",
+          "lines": [
+            156,
+            166
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/gameplay/spell/src/spell/cast/gate.rs#L156-L166"
+        },
+        {
+          "path": "crates/gameplay/spell/src/spell/cast/prepare.rs",
+          "lines": [
+            530,
+            542
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/gameplay/spell/src/spell/cast/prepare.rs#L530-L542"
+        }
+      ],
+      "trigger": "A current legitimate player has a nonzero loyalty/proficiency effect on final qualified magic and uses an affected self/native/conjure route. Example fixture: raw magic 30 with loyalty 3600 projects 31 without other adjustments.",
+      "impact": "Affected casts are rejected before resolution. Ordinary combat path is outside this finding; no cost/item loss was established.",
+      "proof": "Raw build/cache binding passes before qualification. Qualified caster includes loyalty and proficiency, but affected equality gates compare with a raw-plus-condition/Wheel projection. Real dispatch installs those bonuses and invokes the gates.",
+      "reproduction": "Use existing admitted native fixture, otherwise valid Light/self spell, and nonzero loyalty or +2 proficiency magic; expect success but observe Rejected. Include zero-bonus, native and conjure controls. Fixture values were inspected, not executed.",
+      "proposed_fix": "Use one authoritative effective-stat projection for the consistency checks while preserving the separate raw-build binding. Cover all sibling gates.",
+      "verification": "Primary gameplay auditor; independent durability-economy auditor in verification-gp-001.md; lead reread exact projections and gates.",
+      "detailed_report": "gameplay-findings.md",
+      "base_sha": "e2e5ced306040113dc9c395251a802f50eb5776a",
+      "classification": "PROVEN",
+      "production_runtime_observed": false
+    },
+    {
+      "id": "SEC-003",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "evidence": "Static operation-size, production caller and retry proof. Actual mTLS/SQL publication not run.",
+      "title": "Valid V2 guild/death snapshots exceed an incorrectly shared HTTP envelope cap",
+      "modules": [
+        "oteryn-gameplay-native-admission-source",
+        "oteryn-gameplay-durability",
+        "oteryn-game-server"
+      ],
+      "restricted": false,
+      "locations": [
+        {
+          "path": "crates/gameplay/native-admission-source/src/http1_mtls.rs",
+          "lines": [
+            119,
+            143
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/gameplay/native-admission-source/src/http1_mtls.rs#L119-L143"
+        },
+        {
+          "path": "crates/gameplay/native-admission-source/src/http1_mtls.rs",
+          "lines": [
+            169,
+            194
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/gameplay/native-admission-source/src/http1_mtls.rs#L169-L194"
+        },
+        {
+          "path": "crates/gameplay/native-admission-source/src/descriptor.rs",
+          "lines": [
+            188,
+            189
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/gameplay/native-admission-source/src/descriptor.rs#L188-L189"
+        }
+      ],
+      "trigger": "Configured public publisher serializes a valid guild/death body above the 10,240-byte generic request-envelope allowance but within its declared 393,216/32,768-byte operation body bound.",
+      "impact": "Request fails before write, snapshot is not acknowledged and retries; public views can stay stale. No authoritative game-data loss or gameplay outage established.",
+      "proof": "V2 encoder accepts per-operation size; production mTLS sink uses the shared cap without a matching V2 override; success-only acknowledgement retains the failed outbox snapshot.",
+      "reproduction": "Encode a valid sorted guild snapshot above the generic envelope threshold; real isolated mTLS sink should deliver but currently returns CapacityExceeded before write. Add exact/below-bound controls and deaths equivalent. Not executed.",
+      "proposed_fix": "Use declared per-operation body caps plus bounded header allowance for both V2 operations and test encoder-to-transport boundaries.",
+      "verification": "Session worker initial observation; lead independently opened and traced the full production publication route in public-projection-finding.md.",
+      "detailed_report": "public-projection-finding.md",
+      "base_sha": "e2e5ced306040113dc9c395251a802f50eb5776a",
+      "classification": "PROVEN",
+      "production_runtime_observed": false
+    },
+    {
+      "id": "DUR-001",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "evidence": "Static real Inbox/mail/move route and SQL guard analysis. PostgreSQL reproduction not run.",
+      "title": "Inventory capacity invariant defect; private evidence retained",
+      "modules": [
+        "oteryn-gameplay-durability",
+        "oteryn-gameplay-dispatch"
+      ],
+      "restricted": true,
+      "locations": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "trigger": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "impact": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "proof": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "reproduction": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "proposed_fix": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "verification": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "detailed_report": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "base_sha": "e2e5ced306040113dc9c395251a802f50eb5776a",
+      "classification": "PROVEN",
+      "production_runtime_observed": false
+    },
+    {
+      "id": "SEC-002",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "evidence": "Isolated source-extracted listener poll closure reproduced; production indefinite-outage severity refuted.",
+      "title": "Isolated transport liveness defect; production P1 severity rejected",
+      "modules": [
+        "oteryn-gameplay-dispatch"
+      ],
+      "restricted": true,
+      "locations": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "trigger": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "impact": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "proof": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "reproduction": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "proposed_fix": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "verification": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "detailed_report": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "base_sha": "e2e5ced306040113dc9c395251a802f50eb5776a",
+      "classification": "PROVEN",
+      "production_runtime_observed": false
+    },
+    {
+      "id": "DUR-002",
+      "severity": "P2",
+      "status": "LIKELY",
+      "evidence": "Static lock-order hypothesis with concrete conflicting relation order; controlled PostgreSQL scheduling required.",
+      "title": "Transaction concurrency candidate awaiting runtime verification",
+      "modules": [
+        "oteryn-gameplay-durability"
+      ],
+      "restricted": true,
+      "locations": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "trigger": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "impact": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "proof": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "reproduction": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "proposed_fix": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "verification": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "detailed_report": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "base_sha": "e2e5ced306040113dc9c395251a802f50eb5776a",
+      "classification": "DERIVED",
+      "production_runtime_observed": false
+    },
+    {
+      "id": "RNG-001",
+      "severity": "P2",
+      "status": "LIKELY",
+      "evidence": "Deterministic cast construction and client-observable occurrence inputs verified; exact deployed server digest availability unproven.",
+      "title": "Randomness-policy candidate with unresolved exposure dependency",
+      "modules": [
+        "oteryn-gameplay-dispatch",
+        "oteryn-gameplay-content",
+        "oteryn-simulation-determinism"
+      ],
+      "restricted": true,
+      "locations": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "trigger": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "impact": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "proof": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "reproduction": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "proposed_fix": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "verification": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "detailed_report": "Restricted security evidence: retained privately for repository owner; not published to this public repository.",
+      "base_sha": "e2e5ced306040113dc9c395251a802f50eb5776a",
+      "classification": "DERIVED",
+      "production_runtime_observed": false
+    }
+  ],
+  "false_positives_detail": [
+    {
+      "id": "FP-001",
+      "hypothesis": "Market history can reach a negative SQL LIMIT",
+      "status": "FALSE POSITIVE",
+      "reason": "Wire page is bounded to <=18 and durability repeats validation before the history SQL.",
+      "locations": [
+        {
+          "path": "crates/protocol-oteryn/src/market.rs",
+          "lines": [
+            52,
+            58
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/protocol-oteryn/src/market.rs#L52-L58"
+        },
+        {
+          "path": "crates/protocol-oteryn/src/market.rs",
+          "lines": [
+            114,
+            114
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/protocol-oteryn/src/market.rs#L114-L114"
+        }
+      ]
+    },
+    {
+      "id": "FP-002",
+      "hypothesis": "Market fee SQL still uses the old 2% rule",
+      "status": "FALSE POSITIVE",
+      "reason": "Migration0296 rewrites the old0191 function and proof to the same current 2.5% / 2,500,000-cap model.",
+      "paths": [
+        "apps/game-server/migrations/0296_market_fee_2026_10.sql"
+      ]
+    },
+    {
+      "id": "FP-003",
+      "hypothesis": "Ordinary depot deposit supplies a populated-container source for the reported weight issue",
+      "status": "FALSE POSITIVE",
+      "reason": "The ordinary depot writer rejects a nonzero subtree height. This specific route is refuted; a distinct supported source is documented privately.",
+      "locations": [
+        {
+          "path": "crates/gameplay/durability/src/durability/depot_move.rs",
+          "lines": [
+            18,
+            61
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/crates/gameplay/durability/src/durability/depot_move.rs#L18-L61"
+        }
+      ]
+    },
+    {
+      "id": "FP-004",
+      "hypothesis": "A full Inbox necessarily blocks rent-warning delivery and later houses",
+      "status": "FALSE POSITIVE",
+      "reason": "The unreserved Inbox delivery helper used here lacks the cited 50,000 limit; that limit belongs to other specific admission paths.",
+      "locations": [
+        {
+          "path": "apps/game-server/migrations/0076_character_inbox.sql",
+          "lines": [
+            201,
+            278
+          ],
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/e2e5ced306040113dc9c395251a802f50eb5776a/apps/game-server/migrations/0076_character_inbox.sql#L201-L278"
+        }
+      ]
+    }
+  ],
+  "latest_main_check": {
+    "scope": "finding freshness only",
+    "report": "latest-main-reconciliation.md",
+    "delta_files": 470,
+    "all_primary_finding_source_blobs_unchanged": true,
+    "inventory_and_coverage_remain_at_original_base": true
+  }
+}

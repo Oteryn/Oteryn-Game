@@ -1,0 +1,66 @@
+{
+  "base": "e2e5ced306040113dc9c395251a802f50eb5776a",
+  "raw_record_counts": {
+    "root-ledger.json": 58,
+    "gameplay-ledger.json": 69,
+    "durability_economy_ledger.json": 80
+  },
+  "deduplicated_record_overlap": 11,
+  "recomputed_counts": {
+    "unique_substantively_analyzed_files": 196,
+    "fully_analyzed_files": 96,
+    "selected_range_files": 100,
+    "analyzed_lines_union": 40516,
+    "analyzed_rust_files": 176,
+    "analyzed_sql_files": 14,
+    "workspace_statuses": {
+      "NOT STARTED": 39,
+      "IN PROGRESS": 25,
+      "REVIEWED": 3
+    },
+    "supplemental_statuses": {
+      "IN PROGRESS": 2,
+      "NOT STARTED": 9
+    }
+  },
+  "inventory_counts": {
+    "tracked_files": 27776,
+    "rust_files": 7159,
+    "sql_files": 424,
+    "python_files": 1398,
+    "workspace_packages": 67,
+    "cargo_targets": 268,
+    "support_domains": 11
+  },
+  "reviewed_packages": [
+    {
+      "name": "oteryn-foundation",
+      "files": 3,
+      "all_full": true
+    },
+    {
+      "name": "oteryn-ntp-clock",
+      "files": 2,
+      "all_full": true
+    },
+    {
+      "name": "oteryn-task-supervisor",
+      "files": 2,
+      "all_full": true
+    }
+  ],
+  "errors": [],
+  "publication_sha256": "8dadd2088b79abda033760f83f70e2100d96a1857be8b6c12f3bcbf1a28a68e5",
+  "inventory_sha256": "e873015e13501616c2ea5a0171a8092febd5803c04564c4ec304983001ff8b30",
+  "method": "Independent line-position sets, exact Git base blobs, raw provenance equality, package/domain partition and status checks; consolidator not invoked.",
+  "markdown_fresh_read": {
+    "status": "PASS",
+    "discrepancy_status": "RESOLVED",
+    "module_rows_compared": 78,
+    "all_rows_equal_to_validated_ledger": true,
+    "aggregate_summary_matches": true,
+    "coverage_ledger_unchanged": true,
+    "coverage_markdown_sha256": "53233ebb8bda9f7c578e7727868b0a253835b880905a28ed0eb7baf1e79b4b94",
+    "harness_or_other_tests_rerun": false
+  }
+}
