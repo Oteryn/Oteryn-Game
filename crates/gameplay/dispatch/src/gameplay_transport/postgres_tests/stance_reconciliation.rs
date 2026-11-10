@@ -238,8 +238,11 @@ fn scenario(case: Case) -> TestResult {
                 assert_eq!(stance_receipts(&h, advanced.character_id).await?, 1);
                 assert_eq!(current_fence(&owner, session).await?, advanced);
 
+                // The full logout owner needs the live admission item binding too.
+                let mut admitted = deps.admitted;
+                admitted.item_fence = Some(advanced.item_fence());
                 assert_eq!(
-                    owner.logout_session(deps.admitted).await,
+                    owner.logout_session(admitted).await,
                     LogoutReply::Result(LogoutResult::Accepted)
                 );
                 assert_eq!(

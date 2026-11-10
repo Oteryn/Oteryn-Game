@@ -152,7 +152,12 @@ impl FreshAdmissionAuthority for ProjectionOwner<'_, '_, '_, '_> {
             .appearance_observation_projected_result(actor, session, empty_outfit, entities)
             .await;
         match result {
-            Err(ObservationError::HolderBusy) => self.busy.set(self.busy.get() + 1),
+            Err(ObservationError::HolderBusy) => {
+                self.busy.set(self.busy.get() + 1);
+                // Change the source before another refresh can stage it, so
+                // reusing the originally rejected offset 1 still fails below.
+                self.item_offset.set(2);
+            }
             Err(ObservationError::Unavailable) => self.unavailable.set(self.unavailable.get() + 1),
             Ok(_) => {}
         }
@@ -331,7 +336,7 @@ fn scenario(case: Case) -> TestResult {
                     assert!(owner.runtime.try_lock().is_ok());
                     assert!(owner.states.spell_states.try_lock().is_ok());
                     // The previously staged position must also be discarded.
-                    projection.item_offset.set(2);
+                    assert_eq!(projection.item_offset.get(), 2);
                     drop(held);
                     let mut mapped = false;
                     let mut spatial = false;

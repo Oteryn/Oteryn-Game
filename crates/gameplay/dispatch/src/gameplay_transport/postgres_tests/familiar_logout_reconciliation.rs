@@ -41,10 +41,16 @@ fn familiar_logout_reconciliation_keeps_retired_scope_original_postgres() -> Tes
     scenario(true, Finish::RetiredOwner)
 }
 
+#[test]
+fn logout_training_refusal_releases_kill_hold_before_retry_postgres() -> TestResult {
+    scenario(false, Finish::TrainingRefused)
+}
+
 #[derive(Clone, Copy)]
 enum Finish {
     Logout,
     Loss,
+    TrainingRefused,
     Terminal,
     RetiredOwner,
 }
@@ -57,6 +63,7 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
             (false, Finish::Logout) => "familiar_logout_absent_retry",
             (true, Finish::Loss) => "familiar_logout_known_loss",
             (false, Finish::Loss) => "familiar_logout_absent_loss",
+            (_, Finish::TrainingRefused) => "logout_training_kill_hold",
             (_, Finish::Terminal) => "familiar_logout_terminal",
             (_, Finish::RetiredOwner) => "familiar_logout_retired",
         };
@@ -107,13 +114,21 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
             );
         }
         track(&owner, &deps)?;
+        // Production content enables graceful training settlement, whose caller
+        // must carry the independently current session, lease and scope fence.
+        let mut admitted = deps.admitted;
+        admitted.item_fence = Some(
+            death_ml_loss_composed::current_fence(&owner, session)
+                .await?
+                .item_fence(),
+        );
         let store = FreshAdmissionStore::from_root(h.root.clone());
 
         // This is the real logout producer and its minted transition, with no
         // physical familiar. Hide only a real commit acknowledgement, or hold
         // the real root precisely after retention and before the write attempt.
         let (first, writes) = owner
-            .test_familiar_clean_end_probe(owner.logout_session(deps.admitted), Some(committed))
+            .test_familiar_clean_end_probe(owner.logout_session(admitted), Some(committed))
             .await;
         assert_eq!(first, LogoutReply::Result(LogoutResult::Busy));
         assert_eq!(
@@ -262,7 +277,9 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
                         GameSessionState::Active
                     );
                 }
-                Finish::Logout | Finish::Loss => return Err("not a refusal case".into()),
+                Finish::Logout | Finish::Loss | Finish::TrainingRefused => {
+                    return Err("not a refusal case".into());
+                }
             }
             assert!(
                 !owner
@@ -288,15 +305,62 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
         match finish {
             Finish::Logout => {
                 let (reply, writes) = owner
-                    .test_familiar_clean_end_probe(owner.logout_session(deps.admitted), None)
+                    .test_familiar_clean_end_probe(owner.logout_session(admitted), None)
                     .await;
                 assert_eq!(reply, LogoutReply::Result(LogoutResult::Accepted));
                 assert_eq!(writes, if committed { 0 } else { 1 });
             }
+            Finish::TrainingRefused => {
+                let principal = (session, original_fence.character_lease_generation);
+                assert_eq!(
+                    owner.states.attack.lock().await.kills().holders(principal),
+                    None
+                );
+                // Deliberately omit the admission binding to refuse training
+                // preparation after the real familiar save and kill seal. A
+                // failed authority read reaches this same precommit None branch.
+                let mut unbound = admitted;
+                unbound.item_fence = None;
+                let (reply, writes) = owner
+                    .test_familiar_clean_end_probe(owner.logout_session(unbound), None)
+                    .await;
+                assert_eq!(reply, LogoutReply::Result(LogoutResult::Busy));
+                assert_eq!(
+                    writes, 1,
+                    "this retry must reach the writer after the kill seal"
+                );
+                assert_eq!(receipt_count_for(&h, None).await?, 1);
+                assert!(
+                    owner
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .pending_familiar_logouts
+                        .is_empty(),
+                    "the real familiar save must be known before training refuses"
+                );
+                assert_eq!(
+                    store.current_session(session).await?.session_state(),
+                    GameSessionState::Active
+                );
+                {
+                    let attack = owner.states.attack.lock().await;
+                    assert_eq!(attack.kills().holders(principal), None);
+                    assert_eq!(attack.kills().parked(principal), None);
+                }
+                // The precommit refusal must not retain a committing kill mark
+                // for this still-active principal or replay its familiar write.
+                let (reply, writes) = owner
+                    .test_familiar_clean_end_probe(owner.logout_session(admitted), None)
+                    .await;
+                assert_eq!(reply, LogoutReply::Result(LogoutResult::Accepted));
+                assert_eq!(writes, 0);
+            }
             Finish::Loss => {
                 let (loss, writes) = owner
                     .test_familiar_clean_end_probe(
-                        owner.lose_control(deps.admitted, Duration::ZERO, None),
+                        owner.lose_control(admitted, Duration::ZERO, None),
                         None,
                     )
                     .await;
@@ -323,6 +387,11 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
                         .get(),
                     1
                 );
+                // Loss suspends the Monk evaluation schedule until recovery
+                // reinitializes it. Compare the entire snapshot with only
+                // that required transition applied.
+                let mut detached = live;
+                detached.detach();
                 {
                     let runtime = owner.runtime.lock().await;
                     assert_eq!(
@@ -332,7 +401,7 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
                             .lock()
                             .await
                             .get(&runtime, actor, session),
-                        Some(&live)
+                        Some(&detached)
                     );
                 }
                 let wait = Duration::from_secs(
@@ -344,7 +413,7 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
                 let (released, writes) = tokio::time::timeout(
                     wait,
                     owner.test_familiar_clean_end_probe(
-                        owner.release_after_grace(deps.admitted),
+                        owner.release_after_grace(admitted),
                         Some(true),
                     ),
                 )
