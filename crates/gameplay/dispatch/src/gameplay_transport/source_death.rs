@@ -20,6 +20,7 @@ pub(super) enum SourceWorkFamily {
     Native,
     TaintOne,
     SoulWarAttack,
+    Greed,
     Physical,
     RottenBlood,
     Detached,
@@ -57,6 +58,10 @@ pub(super) fn next_source_work(
         (
             SourceWorkFamily::SoulWarAttack,
             states.soul_war_callbacks.next_attack_due(),
+        ),
+        (
+            SourceWorkFamily::Greed,
+            super::soul_war_callbacks::greed::next_source_due_time(runtime, states)?,
         ),
         (
             SourceWorkFamily::Physical,
@@ -496,6 +501,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 soul_war_malice::consume_cage_death(
                     runtime, states, room, native, &begin, event, action_now,
                 )?
+            } else if matches!(event.name(), "GreedMonsterDeath" | "SoulSphereDeath") {
+                super::soul_war_callbacks::greed::consume_death(
+                    runtime, states, room, native, &begin, event, action_now,
+                )?
             } else {
                 let callbacks = states.native_callbacks.clone();
                 let action = states.source_death_action.as_ref().ok_or(())?;
@@ -664,6 +673,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Some((SourceWorkFamily::SoulWarAttack, due)) => {
                 super::soul_war_callbacks::drive_attack_due_through(
+                    runtime, states, room, native, map, due, now,
+                )
+                .await?;
+            }
+            Some((SourceWorkFamily::Greed, due)) => {
+                super::soul_war_callbacks::greed::drive_due_through(
                     runtime, states, room, native, map, due, now,
                 )
                 .await?;
