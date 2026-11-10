@@ -2503,6 +2503,7 @@ fn validate_server_acceptance_ingress(
         transport_field,
         schema_field,
         capabilities_field,
+        trace_field,
     ) = match message_type {
         MessageType::ServerAccepted => (
             SERVER_ACCEPTED_IDENTITY_FIELDS,
@@ -2513,6 +2514,7 @@ fn validate_server_acceptance_ingress(
             Some(8u32),
             9u32,
             10u32,
+            11u32,
         ),
         MessageType::ServerResumeAccepted => (
             SERVER_RESUME_ACCEPTED_IDENTITY_FIELDS,
@@ -2523,6 +2525,7 @@ fn validate_server_acceptance_ingress(
             None,
             5u32,
             6u32,
+            7u32,
         ),
         _ => return Ok(()),
     };
@@ -2537,6 +2540,7 @@ fn validate_server_acceptance_ingress(
     let mut capability_count = 0usize;
     let mut previous_capability = None;
     let mut selected_capabilities = Vec::new();
+    let mut connection_trace = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -2577,6 +2581,8 @@ fn validate_server_acceptance_ingress(
                 &mut previous_capability,
                 &mut selected_capabilities,
             )?;
+        } else if field == trace_field {
+            read_connection_trace(payload, &mut cursor, wire, &mut connection_trace)?;
         } else {
             skip_field(payload, &mut cursor, wire)?;
         }
@@ -2602,7 +2608,13 @@ fn validate_server_acceptance_ingress(
     {
         return Err(FoundationProtocolError::TransportProfileMismatch);
     }
-    validate_capability_closure(&selected_capabilities)
+    validate_capability_closure(&selected_capabilities)?;
+    if connection_trace.is_some()
+        && !selected_capabilities.contains(&connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
+    {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    Ok(())
 }
 
 fn validate_command_result_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {

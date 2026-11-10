@@ -83,6 +83,10 @@ fn connection_trace() -> Option<[u8; 16]> {
         .flatten()
 }
 
+pub(super) fn diagnostic_connection_trace() -> Option<[u8; 16]> {
+    CONNECTION_TRACE.try_with(|context| context.trace).ok()
+}
+
 fn enable_connection_trace() {
     let _ = CONNECTION_TRACE.try_with(|context| context.enabled.set(true));
 }
@@ -479,22 +483,30 @@ pub(super) fn admission_refused_event(refusal: AdmissionRefusal) -> Option<&'sta
 }
 
 pub(super) fn report_admission_refusal(refusal: AdmissionRefusal) {
-    let kind = match refusal {
-        AdmissionRefusal::PremiumRequired | AdmissionRefusal::Rejected => "rejected",
-        AdmissionRefusal::Unavailable => "unavailable",
-        AdmissionRefusal::Classified(_) => "classified",
-        AdmissionRefusal::Queued(_) => "queued",
-        AdmissionRefusal::RecoveryCapabilityRequired => "recovery_capability",
+    let (kind, reason) = match refusal {
+        AdmissionRefusal::PremiumRequired | AdmissionRefusal::Rejected => ("rejected", None),
+        AdmissionRefusal::Unavailable => ("unavailable", None),
+        AdmissionRefusal::Classified(error) => ("classified", Some(error)),
+        AdmissionRefusal::Queued(_) => ("queued", None),
+        AdmissionRefusal::RecoveryCapabilityRequired => ("recovery_capability", None),
     };
-    oteryn_error_codes::emit(
-        "oteryn-game-server",
-        &oteryn_error_codes::Line::new(
-            oteryn_error_codes::Level::Warn,
-            "admission",
-            "admission_refused",
-        )
-        .field("kind", oteryn_error_codes::FieldValue::Token(kind)),
-    );
+    let trace = diagnostic_connection_trace().map(super::format_connection_trace);
+    let mut line = oteryn_error_codes::Line::new(
+        oteryn_error_codes::Level::Warn,
+        "admission",
+        "admission_refused",
+    )
+    .field("kind", oteryn_error_codes::FieldValue::Token(kind));
+    if let Some(error) = reason {
+        line = line.field(
+            "reason_code",
+            oteryn_error_codes::FieldValue::U64(u64::from(error.code())),
+        );
+    }
+    if let Some(trace) = trace.as_deref() {
+        line = line.trace(trace);
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
 }
 
 /// The terminal outcome of one `ACCOUNT_ACHIEVEMENTS_QUERY` (display contract §3.3, §4).
