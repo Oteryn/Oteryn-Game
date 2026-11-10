@@ -539,6 +539,7 @@ def source_cohort_extent(world: Path) -> dict[str, int | str]:
         "creature_records": sum(row["kind"] != "Item" and reference_id(row) not in npc_profiles for row in records),
         "creature_profiles": sum(profile_id(row) not in npc_profiles for row in profiles),
         "npc_records": len(npc_profiles),
+        "npc_declarations": len(npcs),
         "project_revision": project["project_revision"],
     }
 
@@ -563,6 +564,9 @@ def refresh_source_cohort_extent() -> None:
     rewrite(PIN_TEST, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
     rewrite(PIN_TEST, r"assert_eq!\(project\.imports\(\)\.len\(\), [\d_]+\);", f'assert_eq!(project.imports().len(), {measured["imports"]});')
     rewrite(PIN_TEST, r"assert_eq!\(v2\.sources\.len\(\), [\d_]+\);", f'assert_eq!(v2.sources.len(), {measured["sources"]});')
+    rewrite(ROOT / "apps/game-server/tests/content_npc_catalogue.rs",
+            r"assert_eq!\(catalogue\.npc_count\(\), [\d_]+\);",
+            f'assert_eq!(catalogue.npc_count(), {measured["npc_declarations"]});')
     for path, receiver in ((PIN_TEST, "project"), (ROOT / "apps/game-server/tests/content_npc_catalogue.rs", "catalogue")):
         rewrite(path, rf'({receiver}\.project_revision\(\),\s*")[^"]+("\s*\))', rf'\g<1>{measured["project_revision"]}\g<2>')
 

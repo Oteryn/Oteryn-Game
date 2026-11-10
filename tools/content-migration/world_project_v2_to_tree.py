@@ -488,7 +488,10 @@ def main() -> int:
     })
 
     npc_declarations = [row for row in declarations["records"] if row.get("kind") == "NPC"]
-    if len(npc_declarations) != 1282:
+    from native_contact_definitions import qualified_counts
+    native_npc_count, _ = qualified_counts(npc_declarations,
+        [b for b in sources["source_identity_bindings"] if b["target"]["family"] == "NPC"])
+    if len(npc_declarations) != 1282 + native_npc_count:
         raise RuntimeError(f"NPC_SOURCE_COUNT_MISMATCH:{len(npc_declarations)}")
 
     npc_rows = []
@@ -505,6 +508,9 @@ def main() -> int:
         rows = npc_rows[start:start + ITEM_SHARD_SIZE]
         end = start + len(rows) - 1
         relative = f"content/npcs/definitions/npcs-{start:05d}-{end:05d}.json"
+        if start == 1000:
+            # Keep the published partial-shard locator; the header owns the current extent.
+            relative = "content/npcs/definitions/npcs-01000-01281.json"
         npc_shards.append(relative)
         write(relative, {
             "schema": "OTERYN_NPC_AUTHORING_SHARD/v1",

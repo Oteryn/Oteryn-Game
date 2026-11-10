@@ -348,7 +348,7 @@ def test_source_cohort_extent_separates_npc_profiles_and_tracks_successors() -> 
         write(root, "provenance/sources.json", {"sources": [{"key": "one"}]})
         write(root, "provenance/imports.json", {"batches": [{"batch_id": "one"}]})
         write(root, "project.json", {"project_revision": "one"})
-        assert rc.source_cohort_extent(root) == {"references": 4, "sources": 1, "imports": 1, "creatures": 1, "creature_records": 1, "creature_profiles": 1, "npc_records": 2, "project_revision": "one"}
+        assert rc.source_cohort_extent(root) == {"references": 4, "sources": 1, "imports": 1, "creatures": 1, "creature_records": 1, "creature_profiles": 1, "npc_records": 2, "npc_declarations": 1, "project_revision": "one"}
         successor = identity("Creature", "oteryn:creature.two")
         records.append({"kind": "Creature", "identity": successor})
         document["authoring_profiles"].append({"target": successor})
@@ -356,6 +356,12 @@ def test_source_cohort_extent_separates_npc_profiles_and_tracks_successors() -> 
         write(root, "definitions/declarations.json", document)
         extent = rc.source_cohort_extent(root)
         assert (extent["references"], extent["creatures"], extent["creature_records"], extent["creature_profiles"], extent["npc_records"]) == (5, 2, 2, 2, 2)
+        # A new contact may reuse both existing profiles without increasing
+        # their reference budget, while the runtime declaration count increases.
+        document["records"].append({"kind": "NPC", "presentation": head, "behavior": behavior})
+        write(root, "definitions/declarations.json", document)
+        shared = rc.source_cohort_extent(root)
+        assert (shared["npc_records"], shared["npc_declarations"], shared["references"]) == (2, 2, 5)
         # Missing source profiles and duplicate identities cannot silently become
         # a larger accepted count merely because the file remains valid JSON.
         document["authoring_profiles"] = document["authoring_profiles"][1:]

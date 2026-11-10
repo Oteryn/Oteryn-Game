@@ -725,5 +725,35 @@
     },
     "deployment_handoff": "Protected topology unchanged; coordinator must refresh World digest at integration",
     "remaining": "M38 other contacts, conditional bindings and native ticket/return wiring remain PARTIAL"
+  },
+  "spy_rat_contact_slice": {
+    "state": "GREEN_PUSH_READY",
+    "scope": "Real normal-package Eustacios Spy Rat definition plus exact BR-bound source anchor; no authored speech, service or quest grant. Existing Oteryn generated replies remain the platform default.",
+    "source": "BR page50622/revision395123 at33857,31333,9, already in registered snapshot0773232d; Tibiopedia supplies display name",
+    "choices": "Reuse existing Generic rat presentation21 and stationary passive Swan behavior; no canonical numeric appearance or visual-equivalence claim",
+    "red": "2 authoring cases failed because the normal NPC and placement did not exist",
+    "green": "Materializer2 cases; approved-cohort3; regeneration-tool14; focused M38 authoring11; source-map1 case25.90s; real runtime model1 case47.35s; complete catalogue5 cases56.30s including exact source/reference boundary negatives",
+    "qualification_seconds": {
+      "npc-authoring-units": 43.513,
+      "qualified-cohort": 0.117,
+      "regeneration-units": 0.723,
+      "placement-freshness": 0.402,
+      "materializer-clippy": 250.032,
+      "content-clippy": 32.271,
+      "compiler-clippy": 0.434,
+      "pin-refresh": 62.427,
+      "quest-checks": 394.618,
+      "quest-units": 468.977,
+      "workspace": 430.402,
+      "architecture": 6.027,
+      "fmt": 22.041,
+      "dup": 0.652,
+      "pins": 49.867
+    },
+    "semantic_delta": "Exactly one added NPC, no removed/changed existing declarations; creature/Prey outputs only provenance hashes change",
+    "postgres": "No SQL or persistence change; no new PostgreSQL claim",
+    "migration": "none",
+    "deployment_handoff": "Protected topology unchanged; coordinator must refresh World digest at integration",
+    "remaining": "M38 other conditional contacts and native ticket/return bindings remain PARTIAL"
   }
 }

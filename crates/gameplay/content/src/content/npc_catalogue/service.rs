@@ -13,6 +13,10 @@ use crate::content::{
 use std::collections::{BTreeMap, BTreeSet};
 
 #[cfg(test)]
+#[path = "native_contact_tests.rs"]
+mod native_contact_tests;
+
+#[cfg(test)]
 #[path = "display_name_tests.rs"]
 mod display_name_tests;
 

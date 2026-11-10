@@ -2,6 +2,8 @@
 mod cake_creature_admission;
 #[path = "support/item_fx_audio_raw_import.rs"]
 mod item_fx_audio_raw_import;
+#[path = "npc_materializer/native_contacts.rs"]
+mod native_contacts;
 #[path = "npc_materializer/preserved_display_names.rs"]
 mod preserved_display_names;
 
@@ -3107,6 +3109,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         apply_current_power_ring(&mut draft)?;
         cake_creature_admission::apply(&mut draft)?;
         preserved_display_names::apply(&mut draft.state.declarations)?;
+        let native_contacts = native_contacts::apply(
+            &mut draft.state.declarations,
+            &mut draft.state.source_identity_bindings,
+            &draft.state.sources,
+        )?;
+        println!("native_contact_npcs={native_contacts}");
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
         // This fresh output contains only the base package just materialized above.
         // The canonical writer requires an absent root for the successor package.

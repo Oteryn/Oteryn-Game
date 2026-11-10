@@ -522,9 +522,12 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
     """Round-trip the admitted NPC declarations (with source bindings) and Service declarations."""
     validate_native_bank_admission(declarations)
     legacy_npcs = [row for row in declarations["records"] if row.get("kind") == "NPC"]
-    require(len(legacy_npcs) == NPC_COUNT, "LEGACY_NPC_COUNT")
     legacy_npc_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "NPC"]
-    require(len(legacy_npc_bindings) == NPC_BINDING_COUNT, "LEGACY_NPC_BINDING_COUNT")
+    from native_contact_definitions import qualified_counts
+    npc_delta, binding_delta = qualified_counts(legacy_npcs, legacy_npc_bindings)
+    expected_npcs, expected_bindings = NPC_COUNT + npc_delta, NPC_BINDING_COUNT + binding_delta
+    require(len(legacy_npcs) == expected_npcs, "LEGACY_NPC_COUNT")
+    require(len(legacy_npc_bindings) == expected_bindings, "LEGACY_NPC_BINDING_COUNT")
 
     npc_index = load(ROOT / "content/npcs/definitions/index.json")
     require(npc_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and npc_index["family"] == "NPC", "NPC_INDEX")
@@ -545,11 +548,11 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
                 require(target_id(binding["target"]) == target_id(target), "NPC_BINDING_TARGET")
                 migrated_npc_bindings.append(binding)
         expected_start = payload["shard"]["end"] + 1
-    require(expected_start == NPC_COUNT, "NPC_SHARD_COVERAGE")
+    require(expected_start == expected_npcs, "NPC_SHARD_COVERAGE")
     require(migrated_npcs == legacy_npcs, "NPC_DECLARATION_ROUNDTRIP")
     require(canonical_sorted(migrated_npc_bindings) == canonical_sorted(legacy_npc_bindings), "NPC_BINDING_ROUNDTRIP")
     require(npc_index["attached_source_bindings"] == len(migrated_npc_bindings), "NPC_INDEX_BINDING_COUNT")
-    require(len({(row["identity"]["key"], row["identity"]["revision"]) for row in migrated_npcs}) == NPC_COUNT, "NPC_IDENTITY_UNIQUENESS")
+    require(len({(row["identity"]["key"], row["identity"]["revision"]) for row in migrated_npcs}) == expected_npcs, "NPC_IDENTITY_UNIQUENESS")
 
     legacy_services = [row for row in declarations["records"] if row.get("kind") == "Service"]
     require(len(legacy_services) == sum(SERVICE_FAMILY_COUNTS.values()), "LEGACY_SERVICE_COUNT")
@@ -722,7 +725,11 @@ def main() -> int:
         require("Quest" in project["migrated_families"] and "Quest" not in project["next_population_families"], "QUEST_PROJECT_REGISTRATION")
         require(set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]}), "QUEST_MANAGED_FILES")
     # E06 (owner decision 2026-10-31) minted the 68 client-only Crystal market Items: 34043 + 68.
-    require(lock["family_counts"] == {"Item": 34111, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
+    from native_contact_definitions import qualified_counts
+    native_npc_count, native_binding_count = qualified_counts(
+        [r for r in declarations["records"] if r.get("kind") == "NPC"],
+        [b for b in sources["source_identity_bindings"] if b["target"]["family"] == "NPC"])
+    require(lock["family_counts"] == {"Item": 34111, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT + native_npc_count,
                                        # RAIDS-GLOBAL 2026-11-01; raid_catalogue.py --check pins the full source reconciliation.
                                        "Encounter.Raid": load(ROOT / "content/encounters/raids/index.json")["record_count"],
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, "Document": DOCUMENT_COUNT, **SERVICE_FAMILY_COUNTS,
@@ -731,7 +738,7 @@ def main() -> int:
                                        "item_conversion": load(ROOT / "content/craft/index.json")["record_count"],
                                        **{family: value["records"] for family, value in quest_families.items()}},
             "LOCK_COUNTS")
-    require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
+    require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT + native_binding_count, "LOCK_NPC_BINDING_COUNT")
     require(item_index["record_count"] == 34111 and len(item_index["shards"]) == 69, "ITEM_INDEX")
     require(mount_index["record_count"] == 252 and len(mount_index["shards"]) == 1, "MOUNT_INDEX")
 

@@ -1,0 +1,56 @@
+{
+  "schema": "OTERYN_NATIVE_CONTACT_NPCS/v1",
+  "source": {
+    "key": "oteryn:source.tibiawiki",
+    "import_batch_id": "g4-npc-prices-tibiawiki-br-r1",
+    "revision": "tibiawiki-br-npc-0773232ddd356be2",
+    "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+    "evidence": "Derived"
+  },
+  "records": [
+    {
+      "declaration": {
+        "kind": "NPC",
+        "identity": {
+          "key": "oteryn:npc.eustacios_spy_rat",
+          "revision": "definition-r1"
+        },
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.rata_mari",
+          "revision": "definition-r1"
+        },
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.a_swan",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "services": [],
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Eustacio's Spy Rat"
+            }
+          }
+        ]
+      },
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "50622",
+          "identity_namespace": "mediawiki/page_id",
+          "source_key": "oteryn:source.tibiawiki",
+          "source_revision": "tibiawiki-br-npc-0773232ddd356be2",
+          "target": {
+            "family": "NPC",
+            "key": "oteryn:npc.eustacios_spy_rat",
+            "revision": "definition-r1"
+          }
+        }
+      ]
+    }
+  ]
+}

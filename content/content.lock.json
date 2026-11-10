@@ -28,7 +28,7 @@
     "Item": 34111,
     "Loot": 1292,
     "Mount": 252,
-    "NPC": 1282,
+    "NPC": 1283,
     "Presentation": 3146,
     "Proficiency": 443,
     "Quest": 352,
@@ -47,11 +47,11 @@
     "taxonomy": 12252
   },
   "legacy_blobs": {
-    "declarations": "3e8752c1a5c578e3d74b93e92c4839f2c35603cc",
+    "declarations": "a9bffd45bbdb90fbe249c82ffc5e1ff68f7fc342",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "4c8aa501e96ffa0c84ac6a448f0fe9836433ea90",
+    "imports": "4df37902a0f95efc48df86fd023b4d9aa121c6f0",
     "reference": "5ea6d7f635a63d18d48f368c70e252e39910bc76",
-    "sources": "4f6b825b939e0b74d049f6be23306972299ecf28"
+    "sources": "04f4a2fab01e96c64f2170e68e099305a7e6af70"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
@@ -93,7 +93,7 @@
     "Encounter": 108,
     "Item": 476,
     "Mount": 252,
-    "NPC": 2747
+    "NPC": 2748
   },
   "spell_import": {
     "collections": {
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "0ad1e28b1f5d926b1c8d7a4bcf7e6279f4d136ef0396d912dff287c838df6b7e"
+          "sha256": "5480c96a6d829a23f076be18c98a0a34644762d0902ca53518366b27e7c9380f"
         },
         {
           "creates_canonical_identities": false,

@@ -60,7 +60,7 @@
     },
     "NPC": {
       "index": "content/npcs/definitions/index.json",
-      "records": 1282
+      "records": 1283
     },
     "Presentation": {
       "index": "content/presentations/definitions/index.json",
@@ -939,7 +939,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "0ad1e28b1f5d926b1c8d7a4bcf7e6279f4d136ef0396d912dff287c838df6b7e"
+          "sha256": "5480c96a6d829a23f076be18c98a0a34644762d0902ca53518366b27e7c9380f"
         },
         {
           "creates_canonical_identities": false,

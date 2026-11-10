@@ -10,6 +10,11 @@ fn source_yselda_is_admitted_only_at_its_retained_page_bound_contact() -> TestRe
     exact_contact("oteryn:npc.yselda", (32619, 32488, 12), true)
 }
 
+#[test]
+fn source_spy_rat_is_admitted_only_at_its_retained_page_bound_contact() -> TestResult {
+    exact_contact("oteryn:npc.eustacios_spy_rat", (33857, 31333, 9), false)
+}
+
 fn exact_contact(key: &str, (x, y, z): (u16, u16, u8), requires_opt_in: bool) -> TestResult {
     let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
     let project =

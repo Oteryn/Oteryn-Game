@@ -1,7 +1,7 @@
 # M38 Yselda contact anchor
 
 The existing NPC declaration is `content/npcs/definitions/npcs-01000-01281.json`,
-record257, `oteryn:npc.yselda/definition-r1`. Its exact BR page binding is52101.
+identity `oteryn:npc.yselda/definition-r1` (record257 at commit68d9ff751). Its exact BR page binding is52101.
 The retained capture is
 `imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json`, page Yselda,
 revision353837, source SHA256
