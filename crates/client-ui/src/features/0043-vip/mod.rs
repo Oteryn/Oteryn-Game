@@ -20,10 +20,20 @@ pub enum Intent {
     Withdraw(u64),
     Status(u64),
     Query(u64),
+    MainCharacter,
+    FriendInvite(String),
+    FriendAccept(u64),
+    FriendRevoke(u64),
+    FriendsQuery(u64),
+    FriendReject(u64),
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct VipPanel {
+    pub account_view: Option<String>,
+    pub account_open: bool,
+    pub account_fields: [String; 2],
+    pub friends_filter: FriendsFilter,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -62,6 +72,47 @@ pub fn request(panel: &mut VipPanel, intent: Intent) -> Option<VipCommand> {
         Intent::Withdraw(n) => (vip::Operation::Withdraw, n, String::new(), 0, false, vec![]),
         Intent::Status(n) => (vip::Operation::Status, n, String::new(), 0, false, vec![]),
         Intent::Query(n) => (vip::Operation::Query, n, String::new(), 0, false, vec![]),
+        Intent::MainCharacter => (
+            vip::Operation::MainCharacter,
+            0,
+            String::new(),
+            0,
+            false,
+            vec![],
+        ),
+        Intent::FriendInvite(text) => (vip::Operation::FriendInvite, 0, text, 0, false, vec![]),
+        Intent::FriendAccept(n) => (
+            vip::Operation::FriendAccept,
+            n,
+            String::new(),
+            0,
+            false,
+            vec![],
+        ),
+        Intent::FriendRevoke(n) => (
+            vip::Operation::FriendRevoke,
+            n,
+            String::new(),
+            0,
+            false,
+            vec![],
+        ),
+        Intent::FriendsQuery(n) => (
+            vip::Operation::FriendsQuery,
+            n,
+            String::new(),
+            0,
+            false,
+            vec![],
+        ),
+        Intent::FriendReject(n) => (
+            vip::Operation::FriendReject,
+            n,
+            String::new(),
+            0,
+            false,
+            vec![],
+        ),
     };
     let command = VipCommand::new(&vip::Request {
         operation,
@@ -75,7 +126,7 @@ pub fn request(panel: &mut VipPanel, intent: Intent) -> Option<VipCommand> {
         panel.pending = true;
         panel.feedback = None;
     } else {
-        panel.feedback = Some("Invalid VIP request".into());
+        panel.feedback = Some(tr!("Invalid VIP request").into());
     }
     command
 }
@@ -84,19 +135,26 @@ pub fn apply_result(panel: &mut VipPanel, response: &VipResponse) {
     panel.pending = false;
     panel.revision = response.result.revision;
     if !response.result.view.is_empty() {
-        panel.view = Some(response.result.view.clone());
+        if serde_json::from_str::<serde_json::Value>(&response.result.view)
+            .ok()
+            .is_some_and(|value| value.get("account_friends").is_some())
+        {
+            panel.account_view = Some(response.result.view.clone());
+        } else {
+            panel.view = Some(response.result.view.clone());
+        }
     }
     panel.feedback = (response.result.code != 1).then(|| {
         match response.result.code {
-            2 => "Unknown character name",
-            3 => "Character is already listed",
-            4 => "VIP list is full",
-            5 => "VIP group limit reached",
-            6 => "That group name is taken",
-            7 => "VIP entry was not found",
-            8 => "VIP request rate limited",
-            9 => "VIP service unavailable",
-            _ => "VIP request rejected",
+            2 => tr!("Unknown character name"),
+            3 => tr!("Character is already listed"),
+            4 => tr!("VIP list is full"),
+            5 => tr!("VIP group limit reached"),
+            6 => tr!("That group name is taken"),
+            7 => tr!("VIP entry was not found"),
+            8 => tr!("VIP request rate limited"),
+            9 => tr!("VIP service unavailable"),
+            _ => tr!("VIP request rejected"),
         }
         .to_owned()
     });
@@ -105,12 +163,12 @@ pub fn apply_result(panel: &mut VipPanel, response: &VipResponse) {
 #[must_use]
 pub fn panel_text(panel: &VipPanel) -> String {
     if !panel.selected {
-        return "VIP unavailable in this session".into();
+        return tr!("VIP unavailable in this session").into();
     }
     let mut text = panel
         .view
         .clone()
-        .unwrap_or_else(|| "Loading VIP list…".into());
+        .unwrap_or_else(|| tr!("Loading VIP list…").into());
     if let Some(feedback) = &panel.feedback {
         text.push_str("\r\n");
         text.push_str(feedback);
@@ -174,6 +232,58 @@ mod tests {
         assert!(panel_text(&panel).contains("VIP list is full"));
         assert_eq!(panel.revision, 3);
     }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum FriendsFilter {
+    #[default]
+    All,
+    Confirmed,
+    Invitations,
+}
+/// Account/world consent view from the existing VIP owner, without inferring main characters.
+pub fn friends_text(panel: &VipPanel) -> String {
+    if !panel.selected {
+        return tr!("Friends unavailable in this session").into();
+    }
+    let Some(raw) = panel.view.as_deref() else {
+        return tr!("Loading Friends…").into();
+    };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(raw) else {
+        return tr!("Friends reply is invalid; refresh").into();
+    };
+    let mut text = String::from(tr!("Friends and invitations (current page)\r\n"));
+    if panel.friends_filter != FriendsFilter::Invitations {
+        for row in value["entries"].as_array().into_iter().flatten() {
+            let confirmed = row["confirmed"] == true;
+            if panel.friends_filter == FriendsFilter::Confirmed && !confirmed {
+                continue;
+            }
+            if let Some(name) = row["name"].as_str() {
+                text.push_str(&format!(
+                    "{name} — {}\r\n",
+                    if confirmed {
+                        "friend"
+                    } else {
+                        tr!("invitation sent")
+                    }
+                ));
+            }
+        }
+    }
+    if panel.friends_filter != FriendsFilter::Confirmed {
+        for row in value["consents"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|row| row["accepted"] != true)
+        {
+            if let Some(name) = row["name"].as_str() {
+                text.push_str(&lfmt!("{name} — invitation received\r\n", name = name));
+            }
+        }
+    }
+    text
 }
 
 #[cfg(test)]

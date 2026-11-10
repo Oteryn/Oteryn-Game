@@ -5,6 +5,7 @@ pub use oteryn_client_runtime::combat::{CombatCommand, CombatReport, run_combat}
 /// What the shell asks of the session task.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayCommand {
+    HudStamina,
     BrowseFieldMove(oteryn_session::ItemMoveIntent),
     Depot(oteryn_session::DepotIntent),
     DepotContainer(oteryn_session::ItemHandle),
@@ -17,10 +18,16 @@ pub enum PlayCommand {
     LoyaltySkills(Vec<u8>),
     Wheel(oteryn_client_runtime::wheel_allocation::WheelCommand),
     Feature(oteryn_client_runtime::raw_feature::FeatureCommand),
+    SupportDelivery(
+        oteryn_client_runtime::raw_feature::FeatureCommand,
+        std::path::PathBuf,
+    ),
     ServerMechanic(oteryn_client_runtime::server_mechanic::ServerMechanicCommand),
     Step(StepDir),
     TargetWalk(oteryn_session::ActorPosition),
+    MoveContainerContents(Vec<oteryn_client_runtime::inventory::MoveRequest>),
     MoveItem(oteryn_client_runtime::inventory::MoveRequest),
+    MoveContents(Vec<oteryn_client_runtime::inventory::MoveRequest>),
     ContainerView(oteryn_client_runtime::container_tree::ContainerViewIntent),
     WorldContext(oteryn_client_runtime::world_interaction::Command),
     Combat(CombatCommand),

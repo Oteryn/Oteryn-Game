@@ -49,6 +49,8 @@ pub mod player_report;
 #[path = "features/0039-timed-item/protocol.rs"]
 pub mod timed_item;
 
+pub use oteryn_session::property_services::support_intake;
+
 /// Cast wire values pass through the session boundary.
 pub use oteryn_session::cast;
 pub use oteryn_session::cast_chat::decode_line as decode_cast_caster_line;
@@ -207,6 +209,7 @@ pub use oteryn_session::animus_mastery;
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 
+pub use oteryn_session::action_bar_cooldowns;
 pub use oteryn_session::battle_instinct_status;
 pub use oteryn_session::condition_status;
 pub use oteryn_session::death_protection;
@@ -215,9 +218,11 @@ pub use oteryn_session::loyalty_skills;
 pub use oteryn_session::mechanics_status;
 pub use oteryn_session::party_effects;
 pub use oteryn_session::potion_durations;
+pub use oteryn_session::premium_overview;
 pub use oteryn_session::rest_status;
 pub use oteryn_session::skill_display;
 pub use oteryn_session::skill_progress;
+pub use oteryn_session::weapon_proficiency_state;
 
 #[path = "features/0117-boss-encounter/protocol.rs"]
 pub mod boss_encounter;
@@ -297,9 +302,16 @@ pub mod stash;
 #[path = "features/0081-npc-shop/protocol.rs"]
 pub mod npc_shop;
 
+/// Optional current Forge candidates and advisory pair quotes.
+#[path = "features/0152-item-forge/protocol.rs"]
+pub mod forge_preview;
+
 /// Imbuement commands executed through the admitted session.
 #[path = "features/0068-imbue/protocol.rs"]
 pub mod imbue;
+/// Optional material quotes for the existing shrine panel.
+#[path = "features/0447-imbuement-details/protocol.rs"]
+pub mod imbuement_details;
 
 /// VIP list, groups and consent commands.
 #[path = "features/0043-vip/protocol.rs"]
@@ -326,8 +338,20 @@ pub mod chat_private_channel;
 pub mod chat_public_channels;
 /// Protocol codecs consumed by the native controls for the CUI-3 feature set.
 pub mod cui3 {
+    pub use oteryn_session::property_services::house_podium;
     pub use oteryn_session::{
-        browse_field, container_tree, daily_boost, depot_search, hotkey_equip, item_forge,
-        item_view, store,
+        battle_metadata, browse_field, container_tree, daily_boost, depot_search, hotkey_equip,
+        item_forge, item_view, store,
     };
 }
+
+/// Optional server-executed Gem modifier presentation.
+pub use oteryn_session::gem_presentation;
+
+/// Optional authoritative Wheel graph and advisory draft preview.
+pub use oteryn_session::wheel_presentation;
+#[path = "features/0450-server-modal/protocol.rs"]
+pub mod server_modal;
+
+pub use oteryn_session::coin_market;
+pub use oteryn_session::coin_transfer;

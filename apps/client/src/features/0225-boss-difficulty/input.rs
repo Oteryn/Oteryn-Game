@@ -9,7 +9,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Feature(command)).is_err()
         {
             mailbox.boss_difficulty.pending = false;
-            mailbox.boss_difficulty.feedback = Some("The session has ended");
+            mailbox.boss_difficulty.feedback = Some(tr!("The session has ended"));
         }
     }
     pub fn boss_difficulty_input(&self, events: &[NormalizedInputEvent]) -> bool {

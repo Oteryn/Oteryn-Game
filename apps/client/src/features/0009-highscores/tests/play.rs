@@ -41,19 +41,47 @@ impl Stepper for HighscoresPeer {
         let query = wire::decode_highscores_query(&command.payload)
             .map_err(|_| SessionError::SessionUnusable)?;
         let result = wire::HighscoresResult {
+            world: query.details.then_some(
+                query.world.unwrap_or(
+                    wire::WorldId::decode(&[
+                        1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 1,
+                    ])
+                    .map_err(|_| SessionError::SessionUnusable)?,
+                ),
+            ),
+            own_page: (query.world.is_none() && query.details).then_some(2),
             category: query.category,
             snapshot_id: 4,
             computed_at: 123,
             page: query.page,
             has_more: false,
             rows: vec![wire::HighscoreRow {
-                rank: 7,
-                name: "Ada Knight".into(),
+                rank: if query.world.is_none() && query.page == 2 {
+                    1500
+                } else {
+                    7
+                },
+                name: if query.world.is_none() && query.page == 2 {
+                    "Me"
+                } else {
+                    "Ada Knight"
+                }
+                .into(),
                 vocation: "knight".into(),
                 level: 90,
-                value: 123456,
+                value: if query.world.is_none() && query.page == 2 {
+                    100
+                } else {
+                    123456
+                },
             }],
-            own_row: None,
+            own_row: query.world.is_none().then_some(wire::HighscoreRow {
+                rank: 1500,
+                name: "Me".into(),
+                vocation: "knight".into(),
+                level: 90,
+                value: 100,
+            }),
         };
         Ok(ServerMechanicResponse {
             command_id: 1,
@@ -112,6 +140,48 @@ fn scenario() -> Result<(), String> {
             .as_ref()
             .is_some_and(|r| r.category == 2)
     })?;
+    link.highscores_request(Action::ShowMe);
+    wait(&|| {
+        link.highscores_panel()
+            .reply
+            .as_ref()
+            .is_some_and(|r| r.page == 2)
+    })?;
+    assert_eq!(
+        link.highscores_panel()
+            .reply
+            .as_ref()
+            .map(|r| r.snapshot_id),
+        Some(4)
+    );
+    assert!(link.highscores_panel().reply.as_ref().is_some_and(|reply| {
+        reply
+            .rows
+            .iter()
+            .any(|row| row.name == "Me" && row.rank == 1500)
+    }));
+    let other = highscores::parse_world("5a020304-0506-7008-800a-0b0c0d0e0f5a")
+        .flatten()
+        .ok_or("foreign world")?;
+    link.highscores_request(Action::World(Some(other)));
+    wait(&|| {
+        link.highscores_panel()
+            .reply
+            .as_ref()
+            .is_some_and(|r| r.world == Some(other))
+    })?;
+    assert_eq!(
+        link.highscores_panel().reply.as_ref().map(|r| r.page),
+        Some(1)
+    );
+    assert!(
+        link.highscores_panel()
+            .reply
+            .as_ref()
+            .is_some_and(|r| r.own_row.is_none() && r.own_page.is_none())
+    );
+    link.highscores_request(Action::World(None));
+    wait(&|| link.highscores_panel().world.is_none() && !link.highscores_panel().pending)?;
     // docs/reference/tibia-manual/combat.md:262: native filters use the existing highscore wire for both Drome lists.
     for (category, label) in [
         (14, "Tibiadrome lifetime"),
@@ -132,5 +202,51 @@ fn scenario() -> Result<(), String> {
     }
     drop(link);
     runtime.shutdown(Duration::from_millis(250));
+    Ok(())
+}
+
+#[test]
+fn phosphorus_record_category_uses_real_play_queue_and_displays_victory() -> Result<(), String> {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.highscores_initialize(true);
+    link.highscores_request(Action::Filter {
+        category: 16,
+        vocation: 0,
+    });
+    let Ok(crate::combat_input::PlayCommand::ServerMechanic(command)) = commands.try_recv() else {
+        return Err("missing highscore play command".into());
+    };
+    let Some(index) = highscores::category_selection(16) else {
+        return Err("missing Phosphorus combo category".into());
+    };
+    assert_eq!(highscores::CATEGORIES[index], "Phosphorus Record");
+    assert_eq!((command.capability, command.command_type), (9, 14));
+    let query = wire::decode_highscores_query(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(query.category, 16);
+    let result = wire::HighscoresResult {
+        world: None,
+        own_page: None,
+        category: 16,
+        snapshot_id: 1,
+        computed_at: 1,
+        page: 1,
+        has_more: false,
+        rows: vec![wire::HighscoreRow {
+            rank: 1,
+            name: "Victor".into(),
+            vocation: "knight".into(),
+            level: 90,
+            value: 28,
+        }],
+        own_row: None,
+    };
+    outbox.highscores_result(&ServerMechanicResponse {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: wire::encode_highscores_result(&result).map_err(|e| format!("{e:?}"))?,
+    });
+    let text = highscores::panel_text(&link.highscores_panel());
+    assert!(text.contains("Phosphorus Record") && text.contains("Victor") && text.contains("28"));
     Ok(())
 }

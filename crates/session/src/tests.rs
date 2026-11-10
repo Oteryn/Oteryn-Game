@@ -315,6 +315,8 @@ include!("session_tests_recovery.rs");
 include!("session_tests_combat_logout.rs");
 include!("session_tests_vitals.rs");
 include!("session_tests_capabilities.rs");
+include!("session_tests_market_details.rs");
+include!("session_tests_admission.rs");
 #[path = "property_services/house_transfer_tests.rs"]
 mod pc04_house_transfer;
 include!("session_tests_capability_movement.rs");
@@ -324,6 +326,7 @@ include!("session_tests_entities.rs");
 #[path = "features/0004-item-view-move/tests/e2e_i13.rs"]
 mod e2e_i13;
 include!("session_tests_chat.rs");
+include!("session_tests_chat_messages.rs");
 #[path = "tests/e2e_i14.rs"]
 mod e2e_i14;
 #[path = "tests/e2e_s04b.rs"]
@@ -335,6 +338,12 @@ include!("session_tests_refusal_details.rs");
 include!("session_tests_browse_field.rs");
 
 include!("session_tests_player_trade.rs");
+
+#[path = "tests/gem_presentation_gated.rs"]
+mod gem_presentation_gated;
+
+#[path = "tests/wheel_presentation_gated.rs"]
+mod wheel_presentation_gated;
 
 #[cfg(test)]
 #[path = "e2e_c16d.rs"]

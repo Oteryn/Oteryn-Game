@@ -1,12 +1,15 @@
 //! STORE_V1 bounded client codecs. Commercial authority and account identity stay on Platform.
 
 mod catalogue;
+mod coin_history;
+pub mod cosmetic_tokens;
 mod hireling_purchase;
 mod history;
 mod inbox_claim;
 mod purchase;
 
 pub use catalogue::*;
+pub use coin_history::*;
 pub use hireling_purchase::*;
 pub use history::*;
 pub use inbox_claim::*;
@@ -86,3 +89,5 @@ fn as_uuid(bytes: &[u8]) -> Result<[u8; 16], StoreWireError> {
 #[cfg(test)]
 #[path = "tests.rs"]
 mod tests;
+
+pub mod browse;

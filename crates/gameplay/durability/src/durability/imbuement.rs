@@ -69,7 +69,7 @@ fn uuid_text(bytes: &[u8; 16]) -> String {
     )
 }
 
-/// One stored imbuement slot; `category` is the stored 0-19 category.
+/// One stored imbuement slot; `category` is the stored 0-25 category.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StoredImbuement {
     pub slot: u8,
@@ -94,16 +94,26 @@ async fn read_worn_in_transaction(
     character: CharacterId,
     world: crate::foundation::WorldId,
 ) -> Result<Vec<EquippedImbuement>, DurabilityError> {
-            let rows = sqlx::query(
+    let rows = sqlx::query(
                 "WITH worn AS (SELECT item_instance_id,world_id FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid UNION ALL SELECT item_instance_id,world_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid) SELECT b.item_instance_id::text,b.slot::bigint,b.category::bigint,b.tier::bigint,b.remaining_ms,b.applying_occurrence_id::text FROM worn e JOIN game_item_instances i USING(item_instance_id) JOIN game_item_imbuements b USING(item_instance_id) WHERE i.lifecycle=1 AND i.world_id=encode($2,'hex')::uuid AND e.world_id=i.world_id ORDER BY b.item_instance_id,b.slot LIMIT 31"
             ).bind(character.as_bytes().as_slice()).bind(world.as_bytes().as_slice())
                 .fetch_all(&mut **tx).await?;
-            if rows.len()>30 { return Err(DurabilityError::InvalidStoredState); }
-            let rows = rows.iter().map(|b| Ok(EquippedImbuement {
-                item: decode_uuid(b.try_get(0)?)?, slot: stored(b.try_get(1)?)?,
-                category: stored(b.try_get(2)?)?, tier: stored(b.try_get(3)?)?,
-                remaining_ms: stored(b.try_get(4)?)?, occurrence: decode_uuid(b.try_get(5)?)?,
-            })).collect::<Result<Vec<_>, DurabilityError>>()?;
+    if rows.len() > 30 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let rows = rows
+        .iter()
+        .map(|b| {
+            Ok(EquippedImbuement {
+                item: decode_uuid(b.try_get(0)?)?,
+                slot: stored(b.try_get(1)?)?,
+                category: stored(b.try_get(2)?)?,
+                tier: stored(b.try_get(3)?)?,
+                remaining_ms: stored(b.try_get(4)?)?,
+                occurrence: decode_uuid(b.try_get(5)?)?,
+            })
+        })
+        .collect::<Result<Vec<_>, DurabilityError>>()?;
     Ok(rows)
 }
 
@@ -120,16 +130,28 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &record).await?;
-            if assert_item_only_fence(&mut tx, &fence.item_fence(), &node).await?.is_err() {
-                return Err(DurabilityError::Unavailable);
-            }
-            let rows = read_worn_in_transaction(&mut tx, fence.character_id, fence.runtime_scope.world_id()).await?;
-            super::db::commit_semantic_transaction(tx, deadline).await?;
-            Ok(rows)
-        })).await
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &record).await?;
+                    if assert_item_only_fence(&mut tx, &fence.item_fence(), &node)
+                        .await?
+                        .is_err()
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    let rows = read_worn_in_transaction(
+                        &mut tx,
+                        fence.character_id,
+                        fence.runtime_scope.world_id(),
+                    )
+                    .await?;
+                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(rows)
+                })
+            })
+            .await
     }
 
     /// Read-only House projection. The ordinary Channel checkpoint writer stays closed.
@@ -138,21 +160,39 @@ impl DurabilityRoot {
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
-        origin_channel: [u8;16],
+        origin_channel: [u8; 16],
     ) -> Result<Vec<EquippedImbuement>, DurabilityError> {
-        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &record).await?;
-            super::db::lock_admission_relations(&mut tx).await?;
-            if !super::house_hireling::fence::assert_house_inventory_fence(
-                &mut tx, &node, &fence.item_fence(), origin_channel,
-            ).await? { return Err(DurabilityError::Unavailable); }
-            let rows = read_worn_in_transaction(&mut tx, fence.character_id, fence.runtime_scope.world_id()).await?;
-            super::db::commit_semantic_transaction(tx, deadline).await?;
-            Ok(rows)
-        })).await
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &record).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    if !super::house_hireling::fence::assert_house_inventory_fence(
+                        &mut tx,
+                        &node,
+                        &fence.item_fence(),
+                        origin_channel,
+                    )
+                    .await?
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    let rows = read_worn_in_transaction(
+                        &mut tx,
+                        fence.character_id,
+                        fence.runtime_scope.world_id(),
+                    )
+                    .await?;
+                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(rows)
+                })
+            })
+            .await
     }
 
     /// Commit one bounded elapsed checkpoint. Its immutable receipt binds every lifetime

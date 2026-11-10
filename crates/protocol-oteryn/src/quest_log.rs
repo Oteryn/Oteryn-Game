@@ -65,9 +65,8 @@ pub const MAX_QUEST_LIST_BYTES: usize = MAX_LISTED_QUESTS * MAX_LIST_ENTRY_ELEME
 pub const MAX_QUEST_LOG_BYTES: usize = (1 + MAX_TRACKED_QUESTS) * MAX_QUEST_LINE_ELEMENT_BYTES;
 /// `QuestLogQueryV1`: the largest query, `track` 1 + 1 + 10 x (1 + 5).
 pub const MAX_QUEST_LOG_QUERY_BYTES: usize = 2 + MAX_TRACKED_QUESTS * 6;
-/// Command type 22 has no result payload: an accepted query is followed by its domain 16 delta,
-/// and a refused one is `REJECTED`.
-pub const MAX_QUEST_LOG_QUERY_RESULT_BYTES: usize = 0;
+/// ListOnly returns a list-only QuestLog; original queries retain empty results.
+pub const MAX_QUEST_LOG_QUERY_RESULT_BYTES: usize = MAX_QUEST_LIST_BYTES + 4;
 
 /// `QuestListEntryV1`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -117,6 +116,8 @@ pub struct QuestLog {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum QuestLogQuery {
     List,
+    /// Read the list without changing the active view, tracking or domain revision.
+    ListOnly,
     Quest {
         quest_index: u32,
     },
@@ -379,6 +380,7 @@ pub fn encode_quest_log_query(query: &QuestLogQuery) -> WireResult<Vec<u8>> {
     let mut output = Vec::with_capacity(MAX_QUEST_LOG_QUERY_BYTES);
     match query {
         QuestLogQuery::List => push_message_field(&mut output, 1, &[]),
+        QuestLogQuery::ListOnly => push_message_field(&mut output, 4, &[]),
         QuestLogQuery::Quest { quest_index } => {
             let mut body = Vec::with_capacity(6);
             push_nonzero_varint_field(&mut body, 1, u64::from(*quest_index));
@@ -425,12 +427,13 @@ pub fn decode_quest_log_query(payload: &[u8]) -> WireResult<QuestLogQuery> {
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let body = match key {
-            0x0a | 0x12 | 0x1a => read_bytes(payload, &mut cursor)?,
+            0x0a | 0x12 | 0x1a | 0x22 => read_bytes(payload, &mut cursor)?,
             _ => return malformed(),
         };
         let decoded = match key {
             0x0a if body.is_empty() => QuestLogQuery::List,
-            0x0a => return malformed(),
+            0x22 if body.is_empty() => QuestLogQuery::ListOnly,
+            0x0a | 0x22 => return malformed(),
             0x12 => {
                 let mut inner = 0;
                 let mut index = None;

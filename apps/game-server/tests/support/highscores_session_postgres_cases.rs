@@ -75,6 +75,8 @@ fn committed_fresh_session_reads_its_world_highscores_through_the_session_handle
                     .find(|snapshot| snapshot.category == 1)
                     .ok_or("experience snapshot was not published")?;
                 let query = || HighscoresQuery {
+                    world: None,
+                    details: false,
                     category: 1,
                     vocation: 0,
                     page: 1,

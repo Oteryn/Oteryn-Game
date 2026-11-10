@@ -112,16 +112,19 @@ pub const BOSS_POINTS_CATEGORY: u8 = 12;
 /// docs/reference/tibia-manual/combat.md:262: cumulative levels and the current two-week rotation.
 pub const TIBIADROME_LIFETIME_CATEGORY: u8 = 14;
 pub const TIBIADROME_ROTATION_CATEGORY: u8 = 17;
+pub const PHOSPHORUS_RECORD_CATEGORY: u8 = 16;
 const DROME_ROTATION_MS: i64 = super::tibiadrome::ROTATION_SECONDS as i64 * 1000;
 
-/// Categories 1-10, 12, 14 and 17 are always served; category 11 requires an activated Charm point
+/// Categories 1-10, 12, 14, 16 and 17 are always served; category 11 requires an activated Charm point
 /// source.
 pub fn served_category(category: u8) -> bool {
     (1..=10).contains(&category)
         || category == BOSS_POINTS_CATEGORY
         || matches!(
             category,
-            TIBIADROME_LIFETIME_CATEGORY | TIBIADROME_ROTATION_CATEGORY
+            TIBIADROME_LIFETIME_CATEGORY
+                | PHOSPHORUS_RECORD_CATEGORY
+                | TIBIADROME_ROTATION_CATEGORY
         )
         || (category == 11 && activated_charm_points().is_some())
 }
@@ -165,7 +168,7 @@ impl SnapshotCatalogues {
         })
     }
 
-    /// The categories one publication writes: 1..=10, 12, 14 and 17, plus 11 with a Charm source.
+    /// The categories one publication writes: 1..=10, 12, 14, 16 and 17, plus 11 with a Charm source.
     fn published_categories(&self) -> Vec<i32> {
         let mut categories: Vec<i32> = (1..=10).collect();
         if self.charm_points {
@@ -174,6 +177,7 @@ impl SnapshotCatalogues {
         categories.extend([
             i32::from(BOSS_POINTS_CATEGORY),
             i32::from(TIBIADROME_LIFETIME_CATEGORY),
+            i32::from(PHOSPHORUS_RECORD_CATEGORY),
             i32::from(TIBIADROME_ROTATION_CATEGORY),
         ]);
         categories
@@ -243,6 +247,7 @@ pub struct SnapshotRow {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SnapshotPage {
+    pub own_page: Option<u32>,
     pub snapshot: SnapshotInfo,
     pub page: u32,
     pub has_more: bool,
@@ -350,7 +355,9 @@ impl DurabilityRoot {
         if !(1..=12).contains(&category)
             && !matches!(
                 category,
-                TIBIADROME_LIFETIME_CATEGORY | TIBIADROME_ROTATION_CATEGORY
+                TIBIADROME_LIFETIME_CATEGORY
+                    | PHOSPHORUS_RECORD_CATEGORY
+                    | TIBIADROME_ROTATION_CATEGORY
             )
         {
             return Err(SnapshotError::NotSupported);
@@ -640,6 +647,44 @@ async fn read_boss_points(
     Ok(bosses)
 }
 
+/// Only victorious characters enter the Phosphorus Record; no zero-score rows.
+async fn read_phosphorus(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    limits: CutLimits,
+) -> Result<Vec<Source>> {
+    let mut sources = Vec::new();
+    let mut after: Option<String> = None;
+    loop {
+        let wanted = limits.next_page(sources.len())?;
+        let rows = sqlx::query("SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation,max(d.highest_defeated)::bigint AS highest FROM game_character_roots r JOIN game_character_boss_difficulty_records d USING(character_id) JOIN game_boss_room_catalogue c ON c.boss_key=d.boss_key LEFT JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND NOT game_account_closure_detached(r.character_id) AND (c.boss_key='oteryn:boss.phosphorus' OR c.boss_creature_key='oteryn:creature.phosphorus') AND ($2::text IS NULL OR r.character_id>$2::text::uuid) GROUP BY r.character_id,r.name,p.level,b.vocation ORDER BY r.character_id LIMIT $3")
+            .bind(world.as_bytes().as_slice()).bind(after.as_deref()).bind(wanted).fetch_all(&mut **tx).await?;
+        let fetched = rows.len();
+        for row in rows {
+            let level = u32::try_from(nonnegative(&row, "level")?).map_err(|_| corrupt())?;
+            if level == 0 {
+                return Err(corrupt());
+            }
+            let mut values = [(0, 0); 9];
+            values[0] = (nonnegative(&row, "highest")?, 0);
+            sources.push(Source {
+                character_id: character(&row)?,
+                name: row.try_get("name")?,
+                vocation: row.try_get("vocation")?,
+                level,
+                values,
+            });
+        }
+        limits.admit(sources.len())?;
+        if i64::try_from(fetched).map_err(|_| corrupt())? < wanted {
+            return Ok(sources);
+        }
+        after = sources
+            .last()
+            .map(|last| uuid_hex(last.character_id.as_bytes()));
+    }
+}
+
 /// HIGHSCORES0 §5's vocation-none exclusion belongs to classic categories 1-9/11.
 /// docs/reference/tibia-manual/combat.md:252,262: the Drome's positive score is its
 /// qualification; current level/vocation are presentation, not new entry prerequisites.
@@ -882,6 +927,7 @@ async fn publish_cut(
     let bosses = read_boss_points(tx, &source, limits).await?;
     let drome_characters = read_tibiadrome_characters(tx, world, limits, computed_at_ms).await?;
     let drome = read_tibiadrome(tx, world, &drome_characters, limits, computed_at_ms).await?;
+    let phosphorus = read_phosphorus(tx, world, limits).await?;
     let mut published = Vec::new();
     for (index, head) in heads.into_iter().enumerate() {
         let category = u8::try_from(head.try_get::<i32, _>("category")?).map_err(|_| corrupt())?;
@@ -894,6 +940,7 @@ async fn publish_cut(
             10 => materialize(&extra[0], 0)?,
             11 => materialize(&extra[1], 0)?,
             BOSS_POINTS_CATEGORY => materialize(&bosses, 0)?,
+            PHOSPHORUS_RECORD_CATEGORY => materialize(&phosphorus, 0)?,
             TIBIADROME_LIFETIME_CATEGORY => materialize(&drome[0], 0)?,
             TIBIADROME_ROTATION_CATEGORY => materialize_ordered(&drome[1], 0, true)?,
             _ => return Err(corrupt()),
@@ -985,17 +1032,29 @@ async fn read_in_transaction(
     // it never reranks or fills gaps in a retained snapshot, or changes other categories.
     let drome = matches!(
         category,
-        TIBIADROME_LIFETIME_CATEGORY | TIBIADROME_ROTATION_CATEGORY
+        TIBIADROME_LIFETIME_CATEGORY | PHOSPHORUS_RECORD_CATEGORY | TIBIADROME_ROTATION_CATEGORY
     );
     let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows hs WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND (NOT $5::boolean OR EXISTS(SELECT 1 FROM game_character_roots live WHERE live.character_id=hs.character_id AND live.lifecycle=1)) AND position>$3 AND position<=$4 ORDER BY position LIMIT 50")
         .bind(id).bind(filter).bind(start).bind(end).bind(drome).fetch_all(&mut **tx).await?
         .into_iter().map(stored_row).collect::<Result<Vec<_>>>()?;
     let has_more = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_highscore_rows hs WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM game_character_roots live WHERE live.character_id=hs.character_id AND live.lifecycle=1)) AND position>$3)")
         .bind(id).bind(filter).bind(end).bind(drome).fetch_one(&mut **tx).await?;
-    let own_row = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows hs WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM game_character_roots live WHERE live.character_id=hs.character_id AND live.lifecycle=1)) AND character_id=encode($3,'hex')::uuid")
+    let own = sqlx::query("SELECT position,uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows hs WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM game_character_roots live WHERE live.character_id=hs.character_id AND live.lifecycle=1)) AND character_id=encode($3,'hex')::uuid")
         .bind(id).bind(filter).bind(character.as_bytes().as_slice()).bind(drome).fetch_optional(&mut **tx).await?
-        .map(stored_row).transpose()?;
+        ;
+    let own_page = own
+        .as_ref()
+        .map(|row| {
+            let position: i32 = row.try_get("position")?;
+            if !(1..=1000).contains(&position) {
+                return Err(corrupt());
+            }
+            Ok((position as u32 - 1) / PAGE_ROWS as u32 + 1)
+        })
+        .transpose()?;
+    let own_row = own.map(stored_row).transpose()?;
     Ok(SnapshotPage {
+        own_page,
         snapshot,
         page,
         has_more,
@@ -1038,7 +1097,7 @@ mod category_set_tests {
         assert!(!served_category(15));
         assert!(served_category(17));
         assert!(!served_category(18));
-        assert!(!served_category(16));
+        assert!(served_category(16));
         assert_eq!(BOSS_POINTS_CATEGORY, 12);
     }
 }

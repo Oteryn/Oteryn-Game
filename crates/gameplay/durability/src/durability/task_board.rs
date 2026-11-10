@@ -21,7 +21,12 @@ mod expansion;
 mod fee;
 mod mint;
 mod progression;
+mod soulseal_catalogue;
+mod soulseal_debit;
 mod state;
+pub(crate) use soulseal_catalogue::soulseal_fight;
+pub use soulseal_catalogue::{SoulsealFight, soulseal_fights};
+pub(crate) use soulseal_debit::spend_soulseals_in_transaction;
 mod talisman;
 mod writer;
 pub use entitlements::read_promotion_points_in_transaction;
@@ -101,7 +106,7 @@ pub struct TaskBoardCommit {
 
 /// State is constrained by the donor's maximum nine kill/nine delivery slots and
 /// bounded five-entry lists; this byte cap also rejects malformed persisted JSON.
-pub const MAX_TASK_BOARD_STATE_BYTES: usize = 65_536;
+pub const MAX_TASK_BOARD_STATE_BYTES: usize = 1_048_576;
 pub const MAX_TASK_BOARD_PAYLOAD_BYTES: usize = 1_024;
 pub const SOULSEALS: &str = "oteryn:taskboard/weekly/soulseals";
 pub const BOARD_REVISION: &str = "oteryn:taskboard/weekly/board-revision";

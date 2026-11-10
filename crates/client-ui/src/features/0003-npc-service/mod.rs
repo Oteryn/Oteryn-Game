@@ -46,7 +46,7 @@ impl DialoguePanel {
     pub fn result(&mut self, result: NpcIntentDisposition) {
         self.pending = false;
         if result != NpcIntentDisposition::Ok {
-            self.feedback = Some(format!("Talk refused: {result:?}"));
+            self.feedback = Some(lfmt!("Talk refused: {result:?}", result = result));
             if matches!(
                 result,
                 NpcIntentDisposition::NotInRange

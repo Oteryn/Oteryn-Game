@@ -31,6 +31,7 @@ pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<Offere
 /// One decoded command of capability 150.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Request {
+    Preview(wire::preview::Request),
     Query([u8; 16]),
     Set(wire::SetRequest),
     Projection([u8; 16]),
@@ -39,6 +40,9 @@ pub enum Request {
 impl Request {
     pub fn decode(command_type: u32, payload: &[u8]) -> Option<Self> {
         match command_type {
+            wire::preview::COMMAND_PREVIEW => {
+                wire::preview::Request::decode(payload).map(Self::Preview)
+            }
             wire::COMMAND_QUERY => wire::decode_item(payload).map(Self::Query),
             wire::COMMAND_SET => wire::SetRequest::decode(payload).map(Self::Set),
             wire::COMMAND_PROJECTION => wire::decode_item(payload).map(Self::Projection),
@@ -171,6 +175,46 @@ pub(super) async fn execute(
     }
     let fence = admitted.item_fence?;
     let actor = admitted.runtime_actor?;
+    if let Request::Preview(query) = &request {
+        let runtime = owner.runtime.lock().await;
+        if !super::battle_instinct_status::actor_is_current(&runtime, admitted) {
+            return None;
+        }
+        drop(runtime);
+        let gameplay = owner.active_generation?.native_gameplay()?;
+        let artwork = match query.display_kind {
+            1 => gameplay.cosmetics().and_then(|cosmetics| {
+                Some(wire::preview::Artwork {
+                    object: false,
+                    direction: query.direction,
+                    looks: [
+                        cosmetics.look_type(&query.key, Sex::Male)?,
+                        cosmetics.look_type(&query.key, Sex::Female)?,
+                    ],
+                })
+            }),
+            2 => gameplay
+                .cosmetics()
+                .and_then(|cosmetics| cosmetics.mount_metadata(&query.key))
+                .map(|(look, _, _)| wire::preview::Artwork {
+                    object: false,
+                    direction: query.direction,
+                    looks: [look; 2],
+                }),
+            3 => gameplay
+                .policies()
+                .policies()
+                .iter()
+                .find(|policy| policy.definition_key == query.key)
+                .map(|policy| wire::preview::Artwork {
+                    object: policy.object_look_type.is_some(),
+                    direction: query.direction,
+                    looks: [policy.object_look_type.unwrap_or(policy.outfit_look_type); 2],
+                }),
+            _ => None,
+        };
+        return wire::preview::Artwork::encode(artwork.filter(|value| !value.looks.contains(&0)));
+    }
     let house = {
         let runtime = owner.runtime.lock().await;
         runtime
@@ -180,6 +224,7 @@ pub(super) async fn execute(
     };
     let house = HouseId::new(admitted.world_id, &house)?;
     let item = match request {
+        Request::Preview(_) => return None,
         Request::Query(item) | Request::Projection(item) => item,
         Request::Set(set) => {
             let gameplay = owner.active_generation?.native_gameplay()?;

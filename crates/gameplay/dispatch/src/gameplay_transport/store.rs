@@ -2,6 +2,10 @@
 //! purchase the Platform debits and the native Inbox mint delivers. Platform owns the balance,
 //! the debit and the order ledger; Game retains only the request binding and its answer
 //! (`store_purchase_requests`) and the delivery receipt of each operation.
+#[path = "store/cosmetic_tokens.rs"]
+mod cosmetic_tokens;
+#[path = "store/coin_history.rs"]
+mod coin_history;
 use super::connection::AdmittedSession;
 use super::item_ref_admission::{generation_item_facts,generation_inbox_item_facts};
 use super::{ComposedFreshAdmission, FreshAdmissionStore};
@@ -20,6 +24,8 @@ use std::sync::{Arc, LazyLock};
 
 #[path = "store/catalogue.rs"]
 mod catalogue;
+#[path = "store/browse.rs"]
+mod browse;
 #[path = "store/prey_retry.rs"]
 mod prey_retry;
 #[path = "store/hireling.rs"]
@@ -68,6 +74,9 @@ pub fn with_store_offer(
             requires: &[wire::CAPABILITY_STORE_V1],
         });
     }
+    if !set.iter().any(|row| row.id == wire::cosmetic_tokens::CAPABILITY) {
+        set.push(super::capabilities::OfferedCapability { id: wire::cosmetic_tokens::CAPABILITY, requires: &[wire::CAPABILITY_STORE_V1] });
+    }
     set.sort_by_key(|row| row.id);
     let set: Set = Box::leak(set.into_boxed_slice());
     cache.push((base, set));
@@ -98,8 +107,10 @@ static HIRELING_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(||
     RuntimeCatalogue::from_json(include_bytes!("../../../../../rulesets/economy/store/hirelings.json"))
 });
 
+static COSMETIC_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(|| RuntimeCatalogue::from_json(crate::content::store_cosmetics::DOCUMENT));
+
 fn catalogue_for_key(key: &str)->Option<&'static RuntimeCatalogue> {
-    if key.starts_with("store:hireling:") {HIRELING_CATALOGUE.as_ref()} else {CATALOGUE.as_ref()}
+    if crate::content::store_cosmetics::offer(key).is_some() {COSMETIC_CATALOGUE.as_ref()} else if key.starts_with("store:hireling:") {HIRELING_CATALOGUE.as_ref()} else {CATALOGUE.as_ref()}
 }
 
 macro_rules! authority_methods {
@@ -143,6 +154,22 @@ pub(super) async fn execute(
     payload: &[u8],
 ) -> (CommandStatus, Vec<u8>) {
     let encoded = match command_type {
+        wire::cosmetic_tokens::BALANCE => {
+            if !payload.is_empty() || !admitted.continuity.selected_capabilities.contains(wire::cosmetic_tokens::CAPABILITY) { return REJECTED; }
+            let Some(fence) = gameplay_fence(owner, admitted).await else { return REJECTED; };
+            let Ok(balance) = owner.root.read_cosmetic_token_balance(owner.character, owner.holder, fence).await else { return REJECTED; };
+            Ok(balance.to_le_bytes().to_vec())
+        }
+        wire::cosmetic_tokens::PURCHASE => {
+            if !admitted.continuity.selected_capabilities.contains(wire::cosmetic_tokens::CAPABILITY) { return REJECTED; }
+            let Some(result) = cosmetic_tokens::purchase(owner, admitted, payload).await else { return REJECTED; };
+            wire::encode_purchase_result(&result)
+        }
+        wire::browse::COMMAND_TYPE => {
+            let Ok(query)=wire::browse::Query::decode(payload) else {return REJECTED;};
+            let Some(page)=browse::execute(owner,admitted,&query).await else {return REJECTED;};
+            page.encode()
+        }
         wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE => {
             let Ok(request) = wire::decode_catalogue_request(payload) else {
                 return REJECTED;
@@ -150,7 +177,7 @@ pub(super) async fn execute(
             let catalogue=if matches!(request.category.as_str(),"houses.hirelings"|"houses.hireling-dresses") {
                 if !admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1) {return REJECTED}
                 HIRELING_CATALOGUE.as_ref()
-            } else {CATALOGUE.as_ref()};
+            } else if wire::cosmetic_tokens::eligible(&request.category) {COSMETIC_CATALOGUE.as_ref()} else {CATALOGUE.as_ref()};
             let Some(catalogue)=catalogue else {return REJECTED};
             let Some(page) = catalogue_page(owner, admitted, catalogue, &request).await else {
                 return REJECTED;
@@ -167,6 +194,14 @@ pub(super) async fn execute(
                 return REJECTED;
             };
             wire::encode_purchase_result(&result)
+        }
+        wire::COMMAND_TYPE_STORE_HISTORY_PAGE => {
+            let Ok(request) = wire::decode_coin_history_request(payload) else { return REJECTED; };
+            let Some(account) = admitted.controller.map(|controller| controller.account_id) else { return REJECTED; };
+            let Some(platform) = owner.store.as_ref() else { return REJECTED; };
+            let mut client = platform.lock().await;
+            let Some(page) = coin_history::page(&mut client, &uuid_text(&account), &request).await else { return REJECTED; };
+            wire::encode_coin_history_page(&page)
         }
         wire::COMMAND_TYPE_STORE_PURCHASE_HISTORY_PAGE => {
             if !admitted
@@ -372,6 +407,11 @@ async fn purchase_retained_or_new(
     {
         return Some(result);
     }
+    let cosmetic = crate::content::store_cosmetics::offer(&request.offer_key);
+    if let Some(offer) = cosmetic {
+        let native = owner.active_generation?.native_gameplay()?.cosmetics()?;
+        if !crate::content::store_cosmetics::compatible(native, offer) { return Some(refusal(wire::StorePurchaseCode::OfferUnavailable)); }
+    }
     let hireling_action=if let Some(offer)=catalogue.hireling(&request.offer_key) {
         if !admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1) {return None}
         let Some(action)=hireling::action(offer,customization.as_ref()) else {return Some(refusal(wire::StorePurchaseCode::OfferUnavailable))};
@@ -433,7 +473,10 @@ async fn purchase_retained_or_new(
     let saved = match request_state {
         PurchaseRequestState::Answered(saved) => saved,
         PurchaseRequestState::Sent => {
-            let reserved = if prey_expansion {
+            let reserved = if cosmetic.is_some() {
+                let fence = gameplay_fence(owner, admitted).await?;
+                owner.root.reserve_store_cosmetic(owner.character, owner.holder, fence, journal.clone(), request.offer_key.clone()).await.ok()?
+            } else if prey_expansion {
                 let fence = gameplay_fence(owner, admitted).await?;
                 owner.root.reserve_prey_expansion_purchase(
                     owner.character, owner.holder, fence, journal.clone()
@@ -483,7 +526,9 @@ async fn purchase_retained_or_new(
     let answer: RetainedAnswer = serde_json::from_slice(&saved).ok()?;
     let code = answer.code()?;
     if code != wire::StorePurchaseCode::Accepted {
-        if prey_expansion {
+        if cosmetic.is_some() {
+            owner.root.release_store_cosmetic(journal).await.ok()?;
+        } else if prey_expansion {
             owner.root.release_refused_prey_expansion_purchase(owner.character, journal).await.ok()?;
         } else if charm_expansion {
             owner.root.release_refused_charm_expansion_purchase(owner.character, journal).await.ok()?;
@@ -565,7 +610,14 @@ async fn deliver(
             let fence = gameplay_fence(owner, admitted).await?;
             owner.root.grant_charm_expansion(owner.character, owner.holder, fence, operation_id,
                 DeliveryIdentity { account_id: account, character_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone() }).await.ok()?
-        } else { return None };
+        } else {
+            let offer = crate::content::store_cosmetics::offer(&binding.offer_key)?;
+            let native = owner.active_generation?.native_gameplay()?.cosmetics()?;
+            if !crate::content::store_cosmetics::compatible(native, offer) { return None; }
+            let fence = gameplay_fence(owner, admitted).await?;
+            owner.root.grant_store_cosmetic(owner.character, owner.holder, fence, operation_id,
+                DeliveryIdentity { account_id: account, character_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone() }, binding.offer_key.clone()).await.ok()?
+        };
         let bytes = platform.lock().await.delivery_receipt(&intent, &receipt.recovery_generation, &receipt.decided_at).ok()?;
         if platform.lock().await.publish_receipt(&bytes).await.is_ok() {
             let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;

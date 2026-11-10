@@ -53,3 +53,9 @@ with current recovery still required. Handle mappings and receipts are retained
 without expiry in this basic implementation, covering the full command replay window.
 The existing PARTY block writer ends consent in both directions atomically through
 an installed trigger. Removing a block never restores an old invitation or consent.
+
+## Independent account Friends extension (T026)
+
+Operations 13–18 reuse commands 48–50 without changing character VIP consent.
+Their strict shapes, account-level consent, main-character disclosure and replay
+rules are specified in `docs/contracts/ACCOUNT_FRIENDS_T026_PROPOSAL.md`.

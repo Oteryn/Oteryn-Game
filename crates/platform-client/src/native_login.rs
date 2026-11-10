@@ -6,9 +6,13 @@
 //! and `Display`, never logged. This module decodes its own typed Gateway response, so it does not
 //! pass through the directory's forbidden-field filter; nothing else may.
 
+mod account_services;
+pub mod bazaar;
 mod challenge;
+pub mod coin_purchase;
 pub use challenge::{ChallengeProof, LoginChallenge, TokenExchange};
 mod owner_characters;
+pub mod premium;
 pub use owner_characters::{CharacterAvailability, GatewayLogin, OwnerCharacter};
 
 use crate::{PlatformClientConfig, PlatformClientError};
@@ -21,7 +25,7 @@ use std::net::IpAddr;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-/// The only OAuth scope the native client requests (N4-P §2 step 1).
+/// The normal gameplay OAuth scope (N4-P §2 step 1); account services opt in separately.
 pub const NATIVE_LOGIN_SCOPE: &str = "game:ticket";
 /// The Gateway native branch version (N4-P §3.1).
 pub const GATEWAY_PROTOCOL_VERSION: u64 = 2;
@@ -622,6 +626,16 @@ impl NativeLoginClient {
         if body.len() > MAX_LOGIN_REQUEST_BYTES {
             return Err(PlatformClientError::InvalidPayload.into());
         }
+        let mut span = oteryn_error_codes::Span::start(
+            oteryn_error_codes::Level::Info,
+            "platform",
+            "platform_call",
+            None,
+        )
+        .slow_after(crate::PLATFORM_SLOW_OPERATION);
+        span.field("endpoint", "gateway_login");
+        let started = Instant::now();
+        let mut attempts_made = 0_u64;
         let attempts = async {
             loop {
                 if Instant::now() >= ticket.usable_until {
@@ -631,6 +645,7 @@ impl NativeLoginClient {
                 if request_number > MAX_LOGIN_REQUESTS {
                     return Err(NativeLoginError::TicketSpent);
                 }
+                attempts_made = attempts_made.saturating_add(1);
                 let (error, retry_after) =
                     match self.login_once(&endpoint, &body, login.attempt_ref).await {
                         Ok(grant) => return Ok(grant),
@@ -656,7 +671,44 @@ impl NativeLoginClient {
                 tokio::time::sleep(backoff).await;
             }
         };
-        run(cancellation, attempts).await
+        let result = run(cancellation, attempts).await;
+        oteryn_error_codes::metrics::Registry::global()
+            .histogram("platform_call_ms", &[("endpoint", "gateway_login")])
+            .observe(u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX));
+        span.field("attempts", attempts_made);
+        match result {
+            Ok(grant) => {
+                span.set_outcome("ok");
+                span.field("status", 200_u64);
+                Ok(grant)
+            }
+            Err(error) => {
+                span.set_outcome("failed");
+                let code = match error {
+                    NativeLoginError::Platform(platform_error) => {
+                        crate::platform_error_code(platform_error)
+                    }
+                    NativeLoginError::Gateway(code)
+                        if code.progression() != Progression::Retryable =>
+                    {
+                        oteryn_error_codes::ErrorCode::new(
+                            5006,
+                            "PLATFORM_RESPONSE_INVALID",
+                            oteryn_error_codes::Category::InternalUnavailable,
+                            oteryn_error_codes::Progression::Terminal,
+                        )
+                    }
+                    _ => oteryn_error_codes::ErrorCode::new(
+                        5007,
+                        "PLATFORM_UNAVAILABLE",
+                        oteryn_error_codes::Category::DependencyUnavailable,
+                        oteryn_error_codes::Progression::Retryable,
+                    ),
+                };
+                span.set_code(code);
+                Err(error)
+            }
+        }
     }
 
     /// One Gateway request. On failure, returns the error and the server's `Retry-After`.

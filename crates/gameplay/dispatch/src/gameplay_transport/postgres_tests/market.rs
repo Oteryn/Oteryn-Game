@@ -59,27 +59,24 @@ async fn routed_market(
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
     requests: impl IntoIterator<Item = (u64, MarketRequest)>,
 ) -> TestResult<Vec<Vec<u8>>> {
-    let mut input = Vec::new();
-    for (command_id, request) in requests {
-        let payload = encode_request(request).map_err(debug)?;
-        let frame = oteryn_protocol_oteryn::encode_client_command(
-            1,
-            &oteryn_protocol_oteryn::ClientCommandValue {
-                command_id,
-                command_type: COMMAND_TYPE_MARKET,
-                payload: &payload,
-            },
-        )
-        .map_err(debug)?;
-        input.extend(u32::try_from(frame.len())?.to_be_bytes());
-        input.extend(frame);
-    }
+    let requests = requests
+        .into_iter()
+        .map(|(id, request)| Ok((id, encode_request(request).map_err(debug)?)))
+        .collect::<TestResult<Vec<_>>>()?;
+    routed_market_payloads(owner, admitted, requests).await
+}
+async fn market_transport(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    input: &[u8],
+) -> TestResult<(String, Vec<u8>)> {
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    client.write_all(&input).await?;
+    client.write_all(input).await?;
     client.shutdown().await?;
     let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
+    let label = format!("{end:?}");
     let ConnectionEnd::AdmittedThenDisconnected(next) = end else {
         return Err(format!("market connection ended: {end:?}").into());
     };
@@ -87,6 +84,32 @@ async fn routed_market(
     drop(server);
     let mut output = Vec::new();
     client.read_to_end(&mut output).await?;
+    Ok((label, output))
+}
+async fn routed_market_payloads(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    requests: impl IntoIterator<Item = (u64, Vec<u8>)>,
+) -> TestResult<Vec<Vec<u8>>> {
+    let mut input = Vec::new();
+    for (command_id, payload) in requests {
+        let frame = oteryn_protocol_oteryn::encode_client_command(
+            1,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id,
+                command_type: if oteryn_protocol_oteryn::market_details::is_query(&payload) {
+                    oteryn_protocol_oteryn::market_details::COMMAND_TYPE_MARKET_DETAILS
+                } else {
+                    COMMAND_TYPE_MARKET
+                },
+                payload: &payload,
+            },
+        )
+        .map_err(debug)?;
+        input.extend(u32::try_from(frame.len())?.to_be_bytes());
+        input.extend(frame);
+    }
+    let (_, output) = market_transport(owner, admitted, &input).await?;
     let mut cursor = output.as_slice();
     let mut replies = Vec::new();
     while !cursor.is_empty() {
@@ -157,7 +180,7 @@ fn reaudit_market_population() -> TestResult {
     Ok(())
 }
 
-fn scenario(bounds: bool, population: bool) -> TestResult {
+pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "market_settlement", true, false).await?;
@@ -575,6 +598,50 @@ fn scenario(bounds: bool, population: bool) -> TestResult {
             let states: Vec<i16> = sqlx::query_scalar("SELECT state FROM game_market_offers WHERE offer_id IN (game_market_identity(encode($1,'hex')::uuid,'expiry-29'),game_market_identity(encode($1,'hex')::uuid,'expiry-30')) ORDER BY created_at_us")
                 .bind(id(192).as_slice()).fetch_all(&harness.pool).await?;
             assert_eq!(states, [4, 1]);
+            use oteryn_protocol_oteryn::market_details::{self as details, Query, Reply};
+            let before_book = snapshot(&harness).await?;
+            let next_query = admitted.continuity.next_command_id;
+            let replies = routed_market_payloads(
+                &owner,
+                &mut admitted,
+                (0..22)
+                    .map(|page| {
+                        Ok((
+                            next_query + u64::from(page),
+                            details::encode_query(&Query::Book {
+                                definition: reference,
+                                page,
+                            })
+                            .map_err(debug)?,
+                        ))
+                    })
+                    .collect::<TestResult<Vec<_>>>()?,
+            )
+            .await?;
+            let mut counts = [0usize; 2];
+            let mut seen = std::collections::BTreeSet::new();
+            for (page, bytes) in replies.iter().enumerate() {
+                let Reply::Book { rows, has_next, .. } =
+                    details::decode_reply(bytes).map_err(debug)?
+                else {
+                    return Err("dual book reply".into());
+                };
+                assert_eq!(has_next, page < 21);
+                assert_eq!(
+                    rows.iter().filter(|r| r.side == 1).count(),
+                    if page < 21 { 32 } else { 28 }
+                );
+                assert_eq!(
+                    rows.iter().filter(|r| r.side == 2).count(),
+                    if page < 21 { 32 } else { 28 }
+                );
+                for row in rows {
+                    assert!(seen.insert(row.offer));
+                    counts[usize::from(row.side - 1)] += 1;
+                }
+            }
+            assert_eq!(counts, [700, 700]);
+            assert_eq!(before_book, snapshot(&harness).await?);
             drop(owner);
             drop(authority);
             drop(seal);
@@ -667,8 +734,7 @@ fn scenario(bounds: bool, population: bool) -> TestResult {
         }
         assert_eq!(before_unsupported, snapshot(&harness).await?);
 
-        let (end, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
+        let (end, output) = market_transport(&owner, &mut admitted, &input).await?;
         let mut replies = Vec::new();
         let mut deltas = Vec::new();
         let mut cursor = output.as_slice();
@@ -976,6 +1042,236 @@ fn scenario(bounds: bool, population: bool) -> TestResult {
             )
             .await?;
         assert_eq!(history.len(), 2);
+        // T124: real transport + current authority, not a client-side page calculation.
+        use oteryn_protocol_oteryn::market_details::{self as details, Filter, Query, Reply};
+        let before_queries = snapshot(&harness).await?;
+        let next_query = admitted.continuity.next_command_id;
+        let replies = routed_market_payloads(
+            &owner,
+            &mut admitted,
+            [(
+                next_query,
+                details::encode_query(&Query::Statistics {
+                    definition: reference,
+                })
+                .map_err(debug)?,
+            )],
+        )
+        .await?;
+        let Reply::Statistics(stats) =
+            details::decode_reply(replies.first().ok_or("statistics reply")?).map_err(debug)?
+        else {
+            return Err("statistics refused".into());
+        };
+        assert_eq!(
+            (
+                stats.trades,
+                stats.units,
+                stats.minimum,
+                stats.maximum,
+                stats.average
+            ),
+            (1, 4, Some(100), Some(100), Some(100))
+        );
+        assert_eq!(stats.buy.trades, 0);
+        assert_eq!((stats.sell.trades, stats.sell.average), (1, Some(100)));
+        assert_eq!(stats.as_of_us - stats.since_us, 2592000000000);
+        let next_query = admitted.continuity.next_command_id;
+        let replies = routed_market_payloads(
+            &owner,
+            &mut admitted,
+            [(
+                next_query,
+                details::encode_query(&Query::Catalogue {
+                    filter: Filter {
+                        search: "no-such-item-unique-t124".into(),
+                        ..Default::default()
+                    },
+                    page: 0,
+                })
+                .map_err(debug)?,
+            )],
+        )
+        .await?;
+        let Reply::Catalogue {
+            items, categories, ..
+        } = details::decode_reply(replies.first().ok_or("catalogue reply")?).map_err(debug)?
+        else {
+            return Err("catalogue refused".into());
+        };
+        assert!(items.is_empty());
+        assert!(!categories.is_empty());
+        let next_query = admitted.continuity.next_command_id;
+        let replies = routed_market_payloads(
+            &owner,
+            &mut admitted,
+            [(
+                next_query,
+                details::encode_query(&Query::Catalogue {
+                    filter: Filter::default(),
+                    page: 0,
+                })
+                .map_err(debug)?,
+            )],
+        )
+        .await?;
+        let Reply::Catalogue { items, .. } =
+            details::decode_reply(replies.first().ok_or("default catalogue")?).map_err(debug)?
+        else {
+            return Err("default catalogue refused".into());
+        };
+        let first = items
+            .first()
+            .ok_or("active catalogue must enumerate marketable types")?
+            .clone();
+        let filter = Filter {
+            category: first.categories.first().cloned(),
+            vocation: first
+                .vocations
+                .as_ref()
+                .map(|vs| vs.first().copied().unwrap_or(1)),
+            minimum_level: first.level,
+            maximum_level: first.level,
+            forge_class: first.forge_class,
+            depot_only: first.depot_units > 0,
+            ..Default::default()
+        };
+        let next_query = admitted.continuity.next_command_id;
+        let replies = routed_market_payloads(
+            &owner,
+            &mut admitted,
+            [(
+                next_query,
+                details::encode_query(&Query::Catalogue {
+                    filter: filter.clone(),
+                    page: 0,
+                })
+                .map_err(debug)?,
+            )],
+        )
+        .await?;
+        let Reply::Catalogue { items, .. } =
+            details::decode_reply(replies.first().ok_or("filtered catalogue")?).map_err(debug)?
+        else {
+            return Err("filtered catalogue refused".into());
+        };
+        assert!(items.iter().any(|item| item.definition == first.definition));
+        assert!(items.iter().all(|item| filter.matches(item)));
+        let stale = crate::durability::item_transfer::CurrentCharacterItemFence {
+            connection_generation: crate::foundation::ConnectionGeneration::new(99)
+                .map_err(debug)?,
+            ..fence
+        };
+        assert!(
+            harness
+                .root
+                .market_projection(&authority, &harness.node, stale, Some(key.clone()), 0, None)
+                .await
+                .is_err()
+        );
+        assert_eq!(before_queries, snapshot(&harness).await?);
+        // Retained history fixture: a separate completed offer at a different price and
+        // quantity. This is projection data only, never current mutation authority.
+        let mut retained = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *retained)
+            .await?;
+        let prior: String = sqlx::query_scalar(
+            "SELECT transaction_id::text FROM game_market_settlements WHERE kind=2 LIMIT 1",
+        )
+        .fetch_one(&mut *retained)
+        .await?;
+        let extra: String =
+            sqlx::query_scalar("SELECT game_market_identity($1::uuid,'t124-price-sample')::text")
+                .bind(&prior)
+                .fetch_one(&mut *retained)
+                .await?;
+        sqlx::query("INSERT INTO game_market_offers SELECT (jsonb_populate_record(NULL::game_market_offers,to_jsonb(o)||jsonb_build_object('offer_id',game_market_identity(o.offer_id,'t124-price-offer'),'side',1,'piece_price',201,'amount',1,'remaining',0,'state',2,'ended_as',NULL,'ended_at_us',floor(extract(epoch FROM clock_timestamp())*1000000)::bigint,'end_sequence',nextval('game_market_end_sequence'),'inbox_reservation',0,'matching_pending',false))).* FROM game_market_offers o JOIN game_market_settlements s ON s.offer_id=o.offer_id WHERE s.transaction_id=$1::uuid").bind(&prior).execute(&mut *retained).await?;
+        sqlx::query("INSERT INTO game_market_settlements SELECT (jsonb_populate_record(NULL::game_market_settlements,to_jsonb(s)||jsonb_build_object('transaction_id',$2::uuid,'offer_id',game_market_identity(s.offer_id,'t124-price-offer'),'moved_units',1,'created_xact_id',pg_current_xact_id()))).* FROM game_market_settlements s WHERE s.transaction_id=$1::uuid").bind(&prior).bind(&extra).execute(&mut *retained).await?;
+        sqlx::query("INSERT INTO game_market_history SELECT $2::uuid,character_id,game_market_identity(offer_id,'t124-price-offer'),1,201,occurred_at_us FROM game_market_history WHERE transaction_id=$1::uuid").bind(&prior).bind(&extra).execute(&mut *retained).await?;
+        retained.commit().await?;
+        let next_query = admitted.continuity.next_command_id;
+        let replies = routed_market_payloads(
+            &owner,
+            &mut admitted,
+            [(
+                next_query,
+                details::encode_query(&Query::Statistics {
+                    definition: reference,
+                })
+                .map_err(debug)?,
+            )],
+        )
+        .await?;
+        let Reply::Statistics(prices) =
+            details::decode_reply(replies.first().ok_or("retained statistics")?).map_err(debug)?
+        else {
+            return Err("retained statistics refused".into());
+        };
+        assert_eq!(
+            (
+                prices.trades,
+                prices.units,
+                prices.minimum,
+                prices.maximum,
+                prices.average
+            ),
+            (2, 5, Some(100), Some(201), Some(150)),
+            "unit-price arithmetic mean must not become amount-weighted"
+        );
+        assert_eq!(
+            (prices.buy.trades, prices.buy.units, prices.buy.average),
+            (1, 1, Some(201))
+        );
+        assert_eq!(
+            (prices.sell.trades, prices.sell.units, prices.sell.average),
+            (1, 4, Some(100))
+        );
+        // Privileged fixture timestamp substitution: the production read still resolves
+        // current fences independently; no mutation helper is weakened for this test.
+        for (offset, expected) in [
+            (-31_i64 * 86400000000, 0_u64),
+            (86400000000, 0),
+            (-29_i64 * 86400000000, 2),
+        ] {
+            let mut fixture = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *fixture)
+                .await?;
+            sqlx::query("UPDATE game_market_settlements SET occurred_at_us=floor(extract(epoch FROM clock_timestamp())*1000000)::bigint+$1 WHERE kind=2").bind(offset).execute(&mut *fixture).await?;
+            fixture.commit().await?;
+            let projection = harness
+                .root
+                .market_projection(&authority, &harness.node, fence, Some(key.clone()), 0, None)
+                .await?;
+            assert_eq!(projection.statistics.trades, expected);
+            assert_eq!(
+                projection.statistics.minimum,
+                if expected == 0 { None } else { Some(100) }
+            );
+        }
+        let other_world = crate::foundation::WorldId::decode(&id(95)).map_err(debug)?;
+        let wrong_world = crate::durability::item_transfer::CurrentCharacterItemFence {
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
+                other_world,
+                admitted.channel_id,
+            ),
+            ..fence
+        };
+        assert!(
+            harness
+                .root
+                .market_projection(
+                    &authority,
+                    &harness.node,
+                    wrong_world,
+                    Some(key.clone()),
+                    0,
+                    None
+                )
+                .await
+                .is_err()
+        );
         drop(owner);
         drop(authority);
         drop(seal);

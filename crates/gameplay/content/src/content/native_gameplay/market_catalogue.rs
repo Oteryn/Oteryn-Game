@@ -68,6 +68,113 @@ impl MarketCatalogue {
     }
 }
 
+/// Numeric navigation facts only. They never participate in type admission or activation.
+#[derive(Debug, Clone, Copy)]
+pub struct MarketMetadata {
+    pub category: u8,
+    pub forge_class: Option<u8>,
+}
+#[derive(Deserialize)]
+struct MetadataDocument {
+    schema: String,
+    admission_sha256: String,
+    appearances_sha256: String,
+    rows: Vec<(u32, u8, Option<u8>)>,
+}
+fn filter_metadata() -> Option<&'static std::collections::BTreeMap<u32, MarketMetadata>> {
+    static DATA: std::sync::OnceLock<Option<std::collections::BTreeMap<u32, MarketMetadata>>> =
+        std::sync::OnceLock::new();
+    DATA.get_or_init(|| {
+        let document: MetadataDocument =
+            serde_json::from_slice(include_bytes!("market_filter_catalogue.json")).ok()?;
+        let admitted = MarketCatalogue::decode(SOURCE).ok()?;
+        if document.schema != "OTERYN_MARKET_FILTERS/v1"
+            || document.admission_sha256 != SOURCE_SHA256
+            || document.appearances_sha256
+                != "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+            || document
+                .rows
+                .iter()
+                .map(|r| r.0)
+                .ne(admitted.ids.iter().copied())
+            || document
+                .rows
+                .iter()
+                .any(|r| !(1..=31).contains(&r.1) || r.2.is_some_and(|v| v > 4))
+        {
+            return None;
+        }
+        Some(
+            document
+                .rows
+                .into_iter()
+                .map(|(id, category, forge_class)| {
+                    (
+                        id,
+                        MarketMetadata {
+                            category,
+                            forge_class,
+                        },
+                    )
+                })
+                .collect(),
+        )
+    })
+    .as_ref()
+}
+
+impl super::NativeGameplayState {
+    /// Stable active-generation Market type references, without rescanning non-marketable types.
+    pub fn market_references(&self) -> Vec<std::num::NonZeroU32> {
+        let Some(index) = self.item_index() else {
+            return Vec::new();
+        };
+        let mut found = std::collections::BTreeSet::new();
+        if let Some(catalogue) = &self.market_catalogue {
+            for id in &catalogue.ids {
+                let key = format!("oteryn:item.tibia.i{id}");
+                if let Some(reference) = index.definition_ref("Item", &key, "definition-r1") {
+                    found.insert(reference);
+                }
+            }
+        }
+        for record in self.item_profiles() {
+            use super::super::ReferenceItemField::Known;
+            if !matches!(&record.semantics.trade_restrictions,Known(trade) if trade.marketable==Known(true))
+            {
+                continue;
+            }
+            for (key, revision) in [
+                (
+                    &record.production_definition.production_key,
+                    &record.production_definition.revision_ref,
+                ),
+                (&record.authoring.item.key, &record.authoring.item.revision),
+            ] {
+                if let Some(reference) = index.definition_ref("Item", key, revision) {
+                    found.insert(reference);
+                }
+            }
+        }
+        found.into_iter().collect()
+    }
+    pub fn market_metadata_ready(&self) -> bool {
+        filter_metadata().is_some()
+    }
+    pub fn market_metadata(&self, key: &str, revision: &str) -> Option<MarketMetadata> {
+        if revision != "definition-r1" || !self.marketable_definition(key, revision) {
+            return None;
+        }
+        let suffix = key.strip_prefix("oteryn:item.tibia.i")?;
+        if suffix.starts_with('0') {
+            return None;
+        }
+        filter_metadata()?
+            .get(&suffix.parse::<u32>().ok()?)
+            .copied()
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,
@@ -107,5 +214,21 @@ mod tests {
         changed.push(b' ');
         assert!(MarketCatalogue::decode(&changed).is_err());
         assert!(MarketCatalogue::decode(b"{}").is_err());
+    }
+}
+
+#[cfg(test)]
+mod filter_tests {
+    use super::*;
+    #[test]
+    fn t124_numeric_filters_cover_the_full_admitted_cohort()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let metadata = filter_metadata().ok_or("qualified navigation metadata")?;
+        assert_eq!(metadata.len(), 5095);
+        assert_eq!(metadata.values().filter(|m| m.category == 26).count(), 835);
+        assert_eq!(metadata.values().filter(|m| m.category == 27).count(), 36);
+        let groups: std::collections::BTreeSet<_> = metadata.values().map(|m| m.category).collect();
+        assert_eq!(groups.len(), 27);
+        Ok(())
     }
 }

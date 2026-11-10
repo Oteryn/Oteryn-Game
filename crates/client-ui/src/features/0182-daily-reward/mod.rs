@@ -8,12 +8,33 @@ mod protocol;
 mod state;
 mod view;
 pub use input::open_key;
-pub use protocol::{Intent, apply_result, request};
+pub use protocol::{Intent, apply_result, request, request_details};
 pub use state::DailyRewardPanel;
 pub use view::panel_text;
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
+
+#[path = "state/returner.rs"]
+mod returner;
+pub use returner::{ReturnerOffer, ReturnerRewardPanel};
+
+#[path = "state/details.rs"]
+mod details;
+pub use details::{apply_details, details_text};
+
+#[path = "state/picker.rs"]
+mod picker;
+pub use picker::{apply_picker, picker_text};
+pub use protocol::request_picker;
+
+#[path = "state/picker_names.rs"]
+mod picker_names;
+
+#[path = "state/returner_wire.rs"]
+mod returner_wire;
+pub use protocol::request_returner;
+pub use returner_wire::apply_returner;
 
 #[cfg(test)]
 #[path = "tests/e2e_p09.rs"]

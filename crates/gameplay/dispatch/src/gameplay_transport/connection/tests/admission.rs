@@ -299,3 +299,50 @@ fn admission_post_admission_input_closes_without_gameplay() -> Result<(), Box<dy
         Ok(())
     })
 }
+
+#[test]
+fn authenticated_queue_refusal_crosses_the_real_connection_driver() -> Result<(), Box<dyn Error>> {
+    run(async {
+        use oteryn_protocol_oteryn::admission_queue::{AdmissionQueue, decode_queue, encode_queue_refusal};
+        let queue = AdmissionQueue { position: 3, retry_after_ms: 2_000 };
+        let refusal = AdmissionRefusal::Queued(queue);
+        let authority = Authority::new(Err(refusal));
+        let (end, frames) = drive(&authority, &[bootstrap(1, 1, b"grant")]).await?;
+        assert_eq!(end, ConnectionEnd::AdmissionRefused(refusal));
+        assert_eq!(authority.calls.get(), 1);
+        assert_eq!(frames, vec![encode_queue_refusal(queue)?]);
+        let envelope = decode_wire_envelope(&frames[0])?;
+        assert_eq!(decode_queue(envelope.payload())?, Some(queue));
+        Ok(())
+    })
+}
+
+#[test]
+fn operator_publication_reloads_through_the_authenticated_connection_writer() -> Result<(), Box<dyn Error>> {
+    run(async {
+        use crate::gameplay_transport::bulletin::BulletinSource;
+        struct Published { inner: Authority, source: std::sync::Arc<BulletinSource>, reads: Cell<u32> }
+        impl FreshAdmissionAuthority for Published {
+            async fn admit(&self, attempt: FreshAdmissionAttempt<'_>) -> Result<AdmittedSession, AdmissionRefusal> { self.inner.admit(attempt).await }
+            async fn client_bulletin(&self) -> Option<String> { self.reads.set(self.reads.get() + 1); self.source.load().await }
+        }
+        let path = std::env::temp_dir().join(format!("oteryn-wire-bulletin-{}.json", std::process::id()));
+        let source = std::sync::Arc::new(BulletinSource::new(path.clone()));
+        let authority = Published { inner: Authority::new(Ok(())), source: source.clone(), reads: Cell::new(0) };
+        for title in ["First publication", "Operator replacement"] {
+            let document = format!(r#"{{"news":[{{"title":"{title}","body":"Live notice"}}],"events":[{{"year":2027,"month":1,"day":12,"title":"Gathering","body":"Town square"}}]}}"#);
+            std::fs::write(&path, &document)?;
+            let (_, frames) = drive(&authority, &[bootstrap(1, 1, b"grant")]).await?;
+            let envelope = decode_wire_envelope(frames.first().ok_or("missing acceptance")?)?;
+            assert_eq!(envelope.message_type(), MessageType::ServerAccepted);
+            assert_eq!(oteryn_protocol_oteryn::bulletin::document_from_acceptance(envelope.payload())?, Some(document.as_str()));
+        }
+        assert_eq!(authority.reads.get(), 2);
+        let refused = Published { inner: Authority::new(Err(AdmissionRefusal::Rejected)), source, reads: Cell::new(0) };
+        let (_, frames) = drive(&refused, &[bootstrap(1, 1, b"invalid")]).await?;
+        assert!(frames.is_empty());
+        assert_eq!(refused.reads.get(), 0);
+        std::fs::remove_file(path)?;
+        Ok(())
+    })
+}

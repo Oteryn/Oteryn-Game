@@ -41,7 +41,7 @@ use std::fmt;
 use std::io;
 use std::net::SocketAddr;
 use std::num::NonZeroU32;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 pub use oteryn_client_runtime as client_runtime;
 pub use oteryn_client_ui as client_ui;
@@ -82,6 +82,14 @@ pub enum DevClientError {
     /// The TCP connect or TLS handshake exceeded `JoinRequest::deadline`.
     Timeout(&'static str),
     Session(SessionError),
+    /// Operation context retained by the diagnostic harness without exposing admission material
+    /// or player identity.
+    Context {
+        phase: &'static str,
+        elapsed: Duration,
+        last_frame: String,
+        source: Box<DevClientError>,
+    },
 }
 
 impl From<SessionError> for DevClientError {
@@ -138,11 +146,76 @@ impl fmt::Display for DevClientError {
             ),
             Self::Timeout(stage) => write!(formatter, "timed out waiting for {stage}"),
             Self::Session(error) => fmt::Display::fmt(error, formatter),
+            Self::Context {
+                phase,
+                elapsed,
+                last_frame,
+                source,
+            } => write!(
+                formatter,
+                "{source} in {phase} after {:.3}s, last frame {last_frame}",
+                elapsed.as_secs_f64()
+            ),
         }
     }
 }
 
-impl StdError for DevClientError {}
+impl StdError for DevClientError {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match self {
+            Self::Tls(error) => Some(error),
+            Self::Io(error) => Some(error),
+            Self::Session(error) => Some(error),
+            Self::Context { source, .. } => Some(source),
+            Self::InvalidServerName | Self::AlpnMismatch | Self::Timeout(_) => None,
+        }
+    }
+}
+
+fn contextualize(
+    error: impl Into<DevClientError>,
+    phase: &'static str,
+    started: Instant,
+    last_frame: impl Into<String>,
+) -> DevClientError {
+    DevClientError::Context {
+        phase,
+        elapsed: started.elapsed(),
+        last_frame: last_frame.into(),
+        source: Box::new(error.into()),
+    }
+}
+
+fn contextualize_session(
+    error: SessionError,
+    phase: &'static str,
+    started: Instant,
+    last_frame: impl Into<String>,
+) -> DevClientError {
+    if matches!(error, SessionError::Io(_) | SessionError::Timeout(_)) {
+        contextualize(error, phase, started, last_frame)
+    } else {
+        DevClientError::Session(error)
+    }
+}
+
+fn contextualize_transport(error: TcpAdapterError, started: Instant) -> DevClientError {
+    if matches!(error, TcpAdapterError::Io(_) | TcpAdapterError::Timeout(_)) {
+        contextualize(error, "connect", started, "none")
+    } else {
+        error.into()
+    }
+}
+
+fn join_last_frame(error: &SessionError) -> &'static str {
+    match error {
+        SessionError::Timeout("ServerAccepted") | SessionError::NotAdmitted(_) => "none",
+        SessionError::Timeout("SnapshotBegin") => "ServerAccepted",
+        SessionError::Timeout("SnapshotChunk") => "SnapshotBegin",
+        SessionError::Timeout("SnapshotCommit") => "SnapshotChunk",
+        _ => "unknown",
+    }
+}
 /// Connects to `request.address` over rustls TLS 1.3 with ALPN `oteryn-game/1` (the TCP adapter
 /// rejects any other or absent negotiated ALPN before sending anything), admits with the
 /// request's grant and decodes the join snapshot (see `Session::admit` for every check it makes).
@@ -159,13 +232,15 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
 /// `connect_and_join`'s full join, but keeps the admitted connection: see
 /// `oteryn_session::Session` for the sequence, revision and liveness discipline it carries.
 pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSession, DevClientError> {
+    let started = Instant::now();
     let stream = oteryn_session_tcp::connect(TcpConnect {
         address: request.address,
         server_name: request.server_name,
         root_certificate: request.root_certificate,
         deadline: request.deadline,
     })
-    .await?;
+    .await
+    .map_err(|error| contextualize_transport(error, started))?;
     let session = Session::admit(
         stream,
         Admission {
@@ -178,8 +253,12 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
             deadline: request.deadline,
         },
     )
-    .await?;
-    Ok(DevClientSession { session })
+    .await
+    .map_err(|error| {
+        let last_frame = join_last_frame(&error);
+        contextualize_session(error, "join_snapshot", started, last_frame)
+    })?;
+    Ok(DevClientSession { session, started })
 }
 
 /// Connect a fresh TLS transport and recover the same server session with its retained selection.
@@ -188,9 +267,14 @@ pub async fn resume_session(
     previous: oteryn_session::RecoveryState,
     recovery: oteryn_session::Recovery<'_>,
 ) -> Result<DevClientSession, DevClientError> {
-    let stream = oteryn_session_tcp::connect(transport).await?;
-    let session = Session::resume(stream, previous, recovery).await?;
-    Ok(DevClientSession { session })
+    let started = Instant::now();
+    let stream = oteryn_session_tcp::connect(transport)
+        .await
+        .map_err(|error| contextualize_transport(error, started))?;
+    let session = Session::resume(stream, previous, recovery)
+        .await
+        .map_err(|error| contextualize_session(error, "resume", started, "unknown"))?;
+    Ok(DevClientSession { session, started })
 }
 
 pub use oteryn_session::{Recovery, RecoveryState};
@@ -201,6 +285,7 @@ pub use oteryn_session_tcp::TcpConnect as RecoveryTransport;
 #[derive(Debug)]
 pub struct DevClientSession {
     session: Session<TcpTlsStream>,
+    started: Instant,
 }
 
 impl DevClientSession {
@@ -214,7 +299,19 @@ impl DevClientSession {
         self,
         direction: StepDirection,
     ) -> Result<RecoveryState, DevClientError> {
-        Ok(self.session.disconnect_after_step(direction).await?)
+        let sequence = self.last_server_sequence();
+        let started = self.started;
+        self.session
+            .disconnect_after_step(direction)
+            .await
+            .map_err(|error| {
+                contextualize_session(
+                    error,
+                    "command",
+                    started,
+                    format!("server_sequence={sequence}"),
+                )
+            })
     }
 
     /// The session used by the native feature adapters. Qualification code deliberately uses
@@ -294,12 +391,32 @@ impl DevClientSession {
 
     /// See `Session::service_liveness`.
     pub async fn service_liveness(&mut self, duration: Duration) -> Result<(), DevClientError> {
-        Ok(self.session.service_liveness(duration).await?)
+        let sequence = self.last_server_sequence();
+        self.session
+            .service_liveness(duration)
+            .await
+            .map_err(|error| self.command_error(error, "liveness", sequence))
+    }
+
+    /// Wait for pushed domain events while retaining qualification diagnostics on failure.
+    pub async fn wait_for_events(
+        &mut self,
+        duration: Duration,
+    ) -> Result<Vec<SessionEvent>, DevClientError> {
+        let sequence = self.last_server_sequence();
+        self.session
+            .wait_for_events(duration)
+            .await
+            .map_err(|error| self.command_error(error, "command", sequence))
     }
 
     /// See `Session::step`.
     pub async fn step(&mut self, direction: StepDirection) -> Result<StepOutcome, DevClientError> {
-        Ok(self.session.step(direction).await?)
+        let sequence = self.last_server_sequence();
+        self.session
+            .step(direction)
+            .await
+            .map_err(|error| self.command_error(error, "command", sequence))
     }
 
     /// See `Session::step_retrying`.
@@ -307,7 +424,11 @@ impl DevClientSession {
         &mut self,
         direction: StepDirection,
     ) -> Result<StepOutcome, DevClientError> {
-        Ok(self.session.step_retrying(direction).await?)
+        let sequence = self.last_server_sequence();
+        self.session
+            .step_retrying(direction)
+            .await
+            .map_err(|error| self.command_error(error, "command", sequence))
     }
 
     /// See `Session::selected_capabilities`.
@@ -322,15 +443,20 @@ impl DevClientSession {
         target: SpellTarget,
         aim_at_target: bool,
     ) -> Result<CastOutcome, DevClientError> {
-        Ok(self
-            .session
+        let sequence = self.last_server_sequence();
+        self.session
             .cast_spell(spell, target, aim_at_target)
-            .await?)
+            .await
+            .map_err(|error| self.command_error(error, "command", sequence))
     }
 
     /// See `Session::use_item`.
     pub async fn use_item(&mut self, handle: ItemHandle) -> Result<UseOutcome, DevClientError> {
-        Ok(self.session.use_item(handle).await?)
+        let sequence = self.last_server_sequence();
+        self.session
+            .use_item(handle)
+            .await
+            .map_err(|error| self.command_error(error, "command", sequence))
     }
 
     /// See `Session::move_item`.
@@ -338,12 +464,20 @@ impl DevClientSession {
         &mut self,
         intent: &ItemMoveIntent,
     ) -> Result<ItemMoveOutcomeResult, DevClientError> {
-        Ok(self.session.move_item(intent).await?)
+        let sequence = self.last_server_sequence();
+        self.session
+            .move_item(intent)
+            .await
+            .map_err(|error| self.command_error(error, "command", sequence))
     }
 
     /// See `Session::chat`.
     pub async fn chat(&mut self, intent: &ChatIntent) -> Result<ChatOutcome, DevClientError> {
-        Ok(self.session.chat(intent).await?)
+        let sequence = self.last_server_sequence();
+        self.session
+            .chat(intent)
+            .await
+            .map_err(|error| self.command_error(error, "command", sequence))
     }
 
     /// See `Session::use_object`.
@@ -352,10 +486,25 @@ impl DevClientSession {
         placement: &[u8],
         expected_revision: u64,
     ) -> Result<UseOutcome, DevClientError> {
-        Ok(self
-            .session
+        let sequence = self.last_server_sequence();
+        self.session
             .use_object(placement, expected_revision)
-            .await?)
+            .await
+            .map_err(|error| self.command_error(error, "command", sequence))
+    }
+
+    fn command_error(
+        &self,
+        error: SessionError,
+        phase: &'static str,
+        last_sequence: u64,
+    ) -> DevClientError {
+        contextualize_session(
+            error,
+            phase,
+            self.started,
+            format!("server_sequence={last_sequence}"),
+        )
     }
 }
 

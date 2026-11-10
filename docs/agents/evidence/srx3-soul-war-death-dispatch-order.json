@@ -1,0 +1,112 @@
+{
+  "schema": "OTERYN_SRX3_SOUL_WAR_DEATH_ORDER_AUDIT/v1",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "path": "src/creatures/creature.cpp",
+      "git_blob": "d1e52e5881ea75cdc5835e0563dc842b38372f85",
+      "sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a"
+    },
+    {
+      "path": "src/game/scheduling/dispatcher.cpp",
+      "git_blob": "1d0cded51912ffc937bc2c85c7ca2a588803c6b4",
+      "sha256": "91498528a253efd66545f5807c56d8d4e89137f0eca2e0f19d276906c55dbe52"
+    },
+    {
+      "path": "src/creatures/combat/combat.cpp",
+      "git_blob": "499a6aec29f7fd85da4953aea599ab1cba181fe3",
+      "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad"
+    },
+    {
+      "path": "src/game/game.cpp",
+      "git_blob": "5f421b1b2361280abeb8b392bca0e0344fc04648",
+      "sha256": "5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6"
+    },
+    {
+      "path": "src/lua/functions/creatures/monster/monster_functions.cpp",
+      "git_blob": "4e6c50984ee2e5881f9a55aa15d82cd42da9979c",
+      "sha256": "2e612c96ff958861a064475288542d39e858e9007d38dd7beeeddb243af6c54e"
+    },
+    {
+      "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "git_blob": "51d42e7e970a2f24fc8438a833aacac2c061dfc2",
+      "sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+    },
+    {
+      "path": "data-global/lib/quests/soul_war.lua",
+      "git_blob": "4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703",
+      "sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75"
+    },
+    {
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+      "git_blob": "7781c66516d83abbe905496cff7c3caf44902bf9",
+      "sha256": "cd2cae8c72c72a46064ec084c5db1684a4223e4150d3670f154a88bcb2589b2b"
+    },
+    {
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+      "git_blob": "cf81168aa00b063ba9ce379e48b7254a4522e160",
+      "sha256": "d1ba4b9e8303d804ceaa75b0c4d24f9bf3181ed7ad6736861ba5ff67b7a64848"
+    }
+  ],
+  "facts": [
+    {
+      "path": "src/creatures/creature.cpp",
+      "lines": "795-806,824-825",
+      "fact": "health<=0 queues Creature::onDeath with Dispatcher::addEvent; drainHealth does not execute it inline"
+    },
+    {
+      "path": "src/game/scheduling/dispatcher.cpp",
+      "lines": "31-39,48-64,158-187,214-219",
+      "fact": "addEvent appends per-thread Serial task; dispatcher merges and executes queued tasks after current task completes"
+    },
+    {
+      "path": "src/creatures/combat/combat.cpp",
+      "lines": "1630-1675",
+      "fact": "AoE finishes tile/creature combat function loop before returning to dispatcher"
+    },
+    {
+      "path": "src/creatures/creature.cpp",
+      "lines": "660-666,758-764",
+      "fact": "queued onDeath invokes Lua death callbacks during dropCorpse, then removes creature"
+    },
+    {
+      "path": "src/game/game.cpp",
+      "lines": "1150-1175",
+      "fact": "name lookup iterates registered monsters without filtering health0"
+    },
+    {
+      "path": "src/lua/functions/creatures/monster/monster_functions.cpp",
+      "lines": "144-176",
+      "fact": "setType defaults restoreHealth=false; without restore it preserves current HP and HP maximum, including0"
+    },
+    {
+      "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "lines": "915-938",
+      "fact": "Aspect death callback looks up named current boss, counts only Purple, captures current boss position or Aspect fallback, queues5s respawn"
+    },
+    {
+      "path": "data-global/lib/quests/soul_war.lua",
+      "lines": "1454-1474",
+      "fact": "fourth counted Aspect changes Green and queues60s Blue/70s conditionalPurple"
+    },
+    {
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+      "lines": "6,14,30-32,80-91",
+      "fact": "Purple XP0/corpse6028, only GoshnarsHatredBuff event,100percent resistance to every combat element; a normal player combat hit cannot kill Purple"
+    },
+    {
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+      "lines": "6,14,111-120",
+      "fact": "Blue XP3000000/corpse33889 and0percent elemental resistance; its scheduled7s return can execute after a lethal Blue task before deferreddeath"
+    }
+  ],
+  "consequences": [
+    "Aspect phase cannot change mitigation of later targets in the same original AoE task",
+    "Post-combat death callbacks must retain original queued order and health0 registered actors until their own removal",
+    "If Aspect death task precedes queued boss death, fourth Aspect can change health0 Purple to Green before boss corpse/loot selection",
+    "Initially-finalized native death profile and later actual drop-time profile are distinct source facts in this edge case",
+    "Do not invent a normal combat path killing immune Purple; use vulnerable Blue followed by its due7s Purple return to test a reachable postlethal type boundary"
+  ],
+  "wiki": "wiki-pending"
+}

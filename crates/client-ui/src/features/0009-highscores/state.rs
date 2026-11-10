@@ -4,6 +4,7 @@ pub struct HighscoresPanel {
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
+    pub world: Option<oteryn_client_runtime::highscores::wire::WorldId>,
     pub category: u32,
     pub vocation: u32,
     pub reply: Option<HighscoresResult>,
@@ -16,6 +17,7 @@ impl Default for HighscoresPanel {
             selected: false,
             open: false,
             pending: false,
+            world: None,
             category: 1,
             vocation: 0,
             reply: None,
@@ -27,6 +29,8 @@ impl Default for HighscoresPanel {
 #[derive(Debug, Clone, Copy)]
 pub enum Action {
     Refresh,
+    World(Option<oteryn_client_runtime::highscores::wire::WorldId>),
+    ShowMe,
     Next,
     Previous,
     Filter { category: u32, vocation: u32 },

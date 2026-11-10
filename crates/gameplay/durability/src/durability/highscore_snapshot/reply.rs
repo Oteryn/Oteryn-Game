@@ -1,7 +1,7 @@
 //! RANK-1 (HS-WIRE-1, HIGHSCORES0 §6, CP D1155): command type 14 `HIGHSCORES_QUERY_V1` under
 //! capability 9. The handler reads one page of a persisted World snapshot (migration 0129) and
-//! never computes ranks. The World and the asking Character come from the admitted session, never
-//! from the payload. A category this server does not publish (outside 1..=12, 14 or 17, or 11 while no Charm
+//! never computes ranks. T143 permits public World selection while the asking Character
+//! and authority World remain bound to the admitted session. A category this server does not publish (outside 1..=12, 14, 16 or 17, or 11 while no Charm
 //! point source is activated) is `NOT_SUPPORTED` (1200) and an echoed token that
 //! is no longer retained `SNAPSHOT_EXPIRED` (1201), both FND-02 error results without a payload.
 //! A malformed query, unreadable storage or a stored row the wire grammar refuses is `REJECTED`
@@ -32,7 +32,7 @@ pub enum HighscoresReply {
 }
 
 /// HIGHSCORES0 §6: the asking Character is the one the current, non-terminal session of
-/// `served_world` controls, read from durable state. A query for another World, an unknown
+/// `served_world` controls, read from durable state. A mismatched authority World, an unknown
 /// session, a session without its committed admission, or a terminal session is REJECTED.
 pub async fn answer_session_highscores(
     root: &DurabilityRoot,
@@ -48,7 +48,8 @@ pub async fn answer_session_highscores(
     let Ok((current, _)) = store.current_session_at(session).await else {
         return HighscoresReply::Rejected;
     };
-    if current.session_state() == GameSessionState::Terminal {
+    if current.session_state() == GameSessionState::Terminal || current.commit().world_id() != world
+    {
         return HighscoresReply::Rejected;
     }
     answer_highscores(root, world, current.commit().character_id(), query).await
@@ -87,9 +88,10 @@ pub async fn answer_highscores(
     else {
         return HighscoresReply::Rejected;
     };
+    let target = query.world.unwrap_or(world);
     let page = root
         .read_highscore_page(
-            world,
+            target,
             category,
             *vocation,
             query.page,
@@ -97,7 +99,14 @@ pub async fn answer_highscores(
             character,
         )
         .await;
-    highscores_reply(page, character)
+    let page = page.map(|mut page| {
+        if target != world {
+            page.own_row = None;
+            page.own_page = None;
+        }
+        page
+    });
+    highscores_reply_with_details(page, character, query.details.then_some(target))
 }
 
 /// The reply of one read for the asking `character`: the encoded page or its fail-closed
@@ -105,6 +114,14 @@ pub async fn answer_highscores(
 pub fn highscores_reply(
     page: Result<SnapshotPage, SnapshotError>,
     character: CharacterId,
+) -> HighscoresReply {
+    highscores_reply_with_details(page, character, None)
+}
+
+fn highscores_reply_with_details(
+    page: Result<SnapshotPage, SnapshotError>,
+    character: CharacterId,
+    world: Option<WorldId>,
 ) -> HighscoresReply {
     let page = match page {
         Ok(page) => page,
@@ -129,6 +146,8 @@ pub fn highscores_reply(
         return HighscoresReply::Rejected;
     }
     let result = HighscoresResult {
+        world,
+        own_page: world.and(page.own_page),
         category: u32::from(page.snapshot.category),
         snapshot_id: page.snapshot.snapshot_id,
         computed_at: page.snapshot.computed_at_ms,

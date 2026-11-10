@@ -231,6 +231,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: &SpellLanePermit,
         entry: &PendingKillSettlement,
     ) -> Result<SettledPartyXp, CharacterProgressionError> {
+        // Early/replayed XP settlement can enter before the outer kill drain freezes
+        // task credit. Qualify once here as well, under the same lane and native fences.
+        if entry.row.as_ref().is_some_and(|row| row.race.is_some()) {
+            self.freeze_task_board_recipients(permit, entry).await?;
+        }
         let plan = self.discover_party_xp(permit, entry).await?;
         let analyser_receipts = self.analyser_receipts(entry.target).await;
         if let Ok(mut receipts) = analyser_receipts.lock() {
@@ -292,6 +297,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ExperienceRewardOccurrence::from_bytes(bytes)?
             };
             members.push(PartyKillXpMember {
+                task_board_eligible: false,
                 fence,
                 request: ExperienceAwardRequest {
                     occurrence,
@@ -442,6 +448,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         } else {
                             states.live_stamina(current.actor, current.session)
                         };
+                        // Use the same frozen, generation-qualified recipients as task credit.
+                        // The XP plan also retains zero-damage members for ordinary forge dust.
+                        request.task_board_eligible = entry.task_board_recipients.get().is_some_and(|recipients| {
+                            recipients.iter().any(|recipient| {
+                                let frozen = recipient.fence;
+                                let current = request.fence;
+                                frozen.character_id == current.character_id
+                                    && frozen.game_session_id == current.game_session_id
+                                    && frozen.character_lease_generation == current.character_lease_generation
+                                    && frozen.runtime_scope == current.runtime_scope
+                                    && frozen.scope_ownership_generation == current.scope_ownership_generation
+                            })
+                        });
                         request.premium = current.premium;
                         request.forge_dust = forge_dust_for_member(entry, states, _attack, current);
                         request.shared = current.shared;

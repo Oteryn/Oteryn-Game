@@ -367,6 +367,7 @@ fn classify_response(
 }
 
 pub struct StoreClient {
+    coins: Option<crate::coins::CoinClient>,
     transport: Box<dyn StoreTransport>,
     source_authority: String,
 }
@@ -375,7 +376,15 @@ impl StoreClient {
         Self {
             transport,
             source_authority,
+            coins: None,
         }
+    }
+    pub fn with_coins(mut self, coins: Option<crate::coins::CoinClient>) -> Self {
+        self.coins = coins;
+        self
+    }
+    pub fn coins(&mut self) -> Option<&mut crate::coins::CoinClient> {
+        self.coins.as_mut()
     }
     async fn request(&mut self, op: Operation, body: String) -> Result<Vec<u8>, ProtocolError> {
         self.transport

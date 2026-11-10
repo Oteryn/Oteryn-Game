@@ -4,7 +4,10 @@
   "constant": "analyser::CAPABILITY_ANALYSER_V1",
   "requires": [],
   "acceptance_requires": false,
-  "commands": [],
+  "commands": [
+    734,
+    735
+  ],
   "domains": [
     15
   ],

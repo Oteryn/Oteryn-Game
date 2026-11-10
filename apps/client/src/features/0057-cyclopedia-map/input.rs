@@ -1,3 +1,5 @@
+#[path = "input/atlas.rs"]
+pub(in crate::play) mod atlas;
 use crate::combat_input::PlayCommand;
 use crate::play::{
     PlayLink,
@@ -14,11 +16,11 @@ pub(in crate::play) fn submit(
 ) {
     let panel = &mut mailbox.properties.cyclopedia_map;
     if !panel.selected {
-        panel.feedback = "Unavailable in this session".into();
+        panel.feedback = tr!("Unavailable in this session").into();
         return;
     }
-    if panel.pending {
-        panel.feedback = "Waiting for the server".into();
+    if panel.pending || panel.speed_pending {
+        panel.feedback = tr!("Waiting for the server").into();
         return;
     }
     match super::protocol::command(panel, intent) {
@@ -26,7 +28,20 @@ pub(in crate::play) fn submit(
             if oteryn_client_ui::cyclopedia_map::request(panel, command.kind)
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
-                panel.failed("The session has ended");
+                panel.failed(tr!("The session has ended"));
+            } else if matches!(
+                intent,
+                Intent::Query | Intent::Start | Intent::Shuffle | Intent::Find | Intent::Atlas
+            ) {
+                panel.speed_pending = true;
+                if commands.send(PlayCommand::Feature(oteryn_client_runtime::raw_feature::FeatureCommand {
+                    capability: 57,
+                    kind: oteryn_client_runtime::cyclopedia_map::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY,
+                    payload: Vec::new(),
+                })).is_err() {
+                    panel.speed_pending = false;
+                    panel.failed(tr!("The session has ended"));
+                }
             }
         }
         Err(message) => panel.feedback = message,
@@ -75,3 +90,7 @@ pub(in crate::play) fn edit(
         *slot = value;
     }
 }
+
+#[cfg(test)]
+#[path = "input/tests/atlas.rs"]
+mod atlas_tests;

@@ -157,6 +157,6 @@ fn daily_boost_shell_input_queries_selected_session() {
     });
     assert_eq!(
         oteryn_client_ui::daily_boost::panel_text(&link.daily_boost_panel()),
-        "Daily boost\nCreature: rat\nBoss: boss\nReset epoch: 42"
+        "Daily spotlight\nReset epoch: 42\nBoosted creature: Rat\nrat\nBoosted boss: Boss\nboss\n"
     );
 }

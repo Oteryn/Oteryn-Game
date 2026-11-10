@@ -115,3 +115,6 @@ fn local_chat_input_reaches_session_and_received_private_message_is_visible() ->
         .join()
         .map_err(|_| "local chat UI test thread panicked")?
 }
+
+#[path = "console.rs"]
+mod console;

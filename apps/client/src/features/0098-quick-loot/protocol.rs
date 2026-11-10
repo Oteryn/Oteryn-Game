@@ -14,31 +14,31 @@ impl PlayLink {
         let mut mailbox = lock(&self.mailbox);
         if capability == 154 {
             mailbox.store.pending = false;
-            mailbox.store.feedback = Some("Session ended".into());
+            mailbox.store.feedback = Some(tr!("Session ended").into());
             return false;
         }
         let state = &mut mailbox.discovery;
         match capability {
             98 => {
                 state.loot.pending = None;
-                state.loot.feedback = "Session ended".into();
+                state.loot.feedback = tr!("Session ended").into();
             }
             132 => {
                 state.inspection.pending = false;
-                state.inspection.feedback = "Session ended".into();
+                state.inspection.feedback = tr!("Session ended").into();
             }
             200 => {
                 state.leader.pending = false;
                 state.leader.submitted = None;
-                state.leader.feedback = "Session ended".into();
+                state.leader.feedback = tr!("Session ended").into();
             }
             232 => {
                 state.teams.pending = None;
-                state.teams.feedback = "Session ended".into();
+                state.teams.feedback = tr!("Session ended").into();
             }
             285 => {
                 state.history.pending = false;
-                state.history.feedback = "Session ended".into();
+                state.history.feedback = tr!("Session ended").into();
             }
             _ => {}
         }
@@ -51,6 +51,7 @@ impl Outbox {
         let state = &mut mailbox.discovery;
         *state = Default::default();
         state.loot.selected = session.server_mechanic_selected(98);
+        state.inspection.invalidate_catalogue();
         state.inspection.selected = session.server_mechanic_selected(132);
         state.leader.selected = session.server_mechanic_selected(200);
         state.teams.selected = session.server_mechanic_selected(232);
@@ -65,10 +66,16 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         match capability {
             98 => oteryn_client_ui::quick_loot::apply_result(&mut mailbox.discovery.loot, response),
-            132 => oteryn_client_ui::inspection::apply_result(
-                &mut mailbox.discovery.inspection,
-                response,
-            ),
+            132 => {
+                crate::play::feature_0068_imbue::protocol::equipment_inspection_result(
+                    &mut mailbox,
+                    response,
+                );
+                oteryn_client_ui::inspection::apply_result(
+                    &mut mailbox.discovery.inspection,
+                    response,
+                );
+            }
             200 => oteryn_client_ui::team_finder_leader::protocol::apply_result(
                 &mut mailbox.discovery.leader,
                 response,

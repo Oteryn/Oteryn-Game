@@ -43,6 +43,7 @@ pub(super) enum Case {
     ForgeIdle,
     ForgeAllFree,
     ForgeNoShared,
+    EliteNoShared,
     ForgeStale,
     ForgeRollback,
     ForgeFar,
@@ -74,6 +75,7 @@ impl Case {
                 | Self::ForgeIdle
                 | Self::ForgeAllFree
                 | Self::ForgeNoShared
+                | Self::EliteNoShared
                 | Self::ForgeStale
                 | Self::ForgeRollback
                 | Self::ForgeFar
@@ -581,6 +583,10 @@ async fn scenario(
     ) {
         task_board::install_boards(&mut owner, h, &players, &pin).await?;
     }
+    if matches!(case, Case::EliteNoShared) {
+        task_board::install_boards(&mut owner, h, &players, &pin).await?;
+        task_board::install_elite_last_kill(&owner, h, &players).await?;
+    }
     if matches!(task_board_case, Case::TaskBoardPrechange) {
         task_board::prepare_selection(&owner, h, players[1].1).await?;
     }
@@ -1081,7 +1087,10 @@ async fn scenario(
             || (index == 0 && matches!(case, Case::Pz | Case::Concurrent | Case::Foreign))
             || (index == 1
                 && (case.staged_ally()
-                    || matches!(case, Case::Inactive | Case::OneHit | Case::ForgeIdle)))
+                    || matches!(
+                        case,
+                        Case::Inactive | Case::OneHit | Case::ForgeIdle | Case::EliteNoShared
+                    )))
         {
             continue;
         }
@@ -1494,6 +1503,9 @@ async fn scenario(
         );
         println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: party_credit_without_progression_binding");
         return Ok(());
+    }
+    if matches!(case, Case::EliteNoShared) {
+        return task_board::assert_elite_last_kill(&owner, h, &players).await;
     }
     if case.forge() {
         if let Some(entry) = forge_replay {

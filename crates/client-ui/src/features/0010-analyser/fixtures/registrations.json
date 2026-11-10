@@ -1,6 +1,21 @@
 [
   {
     "mechanic": "0010-analyser",
+    "kind": "handlers",
+    "id": "0010-analyser-item-query",
+    "status": "supported",
+    "commands": [
+      734
+    ],
+    "direction": "client_to_server",
+    "capability": 10,
+    "entry": "protocol.rs::catalogue_request",
+    "not_applicable": {
+      "settings": "Read-only active-generation item identities."
+    }
+  },
+  {
+    "mechanic": "0010-analyser",
     "kind": "keybindings",
     "id": "0010-analyser-open",
     "status": "supported",
@@ -14,6 +29,22 @@
     "id": "0010-analyser-panel",
     "status": "supported",
     "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0010-analyser",
+    "kind": "handlers",
+    "id": "0010-analyser-party-query",
+    "status": "supported",
+    "commands": [
+      735
+    ],
+    "direction": "client_to_server",
+    "capability": 10,
+    "entry": "protocol.rs::party_request",
+    "test": "tests/state.rs::party_split_conserves_positive_negative_and_remainder_balances",
+    "not_applicable": {
+      "settings": "Connection-local confirmed party counters; custom item prices are explicit local inputs."
+    }
   },
   {
     "mechanic": "0010-analyser",

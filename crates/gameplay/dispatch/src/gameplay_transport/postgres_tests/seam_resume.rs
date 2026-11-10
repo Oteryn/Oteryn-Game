@@ -12,16 +12,26 @@ use oteryn_protocol_oteryn::{
     encode_command_protocol_error, encode_command_result, encode_single_chunk_snapshot,
     encode_state_delta,
 };
+use std::sync::Arc;
 use tokio::io::AsyncReadExt;
 
 #[test]
 fn seam_second_same_session_resume_has_deterministic_frames_with_busy_holder() -> TestResult {
+    resume_frames(false)
+}
+
+#[test]
+fn seam_resume_waits_for_durable_loss_runtime_publication() -> TestResult {
+    resume_frames(true)
+}
+
+fn resume_frames(delay_loss_publication: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| {
+        .spawn(move || {
             run(async |admin| {
                 let h =
                     Harness::create_with_admission_seed(admin, "seam_resume_frames", false, false)
@@ -96,22 +106,66 @@ fn seam_second_same_session_resume_has_deterministic_frames_with_busy_holder() -
                 );
                 owner.states.command_ingress.admit(admitted.game_session_id);
                 for generation in [2, 3] {
-                    assert_eq!(
-                        owner.lose_control(admitted, Duration::ZERO, None).await,
-                        ControlLossResult::Recorded
-                    );
                     let token = super::house_transfer::RecoverySource::token(generation as u8)?;
-                    admitted = owner
-                        .resume(ResumeAttempt {
-                            game_session_id: admitted.game_session_id,
-                            recovery_material: token.as_bytes(),
-                            transport: AuthenticatedTransportRefV1::decode(&[generation as u8; 16])
-                                .map_err(debug)?,
-                            last_applied_server_sequence: admitted.continuity.server_sequence,
-                            supported_capabilities: &[],
-                        })
-                        .await
-                        .map_err(debug)?;
+                    let attempt = ResumeAttempt {
+                        game_session_id: admitted.game_session_id,
+                        recovery_material: token.as_bytes(),
+                        transport: AuthenticatedTransportRefV1::decode(&[generation as u8; 16])
+                            .map_err(debug)?,
+                        last_applied_server_sequence: admitted.continuity.server_sequence,
+                        supported_capabilities: &[],
+                    };
+                    admitted = if delay_loss_publication {
+                        let barrier =
+                            Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+                        let loss =
+                            crate::gameplay_transport::control_loss::LOSS_PUBLICATION_BARRIER
+                                .scope(
+                                    barrier.clone(),
+                                    owner.lose_control(admitted, Duration::ZERO, None),
+                                );
+                        let resume = async {
+                            barrier.0.notified().await;
+                            let current = FreshAdmissionStore::from_root(h.root.clone())
+                                .current_session(admitted.game_session_id)
+                                .await?;
+                            assert_eq!(
+                                current.session_state(),
+                                crate::foundation::GameSessionState::Reconnectable
+                            );
+                            assert!(
+                                !owner
+                                    .states
+                                    .lost
+                                    .lock()
+                                    .map_err(debug)?
+                                    .contains_key(&admitted.game_session_id)
+                            );
+                            let mut resume = std::pin::pin!(owner.resume(attempt));
+                            // Hold the exact publication gap open: admission must remain pending,
+                            // rather than permanently reject a durably reconnectable session.
+                            assert!(
+                                tokio::time::timeout(Duration::from_millis(500), &mut resume)
+                                    .await
+                                    .is_err()
+                            );
+                            barrier.1.notify_one();
+                            resume.await.map_err(debug)
+                        };
+                        let (lost, resumed) =
+                            tokio::time::timeout(Duration::from_secs(20), async {
+                                tokio::join!(loss, resume)
+                            })
+                            .await?;
+                        assert_eq!(lost, ControlLossResult::Recorded);
+                        resumed?
+                    } else {
+                        assert_eq!(
+                            owner.lose_control(admitted, Duration::ZERO, None).await,
+                            ControlLossResult::Recorded
+                        );
+                        owner.resume(attempt).await.map_err(debug)?
+                    };
                     assert_eq!(admitted.continuity.connection_generation, generation);
                     // Force the original-work lookup to meet an occupied holder. Its first poll
                     // must wait, not report an unknown original and close the resumed stream.

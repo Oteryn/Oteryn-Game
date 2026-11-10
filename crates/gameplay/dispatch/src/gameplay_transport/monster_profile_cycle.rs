@@ -208,7 +208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let mut map = reader.map;
                 let next_due = table.earliest_due().into_iter().chain(next_step).min();
                 owner
-                    .tick_creature_fields(&mut map, runtime, states, room, native, now)
+                    .tick_creature_fields(&mut map, runtime, states, native, now)
                     .await?;
                 if !map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);

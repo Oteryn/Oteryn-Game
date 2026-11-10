@@ -15,6 +15,88 @@ const RANKING_ACTIONS: &[&str] = &[
     "relog-snapshot",
 ];
 
+// Kept outside the timed future so cancellation retains the exact unfinished read.
+// These are logical ranking queries (one may retry an empty refusal), not wire counts.
+struct RankingProgress {
+    stage: &'static str,
+    stage_started: tokio::time::Instant,
+    query: Option<wire::HighscoresQuery>,
+    query_started: tokio::time::Instant,
+    issued: u32,
+    finished: u32,
+    validated: u32,
+    in_flight: bool,
+}
+
+impl RankingProgress {
+    fn new() -> Self {
+        let now = tokio::time::Instant::now();
+        Self {
+            stage: "initial_admission",
+            stage_started: now,
+            query: None,
+            query_started: now,
+            issued: 0,
+            finished: 0,
+            validated: 0,
+            in_flight: false,
+        }
+    }
+
+    fn stage(&mut self, stage: &'static str, query: Option<wire::HighscoresQuery>) {
+        self.stage = stage;
+        self.stage_started = tokio::time::Instant::now();
+        self.query = query;
+        self.in_flight = false;
+        self.report("start");
+    }
+
+    fn begin_query(&mut self, query: wire::HighscoresQuery) {
+        self.query = Some(query);
+        self.query_started = tokio::time::Instant::now();
+        self.issued += 1;
+        self.in_flight = true;
+    }
+
+    fn finish_query(&mut self, validated: bool) {
+        self.finished = self.issued;
+        self.validated += u32::from(validated);
+        self.in_flight = false;
+        if !validated {
+            self.report("query_failed");
+        }
+    }
+
+    fn report(&self, state: &'static str) {
+        let query = self.query.map_or_else(String::new, |query| {
+            let snapshot = match query.snapshot_id {
+                0 => "latest",
+                u64::MAX => "out_of_range",
+                _ => "retained",
+            };
+            format!(
+                " category={} vocation={} page={} snapshot={snapshot}",
+                query.category, query.vocation, query.page,
+            )
+        });
+        evidence(&format!(
+            "E2EF7_PROGRESS scenario=S11 stage={} state={state} issued={} finished={} validated={} in_flight={} stage_ms={} query_ms={}{}",
+            self.stage,
+            self.issued,
+            self.finished,
+            self.validated,
+            self.in_flight,
+            self.stage_started.elapsed().as_millis(),
+            if self.in_flight {
+                self.query_started.elapsed().as_millis()
+            } else {
+                0
+            },
+            query,
+        ));
+    }
+}
+
 struct Row {
     required: &'static [&'static str],
     passed: BTreeSet<&'static str>,
@@ -74,9 +156,19 @@ impl Row {
 
 pub(super) async fn run(clients: &SeamClients<'_>) {
     let mut row = Row::new(RANKING_ACTIONS);
+    let mut progress = RankingProgress::new();
     // Admission and final logout are part of the row, so failure cannot silently
     // omit its report. Other packet mounts can still run after this returns.
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
+    let result = tokio::time::timeout(
+        Duration::from_secs(180),
+        journey(&mut row, clients, &mut progress),
+    )
+    .await;
+    progress.report(match &result {
+        Ok(Ok(())) => "finished",
+        Ok(Err(_)) => "failed",
+        Err(_) => "deadline",
+    });
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("ranking journey deadline; remaining actions unproven".into()),
@@ -121,6 +213,17 @@ async fn query(
     }
 }
 
+async fn observed_query(
+    client: &mut DevClientSession,
+    request: wire::HighscoresQuery,
+    progress: &mut RankingProgress,
+) -> TestResult<wire::HighscoresResult> {
+    progress.begin_query(request);
+    let result = query(client, request).await;
+    progress.finish_query(result.is_ok());
+    result
+}
+
 fn validate_page(page: &wire::HighscoresResult, query: wire::HighscoresQuery) -> TestResult {
     if page.category != query.category
         || page.page != query.page
@@ -146,6 +249,8 @@ fn validate_page(page: &wire::HighscoresResult, query: wire::HighscoresQuery) ->
 
 fn request(category: u32, vocation: u32, page: u32, snapshot_id: u64) -> wire::HighscoresQuery {
     wire::HighscoresQuery {
+        world: None,
+        details: false,
         category,
         vocation,
         page,
@@ -158,17 +263,22 @@ async fn list(
     category: u32,
     vocation: u32,
     snapshot_id: u64,
+    progress: &mut RankingProgress,
+    stage: &'static str,
 ) -> TestResult<(wire::HighscoresResult, Vec<wire::HighscoreRow>)> {
-    let first = query(client, request(category, vocation, 1, snapshot_id)).await?;
+    let first_query = request(category, vocation, 1, snapshot_id);
+    progress.stage(stage, Some(first_query));
+    let first = observed_query(client, first_query, progress).await?;
     let mut rows = first.rows.clone();
     let mut more = first.has_more;
     for number in 2..=20 {
         if !more {
             break;
         }
-        let page = query(
+        let page = observed_query(
             client,
             request(category, vocation, number, first.snapshot_id),
+            progress,
         )
         .await?;
         if page.computed_at != first.computed_at || page.own_row != first.own_row {
@@ -187,9 +297,10 @@ async fn list(
     {
         return Err("ranking list repeats rows, exceeds cap or misorders a page boundary".into());
     }
-    let beyond = query(
+    let beyond = observed_query(
         client,
         request(category, vocation, u32::MAX, first.snapshot_id),
+        progress,
     )
     .await?;
     if !beyond.rows.is_empty()
@@ -202,14 +313,26 @@ async fn list(
     Ok((first, rows))
 }
 
-async fn refused(client: &mut DevClientSession, query: wire::HighscoresQuery) -> TestResult {
-    let reply = exchange(client, query).await?;
-    // The generic session adapter exposes status/payload, not the terminal code.
-    // Do not claim to have checked NOT_SUPPORTED/SNAPSHOT_EXPIRED codes here.
-    if reply.status != CommandStatus::Rejected || !reply.payload.is_empty() {
-        return Err(format!("invalid ranking query not refused without rows: {reply:?}").into());
+async fn refused(
+    client: &mut DevClientSession,
+    query: wire::HighscoresQuery,
+    progress: &mut RankingProgress,
+) -> TestResult {
+    progress.begin_query(query);
+    let result = async {
+        let reply = exchange(client, query).await?;
+        // The generic session adapter exposes status/payload, not the terminal code.
+        // Do not claim to have checked NOT_SUPPORTED/SNAPSHOT_EXPIRED codes here.
+        if reply.status != CommandStatus::Rejected || !reply.payload.is_empty() {
+            return Err(
+                format!("invalid ranking query not refused without rows: {reply:?}").into(),
+            );
+        }
+        Ok(())
     }
-    Ok(())
+    .await;
+    progress.finish_query(result.is_ok());
+    result
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -221,7 +344,12 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+async fn journey(
+    row: &mut Row,
+    clients: &SeamClients<'_>,
+    progress: &mut RankingProgress,
+) -> TestResult {
+    progress.stage("initial_admission", None);
     let mut client = connect_world(clients, 0xa0)
         .await
         .map_err(|error| format!("ranking initial admission: {error}"))?;
@@ -241,7 +369,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         // Charm points (11) have no activated source. Its unsupported response
         // is exercised as a refusal; it must never masquerade as an empty list.
         for category in (1..=10).chain(std::iter::once(12)) {
-            let (first, all) = list(&mut client, category, 0, 0).await?;
+            let (first, all) = list(&mut client, category, 0, 0, progress, "category_list").await?;
             if let Some(own) = &first.own_row {
                 if own.name != own_name {
                     return Err("ranking own row names another character".into());
@@ -260,8 +388,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 (4, "druid"),
                 (5, "monk"),
             ] {
-                let (filtered, entries) =
-                    list(&mut client, category, vocation, first.snapshot_id).await?;
+                let (filtered, entries) = list(
+                    &mut client,
+                    category,
+                    vocation,
+                    first.snapshot_id,
+                    progress,
+                    "vocation_list",
+                )
+                .await?;
                 if entries.iter().chain(filtered.own_row.iter()).any(|entry| {
                     oteryn_gameplay_progression::wheel::base_vocation(&entry.vocation) != Some(key)
                 }) || filtered.computed_at != first.computed_at
@@ -304,18 +439,23 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             return Err("no own ranking row observed; empty lists cannot qualify own rank".into());
         }
         row.pass("own-rank");
-        refused(&mut client, request(u32::MAX, 0, 1, 0)).await?;
-        refused(&mut client, request(11, 0, 1, 0)).await?;
+        progress.stage("unsupported_refusal", Some(request(u32::MAX, 0, 1, 0)));
+        refused(&mut client, request(u32::MAX, 0, 1, 0), progress).await?;
+        progress.stage("unsupported_refusal", Some(request(11, 0, 1, 0)));
+        refused(&mut client, request(11, 0, 1, 0), progress).await?;
         row.pass("unsupported-refusal");
         // Valid wire token outside the store's positive signed-bigint domain.
         // This is an invalid query, never a minted runtime actor/item handle.
-        refused(&mut client, request(1, 0, 1, u64::MAX)).await?;
+        progress.stage("unknown_snapshot_refusal", Some(request(1, 0, 1, u64::MAX)));
+        refused(&mut client, request(1, 0, 1, u64::MAX), progress).await?;
         row.pass("unknown-snapshot-refusal");
         // A successful read after both refusals proves the connection survived.
+        progress.stage("retained_read", None);
         for (before, _) in &saved {
-            if query(
+            if observed_query(
                 &mut client,
                 request(before.category, 0, 1, before.snapshot_id),
+                progress,
             )
             .await?
                 != *before
@@ -323,23 +463,35 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 return Err("refused query changed retained ranking state".into());
             }
         }
+        progress.stage("initial_logout", None);
         logout(&mut client).await?;
         Ok(())
     }
     .await;
     if result.is_err() {
+        progress.report("journey_failed");
+        progress.stage("failed_journey_logout", None);
         let _ = logout(&mut client).await;
         return result;
     }
     // Preserve the saved pages across a genuinely new admission, not recovery.
     drop(client);
+    progress.stage("relog_admission", None);
     let mut fresh = connect_world(clients, 0xa1).await?;
     let result: TestResult = async {
         if fresh.join_snapshot().game_session_id == initial_session {
             return Err("ranking relog reused the old game session".into());
         }
         for (before, all) in &saved {
-            let (after, rows) = list(&mut fresh, before.category, 0, before.snapshot_id).await?;
+            let (after, rows) = list(
+                &mut fresh,
+                before.category,
+                0,
+                before.snapshot_id,
+                progress,
+                "relog_list",
+            )
+            .await?;
             if after != *before || rows != *all {
                 return Err("fresh admission lost retained snapshot, rows or own rank".into());
             }
@@ -348,6 +500,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         Ok(())
     }
     .await;
+    if result.is_err() {
+        progress.report("relog_failed");
+    }
+    progress.stage("final_logout", None);
     let cleanup = logout(&mut fresh).await;
     result?;
     cleanup?;
@@ -357,6 +513,31 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test(start_paused = true)]
+    async fn ranking_deadline_retains_the_unfinished_query_and_completed_progress() {
+        let mut progress = RankingProgress::new();
+        let result = tokio::time::timeout(Duration::from_secs(180), async {
+            progress.begin_query(request(1, 0, 1, 0));
+            progress.finish_query(true);
+            progress.begin_query(request(2, 3, 4, 7));
+            std::future::pending::<()>().await;
+        })
+        .await;
+        assert!(result.is_err());
+        assert_eq!(
+            (progress.issued, progress.finished, progress.validated),
+            (2, 1, 1)
+        );
+        assert!(progress.in_flight);
+        assert_eq!(
+            progress
+                .query
+                .map(|query| (query.category, query.vocation, query.page)),
+            Some((2, 3, 4)),
+        );
+        assert_eq!(progress.query_started.elapsed(), Duration::from_secs(180));
+    }
 
     #[test]
     fn verdict_requires_every_action_and_rejects_duplicate_or_unknown_actions() {
@@ -378,6 +559,8 @@ mod tests {
     fn pages_must_echo_the_pinned_cut_and_respect_the_terminal_bound() {
         let query = request(1, 0, 21, 7);
         let mut page = wire::HighscoresResult {
+            world: None,
+            own_page: None,
             category: 1,
             snapshot_id: 7,
             computed_at: 1,
@@ -404,6 +587,8 @@ mod tests {
             value: 100,
         };
         let mut page = wire::HighscoresResult {
+            world: None,
+            own_page: None,
             category: 1,
             snapshot_id: 7,
             computed_at: 1,
@@ -436,13 +621,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = ClockRow::default();
     let mut client = None;
     let result = tokio::time::timeout(
-        Duration::from_secs(3_750),
+        qualification_deadline(3_750),
         clock_journey(&mut row, &mut client, clients),
     )
     .await;
     let mut result = match result {
         Ok(result) => result,
-        Err(_) => Err("world-clock deadline: natural full cycle not observed within 3750s".into()),
+        Err(_) => Err("world-clock deadline: full cycle not observed within wall-time budget".into()),
     };
     // The session lives outside the timed future: even cancellation attempts an
     // ordinary logout, and cleanup failure prevents a full-row PASS.
@@ -639,6 +824,54 @@ fn admitted_clock(
         .map_err(|error| format!("world-clock snapshot: {error:?}").into())
 }
 
+// Advances are explicit and occur only while W20 observes time. Other packet
+// rows, immediate cooldown refusals and offline restoration retain real time.
+fn qualification_deadline(real_seconds: u64) -> Duration {
+    Duration::from_secs(if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some() {
+        120
+    } else {
+        real_seconds
+    })
+}
+
+fn qualification_step() -> Duration {
+    Duration::from_secs(75)
+}
+
+fn qualification_offset() -> Duration {
+    #[cfg(feature = "qualification-clock")]
+    {
+        Duration::from_millis(crate::world_clock::qualification_offset_ms())
+    }
+    #[cfg(not(feature = "qualification-clock"))]
+    {
+        Duration::ZERO
+    }
+}
+
+fn advance_qualification_time(step: Duration) -> TestResult {
+    if let Some(path) = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE") {
+        if !cfg!(feature = "qualification-clock") {
+            return Err("qualification clock requires the disposable build feature".into());
+        }
+        let path = std::path::PathBuf::from(path);
+        let next = qualification_offset().checked_add(step).ok_or("clock overflow")?;
+        let temporary = path.with_extension("next");
+        fs::write(&temporary, next.as_millis().to_string())?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&temporary, fs::Permissions::from_mode(0o644))?;
+        }
+        fs::rename(temporary, path)?;
+    }
+    Ok(())
+}
+
+fn qualification_elapsed(started: std::time::Instant, offset: Duration) -> Duration {
+    started.elapsed().saturating_add(qualification_offset().saturating_sub(offset))
+}
+
 async fn clock_journey(
     row: &mut ClockRow,
     connection: &mut Option<DevClientSession>,
@@ -646,8 +879,9 @@ async fn clock_journey(
 ) -> TestResult {
     let started = std::time::Instant::now();
     row.started = Some(started);
+    let offset = qualification_offset();
     let mut previous_session = None;
-    // One Tibian day is one real hour. No fixture or clock override is used.
+    // The real-clock mode takes one hour; the disposable build advances facts.
     // Short sessions also avoid idle-removal: each logout is real and each new
     // admission proves the World clock continues independently of the session.
     for tag in 0xb0..=0xdf {
@@ -658,18 +892,30 @@ async fn clock_journey(
             return Err("world-clock fresh admission reused the old game session".into());
         }
         let clock = admitted_clock(client)?;
-        row.observe(clock, started.elapsed())?;
+        row.observe(clock, qualification_elapsed(started, offset))?;
         row.pass("snapshot");
         if previous_session.is_some() {
             row.pass("fresh-admission");
         }
-        let reconnect_at = tokio::time::Instant::now() + Duration::from_secs(90);
+        let reconnect_at = qualification_elapsed(started, offset) + Duration::from_secs(90);
         loop {
-            client.service_liveness(Duration::from_secs(1)).await?;
-            for event in client.take_events() {
-                if let oteryn_dev_client::SessionEvent::WorldClock(delta) = event {
-                    row.observe(delta.value, started.elapsed())?;
-                    row.pass("clock-delta");
+            advance_qualification_time(qualification_step())?;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+            loop {
+                client.service_liveness(Duration::from_secs(1)).await?;
+                let mut observed = false;
+                for event in client.take_events() {
+                    if let oteryn_dev_client::SessionEvent::WorldClock(delta) = event {
+                        row.observe(delta.value, qualification_elapsed(started, offset))?;
+                        row.pass("clock-delta");
+                        observed = true;
+                    }
+                }
+                if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_none() || observed {
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err("world-clock advance did not produce a server delta".into());
                 }
             }
             // Final logout is checked by run_packet even on timeout or error.
@@ -680,7 +926,7 @@ async fn clock_journey(
             {
                 return Ok(());
             }
-            if tokio::time::Instant::now() >= reconnect_at {
+            if qualification_elapsed(started, offset) >= reconnect_at {
                 break;
             }
         }
@@ -702,6 +948,61 @@ mod clock_tests {
             light_level: expected_light(u32::from(minute)),
             light_color: 215,
         }
+    }
+
+    #[test]
+    fn accelerated_clock_keeps_all_natural_transition_assertions() -> TestResult {
+        let source = crate::world_clock::WorldClockSource::new(0);
+        for initial_minute in [0_u64, 359, 479, 1_049, 1_439] {
+            let mut row = ClockRow::default();
+            for step in 0..=50_u64 {
+                let elapsed = qualification_step() * u32::try_from(step)?;
+                let now = initial_minute * 2_500 + u64::try_from(elapsed.as_millis())?;
+                row.observe(source.reading(now).ok_or("clock reading")?, elapsed)?;
+            }
+            for action in ["day", "night", "sunrise", "sunset", "midnight-wrap", "full-cycle"] {
+                assert!(row.passed.contains(action), "missing {action}");
+            }
+            assert!(!row.complete(), "transport and relog are still required");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn accelerated_personal_light_keeps_decay_and_expiry_assertions() -> TestResult {
+        use crate::foundation::condition::{
+            ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionStore,
+        };
+        use oteryn_gameplay_domain::domain::condition::ConditionValues;
+        use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+        let root = GameplayDecisionRoot::from_bytes([1; 32]);
+        for (level, seconds) in [(6_u8, 370_u64), (8, 695), (8, 1_990)] {
+            let duration = Duration::from_secs(seconds);
+            let definition = ConditionDefinition::new("qualification.light", 1,
+                ConditionValues::SpellLight { level, color: 215, duration_ms: u32::try_from(seconds * 1_000)? })
+                .ok_or("light definition")?;
+            let mut store = ConditionStore::<String>::new();
+            store.apply(&definition, None, ConditionSourceKind::SelfUse, &[], &ApplicationFacts {
+                now: 0, base_speed: 220, mana_shield_capacity: 0,
+                target_reentry_protected: false, source_reentry_protected: false,
+                target_is_player: true, decision_root: &root,
+                occurrence: DecisionOccurrenceId::from_bytes([2; 16]),
+            }).map_err(|error| format!("light application: {error:?}"))?;
+            let step = duration / u32::from(level);
+            let mut saw_decay = false;
+            for index in 0..=u32::from(level) + 1 {
+                let elapsed = step * index;
+                let light = store.light_at(u64::try_from(elapsed.as_micros())?)
+                    .map(|(level, color)| spatial::EntityLight { level, color: color.unwrap_or(0) });
+                light_sample(light, level, elapsed, duration)?;
+                saw_decay |= light.is_some_and(|light| light.level > 0 && light.level < level);
+                if elapsed >= duration {
+                    assert!(light.is_none());
+                }
+            }
+            assert!(saw_decay);
+        }
+        Ok(())
     }
 
     #[test]
@@ -894,12 +1195,12 @@ async fn additional_rows(clients: &SeamClients<'_>) {
     let mut row = JourneyRow::new("W20b", LIGHT_ACTIONS);
     let mut light = None;
     let result = tokio::time::timeout(
-        Duration::from_secs(3_300),
+        qualification_deadline(3_300),
         light_journey(&mut row, &mut light, clients),
     )
     .await;
     let mut result = result.unwrap_or_else(|_| {
-        Err("personal-light journey exceeded natural-duration deadline".into())
+        Err("personal-light journey exceeded wall-time deadline".into())
     });
     if let Some(client) = light.as_mut() {
         match tokio::time::timeout(Duration::from_secs(25), client.logout()).await {
@@ -991,9 +1292,15 @@ fn qualification_spell_index(
         .ok_or_else(|| format!("compiled spell has no index: {words}").into())
 }
 
-// The ordinary DevClientSession discards EntityLights. This test-only wire
-// observer uses the same TLS, Foundation and light-aware native codecs, retaining
-// those fields without changing a client/server crate or inventing observations.
+// These ordinary TLS observers include the boot-required capability closure and
+// decode its map/item domains as well as their journey-specific observations.
+const LIGHT_SUPPORTED_CAPABILITIES: &[u32] = &[4, 6, 11, 13, 15, 18, 19, 21, 30, 64];
+const PVP_SUPPORTED_CAPABILITIES: &[u32] =
+    &[4, 6, 9, 11, 13, 15, 17, 18, 21, 30, 42, 64, 87, 134, 199];
+const FORGE_SUPPORTED_CAPABILITIES: &[u32] = &[
+    4, 6, 9, 11, 12, 13, 14, 15, 17, 18, 21, 25, 30, 64, 104, 152, 199,
+];
+
 type LightStream = tokio_rustls::client::TlsStream<TcpStream>;
 struct LightClient {
     stream: LightStream,
@@ -1009,10 +1316,11 @@ struct LightClient {
     vitals: casts::ActorVitals,
     position: ActorPosition,
     content: [u8; 32],
+    map_header: native::world_map::MapViewHeader,
     own_updates: u64,
     refusal: Option<casts::SpellCastRefusalDetail>,
 }
-async fn light_read(stream: &mut LightStream) -> TestResult<Vec<u8>> {
+async fn light_read<S: tokio::io::AsyncRead + Unpin>(stream: &mut S) -> TestResult<Vec<u8>> {
     tokio::time::timeout(Duration::from_secs(20), async {
         let size = stream.read_u32().await?;
         if size == 0 || size > native::MAX_WIRE_FRAME_BYTES {
@@ -1050,6 +1358,90 @@ fn post_frame(
     }
     Ok(frame)
 }
+
+async fn raw_snapshot<S: tokio::io::AsyncRead + Unpin>(
+    stream: &mut S,
+    generation: u64,
+    bytes: &[u8],
+) -> TestResult<(native::SnapshotBeginFields, Vec<u8>)> {
+    let frame = post_frame(bytes, generation, MessageType::SnapshotBegin)?;
+    let begin = native::decode_snapshot_begin(frame.payload())?;
+    let mut body = Vec::new();
+    for index in 0..begin.chunk_count {
+        let bytes = light_read(stream).await?;
+        let frame = post_frame(&bytes, generation, MessageType::SnapshotChunk)?;
+        let (seen, chunk) = native::decode_snapshot_chunk_framing(frame.payload())?;
+        if native::decode_snapshot_id(frame.payload())? != begin.snapshot_id || seen != index {
+            return Err("native observer snapshot chunk correlation mismatch".into());
+        }
+        if u64::try_from(body.len())?
+            .checked_add(u64::try_from(chunk.len())?)
+            .is_none_or(|total| total > begin.total_encoded_bytes)
+        {
+            return Err("native observer snapshot exceeds declared length".into());
+        }
+        body.extend_from_slice(chunk);
+    }
+    let bytes = light_read(stream).await?;
+    let frame = post_frame(&bytes, generation, MessageType::SnapshotCommit)?;
+    if native::decode_snapshot_id(frame.payload())? != begin.snapshot_id
+        || u64::try_from(body.len())? != begin.total_encoded_bytes
+    {
+        return Err("native observer snapshot commit mismatch".into());
+    }
+    Ok((begin, body))
+}
+
+fn raw_map_snapshot(
+    domains: &[native::DomainSnapshot<'_>],
+    content: [u8; 32],
+) -> TestResult<native::world_map::MapViewHeader> {
+    let domain = domains
+        .iter()
+        .find(|domain| domain.domain_id == 17)
+        .ok_or("native observer map snapshot absent")?;
+    if domain.snapshot_type != 1 || domains.iter().any(|domain| domain.domain_id == 2) {
+        return Err("native observer map snapshot type/domain mismatch".into());
+    }
+    let map = native::world_map::decode_world_map_snapshot(domain.payload)
+        .map_err(|error| format!("native observer map snapshot: {error:?}"))?;
+    if map.header.content_generation != content {
+        return Err("native observer map content generation changed".into());
+    }
+    Ok(map.header)
+}
+
+fn raw_map_delta(
+    header: &native::world_map::MapViewHeader,
+    payload: &[u8],
+) -> TestResult<native::world_map::MapViewHeader> {
+    native::world_map::decode_world_map_delta(header, payload)
+        .map(|delta| delta.header)
+        .map_err(|error| format!("native observer map delta: {error:?}").into())
+}
+
+async fn raw_map_replacement<S: tokio::io::AsyncRead + Unpin>(
+    stream: &mut S,
+    generation: u64,
+    bytes: &[u8],
+    sequence: u64,
+    revision: u64,
+    content: [u8; 32],
+) -> TestResult<(u64, u64, native::world_map::MapViewHeader)> {
+    let frame = post_frame(bytes, generation, MessageType::SnapshotBegin)?;
+    let begin = native::decode_snapshot_begin(frame.payload())?;
+    if Some(begin.target_server_sequence) != sequence.checked_add(1) {
+        return Err("native observer replacement snapshot sequence gap".into());
+    }
+    let (_, body) = raw_snapshot(stream, generation, bytes).await?;
+    let domains = native::decode_snapshot_body(&body)?;
+    if domains.len() != 1 || domains[0].domain_id != 17 || domains[0].revision <= revision {
+        return Err("native observer replacement map domain/revision mismatch".into());
+    }
+    let header = raw_map_snapshot(&domains, content)?;
+    Ok((begin.target_server_sequence, domains[0].revision, header))
+}
+
 impl LightClient {
     async fn connect(clients: &SeamClients<'_>, tag: u8) -> TestResult<Self> {
         let generation = platform_generation(clients.descriptor, &clients.accounts[1]).await?;
@@ -1082,9 +1474,7 @@ impl LightClient {
         if stream.get_ref().1.alpn_protocol() != Some(native::ALPN_OTERYN_GAME_V1.as_bytes()) {
             return Err("personal-light ALPN mismatch".into());
         }
-        // Select only the native domains this observer needs; no command or
-        // state-domain is created by this phase.
-        let supported = [6, 13, 19, 21, 23, 64];
+        let supported = LIGHT_SUPPORTED_CAPABILITIES;
         light_write(
             &mut stream,
             &native::encode_client_bootstrap(&native::ClientBootstrapValue {
@@ -1092,7 +1482,7 @@ impl LightClient {
                 character_id: CharacterId::decode(&clients.characters[1])?,
                 admission_material: token.as_bytes(),
                 client_build_id: "oteryn-e2e-light",
-                supported_capabilities: &supported,
+                supported_capabilities: supported,
             })?,
         )
         .await?;
@@ -1117,43 +1507,21 @@ impl LightClient {
             return Err("personal-light admission world/channel/capabilities mismatch".into());
         }
         let bytes = light_read(&mut stream).await?;
-        let frame = post_frame(
-            &bytes,
-            accepted.connection_generation,
-            MessageType::SnapshotBegin,
-        )?;
-        let begin = native::decode_snapshot_begin(frame.payload())?;
-        let mut body = Vec::new();
-        for index in 0..begin.chunk_count {
-            let bytes = light_read(&mut stream).await?;
-            let frame = post_frame(
-                &bytes,
-                accepted.connection_generation,
-                MessageType::SnapshotChunk,
-            )?;
-            let (seen, chunk) = native::decode_snapshot_chunk_framing(frame.payload())?;
-            if native::decode_snapshot_id(frame.payload())? != begin.snapshot_id || seen != index {
-                return Err("personal-light snapshot chunk correlation mismatch".into());
-            }
-            body.extend_from_slice(chunk);
-            if body.len() as u64 > begin.total_encoded_bytes {
-                return Err("personal-light snapshot exceeds declared length".into());
-            }
-        }
-        let bytes = light_read(&mut stream).await?;
-        let frame = post_frame(
-            &bytes,
-            accepted.connection_generation,
-            MessageType::SnapshotCommit,
-        )?;
-        if native::decode_snapshot_id(frame.payload())? != begin.snapshot_id
-            || body.len() as u64 != begin.total_encoded_bytes
-            || begin.target_server_sequence < accepted.current_server_sequence
-        {
+        let (begin, body) =
+            raw_snapshot(&mut stream, accepted.connection_generation, &bytes).await?;
+        if begin.target_server_sequence < accepted.current_server_sequence {
             return Err("personal-light snapshot commit mismatch".into());
         }
         let domains = native::decode_snapshot_body(&body)?;
-        for id in [2, 3, 18, 19, 20] {
+        // PRESENTATION_V1 remains unoffered. The light oracle uses spatial light,
+        // vitals and cast dispositions, so unselected presentation domains are refused.
+        if domains
+            .iter()
+            .any(|domain| matches!(domain.domain_id, 19 | 20))
+        {
+            return Err("personal-light unselected presentation snapshot".into());
+        }
+        for id in [3, 9, 11, 17, 18] {
             let row = domains
                 .iter()
                 .find(|d| d.domain_id == id)
@@ -1164,23 +1532,19 @@ impl LightClient {
                 );
             }
             match id {
-                2 => {
-                    native::world_object::decode_world_object_overlay_snapshot(row.payload)
-                        .map_err(|e| format!("personal-light overlay snapshot: {e:?}"))?;
+                9 => {
+                    native::item_view::decode_character_inventory(row.payload)
+                        .map_err(|e| format!("personal-light inventory snapshot: {e:?}"))?;
+                }
+                11 => {
+                    native::item_view::decode_open_container(row.payload)
+                        .map_err(|e| format!("personal-light container snapshot: {e:?}"))?;
                 }
                 18 => {
                     native::world_clock::decode_world_clock(row.payload)
                         .map_err(|e| format!("personal-light clock snapshot: {e:?}"))?;
                 }
-                19 => {
-                    native::presentation::decode_presentation_snapshot(row.payload)
-                        .map_err(|e| format!("personal-light presentation snapshot: {e:?}"))?;
-                }
-                20 => {
-                    native::presentation::decode_actor_cooldowns(row.payload)
-                        .map_err(|e| format!("personal-light cooldown snapshot: {e:?}"))?;
-                }
-                _ => {} // Vitals are decoded below, before constructing the client.
+                _ => {} // Vitals and map are decoded below, before constructing the client.
             }
         }
         let domain = domains
@@ -1196,6 +1560,7 @@ impl LightClient {
         let spatial::WorldSpatialSnapshotView::Entities(view) = view else {
             return Err("personal-light entity snapshot absent".into());
         };
+        let map_header = raw_map_snapshot(&domains, view.content_generation)?;
         let vitals = domains
             .iter()
             .find(|d| d.domain_id == 3)
@@ -1216,6 +1581,7 @@ impl LightClient {
             vitals,
             position: view.actor_position,
             content: view.content_generation,
+            map_header,
             own_updates: 0,
             refusal: None,
         })
@@ -1226,6 +1592,24 @@ impl LightClient {
         frame.validate(native::Direction::ServerToClient, true)?;
         if frame.connection_generation() != self.generation {
             return Err("personal-light stale frame generation".into());
+        }
+        if frame.message_type() == MessageType::SnapshotBegin {
+            let (sequence, revision, header) = raw_map_replacement(
+                &mut self.stream,
+                self.generation,
+                &bytes,
+                self.sequence,
+                self.revisions
+                    .get(&17)
+                    .copied()
+                    .ok_or("map revision absent")?,
+                self.content,
+            )
+            .await?;
+            self.sequence = sequence;
+            self.revisions.insert(17, revision);
+            self.map_header = header;
+            return Ok(None);
         }
         match frame.message_type() {
             MessageType::LivenessProbe => {
@@ -1287,9 +1671,16 @@ impl LightClient {
                             self.own_updates += 1;
                         }
                     }
-                    2 => {
-                        native::world_object::decode_world_object_overlay_delta(delta.payload)
-                            .map_err(|e| format!("personal-light overlay delta: {e:?}"))?;
+                    17 => {
+                        self.map_header = raw_map_delta(&self.map_header, delta.payload)?;
+                    }
+                    9 => {
+                        native::item_view::decode_character_inventory(delta.payload)
+                            .map_err(|e| format!("personal-light inventory delta: {e:?}"))?;
+                    }
+                    11 => {
+                        native::item_view::decode_open_container(delta.payload)
+                            .map_err(|e| format!("personal-light container delta: {e:?}"))?;
                     }
                     3 => {
                         if delta.delta_type != 1 {
@@ -1301,14 +1692,6 @@ impl LightClient {
                     18 => {
                         native::world_clock::decode_world_clock(delta.payload)
                             .map_err(|e| format!("personal-light clock: {e:?}"))?;
-                    }
-                    19 => {
-                        native::presentation::decode_presentation_batch(delta.payload)
-                            .map_err(|e| format!("personal-light presentation: {e:?}"))?;
-                    }
-                    20 => {
-                        native::presentation::decode_actor_cooldowns(delta.payload)
-                            .map_err(|e| format!("personal-light cooldowns: {e:?}"))?;
                     }
                     _ => {
                         return Err(format!(
@@ -1479,6 +1862,7 @@ async fn light_journey(
         let before = client.vitals;
         let own_updates = client.own_updates;
         let started = std::time::Instant::now();
+        let offset = qualification_offset();
         let cast = client.cast(index).await?;
         if cast != casts::SpellCastDisposition::Cast {
             let spell = book
@@ -1541,11 +1925,26 @@ async fn light_journey(
         let mut last_level = level;
         let mut saw_decay = false;
         let mut activity = std::time::Instant::now();
-        while started.elapsed().saturating_sub(offline) <= duration + Duration::from_secs(8) {
-            if client.receive().await?.is_some() {
-                return Err("personal-light unsolicited command result during observation".into());
+        while qualification_elapsed(started, offset).saturating_sub(offline) <= duration + Duration::from_secs(8) {
+            advance_qualification_time(duration / u32::from(level))?;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+            loop {
+                let accelerated = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some();
+                let result = if accelerated {
+                    tokio::time::timeout_at(deadline, client.receive()).await??
+                } else {
+                    client.receive().await?
+                };
+                if result.is_some() {
+                    return Err("personal-light unsolicited command result during observation".into());
+                }
+                if !accelerated
+                    || client.light.map_or(0, |light| light.level) < last_level
+                {
+                    break;
+                }
             }
-            let elapsed = started.elapsed().saturating_sub(offline);
+            let elapsed = qualification_elapsed(started, offset).saturating_sub(offline);
             light_sample(client.light, level, elapsed, duration)?;
             let current = client.light.map_or(0, |l| l.level);
             if current > last_level {
@@ -2118,6 +2517,7 @@ mod continuation_tests {
         let mut a = parties::PartyResult::refused(parties::PartyDisposition::Ok);
         a.members = vec![
             parties::PartyEntry {
+                list: Vec::new(),
                 handle: 1,
                 name: "Caster".into(),
                 leader: true,
@@ -2125,6 +2525,7 @@ mod continuation_tests {
                 party_spell_remaining_ms: None,
             },
             parties::PartyEntry {
+                list: Vec::new(),
                 handle: 2,
                 name: "Peer".into(),
                 leader: false,
@@ -2220,6 +2621,257 @@ mod continuation_tests {
             )
             .is_err()
         );
+    }
+}
+
+#[cfg(test)]
+mod raw_observer_tests {
+    use super::*;
+    use native::world_map::{self, MapViewHeader, WorldMapViewDelta, WorldMapViewSnapshot};
+
+    #[test]
+    fn raw_observers_support_the_boot_owner_required_capability_closure() -> TestResult {
+        use crate::gameplay_transport::world_required_capabilities::{
+            BoundRequiredCapabilities, SessionCapabilityError, offered_for_scope_with,
+        };
+        // The bundle branch in node_boot/run.sh declares these roots. The owner
+        // derives the mandatory floor and transitive dependencies from its registry.
+        let required = BoundRequiredCapabilities::for_channel_boot(
+            &[11, 18, 21, 30],
+            RuntimeScopeRefV1::channel(
+                WorldId::decode(&v7(0x71, 1))?,
+                ChannelId::decode(&v7(0x72, 1))?,
+            ),
+            1,
+            "node-boot-raw-observers",
+            offered_for_scope_with(true, None, false),
+        )
+        .map_err(|error| format!("raw observer boot requirements: {error:?}"))?;
+        // Appearance's owner adds 25/104 at session admission when cosmetics are
+        // available. They are intentionally absent from the static boot offer.
+        for (supported, dynamic_only) in [
+            (LIGHT_SUPPORTED_CAPABILITIES, &[][..]),
+            (PVP_SUPPORTED_CAPABILITIES, &[][..]),
+            (FORGE_SUPPORTED_CAPABILITIES, &[25, 104][..]),
+        ] {
+            let selected = required
+                .authenticate_support(supported)
+                .map_err(|error| format!("raw observer admission: {error:?}"))?
+                .selected();
+            let expected: Vec<_> = supported
+                .iter()
+                .copied()
+                .filter(|id| !dynamic_only.contains(id))
+                .collect();
+            assert_eq!(selected.as_slice(), expected.as_slice());
+            let deferred: Vec<_> = supported
+                .iter()
+                .copied()
+                .filter(|id| !selected.contains(*id))
+                .collect();
+            assert_eq!(deferred.as_slice(), dynamic_only);
+            for domain in [9, 11, 17] {
+                assert!(selected.domain_selected(domain));
+            }
+            assert!(!selected.domain_selected(2));
+            for missing in required.effective() {
+                let reduced: Vec<_> = supported
+                    .iter()
+                    .copied()
+                    .filter(|id| id != missing)
+                    .collect();
+                assert!(matches!(
+                    required.authenticate_support(&reduced),
+                    Err(SessionCapabilityError::MissingSupport(_))
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn header(floor: i16) -> MapViewHeader {
+        MapViewHeader {
+            content_generation: [0x11; 32],
+            bundle_digest: [0x22; 32],
+            reset_epoch: 3,
+            origin: ActorPosition {
+                x: 100,
+                y: 100,
+                floor,
+            },
+            first_visible_floor: world_map::first_visible_floor_start(floor),
+        }
+    }
+
+    fn snapshot(
+        generation: u64,
+        id: u64,
+        sequence: u64,
+        revision: u64,
+        header: MapViewHeader,
+    ) -> TestResult<Vec<Vec<u8>>> {
+        let payload = world_map::encode_world_map_snapshot(&WorldMapViewSnapshot {
+            header,
+            tiles: Vec::new(),
+        })
+        .map_err(|error| format!("map snapshot fixture: {error:?}"))?;
+        Ok(native::encode_snapshot(
+            generation,
+            id,
+            sequence,
+            &[native::DomainSnapshot {
+                domain_id: 17,
+                revision,
+                snapshot_type: 1,
+                payload: &payload,
+            }],
+        )?)
+    }
+
+    fn tail(frames: &[Vec<u8>]) -> Vec<u8> {
+        frames[1..].iter().flat_map(|frame| framed(frame)).collect()
+    }
+
+    fn begin_frame(begin: native::SnapshotBeginFields) -> Vec<u8> {
+        let mut payload = Vec::new();
+        scalar(&mut payload, 1, begin.snapshot_id);
+        scalar(&mut payload, 2, u64::from(begin.chunk_count));
+        scalar(&mut payload, 3, begin.total_encoded_bytes);
+        scalar(&mut payload, 4, begin.target_server_sequence);
+        envelope(MessageType::SnapshotBegin as u64, 7, &payload)
+    }
+
+    fn chunk_frame(id: u64, index: u64, data: &[u8]) -> Vec<u8> {
+        let mut payload = Vec::new();
+        scalar(&mut payload, 1, id);
+        scalar(&mut payload, 2, index);
+        bytes_field(&mut payload, 3, data);
+        envelope(MessageType::SnapshotChunk as u64, 7, &payload)
+    }
+
+    async fn replacement(frames: &[Vec<u8>]) -> TestResult<(u64, u64, MapViewHeader)> {
+        raw_map_replacement(
+            &mut tail(frames).as_slice(),
+            7,
+            &frames[0],
+            10,
+            5,
+            [0x11; 32],
+        )
+        .await
+    }
+
+    #[tokio::test]
+    async fn raw_observer_decodes_initial_map_delta_and_floor_replacement() -> TestResult {
+        let initial = snapshot(7, 1, 0, 5, header(-7))?;
+        let (begin, body) = raw_snapshot(&mut tail(&initial).as_slice(), 7, &initial[0]).await?;
+        assert_eq!(begin.target_server_sequence, 0);
+        let domains = native::decode_snapshot_body(&body)?;
+        let joined = raw_map_snapshot(&domains, [0x11; 32])?;
+        assert_eq!(joined, header(-7));
+        assert!(raw_map_snapshot(&domains, [0x33; 32]).is_err());
+        let mut moved = joined;
+        moved.origin.x += 1;
+        let payload = world_map::encode_world_map_delta(
+            &joined,
+            &WorldMapViewDelta {
+                header: moved,
+                tiles: Vec::new(),
+                cleared: Vec::new(),
+            },
+        )
+        .map_err(|error| format!("map delta fixture: {error:?}"))?;
+        assert_eq!(raw_map_delta(&joined, &payload)?, moved);
+        let mut stale = joined;
+        stale.reset_epoch += 1;
+        assert!(raw_map_delta(&stale, &payload).is_err());
+        assert!(raw_map_delta(&joined, &[]).is_err());
+
+        // Split a real encoded body inside a field to exercise the same bounded
+        // multi-chunk transfer used when a replacement outgrows one wire frame.
+        let frames = snapshot(7, 11, 11, 6, header(-8))?;
+        let mut begin =
+            native::decode_snapshot_begin(native::decode_wire_envelope(&frames[0])?.payload())?;
+        let chunk = native::decode_wire_envelope(&frames[1])?;
+        let (_, body) = native::decode_snapshot_chunk_framing(chunk.payload())?;
+        begin.chunk_count = 2;
+        let split = vec![
+            begin_frame(begin),
+            chunk_frame(11, 0, &body[..7]),
+            chunk_frame(11, 1, &body[7..]),
+            frames[2].clone(),
+        ];
+        assert_eq!(replacement(&split).await?, (11, 6, header(-8)));
+        let mut reversed = split;
+        reversed.swap(1, 2);
+        assert!(replacement(&reversed).await.is_err());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn raw_observer_rejects_unfenced_or_malformed_map_replacements() -> TestResult {
+        let valid = snapshot(7, 11, 11, 6, header(-8))?;
+        assert_eq!(replacement(&valid).await?, (11, 6, header(-8)));
+        for frames in [
+            snapshot(8, 11, 11, 6, header(-8))?,
+            snapshot(7, 11, 10, 6, header(-8))?,
+            snapshot(7, 11, 12, 6, header(-8))?,
+            snapshot(7, 11, 11, 5, header(-8))?,
+            snapshot(
+                7,
+                11,
+                11,
+                6,
+                MapViewHeader {
+                    content_generation: [0x33; 32],
+                    ..header(-8)
+                },
+            )?,
+        ] {
+            assert!(replacement(&frames).await.is_err());
+        }
+        for index in [1, 2] {
+            for foreign in [
+                snapshot(8, 11, 11, 6, header(-8))?,
+                snapshot(7, 12, 11, 6, header(-8))?,
+            ] {
+                let mut frames = valid.clone();
+                frames[index] = foreign[index].clone();
+                assert!(replacement(&frames).await.is_err());
+            }
+        }
+        let begin =
+            native::decode_snapshot_begin(native::decode_wire_envelope(&valid[0])?.payload())?;
+        for total in [
+            begin.total_encoded_bytes - 1,
+            begin.total_encoded_bytes + 1,
+            native::MAX_SNAPSHOT_ASSEMBLED_BYTES + 1,
+        ] {
+            let mut frames = valid.clone();
+            frames[0] = begin_frame(native::SnapshotBeginFields {
+                total_encoded_bytes: total,
+                ..begin
+            });
+            assert!(replacement(&frames).await.is_err());
+        }
+        for (domain_id, snapshot_type, payload) in
+            [(2, 1, &[][..]), (17, 2, &[][..]), (17, 1, &[0xff][..])]
+        {
+            let frames = native::encode_snapshot(
+                7,
+                11,
+                11,
+                &[native::DomainSnapshot {
+                    domain_id,
+                    revision: 6,
+                    snapshot_type,
+                    payload,
+                }],
+            )?;
+            assert!(replacement(&frames).await.is_err());
+        }
+        assert!(replacement(&valid[..2]).await.is_err());
+        Ok(())
     }
 }
 
@@ -3523,6 +4175,7 @@ struct PvpClient {
     vitals: casts::ActorVitals,
     position: ActorPosition,
     content: [u8; 32],
+    map_header: native::world_map::MapViewHeader,
     expert: native::pvp_expert::ExpertFightModes,
     expert_delta: Option<Vec<u8>>,
     released: bool,
@@ -3576,9 +4229,7 @@ impl PvpClient {
         if stream.get_ref().1.alpn_protocol() != Some(native::ALPN_OTERYN_GAME_V1.as_bytes()) {
             return Err("pvp-native ALPN mismatch".into());
         }
-        // Select only the native domains this observer needs; no command or
-        // state-domain is created by this phase.
-        let supported = [6, 9, 13, 17, 21, 42, 64, 87, 134, 199];
+        let supported = PVP_SUPPORTED_CAPABILITIES;
         light_write(
             &mut stream,
             &native::encode_client_bootstrap(&native::ClientBootstrapValue {
@@ -3586,7 +4237,7 @@ impl PvpClient {
                 character_id: CharacterId::decode(&clients.characters[index])?,
                 admission_material: token.as_bytes(),
                 client_build_id: "oteryn-e2e-pvp",
-                supported_capabilities: &supported,
+                supported_capabilities: supported,
             })?,
         )
         .await?;
@@ -3611,49 +4262,30 @@ impl PvpClient {
             return Err("pvp-native admission world/channel/capabilities mismatch".into());
         }
         let bytes = light_read(&mut stream).await?;
-        let frame = post_frame(
-            &bytes,
-            accepted.connection_generation,
-            MessageType::SnapshotBegin,
-        )?;
-        let begin = native::decode_snapshot_begin(frame.payload())?;
-        let mut body = Vec::new();
-        for index in 0..begin.chunk_count {
-            let bytes = light_read(&mut stream).await?;
-            let frame = post_frame(
-                &bytes,
-                accepted.connection_generation,
-                MessageType::SnapshotChunk,
-            )?;
-            let (seen, chunk) = native::decode_snapshot_chunk_framing(frame.payload())?;
-            if native::decode_snapshot_id(frame.payload())? != begin.snapshot_id || seen != index {
-                return Err("pvp-native snapshot chunk correlation mismatch".into());
-            }
-            body.extend_from_slice(chunk);
-            if body.len() as u64 > begin.total_encoded_bytes {
-                return Err("pvp-native snapshot exceeds declared length".into());
-            }
-        }
-        let bytes = light_read(&mut stream).await?;
-        let frame = post_frame(
-            &bytes,
-            accepted.connection_generation,
-            MessageType::SnapshotCommit,
-        )?;
-        if native::decode_snapshot_id(frame.payload())? != begin.snapshot_id
-            || body.len() as u64 != begin.total_encoded_bytes
-            || begin.target_server_sequence < accepted.current_server_sequence
-        {
+        let (begin, body) =
+            raw_snapshot(&mut stream, accepted.connection_generation, &bytes).await?;
+        if begin.target_server_sequence < accepted.current_server_sequence {
             return Err("pvp-native snapshot commit mismatch".into());
         }
         let domains = native::decode_snapshot_body(&body)?;
-        for id in [1, 2, 3, 10, 52] {
+        for id in [1, 3, 9, 10, 11, 17, 52] {
             let domain = domains
                 .iter()
                 .find(|d| d.domain_id == id)
                 .ok_or("PvP required snapshot domain absent")?;
             if id != 1 && domain.snapshot_type != 1 {
                 return Err("PvP snapshot type mismatch".into());
+            }
+            match id {
+                9 => {
+                    native::item_view::decode_character_inventory(domain.payload)
+                        .map_err(|e| format!("PvP inventory snapshot: {e:?}"))?;
+                }
+                11 => {
+                    native::item_view::decode_open_container(domain.payload)
+                        .map_err(|e| format!("PvP container snapshot: {e:?}"))?;
+                }
+                _ => {}
             }
         }
         let domain = domains
@@ -3669,6 +4301,7 @@ impl PvpClient {
         let spatial::WorldSpatialSnapshotView::Entities(view) = view else {
             return Err("pvp-native entity snapshot absent".into());
         };
+        let map_header = raw_map_snapshot(&domains, view.content_generation)?;
         let vitals = domains
             .iter()
             .find(|d| d.domain_id == 3)
@@ -3702,6 +4335,7 @@ impl PvpClient {
             vitals,
             position: view.actor_position,
             content: view.content_generation,
+            map_header,
             expert,
             expert_delta: None,
             released: false,
@@ -3731,6 +4365,24 @@ impl PvpClient {
         frame.validate(native::Direction::ServerToClient, true)?;
         if frame.connection_generation() != self.generation {
             return Err("PvP stale frame generation".into());
+        }
+        if frame.message_type() == MessageType::SnapshotBegin {
+            let (sequence, revision, header) = raw_map_replacement(
+                &mut self.stream,
+                self.generation,
+                &bytes,
+                self.sequence,
+                self.revisions
+                    .get(&17)
+                    .copied()
+                    .ok_or("map revision absent")?,
+                self.content,
+            )
+            .await?;
+            self.sequence = sequence;
+            self.revisions.insert(17, revision);
+            self.map_header = header;
+            return Ok(None);
         }
         if frame.message_type() == MessageType::LivenessProbe {
             let probe = native::decode_liveness_probe(frame.payload())?;
@@ -3782,9 +4434,16 @@ impl PvpClient {
                 }
                 self.position = view.actor_position;
             }
-            2 => {
-                native::world_object::decode_world_object_overlay_delta(delta.payload)
-                    .map_err(|e| format!("PvP overlay:{e:?}"))?;
+            17 => {
+                self.map_header = raw_map_delta(&self.map_header, delta.payload)?;
+            }
+            9 => {
+                native::item_view::decode_character_inventory(delta.payload)
+                    .map_err(|e| format!("PvP inventory delta: {e:?}"))?;
+            }
+            11 => {
+                native::item_view::decode_open_container(delta.payload)
+                    .map_err(|e| format!("PvP container delta: {e:?}"))?;
             }
             3 => {
                 self.vitals = casts::decode_actor_vitals(delta.payload)
@@ -4213,6 +4872,7 @@ struct ForgeClient {
     vitals: casts::ActorVitals,
     position: ActorPosition,
     content: [u8; 32],
+    map_header: native::world_map::MapViewHeader,
     entities: Vec<spatial::WorldSpatialEntity>,
     bindings: Vec<native::appearance::Binding>,
     inventory: native::item_view::CharacterInventory,
@@ -4269,9 +4929,7 @@ impl ForgeClient {
         if stream.get_ref().1.alpn_protocol() != Some(native::ALPN_OTERYN_GAME_V1.as_bytes()) {
             return Err("forge-native ALPN mismatch".into());
         }
-        // Select only the native domains this observer needs; no command or
-        // state-domain is created by this phase.
-        let supported = [4, 6, 9, 12, 13, 14, 17, 21, 25, 64, 104, 152, 199];
+        let supported = FORGE_SUPPORTED_CAPABILITIES;
         light_write(
             &mut stream,
             &native::encode_client_bootstrap(&native::ClientBootstrapValue {
@@ -4279,7 +4937,7 @@ impl ForgeClient {
                 character_id: CharacterId::decode(&clients.characters[index])?,
                 admission_material: token.as_bytes(),
                 client_build_id: "oteryn-e2e-forge",
-                supported_capabilities: &supported,
+                supported_capabilities: supported,
             })?,
         )
         .await?;
@@ -4304,43 +4962,13 @@ impl ForgeClient {
             return Err("forge-native admission world/channel/capabilities mismatch".into());
         }
         let bytes = light_read(&mut stream).await?;
-        let frame = post_frame(
-            &bytes,
-            accepted.connection_generation,
-            MessageType::SnapshotBegin,
-        )?;
-        let begin = native::decode_snapshot_begin(frame.payload())?;
-        let mut body = Vec::new();
-        for index in 0..begin.chunk_count {
-            let bytes = light_read(&mut stream).await?;
-            let frame = post_frame(
-                &bytes,
-                accepted.connection_generation,
-                MessageType::SnapshotChunk,
-            )?;
-            let (seen, chunk) = native::decode_snapshot_chunk_framing(frame.payload())?;
-            if native::decode_snapshot_id(frame.payload())? != begin.snapshot_id || seen != index {
-                return Err("forge-native snapshot chunk correlation mismatch".into());
-            }
-            body.extend_from_slice(chunk);
-            if body.len() as u64 > begin.total_encoded_bytes {
-                return Err("forge-native snapshot exceeds declared length".into());
-            }
-        }
-        let bytes = light_read(&mut stream).await?;
-        let frame = post_frame(
-            &bytes,
-            accepted.connection_generation,
-            MessageType::SnapshotCommit,
-        )?;
-        if native::decode_snapshot_id(frame.payload())? != begin.snapshot_id
-            || body.len() as u64 != begin.total_encoded_bytes
-            || begin.target_server_sequence < accepted.current_server_sequence
-        {
+        let (begin, body) =
+            raw_snapshot(&mut stream, accepted.connection_generation, &bytes).await?;
+        if begin.target_server_sequence < accepted.current_server_sequence {
             return Err("forge-native snapshot commit mismatch".into());
         }
         let domains = native::decode_snapshot_body(&body)?;
-        for id in [1, 2, 3, 9, 10, 11, 14, 21] {
+        for id in [1, 3, 9, 10, 11, 14, 17, 21] {
             let domain = domains
                 .iter()
                 .find(|d| d.domain_id == id)
@@ -4362,6 +4990,7 @@ impl ForgeClient {
         let spatial::WorldSpatialSnapshotView::Entities(view) = view else {
             return Err("forge-native entity snapshot absent".into());
         };
+        let map_header = raw_map_snapshot(&domains, view.content_generation)?;
         let vitals = domains
             .iter()
             .find(|d| d.domain_id == 3)
@@ -4416,6 +5045,7 @@ impl ForgeClient {
             vitals,
             position: view.actor_position,
             content: view.content_generation,
+            map_header,
             entities: view.entities,
             bindings: appearance.bindings,
             inventory,
@@ -4438,6 +5068,24 @@ impl ForgeClient {
         frame.validate(native::Direction::ServerToClient, true)?;
         if frame.connection_generation() != self.generation {
             return Err("Forge stale frame generation".into());
+        }
+        if frame.message_type() == MessageType::SnapshotBegin {
+            let (sequence, revision, header) = raw_map_replacement(
+                &mut self.stream,
+                self.generation,
+                &bytes,
+                self.sequence,
+                self.revisions
+                    .get(&17)
+                    .copied()
+                    .ok_or("map revision absent")?,
+                self.content,
+            )
+            .await?;
+            self.sequence = sequence;
+            self.revisions.insert(17, revision);
+            self.map_header = header;
+            return Ok(None);
         }
         if frame.message_type() == MessageType::LivenessProbe {
             let probe = native::decode_liveness_probe(frame.payload())?;
@@ -4494,9 +5142,8 @@ impl ForgeClient {
                     self.entities.push(entity);
                 }
             }
-            2 => {
-                native::world_object::decode_world_object_overlay_delta(delta.payload)
-                    .map_err(|e| format!("Forge overlay:{e:?}"))?;
+            17 => {
+                self.map_header = raw_map_delta(&self.map_header, delta.payload)?;
             }
             3 => {
                 self.vitals = casts::decode_actor_vitals(delta.payload)

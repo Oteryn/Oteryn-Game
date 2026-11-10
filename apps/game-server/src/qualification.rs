@@ -1795,6 +1795,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let serve = serve_gameplay(
         &listener,
         GameplayListenerConfig {
+            bulletin_source: None,
             server_motd: String::new(),
             certificates: vec![certificate.clone()],
             private_key: key.into(),
@@ -2889,7 +2890,6 @@ async fn dev_client_door_events(
     session: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult<Vec<oteryn_dev_client::SessionEvent>> {
     session
-        .session_mut()
         .wait_for_events(std::time::Duration::from_secs(20))
         .await
         .map_err(|error| format!("dev client door delta never arrived: {error}").into())

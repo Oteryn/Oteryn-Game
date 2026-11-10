@@ -220,14 +220,50 @@ impl From<StartupError> for BootError {
 }
 
 static BOOT_TRACE: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+static LAST_ERRORS: std::sync::OnceLock<std::sync::Mutex<std::collections::VecDeque<OpsError>>> =
+    std::sync::OnceLock::new();
 const PROCESS: &str = "oteryn-game-server";
+
+#[derive(Clone, serde::Serialize)]
+struct OpsError {
+    ts: u64,
+    code: String,
+    module: String,
+    event: String,
+    trace: Option<String>,
+}
 
 /// Write one leveled diagnostic line of `process` to stderr unless `OTERYN_LOG` drops it
 /// (ERR-NODE-1). Warn, error and coded lines are always written.
 pub fn emit(process: &str, line: &oteryn_error_codes::Line<'_>) {
+    record_error(line);
     if oteryn_error_codes::filter().allows(line.level, line.module, line.code.is_some()) {
         eprintln!("{}", line.render(process, oteryn_error_codes::unix_ms()));
     }
+}
+
+fn record_error(line: &oteryn_error_codes::Line<'_>) {
+    if let Some(code) = line.code {
+        let errors = LAST_ERRORS.get_or_init(Default::default);
+        let mut errors = errors
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if errors.len() == 10 {
+            errors.pop_front();
+        }
+        errors.push_back(OpsError {
+            ts: oteryn_error_codes::unix_ms(),
+            code: format!("E{:04}", code.number),
+            module: line.module.to_owned(),
+            event: line.event.to_owned(),
+            trace: line.trace.map(str::to_owned),
+        });
+    }
+}
+
+pub(super) fn install_error_sink() {
+    static INSTALL: std::sync::Once = std::sync::Once::new();
+    INSTALL.call_once(|| oteryn_error_codes::install_observer(record_error));
 }
 
 /// Start of a game-server process, before anything else: mint the boot trace, install the
@@ -239,6 +275,7 @@ pub fn begin_process(
     log_spec_code: oteryn_error_codes::ErrorCode,
 ) -> Result<String, oteryn_error_codes::LogSpecError> {
     use oteryn_error_codes::{Level, Line};
+    install_error_sink();
     let trace = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
     let build = oteryn_error_codes::build_id(version);
     oteryn_error_codes::install_panic_hook(process, build.clone(), trace.clone());
@@ -2530,6 +2567,52 @@ async fn handle_control(stream: &mut UnixStream) -> Option<Vec<u8>> {
     Some(request)
 }
 
+/// Bounded, privacy-safe node health for local read-only operations clients.
+fn control_health(root: &DurabilityRoot) -> String {
+    let last_errors = LAST_ERRORS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .clone();
+    serde_json::json!({
+        "readiness": root.is_ready(),
+        "db_pool": if root.is_ready() { "ready" } else { "unavailable" },
+        "platform": "unknown",
+        "tick_ms": null,
+        "connections": 0,
+        "stalled_tasks": [],
+        "last_errors": last_errors,
+    })
+    .to_string()
+}
+
+fn control_diagnose(request: &[u8]) -> Option<String> {
+    let remainder = request.strip_prefix(b"diagnose")?.strip_suffix(b"\n")?;
+    let filter = if remainder.is_empty() {
+        ""
+    } else {
+        std::str::from_utf8(remainder.strip_prefix(b" ")?).ok()?
+    };
+    if !filter.is_empty()
+        && !(filter.len() == 5
+            && filter.starts_with('E')
+            && filter[1..].bytes().all(|byte| byte.is_ascii_digit()))
+    {
+        return None;
+    }
+    let errors = LAST_ERRORS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    serde_json::to_string(
+        &errors
+            .iter()
+            .filter(|error| filter.is_empty() || error.code == filter)
+            .collect::<Vec<_>>(),
+    )
+    .ok()
+}
+
 /// One request at a time, bounded size and deadline; only uid 0 is served.
 #[allow(clippy::too_many_arguments)]
 async fn control_loop(
@@ -2560,26 +2643,46 @@ async fn control_loop(
         let connection = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
         let connection = connection.as_deref();
         let served = tokio::time::timeout(CONTROL_DEADLINE, async {
-            let answer = match handle_control(&mut stream).await {
-                Some(request) if request.starts_with(b"qualify ") => {
-                    qualification_fixture::prepare(root, authority, proof, config, native, &request)
-                        .await
-                }
+            let request = handle_control(&mut stream).await;
+            let (answer, event_name) = match request {
+                Some(request) if request == b"health\n" => (control_health(root), "ops_health"),
+                Some(request) if control_diagnose(&request).is_some() => (
+                    control_diagnose(&request).unwrap_or_else(|| "[]".to_owned()),
+                    "ops_diagnose",
+                ),
+                Some(request) if request.starts_with(b"qualify ") => (
+                    qualification_fixture::prepare(
+                        root, authority, proof, config, native, &request,
+                    )
+                    .await
+                    .to_owned(),
+                    "character_bootstrap",
+                ),
                 Some(request) if parse_operation_id(&request).is_some() => {
                     let Some(operation) = parse_operation_id(&request) else {
                         return;
                     };
-                    bootstrap_one(
-                        root, authority, proof, evidence, intents, &capacity, operation,
+                    (
+                        bootstrap_one(
+                            root, authority, proof, evidence, intents, &capacity, operation,
+                        )
+                        .await
+                        .to_owned(),
+                        "character_bootstrap",
                     )
-                    .await
                 }
-                _ => "rejected",
+                _ => ("rejected".to_owned(), "character_bootstrap"),
             };
-            event_traced(
-                &format!("event=character_bootstrap result={answer}"),
-                connection,
-            );
+            match event_name {
+                "ops_health" => event_traced("event=ops_health result=served", connection),
+                "ops_diagnose" => {
+                    event_traced("event=ops_diagnose result=served", connection);
+                }
+                _ => event_traced(
+                    &format!("event=character_bootstrap result={answer}"),
+                    connection,
+                ),
+            }
             let _ = stream.write_all(format!("{answer}\n").as_bytes()).await;
             let _ = stream.shutdown().await;
         })
@@ -3286,6 +3389,11 @@ async fn boot_and_serve(
     // D3 step 9: three loops under one shutdown token.
     let shutdown = CancellationToken::new();
     let listener_config = GameplayListenerConfig {
+        bulletin_source: std::env::var_os("OTERYN_BULLETIN_FILE").map(|path| {
+            std::sync::Arc::new(crate::gameplay_transport::bulletin::BulletinSource::new(
+                path.into(),
+            ))
+        }),
         server_motd: config.server_motd.clone(),
         certificates: material.gameplay_chain.clone(),
         private_key: material.gameplay_key.clone_key(),
@@ -3314,14 +3422,20 @@ async fn boot_and_serve(
         soulpit_template: soulpit_template.as_ref(),
         gameplay_idle_policy: config.gameplay_idle,
         store_purchases: config.store_purchases,
-        store: Some(crate::native_admission_source::store::StoreClient::new(
-            Box::new(
-                crate::native_admission_source::store::MtlsStoreTransport::new(
-                    material.store.clone(),
+        store: Some(
+            crate::native_admission_source::store::StoreClient::new(
+                Box::new(
+                    crate::native_admission_source::store::MtlsStoreTransport::new(
+                        material.store.clone(),
+                    ),
                 ),
+                material.store.source_authority().to_owned(),
+            )
+            .with_coins(
+                crate::native_admission_source::coins::CoinClient::configured()
+                    .map_err(|_| BootError::Serve)?,
             ),
-            material.store.source_authority().to_owned(),
-        )),
+        ),
         emit,
         root,
         character: &authority,
@@ -4202,6 +4316,30 @@ mod tests {
         assert_eq!(parsed.trace.as_deref(), Some(trace));
         assert!(!text.contains("character="));
         assert!(!text.contains("character_id"));
+    }
+
+    #[test]
+    fn diagnose_filter_accepts_only_a_registered_code_shape() {
+        assert!(control_diagnose(b"diagnose\n").is_some());
+        assert!(control_diagnose(b"diagnose E4001\n").is_some());
+        assert!(control_diagnose(b"diagnose E40\n").is_none());
+        assert!(control_diagnose(b"diagnose player-id\n").is_none());
+    }
+
+    #[test]
+    fn scheduler_failures_reach_health_and_diagnose() {
+        {
+            let mut span = super::super::scheduler_diagnostics::job("test_pass");
+            span.set_outcome("failed");
+            span.set_code(
+                super::super::scheduler_diagnostics::SchedulerErrorKind::JobFailed.code(),
+            );
+        }
+
+        let diagnose = control_diagnose(b"diagnose E2015\n").expect("valid diagnose command");
+        assert!(diagnose.contains("\"code\":\"E2015\""));
+        assert!(diagnose.contains("\"module\":\"scheduler\""));
+        assert!(diagnose.contains("\"event\":\"job_end\""));
     }
 
     #[test]

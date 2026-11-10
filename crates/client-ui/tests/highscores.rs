@@ -7,7 +7,7 @@ fn tibiadrome_highscore_filters_decode_and_render_native_rankings()
 -> Result<(), Box<dyn std::error::Error>> {
     let mut panel = HighscoresPanel::default();
     panel.selected = true;
-    for category in [13, 15, 16] {
+    for category in [13, 15] {
         assert!(
             highscores::request(
                 &mut panel,
@@ -46,6 +46,8 @@ fn tibiadrome_highscore_filters_decode_and_render_native_rankings()
             value: 145,
         };
         let result = HighscoresResult {
+            world: None,
+            own_page: None,
             category,
             snapshot_id: 73,
             computed_at: 9000,
@@ -99,6 +101,8 @@ fn live_page_projection_and_snapshot_navigation() -> Result<(), Box<dyn std::err
         value: 123456,
     };
     let result = HighscoresResult {
+        world: None,
+        own_page: None,
         category: 1,
         snapshot_id: 73,
         computed_at: 9000,
@@ -257,7 +261,45 @@ fn native_combo_selection_preserves_reserved_category_gaps() {
     assert_eq!(highscores::category_for_selection(13), Some(17));
     assert_eq!(highscores::category_for_selection(14), None);
     assert_eq!(highscores::category_for_selection(usize::MAX), None);
-    for category in [0, 13, 15, 16, 18, u32::MAX] {
+    for category in [0, 13, 15, 18, u32::MAX] {
         assert_eq!(highscores::category_selection(category), None);
     }
+}
+
+#[test]
+fn show_me_uses_the_confirmed_rank_and_snapshot_page() -> Result<(), Box<dyn std::error::Error>> {
+    let mut p = HighscoresPanel::default();
+    p.selected = true;
+    assert!(highscores::request(&mut p, Action::Refresh).is_some());
+    let result = HighscoresResult {
+        world: None,
+        own_page: Some(2),
+        category: 1,
+        snapshot_id: 9,
+        computed_at: 100,
+        page: 1,
+        has_more: false,
+        rows: vec![],
+        own_row: Some(HighscoreRow {
+            rank: 73,
+            name: "Me".into(),
+            vocation: "knight".into(),
+            level: 10,
+            value: 20,
+        }),
+    };
+    highscores::apply_result(
+        &mut p,
+        &ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: wire::encode_highscores_result(&result).map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    let command = highscores::request(&mut p, Action::ShowMe).ok_or("show me")?;
+    let query = wire::decode_highscores_query(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!((query.page, query.snapshot_id), (2, 9));
+    assert!(highscores::request(&mut p, Action::ShowMe).is_none());
+    Ok(())
 }

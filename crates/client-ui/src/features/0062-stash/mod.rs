@@ -6,8 +6,8 @@ mod state;
 mod view;
 pub use input::open_key;
 pub use protocol::{Intent, apply_result, carried_intent, request};
-pub use state::StashPanel;
-pub use view::{panel_text, row_label};
+pub use state::{Sort, StashPanel};
+pub use view::{panel_text, row_label, visible_rows, visible_withdraw};
 #[cfg(test)]
 #[path = "tests/e2e_e07.rs"]
 mod e2e_e07;

@@ -26,6 +26,7 @@ mod rewards;
 pub mod runtime;
 pub use handoff::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
+    SoulpitSelection,
 };
 
 fn outcome(disposition: UseDisposition) -> UseOutcome {

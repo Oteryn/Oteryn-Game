@@ -7,12 +7,24 @@ pub const CAPABILITY_BOSS_DIFFICULTY_V1: u32 = 225;
 pub const COMMAND_TYPE_BOSS_DIFFICULTY: u32 = 431;
 pub const MAX_REQUEST_BYTES: usize = 1_024;
 pub const MAX_RESULT_BYTES: usize = 2_048;
-/// Crystal 201189f protocolgame.cpp:11848-11852. This is a choice bound, not a scaling formula.
-pub const MAX_DIFFICULTY: u16 = 25;
+/// Largest sourced cap (Phosphorus); individual boss bounds are below, not scaling formulas.
+pub const MAX_DIFFICULTY: u16 = 28;
+
+/// Owner-supplied TibiaWiki Boss Difficulty System / Updates/15.30.a30dad.
+/// No scaling or special-drop parameters are inferred from these limits.
+pub fn boss_maximum(key: &str) -> Option<u16> {
+    match key {
+        "oteryn:boss.mimar_haffar" | "oteryn:creature.mimar_haffar" => Some(25),
+        "oteryn:boss.maior_domus" | "oteryn:creature.maior_domus" => Some(15),
+        "oteryn:boss.phosphorus" | "oteryn:creature.phosphorus" => Some(28),
+        _ => None,
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Request {
     Open { boss_key: String },
+    OpenWithProgress { boss_key: String },
     Start { context: [u8; 16], difficulty: u16 },
     Cancel { context: [u8; 16] },
     Preview { context: [u8; 16], difficulty: u16 },
@@ -21,7 +33,7 @@ pub enum Request {
 impl Request {
     pub const fn context(&self) -> Option<[u8; 16]> {
         match self {
-            Self::Open { .. } => None,
+            Self::Open { .. } | Self::OpenWithProgress { .. } => None,
             Self::Start { context, .. }
             | Self::Cancel { context }
             | Self::Preview { context, .. } => Some(*context),
@@ -47,7 +59,8 @@ fn valid_key(value: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, b':' | b'_' | b'.' | b'-' | b'/'))
 }
 
-/// Actions 0/1/2 retain Crystal's Start/Cancel/Preview meaning. Action 3 requests a window.
+/// Actions 0/1/2 retain Crystal's Start/Cancel/Preview meaning. Action 3 is the legacy
+/// draft; action 4 opts into individual progress and native Start.
 /// Unknown, repeated, truncated and action-incompatible fields are rejected.
 pub fn decode_request(payload: &[u8]) -> Result<Request, Error> {
     if payload.len() > MAX_REQUEST_BYTES {
@@ -85,6 +98,7 @@ pub fn decode_request(payload: &[u8]) -> Result<Request, Error> {
     }
     match (action, key, context, difficulty) {
         (Some(3), Some(boss_key), None, None) => Ok(Request::Open { boss_key }),
+        (Some(4), Some(boss_key), None, None) => Ok(Request::OpenWithProgress { boss_key }),
         (Some(0), None, Some(context), Some(difficulty)) => Ok(Request::Start {
             context,
             difficulty: clamp_difficulty(difficulty),
@@ -101,8 +115,16 @@ pub fn decode_request(payload: &[u8]) -> Result<Request, Error> {
 pub fn encode_request(request: &Request) -> Result<Vec<u8>, Error> {
     let mut out = Vec::new();
     match request {
-        Request::Open { boss_key } => {
-            push_varint_field(&mut out, 1, 3);
+        Request::Open { boss_key } | Request::OpenWithProgress { boss_key } => {
+            push_varint_field(
+                &mut out,
+                1,
+                if matches!(request, Request::OpenWithProgress { .. }) {
+                    4
+                } else {
+                    3
+                },
+            );
             push_message_field(&mut out, 2, boss_key.as_bytes());
         }
         Request::Start {
@@ -143,6 +165,8 @@ pub enum Refusal {
     ContentChanged = 4,
     BossUnavailable = 5,
     ReplayConflict = 6,
+    DifficultyLocked = 7,
+    AdmissionRefused = 8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -150,8 +174,12 @@ pub enum Reply {
     Window {
         context: [u8; 16],
         boss_key: String,
+        boss_creature_key: String,
         content_revision: String,
         selected_difficulty: u16,
+        personal_highest: u16,
+        unlocked_max: u16,
+        maximum_difficulty: u16,
     },
     Closed {
         context: [u8; 16],
@@ -162,22 +190,29 @@ pub enum Reply {
     },
 }
 
-/// Only known window facts are sent. Uncaptured race/group/personal-highest, banners,
-/// bad-luck and modifier figures are absent rather than copied from the donor's god test.
+/// Per-character victory facts are authoritative. No unsourced pity figures are sent.
 pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>, Error> {
     let mut out = Vec::new();
     match reply {
         Reply::Window {
             context,
             boss_key,
+            boss_creature_key,
             content_revision,
             selected_difficulty,
+            personal_highest,
+            unlocked_max,
+            maximum_difficulty,
         } => {
             if *context == [0; 16]
                 || !valid_key(boss_key)
+                || !valid_key(boss_creature_key)
                 || content_revision.is_empty()
                 || content_revision.len() > 512
-                || *selected_difficulty > MAX_DIFFICULTY
+                || *maximum_difficulty > MAX_DIFFICULTY
+                || *selected_difficulty > *maximum_difficulty
+                || *personal_highest > *maximum_difficulty
+                || *unlocked_max > *maximum_difficulty
             {
                 return Err(Error::Malformed);
             }
@@ -186,7 +221,12 @@ pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>, Error> {
             push_message_field(&mut out, 3, boss_key.as_bytes());
             push_message_field(&mut out, 4, content_revision.as_bytes());
             push_varint_field(&mut out, 5, u64::from(*selected_difficulty));
-            push_varint_field(&mut out, 6, u64::from(MAX_DIFFICULTY));
+            push_varint_field(&mut out, 6, u64::from(*maximum_difficulty));
+            if *unlocked_max != 0 {
+                push_varint_field(&mut out, 8, u64::from(*personal_highest));
+                push_varint_field(&mut out, 9, u64::from(*unlocked_max));
+                push_message_field(&mut out, 10, boss_creature_key.as_bytes());
+            }
         }
         Reply::Closed { context } => {
             if *context == [0; 16] {
@@ -210,6 +250,94 @@ pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>, Error> {
         return Err(Error::LimitExceeded);
     }
     Ok(out)
+}
+
+/// Reject noncanonical, repeated, unknown and out-of-range reply fields.
+pub fn decode_reply(bytes: &[u8]) -> Result<Reply, Error> {
+    if bytes.len() > MAX_RESULT_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    let reply = parse_reply(bytes).ok_or(Error::Malformed)?;
+    if encode_reply(&reply)? != bytes {
+        return Err(Error::Malformed);
+    }
+    Ok(reply)
+}
+fn parse_reply(bytes: &[u8]) -> Option<Reply> {
+    let mut at = 0;
+    let (mut kind, mut context, mut key, mut revision, mut difficulty, mut refusal) =
+        (None, None, None, None, None, None);
+    let (mut highest, mut unlocked, mut maximum, mut creature) = (None, None, None, None);
+    while at < bytes.len() {
+        let tag = var(bytes, &mut at)?;
+        match tag {
+            8 => kind = Some(var(bytes, &mut at)?),
+            18 => context = Some(take(bytes, &mut at)?.try_into().ok()?),
+            26 => key = Some(String::from_utf8(take(bytes, &mut at)?.to_vec()).ok()?),
+            34 => revision = Some(String::from_utf8(take(bytes, &mut at)?.to_vec()).ok()?),
+            40 => difficulty = Some(u16::try_from(var(bytes, &mut at)?).ok()?),
+            48 => {
+                maximum = Some(u16::try_from(var(bytes, &mut at)?).ok()?);
+            }
+            56 => {
+                refusal = Some(match var(bytes, &mut at)? {
+                    1 => Refusal::NoAcceptedProfile,
+                    2 => Refusal::ContextClosed,
+                    3 => Refusal::ContextMissing,
+                    4 => Refusal::ContentChanged,
+                    5 => Refusal::BossUnavailable,
+                    6 => Refusal::ReplayConflict,
+                    7 => Refusal::DifficultyLocked,
+                    8 => Refusal::AdmissionRefused,
+                    _ => return None,
+                })
+            }
+            64 => highest = Some(u16::try_from(var(bytes, &mut at)?).ok()?),
+            72 => unlocked = Some(u16::try_from(var(bytes, &mut at)?).ok()?),
+            82 => creature = Some(String::from_utf8(take(bytes, &mut at)?.to_vec()).ok()?),
+            _ => return None,
+        }
+    }
+    match kind? {
+        0 => Some(Reply::Window {
+            context: context?,
+            boss_creature_key: creature.unwrap_or_else(|| key.clone().unwrap_or_default()),
+            boss_key: key?,
+            content_revision: revision?,
+            selected_difficulty: difficulty?,
+            personal_highest: highest.unwrap_or(0),
+            unlocked_max: unlocked.unwrap_or(0),
+            maximum_difficulty: maximum?,
+        }),
+        1 => Some(Reply::Closed { context: context? }),
+        2 => Some(Reply::Refused {
+            context,
+            reason: refusal?,
+        }),
+        _ => None,
+    }
+}
+fn var(b: &[u8], a: &mut usize) -> Option<u64> {
+    let (mut v, mut s) = (0, 0);
+    loop {
+        let x = *b.get(*a)?;
+        *a += 1;
+        v |= u64::from(x & 127) << s;
+        if x & 128 == 0 {
+            return Some(v);
+        }
+        s += 7;
+        if s > 63 {
+            return None;
+        }
+    }
+}
+fn take<'a>(b: &'a [u8], a: &mut usize) -> Option<&'a [u8]> {
+    let n = usize::try_from(var(b, a)?).ok()?;
+    let end = a.checked_add(n)?;
+    let x = b.get(*a..end)?;
+    *a = end;
+    Some(x)
 }
 
 #[cfg(test)]

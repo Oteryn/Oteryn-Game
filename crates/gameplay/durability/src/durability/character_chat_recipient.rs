@@ -60,3 +60,29 @@ impl DurabilityRoot {
             .await?
     }
 }
+
+impl DurabilityRoot {
+    /// Public current levels, resolved by indexed names within the requester's World.
+    pub async fn read_console_levels(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        world: [u8; 16],
+        names: Vec<CharacterName>,
+    ) -> Result<Vec<Option<u32>>, CharacterAuthorityError> {
+        if names.len() > 32 { return Err(CharacterAuthorityError::Rejected); }
+        let keys: Vec<String> = names.iter().map(CharacterName::comparison_key).collect();
+        let recovery = authority.record_for(self)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            let mut levels = Vec::with_capacity(keys.len());
+            for key in keys {
+                let level: Option<i64> = sqlx::query_scalar("SELECT p.level FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.name_key=$2 AND r.lifecycle=1 LIMIT 1")
+                    .bind(world.as_slice()).bind(key).fetch_optional(&mut *tx).await?;
+                levels.push(level.and_then(|value| u32::try_from(value).ok()).filter(|value| *value > 0));
+            }
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(levels))
+        })).await?
+    }
+}

@@ -57,8 +57,7 @@ fn synthetic_session_vitals_scenario() -> Result<(), String> {
         assert_eq!(view.tick(&link), Ok(()));
         std::thread::yield_now();
     }
-    assert!(view.hud_status().contains("HP [██████████] 150/150"));
-    assert!(view.hud_status().contains("MP [█████░░░░░] 30/60"));
+    assert!(view.hud_status().contains("HP 150/150   MP 30/60"));
     drop(link);
     runtime.block_on(task).map_err(|e| e.to_string())?;
     Ok(())

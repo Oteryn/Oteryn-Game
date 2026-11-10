@@ -13,7 +13,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Party(command)).is_err()
         {
             mailbox.party.pending = None;
-            mailbox.party.feedback = Some("The session has ended");
+            mailbox.party.feedback = Some(tr!("The session has ended"));
         }
     }
 
@@ -85,12 +85,22 @@ impl PlayLink {
 impl PlayLink {
     pub fn party_select_member(&self, row: usize) {
         let mut mailbox = lock(&self.mailbox);
-        mailbox.party.selected_member = mailbox
-            .party
-            .state
-            .as_ref()
-            .and_then(|state| state.members.get(row))
-            .map(|entry| entry.handle);
+        let visible = mailbox.party.list_rows();
+        let selected = if let Some((handle, entry)) = visible.get(row) {
+            (!entry.summon).then_some(*handle)
+        } else if mailbox.party.list_hidden[0] {
+            None
+        } else {
+            mailbox.party.state.as_ref().and_then(|state| {
+                state
+                    .members
+                    .iter()
+                    .filter(|entry| entry.list.is_empty())
+                    .nth(row - visible.len())
+                    .map(|entry| entry.handle)
+            })
+        };
+        mailbox.party.selected_member = selected;
     }
 
     pub fn party_select_invitation(&self, row: usize) {
@@ -101,5 +111,11 @@ impl PlayLink {
             .as_ref()
             .and_then(|state| state.invitations.get(row))
             .map(|entry| entry.handle);
+    }
+}
+
+impl PlayLink {
+    pub fn party_list_action(&self, action: oteryn_client_ui::party::ListAction) {
+        lock(&self.mailbox).party.list_action(action);
     }
 }

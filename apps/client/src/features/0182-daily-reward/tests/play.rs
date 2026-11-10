@@ -14,10 +14,31 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 struct Peer {
     commands: Arc<Mutex<Vec<DailyRewardCommand>>>,
     claimed: bool,
+    returner_offer: Option<[u8; 16]>,
 }
 impl Stepper for Peer {
     fn daily_reward_selected(&self) -> bool {
         true
+    }
+    async fn feature(
+        &mut self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        assert_eq!(
+            (command.capability, command.kind),
+            (182, daily_reward::returner::QUERY)
+        );
+        Ok(oteryn_session::GatedCommandResult {
+            command_id: 1,
+            status: CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: daily_reward::returner::Reply {
+                state: if self.returner_offer.is_some() { 1 } else { 0 },
+                id: self.returner_offer,
+            }
+            .encode()
+            .map_err(|_| SessionError::SessionUnusable)?,
+        })
     }
     async fn daily_reward(
         &mut self,
@@ -30,7 +51,7 @@ impl Stepper for Peer {
         let reply = match command {
             DailyRewardCommand::Query => DailyRewardReply::Wall(daily_reward::DailyRewardWall {
                 lane_day: 12,
-                streak: 19,
+                streak: if self.claimed { 14 } else { 13 },
                 jokers: 2,
                 claimed: self.claimed,
                 claim_enabled: !self.claimed,
@@ -91,6 +112,7 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
                     Peer {
                         commands,
                         claimed: false,
+                        returner_offer: None,
                     },
                 );
                 let (link, incoming, outbox) = play_channel();
@@ -109,6 +131,10 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
                 assert!(link.daily_reward_panel().open);
                 ready(&link, true).await?;
                 assert!(panel_text(&link.daily_reward_panel()).contains("Day 12 of 30"));
+                let text = panel_text(&link.daily_reward_panel());
+                assert!(text.contains("Weapon proficiency XP: 7% chance to gain double XP"));
+                assert!(text.contains("Each eligible weapon proficiency XP award"));
+                assert!(text.contains("Refresh after claiming to update the bonus"));
                 link.daily_reward_request(Intent::Claim);
                 tokio::time::timeout(Duration::from_secs(3), async {
                     while link.daily_reward_panel().pending {
@@ -140,6 +166,8 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
                         .wall
                         .is_some_and(|wall| wall.claimed && !wall.claim_enabled)
                 );
+                assert!(panel_text(&link.daily_reward_panel())
+                    .contains("Weapon proficiency XP: 8% chance to gain double XP"));
                 drop(link);
                 task.await?;
                 Ok::<(), Error>(())
@@ -148,3 +176,11 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
         .join()
         .map_err(|_| "Daily reward UI test thread panicked")?
 }
+#[path = "details.rs"]
+mod details;
+
+#[path = "picker.rs"]
+mod picker;
+
+#[path = "returner.rs"]
+mod returner;

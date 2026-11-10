@@ -49,7 +49,7 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
         let h = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Minimap and markers — Ctrl+Alt+Shift+M").as_ptr(),
+            wide(tr!("Minimap and markers — Ctrl+Alt+Shift+M")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -68,16 +68,16 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
         SetWindowLongPtrW(h, GWLP_USERDATA, (&mut *actions as *mut Actions) as isize);
         SetWindowLongPtrW(h, GWLP_WNDPROC, proc as *const () as isize);
         for (i, label) in [
-            "Zoom in",
-            "Zoom out",
-            "Floor up",
-            "Floor down",
-            "Recenter",
-            "West",
-            "East",
-            "North",
-            "South",
-            "Use map centre",
+            tr!("Zoom in"),
+            tr!("Zoom out"),
+            tr!("Floor up"),
+            tr!("Floor down"),
+            tr!("Recenter"),
+            tr!("West"),
+            tr!("East"),
+            tr!("North"),
+            tr!("South"),
+            tr!("Use map centre"),
         ]
         .iter()
         .enumerate()
@@ -104,8 +104,8 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
         for (i, (label, value)) in [
             ("X", own.0.to_string()),
             ("Y", own.1.to_string()),
-            ("Floor", own.2.to_string()),
-            ("Label", String::new()),
+            (tr!("Floor"), own.2.to_string()),
+            (tr!("Label"), String::new()),
         ]
         .iter()
         .enumerate()
@@ -131,13 +131,27 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
             [460, 385, 230, 160],
             CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
         );
-        for name in ["Red", "Blue", "Green", "Gold"] {
+        for name in [tr!("Red"), tr!("Blue"), tr!("Green"), tr!("Gold")] {
             SendMessageW(color, CB_ADDSTRING, 0, wide(name).as_ptr() as isize);
         }
         SendMessageW(color, CB_SETCURSEL, 0, 0);
-        control(h, "BUTTON", "Save marker", 110, [460, 425, 230, 28], 0);
-        control(h, "BUTTON", "Delete selected", 111, [460, 460, 230, 28], 0);
-        control(h, "BUTTON", "Go to selected", 112, [460, 495, 230, 28], 0);
+        control(h, "BUTTON", tr!("Save marker"), 110, [460, 425, 230, 28], 0);
+        control(
+            h,
+            "BUTTON",
+            tr!("Delete selected"),
+            111,
+            [460, 460, 230, 28],
+            0,
+        );
+        control(
+            h,
+            "BUTTON",
+            tr!("Go to selected"),
+            112,
+            [460, 495, 230, 28],
+            0,
+        );
         let feedback = control(h, "STATIC", "", 301, [10, 530, 690, 55], 0);
         if fields
             .iter()
@@ -223,18 +237,18 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
                         map.feedback = match position {
                             Some(((x, y), f)) => {
                                 match map.edit_marker(x, y, f, values[3].clone(), selected_color) {
-                                    Ok(()) => "Marker saved locally".into(),
+                                    Ok(()) => tr!("Marker saved locally").into(),
                                     Err(e) => e.to_string(),
                                 }
                             }
-                            None => "Enter valid X, Y and floor values".into(),
+                            None => tr!("Enter valid X, Y and floor values").into(),
                         };
                     }
                     111 => {
                         if let Some(marker) = &chosen {
                             map.feedback = match map.remove_marker(marker.x, marker.y, marker.floor)
                             {
-                                Ok(()) => "Marker deleted".into(),
+                                Ok(()) => tr!("Marker deleted").into(),
                                 Err(e) => e.to_string(),
                             };
                         }
@@ -250,7 +264,7 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
                     _ => {}
                 }
             }
-            SetWindowTextW(status, wide(&format!("Map centre: {}, {} · Floor {} · {} tiles per cell\r\nGreen: remembered ground. Select a marker to edit its label.", map.x, map.y, map.floor, map.zoom)).as_ptr());
+            SetWindowTextW(status, wide(&lfmt!("Map centre: {}, {} · Floor {} · {} tiles per cell\r\nGreen: remembered ground. Select a marker to edit its label.", map.x, map.y, map.floor, map.zoom)).as_ptr());
             SetWindowTextW(feedback, wide(&map.feedback).as_ptr());
             if held != map.markers {
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
@@ -259,9 +273,12 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
                         list,
                         LB_ADDSTRING,
                         0,
-                        wide(&format!(
+                        wide(&lfmt!(
                             "{} · {}, {} · floor {}",
-                            marker.label, marker.x, marker.y, marker.floor
+                            marker.label,
+                            marker.x,
+                            marker.y,
+                            marker.floor
                         ))
                         .as_ptr() as isize,
                     );

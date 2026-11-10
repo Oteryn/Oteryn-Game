@@ -85,6 +85,7 @@ pub mod house_ownership;
 mod house_ownership_audit;
 pub mod house_podium;
 pub mod house_rent;
+pub mod house_sale;
 pub mod house_scope_handoff;
 pub mod house_spell_acl;
 pub mod house_wrap;

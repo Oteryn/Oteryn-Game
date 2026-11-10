@@ -1,12 +1,39 @@
+#[path = "build_support/release_identity.rs"]
+mod release_identity;
+
 #[path = "build_support/play_features.rs"]
 mod play_features;
 
 #[path = "build_support/preference_bindings.rs"]
 mod preference_bindings;
 
+#[path = "build_support/update_trust.rs"]
+mod update_trust;
+
+/// `SetWindowSubclass`, `DefSubclassProc` and `RemoveWindowSubclass` are exported by name only
+/// from Common Controls 6, which Windows loads only for an executable whose manifest asks for it;
+/// without it the client fails to start with STATUS_ENTRYPOINT_NOT_FOUND (0xC0000139).
+fn emit_common_controls_manifest() {
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+    if target_os == "windows" && target_env == "msvc" {
+        let manifest =
+            std::path::Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default())
+                .join("resources/windows.manifest");
+        println!("cargo:rustc-link-arg=/MANIFEST:EMBED");
+        println!("cargo:rustc-link-arg=/MANIFESTINPUT:{}", manifest.display());
+        println!("cargo:rerun-if-changed={}", manifest.display());
+    }
+}
+
 fn main() -> Result<(), String> {
+    emit_common_controls_manifest();
+    update_trust::emit()?;
+    println!("cargo:rerun-if-changed=build_support/update_trust.rs");
     let manifest = std::env::var("CARGO_MANIFEST_DIR").map_err(|e| e.to_string())?;
     let root = std::path::Path::new(&manifest);
+    release_identity::emit(root)?;
+    println!("cargo:rerun-if-changed=build_support/release_identity.rs");
     println!("cargo:rerun-if-changed=src/features");
     println!("cargo:rerun-if-changed=build_support/play_features.rs");
     println!("cargo:rerun-if-changed=../../crates/protocol-oteryn/capabilities");

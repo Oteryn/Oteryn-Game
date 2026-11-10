@@ -521,6 +521,12 @@ impl NodeConfig {
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
+        #[cfg(feature = "qualification-clock")]
+        if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some()
+            && !self.qualification_fixture
+        {
+            return reject("qualification_fixture");
+        }
         let audit = &self.audit_collector;
         if audit.directory == std::path::Path::new("/")
             || !outside(&audit.directory, &self.character)
@@ -1249,6 +1255,29 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
             config.platform.runtime_status.map(|s| s.assignment_epoch),
             Some(1)
         );
+    }
+
+    #[cfg(feature = "qualification-clock")]
+    #[test]
+    fn qualification_clock_requires_disposable_configuration()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const PROBE: &str = "OTERYN_QUALIFICATION_CONFIG_PROBE";
+        if std::env::var_os(PROBE).is_some() {
+            assert!(NodeConfig::parse(NODE.as_bytes()).is_err());
+            qualification_fixture_requires_the_disposable_node_boot_configuration();
+            return Ok(());
+        }
+        let status = std::process::Command::new(std::env::current_exe()?)
+            .args([
+                "--exact",
+                "node::config::tests::qualification_clock_requires_disposable_configuration",
+                "--nocapture",
+            ])
+            .env(PROBE, "1")
+            .env("OTERYN_QUALIFICATION_CLOCK_FILE", "disposable-clock")
+            .status()?;
+        assert!(status.success());
+        Ok(())
     }
 
     #[test]

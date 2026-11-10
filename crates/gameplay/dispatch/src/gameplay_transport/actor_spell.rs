@@ -120,6 +120,7 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) pending_gourmet: Vec<super::item_use::gourmet::PendingUse>,
     pub(in crate::gameplay_transport) pending_hireling_lamps: Vec<super::hireling::PendingLampUse>,
     pub(super) prey: Vec<super::prey::LivePrey>,
+    pub(in crate::gameplay_transport) elite_bounties: Vec<(ExactActorRef, GameSessionId, String)>,
     pub(super) hunting_stamina: Vec<super::hunting_stamina::LiveStamina>,
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
     pub(in crate::gameplay_transport) actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
@@ -304,6 +305,7 @@ impl Default for ChannelSpellStates {
             pending_gourmet: Vec::new(),
             pending_hireling_lamps: Vec::new(),
             prey: Vec::new(),
+            elite_bounties: Vec::new(),
             hunting_stamina: Vec::new(),
             analyser: Default::default(),
             owner_wake: Default::default(),
@@ -638,6 +640,8 @@ impl ChannelSpellStates {
                 runtime,
             ));
         }
+        self.elite_bounties
+            .retain(|(actor, session, _)| runtime.player_control_facts(*actor, *session).is_ok());
         self.actors.retain(|(present, session, _)| {
             runtime.player_control_facts(*present, *session).is_ok()
                 || runtime
@@ -1202,17 +1206,34 @@ pub(super) fn qualified_protection_zone(
         return None;
     }
     let position = position.position();
-    let tile = cells
-        .spell_tiles()
-        .lookup(
-            scope,
-            crate::content::LogicalCell {
-                x: position.x,
-                y: position.y,
-                z: i32::from(position.floor),
-            },
-        )
-        .ok()?;
+    let cell = crate::content::LogicalCell {
+        x: position.x,
+        y: position.y,
+        z: i32::from(position.floor),
+    };
+    if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+        cells.index()
+    {
+        use crate::map::boot::BundleCollisionIndexExt;
+        use sha2::{Digest, Sha256};
+        // Zone flags belong to the pinned map even when a pickupable stack
+        // makes its spell metadata unknown, as on the logout path.
+        let revision: [u8; 32] = Sha256::digest(scope.map_revision.as_str().as_bytes()).into();
+        if revision != runtime.content_pin().map_revision_digest() {
+            return None;
+        }
+        index.lookup(scope, cell).ok()?;
+        let pos = crate::content::bundle_spell_tiles::tile_pos(cell)?;
+        return Some(
+            index
+                .map()
+                .overlay
+                .base()
+                .tile(pos.x, pos.y, pos.floor)?
+                .protection_zone(),
+        );
+    }
+    let tile = cells.spell_tiles().lookup(scope, cell).ok()?;
     Some(tile.flags().protection_zone)
 }
 
@@ -1617,6 +1638,21 @@ impl ChannelSpellStates {
             return None;
         }
 
+        let magnitude = runtime
+            .companion_snapshot(source)
+            .ok()
+            .map_or(magnitude, |snapshot| {
+                if self.elite_bounty(
+                    runtime,
+                    target,
+                    session,
+                    &snapshot.state.policy.definition_key,
+                ) {
+                    magnitude.saturating_mul(2)
+                } else {
+                    magnitude
+                }
+            });
         let percent = runtime.companion_snapshot(source).ok().map_or(0, |s| {
             self.prey_percent(
                 runtime,
@@ -2231,6 +2267,13 @@ impl ChannelSpellStates {
                     {
                         return None;
                     }
+                    let amount = self.elite_condition_damage(
+                        runtime,
+                        target,
+                        session,
+                        &tick.provenance,
+                        amount,
+                    );
                     let (successor, hit) =
                         crate::spell::actor_conditions::stage_typed_hit_in_world(
                             runtime,
@@ -2290,6 +2333,13 @@ impl ChannelSpellStates {
                         {
                             return None;
                         }
+                        let amount = self.elite_condition_damage(
+                            runtime,
+                            target,
+                            session,
+                            &tick.provenance,
+                            amount,
+                        );
                         let (successor, hit) = crate::spell::actor_conditions::stage_agony_hit(
                             &next,
                             amount,
@@ -2468,7 +2518,10 @@ impl ChannelSpellStates {
                 }) => damage_dealt_percent,
                 _ => 100,
             };
-            Ok(Some(percent))
+            let elite = r.companion_snapshot(target).is_ok_and(|victim| {
+                self.elite_bounty(r, source, *session, &victim.state.policy.definition_key)
+            });
+            Ok(Some(if elite { percent / 2 } else { percent }))
         };
         let receipt = runtime.apply_creature_periodic_turn_with_sources(
             target,

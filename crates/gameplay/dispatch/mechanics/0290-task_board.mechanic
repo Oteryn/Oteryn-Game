@@ -1,5 +1,5 @@
 name=task_board
-commands=89
+commands=89,6120,6172,6174
 transport=task_board
 composed=task_board
 authority=task_board

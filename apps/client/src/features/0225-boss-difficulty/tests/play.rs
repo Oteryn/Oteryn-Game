@@ -11,12 +11,16 @@ fn controls_encode_exact_request_and_reply_and_refusal_are_visible() {
         ..Default::default()
     };
     let c = request(&mut p, Intent::Open).unwrap_or_else(|| unreachable!());
-    assert_eq!(c.payload, b"\x08\x03\x12\x0doteryn:dragon");
+    assert_eq!(c.payload, b"\x08\x04\x12\x0doteryn:dragon");
     let payload = encode_reply(&Reply::Window {
         context: [1; 16],
         boss_key: "oteryn:dragon".into(),
+        boss_creature_key: "oteryn:dragon".into(),
         content_revision: "r1".into(),
         selected_difficulty: 2,
+        personal_highest: 0,
+        unlocked_max: 1,
+        maximum_difficulty: 25,
     })
     .unwrap_or_default();
     let ok = GatedCommandResult {
@@ -111,7 +115,7 @@ fn boss_difficulty_native_actions_use_admitted_commands() {
     for (intent, expected) in [
         (
             Intent::Open,
-            Request::Open {
+            Request::OpenWithProgress {
                 boss_key: "oteryn:dragon".into(),
             },
         ),
@@ -150,10 +154,13 @@ fn boss_difficulty_native_actions_use_admitted_commands() {
     }
     for (context, difficulty) in [
         ("00000000000000000000000000000000", "2"),
-        ("01010101010101010101010101010101", "26"),
+        ("01010101010101010101010101010101", "29"),
     ] {
         p.pending = false;
         assert!(native::submit(&mut p, Intent::Start, "", context, difficulty).is_none());
         assert!(!p.pending);
     }
 }
+
+#[path = "context.rs"]
+mod context;

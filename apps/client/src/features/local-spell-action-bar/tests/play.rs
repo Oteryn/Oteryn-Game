@@ -196,3 +196,261 @@ fn nx7_battle_instinct_reply_reaches_hud_beside_harmony() -> Result<(), Box<dyn 
 
 #[path = "directional.rs"]
 mod directional;
+
+#[test]
+fn full_spell_row_dispatches_last_slot_and_projects_server_cooldown()
+-> Result<(), Box<dyn std::error::Error>> {
+    use std::num::NonZeroU32;
+    let (link, mut commands, outbox) = play_channel();
+    let mut fields = vec![String::new(); 12];
+    fields[11] = "71".into();
+    assert!(link.spell_bar_bind(&fields));
+    let mut view = view()?;
+    view.cast(NonZeroU32::new(12).ok_or("slot")?);
+    view.tick(&link).map_err(|_| "tick")?;
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get()==71)
+    );
+    outbox.push(vec![SessionEvent::ActorCooldowns(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 1,
+        new_revision: 2,
+        value: oteryn_session::ActorCooldowns {
+            server_now_ms: 100,
+            rtt_ms: None,
+            entries: vec![oteryn_session::ActorCooldown {
+                kind: oteryn_session::ActorCooldownKind::Spell,
+                id: 71,
+                expires_at_ms: 600,
+            }],
+        },
+    })]);
+    let mailbox = crate::play::mailbox::lock(&link.mailbox);
+    let text = oteryn_client_ui::spell_action_bar::panel_text(
+        &mailbox.spell_bar,
+        &mailbox.spell_catalog.catalog,
+    );
+    assert!(text.contains("12: 71"));
+    assert!(text.contains("500 ms"));
+    assert!(
+        mailbox
+            .spell_bar
+            .bar
+            .spell(NonZeroU32::new(13).ok_or("slot")?)
+            .is_none()
+    );
+    Ok(())
+}
+
+#[test]
+fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::feature_local_spell_action_bar::view::{BarAction, PassiveAbility};
+    use std::num::NonZeroU32;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.hotkey_equip_initialize(true);
+    outbox.hotkey_equip_items(vec![256]);
+    assert!(link.assign_bar_action(
+        10,
+        BarAction::Equip {
+            definition: NonZeroU32::new(256).ok_or("item")?
+        }
+    ));
+    crate::play::feature_local_spell_action_bar::input::submit(
+        &mut crate::play::mailbox::lock(&link.mailbox),
+        &link.commands,
+        11,
+        &[],
+    );
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("equip command".into());
+    };
+    assert_eq!(
+        (command.capability, command.command_type, command.payload),
+        (179, 348, vec![0, 0, 1, 0])
+    );
+    assert!(link.assign_bar_action(
+        9,
+        BarAction::Text {
+            text: "Hello travellers".into()
+        }
+    ));
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.chat.selected = true;
+        mailbox.chat.text = "Draft stays here".into();
+    }
+    link.cast_spell_slot(NonZeroU32::new(10).ok_or("slot")?);
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::ChatPublic(oteryn_client_runtime::chat::ChatIntent::Say { text, .. }) if text=="Hello travellers")
+    );
+    assert_eq!(
+        crate::play::mailbox::lock(&link.mailbox).chat.text,
+        "Draft stays here"
+    );
+    assert!(link.assign_bar_action(
+        8,
+        BarAction::Passive {
+            ability: PassiveAbility::BattleInstinct
+        }
+    ));
+    link.cast_spell_slot(NonZeroU32::new(9).ok_or("slot")?);
+    assert!(
+        commands.try_recv().is_err(),
+        "passive assignments must never cast"
+    );
+    let path = std::env::temp_dir().join(format!("mixed-bars-{}.json", std::process::id()));
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    settings.sync_bar_actions(&link);
+    let saved = crate::play::SettingsState::new(Some(path.clone()));
+    assert_eq!(
+        saved.preferences.bar_actions,
+        settings.preferences.bar_actions
+    );
+    assert!(!link.assign_bar_action(
+        150,
+        BarAction::Text {
+            text: "out of bounds".into()
+        }
+    ));
+    assert!(!link.assign_bar_action(0, BarAction::Text { text: "\0".into() }));
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[path = "layout.rs"]
+mod layout;
+
+#[path = "hotkeys.rs"]
+mod hotkeys;
+
+#[test]
+fn t058_bar_labels_and_cooldowns_are_independent() {
+    let (link, _, _) = crate::play::play_channel();
+    assert!(link.spell_slot_labels()[0].contains('\n'));
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.local_preferences.action_bar.cooldowns = false;
+    }
+    assert!(!link.spell_slot_labels()[0].contains('\n'));
+    assert!(link.spell_slot_labels()[0].starts_with("1:"));
+    crate::play::mailbox::lock(&link.mailbox)
+        .local_preferences
+        .action_bar
+        .labels = false;
+    assert!(link.spell_slot_labels().iter().all(String::is_empty));
+}
+
+#[test]
+fn t058_row_layout_preserves_all_twelve_slots() {
+    let (link, _, _) = crate::play::play_channel();
+    assert_eq!(link.action_bar_grid(), (12, 1));
+    crate::play::mailbox::lock(&link.mailbox)
+        .local_preferences
+        .action_bar
+        .three_rows = true;
+    assert_eq!(link.action_bar_grid(), (4, 3));
+}
+
+#[test]
+fn t058_auto_insert_uses_learned_server_catalog_once() {
+    use oteryn_client_runtime::spell_catalog::{SpellCatalog, SpellCatalogEntry};
+    let (link, _, _) = crate::play::play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.local_preferences.action_bar.auto_insert = true;
+        mailbox.spell_catalog.catalog.replace(SpellCatalog {
+            revision: 1,
+            entries: vec![SpellCatalogEntry {
+                cast_index: 77,
+                name: "Oteryn test spell".into(),
+                words: String::new(),
+                level: 1,
+                mana: 1,
+                mana_percent: false,
+                soul: 0,
+                learned: true,
+                available: true,
+                cooldown_groups: vec![],
+                rune_item: None,
+            }],
+        });
+    }
+    assert!(link.spell_slot_labels()[4].contains("Oteryn test spell"));
+    crate::play::mailbox::lock(&link.mailbox)
+        .spell_bar
+        .bar
+        .bind(4, None);
+    assert!(!link.spell_slot_labels()[4].contains("Oteryn test spell"));
+}
+
+#[test]
+fn t058_tooltip_toggle_projects_live_slot_details() {
+    let (link, _, _) = crate::play::play_channel();
+    assert!(link.spell_slot_tooltips()[0].contains("Cooldown"));
+    crate::play::mailbox::lock(&link.mailbox)
+        .local_preferences
+        .action_bar
+        .tooltips = false;
+    assert!(link.spell_slot_tooltips().iter().all(String::is_empty));
+}
+
+#[test]
+fn t058_rune_amounts_use_live_inventory_stacks() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::spell_catalog::{SpellCatalog, SpellCatalogEntry};
+    let (link, _, _) = crate::play::play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.spell_catalog.catalog.replace(SpellCatalog {
+            revision: 1,
+            entries: vec![SpellCatalogEntry {
+                cast_index: 1,
+                name: "Rune".into(),
+                words: String::new(),
+                level: 1,
+                mana: 0,
+                mana_percent: false,
+                soul: 0,
+                learned: true,
+                available: true,
+                cooldown_groups: vec![],
+                rune_item: Some(42),
+            }],
+        });
+    }
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox
+            .inventory
+            .apply(Some(oteryn_session::CharacterInventory {
+                entries: vec![oteryn_session::ItemEntry {
+                    handle: 1_u64.try_into()?,
+                    item_definition_ref: 42_u32.try_into()?,
+                    count: 7_u32.try_into()?,
+                    sub_type: 0,
+                }],
+                ..Default::default()
+            }));
+    }
+    assert!(link.spell_slot_labels()[0].contains("Visible: 7"));
+    crate::play::mailbox::lock(&link.mailbox)
+        .inventory
+        .inventory
+        .as_mut()
+        .ok_or("inventory")?
+        .entries[0]
+        .count = 3_u32.try_into()?;
+    assert!(link.spell_slot_labels()[0].contains("Visible: 3"));
+    crate::play::mailbox::lock(&link.mailbox)
+        .local_preferences
+        .action_bar
+        .amounts = false;
+    assert!(!link.spell_slot_labels()[0].contains("Visible:"));
+    Ok(())
+}
+
+#[path = "parity.rs"]
+mod parity;
+
+#[path = "item_cooldowns.rs"]
+mod item_cooldowns;

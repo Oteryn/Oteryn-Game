@@ -82,13 +82,13 @@ pub fn apply_result(panel: &mut GuildPanel, reply: &GuildReply) {
         GuildReply::Intent {
             result: Some(result),
             ..
-        } if result.code == 1 => panel.feedback = Some("Guild action accepted".into()),
+        } if result.code == 1 => panel.feedback = Some(tr!("Guild action accepted").into()),
         GuildReply::Intent {
             result: Some(result),
             ..
-        } => panel.feedback = Some(format!("Guild action refused (code {})", result.code)),
+        } => panel.feedback = Some(lfmt!("Guild action refused (code {})", result.code)),
         GuildReply::Intent { result: None, .. } | GuildReply::Query { result: None, .. } => {
-            panel.feedback = Some("Guild request refused by the server".into())
+            panel.feedback = Some(tr!("Guild request refused by the server").into())
         }
         GuildReply::Query {
             result: Some(guild::GuildQueryResult::Own(value)),
@@ -122,12 +122,12 @@ pub fn apply_result(panel: &mut GuildPanel, reply: &GuildReply) {
 #[must_use]
 pub fn panel_text(panel: &GuildPanel) -> String {
     if !panel.selected {
-        return "Guild unavailable in this session".into();
+        return tr!("Guild unavailable in this session").into();
     }
     let mut lines = vec![panel.own.as_ref().map_or_else(
-        || "No guild".into(),
+        || tr!("No guild").into(),
         |g| {
-            format!(
+            lfmt!(
                 "{} — {}\r\n{}\r\nRank: {}",
                 g.name,
                 g.title,
@@ -138,14 +138,14 @@ pub fn panel_text(panel: &GuildPanel) -> String {
             )
         },
     )];
-    lines.push(format!("Roster ({}):", panel.roster.len()));
+    lines.push(lfmt!("Roster ({}):", panel.roster.len()));
     lines.extend(
         panel
             .roster
             .iter()
-            .map(|m| format!("{} — {} (rank {})", m.name, m.title, m.level)),
+            .map(|m| lfmt!("{} — {} (rank {})", m.name, m.title, m.level)),
     );
-    lines.push(format!("Invitations ({}):", panel.invitations.len()));
+    lines.push(lfmt!("Invitations ({}):", panel.invitations.len()));
     lines.extend(panel.invitations.iter().map(|i| i.name.clone()));
     if let Some(feedback) = &panel.feedback {
         lines.push(feedback.clone());

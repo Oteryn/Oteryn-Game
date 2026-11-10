@@ -3,6 +3,8 @@
 //! guesses another release. `--after-setup` first waits until the install that started it has
 //! released the transaction mutex.
 #![windows_subsystem = "windows"]
+#[macro_use]
+extern crate oteryn_client_ui;
 
 use std::fmt::{self, Display, Formatter};
 use std::io;
@@ -24,19 +26,28 @@ enum LaunchError {
 impl Display for LaunchError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::MissingPointer => formatter.write_str("current.txt is missing"),
+            Self::MissingPointer => formatter.write_str(tr!("current.txt is missing")),
             Self::UnreadablePointer(error) => {
-                write!(formatter, "current.txt is unreadable: {error}")
-            }
-            Self::MalformedPointer => formatter.write_str("current.txt does not name a release"),
-            Self::DanglingPointer(release) => {
-                write!(
+                lwrite!(
                     formatter,
-                    "release {release} named by current.txt is not installed"
+                    "current.txt is unreadable: {error}",
+                    error = error
                 )
             }
-            Self::SetupStillRunning => formatter.write_str("the installer did not finish in time"),
-            Self::Os(error) => write!(formatter, "cannot start Oteryn: {error}"),
+            Self::MalformedPointer => {
+                formatter.write_str(tr!("current.txt does not name a release"))
+            }
+            Self::DanglingPointer(release) => {
+                lwrite!(
+                    formatter,
+                    "release {release} named by current.txt is not installed",
+                    release = release
+                )
+            }
+            Self::SetupStillRunning => {
+                formatter.write_str(tr!("the installer did not finish in time"))
+            }
+            Self::Os(error) => lwrite!(formatter, "cannot start Oteryn: {error}", error = error),
         }
     }
 }
@@ -55,7 +66,9 @@ fn is_release_directory_name(value: &str) -> bool {
             && suffix.bytes().all(|digit| digit.is_ascii_digit())
             && suffix.parse::<u32>().is_ok()
     });
-    suffix_valid && oteryn_client::is_contract_release_id(release_id)
+    suffix_valid
+        && (oteryn_client::is_contract_release_id(release_id)
+            || oteryn_client::updater::release_directory(release_id))
 }
 
 /// The release directory name `current.txt` holds; one trailing line ending is accepted.
@@ -91,6 +104,27 @@ fn active_client(install_dir: &Path) -> Result<PathBuf, LaunchError> {
     }
 }
 
+#[path = "../launcher/package_status.rs"]
+mod package_checks;
+
+/// Local diagnosis never downloads or replaces a release behind the installer.
+fn installation_report(install_dir: &Path) -> String {
+    let status = match active_client(install_dir) {
+        Ok(client) => format!(
+            "{}\r\n{}: {}",
+            lfmt!("Ready to launch: {}", client.display()),
+            tr!("Active client"),
+            package_checks::status(&client)
+        ),
+        Err(error) => lfmt!("Installation check failed: {error}", error = error),
+    };
+    lfmt!(
+        "Oteryn installation check\r\nLauncher: {}\r\n{status}\r\nRepair: run the Oteryn installer and choose the same installation directory. Keep the client closed until setup finishes. Updates must come from your operator's trusted release channel.",
+        oteryn_client::RELEASE_ID,
+        status = status
+    )
+}
+
 #[cfg(windows)]
 fn wait_for_setup_exit() -> Result<(), LaunchError> {
     use oteryn_client::win_mutex;
@@ -122,6 +156,22 @@ fn launch() -> Result<(), LaunchError> {
     let install_dir = launcher
         .parent()
         .ok_or(LaunchError::Os(io::Error::from(io::ErrorKind::NotFound)))?;
+    if let Some(result) = oteryn_client::updater::requested(install_dir, &arguments) {
+        let message = result.map_err(|_| {
+            LaunchError::Os(io::Error::other(
+                "Update refused; trusted update configuration or signed release unavailable",
+            ))
+        })?;
+        oteryn_client::win_mutex::show_error(&message);
+        return Ok(());
+    }
+    if arguments
+        .iter()
+        .any(|argument| argument == "--check-install")
+    {
+        oteryn_client::win_mutex::show_error(&installation_report(install_dir));
+        return Ok(());
+    }
     let client = active_client(install_dir)?;
     std::process::Command::new(client)
         .args(arguments)
@@ -132,11 +182,21 @@ fn launch() -> Result<(), LaunchError> {
 
 #[cfg(windows)]
 fn main() -> std::process::ExitCode {
+    if let Some(path) = oteryn_client::play::PreferenceStore::path()
+        && let Ok(store) = oteryn_client::play::PreferenceStore::load(path)
+    {
+        oteryn_client_ui::localization::set_default(store.preferences().language());
+    }
     match launch() {
-        Ok(()) => std::process::ExitCode::SUCCESS,
+        Ok(()) => {
+            oteryn_client::crash_report::record_launcher_exit_code(0);
+            std::process::ExitCode::SUCCESS
+        }
         Err(error) => {
-            let message = format!("{error}. Reinstall Oteryn to repair it.");
-            eprintln!("Oteryn: {message}");
+            let message = lfmt!("{error}. Reinstall Oteryn to repair it.", error = error);
+            oteryn_client::crash_report::record_startup_failure("launcher", &message);
+            oteryn_client::crash_report::record_launcher_exit_code(2);
+            leprintln!("Oteryn: {message}", message = message);
             // The launcher has no console, so the user sees the error only in a dialog. A
             // `--smoke` run is unattended and must not block on one.
             if !std::env::args_os().any(|argument| argument == "--smoke") {
@@ -150,11 +210,31 @@ fn main() -> std::process::ExitCode {
 #[cfg(not(windows))]
 fn main() {
     if let Ok(directory) = std::env::current_dir()
+        && let Some(result) = oteryn_client::updater::requested(
+            &directory,
+            &std::env::args_os().skip(1).collect::<Vec<_>>(),
+        )
+    {
+        match result {
+            Ok(message) => println!("{message}"),
+            Err(error) => {
+                eprintln!("{error}");
+                std::process::exit(2);
+            }
+        }
+        return;
+    }
+    if let Ok(directory) = std::env::current_dir()
         && let Err(error) = active_client(&directory)
     {
-        eprintln!("Oteryn: {error}");
+        leprintln!("Oteryn: {error}", error = error);
     }
-    println!("Oteryn launcher: Windows desktop target only");
+    if std::env::args_os().any(|argument| argument == "--check-install")
+        && let Ok(directory) = std::env::current_dir()
+    {
+        println!("{}", installation_report(&directory));
+    }
+    lprintln!("Oteryn launcher: Windows desktop target only");
 }
 
 #[cfg(test)]
@@ -175,6 +255,17 @@ mod tests {
         let release_dir = directory.join("releases").join(release);
         assert!(std::fs::create_dir_all(&release_dir).is_ok());
         assert!(std::fs::write(release_dir.join("oteryn-client.exe"), b"").is_ok());
+    }
+
+    #[test]
+    fn installation_check_explains_repair_and_active_release() {
+        let directory = install_dir("check-report");
+        assert!(installation_report(&directory).contains("Repair: run the Oteryn installer"));
+        install_release(&directory, RELEASE);
+        assert!(std::fs::write(directory.join("current.txt"), RELEASE).is_ok());
+        let report = installation_report(&directory);
+        assert!(report.contains(RELEASE));
+        assert!(report.contains("Active client"));
     }
 
     #[test]
@@ -203,7 +294,6 @@ mod tests {
             format!(" {RELEASE}"),
             format!("{RELEASE}\n\n"),
             format!("{RELEASE}\\..\\x"),
-            "not-a-release".to_owned(),
         ] {
             assert!(std::fs::write(directory.join("current.txt"), &contents).is_ok());
             assert!(
@@ -271,7 +361,9 @@ mod tests {
         install_release(&directory, RELEASE);
         let repaired = format!("{RELEASE}~2");
         install_release(&directory, &repaired);
+        install_release(&directory, "rel-a");
         for (contents, release) in [
+            ("rel-a".to_owned(), "rel-a"),
             (RELEASE.to_owned(), RELEASE),
             (format!("{RELEASE}\r\n"), RELEASE),
             (format!("{repaired}\n"), repaired.as_str()),

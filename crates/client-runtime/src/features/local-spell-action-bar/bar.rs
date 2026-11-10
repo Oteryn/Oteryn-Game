@@ -1,14 +1,21 @@
-//! oteryn-choice: four local bindings; server cast indices are never display row numbers.
+//! Local spell row; server cast indices are never display row numbers.
 use std::num::NonZeroU32;
+pub const ACTION_BAR_SLOTS: usize = 150;
 #[derive(Debug, Clone)]
 pub struct ActionBar {
-    slots: [Option<NonZeroU32>; 4],
+    slots: [Option<NonZeroU32>; ACTION_BAR_SLOTS],
     pub cooldowns: Option<oteryn_session::ActorCooldowns>,
 }
 impl Default for ActionBar {
     fn default() -> Self {
         Self {
-            slots: [1, 2, 3, 4].map(NonZeroU32::new),
+            slots: std::array::from_fn(|slot| {
+                if slot < 4 {
+                    NonZeroU32::new(slot as u32 + 1)
+                } else {
+                    None
+                }
+            }),
             cooldowns: None,
         }
     }
@@ -29,6 +36,13 @@ impl ActionBar {
             return false;
         };
         *value = spell;
+        true
+    }
+    pub fn swap(&mut self, from: usize, to: usize) -> bool {
+        if from >= self.slots.len() || to >= self.slots.len() {
+            return false;
+        }
+        self.slots.swap(from, to);
         true
     }
     #[must_use]

@@ -1,0 +1,20 @@
+{
+  "classification": "PROVEN",
+  "main_base": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+  "command": "cargo nextest run -p oteryn-gameplay-dispatch --lib --all-features -E 'test(fathers_burden_eight_handins_cape_experience_and_replay) | test(qready1_adorned_uh_rune_quest_exact_reward_once)' --no-capture --no-fail-fast",
+  "postgres": "18.6 / server_version_num180006",
+  "log_sha256": "a1e191db202bd503a0b41f4eecd6e7f46bb580f0361de8b6ee83852b0fbec7fc",
+  "test_sha256_before_fixture_correction": "75ce619282e215c54ae294852ea81445c8495d73d577596230414be81ce08c6d",
+  "cases": [
+    {
+      "quest": "Adorned UH Rune Quest",
+      "seconds": 45.952,
+      "result": "RED: native reward MINT succeeded, but completed quest-state count was0 instead of1"
+    },
+    {
+      "quest": "A Father's Burden Quest",
+      "seconds": 87.088,
+      "result": "RED: DefinitionNotFound; full hand-in reproduction retained locally under .lane/reproductions, not published as a passing test"
+    }
+  ]
+}

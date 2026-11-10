@@ -7,7 +7,7 @@ pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
 /// Empty selects self; otherwise use the native contract's 16-byte Character id.
 pub fn set_target(p: &mut super::CyclopediaCharacterPanel, text: &str) -> bool {
     if p.pending {
-        p.feedback = Some("Waiting for the server");
+        p.feedback = Some(tr!("Waiting for the server"));
         return false;
     }
     let text = text.trim();
@@ -15,7 +15,9 @@ pub fn set_target(p: &mut super::CyclopediaCharacterPanel, text: &str) -> bool {
         None
     } else {
         if text.len() != 32 || !text.bytes().all(|b| b.is_ascii_hexdigit()) {
-            p.feedback = Some("Enter 32 hexadecimal Character id digits, or leave empty for self");
+            p.feedback = Some(tr!(
+                "Enter 32 hexadecimal Character id digits, or leave empty for self"
+            ));
             return false;
         }
         let mut id = [0; 16];
@@ -27,9 +29,17 @@ pub fn set_target(p: &mut super::CyclopediaCharacterPanel, text: &str) -> bool {
         }
         Some(id)
     };
-    p.target = target;
+    p.change_target(target);
     p.offset = 0;
     p.result = None;
     p.feedback = None;
     true
+}
+
+pub fn blessings_key(events: &[NormalizedInputEvent]) -> bool {
+    use oteryn_input_actions::Modifiers;
+    let chord = Modifiers::one(Modifier::Control)
+        .with(Modifier::Alt)
+        .with(Modifier::Shift);
+    events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if code.get() == 69 && *modifiers == chord))
 }

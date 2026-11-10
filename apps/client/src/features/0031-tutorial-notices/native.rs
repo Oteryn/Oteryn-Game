@@ -1,7 +1,7 @@
 //! Native tutorial and server-save panel. HWND access remains on its creating thread.
 #![allow(unsafe_code)]
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::tutorial_notices::{NoticePanel, panel_text};
+use oteryn_client_ui::tutorial_notices::NoticePanel;
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::Duration;
@@ -37,12 +37,12 @@ fn run(weak: WeakMailbox) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Tutorial and server save").as_ptr(),
+            wide(tr!("Compendium — Guide, updates and help")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            440,
-            520,
+            840,
+            620,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -52,6 +52,48 @@ fn run(weak: WeakMailbox) {
             close(&weak);
             return;
         }
+        let mut tabs = Vec::new();
+        for (index, label) in [
+            tr!("Notices"),
+            tr!("Guide"),
+            tr!("Recommendations"),
+            tr!("Updates"),
+            tr!("Features"),
+            tr!("Help"),
+        ]
+        .iter()
+        .enumerate()
+        {
+            tabs.push(CreateWindowExW(
+                0,
+                wide("BUTTON").as_ptr(),
+                wide(label).as_ptr(),
+                WS_CHILD
+                    | WS_VISIBLE
+                    | WS_TABSTOP
+                    | BS_AUTORADIOBUTTON as u32
+                    | if index == 0 { WS_GROUP } else { 0 },
+                10 + index as i32 * 132,
+                10,
+                130,
+                30,
+                hwnd,
+                (201 + index) as _,
+                null_mut(),
+                null(),
+            ));
+        }
+        if tabs.iter().any(|tab| tab.is_null()) {
+            DestroyWindow(hwnd);
+            close(&weak);
+            return;
+        }
+        SendMessageW(tabs[0], BM_SETCHECK, 1, 0);
+        let mut held_tab = usize::MAX;
+        let updates = std::env::current_exe()
+            .ok()
+            .and_then(|path| path.parent().map(super::compendium_updates))
+            .unwrap_or_else(|| "Updates unavailable: cannot locate the client package.".into());
         let list = CreateWindowExW(
             0,
             wide("EDIT").as_ptr(),
@@ -63,14 +105,19 @@ fn run(weak: WeakMailbox) {
                 | ES_MULTILINE as u32
                 | ES_READONLY as u32,
             10,
-            10,
-            400,
-            450,
+            50,
+            800,
+            510,
             hwnd,
             101 as _,
             null_mut(),
             null(),
         );
+        if list.is_null() {
+            DestroyWindow(hwnd);
+            close(&weak);
+            return;
+        }
         let mut held: Option<NoticePanel> = None;
         let mut msg: MSG = std::mem::zeroed();
         loop {
@@ -86,8 +133,15 @@ fn run(weak: WeakMailbox) {
             if mailbox.chat_public_shutdown {
                 break;
             }
-            if held.as_ref() != Some(&mailbox.notices) {
-                SetWindowTextW(list, wide(&panel_text(&mailbox.notices)).as_ptr());
+            let tab = tabs
+                .iter()
+                .position(|tab| SendMessageW(*tab, BM_GETCHECK, 0, 0) == 1)
+                .unwrap_or(0);
+            if held.as_ref() != Some(&mailbox.notices) || held_tab != tab {
+                let text = super::compendium_page_text(&mailbox.notices, tab, &updates)
+                    .unwrap_or_default();
+                SetWindowTextW(list, wide(&text).as_ptr());
+                held_tab = tab;
                 held = Some(mailbox.notices.clone());
             }
             drop(mailbox);

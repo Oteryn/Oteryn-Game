@@ -6,7 +6,7 @@ impl PlayView {
     /// A click on `tile`: a drawn object or actor is selected, any other tile becomes the walk
     /// goal.
     pub fn click(&mut self, tile: TileCoord) -> Result<(), BatchError> {
-        if self.death.dead {
+        if self.death.dead || crate::play::feature_0450_server_modal::view::active() {
             return Ok(());
         }
         if self.cast_at_cursor(tile) {
@@ -75,7 +75,7 @@ impl PlayView {
         {
             lock(&link.mailbox)
                 .world_context
-                .set_feedback("Target changed".into(), std::time::Instant::now());
+                .set_feedback(tr!("Target changed").into(), std::time::Instant::now());
             return false;
         }
         if let Some(tile) = menu.tile {
@@ -85,7 +85,7 @@ impl PlayView {
             if current.binding != menu.binding {
                 lock(&link.mailbox)
                     .world_context
-                    .set_feedback("Target changed".into(), std::time::Instant::now());
+                    .set_feedback(tr!("Target changed").into(), std::time::Instant::now());
                 return false;
             }
         }
@@ -133,7 +133,7 @@ impl PlayView {
         mailbox.world_context.pending = true;
         mailbox
             .world_context
-            .set_feedback("Waiting for server".into(), std::time::Instant::now());
+            .set_feedback(tr!("Waiting for server").into(), std::time::Instant::now());
         true
     }
 }

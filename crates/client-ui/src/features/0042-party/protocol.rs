@@ -19,13 +19,13 @@ pub fn request(panel: &mut PartyPanel, intent: Intent) -> Option<PartyCommand> {
 
 fn prepare(panel: &PartyPanel, intent: Intent) -> Result<PartyCommand, &'static str> {
     if !panel.selected {
-        return Err("Parties are unavailable in this session");
+        return Err(tr!("Parties are unavailable in this session"));
     }
     if panel.pending.is_some() {
-        return Err("Waiting for the server");
+        return Err(tr!("Waiting for the server"));
     }
     if matches!(intent, Intent::Kick | Intent::PassLeadership) && !panel.can_manage_member() {
-        return Err("Only the party leader can manage another member");
+        return Err(tr!("Only the party leader can manage another member"));
     }
     let intent = match intent {
         Intent::Refresh => return Ok(PartyCommand::query()),
@@ -33,28 +33,34 @@ fn prepare(panel: &PartyPanel, intent: Intent) -> Result<PartyCommand, &'static 
         Intent::Join => party::PartyIntent::Accept(
             panel
                 .selected_invitation
-                .ok_or("Select an invitation first")?,
+                .ok_or(tr!("Select an invitation first"))?,
         ),
         Intent::Leave => party::PartyIntent::Leave,
-        Intent::Kick => {
-            party::PartyIntent::Kick(panel.selected_member.ok_or("Select a party member first")?)
-        }
+        Intent::Kick => party::PartyIntent::Kick(
+            panel
+                .selected_member
+                .ok_or(tr!("Select a party member first"))?,
+        ),
         Intent::PassLeadership => party::PartyIntent::PassLeadership(
-            panel.selected_member.ok_or("Select a party member first")?,
+            panel
+                .selected_member
+                .ok_or(tr!("Select a party member first"))?,
         ),
         Intent::ToggleSharedExperience => {
             if !panel.chat_selected {
-                return Err("Shared experience requires chat support in this session");
+                return Err(tr!(
+                    "Shared experience requires chat support in this session"
+                ));
             }
             let state = panel
                 .state
                 .as_ref()
-                .ok_or("Refresh the party before changing shared experience")?;
+                .ok_or(tr!("Refresh the party before changing shared experience"))?;
             return PartyCommand::shared_experience(!state.shared_xp_enabled)
-                .map_err(|_| "The shared experience request could not be encoded");
+                .map_err(|_| tr!("The shared experience request could not be encoded"));
         }
     };
-    PartyCommand::intent(intent).map_err(|_| "The party request could not be encoded")
+    PartyCommand::intent(intent).map_err(|_| tr!("The party request could not be encoded"))
 }
 
 pub fn apply_result(panel: &mut PartyPanel, response: &PartyResponse) -> bool {
@@ -67,16 +73,16 @@ pub fn apply_result(panel: &mut PartyPanel, response: &PartyResponse) -> bool {
         oteryn_client_runtime::party::CommandStatus::Accepted
             | oteryn_client_runtime::party::CommandStatus::DuplicateReplay
     ) {
-        panel.feedback = Some("The server refused the party command");
+        panel.feedback = Some(tr!("The server refused the party command"));
     } else if operation.is_none() {
-        panel.feedback = Some("The server returned an invalid party result");
+        panel.feedback = Some(tr!("The server returned an invalid party result"));
     } else if let Some(result) = operation
         .as_ref()
         .filter(|value| value.disposition != party::PartyDisposition::Ok)
     {
         panel.feedback = Some(disposition_text(result.disposition));
     } else {
-        panel.feedback = Some("The server confirmed the party request");
+        panel.feedback = Some(tr!("The server confirmed the party request"));
     }
     let Some(state) = response
         .view
@@ -92,7 +98,7 @@ pub fn apply_result(panel: &mut PartyPanel, response: &PartyResponse) -> bool {
                     | oteryn_client_runtime::party::CommandStatus::DuplicateReplay
             )
         {
-            panel.feedback = Some("The current party view is unavailable; refresh again");
+            panel.feedback = Some(tr!("The current party view is unavailable; refresh again"));
         }
         return false;
     };
@@ -110,32 +116,35 @@ pub fn apply_result(panel: &mut PartyPanel, response: &PartyResponse) -> bool {
             .any(|entry| entry.handle == *handle)
     });
     panel.state = Some(state);
+    panel.reconcile_list();
     panel.received_at = Some(std::time::Instant::now());
     true
 }
 
 fn disposition_text(value: party::PartyDisposition) -> &'static str {
     match value {
-        party::PartyDisposition::Ok => "The server confirmed the party request",
+        party::PartyDisposition::Ok => tr!("The server confirmed the party request"),
         party::PartyDisposition::NotLeader => {
-            "The server refused: only the party leader can do that"
+            tr!("The server refused: only the party leader can do that")
         }
         party::PartyDisposition::AlreadyInParty => {
-            "The server refused: that player is already in a party"
+            tr!("The server refused: that player is already in a party")
         }
         party::PartyDisposition::NotInvited => {
-            "The server refused: that invitation is no longer available"
+            tr!("The server refused: that invitation is no longer available")
         }
-        party::PartyDisposition::NotVisible => "The server refused: that player is not visible",
+        party::PartyDisposition::NotVisible => {
+            tr!("The server refused: that player is not visible")
+        }
         party::PartyDisposition::LogoutBlocked => {
-            "The server refused: leaving is blocked during logout"
+            tr!("The server refused: leaving is blocked during logout")
         }
         party::PartyDisposition::Unavailable => {
-            "The server refused: the party service is unavailable"
+            tr!("The server refused: the party service is unavailable")
         }
-        party::PartyDisposition::Rejected => "The server refused the party request",
+        party::PartyDisposition::Rejected => tr!("The server refused the party request"),
         party::PartyDisposition::NotMember => {
-            "The server refused: that player is not a party member"
+            tr!("The server refused: that player is not a party member")
         }
     }
 }

@@ -41,6 +41,11 @@ mod tibiadrome;
 #[path = "highscores_postgres_cases/category_allocation.rs"]
 mod category_allocation;
 
+// Complete fixtures activate Charm: categories 1..=12 plus 14 (Drome lifetime),
+// 16 (Phosphorus) and 17 (Drome rotation). Each cut writes one snapshot per category.
+const COMPLETE_CATEGORIES: [u8; 15] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 17];
+const SNAPSHOTS_PER_CUT: i64 = 12 + 3;
+
 struct Formula;
 impl BuildFormula for Formula {
     fn required(&self, _: &str, _: usize, _: u16) -> Option<u64> {
@@ -214,10 +219,10 @@ fn committed_native_sources_cover_every_category_without_source_writes() -> Test
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(ids.len(), 14);
+        assert_eq!(ids.len(), COMPLETE_CATEGORIES.len());
         assert_eq!(
             ids.iter().map(|s| s.category).collect::<Vec<_>>(),
-            (1..=12).chain([14, 17]).collect::<Vec<_>>()
+            COMPLETE_CATEGORIES.to_vec()
         );
         assert!(ids.iter().all(|s| s.source_cut == ids[0].source_cut));
         for category in 1..=9 {
@@ -293,7 +298,10 @@ fn pinned_pages_retain_exact_previous_then_expire_after_three_generations() -> T
             page(h, 1, None, 1, second).await?.snapshot.snapshot_id,
             second
         );
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 28);
+        assert_eq!(
+            h.count("game_world_highscore_snapshots").await?,
+            2 * SNAPSHOTS_PER_CUT
+        );
         assert!(page(h, 1, None, u32::MAX, second).await?.rows.is_empty());
         Ok(())
     })
@@ -311,7 +319,8 @@ fn filtered_list_is_capped_after_filtering_and_keeps_global_rank_below_all_cap()
             .map(|r| r.snapshots)
             .map_err(debug)?;
         eprintln!(
-            "HS-PUBLISH:1002eligible,fourteencategories,sixlists,{:?}",
+            "HS-PUBLISH:1002eligible,{}categories,sixlists,{:?}",
+            COMPLETE_CATEGORIES.len(),
             started.elapsed()
         );
         let target = CharacterId::decode(&generated(2000)).map_err(debug)?;
@@ -400,7 +409,10 @@ fn failed_mid_generation_publication_preserves_previous_headers_rows_and_source(
         );
         assert_eq!(page(h, 1, None, 1, 0).await?, before);
         assert_eq!(h.count("game_world_highscore_rows").await?, count);
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 14);
+        assert_eq!(
+            h.count("game_world_highscore_snapshots").await?,
+            SNAPSHOTS_PER_CUT
+        );
         assert_eq!(h.root_revision().await?, "2");
         h.pool.execute("DROP TRIGGER hs_fixture_fail ON game_world_highscore_rows;DROP FUNCTION hs_fixture_fail();").await?;
         h.root
@@ -408,7 +420,10 @@ fn failed_mid_generation_publication_preserves_previous_headers_rows_and_source(
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 28);
+        assert_eq!(
+            h.count("game_world_highscore_snapshots").await?,
+            2 * SNAPSHOTS_PER_CUT
+        );
         Ok(())
     })
 }
@@ -469,7 +484,10 @@ fn repeatable_read_source_cut_and_stale_publication_conflict_are_real_postgres()
             page(h, 1, None, 1, 0).await?.snapshot.snapshot_id,
             winner[0].snapshot_id
         );
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 28);
+        assert_eq!(
+            h.count("game_world_highscore_snapshots").await?,
+            2 * SNAPSHOTS_PER_CUT
+        );
         Ok(())
     })
 }
@@ -510,7 +528,7 @@ fn world_category_token_isolation_empty_world_and_query_boundaries() -> TestResu
                 Err(SnapshotError::SnapshotExpired)
             ));
         }
-        for category in [0, 13, 15, 16, 18, 255] {
+        for category in [0, 13, 15, 18, 255] {
             assert!(matches!(
                 h.root
                     .read_highscore_page(world(), category, None, 1, 0, asking())
@@ -607,7 +625,10 @@ fn two_real_roots_publish_one_coherent_generation_or_typed_retry_without_lost_re
                     .map(|s| s.snapshot_id)
                     .eq(current.iter().map(|id| id.unsigned_abs())))
         );
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 28);
+        assert_eq!(
+            h.count("game_world_highscore_snapshots").await?,
+            2 * SNAPSHOTS_PER_CUT
+        );
         assert_eq!(h.root_revision().await?, "2");
         Ok(())
     })
@@ -754,7 +775,7 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(ids.len(), 14);
+        assert_eq!(ids.len(), COMPLETE_CATEGORIES.len());
         assert!(ids.iter().all(|s| s.source_cut == ids[0].source_cut));
         let accounts = page(h, 10, None, 1, 0).await?;
         assert_eq!(accounts.rows.len(), 1);
@@ -793,7 +814,7 @@ fn periodic_due_state_survives_restart_and_reset_forces_publication() -> TestRes
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(first.len(), 14);
+        assert_eq!(first.len(), COMPLETE_CATEGORIES.len());
         // A separately connected genuine Root supplies no process-local schedule cache.
         let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
         assert!(other.maintain_ready_once().await?);
@@ -808,7 +829,7 @@ fn periodic_due_state_survives_restart_and_reset_forces_publication() -> TestRes
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(reset.len(), 14);
+        assert_eq!(reset.len(), COMPLETE_CATEGORIES.len());
         assert!(
             reset
                 .iter()
@@ -835,7 +856,10 @@ fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> Test
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(h.count("game_public_highscore_outbox").await?, 14);
+        assert_eq!(
+            h.count("game_public_highscore_outbox").await?,
+            SNAPSHOTS_PER_CUT
+        );
         h.pool.execute("CREATE FUNCTION highscore_test_fail_category() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.category=2 THEN RAISE EXCEPTION 'fixture publication failure'; END IF; RETURN NEW; END;$$; CREATE TRIGGER highscore_test_fail_category BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION highscore_test_fail_category();").await?;
         assert!(
             h.root
@@ -844,14 +868,20 @@ fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> Test
                 .map(|r| r.snapshots)
                 .is_err()
         );
-        assert_eq!(h.count("game_public_highscore_outbox").await?, 14);
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 14);
+        assert_eq!(
+            h.count("game_public_highscore_outbox").await?,
+            SNAPSHOTS_PER_CUT
+        );
+        assert_eq!(
+            h.count("game_world_highscore_snapshots").await?,
+            SNAPSHOTS_PER_CUT
+        );
         Ok(())
     })
 }
 
 #[test]
-fn twelve_category_publishers_keep_one_complete_generation_and_retention() -> TestResult {
+fn all_category_publishers_keep_one_complete_generation_and_retention() -> TestResult {
     run("hsconcurrentfull", async |h| {
         h.root
             .refresh_highscore_schedule(world(), complete_catalogues()?, true)
@@ -915,7 +945,10 @@ fn twelve_category_publishers_keep_one_complete_generation_and_retention() -> Te
                     .map(|s| s.snapshot_id)
                     .eq(current.iter().map(|id| id.unsigned_abs())))
         );
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 28);
+        assert_eq!(
+            h.count("game_world_highscore_snapshots").await?,
+            2 * SNAPSHOTS_PER_CUT
+        );
         assert_eq!(h.root_revision().await?, "2");
         Ok(())
     })
@@ -960,7 +993,7 @@ fn account_representatives_include_vocation_none_and_choose_level_before_identit
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(published.len(), 14);
+        assert_eq!(published.len(), COMPLETE_CATEGORIES.len());
         let accounts = page(h, 10, None, 1, 0).await?;
         // The highest initialized Character represents its account, the bootstrap-only
         // account has no representative, and the whole cut published.
@@ -994,8 +1027,8 @@ fn account_representatives_include_vocation_none_and_choose_level_before_identit
 /// Seed valid retained derived headers with a short remaining interval. This fixture changes
 /// no source, bypasses no trigger, and supplies no current gameplay authority.
 async fn seed_near_due_headers(h: &Harness, remaining_ms: i64) -> TestResult {
-    sqlx::query("WITH inserted AS (INSERT INTO game_world_highscore_snapshots(world_id,category,computed_at_ms,source_cut,row_count) SELECT encode($1,'hex')::uuid,category,floor(extract(epoch FROM statement_timestamp())*1000)::bigint-1800000+$2,pg_current_snapshot()::text,0 FROM unnest(ARRAY[1,2,3,4,5,6,7,8,9,10,11,12,14,17]) category RETURNING world_id,category,snapshot_id) INSERT INTO game_world_highscore_heads(world_id,category,current_snapshot_id) SELECT world_id,category,snapshot_id FROM inserted")
-        .bind(world().as_bytes().as_slice()).bind(remaining_ms).execute(&h.pool).await?;
+    sqlx::query("WITH inserted AS (INSERT INTO game_world_highscore_snapshots(world_id,category,computed_at_ms,source_cut,row_count) SELECT encode($1,'hex')::uuid,category,floor(extract(epoch FROM statement_timestamp())*1000)::bigint-1800000+$2,pg_current_snapshot()::text,0 FROM unnest($3::int[]) category RETURNING world_id,category,snapshot_id) INSERT INTO game_world_highscore_heads(world_id,category,current_snapshot_id) SELECT world_id,category,snapshot_id FROM inserted")
+        .bind(world().as_bytes().as_slice()).bind(remaining_ms).bind(COMPLETE_CATEGORIES.map(i32::from).as_slice()).execute(&h.pool).await?;
     Ok(())
 }
 
@@ -1033,7 +1066,10 @@ fn actual_job_restart_preserves_durable_deadline_after_a_failed_reset() -> TestR
         let observer = async {
             wait_for_passes(&job, 1).await;
             // The immediate restart check truly skipped the not-yet-due retained cut.
-            assert_eq!(h.count("game_world_highscore_snapshots").await?, 14);
+            assert_eq!(
+                h.count("game_world_highscore_snapshots").await?,
+                SNAPSHOTS_PER_CUT
+            );
             // The job writes as its own role (SET LOCAL ROLE): the fixture grants it the counter.
             h.pool.execute("CREATE SEQUENCE highscore_job_failure_seen; GRANT USAGE ON SEQUENCE highscore_job_failure_seen TO oteryn_game_highscore_job; CREATE FUNCTION highscore_job_fail() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN PERFORM nextval('highscore_job_failure_seen'); RAISE EXCEPTION 'fixture reset failure'; END;$$; CREATE TRIGGER highscore_job_fail BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION highscore_job_fail();").await?;
             sender.send(()).await?;
@@ -1043,11 +1079,14 @@ fn actual_job_restart_preserves_durable_deadline_after_a_failed_reset() -> TestR
                     .fetch_one(&h.pool)
                     .await?;
             assert!(failed);
-            assert_eq!(h.count("game_world_highscore_snapshots").await?, 14);
+            assert_eq!(
+                h.count("game_world_highscore_snapshots").await?,
+                SNAPSHOTS_PER_CUT
+            );
             h.pool
                 .execute("DROP TRIGGER highscore_job_fail ON game_world_highscore_snapshots")
                 .await?;
-            while h.count("game_world_highscore_snapshots").await? != 28 {
+            while h.count("game_world_highscore_snapshots").await? != 2 * SNAPSHOTS_PER_CUT {
                 tokio::time::sleep(std::time::Duration::from_millis(20)).await;
             }
             // The run loop counts a pass only after its commit returns, so the committed cut
@@ -1055,13 +1094,16 @@ fn actual_job_restart_preserves_durable_deadline_after_a_failed_reset() -> TestR
             wait_for_passes(&job, 3).await;
             // Uses the actual run-loop timer. The old process-relative +30min scheduler
             // times out here; neither the skipped restart nor the reset error may postpone it.
-            assert_eq!(h.count("game_world_highscore_snapshots").await?, 28);
+            assert_eq!(
+                h.count("game_world_highscore_snapshots").await?,
+                2 * SNAPSHOTS_PER_CUT
+            );
             let ids: Vec<i64> = sqlx::query_scalar(
                 "SELECT current_snapshot_id FROM game_world_highscore_heads ORDER BY category",
             )
             .fetch_all(&h.pool)
             .await?;
-            assert!(ids.iter().all(|id| *id > 14));
+            assert!(ids.iter().all(|id| *id > SNAPSHOTS_PER_CUT));
             drop(sender);
             Ok(())
         };
@@ -1086,13 +1128,19 @@ fn actual_job_periodic_failure_keeps_prior_cut_and_backs_off_without_busy_loop()
         let (sender, resets) = tokio::sync::mpsc::channel(1);
         let observer = async {
             wait_for_passes(&job, 1).await;
-            assert_eq!(h.count("game_world_highscore_snapshots").await?, 14);
+            assert_eq!(
+                h.count("game_world_highscore_snapshots").await?,
+                SNAPSHOTS_PER_CUT
+            );
             h.pool
                 .execute("DROP TRIGGER highscore_job_fail ON game_world_highscore_snapshots")
                 .await?;
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             assert_eq!(job.completed_passes(), 1);
-            assert_eq!(h.count("game_world_highscore_snapshots").await?, 14);
+            assert_eq!(
+                h.count("game_world_highscore_snapshots").await?,
+                SNAPSHOTS_PER_CUT
+            );
             drop(sender);
             Ok(())
         };
@@ -1131,7 +1179,10 @@ fn missing_achievement_catalogue_key_keeps_complete_previous_cut() -> TestResult
                 DurabilityError::InvalidStoredState
             ))
         ));
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 14);
+        assert_eq!(
+            h.count("game_world_highscore_snapshots").await?,
+            SNAPSHOTS_PER_CUT
+        );
         for snapshot in before {
             assert_eq!(
                 page(h, snapshot.category, None, 1, 0)
@@ -1188,6 +1239,8 @@ async fn client_reply(
     snapshot_id: u64,
 ) -> TestResult<HighscoresReply> {
     let payload = encode_highscores_query(HighscoresQuery {
+        world: None,
+        details: false,
         category,
         vocation,
         page,
@@ -1209,8 +1262,10 @@ fn session_resolution_rejects_another_world_an_unknown_session_and_an_unadmitted
             .await
             .map_err(debug)?;
         let snapshots = h.count("game_world_highscore_snapshots").await?;
-        assert_eq!(snapshots, 14);
+        assert_eq!(snapshots, SNAPSHOTS_PER_CUT);
         let payload = encode_highscores_query(HighscoresQuery {
+            world: None,
+            details: false,
             category: 1,
             vocation: 0,
             page: 1,
@@ -1284,7 +1339,10 @@ fn experience_gain_reaches_the_client_through_the_snapshot_job() -> TestResult {
         let (planned_resets, resets) = tokio::sync::mpsc::channel(1);
         let observer = async {
             wait_for_passes(&job, 1).await;
-            assert_eq!(h.count("game_world_highscore_snapshots").await?, 14);
+            assert_eq!(
+                h.count("game_world_highscore_snapshots").await?,
+                SNAPSHOTS_PER_CUT
+            );
             let first = client_query(h, 0, 1, 0).await?;
             assert_eq!(standing(&first), [(1, 1000)]);
             let own = first.own_row.clone().ok_or("own row missing")?;
@@ -1318,7 +1376,10 @@ fn experience_gain_reaches_the_client_through_the_snapshot_job() -> TestResult {
 
             planned_resets.send(()).await?;
             wait_for_passes(&job, 2).await;
-            assert_eq!(h.count("game_world_highscore_snapshots").await?, 28);
+            assert_eq!(
+                h.count("game_world_highscore_snapshots").await?,
+                2 * SNAPSHOTS_PER_CUT
+            );
             let second = client_query(h, 0, 1, 0).await?;
             assert_ne!(second.snapshot_id, first.snapshot_id);
             assert_eq!(
@@ -1358,7 +1419,7 @@ fn experience_gain_reaches_the_client_through_the_snapshot_job() -> TestResult {
 }
 
 /// HIGHSCORES0 §3: with no activated per-race Charm point source (CHARM-6) the serve job's
-/// catalogues publish categories 1 to 10, 12, 14 and 17, and the client's category 11 query through the
+/// catalogues publish categories 1 to 10, 12, 14, 16 and 17, and the client's category 11 query through the
 /// dispatched handler is `NOT_SUPPORTED` rather than a ranking of zero points.
 #[test]
 fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> TestResult {
@@ -1374,7 +1435,10 @@ fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> Test
         let (planned_resets, resets) = tokio::sync::mpsc::channel(1);
         let observer = async {
             wait_for_passes(&job, 1).await;
-            assert_eq!(h.count("game_world_highscore_snapshots").await?, 13);
+            assert_eq!(
+                h.count("game_world_highscore_snapshots").await?,
+                SNAPSHOTS_PER_CUT - 1
+            );
             let charm_heads: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_world_highscore_heads WHERE category=11",
             )
@@ -1392,10 +1456,13 @@ fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> Test
                 decode_highscores_result(&accounts).map_err(debug)?.category,
                 10
             );
-            // A planned reset publishes the same thirteen categories again.
+            // Withholding Charm removes exactly one category from each complete cut.
             planned_resets.send(()).await?;
             wait_for_passes(&job, 2).await;
-            assert_eq!(h.count("game_world_highscore_snapshots").await?, 26);
+            assert_eq!(
+                h.count("game_world_highscore_snapshots").await?,
+                2 * (SNAPSHOTS_PER_CUT - 1)
+            );
             drop(planned_resets);
             Ok(())
         };
@@ -1475,18 +1542,18 @@ fn boss_points_query_is_served_through_the_client_handler() -> TestResult {
     })
 }
 
-/// Migration 1105's restated guard on the cluster-global job group, as the migration runs it.
+/// Migration 2727's extended guard on the cluster-global job group, as the migration runs it.
 fn job_role_guard() -> &'static str {
-    const MIGRATION: &str = include_str!("../../migrations/1105_tibiadrome_highscores.sql");
+    const MIGRATION: &str = include_str!("../../migrations/2727_boss_difficulty_victories.sql");
     const END: &str = "END $highscore_role_guard$;";
     let start = MIGRATION
         .find("DO $highscore_role_guard$")
-        .expect("1105 restates its role guard");
+        .expect("2727 extends its role guard");
     let end = start + MIGRATION[start..].find(END).expect("the guard block ends") + END.len();
     &MIGRATION[start..end]
 }
 
-/// Runs `statements` and then the 1105 guard in one transaction. With `refusal` the guard must
+/// Runs `statements` and then the 2727 guard in one transaction. With `refusal` the guard must
 /// refuse with 42501 and that message, otherwise it must pass. The changes to the cluster-global
 /// group exist only in this transaction, so no other database on the shared cluster ever sees
 /// them; after the rollback the provisioned group passes the guard again.
@@ -1661,7 +1728,7 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
     run("hsjobprivileges", async |h| {
         let guard = job_role_guard();
         assert!(guard.contains("pg_shdepend"));
-        // Provisioned: the table-level grants of 0129/0929/1105 plus exactly the
+        // Provisioned: the table-level grants of 0129/0929/1105/2727 plus exactly the
         // closure predicate of 0996, no shared grants, and the group owns nothing.
         let grants: Vec<(String, String)> = sqlx::query_as(
             "SELECT c.relname::text, string_agg(a.privilege_type, ',' ORDER BY a.privilege_type COLLATE \"C\") \
@@ -1674,7 +1741,9 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
         let expected = [
             ("game_account_achievement_grant_requests", "SELECT"),
             ("game_account_achievements", "SELECT"),
+            ("game_boss_room_catalogue", "SELECT"),
             ("game_character_bestiary_progress", "SELECT"),
+            ("game_character_boss_difficulty_records", "SELECT"),
             ("game_character_bosstiary_progress", "SELECT"),
             ("game_character_build_state", "SELECT"),
             ("game_character_progression_state", "SELECT"),
@@ -1777,7 +1846,7 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
 /// Page 1 of every (category, filter) list of the current snapshots.
 async fn every_list(h: &Harness) -> TestResult<Vec<(u64, Vec<SnapshotRow>)>> {
     let mut lists = Vec::new();
-    for category in (1..=12).chain([14, 17]) {
+    for category in COMPLETE_CATEGORIES {
         for filter in FILTERS {
             let current = page(h, category, filter, 1, 0).await?;
             lists.push((current.snapshot.snapshot_id, current.rows));
@@ -1831,7 +1900,7 @@ fn world_cut_pages_its_sources_and_fails_closed_above_its_character_bound() -> T
             .refresh_highscore_world_within(world(), complete_catalogues()?, limits(2, 1)?)
             .await
             .map_err(debug)?;
-        assert_eq!(published.len(), 14);
+        assert_eq!(published.len(), COMPLETE_CATEGORIES.len());
         assert_eq!(page(h, 10, None, 1, 0).await?.rows.len(), 2);
         // Five more eligible Characters (six in all) cross several page boundaries of every
         // source; the paged cut at its exact bound equals the registered cut.

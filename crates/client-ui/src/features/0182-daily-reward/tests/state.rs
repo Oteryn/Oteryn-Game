@@ -1,5 +1,38 @@
 use super::*;
 #[test]
+fn proficiency_bonus_presentation_matches_server_streak_milestones() {
+    let mut panel = DailyRewardPanel::default();
+    assert!(!panel_text(&panel).contains("chance to gain double XP"));
+    for (streak, chance) in [
+        (0, 0),
+        (1, 1),
+        (6, 6),
+        (7, 7),
+        (8, 7),
+        (13, 7),
+        (14, 8),
+        (20, 8),
+        (21, 9),
+        (27, 9),
+        (28, 10),
+        (100_000, 10),
+    ] {
+        panel.wall = Some(daily_reward::DailyRewardWall {
+            lane_day: 1,
+            streak,
+            jokers: 0,
+            claimed: false,
+            claim_enabled: false,
+        });
+        let text = panel_text(&panel);
+        assert!(text.contains(&format!(
+            "Weapon proficiency XP: {chance}% chance to gain double XP"
+        )));
+        assert!(text.contains("1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28"));
+    }
+}
+
+#[test]
 fn confirmed_claim_disables_repeat_claim_and_projects_receipt() {
     let mut panel = DailyRewardPanel {
         selected: true,
@@ -109,4 +142,63 @@ fn claim_refusal_is_visible_and_not_inferred_as_state() {
         panel.feedback,
         Some("Open the daily reward shrine within reach, then refresh")
     );
+}
+
+#[test]
+fn reward_calendar_records_only_server_confirmed_claims() {
+    let mut panel = DailyRewardPanel {
+        selected: true,
+        wall: Some(daily_reward::DailyRewardWall {
+            lane_day: 5,
+            streak: 12,
+            jokers: 1,
+            claimed: false,
+            claim_enabled: true,
+        }),
+        ..Default::default()
+    };
+    let before = panel_text(&panel);
+    assert!(before.contains("30-day calendar"));
+    assert!(before.contains("05: available"));
+    assert!(!before.contains("04: claimed"));
+    assert!(request(&mut panel, Intent::Claim).is_some());
+    assert!(apply_result(
+        &mut panel,
+        &DailyRewardResponse {
+            status: CommandStatus::Accepted,
+            reply: Some(DailyRewardReply::Result(daily_reward::DailyRewardResult {
+                disposition: 1,
+                transaction_id: None
+            }))
+        }
+    ));
+    let after = panel_text(&panel);
+    assert!(after.contains("05: claimed"));
+    assert!(after.contains("Confirmed this session: day 5, streak 12"));
+}
+
+#[test]
+fn returner_reward_notification_never_infers_entitlement_from_daily_streak() {
+    let mut panel = ReturnerRewardPanel::default();
+    assert!(panel.claim(100).is_none());
+    panel.offer = Some(ReturnerOffer {
+        id: [7; 16],
+        expires_epoch: 200,
+        description: "Welcome back pack".into(),
+    });
+    assert!(panel.notification().contains("Welcome back pack"));
+    assert_eq!(panel.claim(100), Some([7; 16]));
+    assert!(panel.claim(100).is_none());
+    assert!(!panel.finish([8; 16], true));
+    assert!(panel.pending);
+    assert!(panel.finish([7; 16], false));
+    assert_eq!(panel.claim(100), Some([7; 16]));
+    assert!(panel.finish([7; 16], true));
+    assert!(panel.claim(100).is_none());
+    panel.offer = Some(ReturnerOffer {
+        id: [9; 16],
+        expires_epoch: 100,
+        description: "Expired".into(),
+    });
+    assert!(panel.claim(100).is_none());
 }

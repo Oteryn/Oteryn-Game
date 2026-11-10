@@ -35,7 +35,7 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::PlayerTyping(command)).is_err()
     {
         mailbox.player_typing.pending = false;
-        mailbox.player_typing.feedback = Some("The session has ended");
+        mailbox.player_typing.feedback = Some(tr!("The session has ended"));
     }
 }
 

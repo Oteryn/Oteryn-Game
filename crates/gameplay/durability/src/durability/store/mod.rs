@@ -1,6 +1,7 @@
 //! Store purchase retry evidence and Platform-owned delivery receipts.
 //!
 //! These journals are not a purchase or coin ledger. Platform owns both.
+mod cosmetic_tokens;
 mod codec;
 mod charm_expansion;
 mod hireling_capacity;
@@ -20,3 +21,4 @@ pub(crate) use prey_expansion::write_prey_expansion_receipt;
 pub use storage::{PurchaseRequestState, StoreDurabilityError};
 #[cfg(test)]
 mod tests;
+mod popularity;

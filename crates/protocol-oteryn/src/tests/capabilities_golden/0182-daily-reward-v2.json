@@ -6,7 +6,12 @@
   "acceptance_requires": false,
   "commands": [
     354,
-    355
+    355,
+    738,
+    6122,
+    6123,
+    6124,
+    6125
   ],
   "domains": [],
   "supersedes": [],

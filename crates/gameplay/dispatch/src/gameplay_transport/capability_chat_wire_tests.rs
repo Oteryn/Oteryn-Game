@@ -59,6 +59,25 @@ impl FreshAdmissionAuthority for ChatAuthority {
         ChatRoomSet::default()
     }
 
+    async fn console_levels(
+        &self,
+        _admitted: AdmittedSession,
+        names: Vec<String>,
+    ) -> Option<Vec<Option<u32>>> {
+        // This authority fixture models durable level 20 for its named characters.
+        Some(
+            names
+                .iter()
+                .map(|name| {
+                    self.names
+                        .iter()
+                        .any(|(_, known)| *known == name)
+                        .then_some(20)
+                })
+                .collect(),
+        )
+    }
+
     async fn chat_intent(
         &self,
         actor: ExactActorRef,
@@ -488,4 +507,70 @@ fn party_chat_egress_custody_refuses_nonmembers_and_reserves_members_once()
         "replacement must negotiate again"
     );
     Ok(())
+}
+
+#[test]
+fn console_metadata_dispatch_checks_selection_and_preserves_unavailable_levels()
+-> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                use oteryn_protocol_oteryn::chat::console;
+                use tokio::io::{AsyncReadExt, AsyncWriteExt};
+                for selected in [false, true] {
+                    let (runtime, actor, session) = runtime_with_capacity(0x71, 3);
+                    let authority = ChatAuthority {
+                        runtime: RefCell::new(runtime),
+                        chat: ChatRuntime::default(),
+                        names: vec![(session, "Aela")],
+                    };
+                    let mut admitted = admitted(actor, session)?;
+                    if !selected {
+                        admitted.continuity.selected_capabilities = super::selection(&[]);
+                    }
+                    let payload = console::encode_names(&["Aela".into(), "Unknown".into()])
+                        .ok_or("encode")?;
+                    let request = command(1, 6117, &payload);
+                    let (mut client, mut server) = tokio::io::duplex(64 * 1024);
+                    client
+                        .write_all(&(request.len() as u32).to_be_bytes())
+                        .await?;
+                    client.write_all(&request).await?;
+                    client.shutdown().await?;
+                    let serving = async {
+                        let end =
+                            serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+                        drop(server);
+                        end
+                    };
+                    let reading = async {
+                        let mut bytes = Vec::new();
+                        client.read_to_end(&mut bytes).await?;
+                        Ok::<_, std::io::Error>(bytes)
+                    };
+                    let (_, output) = tokio::join!(serving, reading);
+                    let mut accepted = false;
+                    for frame in split(&output?)? {
+                        let envelope = decode_wire_envelope(&frame)?;
+                        if envelope.message_type() == MessageType::CommandResult {
+                            let result = decode_command_result(envelope.payload())?;
+                            if result.status == oteryn_protocol_oteryn::CommandStatus::Accepted {
+                                assert_eq!(
+                                    console::decode_levels(result.payload),
+                                    Some(vec![Some(20), None])
+                                );
+                                accepted = true;
+                            }
+                        }
+                    }
+                    assert_eq!(accepted, selected);
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "console dispatch scenario panicked")?
+        .map_err(Into::into)
 }

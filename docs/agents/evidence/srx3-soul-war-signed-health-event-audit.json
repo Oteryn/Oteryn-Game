@@ -1,0 +1,219 @@
+{
+  "schema": "OTERYN_SRX3_SOUL_WAR_SIGNED_HEALTH_EVENT_AUDIT/v1",
+  "sources": [
+    {
+      "donor": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "src/game/game.cpp",
+      "git_blob": "5f421b1b2361280abeb8b392bca0e0344fc04648",
+      "sha256": "5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6"
+    },
+    {
+      "donor": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "src/lua/creature/creatureevent.cpp",
+      "git_blob": "7589856539986493e7d5be2358bbd18e84d74463",
+      "sha256": "5969dd4887b716be6dda0ddc711cc95ccaf962cf946245922a73b35126800fff"
+    },
+    {
+      "donor": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "src/lua/functions/lua_functions_loader.cpp",
+      "git_blob": "be87e5f65e98d56cfc5ff49c9d62fda8ce19f2cf",
+      "sha256": "82ad6174261b289c3f82618ea71ce308ab4b52c190dbc6b7e3f9f635353f6dc6"
+    },
+    {
+      "donor": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "src/creatures/combat/combat.cpp",
+      "git_blob": "499a6aec29f7fd85da4953aea599ab1cba181fe3",
+      "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad"
+    },
+    {
+      "donor": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "git_blob": "51d42e7e970a2f24fc8438a833aacac2c061dfc2",
+      "sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+    },
+    {
+      "donor": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/scripts/runes/ultimate_healing_rune.lua",
+      "git_blob": "e39af36cbd6cc3a7c461bb4752801eaae3a0dd7b",
+      "sha256": "3ef49893c221a984ff4688c343b03ebdc29989b9ba5d0b505689e638198ef210"
+    },
+    {
+      "donor": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/scripts/runes/intense_healing_rune.lua",
+      "git_blob": "a8c1e4a9e8a87e407342972f01c6aa15e43835f7",
+      "sha256": "ea6a42b9103d2c69593515c1342e7d429e08c5dbac09df503d6174b84e6a28f2"
+    },
+    {
+      "donor": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/scripts/spells/healing/mass_healing.lua",
+      "git_blob": "e5fe533d670be0c406d2b66a513cf575dc584a47",
+      "sha256": "8c9c668fb9d2bf5d73af385dd4ee0b8e42a663fd01d98955c9eeeaa93c6a5965"
+    },
+    {
+      "donor": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/scripts/spells/healing/heal_friend.lua",
+      "git_blob": "87c89b84a469e16b271618eae3359f48f2a643ef",
+      "sha256": "bd5daf081c3475ac9096d8debe43c447e3fd284088c992d0b347e11f37c4b466"
+    },
+    {
+      "donor": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/scripts/spells/healing/heal_monsters.lua",
+      "git_blob": "518b7e5567073010c0a5ade4acf070bfd229a446",
+      "sha256": "b936b466fdb2bd422cad621be7f899ffdd2e76a4f43d9d8e4c331b71a9ea218a"
+    },
+    {
+      "donor": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/cloak_of_terror.lua",
+      "git_blob": "ff25ab1f058c2f514dccb273b0ac135a148ed510",
+      "sha256": "2fca76ce2fcdc41edb87152d385ceefb8bb6bfd34f995eb0e7fc3a62add3b78b"
+    },
+    {
+      "donor": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/game/game.cpp",
+      "git_blob": "40a667ac7c28cff9a04324cca18575cebc92f13f",
+      "sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03"
+    },
+    {
+      "donor": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/lua/creature/creatureevent.cpp",
+      "git_blob": "741c23744d43aa1f41b46a3b719a759e77645017",
+      "sha256": "038c38b68aa3d7853aeeb7414837cf138768956b8025ea62274dfd239e49ddaf"
+    },
+    {
+      "donor": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/lua/functions/lua_functions_loader.cpp",
+      "git_blob": "442bc11ccc9c86f3f75c33ab26c583807367920d",
+      "sha256": "26c3f1aee865301b039b0337c89804b450c1c14257f87660408accadfd7808f8"
+    },
+    {
+      "donor": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "git_blob": "f80094d2692dabd8f1737764b21126cea97606ba",
+      "sha256": "3c38526af65d0bdd6e38573b8da8370cb14f69b017661b25ec28460ba5b6fdf6"
+    }
+  ],
+  "facts": [
+    {
+      "donor": "crystal",
+      "path": "src/game/game.cpp",
+      "lines": "7263-7285,7933-7948",
+      "fact": "Ordinary damage is restored to a negative sign after block; creature health events run before absolute-value normalization."
+    },
+    {
+      "donor": "crystal",
+      "path": "src/lua/functions/lua_functions_loader.cpp",
+      "lines": "598-607",
+      "fact": "Raw signed primary and secondary values are pushed to Lua."
+    },
+    {
+      "donor": "crystal",
+      "path": "src/lua/creature/creatureevent.cpp",
+      "lines": "468-483",
+      "fact": "The raw push precedes the Lua call; absolute value and nonhealing negation happen only after Lua returns."
+    },
+    {
+      "donor": "canary",
+      "path": "src/game/game.cpp",
+      "lines": "8463-8478",
+      "fact": "The same health-event-before-absolute-value order applies."
+    },
+    {
+      "donor": "canary",
+      "path": "src/lua/functions/lua_functions_loader.cpp",
+      "lines": "595-604",
+      "fact": "The same raw signed push applies."
+    },
+    {
+      "donor": "canary",
+      "path": "src/lua/creature/creatureevent.cpp",
+      "lines": "460-475",
+      "fact": "The same postcallback absolute-value and negative-sign wrapper applies."
+    },
+    {
+      "donor": "crystal",
+      "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "lines": "22-26,44-48,809-824",
+      "fact": "Malice/Cage Lua reflection and Cloak blood require positive components; ordinary negative damage does not qualify."
+    },
+    {
+      "donor": "crystal",
+      "path": "src/game/game.cpp",
+      "lines": "7827-7841,7933-7948",
+      "fact": "Health-event arithmetic precedes Wheel for healing and damage; healing also precedes Monk improvement."
+    },
+    {
+      "donor": "crystal",
+      "path": "src/game/game.cpp",
+      "lines": "7400-7401",
+      "fact": "The damage-healing response invokes combatChangeHealth with a null attacker."
+    },
+    {
+      "donor": "crystal",
+      "path": "data/scripts/spells/healing/mass_healing.lua",
+      "lines": "6-12",
+      "fact": "Ordinary unmastered monsters are excluded unless present in the explicit eight-boss whitelist; Cloak is absent."
+    },
+    {
+      "donor": "crystal",
+      "path": "data/scripts/runes/ultimate_healing_rune.lua",
+      "lines": "30-39",
+      "fact": "Monsters are rejected; the additional player-self restriction follows."
+    },
+    {
+      "donor": "crystal",
+      "path": "data/scripts/spells/healing/heal_friend.lua",
+      "lines": "86",
+      "fact": "The registered named target uses hasPlayerNameParam(true)."
+    },
+    {
+      "donor": "crystal",
+      "path": "data/scripts/spells/healing/heal_monsters.lua",
+      "lines": "12",
+      "fact": "Monster healing uses caster ID0, which resolves to a null attacker."
+    },
+    {
+      "donor": "crystal",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/cloak_of_terror.lua",
+      "lines": "54,57",
+      "fact": "Cloak is neither summonable nor convinceable."
+    }
+  ],
+  "decisions": [
+    "Do not change Lua predicates from positive to negative or absolute value as an implicit balance or intent repair.",
+    "Keep native C++ reflection separate from these Lua callbacks.",
+    "Normal Player damage must not emit Cloak positive-health blood.",
+    "The positive-healing predicate remains literal; an allowed ordinary gameplay producer healing Cloak is not yet proved.",
+    "Earlier tests assuming unsigned damage were incorrect contracts and are not source qualification evidence."
+  ],
+  "wiki": "wiki-pending"
+}

@@ -3,12 +3,37 @@ use crate::play::{
     PlayLink,
     mailbox::{Mailbox, lock},
 };
-use oteryn_client_ui::boss_encounter::{Intent, request};
+use oteryn_client_ui::boss_encounter::{BossCategory, BossEncounterPanel, Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    pub fn boss_encounter_browse(&self, search: &str, category: BossCategory, previous: bool) {
+        browse(
+            &mut lock(&self.mailbox).boss_encounter,
+            search,
+            category,
+            previous,
+        );
+    }
+
+    pub fn boss_slot_select_boss(&self, previous: bool) {
+        lock(&self.mailbox)
+            .boss_encounter
+            .select_slot_boss(previous);
+    }
+    pub fn boss_slot_select_slot(&self) {
+        lock(&self.mailbox).boss_encounter.select_slot();
+    }
+
     pub fn boss_encounter_edit(&self, field: usize, value: String) {
         edit(&mut lock(&self.mailbox).boss_encounter, field, value);
+    }
+    pub fn boss_encounter_difficulty_request(
+        &self,
+        intent: oteryn_client_ui::boss_difficulty::Intent,
+        difficulty: u16,
+    ) {
+        enqueue_difficulty(&mut lock(&self.mailbox), &self.commands, intent, difficulty);
     }
     pub fn boss_encounter_request(&self, intent: Intent) {
         enqueue(&mut lock(&self.mailbox), &self.commands, intent);
@@ -19,7 +44,9 @@ impl PlayLink {
             #[cfg(windows)]
             super::view::cooldown_window(self);
             #[cfg(not(windows))]
-            { lock(&self.mailbox).boss_encounter.cooldowns_open = true; }
+            {
+                lock(&self.mailbox).boss_encounter.cooldowns_open = true;
+            }
             return true;
         }
         if !oteryn_client_ui::boss_encounter::open_key(events) {
@@ -44,7 +71,7 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::Feature(command)).is_err()
     {
         mailbox.boss_encounter.pending = false;
-        mailbox.boss_encounter.feedback = Some("The session has ended");
+        mailbox.boss_encounter.feedback = Some(tr!("The session has ended"));
     }
 }
 
@@ -59,5 +86,50 @@ pub(in crate::play) fn edit(
         && let Some(slot) = panel.fields.get_mut(field)
     {
         *slot = value;
+    }
+}
+
+pub(in crate::play) fn browse(
+    panel: &mut BossEncounterPanel,
+    search: &str,
+    category: BossCategory,
+    previous: bool,
+) {
+    if !panel.selected || panel.pending || search.len() > 512 || search.contains('\0') {
+        return;
+    }
+    panel.boss_search = search.to_owned();
+    panel.browser_search = search.to_owned();
+    panel.browser_category = category;
+    panel.select_boss(previous);
+}
+
+/// The integrated Archfoe controls use the same server context as the standalone window.
+pub(in crate::play) fn enqueue_difficulty(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    intent: oteryn_client_ui::boss_difficulty::Intent,
+    difficulty: u16,
+) {
+    let Some(oteryn_client_runtime::boss_difficulty::Reply::Window {
+        boss_key,
+        boss_creature_key,
+        ..
+    }) = &mailbox.boss_difficulty.reply
+    else {
+        return;
+    };
+    if mailbox.boss_encounter.fields[0] != *boss_key
+        && mailbox.boss_encounter.fields[0] != *boss_creature_key
+    {
+        return;
+    }
+    mailbox.boss_difficulty.difficulty = difficulty;
+    if let Some(command) =
+        oteryn_client_ui::boss_difficulty::request(&mut mailbox.boss_difficulty, intent)
+        && commands.send(PlayCommand::Feature(command)).is_err()
+    {
+        mailbox.boss_difficulty.pending = false;
+        mailbox.boss_difficulty.feedback = Some(tr!("The session has ended"));
     }
 }

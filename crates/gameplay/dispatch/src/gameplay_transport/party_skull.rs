@@ -84,6 +84,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .continuity
                 .selected_capabilities
                 .contains(oteryn_protocol_oteryn::party_effects::CAPABILITY_PARTY_EFFECTS_V1)
+            && !admitted
+                .continuity
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::party::CAPABILITY_PARTY_LIST_V1)
         {
             return None;
         }
@@ -188,3 +192,6 @@ mod tests {
         assert_eq!(shield(false, false, true, true, true, false), 0);
     }
 }
+
+#[path = "party_skull/status.rs"]
+mod status;

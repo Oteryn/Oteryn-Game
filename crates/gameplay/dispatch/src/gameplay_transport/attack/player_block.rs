@@ -210,6 +210,17 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                 else {
                     continue;
                 };
+                let amount = if self
+                    .states
+                    .elite_bounty(runtime, target, session, charm.race)
+                {
+                    amount / 2
+                } else {
+                    amount
+                };
+                if amount == 0 {
+                    continue;
+                }
                 let Ok(lease) = runtime.bound_attacker_lease(target, session) else {
                     continue;
                 };
@@ -318,6 +329,14 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                 death: receipt.death.map(|death| death.occurrence_bytes()),
             });
         }
+        let magnitude = if self.charm.as_ref().is_some_and(|c| {
+            self.states
+                .elite_bounty(runtime, target, target_session, c.race)
+        }) {
+            magnitude.saturating_mul(2)
+        } else {
+            magnitude
+        };
         let percent = self.charm.as_ref().map_or(0, |c| {
             self.states
                 .prey_percent(runtime, target, target_session, c.race, 2, now.get())

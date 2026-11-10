@@ -76,6 +76,12 @@ impl<S: SessionStream> Session<S> {
             && refusal.expected_command_id == 0
             && refusal.expected_server_sequence == 0
         {
+            if let Some(queue) = admission_queue::decode_queue(accepted_envelope.payload())? {
+                return Err(SessionError::AdmissionQueued {
+                    code: refusal.error_code,
+                    queue,
+                });
+            }
             return Err(SessionError::AdmissionRefused {
                 code: refusal.error_code,
             });
@@ -93,7 +99,12 @@ impl<S: SessionStream> Session<S> {
         {
             return Err(SessionError::CapabilityNotRequested(capability));
         }
-        Self::read_join(
+        let bulletin =
+            oteryn_protocol_oteryn::bulletin::document_from_acceptance(accepted_envelope.payload())
+                .ok()
+                .flatten()
+                .map(str::to_owned);
+        let mut session = Self::read_join(
             stream,
             admission.deadline,
             admission.appearance_items,
@@ -105,7 +116,13 @@ impl<S: SessionStream> Session<S> {
                 recovery_sequence: None,
             },
         )
-        .await
+        .await?;
+        session.bulletin = bulletin;
+        Ok(session)
+    }
+
+    pub fn bulletin(&self) -> Option<&str> {
+        self.bulletin.as_deref()
     }
 
     /// The capabilities the server selected at admission (never widened by a resume).

@@ -43,6 +43,16 @@ pub(super) struct ServerMessageHub {
 }
 
 impl ServerMessageHub {
+    pub(super) fn connection_root(
+        &self,
+        session: GameSessionId,
+        generation: u64,
+    ) -> Option<(GameSessionId, u64)> {
+        let state = self.state.lock().ok()?;
+        let recipient = state.recipients.get(&session)?;
+        (recipient.connection_generation == generation).then_some(recipient.connection_root)
+    }
+
     pub(super) fn join(&self, session: GameSessionId, connection_generation: u64) -> bool {
         if connection_generation == 0 {
             return false;

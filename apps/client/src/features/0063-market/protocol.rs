@@ -5,7 +5,21 @@ impl Outbox {
         lock(&self.0).market.selected = selected;
     }
     pub(in crate::play) fn market_result(&self, response: &MarketResponse) {
-        oteryn_client_ui::market::apply_result(&mut lock(&self.0).market, response);
+        let mut mailbox = lock(&self.0);
+        let source_query = mailbox.market.pending.as_ref().is_some_and(|pending| {
+            pending.0.action == 2
+                && mailbox.discovery.inspection.catalogue_market_requested
+                    == Some(pending.0.definition)
+        });
+        let accepted = oteryn_client_ui::market::apply_result(&mut mailbox.market, response);
+        if source_query && !accepted {
+            mailbox.discovery.inspection.catalogue_market_requested = None;
+            mailbox.discovery.inspection.feedback = mailbox
+                .market
+                .feedback
+                .unwrap_or("Market query refused")
+                .into();
+        }
     }
 }
 
@@ -38,3 +52,12 @@ impl Outbox {
         Ok(())
     }
 }
+
+impl Outbox {
+ pub(in crate::play) fn coin_market_result(&self,response:&oteryn_client_runtime::server_mechanic::ServerMechanicResponse){
+  oteryn_client_ui::market::coin_result(&mut lock(&self.0).market.coins,response);
+ }
+}
+
+#[path = "protocol/details.rs"]
+pub(in crate::play) mod details;

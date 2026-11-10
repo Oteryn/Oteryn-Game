@@ -27,14 +27,14 @@ pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path)
                     .preset_book
                     .0
                     .get(panel.preset_fields[0].trim())
-                    .ok_or("Select a saved preset name")?
+                    .ok_or(tr!("Select a saved preset name"))?
                     .clone();
                 panel.import_build(&code)?;
             }
             2 => {
                 let mut book = panel.preset_book.clone();
                 if book.0.remove(panel.preset_fields[0].trim()).is_none() {
-                    return Err("Select a saved preset name");
+                    return Err(tr!("Select a saved preset name"));
                 }
                 book.save(path)?;
                 panel.preset_book = book;
@@ -45,12 +45,12 @@ pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path)
                     panel.build_code().replacen("OW1:", "oteryn://wheel/v1/", 1)
             }
             5 => panel.import_build(&panel.preset_fields[1].clone())?,
-            _ => return Err("Unknown preset action"),
+            _ => return Err(tr!("Unknown preset action")),
         }
         Ok(())
     })();
     panel.preset_feedback = result.map_or_else(str::to_owned, |()| {
-        "Preset updated. Loaded points are proposals; Save Wheel submits them.".into()
+        tr!("Preset updated. Loaded points are proposals; Save Wheel submits them.").into()
     });
 }
 impl PlayLink {
@@ -123,7 +123,7 @@ fn open_window(shared: &Arc<Mutex<Mailbox>>, commands: &UnboundedSender<PlayComm
                 window_open(mailbox),
                 !p.ready(),
                 p.preset_fields.to_vec(),
-                format!(
+                lfmt!(
                     "{}\r\nSaved builds:\r\n{}",
                     p.preset_feedback,
                     p.preset_book

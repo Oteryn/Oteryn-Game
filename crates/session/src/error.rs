@@ -31,6 +31,10 @@ pub enum SessionError {
     AdmissionRefused {
         code: u32,
     },
+    AdmissionQueued {
+        code: u32,
+        queue: AdmissionQueue,
+    },
     /// A later frame's message type did not match what the join sequence expects next.
     UnexpectedMessage {
         expected: MessageType,
@@ -190,6 +194,11 @@ impl fmt::Display for SessionError {
             Self::NotAdmitted(message_type) => {
                 write!(formatter, "admission refused: server sent {message_type:?}")
             }
+            Self::AdmissionQueued { code, queue } => write!(
+                formatter,
+                "admission queued with code {code}, position {}",
+                queue.position
+            ),
             Self::AdmissionRefused { code } => {
                 write!(formatter, "admission refused with code {code}")
             }

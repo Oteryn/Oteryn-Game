@@ -13,6 +13,11 @@ pub(in crate::gameplay_transport) struct CastPerks {
 }
 
 impl CastPerks {
+    /// Read-only projection of the same selected rewards installed on an actual cast.
+    pub(in crate::gameplay_transport) fn spell_augments(&self) -> &[ItemSpellAugment] {
+        &self.augments
+    }
+
     fn add(
         &mut self,
         identity: &str,

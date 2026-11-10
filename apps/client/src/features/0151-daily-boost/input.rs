@@ -9,7 +9,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Feature(command)).is_err()
         {
             mailbox.daily_boost.pending = false;
-            mailbox.daily_boost.feedback = Some("The session has ended");
+            mailbox.daily_boost.feedback = Some(tr!("The session has ended"));
         }
     }
     pub fn daily_boost_input(&self, events: &[NormalizedInputEvent]) -> bool {

@@ -45,7 +45,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 let hwnd = CreateWindowExW(
                     0,
                     wide("STATIC").as_ptr(),
-                    wide("World events — Ctrl+N").as_ptr(),
+                    wide(tr!("World events — Ctrl+N")).as_ptr(),
                     WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
@@ -77,7 +77,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     let refresh = CreateWindowExW(
                         0,
                         wide("BUTTON").as_ptr(),
-                        wide("Refresh").as_ptr(),
+                        wide(tr!("Refresh")).as_ptr(),
                         WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON as u32,
                         12,
                         155,
@@ -114,7 +114,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                                     .is_err()
                             {
                                 mailbox.world_event.pending = false;
-                                mailbox.world_event.feedback = Some("The session has ended");
+                                mailbox.world_event.feedback = Some(tr!("The session has ended"));
                             }
                             let current = panel_text(&mailbox.world_event);
                             if current != previous {

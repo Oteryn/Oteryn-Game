@@ -18,7 +18,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.condition_status.pending = false;
-            mailbox.condition_status.error = Some("Session ended");
+            mailbox.condition_status.error = Some(tr!("Session ended"));
         }
     }
     pub fn condition_status_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -27,9 +27,11 @@ impl PlayLink {
         }
         self.condition_status_request();
         #[cfg(windows)]
-        crate::play::status_window::open_window(self, "Conditions — Ctrl+Alt+Shift+C", |mailbox| {
-            &mut mailbox.condition_status
-        });
+        crate::play::status_window::open_window(
+            self,
+            tr!("Conditions — Ctrl+Alt+Shift+C"),
+            |mailbox| &mut mailbox.condition_status,
+        );
         #[cfg(not(windows))]
         {
             lock(&self.mailbox).condition_status.open = true;

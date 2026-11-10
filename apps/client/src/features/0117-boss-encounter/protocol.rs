@@ -10,6 +10,14 @@ impl Outbox {
         mailbox.boss_encounter_shutdown = false;
     }
     pub(in crate::play) fn boss_encounter_result(&self, response: &GatedCommandResult) {
+        if let Ok(oteryn_client_runtime::boss_difficulty::Reply::Window { .. }) =
+            oteryn_client_runtime::boss_difficulty::decode_reply(&response.payload)
+        {
+            self.boss_difficulty_result(response);
+            let mut mailbox = lock(&self.0);
+            mailbox.boss_encounter.pending = false;
+            return;
+        }
         oteryn_client_ui::boss_encounter::apply_result(&mut lock(&self.0).boss_encounter, response);
     }
 }
@@ -17,7 +25,7 @@ impl Outbox {
 impl crate::play::mailbox::Mailbox {
     pub(in crate::play) fn boss_encounter_end(&mut self) {
         self.boss_encounter = oteryn_client_ui::boss_encounter::BossEncounterPanel {
-            feedback: Some("The session has ended"),
+            feedback: Some(tr!("The session has ended")),
             ..Default::default()
         };
         self.boss_encounter_shutdown = true;
