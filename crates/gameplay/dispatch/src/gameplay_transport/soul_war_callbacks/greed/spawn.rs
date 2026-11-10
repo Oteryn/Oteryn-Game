@@ -106,7 +106,9 @@ pub(super) async fn apply(
         {
             continue;
         }
-        let Ok(steps) = crate::native_world_read::source_sight_steps(center, destination) else {
+        let Ok(steps) =
+            crate::durability::native_world_read::source_sight_steps(center, destination)
+        else {
             continue;
         };
         for (at, exempt) in steps {

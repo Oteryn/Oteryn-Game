@@ -405,7 +405,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(QuestTransitionOutcome::Refused(_) | QuestTransitionOutcome::ObligationClosed)
             | Err(_) => None,
         };
-        let mut runtime = self.runtime.lock().await;
+        let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         runtime
             .validate_source_actor_reservation(&pending.reservation, &pending.movement)

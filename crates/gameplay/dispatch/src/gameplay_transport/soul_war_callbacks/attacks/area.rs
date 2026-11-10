@@ -104,7 +104,7 @@ pub(super) async fn prepare(
         // retains the whole callback and cannot silently shorten its area.
         map.read(runtime, at).await.ok_or(())?;
         for (step, exempt) in
-            crate::native_world_read::source_sight_steps(sight, at).map_err(|_| ())?
+            crate::durability::native_world_read::source_sight_steps(sight, at).map_err(|_| ())?
         {
             if !exempt {
                 map.read(runtime, step).await.ok_or(())?;
