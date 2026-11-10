@@ -138,10 +138,11 @@ fn e07_real_server_payloads_replay_into_stash_panel() -> Result<(), Error> {
     );
 
     let command = request(&mut panel, Intent::Withdraw { row, amount: 1 }).ok_or("withdraw")?;
+    let (intent, filter) =
+        stash::decode_stash_query(&command.payload).map_err(|error| format!("{error:?}"))?;
+    assert_eq!(filter, Some(stash::StashFilter::default()));
     assert_eq!(
-        stash::decode_stash_intent(&command.payload)
-            .map_err(|error| format!("{error:?}"))?
-            .action,
+        intent.action,
         stash::StashAction::Withdraw {
             row: panel.rows[row].handle,
             amount: 1

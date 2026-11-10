@@ -151,13 +151,29 @@ fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
         ],
         [first[0], first[1], first[2]]
     );
-    let shop_line = format!(
-        "Shop {}. kind {}, price {}, ",
+    let shop_header = format!(
+        "Shop {} — {}",
         offer.index + 1,
-        first[1],
-        first[2]
+        super::shop_names::name(offer)
     );
-    assert!(lines.iter().any(|line| line.starts_with(&shop_line)));
+    let reward = format!(
+        "  Reward {} / {} (addon {})",
+        offer.primary, offer.secondary, offer.addon
+    );
+    let affordability = if offer.bought {
+        "Already owned"
+    } else if weekly.points >= u64::from(offer.price) {
+        "Available — server confirms purchase"
+    } else {
+        "points short"
+    };
+    let price_line = format!("  {} task points — {affordability}", first[2]);
+    let at = lines
+        .iter()
+        .position(|line| *line == shop_header)
+        .ok_or("shop header line")?;
+    assert_eq!(lines.get(at + 1).copied(), Some(reward.as_str()));
+    assert_eq!(lines.get(at + 2).copied(), Some(price_line.as_str()));
 
     // StartWeekly with an unoffered difficulty is refused and the weekly state stays the same.
     let start = full_request(&mut panel, FullIntent::StartWeekly(3)).ok_or("start request")?;
@@ -169,13 +185,17 @@ fn e2e_p04_replays_query_and_refused_start_weekly() -> Result<(), Error> {
     );
     assert_eq!(
         panel.feedback,
-        Some("The server refused the weekly Task Board action")
+        Some("The server refused: task or bounty is not in the required state")
     );
     let refused = panel.weekly.clone().ok_or("weekly state")?;
+    assert_eq!(value(e, "refusal")?, "2");
     assert_eq!(refused.refusal.to_string(), value(e, "refusal")?);
     assert_eq!(refused.weekly, weekly.weekly);
     assert_eq!(refused.points, weekly.points);
-    assert!(panel_text(&panel).ends_with("The server refused the weekly Task Board action"));
+    assert!(
+        panel_text(&panel)
+            .ends_with("The server refused: task or bounty is not in the required state")
+    );
 
     // Undecodable and rejected replies leave the confirmed board untouched.
     full_request(&mut panel, FullIntent::Refresh).ok_or("query request")?;

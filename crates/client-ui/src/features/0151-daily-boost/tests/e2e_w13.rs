@@ -68,9 +68,22 @@ fn e2e_w13_replays_daily_boost_selection_and_refusal() -> Result<(), Error> {
     assert_eq!(view.creature_key, creature);
     assert_eq!(view.boss_key, boss);
     assert_eq!(panel.feedback, None);
+    let cards = spotlight_cards(&panel);
+    assert_eq!(cards.len(), 2);
+    assert_eq!(
+        (cards[0].key.as_str(), cards[1].key.as_str()),
+        (creature, boss)
+    );
     assert_eq!(
         panel_text(&panel),
-        format!("Daily boost\nCreature: {creature}\nBoss: {boss}\nReset epoch: {epoch}")
+        format!(
+            "Daily spotlight\nReset epoch: {epoch}\n{}: {}\n{creature}\n{}: {}\n{boss}\n",
+            cards[0].kind, cards[0].name, cards[1].kind, cards[1].name
+        )
+    );
+    assert_eq!(
+        (cards[0].kind, cards[1].kind),
+        ("Boosted creature", "Boosted boss")
     );
 
     // A refused query (the server rejects a malformed request) keeps the confirmed selection.

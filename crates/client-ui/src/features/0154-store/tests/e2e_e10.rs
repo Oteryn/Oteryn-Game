@@ -147,16 +147,29 @@ fn e10_real_server_payloads_replay_into_store_panels() -> Result<(), Error> {
         &response(CommandStatus::Accepted, &capture.catalogue),
     );
     let mut want = format!(
-        "Store - Catalogue\nBalance: {} Oteryn Coins",
+        "Store - Catalogue\nBalance: {} Oteryn Coins\nSearch/sort cover the loaded category page. Sort: Catalogue",
         one(expected, "balance")?
     );
-    for offer in field(expected, "offer")? {
+    let mut preview = None;
+    for (index, offer) in field(expected, "offer")?.into_iter().enumerate() {
         let parts: Vec<&str> = offer.split('|').collect();
-        let [_, title, price, _] = parts.as_slice() else {
+        let [key, title, price, currency] = parts.as_slice() else {
             return Err("E10 offer line".into());
         };
-        want.push_str(&format!("\n{title}: {price} Oteryn Coins"));
+        want.push_str(&format!("\n{title}: {price} {currency}"));
+        if index == 0 {
+            preview = Some((*key, *title, *price, *currency));
+        }
     }
+    let (key, title, price, currency) = preview.ok_or("E10 first offer")?;
+    let revision = &panel
+        .catalogue
+        .as_ref()
+        .ok_or("catalogue absent")?
+        .catalog_revision;
+    want.push_str(&format!(
+        "\nPreview: {title} — {price} {currency}\r\nOffer: {key}; catalogue revision: {revision}"
+    ));
     assert_eq!(panel_text(&panel), want);
 
     // A refused catalogue refresh leaves the shown catalogue untouched.

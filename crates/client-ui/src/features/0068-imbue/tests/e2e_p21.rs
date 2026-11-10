@@ -126,10 +126,11 @@ fn e2e_p21_replays_imbuement_window_and_refusal() -> Result<(), Error> {
             (family.to_string(), tier.to_string())
         );
         assert_eq!(shown.offers[index].gold.to_string(), *gold);
+        let name = family_name(shown.offers[index].family);
         let suffix = if *premium == "true" { " (premium)" } else { "" };
         assert!(
             text.lines().any(|row| row
-                == format!("Offer {index}: family {family}, tier {tier}, {gold} gold{suffix}")),
+                == format!("Offer {index}: family {name}, tier {tier}, {gold} gold{suffix}")),
             "offer {index} row missing in {text}"
         );
     }

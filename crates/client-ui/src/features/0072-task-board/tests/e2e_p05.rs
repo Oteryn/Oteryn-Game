@@ -179,10 +179,11 @@ fn e2e_p05_replays_purchase_and_refused_repeat() -> Result<(), Error> {
     );
     assert_eq!(
         panel.feedback,
-        Some("The server refused the weekly Task Board action")
+        Some("The server refused: task or bounty is not in the required state")
     );
     assert_eq!(shown(&panel), talisman_lines(value(e, "talisman_after")?));
     let repeated = panel.weekly.as_ref().ok_or("weekly state")?;
+    assert_eq!(value(e, "refusal")?, "2");
     assert_eq!(repeated.refusal.to_string(), value(e, "refusal")?);
     assert_eq!(
         repeated.talisman,

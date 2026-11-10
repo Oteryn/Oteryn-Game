@@ -119,7 +119,7 @@ fn e2e_p02_replays_bosstiary_progress_slots_and_refusal() -> Result<(), Error> {
         let (key, kills) = entry.rsplit_once('=').ok_or("progress entry")?;
         assert!(
             text.lines()
-                .any(|line| line == format!("{key}: {kills} kills")),
+                .any(|line| line == format!("  {key}: {kills} kills")),
             "missing progress line for {key}: {text}"
         );
     }

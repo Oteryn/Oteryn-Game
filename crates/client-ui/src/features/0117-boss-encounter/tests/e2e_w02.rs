@@ -79,10 +79,20 @@ fn e2e_w02_replays_cooldowns_and_lever_reply() -> Result<(), Error> {
         snapshot.points, snapshot.now
     )));
     for (key, at) in &snapshot.cooldowns {
-        assert!(text.contains(&format!(
-            "{key}: {} ms remaining\n",
+        let kills = snapshot
+            .progress
+            .iter()
+            .find(|(id, _)| id == key)
+            .map(|(_, kills)| format!(": {kills} kills"))
+            .unwrap_or_default();
+        let row = format!(
+            "  {key}{kills} | {} ms remaining",
             at.saturating_sub(snapshot.now)
-        )));
+        );
+        assert!(
+            text.lines().any(|line| line == row),
+            "missing {row}: {text}"
+        );
     }
 
     panel.fields[0] = BOSS.into();

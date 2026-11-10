@@ -99,10 +99,11 @@ fn e08_real_server_payloads_replay_into_depot_search_panel()
     );
     let tier_count = parts.next().ok_or("tiers")?.replace('x', " x");
     let (tier_no, count) = tier_count.split_once(" x").ok_or("tier shape")?;
+    let total = depot.parse::<u64>()? + stash.parse::<u64>()? + inbox.parse::<u64>()?;
     assert_eq!(
         panel_text(&panel),
         format!(
-            "Depot Search\nItem id: {item}\nResult: Found\nRetrieved: 0\n\nItem {item}: depot {depot}, stash {stash}, inbox {inbox}; tier {tier_no} x{count}"
+            "Depot Search\nItem id: {item}\nSelected tier: {tier}\nRetrieve one retrieves one unit. Retrieve all includes every tier of the selected item.\nResult: Found\nRetrieved: 0\n\nRow 0 | Item {item}: depot {depot}, stash {stash}, inbox {inbox}; total {total}; tier {tier_no} x{count}"
         )
     );
     assert_eq!(panel.feedback, None);

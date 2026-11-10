@@ -84,6 +84,10 @@ fn e2e_w10_replays_hazard_state_selection_and_locked_refusal() -> Result<(), Err
 
     // Level 2 is locked: the server's empty rejection leaves the confirmed hazard state.
     panel.fields[2] = "2".into();
+    // The client now fences a level above the confirmed unlocked level before sending anything.
+    assert!(request(&mut panel, Intent::HazardSelect).is_none());
+    // With no confirmed bounds the request still goes out and the server's rejection is replayed.
+    panel.hazard = None;
     let command = request(&mut panel, Intent::HazardSelect).ok_or("locked select request")?;
     assert_eq!(command.payload, [2]);
     assert!(!apply_result(
