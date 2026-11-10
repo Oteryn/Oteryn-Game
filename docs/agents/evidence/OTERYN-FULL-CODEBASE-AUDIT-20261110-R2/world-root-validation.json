@@ -1,0 +1,891 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "status": "PASS",
+  "scope_status": "REVIEWED",
+  "full_files": 73,
+  "manual_files": 72,
+  "mixed_semantic_files": 1,
+  "physical_lines": 28966,
+  "checked_at_utc": "2026-11-10T17:18:54.288095+00:00",
+  "method": "Exact Git blob/worktree hashes and complete reviewed-range endpoints; validation does not itself perform source review. Six historical identical-blob reviews retain prior attribution.",
+  "original_unchanged_world_tests_passed": 29,
+  "runtime_verified": false,
+  "files": [
+    {
+      "path": "crates/gameplay/world/Cargo.toml",
+      "blob_sha": "2d80ff98b3e9d079f2eac5c8ded4190dbae8e99e",
+      "sha256": "eec984c9d6ad52a9cc9177f340f02befbff48a376050919a43b1ad00bcbe18c4",
+      "analyzed_ranges": [
+        [
+          1,
+          49
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/house_scope/mod.rs",
+      "blob_sha": "c10950785d8c01713dfc86e46ed43eba65dc1d47",
+      "sha256": "a8c49829ce5e1f022a1259421727c312961b4f08d7684e8037be8bee12edced3",
+      "analyzed_ranges": [
+        [
+          1,
+          31
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/lib.rs",
+      "blob_sha": "38d6babc93fd403fb42672551ebd50d5d4b31cba",
+      "sha256": "d911cfb9c186c8b86f8ea5fc9b2f3b14f6ac01a4b556e1d0b5e6d0f6fada6435",
+      "analyzed_ranges": [
+        [
+          1,
+          26
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/admit_cap_2_bundle_zones_tests.rs",
+      "blob_sha": "9fe2dc2262857ab26fc79dbf2eecd0624c7edd71",
+      "sha256": "f1104622eebac7ee33429c8bd98f229c8281943db7fb6f74a49c7b563cb4e519",
+      "analyzed_ranges": [
+        [
+          1,
+          68
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/boot.rs",
+      "blob_sha": "660dcb35cc524c1d605b1eee43383cbf0d4285c5",
+      "sha256": "f342e67a76fc544aeb6e368cf9490f51582e201052a38dc3c6dc45c1670fa1af",
+      "analyzed_ranges": [
+        [
+          1,
+          2667
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/daily.rs",
+      "blob_sha": "8e5e2cf7e95de8ce0231269556a8c2dd976e27b9",
+      "sha256": "248e99148320fccd2b64421f96b7a9afab8cd005439d9d17862e3fc9c86d1822",
+      "analyzed_ranges": [
+        [
+          1,
+          476
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/door.rs",
+      "blob_sha": "2f021e98604dc6d70aeb9a4c585dea93be8da9eb",
+      "sha256": "60c151fac5521976dd8f4a0ad7081d12e80013ca54c35ed90e762340de0bfcba",
+      "analyzed_ranges": [
+        [
+          1,
+          867
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/door_registry.rs",
+      "blob_sha": "c394f88ed04958b634f922a6ee6e485e7bab672a",
+      "sha256": "798f10ead0e9868809bacfacbef8618ac0b68794b1f1ad93971d32ef25444a0a",
+      "analyzed_ranges": [
+        [
+          1,
+          456
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts.rs",
+      "blob_sha": "17457425d739ec8f8fe48675b6d83b2f51d75853",
+      "sha256": "14172ecdfeb556e6fe98456bf8e0b44207de3a0c92432c3b2d0a97bb465e7852",
+      "analyzed_ranges": [
+        [
+          1,
+          1763
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts/house_base_tests.rs",
+      "blob_sha": "add8305174c54d2dfd095e0d57fa033fe7aec813",
+      "sha256": "4928a0a9c09ce517ffe30583a3b87143252d209f9dd5b56048adb0799bc0a3f7",
+      "analyzed_ranges": [
+        [
+          1,
+          88
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts/pickup_tests.rs",
+      "blob_sha": "3930fc4517069b16b67ba710fd4bca23a4eeb97a",
+      "sha256": "891fa859f2a2523b3c59d90a4b7d674dc0f6db49683fb0433ad3bd904b75a53e",
+      "analyzed_ranges": [
+        [
+          1,
+          175
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts/quest_callbacks.rs",
+      "blob_sha": "2ec83c1897b6e04876bd19d17a3bba654edecb40",
+      "sha256": "8d4c7b91ba861454138855b04fe99d555a552ee0651c592b6abb0b78d0c39c5d",
+      "analyzed_ranges": [
+        [
+          1,
+          1100
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts/terrain_collision_tests.rs",
+      "blob_sha": "f3eff9f7e139b354af1d113df969255077d56bac",
+      "sha256": "8fbd6590acf154350bb823cbad8bb05fafbbb5c924d4db4778625b16e4d385ed",
+      "analyzed_ranges": [
+        [
+          1,
+          97
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts/world_change_phases.rs",
+      "blob_sha": "7c5c5535d3c3c3262675a8291b3262ad69e96677",
+      "sha256": "e73b1c692b8ecff6cc73b5c3a4eecb14a8005876ba08dab05982e6b352223b65",
+      "analyzed_ranges": [
+        [
+          1,
+          188
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/floor.rs",
+      "blob_sha": "b2e305458820891a2fbac9893bd9ecbeee103acd",
+      "sha256": "0617f6e400aafd4270cbcfa5ee425525875ffc73038e1f18a2a1f2bdd7517331",
+      "analyzed_ranges": [
+        [
+          1,
+          1178
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/floor/house.rs",
+      "blob_sha": "266dd11c1853e2a04cf9e0d96714be259e20890f",
+      "sha256": "df7aacc9a4f3d3ef9b2fe73709e6cc4127abe05ce0d7c68b340c352be782b6ee",
+      "analyzed_ranges": [
+        [
+          1,
+          22
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/floor/quest_callback.rs",
+      "blob_sha": "efa2776f3846d8571739ac672c54d2ecc2b5b9c0",
+      "sha256": "191f409544baa4f1d20ad689217810a037e9943b8a0a4be51409ed1229791369",
+      "analyzed_ranges": [
+        [
+          1,
+          107
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/floor/rope.rs",
+      "blob_sha": "e601dff78bb120cfc6379edcf3e92cfda0039e22",
+      "sha256": "12c78295e1a8fd0e55da80cd9ded021f9773b232b125a615e5992863d924d183",
+      "analyzed_ranges": [
+        [
+          1,
+          245
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/floor_catalogue.rs",
+      "blob_sha": "b2d793892b7fd3ea58a141685e0d2b6298a66b94",
+      "sha256": "9bc909df83fc9ad1f1c464d66a87029679651c2eec3cbd634b14a26f936d5948",
+      "analyzed_ranges": [
+        [
+          1,
+          459
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/ladder_catalogue.rs",
+      "blob_sha": "68b964051dfd83310309551033722ddb489a3bb4",
+      "sha256": "940b1a1e1315674f8d959f0db55825d5293d0d883e8dece26ccdf19f270728a4",
+      "analyzed_ranges": [
+        [
+          1,
+          22
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/mod.rs",
+      "blob_sha": "23032dd62c2d9a424eaf49d7e8deef2e3521e0c6",
+      "sha256": "6f2894b0e664d79e883843fff625689906a319326b5107b96cacad2faf037ffc",
+      "analyzed_ranges": [
+        [
+          1,
+          779
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/overlay.rs",
+      "blob_sha": "c928ac4eaa468e744fcaf06cd9178b5f9acc7d24",
+      "sha256": "fa44b3c8ab3555ce31bc3c2537ad95ebffc33a5429feab40052c7f97783c9423",
+      "analyzed_ranges": [
+        [
+          1,
+          726
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/overlay/pickup.rs",
+      "blob_sha": "69ea805cd8961e1864a7fd339cf5c9f845b7120a",
+      "sha256": "1a6d418974af281610b1a61c6ab0726899cd26d1d7713fc62feba32dcb8b1a49",
+      "analyzed_ranges": [
+        [
+          1,
+          367
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/spell_tiles.rs",
+      "blob_sha": "e80f30d5aa18d9e8cddf2a88d1bfcb05b595d06f",
+      "sha256": "1ee7ce966ed62c50c5256fd7641e8f0acc5ac21d1c6cf323701be271cde02b70",
+      "analyzed_ranges": [
+        [
+          1,
+          1102
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/spell_tiles/immovable.rs",
+      "blob_sha": "c6f3681f0a17f8f2833d89838e0245d4762082a5",
+      "sha256": "9c8f0956214f88f0d2f66b619c561e3eae936f72380be996df926962e35510fb",
+      "analyzed_ranges": [
+        [
+          1,
+          77
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/spell_tiles/immovable_catalogue.rs",
+      "blob_sha": "32f1967218ffb3e79eb6f1eef2b6a9e24d39d297",
+      "sha256": "d15efe6c9c38437d69baf328efa9abdcf5a77c22879f2b68a074a002692a61e7",
+      "analyzed_ranges": [
+        [
+          1,
+          572
+        ]
+      ],
+      "review_method": "manual control and complete semantic-class/relation validation"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/spell_tiles/tests/movement_arena.rs",
+      "blob_sha": "030e26429123a155dd483e7e4489430c06b05272",
+      "sha256": "0b4b7c726d1c4a2d586b83a98e11aea75837b38e3d8b8dbe275c22eacdb0b83e",
+      "analyzed_ranges": [
+        [
+          1,
+          68
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/spell_tiles/tests/vertical_movement.rs",
+      "blob_sha": "19617ede620005808d4e7e1b00ec96173b95989b",
+      "sha256": "353f2b6dc5b755dfcaf2154f1374bce11a4cd7caa319bc58ba178e288efc7c75",
+      "analyzed_ranges": [
+        [
+          1,
+          73
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map/view.rs",
+      "blob_sha": "9b26073becd1f9eab27ce60ee584566a5b6a6ec0",
+      "sha256": "e76b7daeec7d8d39a7e36f633012c0bc891c70dcea26871d88b04f92a852fc11",
+      "analyzed_ranges": [
+        [
+          1,
+          516
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/map_view_diff.rs",
+      "blob_sha": "68869bc33e64a68a57561029bb243c1749696fe6",
+      "sha256": "c4f287a60c5ec2bce9eb9a18391c492243efe72ff266fe5026b631b431d6c6d2",
+      "analyzed_ranges": [
+        [
+          1,
+          298
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement.rs",
+      "blob_sha": "3b4924fae4f7424e716d7e2c95ba714cb7d9f319",
+      "sha256": "2fa97cab57a0c47c1180c59a6eecbd0377ce0505c7e89a05f5f4a873ad5a51c3",
+      "analyzed_ranges": [
+        [
+          1,
+          1367
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/cake_extraction.rs",
+      "blob_sha": "017a384a04318f166f312b99640b096a6be79338",
+      "sha256": "c231e01237935a586b21ab33e20a5f4b71cce7b8c28f27a368ba4af1e712f20d",
+      "analyzed_ranges": [
+        [
+          1,
+          125
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/interest.rs",
+      "blob_sha": "df78481acc1788f8ce3a6a2c530e8940f9c19c9c",
+      "sha256": "1db6e0fd331fdd91b3300e13bcfa5101b5b6493f786560882758972506041667",
+      "analyzed_ranges": [
+        [
+          1,
+          1033
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/monster_map.rs",
+      "blob_sha": "6f059512ed9c106af11b9f6299da1661aa44a211",
+      "sha256": "962229d036195bc17c21227191d7133b5c1d02fb4d2e2cffed95654fe62b02a0",
+      "analyzed_ranges": [
+        [
+          1,
+          513
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/monster_map/movement_script_tests.rs",
+      "blob_sha": "bb0477f091d498a54c7f994cf36a8450e3d8d180",
+      "sha256": "8c36d15744d4d5786d651caac5e0cec9a41f4ab6591f7e7cdf9b7bf2d77e8e6e",
+      "analyzed_ranges": [
+        [
+          1,
+          271
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/monster_map/special_movement.rs",
+      "blob_sha": "712ff590085c0d86ffc12b1432a8221e1186484f",
+      "sha256": "980d18899b45868ac3b42b5dc943a91f4ca9cca8c1cf63427d8d8eedc4a349ba",
+      "analyzed_ranges": [
+        [
+          1,
+          83
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/monster_map/transaction_test_support.rs",
+      "blob_sha": "8c23fbd29579601c7f73730a4766be0de65904af",
+      "sha256": "ccb035f70340cedd2c86a69a7402d1e018691202bb88cd398bfe2ed58c0b2cda",
+      "analyzed_ranges": [
+        [
+          1,
+          7
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/pacing.rs",
+      "blob_sha": "4b2b9a01769517e20e27b9f5ed4ef4142618511e",
+      "sha256": "0528fee6437738c204f42d600a33e2763427d28044f1b00a9dbf48d67d9b86ca",
+      "analyzed_ranges": [
+        [
+          1,
+          151
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_budget.rs",
+      "blob_sha": "6cf9f58c0349ffede8f6ca51c38933366de660d4",
+      "sha256": "1f6b929d31dd57ee757374424002ab13d3585b3b4350bd103a4601fafa90be73",
+      "analyzed_ranges": [
+        [
+          1,
+          76
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_budget/path_budget_tests.rs",
+      "blob_sha": "7e8d2964a8cb842806c4edf4bef2f011c2040ce3",
+      "sha256": "2e2e7d0534ce84b83aee20a50b51167ca811c5d71381107aff0ac390f4ab3bc2",
+      "analyzed_ranges": [
+        [
+          1,
+          46
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search.rs",
+      "blob_sha": "a88b5d809d99175f3bdc73f5eb0b0e377fcba851",
+      "sha256": "2bc1a7eafccc52419da6064470d7cde771f64f09d38b884ecc50d758d7204512",
+      "analyzed_ranges": [
+        [
+          1,
+          406
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search/current_path.rs",
+      "blob_sha": "f56448420b2fa6425b7ffb4068382d44467fd842",
+      "sha256": "ca968d934203b04db6e8e1d04f4323b4ab0e5b985c87f61ef2bb2b4792cc5dfe",
+      "analyzed_ranges": [
+        [
+          1,
+          47
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search/current_path/current_path_tests.rs",
+      "blob_sha": "c6fcd550d1920b54a46f02de4d430dd298a4f4d4",
+      "sha256": "d48800395576516b931ef58ee6872dfcdee27e6a6057a8b2c17fae969d885a21",
+      "analyzed_ranges": [
+        [
+          1,
+          57
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search/path_kernel.rs",
+      "blob_sha": "736ac79ea40f95e765ab6c198680c99dad644d2d",
+      "sha256": "c7d8b93f4ae88abd5a731218b2a094db5f0d41dd884785c57ceda5c02979bd67",
+      "analyzed_ranges": [
+        [
+          1,
+          104
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search/path_labels.rs",
+      "blob_sha": "a34ea5d22e81387e5daafcaee2f9a2b4906973db",
+      "sha256": "6bb3a8413eb60623d5d6ad1e69d227edad70db64942c12a199909877c011717f",
+      "analyzed_ranges": [
+        [
+          1,
+          127
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search/path_occupancy.rs",
+      "blob_sha": "ff4539c4cc26fdd9d170238663ff0a0e4e8475ac",
+      "sha256": "ac4967fb2a07971235a0046dfe15ea18a6dd6d114643ba93125506db2184f3e1",
+      "analyzed_ranges": [
+        [
+          1,
+          46
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search/path_tiles.rs",
+      "blob_sha": "a8fea37f4f0a1796e534230353eda713f1873848",
+      "sha256": "59bc9b131a5dc5e194c1b5561a4a232f27c7378b2ff834f92c0c926c64e66c13",
+      "analyzed_ranges": [
+        [
+          1,
+          44
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search/tests/creature_path_tests.rs",
+      "blob_sha": "bdaaf2d1148f9d57e8089eb1b099ba02ade26941",
+      "sha256": "be483d931ebabb0b3361e9337b1fe7fee0af62df7cd8cba0e0558ec635ac0b22",
+      "analyzed_ranges": [
+        [
+          1,
+          79
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search/tests/path_labels_tests.rs",
+      "blob_sha": "e3ce925b454f12b71f2ddd6cfb3288b45108063d",
+      "sha256": "08c5f9fb79f8b93db0ed7972d454440f11b3171251d6e244c59a937f1c88e6b6",
+      "analyzed_ranges": [
+        [
+          1,
+          40
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/relocate.rs",
+      "blob_sha": "0f1b92e48fb707bb8a94b5c3d75a3fe6c52408a5",
+      "sha256": "49c6964c5263f328b23679cda5e2919c534095ac892a4b55a4b48f5d52ab1227",
+      "analyzed_ranges": [
+        [
+          1,
+          111
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/source_floor_change.rs",
+      "blob_sha": "9b31a43a2d840fd1ed0294f6064966b8979fb322",
+      "sha256": "1501f8e1e8e94440e0d551aee9d306854b668337e56779272236f3cb3ef8e2cb",
+      "analyzed_ranges": [
+        [
+          1,
+          995
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/source_floor_change/house.rs",
+      "blob_sha": "dbd52c0106e29bfff8e26d824e05f1e09a948e06",
+      "sha256": "7679ff04cbd11802522d61c7a6934673d44f5f71e4d4d1c76764000b56af019f",
+      "analyzed_ranges": [
+        [
+          1,
+          32
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/speed.rs",
+      "blob_sha": "e4faf0e3fd87da0354406d79a64f9258bce90564",
+      "sha256": "6ce10acbb9f7e15bdac318367dfa1393151e66112bfe7e99879e47d209253f4b",
+      "analyzed_ranges": [
+        [
+          1,
+          469
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/speed/creature_speed_fixture.rs",
+      "blob_sha": "8b1433647b6cb50de5e6fb6c54204e24f9bfa2f9",
+      "sha256": "1b82adc071ba327b2e68aada3ca6f33e313b5f4a0a3f9b0b0b97e6ed5af8dfbf",
+      "analyzed_ranges": [
+        [
+          1,
+          26
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/tests/relocate_tests.rs",
+      "blob_sha": "09d3b1a5d0c512129ca61680db9867697c0974b8",
+      "sha256": "b2ab2a7e4e6508a79530cbf28a13e79787bba9ac6bcd062319f092527a322748",
+      "analyzed_ranges": [
+        [
+          1,
+          47
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/observability.rs",
+      "blob_sha": "114b52263e8862c4764337e4831feed833fec626",
+      "sha256": "c0f5c099ba570d7cdb4b5d384964e6401d89872b7d714edc10459aa9db259b2c",
+      "analyzed_ranges": [
+        [
+          1,
+          75
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/terrain_tools.rs",
+      "blob_sha": "e2d74311cf5bb49e8c3f8357563fccb731f3ea1e",
+      "sha256": "679321331f242e14ce9dcbd5e15c869e010be98ff77a8e1c4e148dfab9f7cb0a",
+      "analyzed_ranges": [
+        [
+          1,
+          543
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_clock.rs",
+      "blob_sha": "2a1cfee897fec232b4183413f3a8db001ad7ba5e",
+      "sha256": "a7741f6d22898e3a3860f7c03195351ee65dfd778c5badd75a5f00753c9fa432",
+      "analyzed_ranges": [
+        [
+          1,
+          427
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_object_revert.rs",
+      "blob_sha": "77cc5e2c823139443723923f1a01948135b96245",
+      "sha256": "a343c2175c32963038d81f007a0fa1b7039b0025f95c94e36b7804eb5ba84c09",
+      "analyzed_ranges": [
+        [
+          1,
+          816
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_object_revert_tests.rs",
+      "blob_sha": "f6a2ea46d3a583a97a000960f23ce763425b52fe",
+      "sha256": "ab35698da01fc37957a22cf3b50b7770a81b63bb6bf075997b3ab3104dc0eb5b",
+      "analyzed_ranges": [
+        [
+          1,
+          567
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_object_revert_tests_authority.rs",
+      "blob_sha": "261c1facd2ba60bd9315e3fcd4a97f3ba7fcae48",
+      "sha256": "cd76819b0f2130437ca0da25c6f3fb3f1e214fa7c68ff6e44aea9f5522f87a12",
+      "analyzed_ranges": [
+        [
+          1,
+          248
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_object_revert_tests_create.rs",
+      "blob_sha": "785fccbe3c3b8dbe2ab57ff155d8553b38d8b2c7",
+      "sha256": "2c408c1e83311ccc2736c624b6a2dbf506a93b9e1866c688f7164978f745060b",
+      "analyzed_ranges": [
+        [
+          1,
+          370
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_object_revert_tests_duke.rs",
+      "blob_sha": "fbf8943f9f0d7a0dfc90acf630d6fe251aafb480",
+      "sha256": "5b66eb6cace10c3ed64bb499a6a342e14ba1fe5a086fe3549df8e40481295899",
+      "analyzed_ranges": [
+        [
+          1,
+          251
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_object_revert_tests_lifecycle.rs",
+      "blob_sha": "3aa6f9af8e082c315e618a46a027e70745434466",
+      "sha256": "064bcfb679888b7be65e4d22d5a6fec007667baa0726346ec1fc562d4e99a42b",
+      "analyzed_ranges": [
+        [
+          1,
+          391
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_object_revert_tests_rearm.rs",
+      "blob_sha": "d0c9c6014ec044f8be4cdb429c584e2937e4fe8b",
+      "sha256": "7324b3d24222bcc209d6c086be9ebd0c3d90472ba2750b69d129bd4eeca18df4",
+      "analyzed_ranges": [
+        [
+          1,
+          198
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_object_revert_tests_scheduling.rs",
+      "blob_sha": "4c2fa2c73848d4eeb8e6acc7f8d107294bafe7bc",
+      "sha256": "edc7851acd6974b5f4edd17980f7bc0556914d78305fd117501929e85264a37e",
+      "analyzed_ranges": [
+        [
+          1,
+          389
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_runtime.rs",
+      "blob_sha": "6bf0ab93306cb328d4dff804f48783da2358510e",
+      "sha256": "3b6ae5b25ef15ceca00bd6c0fa90df17d6d514651cb10d2f85395386fc16e63e",
+      "analyzed_ranges": [
+        [
+          1,
+          1958
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_runtime_tests.rs",
+      "blob_sha": "1436ff222a9311ccc937875a6a71b861a80ac506",
+      "sha256": "2a76ae2b24c195a9e5e7a609297cd3d59d8cf19f97ba39cb31960b16ffc65d53",
+      "analyzed_ranges": [
+        [
+          1,
+          68
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_runtime_tests_authority.rs",
+      "blob_sha": "b4792e86786d7bf2580e6e43132a3dfff591b932",
+      "sha256": "5e8be2978f6d07413c3d4a54bcb39802bcdef4dd72f1093158733e64c568044b",
+      "analyzed_ranges": [
+        [
+          1,
+          564
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_runtime_tests_b1.rs",
+      "blob_sha": "e371371edf40a2788344f72955ff6ff9804e4cc3",
+      "sha256": "67135ae75abb4609890f7fe8571f631cac5c86f46050eef2c2ef13317b30b05a",
+      "analyzed_ranges": [
+        [
+          1,
+          101
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_runtime_tests_fixtures.rs",
+      "blob_sha": "46543aff8ce930d22f839c28f7d2c3312111265c",
+      "sha256": "12116f2cfa0ed4b8eb27eb9fa6ea178e47fd440eaa88dcbcfe7af7170ad6c909",
+      "analyzed_ranges": [
+        [
+          1,
+          490
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_runtime_tests_overlay.rs",
+      "blob_sha": "216843d1bef430fd93200c7563dd199c6d96b3db",
+      "sha256": "ba0ba20b9a48d949d7b5a82e3f97d6bc409621a762b12bf77ac1bb2135e2db77",
+      "analyzed_ranges": [
+        [
+          1,
+          311
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    },
+    {
+      "path": "crates/gameplay/world/src/world_runtime_tests_use.rs",
+      "blob_sha": "0172d79556bfd10306376cbf0241179788602193",
+      "sha256": "5accaffbb3bfc458251b4af4bf61b56f3fabd98ddb564eb6e50c4cee8f6ba83e",
+      "analyzed_ranges": [
+        [
+          1,
+          235
+        ]
+      ],
+      "review_method": "manual source review; original attribution retained"
+    }
+  ]
+}

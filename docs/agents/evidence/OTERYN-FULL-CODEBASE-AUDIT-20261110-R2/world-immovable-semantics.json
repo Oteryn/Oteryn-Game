@@ -1,0 +1,191 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T17:09:41.887634+00:00",
+  "source": "crates/gameplay/world/src/map/spell_tiles/immovable_catalogue.rs",
+  "source_sha256": "d15efe6c9c38437d69baf328efa9abdcf5a77c22879f2b68a074a002692a61e7",
+  "source_lines": 572,
+  "encoded_source_ids": 54267,
+  "known_source_ids": 42107,
+  "all_positions_match_pinned_membership": true,
+  "classes": [
+    {
+      "code": "?",
+      "count": 12160,
+      "meaning": "unknown source; consumer returns all three blocking facts"
+    },
+    {
+      "code": "A",
+      "count": 14589,
+      "solid": false,
+      "pathfind": false,
+      "magic_field": false,
+      "movable": false
+    },
+    {
+      "code": "B",
+      "count": 14828,
+      "solid": true,
+      "pathfind": false,
+      "magic_field": false,
+      "movable": false
+    },
+    {
+      "code": "C",
+      "count": 838,
+      "solid": false,
+      "pathfind": true,
+      "magic_field": false,
+      "movable": false
+    },
+    {
+      "code": "D",
+      "count": 321,
+      "solid": true,
+      "pathfind": true,
+      "magic_field": false,
+      "movable": false
+    },
+    {
+      "code": "E",
+      "count": 11,
+      "solid": false,
+      "pathfind": false,
+      "magic_field": true,
+      "movable": false
+    },
+    {
+      "code": "F",
+      "count": 1,
+      "solid": true,
+      "pathfind": false,
+      "magic_field": true,
+      "movable": false
+    },
+    {
+      "code": "G",
+      "count": 20,
+      "solid": false,
+      "pathfind": true,
+      "magic_field": true,
+      "movable": false
+    },
+    {
+      "code": "H",
+      "count": 4,
+      "solid": true,
+      "pathfind": true,
+      "magic_field": true,
+      "movable": false
+    },
+    {
+      "code": "I",
+      "count": 9839,
+      "solid": false,
+      "pathfind": false,
+      "magic_field": false,
+      "movable": true
+    },
+    {
+      "code": "J",
+      "count": 827,
+      "solid": true,
+      "pathfind": false,
+      "magic_field": false,
+      "movable": true
+    },
+    {
+      "code": "K",
+      "count": 664,
+      "solid": false,
+      "pathfind": true,
+      "magic_field": false,
+      "movable": true
+    },
+    {
+      "code": "L",
+      "count": 156,
+      "solid": true,
+      "pathfind": true,
+      "magic_field": false,
+      "movable": true
+    },
+    {
+      "code": "M",
+      "count": 9,
+      "solid": false,
+      "pathfind": false,
+      "magic_field": true,
+      "movable": true
+    }
+  ],
+  "xml_override_checks": {
+    "magic_field_for_xml_member": 32938,
+    "blocking": 4,
+    "movable": 5
+  },
+  "xml_magic_field_ids": [
+    105,
+    1998,
+    1999,
+    2000,
+    2118,
+    2119,
+    2120,
+    2121,
+    2122,
+    2123,
+    2124,
+    2125,
+    2126,
+    2128,
+    2129,
+    2130,
+    2131,
+    2132,
+    2133,
+    2134,
+    2135,
+    2136,
+    2137,
+    2138,
+    2140,
+    7465,
+    7466,
+    7467,
+    7468,
+    7469,
+    7470,
+    7471,
+    7472,
+    7473,
+    10069,
+    10070,
+    10071,
+    10181,
+    10182,
+    21465,
+    23365,
+    23366,
+    23367,
+    23368,
+    31380
+  ],
+  "supporting_inputs": [
+    {
+      "path": "imports/official/appearance-membership/appearances-aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50.json",
+      "sha256": "466fdef535e3b7a8e8e574e2838d729a0f7386f4ffa2dbd7074c043a6e611c58",
+      "credit": "identity-membership relationship only"
+    },
+    {
+      "path": "imports/canary/items-xml/items.xml",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "credit": "selected relevant attribute relationships only"
+    }
+  ],
+  "limits": [
+    "Original appearances.dat bytes are not present in the inspected workspace; protobuf-derived base flags and donor regeneration are not independently authenticated.",
+    "No full-file review credit for supporting membership/large XML from indexing.",
+    "No Rust, SQL, live movement or generator execution."
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "source": "crates/gameplay/world/src/movement/interest.rs",
+  "source_sha256": "1db6e0fd331fdd91b3300e13bcfa5101b5b6493f786560882758972506041667",
+  "status": "PASS",
+  "checked_at_utc": "2026-11-10T17:12:12.254431+00:00",
+  "original_unchanged_source": true,
+  "stubs_or_reimplementation": false,
+  "cargo_sql_native_run": false,
+  "commands": [
+    {
+      "argv": [
+        "/home/agent/.cargo/bin/rustc",
+        "--edition=2024",
+        "--test",
+        "/workspace/scratch/9868b8ed6bb7/Oteryn-Game-audit-r2/crates/gameplay/world/src/movement/interest.rs",
+        "-o",
+        "/tmp/oteryn-audit-world-interest-tests"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/tmp/oteryn-audit-world-interest-tests",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "stdout": "\nrunning 21 tests\ntest tests::constants_are_the_registered_row_values ... ok\ntest tests::diff_reports_enter_leave_and_update ... ok\ntest tests::floor_distance_orders_before_planar_distance ... ok\ntest tests::candidate_ceiling_selection_is_canonical_when_the_filter_rejects ... ok\ntest tests::invisible_positions_and_floors_are_excluded ... ok\ntest tests::own_actor_is_included_and_counted_with_more_nearer_candidates_than_the_ceiling ... ok\ntest tests::position_rejects_floors_outside_minus_fifteen_to_fifteen ... ok\ntest tests::diff_at_max_entries_is_a_delta_and_above_max_is_a_resync ... ok\ntest tests::query_requires_an_indexed_observer ... ok\ntest tests::query_returns_max_results_and_excludes_the_farthest_beyond_it ... ok\ntest tests::settings_accept_bounds_and_reject_outside ... ok\ntest tests::area_offsets_at_reference_min_and_max_sizes ... ok\ntest tests::upsert_moves_an_entity_and_remove_deletes_it ... ok\ntest tests::candidate_ceiling_stops_examination_at_max_and_not_at_max_plus_one ... ok\ntest tests::over_candidate_ceiling_selects_canonical_nearest_regardless_of_insertion_order ... ok\ntest tests::result_ceiling_stops_the_merge_at_the_pull_that_reaches_it ... ok\ntest tests::dense_cell_scan_visits_at_most_the_budget_and_keeps_the_canonical_first ... ok\ntest tests::floor_offset_shifts_both_axes_with_the_observer_minus_target_sign ... ok\ntest tests::native_floors_see_as_the_tibia_floor_of_their_negation ... ok\ntest tests::above_ground_observer_sees_floors_zero_to_seven_only ... ok\ntest tests::underground_observer_sees_two_floors_each_way_clamped_at_fifteen ... ok\n\ntest result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s\n\n",
+      "stderr": ""
+    }
+  ]
+}

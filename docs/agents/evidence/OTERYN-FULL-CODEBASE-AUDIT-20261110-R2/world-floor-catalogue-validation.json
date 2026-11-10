@@ -1,0 +1,2563 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T17:08:23.383020+00:00",
+  "status": "PASS",
+  "floor_catalogue_source_sha256": "9bc909df83fc9ad1f1c464d66a87029679651c2eec3cbd634b14a26f936d5948",
+  "floor_relations": {
+    "objects": {
+      "rows": 287,
+      "complete_relation_equal": true,
+      "inputs": [
+        {
+          "path": "content/world/objects/objects-00000-00499.json",
+          "sha256": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
+          "selected_facts": [
+            {
+              "pointer": "/records/172/floor_change",
+              "identity": "oteryn:world-object.tibia.i855",
+              "value": "southalt"
+            },
+            {
+              "pointer": "/records/173/floor_change",
+              "identity": "oteryn:world-object.tibia.i856",
+              "value": "eastalt"
+            },
+            {
+              "pointer": "/records/181/floor_change",
+              "identity": "oteryn:world-object.tibia.i868",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/183/floor_change",
+              "identity": "oteryn:world-object.tibia.i874",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/184/floor_change",
+              "identity": "oteryn:world-object.tibia.i877",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/236/floor_change",
+              "identity": "oteryn:world-object.tibia.i1066",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/237/floor_change",
+              "identity": "oteryn:world-object.tibia.i1067",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/239/floor_change",
+              "identity": "oteryn:world-object.tibia.i1080",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-00500-00999.json",
+          "sha256": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
+          "selected_facts": [
+            {
+              "pointer": "/records/67/floor_change",
+              "identity": "oteryn:world-object.tibia.i1947",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/70/floor_change",
+              "identity": "oteryn:world-object.tibia.i1950",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/72/floor_change",
+              "identity": "oteryn:world-object.tibia.i1952",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/74/floor_change",
+              "identity": "oteryn:world-object.tibia.i1954",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/76/floor_change",
+              "identity": "oteryn:world-object.tibia.i1956",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/78/floor_change",
+              "identity": "oteryn:world-object.tibia.i1958",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/80/floor_change",
+              "identity": "oteryn:world-object.tibia.i1960",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/82/floor_change",
+              "identity": "oteryn:world-object.tibia.i1962",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/84/floor_change",
+              "identity": "oteryn:world-object.tibia.i1964",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/86/floor_change",
+              "identity": "oteryn:world-object.tibia.i1966",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/89/floor_change",
+              "identity": "oteryn:world-object.tibia.i1969",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/91/floor_change",
+              "identity": "oteryn:world-object.tibia.i1971",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/93/floor_change",
+              "identity": "oteryn:world-object.tibia.i1973",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/95/floor_change",
+              "identity": "oteryn:world-object.tibia.i1975",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/97/floor_change",
+              "identity": "oteryn:world-object.tibia.i1977",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/98/floor_change",
+              "identity": "oteryn:world-object.tibia.i1978",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/143/floor_change",
+              "identity": "oteryn:world-object.tibia.i2192",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/145/floor_change",
+              "identity": "oteryn:world-object.tibia.i2194",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/147/floor_change",
+              "identity": "oteryn:world-object.tibia.i2196",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/149/floor_change",
+              "identity": "oteryn:world-object.tibia.i2198",
+              "value": "west"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-01000-01499.json",
+          "sha256": "8e62410f9edc1cc3e4a58080b1916403931bf6248ad8e2f16b2aa0aee67238cd",
+          "selected_facts": []
+        },
+        {
+          "path": "content/world/objects/objects-01500-01999.json",
+          "sha256": "a0bd18bd67e763d6be89ad62c86752e700a660068044036f4629ad11e7374c3f",
+          "selected_facts": [
+            {
+              "pointer": "/records/28/floor_change",
+              "identity": "oteryn:world-object.tibia.i5257",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/29/floor_change",
+              "identity": "oteryn:world-object.tibia.i5258",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/30/floor_change",
+              "identity": "oteryn:world-object.tibia.i5259",
+              "value": "west"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-02000-02499.json",
+          "sha256": "252593e541ea1227637922eafdff911229c7b13606c40c18653377919bd3b0de",
+          "selected_facts": [
+            {
+              "pointer": "/records/93/floor_change",
+              "identity": "oteryn:world-object.tibia.i6754",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/94/floor_change",
+              "identity": "oteryn:world-object.tibia.i6755",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/95/floor_change",
+              "identity": "oteryn:world-object.tibia.i6756",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/166/floor_change",
+              "identity": "oteryn:world-object.tibia.i6909",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/168/floor_change",
+              "identity": "oteryn:world-object.tibia.i6911",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/170/floor_change",
+              "identity": "oteryn:world-object.tibia.i6913",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/172/floor_change",
+              "identity": "oteryn:world-object.tibia.i6915",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/299/floor_change",
+              "identity": "oteryn:world-object.tibia.i7181",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/300/floor_change",
+              "identity": "oteryn:world-object.tibia.i7182",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/388/floor_change",
+              "identity": "oteryn:world-object.tibia.i7476",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/389/floor_change",
+              "identity": "oteryn:world-object.tibia.i7477",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/390/floor_change",
+              "identity": "oteryn:world-object.tibia.i7478",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/391/floor_change",
+              "identity": "oteryn:world-object.tibia.i7479",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/404/floor_change",
+              "identity": "oteryn:world-object.tibia.i7515",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/405/floor_change",
+              "identity": "oteryn:world-object.tibia.i7516",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/406/floor_change",
+              "identity": "oteryn:world-object.tibia.i7517",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/407/floor_change",
+              "identity": "oteryn:world-object.tibia.i7518",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/408/floor_change",
+              "identity": "oteryn:world-object.tibia.i7520",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/409/floor_change",
+              "identity": "oteryn:world-object.tibia.i7521",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/410/floor_change",
+              "identity": "oteryn:world-object.tibia.i7522",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/419/floor_change",
+              "identity": "oteryn:world-object.tibia.i7542",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/421/floor_change",
+              "identity": "oteryn:world-object.tibia.i7544",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/423/floor_change",
+              "identity": "oteryn:world-object.tibia.i7546",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/425/floor_change",
+              "identity": "oteryn:world-object.tibia.i7548",
+              "value": "north"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-02500-02999.json",
+          "sha256": "815206da28a1ddcb3da87ffee5df33f031ed19ca038be0d407cc9f928e7b1466",
+          "selected_facts": [
+            {
+              "pointer": "/records/43/floor_change",
+              "identity": "oteryn:world-object.tibia.i7881",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/44/floor_change",
+              "identity": "oteryn:world-object.tibia.i7887",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/45/floor_change",
+              "identity": "oteryn:world-object.tibia.i7888",
+              "value": "southalt"
+            },
+            {
+              "pointer": "/records/169/floor_change",
+              "identity": "oteryn:world-object.tibia.i8144",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/347/floor_change",
+              "identity": "oteryn:world-object.tibia.i8657",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/420/floor_change",
+              "identity": "oteryn:world-object.tibia.i8830",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/421/floor_change",
+              "identity": "oteryn:world-object.tibia.i8831",
+              "value": "west"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-03000-03499.json",
+          "sha256": "1609164d335c881603bbe4c876198bf07dcbf5397f3785a83b168f1b147e9eee",
+          "selected_facts": [
+            {
+              "pointer": "/records/414/floor_change",
+              "identity": "oteryn:world-object.tibia.i10206",
+              "value": "north"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-03500-03999.json",
+          "sha256": "a9bab2879801ad3db6e438ba90c17ebfedfc19763ac167c49740b2bc83245a39",
+          "selected_facts": [
+            {
+              "pointer": "/records/285/floor_change",
+              "identity": "oteryn:world-object.tibia.i11365",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/384/floor_change",
+              "identity": "oteryn:world-object.tibia.i11707",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/386/floor_change",
+              "identity": "oteryn:world-object.tibia.i11709",
+              "value": "west"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-04000-04499.json",
+          "sha256": "1d0c497e8ae0c368db09bac89b03f861ac68879fb510bbeb95ffd90c29cd36e5",
+          "selected_facts": [
+            {
+              "pointer": "/records/53/floor_change",
+              "identity": "oteryn:world-object.tibia.i12236",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/336/floor_change",
+              "identity": "oteryn:world-object.tibia.i12961",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-04500-04999.json",
+          "sha256": "fd8201ca7bd0b8aba8be92d51c18844c9c0e8b610aeedb50c2674ac6b318c40a",
+          "selected_facts": [
+            {
+              "pointer": "/records/26/floor_change",
+              "identity": "oteryn:world-object.tibia.i13341",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/27/floor_change",
+              "identity": "oteryn:world-object.tibia.i13342",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/74/floor_change",
+              "identity": "oteryn:world-object.tibia.i13559",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/76/floor_change",
+              "identity": "oteryn:world-object.tibia.i13561",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/79/floor_change",
+              "identity": "oteryn:world-object.tibia.i13564",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/82/floor_change",
+              "identity": "oteryn:world-object.tibia.i13567",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/85/floor_change",
+              "identity": "oteryn:world-object.tibia.i13570",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/88/floor_change",
+              "identity": "oteryn:world-object.tibia.i13573",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/91/floor_change",
+              "identity": "oteryn:world-object.tibia.i13576",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/94/floor_change",
+              "identity": "oteryn:world-object.tibia.i13579",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/97/floor_change",
+              "identity": "oteryn:world-object.tibia.i13582",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/100/floor_change",
+              "identity": "oteryn:world-object.tibia.i13585",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/103/floor_change",
+              "identity": "oteryn:world-object.tibia.i13588",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/106/floor_change",
+              "identity": "oteryn:world-object.tibia.i13591",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/119/floor_change",
+              "identity": "oteryn:world-object.tibia.i13716",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/121/floor_change",
+              "identity": "oteryn:world-object.tibia.i13718",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/123/floor_change",
+              "identity": "oteryn:world-object.tibia.i13720",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/125/floor_change",
+              "identity": "oteryn:world-object.tibia.i13722",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/348/floor_change",
+              "identity": "oteryn:world-object.tibia.i14932",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/350/floor_change",
+              "identity": "oteryn:world-object.tibia.i14934",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/352/floor_change",
+              "identity": "oteryn:world-object.tibia.i14936",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/354/floor_change",
+              "identity": "oteryn:world-object.tibia.i14938",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/390/floor_change",
+              "identity": "oteryn:world-object.tibia.i15108",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/392/floor_change",
+              "identity": "oteryn:world-object.tibia.i15110",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/394/floor_change",
+              "identity": "oteryn:world-object.tibia.i15112",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/396/floor_change",
+              "identity": "oteryn:world-object.tibia.i15114",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/411/floor_change",
+              "identity": "oteryn:world-object.tibia.i15144",
+              "value": "north"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-05000-05499.json",
+          "sha256": "16ca20953a7820a4e5be2fb0af3128f03c9272cf396eb4320cb82ea30e33fdba",
+          "selected_facts": [
+            {
+              "pointer": "/records/276/floor_change",
+              "identity": "oteryn:world-object.tibia.i16680",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/278/floor_change",
+              "identity": "oteryn:world-object.tibia.i16682",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/280/floor_change",
+              "identity": "oteryn:world-object.tibia.i16684",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/282/floor_change",
+              "identity": "oteryn:world-object.tibia.i16686",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/284/floor_change",
+              "identity": "oteryn:world-object.tibia.i16688",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/286/floor_change",
+              "identity": "oteryn:world-object.tibia.i16690",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/288/floor_change",
+              "identity": "oteryn:world-object.tibia.i16692",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/290/floor_change",
+              "identity": "oteryn:world-object.tibia.i16694",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/425/floor_change",
+              "identity": "oteryn:world-object.tibia.i17230",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/456/floor_change",
+              "identity": "oteryn:world-object.tibia.i17394",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/457/floor_change",
+              "identity": "oteryn:world-object.tibia.i17395",
+              "value": "west"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-05500-05999.json",
+          "sha256": "f2779a7bb5c5e101365d532fd8420a0e467dbccd6505fa7591554124baa7333e",
+          "selected_facts": []
+        },
+        {
+          "path": "content/world/objects/objects-06000-06499.json",
+          "sha256": "3c683e1b85baea62c8ff0f6c89f2745e4e4d5e56d089e7c9ac988399377f90e8",
+          "selected_facts": [
+            {
+              "pointer": "/records/122/floor_change",
+              "identity": "oteryn:world-object.tibia.i18650",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/124/floor_change",
+              "identity": "oteryn:world-object.tibia.i18652",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/126/floor_change",
+              "identity": "oteryn:world-object.tibia.i18654",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/128/floor_change",
+              "identity": "oteryn:world-object.tibia.i18656",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/287/floor_change",
+              "identity": "oteryn:world-object.tibia.i19143",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/467/floor_change",
+              "identity": "oteryn:world-object.tibia.i19590",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/468/floor_change",
+              "identity": "oteryn:world-object.tibia.i19591",
+              "value": "west"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-06500-06999.json",
+          "sha256": "edfb10890a94e2b3e7038cadf2fc4b123125978d429fd38d998033d19690c3e0",
+          "selected_facts": [
+            {
+              "pointer": "/records/171/floor_change",
+              "identity": "oteryn:world-object.tibia.i20124",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/223/floor_change",
+              "identity": "oteryn:world-object.tibia.i20224",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/224/floor_change",
+              "identity": "oteryn:world-object.tibia.i20225",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/250/floor_change",
+              "identity": "oteryn:world-object.tibia.i20253",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/251/floor_change",
+              "identity": "oteryn:world-object.tibia.i20254",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/252/floor_change",
+              "identity": "oteryn:world-object.tibia.i20255",
+              "value": "eastalt"
+            },
+            {
+              "pointer": "/records/253/floor_change",
+              "identity": "oteryn:world-object.tibia.i20256",
+              "value": "southalt"
+            },
+            {
+              "pointer": "/records/293/floor_change",
+              "identity": "oteryn:world-object.tibia.i20328",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/294/floor_change",
+              "identity": "oteryn:world-object.tibia.i20329",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/295/floor_change",
+              "identity": "oteryn:world-object.tibia.i20330",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/296/floor_change",
+              "identity": "oteryn:world-object.tibia.i20331",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/297/floor_change",
+              "identity": "oteryn:world-object.tibia.i20332",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/298/floor_change",
+              "identity": "oteryn:world-object.tibia.i20333",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/299/floor_change",
+              "identity": "oteryn:world-object.tibia.i20334",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/300/floor_change",
+              "identity": "oteryn:world-object.tibia.i20335",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/301/floor_change",
+              "identity": "oteryn:world-object.tibia.i20336",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/400/floor_change",
+              "identity": "oteryn:world-object.tibia.i20491",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/401/floor_change",
+              "identity": "oteryn:world-object.tibia.i20492",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/403/floor_change",
+              "identity": "oteryn:world-object.tibia.i20494",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/405/floor_change",
+              "identity": "oteryn:world-object.tibia.i20496",
+              "value": "east"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-07000-07499.json",
+          "sha256": "b330c3125b15da9e6a70dc8921df35de12cf23fe73aa0c098cc1523dfe838ec4",
+          "selected_facts": [
+            {
+              "pointer": "/records/79/floor_change",
+              "identity": "oteryn:world-object.tibia.i20750",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/80/floor_change",
+              "identity": "oteryn:world-object.tibia.i20751",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/82/floor_change",
+              "identity": "oteryn:world-object.tibia.i20753",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/84/floor_change",
+              "identity": "oteryn:world-object.tibia.i20755",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/418/floor_change",
+              "identity": "oteryn:world-object.tibia.i21564",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/420/floor_change",
+              "identity": "oteryn:world-object.tibia.i21566",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/422/floor_change",
+              "identity": "oteryn:world-object.tibia.i21568",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/424/floor_change",
+              "identity": "oteryn:world-object.tibia.i21570",
+              "value": "north"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-07500-07999.json",
+          "sha256": "79c4a5ae8cd81c936e78e260d8516df43e866f6ac133c0931fcce19d3bff7d09",
+          "selected_facts": [
+            {
+              "pointer": "/records/2/floor_change",
+              "identity": "oteryn:world-object.tibia.i21971",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/3/floor_change",
+              "identity": "oteryn:world-object.tibia.i21972",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/95/floor_change",
+              "identity": "oteryn:world-object.tibia.i22156",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/204/floor_change",
+              "identity": "oteryn:world-object.tibia.i22517",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/205/floor_change",
+              "identity": "oteryn:world-object.tibia.i22565",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/206/floor_change",
+              "identity": "oteryn:world-object.tibia.i22566",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/271/floor_change",
+              "identity": "oteryn:world-object.tibia.i22749",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/449/floor_change",
+              "identity": "oteryn:world-object.tibia.i23858",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/451/floor_change",
+              "identity": "oteryn:world-object.tibia.i23860",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/453/floor_change",
+              "identity": "oteryn:world-object.tibia.i23862",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/455/floor_change",
+              "identity": "oteryn:world-object.tibia.i23864",
+              "value": "south"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-08000-08499.json",
+          "sha256": "eaf65a8ebffc93be179e942efff2e93e9049382e808a907685e11c6c18f1215a",
+          "selected_facts": [
+            {
+              "pointer": "/records/378/floor_change",
+              "identity": "oteryn:world-object.tibia.i24806",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/380/floor_change",
+              "identity": "oteryn:world-object.tibia.i24808",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/382/floor_change",
+              "identity": "oteryn:world-object.tibia.i24810",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/384/floor_change",
+              "identity": "oteryn:world-object.tibia.i24812",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/442/floor_change",
+              "identity": "oteryn:world-object.tibia.i25016",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/444/floor_change",
+              "identity": "oteryn:world-object.tibia.i25018",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/446/floor_change",
+              "identity": "oteryn:world-object.tibia.i25020",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/448/floor_change",
+              "identity": "oteryn:world-object.tibia.i25022",
+              "value": "south"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-08500-08999.json",
+          "sha256": "8c3b94ff21c6a294e3f851f78aa95e9a8382ec1e1703f7c6541bfc9389e132e3",
+          "selected_facts": [
+            {
+              "pointer": "/records/449/floor_change",
+              "identity": "oteryn:world-object.tibia.i27629",
+              "value": "north"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-09000-09499.json",
+          "sha256": "d5c80080a119e6db62bb73067279ef49868e6bc99813b7c2760553d8711bfb9b",
+          "selected_facts": [
+            {
+              "pointer": "/records/223/floor_change",
+              "identity": "oteryn:world-object.tibia.i28357",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/225/floor_change",
+              "identity": "oteryn:world-object.tibia.i28359",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/227/floor_change",
+              "identity": "oteryn:world-object.tibia.i28361",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/228/floor_change",
+              "identity": "oteryn:world-object.tibia.i28363",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/387/floor_change",
+              "identity": "oteryn:world-object.tibia.i28655",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/488/floor_change",
+              "identity": "oteryn:world-object.tibia.i29109",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/490/floor_change",
+              "identity": "oteryn:world-object.tibia.i29111",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/492/floor_change",
+              "identity": "oteryn:world-object.tibia.i29113",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/494/floor_change",
+              "identity": "oteryn:world-object.tibia.i29115",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/496/floor_change",
+              "identity": "oteryn:world-object.tibia.i29137",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/498/floor_change",
+              "identity": "oteryn:world-object.tibia.i29139",
+              "value": "west"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-09500-09999.json",
+          "sha256": "2f487d3948825373dd6ed069ff1d2a952d53014e8e8d8718247d5fcdcbd85cd5",
+          "selected_facts": [
+            {
+              "pointer": "/records/0/floor_change",
+              "identity": "oteryn:world-object.tibia.i29141",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/2/floor_change",
+              "identity": "oteryn:world-object.tibia.i29143",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/285/floor_change",
+              "identity": "oteryn:world-object.tibia.i30452",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/286/floor_change",
+              "identity": "oteryn:world-object.tibia.i30453",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/343/floor_change",
+              "identity": "oteryn:world-object.tibia.i30757",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/345/floor_change",
+              "identity": "oteryn:world-object.tibia.i30759",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/347/floor_change",
+              "identity": "oteryn:world-object.tibia.i30761",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/349/floor_change",
+              "identity": "oteryn:world-object.tibia.i30763",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/406/floor_change",
+              "identity": "oteryn:world-object.tibia.i30820",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/408/floor_change",
+              "identity": "oteryn:world-object.tibia.i30822",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/410/floor_change",
+              "identity": "oteryn:world-object.tibia.i30824",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/412/floor_change",
+              "identity": "oteryn:world-object.tibia.i30826",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/466/floor_change",
+              "identity": "oteryn:world-object.tibia.i30904",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/468/floor_change",
+              "identity": "oteryn:world-object.tibia.i30906",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/470/floor_change",
+              "identity": "oteryn:world-object.tibia.i30908",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/472/floor_change",
+              "identity": "oteryn:world-object.tibia.i30910",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/474/floor_change",
+              "identity": "oteryn:world-object.tibia.i30912",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/476/floor_change",
+              "identity": "oteryn:world-object.tibia.i30914",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/478/floor_change",
+              "identity": "oteryn:world-object.tibia.i30916",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/480/floor_change",
+              "identity": "oteryn:world-object.tibia.i30918",
+              "value": "south"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-10000-10499.json",
+          "sha256": "400abc71605fbe4d47c365befb87e5e446afc74a592c75aa3d4ebec746a24a65",
+          "selected_facts": [
+            {
+              "pointer": "/records/109/floor_change",
+              "identity": "oteryn:world-object.tibia.i31129",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/110/floor_change",
+              "identity": "oteryn:world-object.tibia.i31130",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/374/floor_change",
+              "identity": "oteryn:world-object.tibia.i31907",
+              "value": "east"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-10500-10999.json",
+          "sha256": "53f8ce9a2d50ef46262f3f6eedb2618e1cf3a5adcf89c06eae90fcef84e5de8c",
+          "selected_facts": [
+            {
+              "pointer": "/records/158/floor_change",
+              "identity": "oteryn:world-object.tibia.i33175",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/160/floor_change",
+              "identity": "oteryn:world-object.tibia.i33177",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/162/floor_change",
+              "identity": "oteryn:world-object.tibia.i33179",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/164/floor_change",
+              "identity": "oteryn:world-object.tibia.i33181",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/187/floor_change",
+              "identity": "oteryn:world-object.tibia.i33204",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/189/floor_change",
+              "identity": "oteryn:world-object.tibia.i33206",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/191/floor_change",
+              "identity": "oteryn:world-object.tibia.i33208",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/193/floor_change",
+              "identity": "oteryn:world-object.tibia.i33210",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/211/floor_change",
+              "identity": "oteryn:world-object.tibia.i33233",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/213/floor_change",
+              "identity": "oteryn:world-object.tibia.i33235",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/215/floor_change",
+              "identity": "oteryn:world-object.tibia.i33237",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/217/floor_change",
+              "identity": "oteryn:world-object.tibia.i33239",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/234/floor_change",
+              "identity": "oteryn:world-object.tibia.i33256",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/236/floor_change",
+              "identity": "oteryn:world-object.tibia.i33258",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/238/floor_change",
+              "identity": "oteryn:world-object.tibia.i33260",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/240/floor_change",
+              "identity": "oteryn:world-object.tibia.i33262",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/340/floor_change",
+              "identity": "oteryn:world-object.tibia.i33709",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/490/floor_change",
+              "identity": "oteryn:world-object.tibia.i34165",
+              "value": "south"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-11000-11499.json",
+          "sha256": "3017066e3e44140ec427bfd985e0e4bda90a12e9c56df75ca2b3cefa858e9bec",
+          "selected_facts": [
+            {
+              "pointer": "/records/171/floor_change",
+              "identity": "oteryn:world-object.tibia.i36444",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/173/floor_change",
+              "identity": "oteryn:world-object.tibia.i36446",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/175/floor_change",
+              "identity": "oteryn:world-object.tibia.i36448",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/177/floor_change",
+              "identity": "oteryn:world-object.tibia.i36450",
+              "value": "south"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-11500-11999.json",
+          "sha256": "049b9891ade9c74e9383db7b87e434643c8a6c994453667def5431da2fb9e923",
+          "selected_facts": [
+            {
+              "pointer": "/records/20/floor_change",
+              "identity": "oteryn:world-object.tibia.i37964",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/22/floor_change",
+              "identity": "oteryn:world-object.tibia.i37966",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/24/floor_change",
+              "identity": "oteryn:world-object.tibia.i37968",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/26/floor_change",
+              "identity": "oteryn:world-object.tibia.i37970",
+              "value": "south"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-12000-12499.json",
+          "sha256": "9d14651b26891c52bd3405cb011be2dd14fcf0c08a0fd39f248e45adc4066a39",
+          "selected_facts": [
+            {
+              "pointer": "/records/54/floor_change",
+              "identity": "oteryn:world-object.tibia.i39721",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/55/floor_change",
+              "identity": "oteryn:world-object.tibia.i39722",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/61/floor_change",
+              "identity": "oteryn:world-object.tibia.i39919",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/62/floor_change",
+              "identity": "oteryn:world-object.tibia.i39921",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/63/floor_change",
+              "identity": "oteryn:world-object.tibia.i39923",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/64/floor_change",
+              "identity": "oteryn:world-object.tibia.i39925",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/147/floor_change",
+              "identity": "oteryn:world-object.tibia.i40262",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/148/floor_change",
+              "identity": "oteryn:world-object.tibia.i40263",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/149/floor_change",
+              "identity": "oteryn:world-object.tibia.i40279",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/150/floor_change",
+              "identity": "oteryn:world-object.tibia.i40281",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/151/floor_change",
+              "identity": "oteryn:world-object.tibia.i40296",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/152/floor_change",
+              "identity": "oteryn:world-object.tibia.i40298",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/153/floor_change",
+              "identity": "oteryn:world-object.tibia.i40302",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/154/floor_change",
+              "identity": "oteryn:world-object.tibia.i40428",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/155/floor_change",
+              "identity": "oteryn:world-object.tibia.i40430",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/156/floor_change",
+              "identity": "oteryn:world-object.tibia.i40432",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/157/floor_change",
+              "identity": "oteryn:world-object.tibia.i40434",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/220/floor_change",
+              "identity": "oteryn:world-object.tibia.i42391",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/222/floor_change",
+              "identity": "oteryn:world-object.tibia.i42393",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/224/floor_change",
+              "identity": "oteryn:world-object.tibia.i42395",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/226/floor_change",
+              "identity": "oteryn:world-object.tibia.i42397",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/228/floor_change",
+              "identity": "oteryn:world-object.tibia.i42619",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/230/floor_change",
+              "identity": "oteryn:world-object.tibia.i42621",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/232/floor_change",
+              "identity": "oteryn:world-object.tibia.i42623",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/239/floor_change",
+              "identity": "oteryn:world-object.tibia.i42632",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/243/floor_change",
+              "identity": "oteryn:world-object.tibia.i42965",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/245/floor_change",
+              "identity": "oteryn:world-object.tibia.i42967",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/247/floor_change",
+              "identity": "oteryn:world-object.tibia.i42969",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/249/floor_change",
+              "identity": "oteryn:world-object.tibia.i42971",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/251/floor_change",
+              "identity": "oteryn:world-object.tibia.i43130",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/253/floor_change",
+              "identity": "oteryn:world-object.tibia.i43132",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/255/floor_change",
+              "identity": "oteryn:world-object.tibia.i43134",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/256/floor_change",
+              "identity": "oteryn:world-object.tibia.i43372",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/387/floor_change",
+              "identity": "oteryn:world-object.tibia.i44896",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/389/floor_change",
+              "identity": "oteryn:world-object.tibia.i44898",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/391/floor_change",
+              "identity": "oteryn:world-object.tibia.i44900",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/393/floor_change",
+              "identity": "oteryn:world-object.tibia.i44902",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/401/floor_change",
+              "identity": "oteryn:world-object.tibia.i44942",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/402/floor_change",
+              "identity": "oteryn:world-object.tibia.i44943",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/405/floor_change",
+              "identity": "oteryn:world-object.tibia.i44946",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/407/floor_change",
+              "identity": "oteryn:world-object.tibia.i44948",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/409/floor_change",
+              "identity": "oteryn:world-object.tibia.i45154",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/411/floor_change",
+              "identity": "oteryn:world-object.tibia.i45156",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/413/floor_change",
+              "identity": "oteryn:world-object.tibia.i45158",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/415/floor_change",
+              "identity": "oteryn:world-object.tibia.i45160",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/480/floor_change",
+              "identity": "oteryn:world-object.tibia.i49657",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/482/floor_change",
+              "identity": "oteryn:world-object.tibia.i49659",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/484/floor_change",
+              "identity": "oteryn:world-object.tibia.i49661",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/486/floor_change",
+              "identity": "oteryn:world-object.tibia.i49663",
+              "value": "south"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-12500-12781.json",
+          "sha256": "bd43b46df4504b714ea636663bdb48dbd147842d97bebb8ebdaa40fcb3aac97e",
+          "selected_facts": [
+            {
+              "pointer": "/records/17/floor_change",
+              "identity": "oteryn:world-object.tibia.i49776",
+              "value": "southalt"
+            },
+            {
+              "pointer": "/records/18/floor_change",
+              "identity": "oteryn:world-object.tibia.i49777",
+              "value": "southalt"
+            },
+            {
+              "pointer": "/records/19/floor_change",
+              "identity": "oteryn:world-object.tibia.i49778",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/20/floor_change",
+              "identity": "oteryn:world-object.tibia.i49779",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/21/floor_change",
+              "identity": "oteryn:world-object.tibia.i49780",
+              "value": "eastalt"
+            },
+            {
+              "pointer": "/records/22/floor_change",
+              "identity": "oteryn:world-object.tibia.i49781",
+              "value": "eastalt"
+            },
+            {
+              "pointer": "/records/23/floor_change",
+              "identity": "oteryn:world-object.tibia.i49782",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/24/floor_change",
+              "identity": "oteryn:world-object.tibia.i49783",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/34/floor_change",
+              "identity": "oteryn:world-object.tibia.i49937",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/36/floor_change",
+              "identity": "oteryn:world-object.tibia.i49939",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/38/floor_change",
+              "identity": "oteryn:world-object.tibia.i49941",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/40/floor_change",
+              "identity": "oteryn:world-object.tibia.i49943",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/119/floor_change",
+              "identity": "oteryn:world-object.tibia.i50547",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/120/floor_change",
+              "identity": "oteryn:world-object.tibia.i50551",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/121/floor_change",
+              "identity": "oteryn:world-object.tibia.i50553",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/122/floor_change",
+              "identity": "oteryn:world-object.tibia.i50555",
+              "value": "south"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-12782-12876.json",
+          "sha256": "a5b1b3f7fb8beb9b82b089f099bd401a62372a9a6602a2c5b4eb5bd6ac9a0a3a",
+          "selected_facts": [
+            {
+              "pointer": "/records/2/floor_change",
+              "identity": "oteryn:world-object.tibia.i53431",
+              "value": "north"
+            }
+          ]
+        },
+        {
+          "path": "content/world/objects/objects-12877-12916.json",
+          "sha256": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
+          "selected_facts": []
+        },
+        {
+          "path": "content/world/objects/objects-12917-12931.json",
+          "sha256": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
+          "selected_facts": []
+        }
+      ]
+    },
+    "terrain": {
+      "rows": 158,
+      "complete_relation_equal": true,
+      "inputs": [
+        {
+          "path": "content/world/terrain/terrain-00000-00499.json",
+          "sha256": "d54273ee59a6703392a27ecc0ea0778961b66a2abdcba52167beb7548badfd21",
+          "selected_facts": [
+            {
+              "pointer": "/records/30/floor_change",
+              "identity": "oteryn:terrain.tibia.i293",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/31/floor_change",
+              "identity": "oteryn:terrain.tibia.i294",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/76/floor_change",
+              "identity": "oteryn:terrain.tibia.i369",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/77/floor_change",
+              "identity": "oteryn:terrain.tibia.i370",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/91/floor_change",
+              "identity": "oteryn:terrain.tibia.i385",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/94/floor_change",
+              "identity": "oteryn:terrain.tibia.i394",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/99/floor_change",
+              "identity": "oteryn:terrain.tibia.i411",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/100/floor_change",
+              "identity": "oteryn:terrain.tibia.i412",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/101/floor_change",
+              "identity": "oteryn:terrain.tibia.i413",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/102/floor_change",
+              "identity": "oteryn:terrain.tibia.i414",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/114/floor_change",
+              "identity": "oteryn:terrain.tibia.i428",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/118/floor_change",
+              "identity": "oteryn:terrain.tibia.i432",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/119/floor_change",
+              "identity": "oteryn:terrain.tibia.i433",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/120/floor_change",
+              "identity": "oteryn:terrain.tibia.i434",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/122/floor_change",
+              "identity": "oteryn:terrain.tibia.i437",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/123/floor_change",
+              "identity": "oteryn:terrain.tibia.i438",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/149/floor_change",
+              "identity": "oteryn:terrain.tibia.i469",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/151/floor_change",
+              "identity": "oteryn:terrain.tibia.i476",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/156/floor_change",
+              "identity": "oteryn:terrain.tibia.i482",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/157/floor_change",
+              "identity": "oteryn:terrain.tibia.i483",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/158/floor_change",
+              "identity": "oteryn:terrain.tibia.i484",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/159/floor_change",
+              "identity": "oteryn:terrain.tibia.i485",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/240/floor_change",
+              "identity": "oteryn:terrain.tibia.i566",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/241/floor_change",
+              "identity": "oteryn:terrain.tibia.i567",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/251/floor_change",
+              "identity": "oteryn:terrain.tibia.i594",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/252/floor_change",
+              "identity": "oteryn:terrain.tibia.i595",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/257/floor_change",
+              "identity": "oteryn:terrain.tibia.i600",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/258/floor_change",
+              "identity": "oteryn:terrain.tibia.i601",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/261/floor_change",
+              "identity": "oteryn:terrain.tibia.i604",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/262/floor_change",
+              "identity": "oteryn:terrain.tibia.i605",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/263/floor_change",
+              "identity": "oteryn:terrain.tibia.i607",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/265/floor_change",
+              "identity": "oteryn:terrain.tibia.i609",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/266/floor_change",
+              "identity": "oteryn:terrain.tibia.i610",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/270/floor_change",
+              "identity": "oteryn:terrain.tibia.i615",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/295/floor_change",
+              "identity": "oteryn:terrain.tibia.i859",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/406/floor_change",
+              "identity": "oteryn:terrain.tibia.i1156",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-00500-00999.json",
+          "sha256": "21dff9929f9e287eb070ac7b2c6666c4e3fb2002614dee22707daad6d0be033d",
+          "selected_facts": []
+        },
+        {
+          "path": "content/world/terrain/terrain-01000-01499.json",
+          "sha256": "f2c02951b6e217960127adac3e99f7a2835d8220cdec5e3149be7f4ec5cb111b",
+          "selected_facts": [
+            {
+              "pointer": "/records/311/floor_change",
+              "identity": "oteryn:terrain.tibia.i4823",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/312/floor_change",
+              "identity": "oteryn:terrain.tibia.i4824",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/313/floor_change",
+              "identity": "oteryn:terrain.tibia.i4825",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/314/floor_change",
+              "identity": "oteryn:terrain.tibia.i4826",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/347/floor_change",
+              "identity": "oteryn:terrain.tibia.i5033",
+              "value": "east"
+            },
+            {
+              "pointer": "/records/349/floor_change",
+              "identity": "oteryn:terrain.tibia.i5035",
+              "value": "west"
+            },
+            {
+              "pointer": "/records/351/floor_change",
+              "identity": "oteryn:terrain.tibia.i5037",
+              "value": "north"
+            },
+            {
+              "pointer": "/records/353/floor_change",
+              "identity": "oteryn:terrain.tibia.i5039",
+              "value": "south"
+            },
+            {
+              "pointer": "/records/381/floor_change",
+              "identity": "oteryn:terrain.tibia.i5081",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/476/floor_change",
+              "identity": "oteryn:terrain.tibia.i5544",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-01500-01999.json",
+          "sha256": "54c8a17c14e01845f366f397c882ed432c9fa8cc2b8c3300e61d84a7f39999db",
+          "selected_facts": [
+            {
+              "pointer": "/records/7/floor_change",
+              "identity": "oteryn:terrain.tibia.i5691",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/25/floor_change",
+              "identity": "oteryn:terrain.tibia.i5731",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/35/floor_change",
+              "identity": "oteryn:terrain.tibia.i5763",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/72/floor_change",
+              "identity": "oteryn:terrain.tibia.i6127",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/73/floor_change",
+              "identity": "oteryn:terrain.tibia.i6128",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/74/floor_change",
+              "identity": "oteryn:terrain.tibia.i6129",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/75/floor_change",
+              "identity": "oteryn:terrain.tibia.i6130",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/116/floor_change",
+              "identity": "oteryn:terrain.tibia.i6172",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/117/floor_change",
+              "identity": "oteryn:terrain.tibia.i6173",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/380/floor_change",
+              "identity": "oteryn:terrain.tibia.i6917",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/381/floor_change",
+              "identity": "oteryn:terrain.tibia.i6918",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/382/floor_change",
+              "identity": "oteryn:terrain.tibia.i6919",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/383/floor_change",
+              "identity": "oteryn:terrain.tibia.i6920",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/384/floor_change",
+              "identity": "oteryn:terrain.tibia.i6921",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/385/floor_change",
+              "identity": "oteryn:terrain.tibia.i6922",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/386/floor_change",
+              "identity": "oteryn:terrain.tibia.i6923",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/387/floor_change",
+              "identity": "oteryn:terrain.tibia.i6924",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/390/floor_change",
+              "identity": "oteryn:terrain.tibia.i7053",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-02000-02499.json",
+          "sha256": "b5bfa07a608332e21de5f0e00a76506e251e226bf358d56cec8c7977d42cc258",
+          "selected_facts": [
+            {
+              "pointer": "/records/111/floor_change",
+              "identity": "oteryn:terrain.tibia.i7729",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/112/floor_change",
+              "identity": "oteryn:terrain.tibia.i7730",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/113/floor_change",
+              "identity": "oteryn:terrain.tibia.i7731",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/114/floor_change",
+              "identity": "oteryn:terrain.tibia.i7732",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/115/floor_change",
+              "identity": "oteryn:terrain.tibia.i7733",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/116/floor_change",
+              "identity": "oteryn:terrain.tibia.i7734",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/117/floor_change",
+              "identity": "oteryn:terrain.tibia.i7735",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/118/floor_change",
+              "identity": "oteryn:terrain.tibia.i7736",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/119/floor_change",
+              "identity": "oteryn:terrain.tibia.i7737",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/124/floor_change",
+              "identity": "oteryn:terrain.tibia.i7755",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/130/floor_change",
+              "identity": "oteryn:terrain.tibia.i7767",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/131/floor_change",
+              "identity": "oteryn:terrain.tibia.i7768",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/359/floor_change",
+              "identity": "oteryn:terrain.tibia.i8658",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/361/floor_change",
+              "identity": "oteryn:terrain.tibia.i8690",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/376/floor_change",
+              "identity": "oteryn:terrain.tibia.i8709",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/413/floor_change",
+              "identity": "oteryn:terrain.tibia.i8932",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-02500-02999.json",
+          "sha256": "f7438a43c2ac9bd1c5aaed5e97905741273486d055299383a54a499d4133770c",
+          "selected_facts": []
+        },
+        {
+          "path": "content/world/terrain/terrain-03000-03499.json",
+          "sha256": "a64bae31ddde7a08010cbd38b5aabd77204bbf066f2997d30d2e8941ef6a1b80",
+          "selected_facts": [
+            {
+              "pointer": "/records/339/floor_change",
+              "identity": "oteryn:terrain.tibia.i12203",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/460/floor_change",
+              "identity": "oteryn:terrain.tibia.i12799",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-03500-03999.json",
+          "sha256": "e82e8aa080cf43975e9f406b6e907f9d77c5dbe1c85dcd7eb83f622a3338fb3c",
+          "selected_facts": [
+            {
+              "pointer": "/records/328/floor_change",
+              "identity": "oteryn:terrain.tibia.i14133",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/329/floor_change",
+              "identity": "oteryn:terrain.tibia.i14134",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/330/floor_change",
+              "identity": "oteryn:terrain.tibia.i14135",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/439/floor_change",
+              "identity": "oteryn:terrain.tibia.i15145",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/440/floor_change",
+              "identity": "oteryn:terrain.tibia.i15146",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-04000-04499.json",
+          "sha256": "63c1b34729be8f3e3f5dc74cf22d0ea2299ee86753413d8ecc4681e58e3d8d99",
+          "selected_facts": [
+            {
+              "pointer": "/records/263/floor_change",
+              "identity": "oteryn:terrain.tibia.i16265",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/264/floor_change",
+              "identity": "oteryn:terrain.tibia.i16266",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/265/floor_change",
+              "identity": "oteryn:terrain.tibia.i16267",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/266/floor_change",
+              "identity": "oteryn:terrain.tibia.i16268",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/267/floor_change",
+              "identity": "oteryn:terrain.tibia.i16269",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/268/floor_change",
+              "identity": "oteryn:terrain.tibia.i16270",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/269/floor_change",
+              "identity": "oteryn:terrain.tibia.i16271",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/270/floor_change",
+              "identity": "oteryn:terrain.tibia.i16272",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/371/floor_change",
+              "identity": "oteryn:terrain.tibia.i16696",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/372/floor_change",
+              "identity": "oteryn:terrain.tibia.i16697",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/373/floor_change",
+              "identity": "oteryn:terrain.tibia.i16698",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/374/floor_change",
+              "identity": "oteryn:terrain.tibia.i16699",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/375/floor_change",
+              "identity": "oteryn:terrain.tibia.i16700",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/376/floor_change",
+              "identity": "oteryn:terrain.tibia.i16701",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/377/floor_change",
+              "identity": "oteryn:terrain.tibia.i16702",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/378/floor_change",
+              "identity": "oteryn:terrain.tibia.i16703",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/379/floor_change",
+              "identity": "oteryn:terrain.tibia.i16785",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/380/floor_change",
+              "identity": "oteryn:terrain.tibia.i16786",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/381/floor_change",
+              "identity": "oteryn:terrain.tibia.i16787",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/382/floor_change",
+              "identity": "oteryn:terrain.tibia.i16788",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/383/floor_change",
+              "identity": "oteryn:terrain.tibia.i16789",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/384/floor_change",
+              "identity": "oteryn:terrain.tibia.i16790",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/385/floor_change",
+              "identity": "oteryn:terrain.tibia.i16791",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/386/floor_change",
+              "identity": "oteryn:terrain.tibia.i16792",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/491/floor_change",
+              "identity": "oteryn:terrain.tibia.i17239",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-04500-04999.json",
+          "sha256": "36df80df1261b23cbbfaea69581de80622ef02a0c4cb65ff7333324f7d2b2b11",
+          "selected_facts": [
+            {
+              "pointer": "/records/326/floor_change",
+              "identity": "oteryn:terrain.tibia.i18642",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/327/floor_change",
+              "identity": "oteryn:terrain.tibia.i18643",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/328/floor_change",
+              "identity": "oteryn:terrain.tibia.i18644",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/329/floor_change",
+              "identity": "oteryn:terrain.tibia.i18645",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/330/floor_change",
+              "identity": "oteryn:terrain.tibia.i18646",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/331/floor_change",
+              "identity": "oteryn:terrain.tibia.i18647",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/332/floor_change",
+              "identity": "oteryn:terrain.tibia.i18648",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/333/floor_change",
+              "identity": "oteryn:terrain.tibia.i18649",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/407/floor_change",
+              "identity": "oteryn:terrain.tibia.i19220",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-05000-05499.json",
+          "sha256": "1087f8892f6cf73ca2a2d22a4a9ed9dae945d2599f3b3de9cd7562e3a03d47cb",
+          "selected_facts": [
+            {
+              "pointer": "/records/191/floor_change",
+              "identity": "oteryn:terrain.tibia.i20259",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/192/floor_change",
+              "identity": "oteryn:terrain.tibia.i20260",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/193/floor_change",
+              "identity": "oteryn:terrain.tibia.i20261",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/194/floor_change",
+              "identity": "oteryn:terrain.tibia.i20262",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/195/floor_change",
+              "identity": "oteryn:terrain.tibia.i20263",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/197/floor_change",
+              "identity": "oteryn:terrain.tibia.i20344",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/216/floor_change",
+              "identity": "oteryn:terrain.tibia.i20469",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/217/floor_change",
+              "identity": "oteryn:terrain.tibia.i20470",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/218/floor_change",
+              "identity": "oteryn:terrain.tibia.i20471",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/219/floor_change",
+              "identity": "oteryn:terrain.tibia.i20472",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/220/floor_change",
+              "identity": "oteryn:terrain.tibia.i20473",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/221/floor_change",
+              "identity": "oteryn:terrain.tibia.i20488",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/222/floor_change",
+              "identity": "oteryn:terrain.tibia.i20489",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/380/floor_change",
+              "identity": "oteryn:terrain.tibia.i21034",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/438/floor_change",
+              "identity": "oteryn:terrain.tibia.i21342",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/439/floor_change",
+              "identity": "oteryn:terrain.tibia.i21344",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-05500-05999.json",
+          "sha256": "c5081d0589d6e65a40baf89178c4e29f81089147d463d168474ac286d546a66a",
+          "selected_facts": [
+            {
+              "pointer": "/records/142/floor_change",
+              "identity": "oteryn:terrain.tibia.i21973",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/143/floor_change",
+              "identity": "oteryn:terrain.tibia.i22157",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/322/floor_change",
+              "identity": "oteryn:terrain.tibia.i22748",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/404/floor_change",
+              "identity": "oteryn:terrain.tibia.i23364",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-06000-06499.json",
+          "sha256": "a5845d01e5f3599cf11e265af28e3f3c8de5eacde44e408d44a14c69d7cf8d22",
+          "selected_facts": []
+        },
+        {
+          "path": "content/world/terrain/terrain-06500-06999.json",
+          "sha256": "cfd84788ad5cc0fa3b870a9b22accca570f4cdf3615f55275452897055734b52",
+          "selected_facts": [
+            {
+              "pointer": "/records/127/floor_change",
+              "identity": "oteryn:terrain.tibia.i27628",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-07000-07499.json",
+          "sha256": "f5ea86d83b0a4b5fc3c33c8f831b1dd308636529f4c5d9c51e7bb2d15ad1342c",
+          "selected_facts": [
+            {
+              "pointer": "/records/292/floor_change",
+              "identity": "oteryn:terrain.tibia.i31168",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/364/floor_change",
+              "identity": "oteryn:terrain.tibia.i32020",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-07500-07999.json",
+          "sha256": "71292630282c2cc58905fa12f515de2513de681e63ede0d70e1a04a3409efe5e",
+          "selected_facts": [
+            {
+              "pointer": "/records/142/floor_change",
+              "identity": "oteryn:terrain.tibia.i34166",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/150/floor_change",
+              "identity": "oteryn:terrain.tibia.i34255",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-08000-08499.json",
+          "sha256": "92d35db1d4c783d0a05d48e56b6616d429b4da85f76e5ae179bb7ea2eee339a8",
+          "selected_facts": [
+            {
+              "pointer": "/records/122/floor_change",
+              "identity": "oteryn:terrain.tibia.i38831",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/123/floor_change",
+              "identity": "oteryn:terrain.tibia.i38832",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/340/floor_change",
+              "identity": "oteryn:terrain.tibia.i49161",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-08500-08547.json",
+          "sha256": "0a3742d9431f50123f14963c5529ea700eebc22c9b5cde52ef7bea57729e6ca9",
+          "selected_facts": [
+            {
+              "pointer": "/records/24/floor_change",
+              "identity": "oteryn:terrain.tibia.i50069",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/25/floor_change",
+              "identity": "oteryn:terrain.tibia.i50070",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/26/floor_change",
+              "identity": "oteryn:terrain.tibia.i50071",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/27/floor_change",
+              "identity": "oteryn:terrain.tibia.i50072",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/28/floor_change",
+              "identity": "oteryn:terrain.tibia.i50082",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/29/floor_change",
+              "identity": "oteryn:terrain.tibia.i50083",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/30/floor_change",
+              "identity": "oteryn:terrain.tibia.i50084",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/31/floor_change",
+              "identity": "oteryn:terrain.tibia.i50085",
+              "value": "down"
+            },
+            {
+              "pointer": "/records/32/floor_change",
+              "identity": "oteryn:terrain.tibia.i50121",
+              "value": "down"
+            }
+          ]
+        },
+        {
+          "path": "content/world/terrain/terrain-08548-08577.json",
+          "sha256": "5f2dca58c5b7e16dc66e2278ade5f8b23c4a30605c4390cdfe5b7a72377d7357",
+          "selected_facts": []
+        },
+        {
+          "path": "content/world/terrain/terrain-08578-08611.json",
+          "sha256": "471e062add36ecdf53b6f4d4ab9d22313bab683fce781cb63ffbba8a165f00f4",
+          "selected_facts": []
+        },
+        {
+          "path": "content/world/terrain/terrain-08612-08612.json",
+          "sha256": "fc560952a802576672c9473d12d1fab8013eeca07136a79c0b8732b5a2f485cf",
+          "selected_facts": []
+        },
+        {
+          "path": "content/world/terrain/terrain-08613-08613.json",
+          "sha256": "aefdac30e8f0a33bbb52acd1d4e160b33c7f40ce9d8d447496ba95d525b182aa",
+          "selected_facts": []
+        },
+        {
+          "path": "content/world/terrain/terrain-08614-08668.json",
+          "sha256": "dfd54e670a7de3eb8b5a444df9c8efc15faf8ddafadab761347338d80141f820",
+          "selected_facts": []
+        },
+        {
+          "path": "content/world/terrain/terrain-08614-08692.json",
+          "sha256": "aee31f886f134c8dd308e06cccaee0960fd570c4b5bfd2af95327e660ce04562",
+          "selected_facts": []
+        }
+      ]
+    }
+  },
+  "original_ladder_check": {
+    "argv": [
+      "python3",
+      "-B",
+      "tools/content-migration/build_ladder_catalogue.py",
+      "--check"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "content_review_credit": "Selected fact relationships only; no full-file credit to supporting JSON.",
+  "rust_test_run": false
+}

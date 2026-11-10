@@ -1,0 +1,34 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "source": "crates/gameplay/world/src/terrain_tools.rs",
+  "source_sha256": "679321331f242e14ce9dcbd5e15c869e010be98ff77a8e1c4e148dfab9f7cb0a",
+  "status": "PASS",
+  "checked_at_utc": "2026-11-10T17:16:39.621099+00:00",
+  "original_unchanged_source": true,
+  "stubs_or_reimplementation": false,
+  "cargo_sql_native_run": false,
+  "commands": [
+    {
+      "argv": [
+        "/home/agent/.cargo/bin/rustc",
+        "--edition=2024",
+        "--test",
+        "/workspace/scratch/9868b8ed6bb7/Oteryn-Game-audit-r2/crates/gameplay/world/src/terrain_tools.rs",
+        "-o",
+        "/tmp/oteryn-audit-world-terrain-tests"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/tmp/oteryn-audit-world-terrain-tests",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "stdout": "\nrunning 5 tests\ntest tests::worldchg_voice_source_homes_choices_and_slot_identity ... ok\ntest tests::schedules_absolute_decay_and_preserves_harvest_yield ... ok\ntest tests::tool_dispatch_maps_qualified_pairs_and_refuses_wrong_targets ... ok\ntest tests::m08_rows_preserve_harvest_yields_multitools_and_crowbar_cask_regrowth ... ok\ntest tests::fragile_ground_requires_the_source_action_and_deadline_overflow_fails_closed ... ok\n\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+      "stderr": ""
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T17:24:43.653121+00:00",
+  "captures": {
+    "durability": {
+      "path": "protocol-session/durability/captures/checkpoint-46-ledger.json",
+      "sha256": "a9aa6f21b14e8dff0d1ea948e6fa71ea593f5ff69cf7d44265864b4f8c006a8f",
+      "full_files": 676,
+      "full_file_physical_lines": 208088,
+      "all_scope_text_lines_union": 208088,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "server": {
+      "path": "protocol-session/game-server-worker-captures/checkpoint-744-ledger.json",
+      "sha256": "aeea7776308fd9fee43c094699adc5f0ecbde6d327b2228cd13df89f1fb2fb51",
+      "full_files": 744,
+      "full_file_physical_lines": 359641,
+      "all_scope_text_lines_union": 359641,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 2703,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch": {
+      "path": "client-support/dispatch-checkpoint27-ledger.json",
+      "sha256": "35b5642e0810a058888d18fca7bb5b138a2fe1eb2949e93ca7fc101a4dd99135",
+      "full_files": 559,
+      "full_file_physical_lines": 115299,
+      "all_scope_text_lines_union": 121139,
+      "partial_reviewed_lines": 5840,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    }
+  },
+  "server_method_maps": {
+    "game-server-appearance-capture-method-map.md": "90fb804da69c6658b0276f7c488d6862b2d09d3dc371795f3f51dbda51308aa8",
+    "game-server-spawn-fixture-method-map.md": "2219981460bf6bd58cf0e9ddf7306a90584b0bb9fe239b1ae4cdf8b087be9df3",
+    "game-server-seven-fixture-method-map.md": "348390d50ea1da0dd25ae206bd8c550cc9120851d94c0d0067e267359311480b",
+    "game-server-auto-attack-fixture-method-map.md": "d7593104034863d3328a3bef6c649fbcd83965e39db31e895e639f3cdb126ba5",
+    "game-server-callback-cast-fixture-method-map.md": "3fbba196681354508896b1f61c4cb865a8ec62b53118d75943b982b32e9c3538",
+    "game-server-tls-fixture-method-map.md": "51e1efbd633d88829848ddd3653328cbc985da328a24383dc47d1f9187d92836",
+    "game-server-transport-tls-method-map.md": "429224a77cf514e99c1b92d4872b99d6b9a5f52529c2bf3a7edf2f8a0cf9366f"
+  },
+  "root_scope": "Independent immutable byte/range/coverage validation and complete method-map reading; not a second manual review of all delegated files.",
+  "runtime_execution": false
+}
