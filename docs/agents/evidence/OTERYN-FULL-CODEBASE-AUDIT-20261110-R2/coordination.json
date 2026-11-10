@@ -1,6 +1,6 @@
 {
   "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
-  "observed_at_utc": "2026-11-10T13:23:48.065638+00:00",
+  "observed_at_utc": "2026-11-10T13:59:05.212252+00:00",
   "lifecycle": "AUTHORING",
   "branch": "audit/full-codebase-20261110-4f0b6c62",
   "sole_writer": "lead /root",
@@ -8,7 +8,7 @@
   "lanes": [
     {
       "lane": "lead",
-      "ledger_rows": 442,
+      "ledger_rows": 515,
       "reported_completed_modules": [
         "oteryn-admin-contracts",
         "oteryn-admin-agent",
@@ -24,12 +24,13 @@
         "oteryn-gameplay-domain",
         "oteryn-gameplay-combat",
         "oteryn-gameplay-entities",
-        "oteryn-gameplay-progression"
+        "oteryn-gameplay-progression",
+        "oteryn-gameplay-monster-ai"
       ]
     },
     {
       "lane": "protocol-session",
-      "ledger_rows": 1010,
+      "ledger_rows": 1139,
       "reported_completed_modules": [
         "oteryn-identity",
         "oteryn-platform-contracts",
@@ -60,7 +61,7 @@
     },
     {
       "lane": "client-support",
-      "ledger_rows": 2788,
+      "ledger_rows": 2885,
       "reported_completed_modules": [
         "oteryn-client-domain",
         "oteryn-synthetic-assets",
@@ -76,15 +77,17 @@
         "oteryn-client-runtime",
         "oteryn-renderer",
         "oteryn-client-ui",
-        "oteryn-client"
+        "oteryn-client",
+        "oteryn-gameplay-foundation",
+        "oteryn-gameplay-content-promotion"
       ]
     }
   ],
-  "checkpoint": 9,
-  "allocation_comment": 6768460573,
-  "predecessor": "b6f651b16e7996cbeae11f0c405638cd1f019cc5",
-  "predecessor_tree": "3322b0b7fe416dd444bacda32d88024c42ae742e",
-  "expected_sha": "b6f651b16e7996cbeae11f0c405638cd1f019cc5",
+  "checkpoint": 10,
+  "allocation_comment": 6769172522,
+  "predecessor": "654369cf48e7bab9f1f1b5657e831cf0d5db6300",
+  "predecessor_tree": "9843447c3d37f2325240bd28e34a2591fc28a053",
+  "expected_sha": "654369cf48e7bab9f1f1b5657e831cf0d5db6300",
   "latest_main": "af33fd3baeac15d9991bd24c91bcacc8733492e2",
-  "latest_main_observed_at_utc": "2026-11-10T13:26:28Z"
+  "latest_main_observed_at_utc": "2026-11-10T14:03:00Z"
 }

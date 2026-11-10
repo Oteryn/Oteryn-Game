@@ -152,6 +152,16 @@
       "auditor": "lead"
     },
     {
+      "module": "oteryn-gameplay-monster-ai",
+      "path": "crates/gameplay/monster-ai",
+      "report": "monster-ai-review.md",
+      "verification": "All64trackedfiles substantively read; complete line unions, exact Git/worktree SHA and clean base PASS. Seven existing pure AI tests passed via unchanged path-only rustc harness. Native/Cargo/SQL and host benchmark not run.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
       "module": "oteryn-identity",
       "status": "REVIEWED",
       "report": "protocol-session.md",
@@ -196,7 +206,7 @@
     {
       "module": "oteryn-protocol-oteryn",
       "status": "REVIEWED",
-      "report": "protocol-session.md",
+      "report": "protocol.md",
       "verification": "Exact source error-codes rustc unit tests: 25 passed; panic integration tests: 3 passed. Other packages native tests not run.",
       "auditor": "protocol-session"
     },
@@ -630,6 +640,57 @@
       "verification": "All1180 tracked paths fully ledgered and hashes/ranges/base validated; clean immutable source tree. Semantic registration, reference catalogue and child wire-fixture checks executed; no full Cargo/native/GPU/PowerShell/SQL/live-service testing. REVIEWED not whole-package VERIFIED. Four changed af33 startup blobs separately reviewed in latest-main-delta.",
       "auditor": "client-support",
       "report": "apps-client.md"
+    },
+    {
+      "module": "oteryn-gameplay-foundation",
+      "path": "crates/gameplay/foundation",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 55,
+      "reviewed_lines": 38117,
+      "entrypoints_and_invariants": "Full source, manifest and test review of command/session/snapshot/owner timer, signed scoped admission, current publication/lifecycle guards, fresh/reconnect/post-grace/control-loss flows, conditions, persistence and damage schedules. Full production caller traces for admission and CL-016 recorded; see foundation.md and per-file ledger.",
+      "dependency_edges": [
+        "gameplay-domain and protocol-oteryn closed semantic data; simulation-determinism clocks",
+        "durability owning locked current sources and transaction gates; dispatch native resume/control-loss callers",
+        "spell actor_conditions and dispatch periodic/movement/appearance consumers"
+      ],
+      "negative_hypotheses": [
+        "Historical admission receipt does not by itself authorize current control; examined rollback/replay paths guarded.",
+        "Replacement identity, protection/budget reset and malformed persisted damage cursor hypotheses refuted for inspected paths.",
+        "Qualified streak to condition-specific PZ regeneration remains unresolved; actual producer/normative contract required, no finding asserted."
+      ],
+      "findings": [
+        "CL-016 P2 CONFIRMED_STATIC by independent root review; lead/verify-permanent-appearance.md. No runtime execution."
+      ],
+      "remaining_files": [],
+      "verification": "Static complete55file/38117line source and test review. Hash/range/base validation PASS. No Cargo/native/SQL tests executed. Package not independently VERIFIED.",
+      "auditor": "client-support",
+      "report": "foundation.md"
+    },
+    {
+      "module": "oteryn-gameplay-content-promotion",
+      "path": "crates/gameplay/content-promotion",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 36,
+      "reviewed_lines": 13600,
+      "entrypoints_and_invariants": "Full manifest/build/module/importer/promotion source and inline tests. Exact pinned offline identity and semantic lowering, closed native targets, source ownership, field-specific conflict/unit rules, clone/dry-run or propagated-error commit boundaries; see content-promotion.md.",
+      "dependency_edges": [
+        "gameplay-content supplies Reference/domain/WorldProject models and canonical validation",
+        "apps/game-server offline materializer invokes protected imports and promotions before canonical output",
+        "Pinned evidence packets and donor/crosswalk inputs; generators and external test files are separate tracked scopes"
+      ],
+      "negative_hypotheses": [
+        "Arbitrary source JSON cannot widen protected public inputs: byte pins/lengths precede protected decode and all embedded promotion packets matched.",
+        "Nontransactional helper error state is not published by examined actual offline callers; ? precedes canonical write.",
+        "Relative hit fractions and absolute source percentages intentionally differ; exact unit/source checks preserve distinction.",
+        "Market source ID/key mismatch and bed occupied-target closure rejected by independent actual-packet checks."
+      ],
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Complete36files/13600lines static review, exact hash/range/base validation PASS. Read-only106data checks PASS over34 embedded packets plus protected identity inputs. No Cargo, native, SQL, materializer or generator execution; no independent package-wide VERIFIED claim.",
+      "auditor": "client-support",
+      "report": "content-promotion.md"
     },
     {
       "module": "oteryn-foundation",

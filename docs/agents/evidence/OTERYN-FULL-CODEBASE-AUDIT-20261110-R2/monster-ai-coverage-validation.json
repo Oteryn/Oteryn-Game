@@ -1,0 +1,650 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T13:59:03.389395+00:00",
+  "tracked_files": 64,
+  "full_files": 64,
+  "text_lines": 17496,
+  "source_clean": true,
+  "files": [
+    {
+      "path": "crates/gameplay/monster-ai/Cargo.toml",
+      "sha256": "487a5175fce4023ce2d4bf017050f8185af68adc0fd3b8ed20da4cd2ee243402",
+      "lines": 42,
+      "full_range": [
+        1,
+        42
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/mod.rs",
+      "sha256": "c49f7c560969cab16f9d872be0600989775a325d3ec7f06ec7a88c642669fe56",
+      "lines": 118,
+      "full_range": [
+        1,
+        118
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/movement_goal.rs",
+      "sha256": "131df26700ef209405a684084801b3c27784718627edb7bac15a0f4c43fbb4c9",
+      "lines": 188,
+      "full_range": [
+        1,
+        188
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/movement_goal_tests.rs",
+      "sha256": "e9bc1f1d4e1b2102d135a23b6a5056b5c41926705ddd9a5fb67d88c80ceb85e1",
+      "lines": 106,
+      "full_range": [
+        1,
+        106
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/path_proposal.rs",
+      "sha256": "399e61fecfdf453332e896007ef7b02abeb8b5ab185b47708ed166dc787f9647",
+      "lines": 106,
+      "full_range": [
+        1,
+        106
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/perception.rs",
+      "sha256": "3d5c281fd3ba2987a914a773f1bff1bb08a515ee7432d125eac925633cac731f",
+      "lines": 72,
+      "full_range": [
+        1,
+        72
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/resolution.rs",
+      "sha256": "3e371cff90c1771ccbd7cb4de74f5a140d4832cefb802f3ec60546f096a4c8dc",
+      "lines": 73,
+      "full_range": [
+        1,
+        73
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/snapshot.rs",
+      "sha256": "966442daf7eca5d659046ef6652bd1a9edc7eeacbe9111b5bd9d5d27162ed593",
+      "lines": 118,
+      "full_range": [
+        1,
+        118
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "sha256": "0b1b10bb8fa1721e04a6a86fb89b3628a8f6c9a42577182d68d46ae285498f98",
+      "lines": 155,
+      "full_range": [
+        1,
+        155
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests/path_request_tests.rs",
+      "sha256": "c9ec84082a4518ea007166d50f6a80451dbae2b1890e6bf3082f0851cd8cbe50",
+      "lines": 11,
+      "full_range": [
+        1,
+        11
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_monster_melee.rs",
+      "sha256": "cc977f12c53b9477fb5e53d3cc62887fea950eb125a694751d932f0b908c2a55",
+      "lines": 1352,
+      "full_range": [
+        1,
+        1352
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_monster_melee/tests/native_tests.rs",
+      "sha256": "543cf1169ef0cdeb631b89d7a2f9c2b118db645d2c3a436170a594fb0dd6fd6f",
+      "lines": 526,
+      "full_range": [
+        1,
+        526
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_monster_melee/tests/native_tests/movement_tests.rs",
+      "sha256": "98373ca9b9e2a94a54c0ce256b885cd30e5aee8ea27a86af0b5c4e47208ea1e1",
+      "lines": 285,
+      "full_range": [
+        1,
+        285
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think.rs",
+      "sha256": "eece80124a9701b76d5bce1158b7e140bb6920a541f14f7cf69ea940cb07464f",
+      "lines": 1033,
+      "full_range": [
+        1,
+        1033
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/attack_facing.rs",
+      "sha256": "bfee4ad9e2435033d68e4b9344113a637ca82df9aae5a37b8f6520dcfcabc805",
+      "lines": 95,
+      "full_range": [
+        1,
+        95
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/behaviour_profile.rs",
+      "sha256": "805b8265d5094db21b91fc215aed25dbcee460f265366b3b557153dee6fe366d",
+      "lines": 191,
+      "full_range": [
+        1,
+        191
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/behaviour_profile/summon_projection.rs",
+      "sha256": "b2e4f57011110fd29275c96151de306c6ef60c3d5a3b30ed9afb7c7d39bdf3bf",
+      "lines": 38,
+      "full_range": [
+        1,
+        38
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/channel_owner.rs",
+      "sha256": "d919ec8d86460dc81543c6f737bf42de01ccbfdfdfac6ea99bb88c67188e43e2",
+      "lines": 328,
+      "full_range": [
+        1,
+        328
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests.rs",
+      "sha256": "1c33dcfcc279b195086a374839fae7736c65ce3a943ff1ad6b0ec9f6b2d42966",
+      "lines": 882,
+      "full_range": [
+        1,
+        882
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_cadence_tests.rs",
+      "sha256": "cad0769ecf6ba4d643ce1a68b0efaa126e4a7e25307758467877280fa7d53ca6",
+      "lines": 275,
+      "full_range": [
+        1,
+        275
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_movement_measure.rs",
+      "sha256": "e3d866190a442ab3805c854c48f6fb6bcefdc6d098dd780a27c654f5d426c85d",
+      "lines": 75,
+      "full_range": [
+        1,
+        75
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_movement_tests.rs",
+      "sha256": "22d3f177605206618e6a215ade080ac9702ab4f72a6f5a032100cf74bb9447ed",
+      "lines": 155,
+      "full_range": [
+        1,
+        155
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_path_tests.rs",
+      "sha256": "09b73b0697d7e128e735ad566187db48749b57bd911b3b630dbdf93b417888bf",
+      "lines": 167,
+      "full_range": [
+        1,
+        167
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_return_tests.rs",
+      "sha256": "d92a78eb069f19bbc1bfe684be1dd7661770e4cc5ad440846e3114dfd0b08980",
+      "lines": 81,
+      "full_range": [
+        1,
+        81
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_snapshot_tests.rs",
+      "sha256": "d1ddcc849a1e6dd169172d64e4854e7015664238cbd2a086965080457ff40ff4",
+      "lines": 52,
+      "full_range": [
+        1,
+        52
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_think_hook_tests.rs",
+      "sha256": "69f2ff7372baf44d182b92b317373bff206b5eb42c711590e74f51b48fdffd82",
+      "lines": 151,
+      "full_range": [
+        1,
+        151
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/movement_timer_fixture.rs",
+      "sha256": "ebab56d86c4212e353fa14b58548f6316d87ecb85f08aefd2afabc6355e0e233",
+      "lines": 47,
+      "full_range": [
+        1,
+        47
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/creature_steps.rs",
+      "sha256": "8008783a14a44c57660aba6202cc82a4640dc5cb6f78ea0c225b58663aed7304",
+      "lines": 158,
+      "full_range": [
+        1,
+        158
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_current_map.rs",
+      "sha256": "3a4eb522a8296b723aff56ae3577e6d0e4e39c96633d9cd0c6b256cc879c097f",
+      "lines": 253,
+      "full_range": [
+        1,
+        253
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_goal_adoption.rs",
+      "sha256": "1a5edef7c010f96018b1e4033ad4aeba0a945dfd1093cf26cea75f3416623a1c",
+      "lines": 105,
+      "full_range": [
+        1,
+        105
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_paths.rs",
+      "sha256": "1d940312f57cd69d43e579788ebc8d60575511bcafcee2e7b5526765ad738305",
+      "lines": 159,
+      "full_range": [
+        1,
+        159
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_step_choice.rs",
+      "sha256": "3f1e5b77898f75648864781b12dfc6e6997f00d02cad56059dc57f158a2e579c",
+      "lines": 68,
+      "full_range": [
+        1,
+        68
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_step_timer.rs",
+      "sha256": "a1e51e7f4a78df8e8e4f052be48daf1a210d44833ba7fe64c87445c7ff508b41",
+      "lines": 252,
+      "full_range": [
+        1,
+        252
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/creature_think_hook.rs",
+      "sha256": "f53730a970fd9951318810c0e3a4df435ca6c79ffade74d24c20d16e9d7f2c66",
+      "lines": 114,
+      "full_range": [
+        1,
+        114
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/movement_attack.rs",
+      "sha256": "b19f7bb6ddd27a8377975c9429f372056f40dfd3477cd8b069f5be5c3ea39a49",
+      "lines": 210,
+      "full_range": [
+        1,
+        210
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/native_profile.rs",
+      "sha256": "a70570f0b29e5a73f1a2ddbf7b94983f8d8c034a473489aab191f61d7f2b0a00",
+      "lines": 379,
+      "full_range": [
+        1,
+        379
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/native_profile_tests.rs",
+      "sha256": "807244f155a79b972f6c20f1e0141d6dafeaf936f5cccb2064533ecab5a1e4b8",
+      "lines": 76,
+      "full_range": [
+        1,
+        76
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/profile_schedule.rs",
+      "sha256": "2e381370b71bae2b52c49f0039ccd1805f12163822d0227aadeb2fbcaef697cd",
+      "lines": 679,
+      "full_range": [
+        1,
+        679
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/profile_schedule/tests.rs",
+      "sha256": "c8b751624355d2a7543dbf2d156da61c3169c95d9f13e620d9d38c6c7968e765",
+      "lines": 910,
+      "full_range": [
+        1,
+        910
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/profile_schedule/tests/native_melee_clock.rs",
+      "sha256": "0ca08a9926678586d62317f4e87930e45526e1b403a72ceedbc6948a0efee210",
+      "lines": 489,
+      "full_range": [
+        1,
+        489
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/profile_schedule/tests/summon_plan_tests.rs",
+      "sha256": "5ea93fb686fc7ce167d532a88173c98154bcd5889f76058e508dd3a598f62461",
+      "lines": 170,
+      "full_range": [
+        1,
+        170
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/summon_plan.rs",
+      "sha256": "a6ce0bb86465d92a6b449b1a91e210c4f484e9b57b4d73997a46860afb0df0b6",
+      "lines": 515,
+      "full_range": [
+        1,
+        515
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/summon_plan/summon_path.rs",
+      "sha256": "398b8d070edefa30776fbd2e818afeea91a6c50817097dbd66b608af765ce0e4",
+      "lines": 159,
+      "full_range": [
+        1,
+        159
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/summon_plan_test_support.rs",
+      "sha256": "5eadaa5e80fffcc396eadd6b101825f12f3ec841edd0c0286033f7ba1d836127",
+      "lines": 10,
+      "full_range": [
+        1,
+        10
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/targeting.rs",
+      "sha256": "ec6b3bf7e53852f396dce0ea89a2a008f8bdf1718bb6aa44cd5a5ce1f9d7be6f",
+      "lines": 245,
+      "full_range": [
+        1,
+        245
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/think_tests.rs",
+      "sha256": "4be5ef34ebf4207c01529ef7dff84731ff174ff62f42db371f13a914a79d49f8",
+      "lines": 785,
+      "full_range": [
+        1,
+        785
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/think_tests/crystal_parity.rs",
+      "sha256": "f77e36a931f017851b93f0fca3bc08a0b2c3b076160fbc9379641e9e3f636a89",
+      "lines": 171,
+      "full_range": [
+        1,
+        171
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/think_tests/movement_fixtures.rs",
+      "sha256": "458d3c2780f3be7f3e0ed117825447fc2088f72e102011cdf56dc8eef2089afe",
+      "lines": 4,
+      "full_range": [
+        1,
+        4
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think/think_tests/native_parity.rs",
+      "sha256": "103f9de2346598f5fc4bf6fabec722c172162a07e89099421fcbcfb84770b020",
+      "lines": 384,
+      "full_range": [
+        1,
+        384
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "sha256": "723ca446757ec87b2131818f2434e6f6071ae34c3109a446edf320cdb0757d93",
+      "lines": 60,
+      "full_range": [
+        1,
+        60
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_combat_lane.rs",
+      "sha256": "17e0f430c9e60fbf252ed5a1277de6cb787f06a6899d4e5db1f0a548356be7d4",
+      "lines": 543,
+      "full_range": [
+        1,
+        543
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_combat_lane/native_conditions.rs",
+      "sha256": "47135f2da2a4754f831286d966b1c8663d6dc9c6b38633de47b0b9810ee932ad",
+      "lines": 77,
+      "full_range": [
+        1,
+        77
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_combat_lane/native_invisibility.rs",
+      "sha256": "0d5afd1438c3be6e3d87e56c3bd8a204fc01d0d4d1420db011f8e8e9c7038410",
+      "lines": 364,
+      "full_range": [
+        1,
+        364
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_combat_lane/native_ticks.rs",
+      "sha256": "092c7dc80cca3f4c5079470e6aa9f5b9ed42aab75198133ab565ae132da2ca44",
+      "lines": 165,
+      "full_range": [
+        1,
+        165
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_combat_lane/states.rs",
+      "sha256": "947ae79343953ce07ef3df1eeb4241cf31d6ef4429a55cb6c303c3579f5089d3",
+      "lines": 93,
+      "full_range": [
+        1,
+        93
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_lab.rs",
+      "sha256": "c9ee8ed2f73659c2603c5480dfb218def7749427adc5827d0cbeb0c8200bb9ee",
+      "lines": 520,
+      "full_range": [
+        1,
+        520
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_owner_cycle.rs",
+      "sha256": "83f7898e6f4aec8eb08523c01e56984e7c06b0fb887fea94c0f0ae45e6f3c9ea",
+      "lines": 204,
+      "full_range": [
+        1,
+        204
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_owner_cycle/respawn_job.rs",
+      "sha256": "279983d7184e578dcac9a9eb618d1db780db3eababcdc814ef8a92e87aa67030",
+      "lines": 71,
+      "full_range": [
+        1,
+        71
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_summon.rs",
+      "sha256": "c96a081f621c29e769a40ed36ac8a712bbef2bdc5f69b2aa6af95e2877ab2d9d",
+      "lines": 1779,
+      "full_range": [
+        1,
+        1779
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_summon/catalog.rs",
+      "sha256": "08cf4364599d6857da59ae24dcbbafe8e949f95d44c32c9b688f93eba61d9bf3",
+      "lines": 215,
+      "full_range": [
+        1,
+        215
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_summon/catalog_test_support.rs",
+      "sha256": "8ca710672182edab4785a6ac64e3e8bc1ba761f26024c6462f55e47cb5763f03",
+      "lines": 22,
+      "full_range": [
+        1,
+        22
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_summon/owner.rs",
+      "sha256": "d6b8fdf1be100f0d953d9eac5bd916077276b7c2054e376edd93ec4865fcafbe",
+      "lines": 95,
+      "full_range": [
+        1,
+        95
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_summon/physical_admission.rs",
+      "sha256": "f193f0e412b93813d5acb8f2b01e6a4f2f74acbd3b1c4580e8a5d7cd26ea164b",
+      "lines": 196,
+      "full_range": [
+        1,
+        196
+      ],
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/observability.rs",
+      "sha256": "7897f1f7fd8f7af573df67fd2be966b8ba8f9e600a09ff91bb83c8c4cc793c2f",
+      "lines": 75,
+      "full_range": [
+        1,
+        75
+      ],
+      "git_blob_matches": true
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "method": "Complete unchanged ai/mod.rs module tree included by path-only harness; existing tests only. No Cargo or substituted definitions.",
+  "files": {
+    "crates/gameplay/monster-ai/src/ai/mod.rs": "c49f7c560969cab16f9d872be0600989775a325d3ec7f06ec7a88c642669fe56",
+    "crates/gameplay/monster-ai/src/ai/path_proposal.rs": "399e61fecfdf453332e896007ef7b02abeb8b5ab185b47708ed166dc787f9647",
+    "crates/gameplay/monster-ai/src/ai/perception.rs": "3d5c281fd3ba2987a914a773f1bff1bb08a515ee7432d125eac925633cac731f",
+    "crates/gameplay/monster-ai/src/ai/resolution.rs": "3e371cff90c1771ccbd7cb4de74f5a140d4832cefb802f3ec60546f096a4c8dc",
+    "crates/gameplay/monster-ai/src/ai/snapshot.rs": "966442daf7eca5d659046ef6652bd1a9edc7eeacbe9111b5bd9d5d27162ed593",
+    "crates/gameplay/monster-ai/src/ai/tests.rs": "0b1b10bb8fa1721e04a6a86fb89b3628a8f6c9a42577182d68d46ae285498f98",
+    "crates/gameplay/monster-ai/src/ai/tests/path_request_tests.rs": "c9ec84082a4518ea007166d50f6a80451dbae2b1890e6bf3082f0851cd8cbe50"
+  },
+  "compile_exit": 0,
+  "test_exit": 0,
+  "test_output": "\nrunning 7 tests\ntest ai::tests::duplicate_candidate_ids_fail_at_input_head_middle_and_tail ... ok\ntest ai::tests::evaluation_exhaustion_and_route_byte_overflow_publish_no_result ... ok\ntest ai::tests::malformed_duplicate_snapshot_and_perception_inputs_fail_closed ... ok\ntest ai::tests::path_request_tests::one_request_per_think_is_accepted_and_a_second_is_refused ... ok\ntest ai::tests::perception_candidate_capacity_behavior_is_unchanged ... ok\ntest ai::tests::priority_separated_duplicate_candidate_ids_fail_for_every_input_permutation ... ok\ntest ai::tests::unique_perception_candidates_preserve_canonical_order ... ok\n\ntest result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n"
+}

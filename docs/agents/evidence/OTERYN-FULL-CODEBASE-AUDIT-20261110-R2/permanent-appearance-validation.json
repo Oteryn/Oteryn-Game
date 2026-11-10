@@ -1,0 +1,139 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "status": "CONFIRMED_STATIC",
+  "finding": "CL-016",
+  "files": [
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition.rs",
+      "ranges": [
+        [
+          240,
+          285
+        ],
+        [
+          900,
+          940
+        ],
+        [
+          1045,
+          1105
+        ],
+        [
+          1348,
+          1380
+        ],
+        [
+          1520,
+          1595
+        ],
+        [
+          1840,
+          1870
+        ]
+      ],
+      "sha256": "bc8f20b6a6ba76dca1f78c41511a56672c15bc23685e6a9f6e72641dd6470888",
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/paced_movement/special_movement.rs",
+      "ranges": [
+        [
+          250,
+          315
+        ],
+        [
+          370,
+          485
+        ]
+      ],
+      "sha256": "a27c1fec11751d17168a153e379ee3822025b35aeb440567832752b756f2b3bc",
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs",
+      "ranges": [
+        [
+          165,
+          220
+        ]
+      ],
+      "sha256": "08749461b1c27814b73563d0bdb0e9fec44f71fc85cb3e0fd45fc8a1c7939d00",
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/vitals.rs",
+      "ranges": [
+        [
+          150,
+          195
+        ]
+      ],
+      "sha256": "1651aaa7890b6eb9640ce7474e6ea033c41967f55f938089e6459e7b7cecdbc5",
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/spell_periodic.rs",
+      "ranges": [
+        [
+          325,
+          380
+        ]
+      ],
+      "sha256": "a8b9263718b07ad63306d9fcfc1d5183bd25112973322c0d4c3229a09f3d7b3f",
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs",
+      "ranges": [
+        [
+          780,
+          870
+        ]
+      ],
+      "sha256": "19b9a3126d950e9c90759025dba44f8c4817272536026a97130b4860b15afef1",
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/actor_conditions.rs",
+      "ranges": [
+        [
+          490,
+          655
+        ],
+        [
+          1470,
+          1555
+        ]
+      ],
+      "sha256": "08eee65d50c613203f6100a2e78cb82219c983a07e16cfd1ce5087b3fef7d4dc",
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/appearance_change/observation.rs",
+      "ranges": [
+        [
+          115,
+          230
+        ]
+      ],
+      "sha256": "ce363b4b6404b78491361f393d0a197fc166e9c93c6be6fa786fb712f966c3aa",
+      "git_blob_matches": true
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition_spell.rs",
+      "ranges": [
+        [
+          385,
+          425
+        ],
+        [
+          585,
+          630
+        ]
+      ],
+      "sha256": "fc48bd7c7515a916336a43710d08250c67fe7047ed23363a4ede8535b10c7264",
+      "git_blob_matches": true
+    }
+  ],
+  "runtime_executed": false
+}
