@@ -482,6 +482,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )?;
                 if (action.heart.is_some() || action.rotten.is_some())
                     && !begin.has_reward_damage_credit()
+                    && !attack.kills().has_source_drop(&begin)
+                    && attack
+                        .kills()
+                        .source_drop_refusal(runtime, &begin)?
+                        .is_none()
                 {
                     // Keep the projected death and its per-player occurrences through
                     // asynchronous copied effects, before any durable side effect runs.
@@ -560,10 +565,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.source_death_action = None;
             states.source_death_action_ready = false;
         }
+        let refused = attack
+            .kills()
+            .source_drop_refusal(runtime, &begin)?
+            .is_some();
         // A rowless corpse needs the closed uncredited physical port. Do not
         // discard its only completion capability before that pending work is
         // retained; ordinary credited entries retain it in their existing queue.
+        // An original terminal reward refusal instead finishes without a MINT.
         if !attack.kills().has_source_drop(&begin)
+            && !refused
             && native
                 .reward_table()
                 .row(begin.definition_key())
@@ -605,6 +616,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .finish_source_creature_death_task(&begin)
             .map_err(|_| ())?;
         attack.kills().complete_source_drop(runtime, &completed)?;
+        if refused {
+            runtime.unpin_corpse_projection(begin.actor());
+        }
         Ok(true)
     }
 

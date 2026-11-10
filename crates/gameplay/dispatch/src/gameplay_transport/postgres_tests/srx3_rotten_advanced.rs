@@ -70,7 +70,11 @@ enum Extra {
     PortalStep,
     Footprints,
     DueBeforeDeath,
-    CopiedDeath { credited: bool, prepared_bak: bool },
+    CopiedDeath {
+        credited: bool,
+        prepared_bak: bool,
+        full_queue: bool,
+    },
 }
 pub(super) fn copied_death(
     kind: PinnedActivitySourceRoom,
@@ -88,6 +92,25 @@ pub(super) fn copied_death(
         Extra::CopiedDeath {
             credited,
             prepared_bak,
+            full_queue: false,
+        },
+    )
+}
+pub(super) fn copied_death_with_full_queue() -> TestResult {
+    scenario_with_step(
+        PinnedActivitySourceRoom::Bakragore,
+        MovementLocalPosition {
+            x: 33010,
+            y: 32392,
+            floor: 15,
+        },
+        "oteryn:creature.bakragore",
+        true,
+        false,
+        Extra::CopiedDeath {
+            credited: true,
+            prepared_bak: true,
+            full_queue: true,
         },
     )
 }
@@ -466,7 +489,12 @@ fn scenario_with_step(
                 }
                 view.drain_monster_melee().await;
             }
-            if let Extra::CopiedDeath { credited, .. } = extra {
+            if let Extra::CopiedDeath {
+                credited,
+                full_queue,
+                ..
+            } = extra
+            {
                 drop(view);
                 super::srx3_rotten_death::exercise(
                     &h,
@@ -475,6 +503,7 @@ fn scenario_with_step(
                     boss,
                     credited,
                     u8::from(prepared_bak),
+                    full_queue,
                 )
                 .await?;
                 drop(owner);

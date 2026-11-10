@@ -350,6 +350,20 @@ struct ReleasingMark {
     parked: Vec<(PendingKillSettlement, ReleasePhase)>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum SourceDropRefusalReason {
+    QueueFull,
+    PrincipalGone,
+}
+
+/// Only the original terminal disposition, never a reward entry beyond KILLRW-RL-01.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct RefusedSourceDrop {
+    actor: ExactActorRef,
+    death: CreatureDeathOccurrenceKey,
+    reason: SourceDropRefusalReason,
+}
+
 #[derive(Debug, Default)]
 struct KillQueueState {
     /// Advisory deduplication follows the already bounded, exact corpse projections.
@@ -363,6 +377,9 @@ struct KillQueueState {
     /// At most one clock per bounded native corpse projection, including settled
     /// deaths whose original command may still replay. Pruned on every capture.
     activity_deaths: Vec<(ExactActorRef, CapturedActivityDeath)>,
+    /// One terminal refusal per pending native death or retained corpse projection.
+    /// Their existing carrier ceilings bound this metadata; no loot or principal is retained.
+    source_refusals: Vec<RefusedSourceDrop>,
     queued: VecDeque<PendingKillSettlement>,
     /// Admission order survives retries and release parks. Bounded by KILLRW-RL-01.
     accepted_order: VecDeque<CreatureDeathOccurrenceKey>,
@@ -382,6 +399,32 @@ struct KillQueueState {
 }
 
 impl KillQueueState {
+    fn prune_source_refusals(&mut self, runtime: &ChannelRuntimeV1) {
+        self.source_refusals.retain(|refused| {
+            runtime.retains_corpse_projection(refused.actor)
+                || runtime.source_creature_death_pending(refused.actor) == Ok(true)
+        });
+    }
+
+    fn refuse_source_drop(
+        &mut self,
+        entry: &PendingKillSettlement,
+        reason: SourceDropRefusalReason,
+    ) {
+        if entry.source_death_pending
+            && !self
+                .source_refusals
+                .iter()
+                .any(|refused| refused.actor == entry.target && refused.death == entry.facts.death)
+        {
+            self.source_refusals.push(RefusedSourceDrop {
+                actor: entry.target,
+                death: entry.facts.death,
+                reason,
+            });
+        }
+    }
+
     fn prune_accepted_order(&mut self) {
         let order = std::mem::take(&mut self.accepted_order);
         self.accepted_order = order
@@ -447,7 +490,7 @@ pub enum AppendOutcome {
     Queued,
     /// The principal is `releasing`: the entry is parked under its mark in this phase.
     Parked(ReleasePhase),
-    /// The death is already queued or in flight: nothing changed.
+    /// The death is already held or has its retained terminal source refusal: nothing changed.
     Duplicate,
     /// KILLRW-RL-01 is reached: the death settles nothing.
     Full,
@@ -671,6 +714,31 @@ impl KillSettlementQueue {
                     .flat_map(|mark| mark.parked.iter().map(|(entry, _)| entry)),
             )
             .any(|entry| entry.target == begin.actor() && entry.facts.death == begin.death_key())
+    }
+
+    /// Missing work alone proves nothing. Only an original capacity or lifecycle refusal
+    /// may finish a copied death without invoking an uncredited physical writer.
+    pub(super) fn source_drop_refusal(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<Option<SourceDropRefusalReason>, ()> {
+        if !begin.current_for(runtime) {
+            return Err(());
+        }
+        let _ = runtime
+            .source_creature_death_event_index(begin)
+            .map_err(|_| ())?;
+        let mut state = self.state();
+        state.prune_source_refusals(runtime);
+        let refused = state
+            .source_refusals
+            .iter()
+            .find(|refused| refused.actor == begin.actor() && refused.death == begin.death_key());
+        if refused.is_some() && state.holds(begin.death_key()) {
+            return Err(());
+        }
+        Ok(refused.map(|refused| refused.reason))
     }
 
     /// Borrow the existing death's retained reward input without taking its corpse work.
@@ -1081,10 +1149,16 @@ impl KillSettlementQueue {
 
     pub fn append(&self, entry: PendingKillSettlement) -> AppendOutcome {
         let mut state = self.state();
-        if state.holds(entry.facts.death) {
+        if state.holds(entry.facts.death)
+            || state
+                .source_refusals
+                .iter()
+                .any(|refused| refused.actor == entry.target && refused.death == entry.facts.death)
+        {
             return AppendOutcome::Duplicate;
         }
         if state.entries() >= KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
+            state.refuse_source_drop(&entry, SourceDropRefusalReason::QueueFull);
             return AppendOutcome::Full;
         }
         state.prune_accepted_order();
@@ -1170,7 +1244,7 @@ impl KillSettlementQueue {
     fn release_committed(&self, hold: KillReleaseMark, held: bool) {
         let parked = {
             let mut state = self.state();
-            state
+            let parked = state
                 .held_mark(hold)
                 .map(|mark| {
                     if held {
@@ -1179,7 +1253,11 @@ impl KillSettlementQueue {
                     mark.committed = true;
                     std::mem::take(&mut mark.parked)
                 })
-                .unwrap_or_default()
+                .unwrap_or_default();
+            for (entry, _) in &parked {
+                state.refuse_source_drop(entry, SourceDropRefusalReason::PrincipalGone);
+            }
+            parked
         };
         for (entry, _) in parked {
             refuse("principal_gone", &entry.creature);
@@ -1188,7 +1266,14 @@ impl KillSettlementQueue {
 
     /// The released actor slot is removed: drop the mark, freeing any late park.
     fn forget_released(&self, hold: KillReleaseMark) {
-        let parked = self.state().unmark(hold.mark);
+        let parked = {
+            let mut state = self.state();
+            let parked = state.unmark(hold.mark);
+            for entry in &parked {
+                state.refuse_source_drop(entry, SourceDropRefusalReason::PrincipalGone);
+            }
+            parked
+        };
         for entry in parked {
             refuse("principal_gone", &entry.creature);
         }
@@ -1257,6 +1342,9 @@ impl KillSettlementQueue {
                     .into_iter()
                     .flat_map(|mark| mark.parked.into_iter().map(|(entry, _)| entry)),
             );
+            for entry in &gone {
+                state.refuse_source_drop(entry, SourceDropRefusalReason::PrincipalGone);
+            }
             gone
         };
         for entry in gone {
@@ -2456,6 +2544,7 @@ fn accept_encounter_kill(
     states: Option<&super::actor_spell::ChannelSpellStates>,
     mut entry: PendingKillSettlement,
 ) -> AppendOutcome {
+    queue.state().prune_source_refusals(runtime);
     // A source-controlled lethal publication already reserved its deferred
     // task in the canonical carrier FIFO. Hold the ordinary reward entry
     // before append/take can reserve capacity from the pre-BEGIN profile.
