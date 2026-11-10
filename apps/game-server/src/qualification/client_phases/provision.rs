@@ -6,7 +6,6 @@ pub(super) async fn provision(
     clients: &SeamClients<'_>,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
     let vocation = if profile == "explorer" {
         "knight"
@@ -20,27 +19,7 @@ pub(super) async fn provision(
         oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
     )
     .ok_or("qualification profile has no source vitals")?;
-    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../tools/qualification/node_boot/provision.py");
-    let status = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
-            .arg(script)
-            .args([
-                "--socket",
-                &socket,
-                "--session",
-                &session,
-                "--profile",
-                &profile,
-            ])
-            .status()
-    })
-    .await??;
-    if !status.success() {
-        return Err("node-boot fenced build provisioning failed".into());
-    }
+    control_fixture(&client, &profile).await?;
     let (result, logout, attempts, busy_timed_out) =
         client_world::logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -119,4 +98,36 @@ pub(super) fn item_reference(
     index
         .definition_ref("Item", &key, revision)
         .ok_or_else(|| "qualification Item ref missing".into())
+}
+
+/// Ask the node's root-only control socket for one named fixture on the
+/// admitted session. The caller reloads the Character by ordinary readmission.
+pub(super) async fn control_fixture(
+    client: &oteryn_dev_client::DevClientSession,
+    profile: &str,
+) -> TestResult {
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let profile = profile.to_owned();
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let status = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("sudo")
+            .args(["-n", "python3"])
+            .arg(script)
+            .args([
+                "--socket",
+                &socket,
+                "--session",
+                &session,
+                "--profile",
+                &profile,
+            ])
+            .status()
+    })
+    .await??;
+    if !status.success() {
+        return Err("node-boot fenced build provisioning failed".into());
+    }
+    Ok(())
 }

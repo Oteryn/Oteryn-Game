@@ -438,6 +438,9 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     ));
 
     drop(client);
+    // Both Characters are now past their ordinary journeys; S08/P21 fixture
+    // only what those journeys cannot supply and report their own verdicts.
+    full_e2ef7::continuation_rows(clients).await;
     profile_result
 }
 
@@ -787,6 +790,7 @@ fn qualification_nbtown_checks_first_entry_before_mutating_packets() -> TestResu
         .ok_or("missing strict Platform-created town assertion")?;
     for packet in [
         "full_e2ef7::run_packet(clients)",
+        "full_e2ef7::continuation_rows(clients)",
         "include!(\"full_e2ef6_mount.rs\")",
         "full_e2ef5::run(clients",
         "include!(\"full_e2ef4_mount.rs\")",

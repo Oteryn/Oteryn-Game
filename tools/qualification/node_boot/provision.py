@@ -6,7 +6,7 @@ import time
 import uuid
 
 
-PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk")
+PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "pvp", "imbuement")
 
 
 def provision(socket_path, session, profile):

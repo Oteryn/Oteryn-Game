@@ -18,8 +18,9 @@ use crate::durability::character_progression::{
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionAuthoritySnapshot};
+use oteryn_simulation_determinism::ExactI64;
 #[cfg(test)]
-use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+use oteryn_simulation_determinism::RoundingMode;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -250,6 +251,82 @@ pub(super) async fn prepare_character_with_policy<const N: usize>(
     {
         return Err("fenced spell fixture did not produce requested source build".into());
     }
+    Ok(())
+}
+
+/// Award an already progressed Character the remaining served-policy
+/// experience to `level` through the ordinary fenced XP writer. Vocation,
+/// items and the bound policy are unchanged; a higher level is left as is.
+pub(super) async fn award_level_with_policy<const N: usize>(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    level: u32,
+    xp_occurrence: [u8; 16],
+    policy: FiniteProgressionPolicy<String, N>,
+) -> TestResult {
+    let occurrence = ExperienceRewardOccurrence::from_bytes(xp_occurrence).map_err(debug)?;
+    let character =
+        CharacterId::from_bytes(*current.current_character_lease().character_id().as_bytes())
+            .map_err(debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(character).await;
+    let before = root
+        .read_character_progression(authority, character)
+        .await
+        .map_err(debug)?
+        .ok_or("level fixture requires an already progressed Character")?;
+    if before.level >= level {
+        return Ok(());
+    }
+    if before.context != policy.context
+        || before.policy_revision != policy.policy_revision
+        || before.reward_revision != policy.reward_revision
+    {
+        return Err("level fixture cannot replace another progression policy".into());
+    }
+    let target = policy
+        .thresholds
+        .iter()
+        .find(|threshold| threshold.level == level)
+        .ok_or("fixture level absent from the served progression policy")?
+        .minimum_experience;
+    let amount = target
+        .get()
+        .checked_sub(before.total_experience.get())
+        .filter(|amount| *amount > 0)
+        .ok_or("fixture level is not above the saved experience")?;
+    let fence = CurrentCharacterGameplayFence {
+        character_id: character,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+        expected_character_revision: root
+            .read_current_character(authority, character)
+            .await
+            .map_err(debug)?
+            .revision,
+    };
+    slot.commit_experience(
+        root,
+        authority,
+        node,
+        fence,
+        ExperienceAwardRequest {
+            occurrence,
+            amount: ExactI64::new(amount),
+            context: before.context,
+            policy_revision: policy.policy_revision.clone(),
+            reward_revision: policy.reward_revision.clone(),
+            policy,
+        },
+        None,
+    )
+    .await
+    .map_err(debug)?;
     Ok(())
 }
 

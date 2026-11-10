@@ -13,6 +13,13 @@ pub(super) fn item_reference(
 ) -> TestResult<std::num::NonZeroU32> {
     original::item_reference(index, id)
 }
+/// Named control-socket fixture for later journeys (S08 level, P21 stock).
+pub(super) async fn control_fixture(
+    client: &oteryn_dev_client::DevClientSession,
+    profile: &str,
+) -> TestResult {
+    original::control_fixture(client, profile).await
+}
 pub(super) async fn provision(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,

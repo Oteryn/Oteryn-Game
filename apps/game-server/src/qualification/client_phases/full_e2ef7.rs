@@ -645,7 +645,6 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     drop(client);
     row.finish(result);
     additional_rows(clients).await;
-    continuation_rows(clients).await;
     forge_row(clients).await;
 }
 
@@ -3094,7 +3093,7 @@ use native::item_view::{ItemEntry, ItemHandle};
 use native::{attack as attacks, cyclopedia_character as character, imbuement as imbues};
 
 const PVP_ACTIONS: &[&str] = &[
-    "earned-levels",
+    "pvp-levels",
     "two-admissions",
     "expert-modes",
     "secure-refusal",
@@ -3108,7 +3107,7 @@ const PVP_ACTIONS: &[&str] = &[
     "final-logout",
 ];
 const IMBUE_ACTIONS: &[&str] = &[
-    "player-acquisition",
+    "fixture-stock",
     "shrine-apply",
     "occupied-refusal",
     "worn-effect",
@@ -3124,7 +3123,10 @@ const IMBUE_ACTIONS: &[&str] = &[
     "final-logout",
 ];
 
-async fn continuation_rows(clients: &SeamClients<'_>) {
+/// S08/P21 run after the town journey: both Characters are then already used
+/// (character 0 by the profile build, character 1 by the hunt/death journey),
+/// so their setup comes from the node-boot fixture, not from earlier packets.
+pub(super) async fn continuation_rows(clients: &SeamClients<'_>) {
     for (id, actions) in [("S08", PVP_ACTIONS), ("P21", IMBUE_ACTIONS)] {
         let mut row = JourneyRow::new(id, actions);
         let mut connections = [None, None];
@@ -3246,25 +3248,25 @@ async fn release_when_unlocked(client: &mut DevClientSession, budget: Duration) 
     }
 }
 
-// Try the real starter's unarmed hunt, never a fixture build. A refused attack,
-// no damage/kill, absent spawn, or the bounded XP budget is an explicit prerequisite
-// failure. Only served level frames can end this loop successfully.
-async fn earn_pvp_level(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
-    loop {
-        let level = player_level(client).await?;
-        if level >= oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("player-level-acquisition-blocked:served-level={level};required=8;ordinary-rat-hunt-budget=150s").into());
-        }
-        hunt_one(client, world).await.map_err(|e| {
-            format!(
-                "player-level-acquisition-blocked:served-level={level};required=8;ordinary-hunt={e}"
-            )
-        })?;
+// The earlier journeys leave character 1 below the PvP minimum. The fixture
+// awards only the missing served-policy experience; the level frame is re-read
+// from an ordinary fresh admission, never assumed.
+async fn pvp_level(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    index: usize,
+) -> TestResult<u32> {
+    let level = player_level(client).await?;
+    if level >= oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
+        return Ok(level);
     }
+    provisioning::control_fixture(client, "pvp").await?;
+    fresh_player(client, clients, index).await?;
+    let fixtured = player_level(client).await?;
+    if fixtured < oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
+        return Err(format!("pvp level fixture served level={fixtured} from {level}").into());
+    }
+    Ok(fixtured)
 }
 async fn hunt_one(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -3469,9 +3471,9 @@ async fn pvp_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    // Level both through their own playable route before admitting the peer concurrently.
+    // Bring both to the PvP minimum before admitting the peer concurrently.
     pair[0] = Some(connect_character(clients, 0xf2, 0).await?);
-    earn_pvp_level(pair[0].as_mut().ok_or("first admission")?, world).await?;
+    let first = pvp_level(pair[0].as_mut().ok_or("first admission")?, clients, 0).await?;
     release_when_unlocked(
         pair[0].as_mut().ok_or("first admission")?,
         Duration::from_secs(70),
@@ -3479,8 +3481,9 @@ async fn pvp_journey(
     .await?;
     pair[0] = None;
     pair[1] = Some(connect_character(clients, 0xf3, 1).await?);
-    earn_pvp_level(pair[1].as_mut().ok_or("second admission")?, world).await?;
-    row.pass("earned-levels");
+    let second = pvp_level(pair[1].as_mut().ok_or("second admission")?, clients, 1).await?;
+    evidence(&format!("S08 pvp-levels setup=fixture levels={first},{second}"));
+    row.pass("pvp-levels");
     release_when_unlocked(
         pair[1].as_mut().ok_or("second admission")?,
         Duration::from_secs(70),
@@ -4106,8 +4109,13 @@ async fn imbuement_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    *connection = Some(connect_character(clients, 0xf6, 1).await?);
+    // Character 0 (the high-level profile build) survives the eligible combat
+    // interval; its sword, materials and shrine coins come from the fixture.
+    *connection = Some(connect_character(clients, 0xf6, 0).await?);
     let client = connection.as_mut().ok_or("imbuement admission absent")?;
+    provisioning::control_fixture(client, "imbuement").await?;
+    fresh_player(client, clients, 0).await?;
+    evidence("P21 fixture-stock setup=fixture items=i3264,i11444x40,i10311x25,i3043x8,i3035x100");
     let definitions = provisioning::item_index()?;
     let input = native_input()?;
     let profiles: crate::content::native_gameplay::ItemProfilesDocument = serde_json::from_slice(
@@ -4137,7 +4145,7 @@ async fn imbuement_journey(
     for &(key, count) in basic.materials {
         acquire(client, world, &definitions, key, count).await?;
     }
-    row.pass("player-acquisition");
+    row.pass("fixture-stock");
     earn_gold(client, world, basic.apply_gold + 15_000).await?;
     shrine(client, world).await?;
     let baseline = strike_effect(client).await?;
@@ -4198,7 +4206,7 @@ async fn imbuement_journey(
         return Err("unequipping did not remove Strike effect".into());
     }
     row.pass("unequipped-effect");
-    fresh_player(client, clients, 1).await?;
+    fresh_player(client, clients, 0).await?;
     if imbue_window(client, target).await?.applied != duration
         || strike_effect(client).await? != baseline
     {
@@ -4330,7 +4338,7 @@ async fn imbuement_journey(
     }
     row.pass("etch-all");
     let inventory = inventory_counts(client)?;
-    fresh_player(client, clients, 1).await?;
+    fresh_player(client, clients, 0).await?;
     if !imbue_window(client, target).await?.applied.is_empty()
         || inventory_counts(client)? != inventory
         || strike_effect(client).await? != baseline

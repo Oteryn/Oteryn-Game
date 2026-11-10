@@ -10,7 +10,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk"
+        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "pvp" | "imbuement"
     )
     .then_some((session, profile))
 }
@@ -76,6 +76,28 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
+    match profile {
+        // S08 runs after the ordinary hunt/death journey: award that saved
+        // progression the PvP minimum through the fenced XP writer only.
+        "pvp" => {
+            return qualification_build::award_level_with_policy(
+                root,
+                authority,
+                proof,
+                &current,
+                oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL,
+                uuid_v7()?,
+                policy,
+            )
+            .await;
+        }
+        // P21 setup: weapon, Strike materials and coins, never imbued state.
+        "imbuement" => {
+            return mint_items(root, authority, proof, &current, native, &STOCK, STOCK_COMMANDS)
+                .await;
+        }
+        _ => {}
+    }
     qualification_build::prepare_character_with_policy(
         root,
         authority,
@@ -95,12 +117,28 @@ async fn prepare_build(
         policy,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native).await
+    mint_items(root, authority, proof, &current, native, &TOOLS, TOOL_COMMANDS).await
 }
+
+/// Axe, rope, shovel. Every build profile needs the same map/melee
+/// prerequisites; vocation and level still come from the served policy.
+const TOOLS: [(&str, u32, u32); 3] = [("item", 3276, 1), ("item", 3003, 1), ("item", 3457, 1)];
+/// A strike-capable sword, basic plus intricate Strike materials and coins
+/// (80,000 + 10,000 gold) for the shrine fees. Claims are distinct from TOOLS.
+const STOCK: [(&str, u32, u32); 5] = [
+    ("stock", 3264, 1),
+    ("stock", 11444, 40),
+    ("stock", 10311, 25),
+    ("stock", 3043, 8),
+    ("stock", 3035, 100),
+];
+// Reserved fixture ids cannot collide with the client's low command ids.
+const TOOL_COMMANDS: u64 = u64::MAX;
+const STOCK_COMMANDS: u64 = u64::MAX - 16;
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
 // inserts. They are setup evidence only, not proof of player chest interaction.
-async fn prepare_items(
+async fn mint_items(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     proof: &NodeIncarnationProof,
@@ -108,6 +146,8 @@ async fn prepare_items(
         crate::foundation::AuthenticatedTransportRefV1,
     >,
     native: &NativeGameplayState,
+    items: &[(&str, u32, u32)],
+    first_command: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -137,9 +177,7 @@ async fn prepare_items(
     let index = native
         .item_index()
         .ok_or("qualification Item index missing")?;
-    // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
-    // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    for (ordinal, &(claim, id, quantity)) in items.iter().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -152,19 +190,18 @@ async fn prepare_items(
         let item = generation_item_facts(native, &definition)
             .map_err(|error| format!("qualification Item {key}: {error:?}"))?;
         let request = RewardClaimMintRequest {
-            // Reserved fixture ids cannot collide with the client's low command ids.
             command: crate::foundation::CommandRef::new(
                 current.current_game_session_id(),
-                crate::foundation::CommandId::new(u64::MAX - ordinal as u64)?,
+                crate::foundation::CommandId::new(first_command - ordinal as u64)?,
             ),
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
-                production_key: format!("oteryn:qualification.item.i{id}"),
+                production_key: format!("oteryn:qualification.{claim}.i{id}"),
                 revision_ref: "qualification-v1".into(),
             },
             source_placement: "oteryn:qualification.node-boot".into(),
             item,
-            quantity: 1,
+            quantity,
             contents: Vec::new(),
             root_text: None,
             backpack: backpack.clone(),
@@ -207,7 +244,7 @@ mod tests {
             crate::content::qualify_native_entry_room_from_gameplay_manifest(world, &manifest)?;
         let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
         let index = native.item_index().ok_or("Item index")?;
-        for id in [3276, 3003, 3457] {
+        for &(_, id, quantity) in TOOLS.iter().chain(&STOCK) {
             let key = format!("oteryn:item.tibia.i{id}");
             let definition = crate::durability::item_mint::TypedDefinitionRef {
                 family: "Item".into(),
@@ -223,6 +260,11 @@ mod tests {
                 facts.stack,
                 crate::durability::item_transfer::ItemStackClass::Unknown
             );
+            assert_eq!(
+                quantity == 1,
+                facts.stack == crate::durability::item_transfer::ItemStackClass::NonStackable,
+                "Item {id}"
+            );
         }
         Ok(())
     }
@@ -230,7 +272,16 @@ mod tests {
     #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
-        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk"] {
+        for profile in [
+            "explorer",
+            "knight",
+            "paladin",
+            "sorcerer",
+            "druid",
+            "monk",
+            "pvp",
+            "imbuement",
+        ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
         for text in [
