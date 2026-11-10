@@ -8,6 +8,7 @@ mod input;
 mod native_login_shell;
 #[path = "features/local-reference-preferences/native.rs"]
 mod settings;
+use oteryn_client::hud_error::HudInitError;
 use oteryn_client::input::{MouseActions, StepDir};
 use oteryn_client::map::{START, World};
 use oteryn_client::native_login::{LoginWindow, error_text};
@@ -27,11 +28,12 @@ use winit::dpi::LogicalSize;
 use winit::event::{DeviceEvent, DeviceId, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShellError {
     EventLoopCreation,
     EventLoopRun,
     WindowCreation,
+    HudInitialization(HudInitError),
     InputInitialization,
     LoginInitialization,
     RendererInitialization,
@@ -44,10 +46,11 @@ pub enum ShellError {
 }
 impl Display for ShellError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str(match self {
+        let message = match self {
             Self::EventLoopCreation => tr!("client event loop creation failed"),
             Self::EventLoopRun => tr!("client event loop failed"),
             Self::WindowCreation => tr!("client window creation failed"),
+            Self::HudInitialization(_) => tr!("client HUD initialization failed"),
             Self::LoginInitialization => tr!("native login window creation failed"),
             Self::InputInitialization => tr!("client input initialization failed"),
             Self::RendererInitialization => tr!("client renderer initialization failed"),
@@ -57,7 +60,12 @@ impl Display for ShellError {
             Self::RendererRender => tr!("client renderer render failed"),
             Self::RendererConfiguration => "client renderer configuration failed",
             Self::RendererClose => tr!("client renderer close failed"),
-        })
+        };
+        formatter.write_str(message)?;
+        if let Self::HudInitialization(error) = self {
+            write!(formatter, ": {error}")?;
+        }
+        Ok(())
     }
 }
 impl std::error::Error for ShellError {}
