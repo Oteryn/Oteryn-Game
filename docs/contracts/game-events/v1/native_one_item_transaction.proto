@@ -391,9 +391,14 @@ message OneItemWorldResetV1 {
 }
 
 message OneItemGroundContainerEntryV1 {
-  bytes parent_item_instance_id = 1;
-  uint64 placement_ordinal = 2;
+  bytes parent_item_instance_id = 1; // actual immediate parent; non-nil UUIDv7
+  uint64 placement_ordinal = 2; // positive monotonic u64; legacy entries remain 1..16
   OneItemGroundV1 parent_ground = 3;
+  // Death-tree WorldReset/ActivityRetirement: parent_ground locates this exact
+  // Ground root, while field 1 retains the actual immediate parent. Present even
+  // for direct death-tree children; absent for legacy Ground-container entries,
+  // preserving their encoded bytes. Exactly 16-byte non-nil UUIDv7 when present.
+  optional bytes tree_root_item_instance_id = 4;
 }
 
 // D3-6 DECAY_RETIRE step: one live item (identity, type and quantity before)

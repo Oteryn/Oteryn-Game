@@ -5,7 +5,7 @@ use super::{Dependencies, TestResult};
 use crate::domain::CharacterRevision;
 use crate::durability::activity_handoff::{
     ActivityEnterOutcome, ActivityHandoffOwner, ActivityRefusal, ActivityReturnOutcome,
-    ActivityReturnReason, ActivityReturnRequest,
+    ActivityReturnReason, ActivityReturnRequest, RetiringActivity,
 };
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
@@ -17,6 +17,7 @@ use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::item_decay_retire::ActivityGroundRetirement;
+use crate::durability::item_loop_move::{ItemLoopContent, LoopDestination, LoopMoveRequest};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{
     CurrentCharacterItemFence, ItemDefinitionFacts, ItemStackClass, ItemTransferDestination,
@@ -35,6 +36,7 @@ use crate::foundation::{
 use crate::gameplay_transport::death_ml_loss_postgres::death as death_request;
 use crate::gameplay_transport::item_fence_of;
 use crate::spell::mana_training::CompiledTrainingFormula;
+use sqlx::Row;
 
 #[path = "activity_player_death/departed_process.rs"]
 mod departed_process;
@@ -186,6 +188,36 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     let RuntimeScopeRefV1::Instance { instance_id, .. } = current.runtime_scope else {
         return Err("actual Instance required".into());
     };
+    if matches!(case, Case::RedSkullDrop) {
+        // Initial stock is flat. Only the real current Instance item owner creates
+        // main70 -> bag71 -> coin72, with every custody/admission guard enabled.
+        let lane = SpellLane::for_scope(current.runtime_scope);
+        let permit = lane
+            .acquire()
+            .await
+            .map_err(|_| "Instance spell lane unavailable")?;
+        let moved = h
+            .root
+            .commit_item_loop_move(
+                &permit,
+                &authority,
+                &h.node,
+                &current,
+                CommandRef::new(current.game_session_id, CommandId::new(11).map_err(debug)?),
+                &Weights(enter.destination_content.server_artifact_digest),
+                LoopMoveRequest {
+                    item: id(72),
+                    count: None,
+                    pickup_cell: None,
+                    destination: LoopDestination::Container(id(71)),
+                },
+            )
+            .await?
+            .map_err(debug)?;
+        assert_eq!(moved.operation, 1);
+        assert!(!moved.replayed);
+    }
+    let retained_before = retained_snapshot(h).await?;
     let fence = gameplay(current, CharacterRevision::new(2).map_err(debug)?);
     let mut request = death_request(101)?;
     request.death_cell.runtime_scope = current.runtime_scope;
@@ -527,12 +559,17 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .is_empty(),
         "the origin Channel has no private death-drop visibility"
     );
-    let child_parent: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(parent_item_instance_id) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+    let child_parent: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(parent_item_instance_id) FROM (SELECT item_instance_id,parent_item_instance_id FROM game_item_container_entries UNION ALL SELECT item_instance_id,parent_item_instance_id FROM game_item_nested_entries) edges WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(id(71).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
         child_parent,
         id(70).to_vec(),
         "the existing death bag retains the actual child identity"
+    );
+    assert_eq!(
+        retained_snapshot(h).await?,
+        retained_before,
+        "death preserves every child ItemInstance and logical edge including placement provenance"
     );
     let amulet_state: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(id(75).as_slice()).fetch_one(&h.pool).await?;
@@ -812,8 +849,8 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     match case {
         Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop => {
             assert!(retired > 0);
-            let live: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid) AND lifecycle=1")
-                .bind(id(70).as_slice()).bind(id(71).as_slice()).bind(id(75).as_slice()).fetch_one(&h.pool).await?;
+            let live: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid) AND lifecycle=1")
+                .bind(id(70).as_slice()).bind(id(71).as_slice()).bind(id(75).as_slice()).bind(id(72).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(
                 live, 0,
                 "the accepted existing retirement owner resolves the death bag and its child"
@@ -824,6 +861,14 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             "a protected carried backpack is never private Ground retirement input"
         ),
     }
+    if matches!(case, Case::RedSkullDrop) {
+        assert_eq!(
+            retired, 2,
+            "one atomic tree step and the separate necklace root"
+        );
+        assert_activity_tree_audits(h, &proof, &request.death_cell.spatial_position).await?;
+    }
+    let retirement_before = retirement_snapshot(h).await?;
     assert!(matches!(
         h.root
             .retire_activity_ground_step(&permit, &authority, &h.node, &proof)
@@ -831,12 +876,25 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .map_err(debug)?,
         ActivityGroundRetirement::Complete
     ));
+    assert_eq!(
+        retirement_snapshot(h).await?,
+        retirement_before,
+        "completed retirement replay cannot duplicate or rewrite a receipt or audit"
+    );
     eprintln!("ACTIVITY_PLAYER_DEATH POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 
 async fn seed_equipment(h: &Harness, case: Case) -> TestResult {
-    super::item_look::seed_main_backpack(h, &[("oteryn:item.tibia.i3031", 5)]).await?;
+    let entries: &[(&str, i64)] = if matches!(case, Case::RedSkullDrop) {
+        &[
+            ("oteryn:item.tibia.i2854", 1),
+            ("oteryn:item.tibia.i3031", 5),
+        ]
+    } else {
+        &[("oteryn:item.tibia.i3031", 5)]
+    };
+    super::item_look::seed_main_backpack(h, entries).await?;
     // Existing fixture construction only. Every death, loss, return and retirement
     // transition below uses the genuine runtime owner with all triggers enabled.
     let mut tx = h.pool.begin().await?;
@@ -860,6 +918,148 @@ async fn seed_equipment(h: &Harness, case: Case) -> TestResult {
     Ok(())
 }
 
+async fn retained_snapshot(h: &Harness) -> TestResult<String> {
+    Ok(sqlx::query_scalar(r#"WITH edges AS (
+        SELECT item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id
+         FROM game_item_container_entries WHERE item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid)
+        UNION ALL SELECT item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id
+         FROM game_item_nested_entries WHERE item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid)
+      ) SELECT jsonb_build_object(
+        'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY item_instance_id) FROM game_item_instances i
+          WHERE item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid)),
+        'edges',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id) FROM edges e))::text"#)
+        .bind(id(71).as_slice()).bind(id(72).as_slice()).fetch_one(&h.pool).await?)
+}
+
+async fn retirement_snapshot(h: &Harness) -> TestResult<String> {
+    Ok(sqlx::query_scalar("SELECT coalesce(jsonb_agg(jsonb_build_array(to_jsonb(r),to_jsonb(a)) ORDER BY r.item_instance_id),'[]'::jsonb)::text FROM game_item_decay_retire_receipts r JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id WHERE r.cause_kind='ACTIVITY_RETIREMENT'")
+        .fetch_one(&h.pool).await?)
+}
+
+async fn assert_activity_tree_audits(
+    h: &Harness,
+    proof: &RetiringActivity,
+    cell: &[u8],
+) -> TestResult {
+    let RuntimeScopeRefV1::Instance {
+        world_id,
+        instance_id,
+    } = proof.scope()
+    else {
+        return Err("retirement proof must retain the actual Instance".into());
+    };
+    let rows = sqlx::query("SELECT uuid_send(r.item_instance_id) AS item,uuid_send(r.ground_root_item_instance_id) AS root,r.created_xact_id::text AS xact,r.fence_scope_ownership_generation::text AS generation,a.envelope,uuid_send(e.parent_item_instance_id) AS actual_parent,e.placement_ordinal::text AS ordinal,i.quantity,i.lifecycle,NOT EXISTS(SELECT 1 FROM game_item_container_entries d WHERE d.item_instance_id=r.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries n WHERE n.item_instance_id=r.item_instance_id) AS no_entries FROM game_item_decay_retire_receipts r JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id AND a.envelope_sha256=r.envelope_sha256 AND a.created_xact_id=r.created_xact_id LEFT JOIN game_player_death_retirement_edges e ON e.item_instance_id=r.item_instance_id WHERE r.cause_kind='ACTIVITY_RETIREMENT' ORDER BY r.item_instance_id LIMIT 5")
+        .fetch_all(&h.pool).await?;
+    assert_eq!(rows.len(), 4);
+    let parents = std::collections::BTreeMap::from([(id(71), id(70)), (id(72), id(71))]);
+    let mut seen = std::collections::BTreeSet::new();
+    let mut tree_transactions = std::collections::BTreeSet::new();
+    for row in rows {
+        let item: [u8; 16] = row
+            .try_get::<Vec<u8>, _>("item")?
+            .try_into()
+            .map_err(|_| "audit item UUID")?;
+        assert!(seen.insert(item));
+        let root = if item == id(75) { id(75) } else { id(70) };
+        assert_eq!(
+            row.try_get::<Vec<u8>, _>("root")?.as_slice(),
+            root.as_slice()
+        );
+        if root == id(70) {
+            tree_transactions.insert(row.try_get::<String, _>("xact")?);
+        }
+        let wire: Vec<u8> = row.try_get("envelope")?;
+        let (envelope, event) =
+            crate::durability::item_decay_retire_audit::decode_decay_retire_envelope(&wire)
+                .map_err(debug)?;
+        assert_eq!(
+            envelope.world_id.as_deref(),
+            Some(world_id.as_bytes().as_slice())
+        );
+        assert_eq!(
+            envelope.instance_id.as_deref(),
+            Some(instance_id.as_slice())
+        );
+        assert!(envelope.channel_id.is_none());
+        let before = event.before.as_ref().ok_or("retirement before")?;
+        let after = event.after.as_ref().ok_or("retirement after")?;
+        assert_eq!(before.item_instance_id.as_slice(), item.as_slice());
+        assert_eq!(after.item_instance_id.as_slice(), item.as_slice());
+        assert_eq!(before.world_id.as_slice(), world_id.as_bytes().as_slice());
+        assert_eq!(before.world_id, after.world_id);
+        assert_eq!(before.definition, after.definition);
+        assert_eq!(before.quantity, if item == id(72) { 5 } else { 1 });
+        assert_eq!(before.lifecycle, 1);
+        assert_eq!((after.quantity, after.lifecycle), (0, 2));
+        assert_eq!(row.try_get::<i64, _>("quantity")?, 0);
+        assert_eq!(row.try_get::<i16, _>("lifecycle")?, 2);
+        assert!(row.try_get::<bool, _>("no_entries")?);
+        let cause = event
+            .activity_retirement
+            .as_ref()
+            .ok_or("activity retirement cause")?;
+        assert_eq!(cause.world_id.as_slice(), world_id.as_bytes().as_slice());
+        assert_eq!(cause.instance_id.as_slice(), instance_id.as_slice());
+        assert_eq!(cause.handoff_id.as_slice(), proof.handoff_id().as_slice());
+        assert_eq!(cause.ownership_generation, proof.generation().get());
+        assert_eq!(cause.item_instance_id.as_slice(), item.as_slice());
+        assert!(
+            event.world_reset.is_none() && event.cause.is_none() && event.corpse_entry.is_none()
+        );
+        assert_eq!(
+            event.runtime_scope_ownership_generation,
+            row.try_get::<String, _>("generation")?.parse::<u64>()?
+        );
+        let ground = if let Some(parent) = parents.get(&item) {
+            assert!(event.ground.is_none());
+            let entry = event
+                .ground_container_entry
+                .as_ref()
+                .ok_or("actual nested custody")?;
+            assert_eq!(entry.parent_item_instance_id.as_slice(), parent.as_slice());
+            assert_eq!(
+                entry.tree_root_item_instance_id.as_deref(),
+                Some(root.as_slice())
+            );
+            assert_eq!(
+                row.try_get::<Option<Vec<u8>>, _>("actual_parent")?
+                    .as_deref(),
+                Some(parent.as_slice())
+            );
+            assert_eq!(
+                entry.placement_ordinal,
+                row.try_get::<String, _>("ordinal")?.parse::<u64>()?
+            );
+            entry.parent_ground.as_ref().ok_or("nested Ground root")?
+        } else {
+            assert!(event.ground_container_entry.is_none());
+            assert!(
+                row.try_get::<Option<Vec<u8>>, _>("actual_parent")?
+                    .is_none()
+            );
+            event.ground.as_ref().ok_or("retired root Ground")?
+        };
+        assert_eq!(ground.world_id.as_slice(), world_id.as_bytes().as_slice());
+        assert_eq!(ground.instance_id.as_deref(), Some(instance_id.as_slice()));
+        assert!(ground.channel_id.is_empty());
+        assert_eq!(ground.spatial_position.as_slice(), cell);
+        assert_eq!(
+            ground.runtime_scope_ownership_generation,
+            proof.generation().get()
+        );
+    }
+    assert_eq!(
+        seen,
+        std::collections::BTreeSet::from([id(70), id(71), id(72), id(75)])
+    );
+    assert_eq!(
+        tree_transactions.len(),
+        1,
+        "the complete death tree retires atomically"
+    );
+    Ok(())
+}
+
 struct Weights([u8; 32]);
 impl ItemWeightLookup for Weights {
     fn generation_digest(&self) -> [u8; 32] {
@@ -876,6 +1076,28 @@ impl ItemWeightLookup for Weights {
             Ok(1)
         } else {
             Err(ItemWeightRefused::Unknown)
+        }
+    }
+}
+
+impl ItemLoopContent for Weights {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        self.0
+    }
+    fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
+        self.weight_of(definition).ok()?;
+        match definition.production_key.as_str() {
+            "oteryn:item.tibia.i2854" => Some(backpack_facts()),
+            "oteryn:item.tibia.i3031" => Some(ItemDefinitionFacts {
+                definition: definition.clone(),
+                weight: Some(1),
+                stack: ItemStackClass::Stackable {
+                    proven_maximum: Some(100),
+                },
+                container_capacity: None,
+                container_slot_equip_pattern: false,
+            }),
+            _ => None,
         }
     }
 }
