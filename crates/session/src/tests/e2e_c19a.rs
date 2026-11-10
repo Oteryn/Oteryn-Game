@@ -93,6 +93,7 @@ fn e2e_c19a_starter_backpack_replay() -> Result<(), BoxError> {
         let mut session = match Session::admit(client, admission_with(SELECTED)?).await {
             Ok(session) => session,
             Err(error) => {
+                peer.abort();
                 let peer_error = peer.await;
                 return Err(format!("C19a admission: {error:?}; peer={peer_error:?}").into());
             }

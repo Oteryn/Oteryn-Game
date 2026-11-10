@@ -46,8 +46,12 @@ fn visible(inventory: &CharacterInventory) -> String {
 fn random_reward_inventory_payload_replays() -> Result<(), BoxError> {
     block_on(async {
         let (before_payload, after_payload, revisions, expected) =
-            if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-                let path = std::path::Path::new(&path);
+            // The server row reports SKIPPED (no grant path for the bag) and
+            // writes no capture; the fixture replay below then stands in.
+            if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+                .map(std::path::PathBuf::from)
+                .filter(|path| path.join("i13-before.bin").exists())
+            {
                 (
                     std::fs::read(path.join("i13-before.bin"))?,
                     std::fs::read(path.join("i13-after.bin"))?,

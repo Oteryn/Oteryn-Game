@@ -124,6 +124,7 @@ fn e03_coin_inventory_replay() -> Result<(), BoxError> {
         let mut session = match Session::admit(client, admission_with(SELECTED)?).await {
             Ok(session) => session,
             Err(error) => {
+                peer.abort();
                 let peer_error = peer.await;
                 return Err(format!("E03 admission: {error:?}; peer={peer_error:?}").into());
             }

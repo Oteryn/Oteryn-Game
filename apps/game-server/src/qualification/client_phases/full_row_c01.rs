@@ -85,7 +85,7 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     Ok((u64::from_le_bytes(reply.payload[1..9].try_into()?), u32::from_le_bytes(reply.payload[9..13].try_into()?)))
 }
 
-async fn mode_attack(client: &mut DevClientSession, modes: FightModes) -> TestResult<(u32, u32)> {
+async fn mode_attack(client: &mut DevClientSession, world: &BundleWorld, modes: FightModes) -> TestResult<(u32, u32)> {
     let creature = target(client)?;
     let EntityDetail::Actor { health_percent: before, .. } = client.world_entities()
         .and_then(|entities| entities.get(&creature)).ok_or("step=mode observed=target-vanished")?.detail
@@ -129,9 +129,46 @@ async fn mode_attack(client: &mut DevClientSession, modes: FightModes) -> TestRe
     if starting_hp.checked_sub(shown) != Some(ending_hp) {
         return Err(format!("step=armor observed=hp-{starting_hp}->{ending_hp}/shown-{shown} need=matching-observed-delta").into());
     }
+    chase_or_stand(client, world, creature, modes.chase).await?;
     let cleared = client.session_mut().attack_target(None).await?;
     if cleared.disposition != AttackIntentDisposition::Ok { return Err(format!("step=disengage observed={cleared:?}").into()); }
     Ok((shown, starting_hp - ending_hp))
+}
+
+/// Step two tiles away from the held target, then watch the player's own position with no
+/// further client step: CHASE must walk the player back next to the target, STAND must not move.
+async fn chase_or_stand(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    creature: oteryn_dev_client::EntityRef,
+    chase: ChaseMode,
+) -> TestResult {
+    let at = |client: &DevClientSession| -> TestResult<TilePos> {
+        let entry = client.world_entities().and_then(|entities| entities.get(&creature)).ok_or("step=chase observed=target-vanished")?;
+        tile(entry.position)
+    };
+    let gap = |a: TilePos, b: TilePos| if a.floor == b.floor { a.x.abs_diff(b.x).max(a.y.abs_diff(b.y)) } else { u16::MAX };
+    let here = tile(client.world_spatial().actor_position)?;
+    let target = at(client)?;
+    let away = route(world, here, |tile| gap(tile, target) >= 3).ok_or("step=chase observed=no-route-away-from-target")?;
+    walk(client, world, &away).await.map_err(|error| format!("step=chase observed=step-away:{error}"))?;
+    let left = tile(client.world_spatial().actor_position)?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
+    let mut moved = false;
+    while tokio::time::Instant::now() < deadline {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+        let now = tile(client.world_spatial().actor_position)?;
+        moved |= now != left;
+        if chase == ChaseMode::Chase && moved && gap(now, at(client)?) <= 1 {
+            return Ok(());
+        }
+    }
+    match chase {
+        ChaseMode::Stand if !moved => Ok(()),
+        ChaseMode::Stand => Err(format!("step=stand observed=player-moved-from-{left:?} need=no-server-step").into()),
+        _ => Err(format!("step=chase observed=moved-{moved}-from-{left:?} need=server-steps-back-next-to-target").into()),
+    }
 }
 
 fn inventory_signature(client: &DevClientSession) -> TestResult<Vec<(u32, u32)>> {
@@ -176,13 +213,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         for (suffix, chase) in [("stand", ChaseMode::Stand), ("chase", ChaseMode::Chase)] {
             travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await
                 .map_err(|error| format!("step={name}-{suffix} observed={error} need=walk-to-live-rat"))?;
-            let observed = mode_attack(&mut client, FightModes { fight_mode: fight, chase, secure: true }).await?;
+            let observed = mode_attack(&mut client, world, FightModes { fight_mode: fight, chase, secure: true }).await?;
             defenses.push(observed);
             let case = CASES.iter().copied().find(|case| *case == format!("{name}-{suffix}")).ok_or("mode case registry")?;
             row.pass(case, format!("accepted-state-and-target-hp-delta incoming={observed:?}"));
         }
     }
-    row.pass("armor-defence", format!("equipment={equipped}-observed-attributed-hp-deltas={defenses:?}"));
+    // Equal shown and HP deltas say nothing about mitigation: only a server mark on a blocked or
+    // armor-reduced hit proves the defence, and the attributed frames carry none.
+    evidence(&format!("C01_GAP armor-defence equipment={equipped} attributed-hp-deltas={defenses:?} needed=server-mark-on-blocked-or-armor-reduced-hit"));
     let me = own(&client)?;
     let before_vitals = *client.actor_vitals().ok_or("step=refusal observed=no-vitals")?;
     let refused = client.session_mut().attack_target(Some(&me)).await?;

@@ -13,13 +13,16 @@
 //!
 //! The production node-boot world currently exposes no legitimate player route that assigns an
 //! owned house or supplies the house furniture/kit. The journey nevertheless sends every native
-//! mechanic command before reporting the observed runtime blocker; it never provisions state.
+//! mechanic command and then fails naming the missing precondition; it never provisions state.
 use super::*;
 use oteryn_dev_client::client_runtime::{item_use, world_interaction::Target};
 use oteryn_dev_client::{CharacterInventory, DevClientSession, ItemHandle};
 use oteryn_protocol_oteryn::{CommandStatus, house_wrap as wrap, world_object};
 
-const GAP: &str = "source:apps/game-server/src/qualification/client_phases/hireling.rs:15";
+/// The refusal is the server's correct answer outside a house, so the row fails on the missing
+/// precondition: House ownership is only settled by the Control-side auction settlement, which
+/// no player command reaches during the run.
+const GAP: &str = "step=wrap-observed=NotInHouse;needed=owned-house;settlement-only:crates/gameplay/durability/src/durability/house_ownership/settlement.rs";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -37,7 +40,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 fn classify(error: &str) -> (&'static str, String) {
     if error.contains("NotInHouse") {
-        ("MISSING-SERVER", GAP.to_owned())
+        ("FAIL", GAP.to_owned())
     } else {
         ("FAIL", compact(error))
     }
@@ -221,10 +224,7 @@ mod tests {
 
     #[test]
     fn verdict_depends_on_observed_reply() {
-        assert_eq!(
-            classify("step=wrap observed=NotInHouse").0,
-            "MISSING-SERVER"
-        );
+        assert_eq!(classify("step=wrap observed=NotInHouse"), ("FAIL", GAP.to_owned()));
         assert_eq!(classify("step=wrap observed=Blocked").0, "FAIL");
     }
 

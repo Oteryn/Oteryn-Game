@@ -145,6 +145,15 @@ class ReportTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 matrix_rows(invalid)
 
+    def test_missing_client_needs_evidence_and_never_qualifies(self):
+        found = results(
+            "SEAM_EVIDENCE e2e_all scenario=P19.client status=MISSING-CLIENT seconds=0.000 evidence=no-reducer"
+        )
+        self.assertEqual(found["P19.client"][0], "MISSING-CLIENT")
+        self.assertFalse(summary([("P19", "Outfits")], found)[1])
+        with self.assertRaises(ValueError):
+            results("SEAM_EVIDENCE e2e_all scenario=P19.client status=MISSING-CLIENT seconds=0")
+
 
 if __name__ == "__main__":
     unittest.main()

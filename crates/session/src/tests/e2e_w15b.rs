@@ -203,6 +203,7 @@ fn e2e_w15b_reward_chest_claim_replay() -> Result<(), BoxError> {
         let mut session = match Session::admit(client, admission_with(SELECTED)?).await {
             Ok(session) => session,
             Err(error) => {
+                peer.abort();
                 let peer_error = peer.await;
                 return Err(format!("W15b admission: {error:?}; peer={peer_error:?}").into());
             }

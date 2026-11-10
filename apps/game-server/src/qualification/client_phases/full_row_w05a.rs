@@ -27,7 +27,7 @@ use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(380), journey(clients)).await;
+    let result = tokio::time::timeout(Duration::from_secs(420), journey(clients)).await;
     let status = match result {
         Ok(Ok(Outcome::ResetObserved)) => "PASS",
         Ok(Ok(Outcome::ResetNotScheduled)) => "FAIL",
@@ -109,11 +109,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
             return Err(format!("step=countdown observed=invalid-delta-{delta:?}").into());
         }
         evidence(&format!("W05a_CHECK step=countdown delta={delta:?}"));
-        let close = client.service_liveness(Duration::from_secs(310)).await;
+        // The notice says the reset lands within its minute: `minutes_remaining` minutes at most
+        // and more than one minute fewer at least. Only a close inside that window is the reset;
+        // an earlier disconnect is some other failure.
+        let noticed = tokio::time::Instant::now();
+        let minutes = u64::from(delta.value.minutes_remaining);
+        let earliest = Duration::from_secs((minutes - 1) * 60).saturating_sub(Duration::from_secs(5));
+        let latest = Duration::from_secs(minutes * 60 + 30);
+        let close = client.service_liveness(latest).await;
+        let elapsed = noticed.elapsed();
         if close.is_ok() {
-            return Err("step=reset-close observed=session-still-live-310s-after-countdown".into());
+            return Err(format!("step=reset-close observed=session-still-live-{}s-after-{minutes}-minute-notice", latest.as_secs()).into());
         }
-        evidence(&format!("W05a_CHECK step=reset-close reply={close:?}"));
+        if elapsed < earliest {
+            return Err(format!("step=reset-close observed=closed-after-{}s-before-the-{minutes}-minute-window error={close:?}", elapsed.as_secs()).into());
+        }
+        evidence(&format!("W05a_CHECK step=reset-close after={}s reply={close:?}", elapsed.as_secs()));
         client = connect_world(clients, 0xa6).await?;
         if client.join_snapshot().game_session_id == admitted_session
             || client.world_spatial().actor_position != saved

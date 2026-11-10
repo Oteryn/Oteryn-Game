@@ -238,7 +238,12 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         .ok_or("no legitimate walking route outside spawn interest")?;
     walk(&mut client, world, &away).await?;
     progress.pass("leave-interest", tile(client.world_spatial().actor_position)?);
-    tokio::time::sleep(Duration::from_millis(u64::from(respawn_ms) + 1_000)).await;
+    // Keep answering liveness while the interval runs out; a bare sleep lets
+    // the server drop the session as unresponsive.
+    let until = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 1_000);
+    while tokio::time::Instant::now() < until {
+        client.service_liveness(Duration::from_millis(500)).await?;
+    }
     let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
         distance(at, spawn) <= 1
     })

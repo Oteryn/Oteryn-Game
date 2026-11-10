@@ -1417,12 +1417,20 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         client_row_n07d::run_packet(clients).await;
         release_row_characters(clients).await;
     }
-    include!("full_e2ef6_mount.rs");
-    full_e2ef5::run(clients, world).await;
+    if e2e_row_selected(230) {
+        include!("full_e2ef6_mount.rs");
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(231) {
+        full_e2ef5::run(clients, world).await;
+    }
     for index in 0..clients.accounts.len() {
         wait_character_released(clients, index).await?;
     }
-    include!("full_e2ef4_mount.rs");
+    if e2e_row_selected(232) {
+        include!("full_e2ef4_mount.rs");
+        release_row_characters(clients).await;
+    }
     let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));

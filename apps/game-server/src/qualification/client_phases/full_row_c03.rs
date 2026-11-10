@@ -6,14 +6,14 @@
 //! 1. `tabs`: request the native Offence and Defence tabs; require revisioned projections.
 //! 2. `baseline`: attack a live compiled-world monster; require attributed player hits, monster
 //!    hits on the player, and an idle vitals regeneration rate to compare against.
-//! 3. `critical`: a hit above the clean non-critical maximum (measured with the equipment source
-//!    stripped) while the critical projection is positive.
+//! 3. `critical`: a hit the server marks as critical while the critical projection is positive;
+//!    the attributed frames carry no such mark yet, so the step fails naming it.
 //! 4. `leech`: attacker health and mana rise beyond the idle regeneration while hitting.
 //! 5. `reflect`: a monster hits the player and the same decision damages that monster without a
 //!    player hit.
 //! 6. `cleave`: a second adjacent monster takes player damage after one target command.
-//! 7. `perfect-shot`: every hit at the projected distance carries the projected flat bonus.
-//! 8. `fatal`: a hit above the clean maximum while the onslaught projection is positive.
+//! 7. `perfect-shot`: a hit at the projected distance that the server marks as a perfect shot.
+//! 8. `fatal`: a hit the server marks as fatal while the onslaught projection is positive.
 //! 9. `refusal-relog`: self-target is refused with no damage; after logout and fresh admission the
 //!    tabs and equipment are unchanged.
 
@@ -30,6 +30,9 @@ const STEPS: [&str; 9] = [
     "tabs", "baseline", "critical", "leech", "reflect", "cleave", "perfect-shot", "fatal", "refusal-relog",
 ];
 const FIGHT_SECONDS: u64 = 25;
+/// The attributed damage frames carry no critical, fatal or perfect-shot mark, so the client
+/// cannot tell those hits from ordinary damage.
+const UNMARKED: &str = "needed=server-mark-on-the-hit;attributed-damage-frames-carry-no-critical-fatal-or-perfect-shot-mark";
 
 struct Row {
     started: std::time::Instant,
@@ -63,8 +66,15 @@ impl Row {
 
     fn finish(mut self, result: TestResult) {
         if let Err(error) = result {
-            let step = STEPS.iter().copied().find(|s| !self.passed.contains(s) && !self.failures.iter().any(|(f, _)| f == s)).unwrap_or("journey");
-            self.fail(step, error);
+            match STEPS.iter().copied().find(|s| !self.passed.contains(s) && !self.failures.iter().any(|(f, _)| f == s)) {
+                Some(step) => self.fail(step, error),
+                // An error after every step was judged (the final logout, say) still fails the row.
+                None => {
+                    let observed = error.to_string();
+                    evidence(&format!("C03_CHECK journey FAIL observed={observed}"));
+                    self.failures.push(("journey", observed));
+                }
+            }
         }
         let detail = if self.complete() {
             String::new()
@@ -397,16 +407,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let hunt = fight(&mut client, engaged, FIGHT_SECONDS * 2, 40).await?;
     let hits = hunt.own_hits(me);
 
-    // critical: the equipped source must lift a hit above the clean non-critical maximum.
+    // critical: a hit marked critical by the server while the projection is positive.
     let (chance, damage) = (with.off(Stat::CriticalChance), with.off(Stat::CriticalDamage));
     if chance <= 0 || damage <= 0 {
         row.fail("critical", needed("critical-chance-and-damage", chance.min(damage)));
     } else if !clean {
         row.fail("critical", "needed=clean-non-critical-baseline;a-source-that-cannot-be-unequipped-remains");
-    } else if hits.iter().any(|h| *h > base_max) {
-        row.pass("critical", (base_max, hits.iter().max()));
     } else {
-        row.fail("critical", format!("no hit above the clean non-critical maximum {base_max}; hits={hits:?}"));
+        // A hit above a sampled clean maximum can still be an ordinary roll; only a server mark
+        // on the hit itself separates a critical from ordinary damage.
+        row.fail("critical", format!("{UNMARKED};clean-max={base_max};hunt-max={:?}", hits.iter().max()));
     }
 
     // leech: attacker vitals must rise beyond idle regeneration, with the expected leech non-zero.
@@ -461,31 +471,26 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         row.fail("cleave", format!("projection={cleave};needed=second-monster-adjacent-to-the-target"));
     }
 
-    // perfect shot: every hit at the projected distance includes the projected flat bonus.
+    // perfect shot: a hit at the projected distance marked as a perfect shot.
     let shots = with.perfect_shots();
     if shots.is_empty() {
         row.fail("perfect-shot", needed("perfect-shot", 0));
     } else if let Some((distance, bonus)) = shots.iter().copied().find(|(d, _)| *d == 1) {
+        // An ordinary hit can exceed the flat bonus, so the lowest hit proves nothing on its own.
         let floor = hits.iter().copied().min().unwrap_or(0);
-        if !hits.is_empty() && i64::try_from(floor).is_ok_and(|f| f >= bonus) {
-            row.pass("perfect-shot", (distance, bonus, floor));
-        } else {
-            row.fail("perfect-shot", format!("distance={distance} bonus={bonus} lowest-hit={floor} hits={hits:?}"));
-        }
+        row.fail("perfect-shot", format!("{UNMARKED};distance={distance};bonus={bonus};lowest-hit={floor}"));
     } else {
         row.fail("perfect-shot", format!("projected={shots:?};needed=ranged-attack-at-the-projected-distance-that-this-adjacent-fight-cannot-produce"));
     }
 
-    // fatal: a hit above the clean maximum while the onslaught projection is positive.
+    // fatal: a hit marked fatal by the server while the onslaught projection is positive.
     let fatal = with.off(Stat::OnslaughtEquipment);
     if fatal <= 0 {
         row.fail("fatal", needed("onslaught-from-a-tiered-weapon", fatal));
     } else if !clean {
         row.fail("fatal", "needed=clean-baseline;a-source-that-cannot-be-unequipped-remains");
-    } else if hits.iter().any(|h| *h > base_max) {
-        row.pass("fatal", (fatal, base_max, hits.iter().max()));
     } else {
-        row.fail("fatal", format!("no hit above the clean maximum {base_max}; hits={hits:?}"));
+        row.fail("fatal", format!("{UNMARKED};projection={fatal};clean-max={base_max};hunt-max={:?}", hits.iter().max()));
     }
 
     // refusal and durability.
