@@ -184,6 +184,7 @@ async fn run(
             }
         };
         // Sleep until the next pull is due, or a reconnect wakes it.
+        let _idle = heartbeat.expected_idle();
         let _ = tokio::time::timeout(delay, wake.notified()).await;
     }
 }

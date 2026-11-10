@@ -241,7 +241,7 @@ impl<C: ReportClock + Clone + 'static> Reporter<C> {
             verified_at: clock.elapsed(),
             lost: false,
         };
-        let task = oteryn_task_supervisor::spawn_supervised(
+        let task = oteryn_task_supervisor::spawn_lifecycle_supervised(
             "runtime_status_reporter",
             None,
             runtime_status::run(

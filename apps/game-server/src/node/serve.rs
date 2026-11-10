@@ -2581,7 +2581,7 @@ fn control_health(root: &DurabilityRoot) -> String {
         .clone();
     let stalled_tasks = oteryn_task_supervisor::supervised_tasks()
         .into_iter()
-        .filter(|task| task.since_beat_ms >= 30_000)
+        .filter(|task| task.is_stalled(Duration::from_secs(30)))
         .map(|task| {
             serde_json::json!({
                 "name": task.name,
@@ -2853,10 +2853,14 @@ pub async fn run_with_npc_data_project(
     let signalled = CancellationToken::new();
     let watcher = {
         let signalled = signalled.clone();
-        oteryn_task_supervisor::spawn_supervised("termination_watcher", None, async move {
-            termination().await;
-            signalled.cancel();
-        })
+        oteryn_task_supervisor::spawn_lifecycle_supervised(
+            "termination_watcher",
+            None,
+            async move {
+                termination().await;
+                signalled.cancel();
+            },
+        )
     };
     // D3 step 2.
     let root = connect_root(&config.database, effective_uid()).await?;
