@@ -1,0 +1,19 @@
+# Dispatch NPC, quests and encounters — partial review
+
+Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. The root reservation contains 356 files; its current validation records **27 complete files / 7,730 full-file lines**, plus selected supporting ranges. The exact per-file notes and source identities are retained in the private lane ledger. Range/hash validation confirms attribution and completeness of recorded ranges; it does not perform the review.
+
+## Completed source groups
+
+The boss catalogue, difficulty and reward command adapters were traced through their actual routing callers. Current capability, session, tagged scope, runtime owner and control checks precede owning operations. Personal settlement freezes the full contributor census, denominator, original death identity and deterministic reward inputs; current Item facts bound quantity splitting and a later recipient failure rejects the complete plan. Collection separates historical receipt lookup from new physical work, with independently current custody and chest reach checks. Contribution tests use both actual native batches and deliberately constructed healing receipts. The actual retained replay producer sets `applied = false`, which is the counterguard against repeated healing credit; the absence of a second local healing key does not establish a defect.
+
+The complete Svargrond Arena adapter, its PostgreSQL scenario and fixture were read. Actual monster-AI cadence calls the arena tick. Advance depends on the projected opponent death and winning Character, while fee, reward and match state are committed by their durable owners before physical projection. Entry checks the authored coordinates, admitted creature policy, walkability and pit occupancy. The test constructs a synthetic walkable map and seeded equipment/build, then defines ten normal fights, fee/reward replay and reload assertions. It does not establish that a deployed World contains the room.
+
+Drome Cube and Kooldown Aid were reviewed through the existing USE routing and all six associated test/fixture files. Exact retained requests preserve transaction and output identity across uncertain storage outcomes. Current continuation authority remains independent of historical receipt data. Cube reservations protect both source and output; a historical receipt cannot clear a newer attempt. Kooldown Aid resets only from a matching retained request under current live-owner checks, and repeated historical reads do not reset later spells. The fixture explicitly seeds custody and uses synthetic clocks; tests were read, not executed.
+
+Endgame NPC dialogue, payment preparation and entry tests were read with the actual dispatch, resume and reward-fee callers. Visible NPC identity and conversation context select closed actions; the access purchase requires two confirmations. Current Character fence, lease, level and quest state govern durable transitions. Pending exact payment/mutation is retained before the await and the revision cursor is invalidated before uncertain work. Receipt reconciliation does not create a new mutation. Test room/catalogue assertions remain unexecuted definitions.
+
+## Remaining work and limits
+
+The remaining reservation covers further NPC conversations, quests, Soulpit, endgame encounters and their separate test bodies. Includes, neighbouring-module completion and catalogue names grant no automatic coverage. Cross-module questions about delayed reward retention, activity availability and source qualification are tracked separately; this partial group establishes no additional confirmed finding.
+
+No Cargo, PostgreSQL, native client/server, external process, TLS handshake or live gameplay test was executed for this group. The immutable application source remains unchanged.

@@ -7,7 +7,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | Module | Status | Tracked files | Analyzed files | Full files | Analyzed lines |
 |---|---|---:|---:|---:|---:|
 | oteryn-client | REVIEWED | 1180 | 1180 | 1180 | 143488 |
-| oteryn-game-server | IN PROGRESS | 873 | 816 | 815 | 431620 |
+| oteryn-game-server | REVIEWED | 873 | 873 | 873 | 489700 |
 | oteryn-admin-agent | REVIEWED | 12 | 12 | 12 | 1865 |
 | oteryn-admin-contracts | REVIEWED | 7 | 7 | 7 | 834 |
 | oteryn-client-assets | REVIEWED | 19 | 19 | 19 | 2341 |
@@ -25,7 +25,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-combat-rules | REVIEWED | 29 | 29 | 29 | 5131 |
 | oteryn-gameplay-content | REVIEWED | 139 | 139 | 139 | 71505 |
 | oteryn-gameplay-content-promotion | REVIEWED | 36 | 36 | 36 | 13600 |
-| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 708 | 640 | 160867 |
+| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 844 | 793 | 211030 |
 | oteryn-gameplay-domain | REVIEWED | 67 | 67 | 67 | 33806 |
 | oteryn-gameplay-durability | REVIEWED | 721 | 721 | 721 | 216548 |
 | oteryn-gameplay-economy | REVIEWED | 28 | 28 | 28 | 3978 |

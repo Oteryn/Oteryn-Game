@@ -1,7 +1,7 @@
 {
   "input_base": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
   "observed_main": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
-  "observed_at_utc": "2026-11-10T18:02:10Z",
+  "observed_at_utc": "2026-11-10T18:38:24Z",
   "changed_paths": [
     ".github/workflows/merge-authority-audit.yml",
     ".github/workflows/merge-group-gate.yml",
@@ -262,7 +262,7 @@
   "delta_review_status": "COMPLETE: all 117 successor changed paths substantively reviewed at 43f48; 26 have complete delta review with selected context, not full target-file reread.",
   "delta_owner": "client-support: 54 final-commit paths; lead: 10 Task Board paths; protocol-session: 53 other successor paths",
   "scope": "Primary audit counts remain bound to input_base. Prior b028 review is retained only at its exact reviewed version; no automatic current-main or runtime credit.",
-  "latest_connector_confirmation_utc": "2026-11-10T18:02:10Z",
+  "latest_connector_confirmation_utc": "2026-11-10T18:38:24Z",
   "confirmation_note": "Fresh connector still identifies 43f48. Root qualified the disjoint 64 plus 53 path partition, exact target bytes, all changed hunks and recorded context. Primary 4f coverage remains separate; no automatic runtime or deployment qualification.",
   "prior_successor_report": "latest-main-hud-delta.md",
   "prior_successor_validation": "latest-main-hud-validation.json",

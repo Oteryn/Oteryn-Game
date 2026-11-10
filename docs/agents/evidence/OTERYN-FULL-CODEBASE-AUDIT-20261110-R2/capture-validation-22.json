@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T18:40:10.032796+00:00",
+  "captures": {
+    "durability": {
+      "path": "protocol-session/durability/captures/checkpoint-50-ledger.json",
+      "sha256": "4fdb43477aefdac4adbc679b8c1f91406769ead34deba052f7eb5f6f8599ddc4",
+      "full_files": 721,
+      "full_file_physical_lines": 216548,
+      "all_scope_text_lines_union": 216548,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "server": {
+      "path": "protocol-session/game-server-worker-captures/checkpoint-873-ledger.json",
+      "sha256": "0272f69956687e04b05e6a6461fa4dc5e8e3e40217335596abde763ea68e4e7b",
+      "full_files": 873,
+      "full_file_physical_lines": 489700,
+      "all_scope_text_lines_union": 489700,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 2703,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch": {
+      "path": "client-support/dispatch-checkpoint38-ledger.json",
+      "sha256": "5147e49b66884c14aa64937f91bdb21bbe48f5d5e64493e54789a785d8f1aa25",
+      "full_files": 638,
+      "full_file_physical_lines": 157363,
+      "all_scope_text_lines_union": 162456,
+      "partial_reviewed_lines": 5093,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_social_world": {
+      "path": "protocol-session/dispatch-social-world/captures/checkpoint-08-ledger.json",
+      "sha256": "884a45e568a9f77acee2bbaddf92c2f33207e8c39a331f5618339bf9a626fdfa",
+      "full_files": 90,
+      "full_file_physical_lines": 23267,
+      "all_scope_text_lines_union": 23267,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_root": {
+      "path": "lead/dispatch-quests-npc-encounters/ledger.json",
+      "sha256": "6290d9864c690b2936591887bfe69ed5ebd537564599de4237f6b57f63dae6cd",
+      "full_files": 27,
+      "full_file_physical_lines": 7730,
+      "all_scope_text_lines_union": 8574,
+      "partial_reviewed_lines": 844,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    }
+  },
+  "server_method_maps": {
+    "game-server-appearance-capture-method-map.md": "90fb804da69c6658b0276f7c488d6862b2d09d3dc371795f3f51dbda51308aa8",
+    "game-server-spawn-fixture-method-map.md": "2219981460bf6bd58cf0e9ddf7306a90584b0bb9fe239b1ae4cdf8b087be9df3",
+    "game-server-seven-fixture-method-map.md": "348390d50ea1da0dd25ae206bd8c550cc9120851d94c0d0067e267359311480b",
+    "game-server-auto-attack-fixture-method-map.md": "d7593104034863d3328a3bef6c649fbcd83965e39db31e895e639f3cdb126ba5",
+    "game-server-callback-cast-fixture-method-map.md": "3fbba196681354508896b1f61c4cb865a8ec62b53118d75943b982b32e9c3538",
+    "game-server-tls-fixture-method-map.md": "51e1efbd633d88829848ddd3653328cbc985da328a24383dc47d1f9187d92836",
+    "game-server-transport-tls-method-map.md": "429224a77cf514e99c1b92d4872b99d6b9a5f52529c2bf3a7edf2f8a0cf9366f"
+  },
+  "new_semantic_note_review": "Root read the final server completion report/manifest, all 58 new server notes since capture 815, all 28 new or changed client-support notes from checkpoint 33 to 38, and all 80 new social/world notes from checkpoint 01 to 08 with the complete checkpoint 08 report. Root directly reviewed its 27 full files and supporting ranges.",
+  "aggregate_scope": "The frozen integrated ledger can include later delegated live work. The stable captures above identify the exact separately root-inspected note sets; aggregate counts are not a claim of a second root manual review of all delegated files.",
+  "root_scope": "Independent immutable byte/range/inclusion qualification and substantive delegated report/note inspection. Method maps retain their earlier complete qualified semantics.",
+  "runtime_execution": false
+}
