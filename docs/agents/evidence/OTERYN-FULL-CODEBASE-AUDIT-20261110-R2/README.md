@@ -1,4 +1,4 @@
-# OTERYN FULL AUDIT — continuation checkpoint 14
+# OTERYN FULL AUDIT — continuation checkpoint 15
 
 Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues across all remaining packages and supplementary domains.
 
@@ -6,7 +6,7 @@ Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues acro
 
 - 67 workspace packages; 11 supplementary domains; 27900 tracked input files.
 - **60 packages REVIEWED / 7 IN PROGRESS / 0 NOT STARTED / 0 VERIFIED**.
-- **5,928 distinct substantively analyzed files**: 5,776 full and 152 selected-range files; 1,043,097 deduplicated text line positions.
+- **6,246 distinct substantively analyzed files**: 6,105 full and 141 selected-range files; 1,117,863 deduplicated text line positions.
 - Four binary fixtures were semantically decoded in full, totaling 475 bytes. Their exact ranges use bytes and are excluded from line counts.
 - 192 historical files retain their exact ranges only because their Git blobs are identical. Four changed historical files receive no automatic carryover credit; fresh review is attributed separately.
 - REVIEWED requires every tracked package file and a substantive report. File discovery, text search, hash checks and test-source inspection are not runtime execution.
@@ -15,7 +15,7 @@ Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues acro
 
 The [first published checkpoint](https://github.com/Oteryn/Oteryn-Game/tree/1c39ebc3347319fe08eaf58299a8a9e9339b0367/docs/agents/evidence/OTERYN-FULL-CODEBASE-AUDIT-20261110) retains three confirmed P1, three confirmed P2, two LIKELY findings and four rejected hypotheses.
 
-Thirteen additional findings have independent lead verification:
+Fourteen additional findings have independent lead verification:
 
 | ID | Confirmed bounded effect | Evidence |
 |---|---|---|
@@ -32,12 +32,13 @@ Thirteen additional findings have independent lead verification:
 | GR-ENT-003 | The first ordinary home-spawn deadline omits the installed selected-creature DailyBoost reduction | `verify-spawn-modifiers.md` |
 | CL-016 | An ordinary periodic condition pass removes a permanent environmental appearance before the player exits the tile | `verify-permanent-appearance.md` |
 | CL-018 | The actual sex-qualified appearance path omits the correctly earned permanent Newly Wed grant | `verify-marriage-outfit.md` |
+| PS-R2-010 | A supported state transition prevents a subsequent feature-state refresh; bounded integration effect, without a permanent account-lock claim | Restricted independent evidence retained privately under SECURITY.md |
 
-Cumulative confirmed counts: **P0=0 / P1=4 / P2=15 / P3=0**. Existing LIKELY=2 and earlier rejected hypotheses=4 remain. New unconfirmed hardening and integration candidates are excluded. Static confirmation does not claim a deployed incident, permanent reconnect failure or native end-to-end reproduction.
+Cumulative confirmed counts: **P0=0 / P1=4 / P2=16 / P3=0**. Existing LIKELY=2 and earlier rejected hypotheses=4 remain. New unconfirmed hardening and integration candidates are excluded. Static confirmation does not claim a deployed incident, permanent reconnect failure or native end-to-end reproduction.
 
 ## Current main and scope
 
-Fresh main is `af33fd3baeac15d9991bd24c91bcacc8733492e2`. Its complete diff from the input is four client startup-diagnostic files. All other input blobs are identical. All four changed files were separately reviewed in full; the lead verified their exact latest-main hashes and complete ranges. The primary package counts remain bound to the immutable input. See `latest-main-reconciliation.json` and `latest-main-delta.md`; native Windows/installer execution was not performed.
+Fresh main observed at 16:08:23 UTC is `b028bef4ddcc6d48bdd6cf61479c94e42435ed88`. The complete source-tree delta from the input is 22 files. The earlier four startup-diagnostic files at `af33fd3baeac15d9991bd24c91bcacc8733492e2` retain separate complete review. The new 18-file Windows HUD/manifest successor is **IN PROGRESS**, assigned to the client lane; no automatic review credit is granted. Primary counts remain bound to the immutable input. See `latest-main-reconciliation.json` and the earlier `latest-main-delta.md`. No native Windows/installer execution was performed.
 
 ## Reports
 
@@ -46,7 +47,7 @@ Fresh main is `af33fd3baeac15d9991bd24c91bcacc8733492e2`. Its complete diff from
 - Lead: `admin-review.md`, `admission-recovery-review.md`, `determinism-ops-review.md`, `world-bundle-review.md`, `dev-client-bots-review.md`, `architecture-review.md`, `world-compiler-review.md`, `domain-review.md`, `combat-review.md`, `entities-review.md`, `progression-review.md`, `monster-ai-review.md`.
 - Gameplay foundation, content promotion and native admission source: `foundation.md`, `content-promotion.md`, `native-admission-source.md`.
 - Complete spell source: `spell-review.md`, `spell-coverage-validation.json`, `spell-embedded-source-validation.json`; complete content: `content.md`, `content-completion-validation.json`; complete items: `items-review.md`, `items-coverage-validation.json`, `items-imbuement-unchanged-tests.json`.
-- Complete encounters: `encounters-review.md`, `encounters-coverage-validation.json`, `encounters-entry-unchanged-tests.json`; partial dispatch: `dispatch-progress.md`.
+- Complete encounters: `encounters-review.md`, `encounters-coverage-validation.json`, `encounters-entry-unchanged-tests.json`; partial dispatch: `dispatch-progress.md`; partial quests: `quests-progress.md`.
 - Native client application: `apps-client.md`; 1,180 full files, with unresolved candidates separated from confirmed findings.
 - Protocol/session: `protocol-session.md`, `platform-client.md`, `session.md`, `protocol.md`; partial `durability-progress.md` and `game-server-progress.md`.
 - Gameplay: `characters.md`, `node-files.md`, `weather.md`, `source-critical-baseline.md`, `housing.md`, `economy.md`, `combat-rules.md`, `encounter-rules.md`, `social-rules.md`, `spell-rules.md`, `world-change.md`, `npc.md`.
@@ -72,8 +73,10 @@ Content is now **REVIEWED: 139/139 files and 71,505 line-accounting units**. Its
 
 Encounters is now **REVIEWED: 93/93 files and 22,624 lines**. The complete source, manifest and test bodies were read, and exact Git/worktree/full-range checks passed. Review traces pure rules, native physical state, map-dependent callbacks, timers, child lifecycle and actual boss entry/party prerequisites. Six original endgame-entry tests passed through an unchanged-source path-only rustc harness. Other native/source test bodies were inspected, not executed. No additional confirmed finding was established.
 
-Frozen durability coverage is **448/721 full files**, 463 with substantive ranges and **139,297 lines**. Frozen game-server coverage is **518/873 full files**, 519 with ranges and **124,200 lines**. Frozen dispatch coverage is **196/1668 full files**, 295 with ranges and **43,118 lines**. The 430-file durability capture and parent-validated 518-file server capture are included. All attributed ranges are deduplicated; later live work is excluded.
+Frozen durability coverage is **482/721 full files**, 495 with substantive ranges and **152,770 lines**. Frozen game-server coverage is **569/873 full files**, 570 with ranges and **143,770 lines**. Frozen dispatch coverage is **376/1668 full files**, 467 with ranges and **70,791 lines**. The 469-file durability capture and parent-validated 569-file server capture are included. All attributed ranges are deduplicated; later live work is excluded.
 
-All 67 packages have substantive review coverage; seven remain incomplete. The eleven supplementary domains remain **5 IN PROGRESS / 6 NOT STARTED**. Lead continues quests, social, world and the synthetic client harness while delegated lanes complete dispatch, durability and server. Every supplementary domain remains in scope. Confirmed counts remain **P0=0 / P1=4 / P2=15 / P3=0**. SEC-001 corroboration is deduplicated; no new candidate is promoted by this checkpoint.
+Quests is **IN PROGRESS: 64/103 full files**, with 15,704 deduplicated reviewed lines. Catalogue, NPC/reward/world callback ownership, shared-world native bindings and all Batch3-A source helpers are reviewed; remaining adapters, task boards, log and integration tests are explicit in the ledger.
+
+All 67 packages have substantive coverage; seven remain incomplete. Supplementary domains remain **5 IN PROGRESS / 6 NOT STARTED**. Lead continues quests, social, world and the synthetic client harness while delegated lanes complete dispatch, durability and server. Every supplementary domain remains in scope. Confirmed counts are **P0=0 / P1=4 / P2=16 / P3=0**. The new PS-R2-010 received independent source confirmation; restricted proof stays private. SEC-001 corroboration is deduplicated.
 
 The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and lifecycle. Repairs remain separate work; this branch changes audit evidence only.

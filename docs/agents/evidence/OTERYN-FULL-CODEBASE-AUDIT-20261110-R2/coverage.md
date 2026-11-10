@@ -7,7 +7,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | Module | Status | Tracked files | Analyzed files | Full files | Analyzed lines |
 |---|---|---:|---:|---:|---:|
 | oteryn-client | REVIEWED | 1180 | 1180 | 1180 | 143488 |
-| oteryn-game-server | IN PROGRESS | 873 | 519 | 518 | 124200 |
+| oteryn-game-server | IN PROGRESS | 873 | 570 | 569 | 143770 |
 | oteryn-admin-agent | REVIEWED | 12 | 12 | 12 | 1865 |
 | oteryn-admin-contracts | REVIEWED | 7 | 7 | 7 | 834 |
 | oteryn-client-assets | REVIEWED | 19 | 19 | 19 | 2341 |
@@ -25,9 +25,9 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-combat-rules | REVIEWED | 29 | 29 | 29 | 5131 |
 | oteryn-gameplay-content | REVIEWED | 139 | 139 | 139 | 71505 |
 | oteryn-gameplay-content-promotion | REVIEWED | 36 | 36 | 36 | 13600 |
-| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 295 | 196 | 43118 |
+| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 467 | 376 | 70791 |
 | oteryn-gameplay-domain | REVIEWED | 67 | 67 | 67 | 33806 |
-| oteryn-gameplay-durability | IN PROGRESS | 721 | 463 | 448 | 139297 |
+| oteryn-gameplay-durability | IN PROGRESS | 721 | 495 | 482 | 152770 |
 | oteryn-gameplay-economy | REVIEWED | 28 | 28 | 28 | 3978 |
 | oteryn-gameplay-encounter-rules | REVIEWED | 21 | 21 | 21 | 4945 |
 | oteryn-gameplay-encounters | REVIEWED | 93 | 93 | 93 | 22624 |
@@ -40,7 +40,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-node-files | REVIEWED | 4 | 4 | 4 | 736 |
 | oteryn-gameplay-npc | REVIEWED | 17 | 17 | 17 | 4359 |
 | oteryn-gameplay-progression | REVIEWED | 43 | 43 | 43 | 11169 |
-| oteryn-gameplay-quests | IN PROGRESS | 103 | 5 | 1 | 1795 |
+| oteryn-gameplay-quests | IN PROGRESS | 103 | 65 | 64 | 15704 |
 | oteryn-gameplay-social | IN PROGRESS | 56 | 3 | 1 | 286 |
 | oteryn-gameplay-social-rules | REVIEWED | 22 | 22 | 22 | 3479 |
 | oteryn-gameplay-source-critical-baseline | REVIEWED | 2 | 2 | 2 | 145 |
@@ -77,10 +77,10 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | agent-configuration-and-retained-evidence | NOT STARTED | 113 | 0 | 0 | 0 |
 | content | IN PROGRESS | 8032 | 3 | 2 | 78 |
 | deploy | NOT STARTED | 16 | 0 | 0 | 0 |
-| docs | IN PROGRESS | 7398 | 25 | 9 | 1912 |
+| docs | IN PROGRESS | 7398 | 27 | 10 | 2003 |
 | imports | NOT STARTED | 565 | 0 | 0 | 0 |
 | repository-root | NOT STARTED | 16 | 0 | 0 | 0 |
-| rulesets | IN PROGRESS | 77 | 3 | 3 | 309 |
+| rulesets | IN PROGRESS | 77 | 4 | 3 | 359 |
 | tests | NOT STARTED | 12 | 0 | 0 | 0 |
 | tools | IN PROGRESS | 2681 | 7 | 4 | 1121 |
 | vendor | NOT STARTED | 793 | 0 | 0 | 0 |
