@@ -86,7 +86,7 @@ impl PanelControls {
             .any(|h| h.is_null())
             {
                 DestroyWindow(h);
-                close(&weak, backend);
+                close(weak, backend);
                 return None;
             }
 

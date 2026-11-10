@@ -14,13 +14,12 @@ pub(in crate::play) fn open(link: &PlayLink) {
             },
             set_open: |mailbox, open| mailbox.premium_game.open = open,
             submit: |mailbox, commands, _, _| {
-                if let Some(command) = mailbox.premium_game.request() {
-                    if commands
+                if let Some(command) = mailbox.premium_game.request()
+                    && commands
                         .send(crate::combat_input::PlayCommand::Feature(command))
                         .is_err()
-                    {
-                        mailbox.premium_game.fail("The session has ended.");
-                    }
+                {
+                    mailbox.premium_game.fail("The session has ended.");
                 }
             },
         },

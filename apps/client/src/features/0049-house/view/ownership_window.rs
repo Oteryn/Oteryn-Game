@@ -153,8 +153,8 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>) {
             }
             if fields != state.fields {
                 fields = state.fields.clone();
-                for i in 0..3 {
-                    set(edits[i], &fields[i]);
+                for (edit, field) in edits.iter().zip(&fields) {
+                    set(*edit, field);
                 }
             }
             let text = oteryn_client_ui::house::ownership_text(&state.model);
@@ -165,9 +165,9 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>) {
             let ready = !state.model.pending();
             let allowed = state.model.row().map_or(0, |r| r.allowed);
             EnableWindow(choice, i32::from(ready));
-            for i in 0..3 {
+            for (i, edit) in edits.iter().enumerate() {
                 EnableWindow(
-                    edits[i],
+                    *edit,
                     i32::from(
                         ready && (allowed & (1 << 3) != 0 || (i == 1 && allowed & (1 << 1) != 0)),
                     ),
