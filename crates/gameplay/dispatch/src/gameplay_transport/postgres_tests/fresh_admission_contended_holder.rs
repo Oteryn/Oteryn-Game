@@ -54,12 +54,13 @@ fn fresh_admission_completes_while_other_owners_share_the_holder_postgres() -> T
                 supported_capabilities: &[],
             };
 
-            // Other owners keep the single holder about half busy with short passes and retry it
-            // through the ordinary command budget whenever they find it busy, as a served session
-            // and the Channel cadences do on a node (holder_window: 35-45 % held).
+            // Other owners keep the single holder about three quarters busy with short passes and
+            // retry it through the ordinary command budget whenever they find it busy, as a served
+            // session and the Channel cadences do on a node while two players join
+            // (holder_window: 77 % held).
             let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
             let mut competitors = Vec::new();
-            for think in [29_u64, 31, 37, 41] {
+            for think in [13_u64, 17, 21, 25] {
                 let root = h.root.clone();
                 let stop = stop.clone();
                 competitors.push(tokio::spawn(async move {

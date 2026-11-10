@@ -1331,6 +1331,9 @@ struct AdmissionRetryBudget<'r> {
     // Opt-in foreground owners retain preference across every read and wait of
     // this fixed budget, including cancellation of the enclosing future.
     _foreground: Option<crate::durability::ForegroundDemand>,
+    /// This owner's place in the holder queue from its first retried refusal on: a returned
+    /// holder is handed to it before owners refused later.
+    waiter: std::sync::OnceLock<Option<crate::durability::HolderWaiter>>,
 }
 
 /// The earliest retry after a step that found the holder busy, measured from the failure
@@ -1350,6 +1353,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             stale_rounds: 1,
             root: None,
             _foreground: None,
+            waiter: std::sync::OnceLock::new(),
         }
     }
 
@@ -1363,6 +1367,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
             _foreground: None,
+            waiter: std::sync::OnceLock::new(),
         }
     }
 
@@ -1408,26 +1413,40 @@ impl<'r> AdmissionRetryBudget<'r> {
     async fn retries_unavailable(&self, refusal: AdmissionRefusal) -> bool {
         let now = tokio::time::Instant::now();
         if refusal != AdmissionRefusal::Unavailable || now + self.backoff >= self.deadline {
+            // A given-up owner no longer holds later owners back.
+            if let Some(root) = self.root {
+                root.holder_retrying();
+            }
             return false;
         }
         match self.root {
             Some(root) => {
+                // Keep this owner's place from its first retried refusal, so the holder is
+                // handed to it before owners refused later.
+                let _ = self.waiter.get_or_init(|| root.holder_waiter());
                 let earliest = now + HOLDER_RETRY_FLOOR;
                 let latest = now + self.backoff;
-                if root.is_ready() {
+                if root.holder_turn() {
+                    // Already handed to this owner: the holder is idle and no owner refused
+                    // before it waits.
+                } else if root.is_ready() {
                     root.wait_holder_retry(earliest, latest).await;
                 } else {
                     // A retired holder cannot emit a return notification. Service
                     // real readiness within this same retry window, then retry on
                     // its observed return; neither deadline nor refusal changes.
                     let ready = tokio::time::timeout_at(latest, root.await_ready()).await;
-                    let retry_at = if matches!(ready, Ok(Ok(()))) {
+                    let retry_at = if matches!(ready, Ok(Ok(()))) && !root.holder_turn() {
                         earliest.min(latest)
+                    } else if matches!(ready, Ok(Ok(()))) {
+                        // The returned holder is this owner's turn: take it now.
+                        tokio::time::Instant::now()
                     } else {
                         latest
                     };
                     tokio::time::sleep_until(retry_at).await;
                 }
+                root.holder_retrying();
             }
             None => tokio::time::sleep(self.backoff).await,
         }

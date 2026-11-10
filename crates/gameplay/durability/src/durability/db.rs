@@ -17,9 +17,12 @@ use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, Notify};
 
 mod foreground;
+mod holder_queue;
 mod ready_admission;
 
 use foreground::HolderPriority;
+use holder_queue::HolderQueue;
+pub use holder_queue::HolderWaiter;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const DB_TRANSACTION_FAILED: oteryn_error_codes::ErrorCode = oteryn_error_codes::ErrorCode::new(
@@ -1012,6 +1015,8 @@ pub struct DurabilityRoot {
     holder_returned: Arc<Notify>,
     maintenance: Arc<Mutex<()>>,
     holder_priority: Arc<HolderPriority>,
+    /// Refused owners in arrival order; the returned holder goes to the oldest waiting one.
+    holder_queue: Arc<StdMutex<HolderQueue>>,
     /// Which semantic pass has the holder checked out (NBDIAG-4).
     holder_owner: Arc<StdMutex<HolderOwner>>,
     /// The deadline of the next semantic pass in milliseconds, shared by every clone:
@@ -1093,6 +1098,7 @@ impl DurabilityRoot {
             holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
             holder_priority: Arc::default(),
+            holder_queue: Arc::default(),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: Some(Box::new(relay_options)),
             _root_i_charge: root_i_charge,
@@ -1132,6 +1138,7 @@ impl DurabilityRoot {
             holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
             holder_priority: Arc::default(),
+            holder_queue: Arc::default(),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: <PgConnectOptions as std::str::FromStr>::from_str(database_url)
                 .ok()
@@ -1142,6 +1149,18 @@ impl DurabilityRoot {
     }
 
     pub fn spawn_task<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        // Work spawned on an owner's behalf keeps that owner's place for the holder.
+        match holder_queue::current_owner() {
+            Some(owner) => self.spawn_on_runtime(holder_queue::spawned_for(owner, future)),
+            None => self.spawn_on_runtime(future),
+        }
+    }
+
+    fn spawn_on_runtime<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
     where
         F: Future + Send + 'static,
         F::Output: Send + 'static,
@@ -1178,13 +1197,54 @@ impl DurabilityRoot {
     }
 
     /// Checkout only an already-idle holder. This method never establishes a connection.
+    /// While an owner refused earlier still waits, a later owner is refused too, so the
+    /// returned holder is handed to the oldest waiting owner (see [`HolderWaiter`]).
     pub fn try_acquire_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+        let owner = holder_queue::current_owner();
+        let now = Instant::now();
+        let mut queue = self
+            .holder_queue
+            .lock()
+            .map_err(|_| DurabilityError::RootUnavailable)?;
+        if queue.blocks(owner, now) {
+            queue.refused(owner, now);
+            return Err(DurabilityError::RootUnavailable);
+        }
         if let Some(holder) = self.pool.try_acquire() {
+            queue.trying(owner);
             return Ok(holder);
         }
-
+        queue.refused(owner, now);
+        drop(queue);
         self.request_ready();
         Err(DurabilityError::RootUnavailable)
+    }
+
+    /// Takes the current owner's place in the holder queue after a refused checkout it will
+    /// retry. `None` when an outer retry of the same owner already holds the place.
+    #[must_use]
+    pub fn holder_waiter(&self) -> Option<HolderWaiter> {
+        HolderWaiter::enqueue(&self.holder_queue)
+    }
+
+    /// Whether the holder is idle and the current owner's checkout would be served now: no
+    /// owner refused before it is still waiting.
+    #[must_use]
+    pub fn holder_turn(&self) -> bool {
+        let owner = holder_queue::current_owner();
+        self.pool.num_idle() > 0
+            && self
+                .holder_queue
+                .lock()
+                .is_ok_and(|queue| !queue.blocks(owner, Instant::now()))
+    }
+
+    /// The current owner retries now: its place stops holding later owners, but keeps it
+    /// ahead of them.
+    pub fn holder_retrying(&self) {
+        if let Ok(mut queue) = self.holder_queue.lock() {
+            queue.trying(holder_queue::current_owner());
+        }
     }
 
     /// Consume at most one coalesced demand and run one bounded maintenance window.
