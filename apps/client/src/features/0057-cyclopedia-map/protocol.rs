@@ -15,6 +15,14 @@ impl crate::play::Outbox {
         let mut mailbox = crate::play::mailbox::lock(&self.0);
         let panel = &mut mailbox.properties.cyclopedia_map;
         for event in events {
+            // Session permits a sequence rewind only for a committed House/activity
+            // destination; ordinary replacement snapshots advance the current sequence.
+            // Apply each barrier in order, retaining any discovery awaiting presentation.
+            if let oteryn_session::SessionEvent::GatedSnapshotReplaced(delta) = event
+                && delta.server_sequence < panel.discovery_notice_sequence
+            {
+                panel.discovery_notice_sequence = delta.server_sequence;
+            }
             if let oteryn_session::SessionEvent::TutorialNotice(delta) = event
                 && matches!(&delta.value,
                     oteryn_client_runtime::tutorial_notices::TutorialNotice::StatusText(text)

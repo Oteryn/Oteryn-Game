@@ -167,3 +167,182 @@ fn reset_waits_for_authoritative_reply_and_snapshots_never_show_discovery_banner
         .join()
         .map_err(|_| "discovery reset scenario panicked")?
 }
+
+fn snapshot_markers(sequence: u64) -> [SessionEvent; 2] {
+    use oteryn_protocol_oteryn::{
+        tutorial_notices::{STATE_DOMAIN_TUTORIAL_NOTICES, TUTORIAL_NOTICES_SNAPSHOT},
+        zones_nologout::{SERVER_MESSAGES_EMPTY_SNAPSHOT, STATE_DOMAIN_SERVER_MESSAGES},
+    };
+    // Session emits one ordered marker per domain in the same validated snapshot.
+    [
+        (STATE_DOMAIN_TUTORIAL_NOTICES, TUTORIAL_NOTICES_SNAPSHOT),
+        (STATE_DOMAIN_SERVER_MESSAGES, SERVER_MESSAGES_EMPTY_SNAPSHOT),
+    ]
+    .map(|(domain_id, payload)| {
+        SessionEvent::GatedSnapshotReplaced(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::GatedSnapshot {
+                domain_id,
+                snapshot_type: 1,
+                revision: 1,
+                payload: payload.to_vec(),
+            },
+        })
+    })
+}
+
+fn handoff_scenario(
+    run: impl FnOnce() -> Result<(), String> + Send + 'static,
+) -> Result<(), String> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(run)
+        .map_err(|e| e.to_string())?
+        .join()
+        .map_err(|_| "discovery handoff scenario panicked")?
+}
+
+#[test]
+fn discovery_notice_accepts_lower_sequences_after_house_and_activity_snapshots()
+-> Result<(), String> {
+    handoff_scenario(|| {
+        // House entry starts at 1; House exit and activity destinations start at 0.
+        for baseline in [0, 1] {
+            let (link, _commands, outbox) = play_channel();
+            let mut view = PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])
+                .map_err(|e| e.to_string())?;
+            outbox.push(vec![discovery(100)]);
+            view.tick(&link).map_err(|e| format!("{e:?}"))?;
+            assert!(!view.notification_text(false).is_empty());
+            assert!(
+                view.game_notifications
+                    .text_at(false, Instant::now() + Duration::from_secs(9))
+                    .is_empty()
+            );
+            outbox.push(snapshot_markers(baseline).into());
+            assert_eq!(
+                link.cyclopedia_map_panel().discovery_notice_sequence,
+                baseline
+            );
+            assert!(link.cyclopedia_map_panel().discovery_banner.is_none());
+            view.tick(&link).map_err(|e| format!("{e:?}"))?;
+            assert!(view.notification_text(false).is_empty());
+            outbox.push(vec![discovery(baseline + 1)]);
+            view.tick(&link).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                view.notification_text(false),
+                format!("{}\r\n", super::super::protocol::DISCOVERY_NOTICE)
+            );
+            assert_eq!(
+                link.cyclopedia_map_panel().discovery_notice_sequence,
+                baseline + 1
+            );
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn discovery_handoff_preserves_queued_banner_and_reduces_mixed_batches_in_order()
+-> Result<(), String> {
+    handoff_scenario(|| {
+        for baseline in [0, 1] {
+            let (link, _commands, outbox) = play_channel();
+            let mut view = PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])
+                .map_err(|e| e.to_string())?;
+            let mut events = vec![discovery(100)];
+            events.extend(snapshot_markers(baseline));
+            outbox.push(events);
+            let panel = link.cyclopedia_map_panel();
+            assert_eq!(panel.discovery_notice_sequence, baseline);
+            assert_eq!(panel.discovery_banner, Some(100));
+            view.tick(&link).map_err(|e| format!("{e:?}"))?;
+            assert!(!view.notification_text(false).is_empty());
+            assert!(
+                view.game_notifications
+                    .text_at(false, Instant::now() + Duration::from_secs(9))
+                    .is_empty()
+            );
+            let mut events = vec![discovery(101)];
+            events.extend(snapshot_markers(baseline));
+            events.extend([discovery(baseline + 2), discovery(baseline + 1)]);
+            outbox.push(events);
+            let panel = link.cyclopedia_map_panel();
+            assert_eq!(panel.discovery_notice_sequence, baseline + 2);
+            assert_eq!(panel.discovery_banner, Some(baseline + 2));
+            view.tick(&link).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                view.notification_text(false),
+                format!("{}\r\n", super::super::protocol::DISCOVERY_NOTICE)
+            );
+            assert!(link.cyclopedia_map_panel().discovery_banner.is_none());
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn ordinary_snapshot_keeps_discovery_replay_watermark() -> Result<(), String> {
+    handoff_scenario(|| {
+        let (link, _commands, outbox) = play_channel();
+        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])
+            .map_err(|e| e.to_string())?;
+        outbox.push(vec![discovery(100)]);
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+        assert!(!view.notification_text(false).is_empty());
+        assert!(
+            view.game_notifications
+                .text_at(false, Instant::now() + Duration::from_secs(9))
+                .is_empty()
+        );
+        let mut events = Vec::from(snapshot_markers(101));
+        events.extend([discovery(100), discovery(99)]);
+        outbox.push(events);
+        assert_eq!(link.cyclopedia_map_panel().discovery_notice_sequence, 100);
+        assert!(link.cyclopedia_map_panel().discovery_banner.is_none());
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+        assert!(view.notification_text(false).is_empty());
+        outbox.push(vec![discovery(102)]);
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+        assert!(!view.notification_text(false).is_empty());
+        Ok(())
+    })
+}
+
+#[test]
+fn discovery_sequence_can_be_reused_after_handoff_but_not_replayed_within_it() -> Result<(), String>
+{
+    handoff_scenario(|| {
+        let (link, _commands, outbox) = play_channel();
+        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])
+            .map_err(|e| e.to_string())?;
+        outbox.push(vec![discovery(2)]);
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+        assert!(!view.notification_text(false).is_empty());
+        assert!(
+            view.game_notifications
+                .text_at(false, Instant::now() + Duration::from_secs(9))
+                .is_empty()
+        );
+        let mut events = Vec::from(snapshot_markers(0));
+        events.push(discovery(2));
+        outbox.push(events);
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            view.notification_text(false),
+            format!("{}\r\n", super::super::protocol::DISCOVERY_NOTICE)
+        );
+        assert!(
+            view.game_notifications
+                .text_at(false, Instant::now() + Duration::from_secs(9))
+                .is_empty()
+        );
+        outbox.push(vec![discovery(2), discovery(1)]);
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+        assert!(view.notification_text(false).is_empty());
+        assert_eq!(link.cyclopedia_map_panel().discovery_notice_sequence, 2);
+        Ok(())
+    })
+}
