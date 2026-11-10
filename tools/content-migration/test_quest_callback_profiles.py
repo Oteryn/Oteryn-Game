@@ -19,6 +19,28 @@ BLOODY_TEAR = 'oteryn:item.tibia.i32594'
 
 
 class QuestCallbackProfiles(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # The committed provider includes later owners' refinements. Capture
+        # the real predecessor stage instead of feeding final output backwards
+        # through this importer and tripping its exact-source conflict guards.
+        import register_spell_families
+        captured = {}
+
+        class StageCaptured(Exception):
+            pass
+
+        def capture(root, generated, profile_path, *args, **kwargs):
+            captured['document'] = json.loads(generated[profile_path])
+            raise StageCaptured
+
+        with patch.object(profiles, 'admit', side_effect=capture):
+            try:
+                register_spell_families.outputs(ROOT)
+            except StageCaptured:
+                pass
+        cls.predecessor = captured['document']
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='.qcb3-profile-', dir=ROOT)
         self.addCleanup(self.temp.cleanup)
@@ -33,7 +55,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.callbacks = json.loads((ROOT / 'content/quests/world-callbacks.json').read_bytes())
         (self.root / 'content/quests/killing-in-the-name-of.json').write_bytes(
             (ROOT / 'content/quests/killing-in-the-name-of.json').read_bytes())
-        self.document = json.loads((ROOT / PROFILE).read_bytes())
+        self.document = copy.deepcopy(self.predecessor)
         self.document['records'] = [r for r in self.document['records']
                                     if r['production_definition']['production_key'] not in
                                     (KEY, 'oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019',

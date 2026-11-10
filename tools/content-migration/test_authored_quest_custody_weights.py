@@ -3,6 +3,7 @@ import copy
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
 import authored_quest_item_custody as custody
@@ -28,6 +29,22 @@ class CustodyWeights(unittest.TestCase):
         self.assertEqual(self.definition, before)
         self.assertEqual(row['semantics']['physical']['value']['weight'], custody.grizzly.source.K(400))
         self.assertEqual(row['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+
+    def test_batch_reuses_proofs_and_still_refuses_a_changed_member(self):
+        expected = custody.qualify(ROOT, self.definition, self.raw)
+        definitions = [self.definition, self.icicle]
+        before = copy.deepcopy(definitions)
+        with patch.object(custody.reward, 'load_admissions', wraps=custody.reward.load_admissions) as admissions:
+            actual = custody.qualify_many(ROOT, definitions, self.raw, terminal_expiry=True)
+        self.assertEqual(admissions.call_count, 1)
+        self.assertEqual(actual[0], expected)
+        self.assertEqual(definitions, before)
+        changed = copy.deepcopy(self.definition)
+        changed['semantics']['physical']['value']['weight']['value'] = 401
+        with self.assertRaisesRegex(ValueError, 'WEIGHT_CORRECTION_BINDING'):
+            custody.qualify_many(ROOT, [self.icicle, changed], self.raw, terminal_expiry=True)
+        with self.assertRaisesRegex(ValueError, 'INSTANCE_OWNER_REQUIRED'):
+            custody.qualify_many(ROOT, definitions, self.raw)
 
     def test_changed_definition_or_xml_refuses_before_publishing_a_correction(self):
         for changed in ('definition', 'xml'):

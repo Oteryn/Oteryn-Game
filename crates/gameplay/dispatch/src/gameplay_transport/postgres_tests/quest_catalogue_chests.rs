@@ -1347,6 +1347,12 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
                     .map_err(|error| error.to_string())?;
             let generation = activation.0.active().ok_or("active generation")?;
             let native = generation.native_gameplay().ok_or("native generation")?;
+            let mut template = None;
+            super::fixture::run(async |admin| {
+                template = Some(super::fixture::MigratedDatabaseTemplate::create(admin).await?);
+                Ok(())
+            }).map_err(|error| error.to_string())?;
+            let result = (|| -> Result<(), String> {
             for case in cases {
                 for key in std::iter::once(case.root.as_str())
                     .chain(case.contents.iter().map(|(key, _, _)| key.as_str()))
@@ -1361,7 +1367,7 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
                     }
                 }
                 let started = std::time::Instant::now();
-                super::quest_container_chests::catalogue_scenario(&case, &activation)
+                super::quest_container_chests::catalogue_scenario_with_template(&case, &activation, template.as_ref())
                     .map_err(|error| format!("{} {:?}: {error}", case.claim, case.position))?;
                 println!(
                     "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED {} {:?} native_source={} duration={:?}",
@@ -1372,6 +1378,11 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
                 );
             }
             Ok(())
+            })();
+            super::fixture::run(async |_| {
+                template.ok_or("migration template")?.cleanup().await
+            }).map_err(|error| error.to_string())?;
+            result
         })?
         .join()
         .map_err(|_| "catalogue chest scenario panicked")??;

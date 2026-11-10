@@ -126,20 +126,29 @@ fn definition(key: &str) -> TypedDefinitionRef {
 }
 
 fn scenario(case: Case) -> TestResult {
-    scenario_case(case, None, None)
+    scenario_case(case, None, None, None)
 }
 
 pub(super) fn catalogue_scenario(
     chest: &super::quest_catalogue_chests::CatalogueChest,
     activation: &super::quest_catalogue_chests::CatalogueActivation,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation))
+    catalogue_scenario_with_template(chest, activation, None)
+}
+
+pub(super) fn catalogue_scenario_with_template(
+    chest: &super::quest_catalogue_chests::CatalogueChest,
+    activation: &super::quest_catalogue_chests::CatalogueActivation,
+    template: Option<&super::fixture::MigratedDatabaseTemplate>,
+) -> TestResult {
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), template)
 }
 
 fn scenario_case(
     case: Case,
     catalogue: Option<&super::quest_catalogue_chests::CatalogueChest>,
     activation: Option<&super::quest_catalogue_chests::CatalogueActivation>,
+    template: Option<&super::fixture::MigratedDatabaseTemplate>,
 ) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
         Case::Catalogue => {
@@ -246,8 +255,11 @@ fn scenario_case(
         ),
     };
     run(async |admin| {
-        let harness =
-            Harness::create_with_admission_seed(admin, "quest_container", false, false).await?;
+        let harness = if let Some(template) = template {
+            Harness::create_from_template(admin, "quest_container", template).await?
+        } else {
+            Harness::create_with_admission_seed(admin, "quest_container", false, false).await?
+        };
         prepare_current_session(&harness).await?;
         if catalogue.is_some_and(|chest| chest.unique == 0) {
             eprintln!(

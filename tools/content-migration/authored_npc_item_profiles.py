@@ -42,11 +42,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     xml = (root / XML).read_bytes()
     document = json.loads(generated[profile_path])
     present = {row['production_definition']['production_key']: row for row in document['records']}
+    new = custody.qualify_many(root, [definitions[key] for key in sorted(keys - present.keys())], xml)
+    document['records'].extend(new)
     for key in sorted(keys):
         if key in present:
             custody.reuse_existing(definitions[key], present[key], bindings)
-        else:
-            document['records'].append(custody.qualify(root, definitions[key], xml))
     document['records'].sort(key=order)
     raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
     manifest = json.loads(generated[manifest_path])

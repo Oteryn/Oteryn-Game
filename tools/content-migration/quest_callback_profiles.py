@@ -332,6 +332,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     source_items = ET.fromstring(raw).findall('item')
     import quests_2_emperor_item_profiles
     source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
+    import authored_quest_item_custody
+    missing_authored = [definitions[key] for key in sorted(authored_keys - present.keys())
+                        if key in definitions]
+    custody_inputs = (authored_quest_item_custody.qualification_inputs(root, missing_authored, raw)
+                      if missing_authored else None)
     for key, definition in sorted(definitions.items()):
         # These exact source-qualified Items retain their canonical identity;
         # this is not a general bypass for an unqualified native record.
@@ -352,7 +357,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
                 raise ValueError('AUTHORED_TIMED_EXACT_BINDING')
             expiry = authored_quest_timed_custody.source_expiry(raw, int(exact[0]['external_id']))
             if expiry is not None:
-                profile, _ = authored_quest_timed_custody.qualify(root, definition, raw, authored_callbacks)
+                profile, _ = authored_quest_timed_custody.qualify(root, definition, raw, authored_callbacks, _inputs=custody_inputs)
                 document['records'].append(profile)
                 continue
         if key in authored_keys and not definition['materializable'] and definition['stack_class'] == 'Unknown':
@@ -360,7 +365,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
             if key in present:
                 authored_quest_item_custody.reuse_existing(definition, present[key], bindings)
                 continue
-            profile = authored_quest_item_custody.qualify(root, definition, raw)
+            profile = authored_quest_item_custody.qualify(root, definition, raw, _inputs=custody_inputs)
             document['records'].append(profile)
             continue
         matches = [binding for binding in bindings if binding['target'] == identity]

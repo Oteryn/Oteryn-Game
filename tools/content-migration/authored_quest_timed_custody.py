@@ -216,10 +216,11 @@ def expiry_contract(callbacks, item_key, expiry):
                           tuple(sorted(callback['key'] for callback in refreshes)))
 
 
-def qualify(root, definition, xml_raw, callbacks):
+def qualify(root, definition, xml_raw, callbacks, *, _inputs=None):
     """Qualify custody only after the canonical omission or full deadline contract exists."""
+    from authored_quest_item_custody import _source
     source = grizzly.source
-    bindings = source.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())
+    bindings = _source(_inputs, 'index', lambda: source.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes()))
     matches = [(external, binding) for external, binding in bindings.items()
                if binding['target'] == definition['identity'] and binding['disposition'] == 'EXACT']
     if len(matches) != 1:
@@ -229,21 +230,24 @@ def qualify(root, definition, xml_raw, callbacks):
     contract = omitted_expiry_contract(root, callbacks, definition['identity']['key'], expiry)
     if contract is None:
         contract = expiry_contract(callbacks, definition['identity']['key'], expiry)
-    holds = reward.load_admissions(root).get(definition['identity']['key'], ({},))[0].get('holds', [])
+    holds = _source(_inputs, 'admissions', lambda: reward.load_admissions(root)).get(
+        definition['identity']['key'], ({},))[0].get('holds', [])
     if holds:
         raise ValueError('AUTHORED_TIMED_ACCEPTED_HOLD:' + ','.join(sorted(holds)))
-    client = (root / reward.CLIENT).read_bytes()
+    client = _source(_inputs, 'client', lambda: (root / reward.CLIENT).read_bytes())
     if hashlib.sha256(client).hexdigest() != reward.CLIENT_SHA or len(client) != reward.CLIENT_BYTES:
         raise ValueError('AUTHORED_TIMED_CLIENT_PIN')
-    appearance = source.engine_items.load_appearance_objects(client).get(item_id)
+    appearance = _source(_inputs, 'objects', lambda: source.engine_items.load_appearance_objects(client)).get(item_id)
     if appearance is None or any(appearance['flags'].get('flags.' + name, False)
                                  for name in ('liquidcontainer', 'liquidpool')):
         raise ValueError('AUTHORED_TIMED_STATEFUL_APPEARANCE')
-    physical = next((row for row in source.policies(client, xml_raw, {item_id})
-                     if row['server_item_id'] == item_id), None)
+    policies = _source(_inputs, 'policies', lambda: {row['server_item_id']: row
+        for row in source.policies(client, xml_raw, _inputs['ids'] if _inputs is not None else {item_id})})
+    physical = policies.get(item_id)
     if physical is None:
         raise ValueError('AUTHORED_TIMED_PHYSICAL_SOURCE')
-    row = source.profile(item_id, source.xml_index(xml_raw)[item_id], appearance,
+    nodes = _source(_inputs, 'nodes', lambda: source.xml_index(xml_raw))
+    row = source.profile(item_id, nodes[item_id], appearance,
                          physical, bindings, None)
     if (not row['admission']['materializable']
             or row['admission']['legal_destinations'] != ['CharacterInventory', 'Ground']

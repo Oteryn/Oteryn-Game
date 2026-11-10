@@ -95,8 +95,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if set(definitions) != set(wanted) - set(existing):
         raise ValueError('QUEST_LOOT_CANONICAL_ITEM_MISSING')
     raw = (root / corpse.XML).read_bytes()
-    records = [custody.qualify(root, definition, raw, terminal_expiry=True)
-               for _, definition in sorted(definitions.items())]
+    records = custody.qualify_many(root, [definition for _, definition in sorted(definitions.items())],
+                                   raw, terminal_expiry=True)
     document['records'].extend(records)
     document['records'].sort(key=order)
     generated[profile_path] = canonical(document)

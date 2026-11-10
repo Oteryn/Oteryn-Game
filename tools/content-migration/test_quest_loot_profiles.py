@@ -23,21 +23,30 @@ class NativeQuestLootFacts(unittest.TestCase):
 
     def test_actual_animal_loot_bridge_preserves_all_entries_and_source_quantities(self):
         required = loot.required_items(loot.ROOT, self.creatures, self.tables)
-        missing = {key for key in required if not self.facts[key]['materializable']}
         expected = {f'oteryn:item.tibia.i{number}' for number in
                     [7398, 3413, 3410, 9657, 9689, 3336, 3355, 3277]}
         animal_expected = expected.copy()
         expected |= {f'oteryn:item.tibia.i{number}' for number in
                      [281, 3006, 3036, 3037, 3038, 5809, 5892, 5904, 7414, 7427, 23529, 23531, 23533, 23542, 23543, 23544, 25759, 30192, 30195, 30275, 30276, 30277, 30278, 30279, 30280, 30281, 30282, 30283, 30284, 30285, 30318, 30319, 30320, 30321, 30322]}
+        # Main now admits these seven canonical Items before native projection.
+        # Model the pre-projection admission view this bridge test exercises,
+        # retaining every source quantity and all unrelated canonical facts.
+        baseline = copy.deepcopy(self.facts)
+        already_admitted = {f'oteryn:item.tibia.i{number}' for number in
+                            [281, 3036, 3037, 3038, 3277, 3355, 3413]}
+        self.assertTrue(all(baseline[key]['materializable'] for key in already_admitted))
+        for key in already_admitted:
+            baseline[key]['materializable'] = False
+        missing = {key for key in required if not baseline[key]['materializable']}
         self.assertEqual(missing, expected)
-        facts, tables = copy.deepcopy(self.facts), copy.deepcopy(self.tables)
+        facts, tables = copy.deepcopy(baseline), copy.deepcopy(self.tables)
         loot.apply_loot_facts(facts, loot.ROOT, self.creatures, tables, self.profiles)
         self.assertTrue(all(facts[key]['materializable'] for key in required))
         self.assertEqual(tables, self.tables)
-        changed = {key for key in facts if facts[key] != self.facts[key]}
+        changed = {key for key in facts if facts[key] != baseline[key]}
         self.assertEqual(changed, expected)
         for key in animal_expected:
-            expected_fact = copy.deepcopy(self.facts[key])
+            expected_fact = copy.deepcopy(baseline[key])
             expected_fact['materializable'] = True
             self.assertEqual(facts[key], expected_fact)
         before = copy.deepcopy(facts)

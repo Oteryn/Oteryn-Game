@@ -292,9 +292,19 @@ async fn metadata(
     let ItemKey::Instance(instance) = key else {
         return Some(None);
     };
-    let metadata = owner
-        .root
-        .read_inspection_metadata(owner.character, admitted.world_id, instance)
+    let metadata = super::AdmissionRetryBudget::for_command(owner.root)
+        .retry_unavailable(async || {
+            owner
+                .root
+                .read_inspection_metadata(owner.character, admitted.world_id, instance)
+                .await
+                .map_err(|error| match error {
+                    crate::durability::DurabilityError::RootUnavailable => {
+                        super::connection::AdmissionRefusal::Unavailable
+                    }
+                    _ => super::connection::AdmissionRefusal::Rejected,
+                })
+        })
         .await
         .ok()??;
     if &metadata.definition != definition || metadata.quantity != count {

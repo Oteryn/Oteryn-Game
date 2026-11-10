@@ -40,23 +40,54 @@ def correct_weight(root, definition, node, row):
         row['semantics']['physical']['value']['weight'] = copy.deepcopy(accepted)
 
 
-def qualify(root, definition, xml_raw, *, terminal_expiry=False):
+def _source(inputs, name, load):
+    if inputs is None:
+        return load()
+    if name not in inputs:
+        inputs[name] = load()
+    return inputs[name]
+
+
+def qualification_inputs(root, definitions, xml_raw):
+    """One source snapshot for a bounded admission pass; callers never retain it."""
+    if hashlib.sha256(xml_raw).hexdigest() != XML_SHA256:
+        raise ValueError('AUTHORED_CUSTODY_XML_PIN')
+    index = grizzly.source.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())
+    identities = {tuple(sorted(definition['identity'].items())) for definition in definitions}
+    ids = {int(external) for external, binding in index.items()
+           if tuple(sorted(binding['target'].items())) in identities and binding['disposition'] == 'EXACT'}
+    return {'index': index, 'ids': ids}
+
+
+def qualify_many(root, definitions, xml_raw, *, terminal_expiry=False):
+    """Share immutable source reads within this pass, never across changed inputs."""
+    definitions = list(definitions)
+    if not definitions:
+        return []
+    inputs = qualification_inputs(root, definitions, xml_raw)
+    return [qualify(root, definition, xml_raw, terminal_expiry=terminal_expiry, _inputs=inputs)
+            for definition in definitions]
+
+
+def qualify(root, definition, xml_raw, *, terminal_expiry=False, _inputs=None):
     if hashlib.sha256(xml_raw).hexdigest() != XML_SHA256:
         raise ValueError('AUTHORED_CUSTODY_XML_PIN')
     source = grizzly.source
-    index = source.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())
+    index = _source(_inputs, 'index', lambda: source.binding_index(
+        (root / 'imports/crystalserver/bindings/items.json').read_bytes()))
     matches = [(external, binding) for external, binding in index.items()
                if binding['target'] == definition['identity'] and binding['disposition'] == 'EXACT']
     if len(matches) != 1:
         raise ValueError('AUTHORED_CUSTODY_EXACT_BINDING')
     item_id = int(matches[0][0])
-    holds = reward.load_admissions(root).get(definition['identity']['key'], ({},))[0].get('holds', [])
+    holds = _source(_inputs, 'admissions', lambda: reward.load_admissions(root)).get(
+        definition['identity']['key'], ({},))[0].get('holds', [])
     if holds:
         raise ValueError('AUTHORED_CUSTODY_ACCEPTED_HOLD:' + ','.join(sorted(holds)))
-    client = (root / reward.CLIENT).read_bytes()
+    client = _source(_inputs, 'client', lambda: (root / reward.CLIENT).read_bytes())
     if hashlib.sha256(client).hexdigest() != reward.CLIENT_SHA or len(client) != reward.CLIENT_BYTES:
         raise ValueError('AUTHORED_CUSTODY_CLIENT_PIN')
-    nodes = source.xml_index(xml_raw)
+    nodes = _source(_inputs, 'nodes', lambda: source.xml_index(xml_raw))
     node = nodes.get(item_id)
     if node is None:
         raise ValueError('AUTHORED_CUSTODY_SOURCE_ITEM')
@@ -67,13 +98,14 @@ def qualify(root, definition, xml_raw, *, terminal_expiry=False):
                 or not 1 <= int(attributes['duration']) <= 0xffffffff // 1000
                 or int(attributes.get('decayto', '0')) != 0):
             raise ValueError('AUTHORED_CUSTODY_INSTANCE_OWNER_REQUIRED')
-    objects = source.engine_items.load_appearance_objects(client)
+    objects = _source(_inputs, 'objects', lambda: source.engine_items.load_appearance_objects(client))
     appearance = objects.get(item_id)
     if appearance is None or any(appearance['flags'].get('flags.' + name, False)
                                  for name in ('liquidcontainer', 'liquidpool')):
         raise ValueError('AUTHORED_CUSTODY_STATEFUL_APPEARANCE')
-    physical = next((row for row in source.policies(client, xml_raw, {item_id})
-                     if row['server_item_id'] == item_id), None)
+    policies = _source(_inputs, 'policies', lambda: {row['server_item_id']: row
+        for row in source.policies(client, xml_raw, _inputs['ids'] if _inputs is not None else {item_id})})
+    physical = policies.get(item_id)
     if physical is None:
         raise ValueError('AUTHORED_CUSTODY_PHYSICAL_SOURCE')
     row = source.profile(item_id, node, appearance, physical, index, None)

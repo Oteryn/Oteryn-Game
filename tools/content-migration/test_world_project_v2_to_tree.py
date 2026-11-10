@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import copy
+from concurrent.futures import ThreadPoolExecutor
 import importlib.util
 import json
 import copy
@@ -31,11 +32,14 @@ def test_relation_rows_route_by_owner():
     real_targets = migration.use_relation_targets
     migration.use_relation_targets = lambda: real_targets() - {dropped}
     try:
-        migration.main()
-    except migration.ValidationError as error:
-        assert str(error) == "RELATION_COVERAGE", error
-    else:
-        raise AssertionError("PR Use row without its sealed owner accepted")
+        with patch("register_spell_families.outputs", side_effect=AssertionError(
+                "invalid ownership reached full content replay")):
+            try:
+                migration.main()
+            except migration.ValidationError as error:
+                assert str(error) == "RELATION_COVERAGE", error
+            else:
+                raise AssertionError("PR Use row without its sealed owner accepted")
     finally:
         migration.use_relation_targets = real_targets
     print("ok test_relation_rows_route_by_owner")
@@ -190,7 +194,8 @@ assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
 
 # The admitted native successor must reproduce exact bytes over immutable r25.
-subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_monster_seven_spell_overlay.py")], check=True)
+def test_frozen_monster_snapshot():
+    subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_monster_seven_spell_overlay.py")], check=True)
 
 # Keep the standalone Quest preservation guards on the migration workflow's test path.
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_quest_registration_preservation.py")], check=True)
@@ -240,7 +245,14 @@ starter_kit_tool = ROOT / "tools" / "content-schema" / "starter-kit-authoring"
 subprocess.run([sys.executable, "test_starter_kit_authoring.py"], cwd=starter_kit_tool, check=True)
 
 test_closed_weapon_metadata_admission()
-test_relation_rows_route_by_owner()
+# These complete read-only qualifications have no shared mutable inputs. The
+# monster check runs in its own process; always join both and propagate either
+# failure, including when the other check has already failed.
+with ThreadPoolExecutor(max_workers=2) as checks:
+    results = [checks.submit(test_frozen_monster_snapshot),
+               checks.submit(test_relation_rows_route_by_owner)]
+    for result in results:
+        result.result()
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_item_taxonomy.py")], check=True)
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_item_official_navigation.py")], check=True)
 def test_closed_bank_admission():

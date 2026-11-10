@@ -327,6 +327,12 @@ def admit_current_staff_profile(root: Path, generated: dict[str, bytes]) -> None
 
 
 def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
+    from qualification_inputs import appearance_input_scope
+    with appearance_input_scope():
+        return _outputs(root, include_prey=include_prey)
+
+
+def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
     """Prepare the entire registration before writing any file.
 
     Legacy shard counts describe legacy definitions only. Imported collections have
