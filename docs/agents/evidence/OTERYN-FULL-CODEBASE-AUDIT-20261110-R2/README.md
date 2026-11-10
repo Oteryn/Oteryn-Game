@@ -1,12 +1,12 @@
-# OTERYN FULL AUDIT — continuation checkpoint 4
+# OTERYN FULL AUDIT — continuation checkpoint 5
 
 Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues across all remaining packages and supplementary domains.
 
 ## Verified evidence at this checkpoint
 
 - 67 workspace packages; 11 supplementary domains; 27900 tracked input files.
-- **45 packages REVIEWED / 20 IN PROGRESS / 2 NOT STARTED / 0 VERIFIED**.
-- **2,881 distinct substantively analyzed files**: 2,638 full and 243 selected-range files; 290,188 deduplicated text line positions.
+- **48 packages REVIEWED / 17 IN PROGRESS / 2 NOT STARTED / 0 VERIFIED**.
+- **3,309 distinct substantively analyzed files**: 3,072 full and 237 selected-range files; 376,298 deduplicated text line positions.
 - Four binary fixtures were semantically decoded in full, totaling 475 bytes. Their exact ranges use bytes and are excluded from line counts.
 - 192 historical files retain their exact ranges only because their Git blobs are identical. Four changed historical files receive no automatic carryover credit; fresh review is attributed separately.
 - REVIEWED requires every tracked package file and a substantive report. File discovery, text search, hash checks and test-source inspection are not runtime execution.
@@ -25,7 +25,6 @@ Ten additional findings have independent lead verification:
 | CL-003 | Three Polish movement-spell controls send translated words that do not match the canonical spells | `verify-localized-movement.md` |
 | PS-R2-001 | A remembered-device login integration path rejects a valid response | Restricted independent evidence retained privately under SECURITY.md |
 | PS-R2-003 | Accepted House entry can make the native Session unusable because the producer sends ambient state before the required destination snapshot | `verify-house-handoff.md` |
-
 | GR-ECON-001 | Economy invariant defect with a verified gain under its stated service and capacity preconditions; no deployed incident or unbounded throughput claim | Restricted independent evidence retained privately under SECURITY.md |
 | CL-004 | Retrying a frozen Store request can display confirmation terms from a replacement catalogue | `verify-client-store-retry.md` |
 | CL-005 | The native VIP presence window sets its open flag before its opener and consequently refuses to create the window | `verify-client-windows.md` |
@@ -35,17 +34,17 @@ Cumulative confirmed counts: **P0=0 / P1=4 / P2=12 / P3=0**. Existing LIKELY=2 a
 
 ## Current main and scope
 
-Fresh main is `af33fd3baeac15d9991bd24c91bcacc8733492e2`. Its complete diff from the input is four client startup-diagnostic files. All other input blobs are identical. The client lane owns a separate review of those changed files; no automatic credit or completed current-main claim is made. See `latest-main-reconciliation.json`.
+Fresh main is `af33fd3baeac15d9991bd24c91bcacc8733492e2`. Its complete diff from the input is four client startup-diagnostic files. All other input blobs are identical. All four changed files were separately reviewed in full; the lead verified their exact latest-main hashes and complete ranges. The primary package counts remain bound to the immutable input. See `latest-main-reconciliation.json` and `latest-main-delta.md`; native Windows/installer execution was not performed.
 
 ## Reports
 
 - `coverage.md`, `coverage-ledger.json`: package/domain status, exact ranges, hashes, provenance and explicit remaining files.
 - `module-reports.json`: completed package reports; client-support reports are inline.
-- Lead: `admin-review.md`, `admission-recovery-review.md`, `determinism-ops-review.md`, `world-bundle-review.md`, `dev-client-bots-review.md`, `architecture-review.md`, `world-compiler-review.md`.
+- Lead: `admin-review.md`, `admission-recovery-review.md`, `determinism-ops-review.md`, `world-bundle-review.md`, `dev-client-bots-review.md`, `architecture-review.md`, `world-compiler-review.md`, `domain-review.md`, `combat-review.md`.
 - Protocol/session: `protocol-session.md`, `platform-client.md`, `session.md`.
 - Gameplay: `characters.md`, `node-files.md`, `weather.md`, `source-critical-baseline.md`, `housing.md`, `economy.md`, `combat-rules.md`, `encounter-rules.md`, `social-rules.md`, `spell-rules.md`, `world-change.md`, `npc.md`.
 - `findings-summary.json`, `inventory.json`, `carryover.json`, `coordination.json`, `snapshot-checks.json`, `validation.md`: findings, scope, allocation and verification.
 
 ## Continuation
 
-The active protocol and client lanes and their delegated worker continue with the lead. The lead has taken over unfinished gameplay scope after the previous worker encountered an authentication gate. Large client UI/app, protocol, gameplay owners, server, dispatch, durability, content and tool scopes retain explicit remaining paths. The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and current lifecycle. Repairs are separate work; this report branch changes audit evidence only.
+The active protocol and client lanes and their delegated worker continue with the lead. The lead has taken over unfinished gameplay scope after the previous worker encountered an authentication gate. Gameplay domain, combat and all 1,334 client-ui files are now REVIEWED. The client application continues with a validated 144-file delegated packet integrated into its parent ledger. Protocol, remaining gameplay owners, client app, server, dispatch, durability, content and tool scopes retain explicit remaining paths. The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and current lifecycle. Repairs are separate work; this report branch changes audit evidence only.

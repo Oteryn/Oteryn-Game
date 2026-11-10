@@ -1,0 +1,10 @@
+{
+  "source": "crates/gameplay/combat/src/ability/charm_desc_fence_gate_tests.rs",
+  "sha256": "0daa5cd5501bc151c47ca8d536bd8d06efad50bddd92cc6a65d3b748b211b6e6",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "compile_exit": 0,
+  "method": "rustc --test on the unchanged complete existing source file; Cargo manifest directory supplies repository locator; no Cargo build",
+  "test_exit": 0,
+  "test_output": "\nrunning 7 tests\ntest explicit_loads_resolve_by_exact_path ... ok\ntest gate_fails_a_synthetic_unbound_caller ... ok\ntest macro_loads_crate_roots_and_attribute_order ... ok\ntest no_production_damage_write_bypasses_the_bound_attacker_slot ... ok\ntest scan_flags_a_production_reference ... ok\ntest scan_ignores_test_comment_string_and_bridge_bodies ... ok\ntest test_named_files_are_skipped_only_when_test_only ... ok\n\ntest result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.16s\n\n",
+  "elapsed_seconds": 4.661
+}

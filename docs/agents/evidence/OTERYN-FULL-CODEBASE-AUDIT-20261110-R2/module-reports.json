@@ -112,6 +112,26 @@
       "auditor": "lead"
     },
     {
+      "module": "oteryn-gameplay-domain",
+      "path": "crates/gameplay/domain",
+      "report": "domain-review.md",
+      "verification": "Combined worker/lead complete67tracked-file review; all generated domain rows semantically validated; exact unchanged-source Echo11 and timed-item21 testsPASS; full Cargo/SQL/runtime not executed.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
+      "module": "oteryn-gameplay-combat",
+      "path": "crates/gameplay/combat",
+      "report": "combat-review.md",
+      "verification": "Full 29 tracked files/10,558 lines; seven unchanged-source fence-gate tests PASS; no full Cargo/SQL/native gameplay run.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
       "module": "oteryn-identity",
       "status": "REVIEWED",
       "report": "protocol-session.md",
@@ -513,6 +533,42 @@
       "findings": [],
       "remaining_files": [],
       "verification": "Static complete source/test/manifest analysis. Tests analyzed notrun. NoWindows/DX12/Vulkan device, shader validation, devicefailure injection,screenshotruntime orperformancebenchmark. REVIEWED notVERIFIED.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-client-ui",
+      "path": "crates/client-ui",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 1334,
+      "source_files": 758,
+      "json_files": 574,
+      "manifest_and_docs_files": 2,
+      "entrypoints_and_invariants": "All tracked package files substantively reviewed:758Rust source/test/build files,574JSON validated by semantics/schema/references, Cargo manifest and README. Detailed bounded group records in ui-groups.json. UI maintains proposals and confirmed projections only; session/runtime/server owners remain authoritative.",
+      "dependency_edges": [
+        "input-actions/platform -> normalized chords -> app callbacks",
+        "client-ui proposals -> apps/client Outbox -> client-runtime/Session encoding and revision guards",
+        "admitted protocol projections -> typed UI reducers -> native Windows rendering",
+        "authoritative content definitions -> validated mechanics/keybinding/panel metadata",
+        "generation/scope reset -> invalidate identity caches, pending commands and open windows"
+      ],
+      "negative_hypotheses": [
+        "Systematic read included every tracked UI source/test/manifest and semantic JSON references; existence or hashes alone did not earn coverage.",
+        "Native input command validation traced for actionable findings and high-risk purchases/item/guild paths.",
+        "Many stale-state hypotheses are blocked by exact request/revision/occurrence fingerprint or server authority; group records identify guards.",
+        "No credit for external protocol/gameplay modules beyond ledgered substantive dependency ranges."
+      ],
+      "findings": [
+        "CL-001",
+        "CL-002",
+        "CL-003",
+        "CL-004",
+        "CL-005",
+        "CL-006",
+        "CL-007 candidate P3"
+      ],
+      "remaining_files": [],
+      "verification": "REVIEWED, not independently VERIFIED. Static complete package analysis. JSON semantic validation PASS. Exact-source existing Highscores mapping test isolated:0passed/1failed; not a Cargo-suite result. No full client-ui Cargo/native/GPU/SQL execution. Prior isolated input-actions11/input-platform17 tests apply to those packages only. Full apps/client native/source/tests remains separate ongoing scope.",
       "auditor": "client-support"
     },
     {

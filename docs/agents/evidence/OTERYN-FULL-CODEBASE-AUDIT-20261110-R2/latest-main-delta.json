@@ -1,0 +1,62 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "review_sha": "af33fd3baeac15d9991bd24c91bcacc8733492e2",
+  "status": "REVIEWED",
+  "coverage": "All four changed files read in full from git show, separate from immutable base ledger.",
+  "files": [
+    {
+      "path": "apps/client/installer/ci-installer.ps1",
+      "ranges": [
+        [
+          1,
+          357
+        ]
+      ],
+      "sha256": "0ba58e94758d9b5ca5d76d2a500f2d4fc8f472a72a7d5f4bdd09d4ec4756384a",
+      "base_sha256": "5c0a1f899efe4e69ac1d726cbe6d297031374a6aa2244ec7ec50e300b7951c11",
+      "review_notes": "Full latest357lines read: clears previous startup/exit diagnostic files under LOCALAPPDATA/Oteryn before relaunch;60second mutex polling preserved; only timeout prints two new diagnostic files and exact current setup log, then fails. Does not treat code0 as proof of living child.",
+      "module": "apps/client"
+    },
+    {
+      "path": "apps/client/src/bin/oteryn-launcher.rs",
+      "ranges": [
+        [
+          1,
+          382
+        ]
+      ],
+      "sha256": "011742b8e4df05d89d86e7575b2f643f64aefdd1ce736f1e48378176ebbd3666",
+      "base_sha256": "30f347ffeab17e44d6925c3464ce3e4111e7b7fe450b3c388f2e430d5b8097a5",
+      "review_notes": "Full latest382lines read: success records launcher exit0; error records existing localized launcher failure and exit2 before prior dialog/exit behavior. Launcher status means spawn/start operation success, not child lifetime health; CI still waits actual client mutex.",
+      "module": "apps/client"
+    },
+    {
+      "path": "apps/client/src/crash_report.rs",
+      "ranges": [
+        [
+          1,
+          209
+        ]
+      ],
+      "sha256": "f3f16e436dc2eb54e76014f4c94185cf09ccac13281866ebb539d5848f627b38",
+      "base_sha256": "a3a347e26976cee32610d3548912083133bc1692abac27ba3581a6cc3e874601",
+      "review_notes": "Full latest209lines read: added startup.log append and launcher-exit-code.txt in settings directory; append helper creates parent; exit recorder writes0/2 best effort. Existing minimal crash/consent path unchanged. New test reads append behavior but was not run. Log is local, no automatic support upload wired by this change; no log rotation in added utility.",
+      "module": "apps/client"
+    },
+    {
+      "path": "apps/client/src/main.rs",
+      "ranges": [
+        [
+          1,
+          101
+        ]
+      ],
+      "sha256": "01d69807309615df8d417453456c4f769c566aeef4dc34271728834f9328d02d",
+      "base_sha256": "438013dbfb00dd98851bd5d099f2bc9e3521db89643005b98feea414f557e119",
+      "review_notes": "Full latest101lines read: on windows_shell::run Err append fixed ShellError class under component client, then retain existing stderr/FAILURE path. No successful flow or package/mutex guard removed.",
+      "module": "apps/client"
+    }
+  ],
+  "findings": [],
+  "tests": "No compile, PowerShell, native Windows or installer execution. Existing added append test source reviewed only."
+}

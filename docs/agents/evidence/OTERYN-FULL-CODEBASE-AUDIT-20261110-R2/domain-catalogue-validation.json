@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "source_registry_rows": 1875,
+  "source_bestiary_candidates": 819,
+  "source_core_items": 835,
+  "hireling_trade_rows": 1675,
+  "hireling_packages": 23,
+  "historical_core_capture_file_sha256": "94644f01fb0c574a33eb84f45abec2deb5e1f0c0316b57ac3f2684f0e9cc7192",
+  "current_core_profile_file_sha256": "5ebf02b389091c9d29e49a7df6810a4c9085289e69a84a8a1a1516dae3e1a62e",
+  "historical_whole_core_profile_hash_matches_current_file": false,
+  "checks": [
+    "Every Rust monster field/index equals pinned capture; canonical digest matches",
+    "Registration and numeric bounds, complete race-map membership, first-wins duplicate equivalence",
+    "Every core ID/name equals captured core catalogue; ordered lookup and deliberate malformed-name distinctions",
+    "Every trade/package row parsed with no ignored content; category/order/range/key closure and wrapped custody mapping",
+    "Generated hireling bytes match pinned profile capture; separate economy data proof retained privately"
+  ],
+  "observations": "The historical core-capture whole-file hash differs from the current profile file. All consumed core ID/name values are independently compared below the hash check; no runtime defect is inferred from whole-file provenance drift.",
+  "limits": "Does not rerun external donor Lua capture, prove current deployed activation, or execute native Rust/SQL gameplay."
+}
