@@ -1,5 +1,7 @@
 //! The shared frozen one-item retirement workflow for both admitted causes.
 use super::*;
+#[cfg(any(test, feature = "test-support"))]
+use crate::durability::world_reset::test_support::{RetirementPhase, RetirementProbe};
 
 impl DurabilityRoot {
     /// Validate the step and reserve its logical `DECAY_RETIRE` under the
@@ -275,6 +277,8 @@ impl DurabilityRoot {
             .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
                     let permit: &SpellLanePermit = permit;
+                    #[cfg(any(test, feature = "test-support"))]
+                    let mut profile = RetirementProbe::start(step.item_instance_id);
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
@@ -297,7 +301,15 @@ impl DurabilityRoot {
                         {
                             return Ok(Err(DecayRetireError::ConflictingCause));
                         }
+                        #[cfg(any(test, feature = "test-support"))]
+                        if let Some(profile) = profile.as_mut() {
+                            profile.begin_commit(deadline);
+                        }
                         tx.commit(deadline).await?;
+                        #[cfg(any(test, feature = "test-support"))]
+                        if let Some(profile) = profile.as_mut() {
+                            profile.committed();
+                        }
                         return Ok(Ok(DecayRetireOutcome::AlreadyCommitted(committed)));
                     }
 
@@ -362,12 +374,31 @@ impl DurabilityRoot {
                         return Ok(Err(DecayRetireError::ConflictingCandidate));
                     }
                     world_reset_cause::retire_death_contents(
-                        &mut tx, permit, &fence, &node, step, &admitted,
+                        &mut tx,
+                        permit,
+                        &fence,
+                        &node,
+                        step,
+                        &admitted,
+                        #[cfg(any(test, feature = "test-support"))]
+                        profile.as_mut(),
                     )
                     .await?;
+                    #[cfg(any(test, feature = "test-support"))]
+                    if let Some(profile) = profile.as_mut() {
+                        profile.enter(RetirementPhase::Root);
+                    }
                     let committed =
                         apply_retire(&mut tx, permit, step, &admitted, &reservation, tuple).await?;
+                    #[cfg(any(test, feature = "test-support"))]
+                    if let Some(profile) = profile.as_mut() {
+                        profile.begin_commit(deadline);
+                    }
                     tx.commit(deadline).await?;
+                    #[cfg(any(test, feature = "test-support"))]
+                    if let Some(profile) = profile.as_mut() {
+                        profile.committed();
+                    }
                     Ok(Ok(DecayRetireOutcome::Committed(committed)))
                 })
             })

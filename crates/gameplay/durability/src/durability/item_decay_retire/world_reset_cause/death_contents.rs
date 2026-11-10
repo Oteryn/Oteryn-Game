@@ -1,5 +1,7 @@
 //! Every retained death-tree edge shares the Ground root's atomic retirement.
 use super::*;
+#[cfg(any(test, feature = "test-support"))]
+use crate::durability::world_reset::test_support::{RetirementPhase, RetirementProbe};
 
 pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
     tx: &mut mint_audit::Type2Transaction<'_>,
@@ -8,7 +10,12 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
     node: &NodeIncarnationProof,
     step: DecayRetireStep,
     parent: &Admitted,
+    #[cfg(any(test, feature = "test-support"))] mut profile: Option<&mut RetirementProbe>,
 ) -> std::result::Result<(), DurabilityError> {
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(profile) = profile.as_mut() {
+        profile.enter(RetirementPhase::TreeLoad);
+    }
     if !matches!(
         step.cause,
         RetireCause::WorldReset(_) | RetireCause::ActivityRetirement(_)
@@ -23,6 +30,11 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
     }
     let tree =
         crate::durability::world_reset::ground_step::death_tree(tx, step.item_instance_id).await?;
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(profile) = profile.as_mut() {
+        profile.descendants(tree.len());
+        profile.enter(RetirementPhase::ItemLocks);
+    }
     let ids: Vec<_> = tree
         .iter()
         .map(|entry| sqlx::types::Uuid::from_bytes(entry.item))
@@ -32,6 +44,10 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
     let rows = sqlx::query("SELECT i.item_instance_id::text,i.world_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.lifecycle,(SELECT coalesce(max(key_number),0)::bigint FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AS key_number,game_character_uuid_v7()::text AS transaction_id,game_character_uuid_v7()::text AS event_id FROM game_item_instances i WHERE i.item_instance_id=ANY($1) ORDER BY i.item_instance_id FOR UPDATE OF i")
         .bind(ids)
         .fetch_all(&mut ***tx).await?;
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(profile) = profile.as_mut() {
+        profile.enter(RetirementPhase::GraphRecheck);
+    }
     if rows.len() != tree.len()
         || crate::durability::world_reset::ground_step::death_tree(tx, step.item_instance_id)
             .await?
@@ -39,11 +55,19 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
     {
         return Err(DurabilityError::InvalidStoredState);
     }
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(profile) = profile.as_mut() {
+        profile.enter(RetirementPhase::Preparation);
+    }
     let mut locked = std::collections::BTreeMap::new();
     for row in rows {
         locked.insert(uuid_text(row.try_get("item_instance_id")?)?, row);
     }
     for entry in tree {
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(profile) = profile.as_mut() {
+            profile.begin_child();
+        }
         let row = locked
             .remove(&entry.item)
             .ok_or(DurabilityError::InvalidStoredState)?;
@@ -104,8 +128,20 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
             fence_registration_revision: fact.registration_revision(),
             work_units_used: 0,
         };
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(profile) = profile.as_mut() {
+            profile.enter(RetirementPhase::Reservation);
+        }
         retirement_workflow::insert_reservation(tx, child, &admitted, &reservation, tuple).await?;
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(profile) = profile.as_mut() {
+            profile.reservation_finished();
+        }
         apply_death_entry_retire(tx, permit, child, &admitted, &reservation, tuple).await?;
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(profile) = profile.as_mut() {
+            profile.wrapper_finished();
+        }
     }
     Ok(())
 }

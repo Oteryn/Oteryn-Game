@@ -1874,12 +1874,18 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     // deadline and retry ceiling. A timeout is a test failure, never a skip or
     // permission to widen those limits for the largest source-legal graph.
     let started = std::time::Instant::now();
-    assert!(
-        h.root
-            .retire_world_reset_ground(&authority, &h.node, &reset)
-            .await
-            .map_err(debug)?
-    );
+    let (retired, profile) =
+        crate::durability::world_reset::test_support::profile_maximum_retirement(
+            selected,
+            h.root
+                .retire_world_reset_ground(&authority, &h.node, &reset),
+        )
+        .await;
+    match profile {
+        Some(profile) => eprintln!("[DBG-audit-765f34] MAX501 {profile}"),
+        None => eprintln!("[DBG-audit-765f34] MAX501 profile=missing"),
+    }
+    assert!(retired.map_err(debug)?);
     eprintln!(
         "DUR-003-MAX-RESET: 501 items completed in {:?}",
         started.elapsed()
