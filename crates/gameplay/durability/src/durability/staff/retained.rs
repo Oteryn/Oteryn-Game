@@ -14,12 +14,16 @@ impl StaffTrust {
         self: Arc<Self>,
         auth: Authenticated,
     ) -> Result<(), DurabilityError> {
-        tokio::task::spawn_blocking(move || {
-            let seq = auth.seq().ok_or(DurabilityError::InvalidStoredState)?;
-            let bytes =
-                encode_envelope(&auth.envelope).map_err(|_| DurabilityError::InvalidStoredState)?;
-            self.retain_link(seq, &bytes)
-        })
+        oteryn_task_supervisor::spawn_blocking_lifecycle_supervised(
+            "staff_link_retain",
+            None,
+            move || {
+                let seq = auth.seq().ok_or(DurabilityError::InvalidStoredState)?;
+                let bytes = encode_envelope(&auth.envelope)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                self.retain_link(seq, &bytes)
+            },
+        )
         .await
         .map_err(|_| DurabilityError::InvalidStoredState)?
     }
@@ -68,30 +72,34 @@ impl StaffTrust {
     }
 
     pub(super) async fn retained_tip(self: Arc<Self>) -> Result<u64, DurabilityError> {
-        tokio::task::spawn_blocking(move || {
-            let mut tip = 0;
-            for entry in std::fs::read_dir(self.state_directory())
-                .map_err(|_| DurabilityError::InvalidStoredState)?
-            {
-                let entry = entry.map_err(|_| DurabilityError::InvalidStoredState)?;
-                let name = entry.file_name();
-                let name = name.to_str().ok_or(DurabilityError::InvalidStoredState)?;
-                let Some(seq) = name.strip_prefix(&prefix(&self)) else {
-                    continue;
-                };
-                if seq.len() != 20 || !seq.bytes().all(|b| b.is_ascii_digit()) {
-                    return Err(DurabilityError::InvalidStoredState);
+        oteryn_task_supervisor::spawn_blocking_lifecycle_supervised(
+            "staff_link_retained_tip",
+            None,
+            move || {
+                let mut tip = 0;
+                for entry in std::fs::read_dir(self.state_directory())
+                    .map_err(|_| DurabilityError::InvalidStoredState)?
+                {
+                    let entry = entry.map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let name = entry.file_name();
+                    let name = name.to_str().ok_or(DurabilityError::InvalidStoredState)?;
+                    let Some(seq) = name.strip_prefix(&prefix(&self)) else {
+                        continue;
+                    };
+                    if seq.len() != 20 || !seq.bytes().all(|b| b.is_ascii_digit()) {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    let seq = seq
+                        .parse::<u64>()
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if seq == 0 {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    tip = tip.max(seq);
                 }
-                let seq = seq
-                    .parse::<u64>()
-                    .map_err(|_| DurabilityError::InvalidStoredState)?;
-                if seq == 0 {
-                    return Err(DurabilityError::InvalidStoredState);
-                }
-                tip = tip.max(seq);
-            }
-            Ok(tip)
-        })
+                Ok(tip)
+            },
+        )
         .await
         .map_err(|_| DurabilityError::InvalidStoredState)?
     }
@@ -123,9 +131,13 @@ pub(super) async fn verify_and_retain(
             })
             .map_err(|_| DurabilityError::InvalidStoredState)?;
             let pinned = trust.clone();
-            tokio::task::spawn_blocking(move || pinned.retain_link(next as u64, &bytes))
-                .await
-                .map_err(|_| DurabilityError::InvalidStoredState)??;
+            oteryn_task_supervisor::spawn_blocking_lifecycle_supervised(
+                "staff_link_repair",
+                None,
+                move || pinned.retain_link(next as u64, &bytes),
+            )
+            .await
+            .map_err(|_| DurabilityError::InvalidStoredState)??;
             seq = next;
         }
     }
