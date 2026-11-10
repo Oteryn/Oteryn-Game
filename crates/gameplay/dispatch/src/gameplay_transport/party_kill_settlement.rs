@@ -231,6 +231,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: &SpellLanePermit,
         entry: &PendingKillSettlement,
     ) -> Result<SettledPartyXp, CharacterProgressionError> {
+        self.settle_party_experience_inner(permit, entry, None)
+            .await
+    }
+
+    pub(super) async fn settle_source_soul_war_experience(
+        &self,
+        permit: &SpellLanePermit,
+        entry: &PendingKillSettlement,
+        source: &super::source_death::SoulWarAction,
+    ) -> Result<SettledPartyXp, CharacterProgressionError> {
+        if !source.matches_entry(entry) {
+            return Err(rejected());
+        }
+        self.settle_party_experience_inner(permit, entry, Some(source))
+            .await
+    }
+
+    async fn settle_party_experience_inner(
+        &self,
+        permit: &SpellLanePermit,
+        entry: &PendingKillSettlement,
+        source: Option<&super::source_death::SoulWarAction>,
+    ) -> Result<SettledPartyXp, CharacterProgressionError> {
         // Early/replayed XP settlement can enter before the outer kill drain freezes
         // task credit. Qualify once here as well, under the same lane and native fences.
         if entry.row.as_ref().is_some_and(|row| row.race.is_some()) {
@@ -336,6 +359,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let attack = self.states.attack.lock().await;
+        if source.is_some_and(|source| !source.current_for(&runtime)) {
+            return Err(rejected());
+        }
         let mut ctx = (
             self,
             &*runtime,
@@ -417,7 +443,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // Freeze original fences and true native damage participation before XP
                     // moves the member requests. A shared-XP bystander is not a boss killer.
                     let participants = members.iter().map(|member| {
-                        let dealt_damage = entry.damage_shares.iter().any(|damage| {
+                        let dealt_damage = source.map_or_else(|| entry.damage_shares.iter().any(|damage| {
                             damage.total > 0
                                 && damage.character.as_bytes() == member.fence.character_id.as_bytes()
                                 && damage.session == Some(member.fence.game_session_id)
@@ -427,9 +453,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 && damage.last_damage_at_ms.is_some_and(|at| {
                                     entry.facts.death_at_ms.checked_sub(at).is_some_and(|age| age <= 60_000)
                                 })
-                        });
+                        }), |source| source.credits(&member.fence));
                         (member.fence, dealt_damage)
                     }).collect::<Vec<_>>();
+                    if source.is_some_and(|source| !source.contains_all_killers(&participants)) {
+                        return Err(DurabilityError::Unavailable);
+                    }
                     for (request, current) in members.iter_mut().zip(&current.members) {
                         let amount = match crate::durability::quest_state::soul_war::soul_war_experience_in_transaction(
                             &mut tx, request.fence.character_id, &entry.creature, current.share,

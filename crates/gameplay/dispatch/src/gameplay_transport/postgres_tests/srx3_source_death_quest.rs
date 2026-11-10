@@ -215,27 +215,26 @@ fn srx3_source_death_real_malice_lethal_runs_copied_goal_and_preserves_pre_taint
                     attack.kills().has_session(admitted.game_session_id),
                     "actual ordinary reward owner retains this source death before take"
                 );
-                captured = Some(notice.death_key());
+                captured = Some((notice.death_key(), boss, observed));
                 break;
             }
-            let death =
+            let (death, boss, observed) =
                 captured.ok_or("real source timer work must quiesce before the lethal fixture")?;
             // Production dispatcher and ordinary physical drain only. No direct
             // apply_soul_war_kill/Quest helper invocation can mask a missing hook.
-            view.drain_monster_melee().await;
-            let _ = view.drain_kill_rewards(admitted.game_session_id).await;
+            super::srx3_native_source_cast::drain_source_death(&view, boss, observed).await?;
             let flags:i16=sqlx::query_scalar("SELECT defeated_bosses FROM game_character_soul_war WHERE character_id=encode($1,'hex')::uuid")
                 .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(
                 flags & 1,
                 1,
-                "copied SoulWarBossesDeath must award Malice through the real deferred caller"
+                "copied SoulWarBossesDeath must award Malice before releasing the ordinary drain"
             );
             let count:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_soul_war_receipts WHERE character_id=encode($1,'hex')::uuid AND boss_key='malice'")
                 .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(count, 1);
             let key = crate::durability::party_kill_xp::encode_death_key(death);
-            let xp:(i64,i64)=sqlx::query_as("SELECT d.base_xp,m.raw_share FROM game_party_kill_xp_receipts d JOIN game_party_kill_xp_members m USING(death_key) WHERE d.death_key=$1 AND m.character_id=encode($2,'hex')::uuid")
+            let xp:(i64,i64,String)=sqlx::query_as("SELECT d.base_xp,m.raw_share,d.created_xact_id::text FROM game_party_kill_xp_receipts d JOIN game_party_kill_xp_members m USING(death_key) WHERE d.death_key=$1 AND m.character_id=encode($2,'hex')::uuid")
                 .bind(&key).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             assert!(xp.0 > 0);
             assert_eq!(
@@ -244,6 +243,12 @@ fn srx3_source_death_real_malice_lethal_runs_copied_goal_and_preserves_pre_taint
             );
             view.drain_monster_melee().await;
             let _ = view.drain_kill_rewards(admitted.game_session_id).await;
+            let replay_xp:(i64,i64,String)=sqlx::query_as("SELECT d.base_xp,m.raw_share,d.created_xact_id::text FROM game_party_kill_xp_receipts d JOIN game_party_kill_xp_members m USING(death_key) WHERE d.death_key=$1 AND m.character_id=encode($2,'hex')::uuid")
+                .bind(&key).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(
+                replay_xp, xp,
+                "the physical drain replays the original prepared XP receipt"
+            );
             let replay:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_soul_war_receipts WHERE character_id=encode($1,'hex')::uuid AND boss_key='malice'")
                 .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(

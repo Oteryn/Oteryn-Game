@@ -8,7 +8,9 @@ use super::*;
 use crate::movement::monster_map::CurrentMonsterMap;
 
 mod heart;
+mod soul_war;
 mod uncredited;
+pub(super) use soul_war::SoulWarAction;
 pub(super) use uncredited::PendingSourceCorpse;
 
 /// One retained action payload for the canonical head's current copied event.
@@ -19,11 +21,13 @@ pub(super) struct PreparedSourceDeathAction {
     index: usize,
     now_us: u64,
     heart: Option<heart::HeartAction>,
+    soul_war: Option<SoulWarAction>,
 }
 impl PreparedSourceDeathAction {
     fn capture(
         owner: &ComposedFreshAdmission<'_, '_, '_>,
         runtime: &mut ChannelRuntimeV1,
+        attack: &attack::ChannelAttackStates,
         begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
         now_us: u64,
     ) -> Result<Self, ()> {
@@ -36,11 +40,13 @@ impl PreparedSourceDeathAction {
         } else {
             None
         };
+        let soul_war = SoulWarAction::capture(runtime, attack, begin, index, now_us)?;
         Ok(Self {
             begin: begin.clone(),
             index,
             now_us,
             heart,
+            soul_war,
         })
     }
     pub(super) fn begin(
@@ -205,6 +211,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let completed = if let Some(heart) = &action.heart {
             heart.execute(self, &action).await.is_ok()
+        } else if let Some(soul_war) = &action.soul_war {
+            soul_war.execute(self, permit).await.is_ok()
         } else {
             matches!(
                 callbacks
@@ -231,6 +239,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_err()
             || if let Some(heart) = &action.heart {
                 heart.publish_vortex(self).is_err()
+            } else if let Some(soul_war) = &action.soul_war {
+                !soul_war.current_for(&runtime)
             } else {
                 !matches!(
                     callbacks.publish_source_death_action(&mut runtime, &action),
@@ -260,6 +270,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(runtime);
         if let Some(heart) = &action.heart {
             heart.refresh_after_release(self).await;
+        } else if let Some(soul_war) = &action.soul_war {
+            soul_war.refresh_after_release(self).await;
         }
         true
     }
@@ -322,7 +334,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(());
                 }
             } else {
-                let action = PreparedSourceDeathAction::capture(self, runtime, &begin, now)?;
+                let action =
+                    PreparedSourceDeathAction::capture(self, runtime, attack, &begin, now)?;
                 if action.heart.is_some() && !begin.has_reward_damage_credit() {
                     // Keep the projected death and its per-player occurrences through
                     // asynchronous Heart effects, before any durable side effect runs.
@@ -351,7 +364,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     event.name(),
                     begin.definition_key()
                 );
-                let prepared = if action.heart.is_some() {
+                let prepared = if action.heart.is_some() || action.soul_war.is_some() {
                     true
                 } else {
                     callbacks.prepare_source_death_action(runtime, room, native, action)?
@@ -363,7 +376,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .reserve_source_death_action(
                                     action.begin(),
                                     action.event(),
-                                    action.heart.as_ref().map_or(&[], |heart| heart.actors()),
+                                    action.heart.as_ref().map_or_else(
+                                        || {
+                                            action
+                                                .soul_war
+                                                .as_ref()
+                                                .map_or(&[], |soul_war| soul_war.actors())
+                                        },
+                                        |heart| heart.actors(),
+                                    ),
                                 )
                                 .map_err(|_| ())?,
                         );
