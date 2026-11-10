@@ -167,8 +167,13 @@ fn scenario(case: Case, name: &str) -> TestResult {
         let cells = map
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
-        let bundle_room=if case.ground() || case.moves() {Some(super::rust_lottery::bundle_action_room(pin.qualified_room(),&map,deps.admitted.world_id,&cells)?)} else {None};
-        let action_room=bundle_room.as_ref().unwrap_or(pin.qualified_room());
+        let bundle_room = super::rust_lottery::bundle_action_room(
+            pin.qualified_room(),
+            &map,
+            deps.admitted.world_id,
+            &cells,
+        )?;
+        let action_room = &bundle_room;
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             pin.activation_sequence(),
@@ -471,6 +476,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
                 let mut restarted = deps.owner(&harness, &authority);
                 restarted.active_generation = Some(active);
                 restarted.movement_cells = (&cells).into();
+                restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(action_room));
                 deps.initialize(&restarted).await;
                 let (_, recovered, _) = exchange_carried(&restarted, admitted, 1, &actual, None, None).await?;
                 assert_eq!(recovered, UseDisposition::Committed);
@@ -538,6 +544,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
             let mut restarted = deps.owner(&harness, &authority);
             restarted.active_generation = Some(active);
             restarted.movement_cells = (&cells).into();
+            restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(action_room));
             deps.initialize(&restarted).await;
             let output = "oteryn:item.tibia.i3604";
             let (_, replay, _) =

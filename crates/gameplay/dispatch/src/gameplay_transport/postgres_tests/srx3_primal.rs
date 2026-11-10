@@ -386,7 +386,7 @@ async fn exercise_callbacks(
             .checked_sub(std::time::Duration::from_secs(seconds))
             .ok_or("owner clock")?;
         let view = owner.runtime_view(&registered);
-        view.drain_monster_melee().await;
+        drain_due_callbacks(&view).await?;
     }
     let view = owner.runtime_view(&registered);
     let beasts_before = {
@@ -456,6 +456,27 @@ async fn exercise_callbacks(
         "removed Pod retains original timer, whose real current-position expiry finds no Item"
     );
     Ok(())
+}
+
+async fn drain_due_callbacks(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult {
+    let now = owner.owner_now();
+    // Each production turn consumes one selected original callback. Finish
+    // that due prefix and the current Think without advancing its source clock.
+    for _ in 0..256 {
+        owner.drain_monster_melee_at(now).await;
+        let states = owner.states.spell_states.lock().await;
+        if states.next_monster_ai_pass_us > now.get()
+            && states
+                .primal_callbacks
+                .next_due_us()
+                .is_none_or(|due| due > now.get())
+        {
+            return Ok(());
+        }
+    }
+    Err("actual Primal due callbacks did not drain within 256 native owner turns".into())
 }
 
 #[allow(
