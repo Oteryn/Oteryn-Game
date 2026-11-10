@@ -6,6 +6,7 @@ use super::*;
 
 #[cfg(test)]
 mod maw_tests;
+mod megalomania;
 
 pub const GREED: &str = "oteryn:creature.goshnar_s_greed";
 pub const MALICE: &str = "oteryn:creature.goshnar_s_malice";
