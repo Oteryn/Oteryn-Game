@@ -10,6 +10,20 @@ struct LiveSetup {
     world: snapshot::WorldSnapshot,
 }
 
+/// Why the join did not complete: before or after its snapshot reached the transport.
+enum JoinFailure {
+    Unprepared(ServeEnd),
+    Transport,
+}
+
+impl From<ServeEnd> for JoinFailure {
+    fn from(end: ServeEnd) -> Self {
+        Self::Unprepared(end)
+    }
+}
+
+/// A join that could not be prepared reports `SESSION_JOIN_UNAVAILABLE` before the same end;
+/// a failed snapshot write has no transport left to report on.
 pub(super) async fn prepare<S, A>(
     stream: &mut S,
     admitted: &mut AdmittedSession,
@@ -19,6 +33,34 @@ pub(super) async fn prepare<S, A>(
     baseline: WorldSpatialObservation,
     integrity: integrity::Integrity,
 ) -> Result<ServeState, ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    let generation = admitted.continuity.connection_generation;
+    match join(
+        stream, admitted, authority, policy, actor, baseline, integrity,
+    )
+    .await
+    {
+        Ok(state) => Ok(state),
+        Err(JoinFailure::Unprepared(end)) => {
+            send_join_unavailable(stream, generation).await;
+            Err(end)
+        }
+        Err(JoinFailure::Transport) => Err(ServeEnd::Disconnected),
+    }
+}
+
+async fn join<S, A>(
+    stream: &mut S,
+    admitted: &mut AdmittedSession,
+    authority: &A,
+    policy: LivenessPolicy,
+    actor: ExactActorRef,
+    baseline: WorldSpatialObservation,
+    integrity: integrity::Integrity,
+) -> Result<ServeState, JoinFailure>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
@@ -156,11 +198,11 @@ where
     domains.extend(tutorial_notices_transport::snapshot(admitted));
     let snapshot = encode_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
     let Ok(snapshot) = snapshot else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::Disconnected.into());
     };
     for frame in &snapshot {
         if write_frame(stream, frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(JoinFailure::Transport);
         }
     }
     zones_nologout_transport::delivered(admitted);
@@ -183,7 +225,7 @@ where
     if let Some((revision, state)) = &sessions.combat_sent {
         admitted.continuity.combat.snapshot_sent(*revision, *state);
     }
-    live(
+    Ok(live(
         authority,
         admitted,
         policy,
@@ -198,11 +240,15 @@ where
             world,
         },
     )
-    .await
+    .await?)
 }
 
-fn failed(event: &'static str, end: ServeEnd) -> ServeEnd {
-    crate::gameplay_transport::operator_event(event);
+/// Logs the failed join phase with the code the client is sent.
+pub(super) fn failed(event: &'static str, end: ServeEnd) -> ServeEnd {
+    crate::gameplay_transport::operator_event(&format!(
+        "{event} code={}",
+        FoundationProtocolError::SessionJoinUnavailable.code()
+    ));
     end
 }
 
