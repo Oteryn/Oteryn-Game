@@ -48,11 +48,27 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     ) {
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return;
+        };
         for _ in 0..32 {
             let now = self.owner_now().get();
-            let callback = {
+            let (callback, prefix, binding) = {
                 let runtime = self.runtime.lock().await;
                 let mut states = self.states.spell_states.lock().await;
+                let prefix = match super::super::source_prefix(
+                    &runtime,
+                    &states,
+                    native,
+                    DueKind::Footprint,
+                    now,
+                ) {
+                    Ok(prefix) => prefix,
+                    Err(()) => return,
+                };
                 let advanced = &mut states.rotten_blood_callbacks.advanced;
                 // Preserve the original physical movement event until a known
                 // Item receipt. No reconstruction from the mover's later pose.
@@ -61,6 +77,12 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
                     Err(_) => return,
                 };
                 for event in events {
+                    if prefix
+                        .as_ref()
+                        .is_some_and(|prefix| event.observed_us() > prefix.through)
+                    {
+                        continue;
+                    }
                     if advanced
                         .footprints
                         .iter()
@@ -73,12 +95,6 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
                     {
                         return;
                     }
-                    let Some(native) = self
-                        .active_generation
-                        .and_then(|active| active.native_gameplay())
-                    else {
-                        return;
-                    };
                     let Some(room) = self.effective_rooms().gate_wire_position() else {
                         return;
                     };
@@ -103,10 +119,15 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
                     .footprints
                     .iter()
                     .enumerate()
-                    .filter(|(_, pending)| pending.due_us() <= now)
+                    .filter(|(_, pending)| {
+                        pending.due_us() <= now
+                            && prefix
+                                .as_ref()
+                                .is_none_or(|prefix| pending.due_us() <= prefix.through)
+                    })
                     .min_by_key(|(_, pending)| pending.due_us())
                     .map(|(index, _)| index);
-                if let Some(index) = selected {
+                let callback = if let Some(index) = selected {
                     let started = match advanced.footprints[index].callback.begin_execution(now) {
                         Ok(callback) => callback,
                         Err(_) => return,
@@ -115,7 +136,8 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
                     Some(Arc::clone(&advanced.footprints[index].callback))
                 } else {
                     None
-                }
+                };
+                (callback, prefix, super::super::context(&runtime))
             };
             let Some(mut callback) = callback else { return };
             if callback.needs_intrinsic_decay_clock() {
@@ -174,6 +196,14 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
             self.states.loop_ground.invalidate();
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
+            if runtime.owner_fence().is_err()
+                || binding != super::super::context(&runtime)
+                || prefix
+                    .as_ref()
+                    .is_some_and(|prefix| !prefix.current(&runtime, &states))
+            {
+                return;
+            }
             let advanced = &mut states.rotten_blood_callbacks.advanced;
             let Some(index) = advanced
                 .footprints
@@ -198,6 +228,9 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
                 advanced.footprints.remove(index);
             }
             states.owner_wake.notify_one();
+            if prefix.is_some() {
+                return;
+            }
         }
     }
 }

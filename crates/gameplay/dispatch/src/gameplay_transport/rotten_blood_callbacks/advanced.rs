@@ -11,6 +11,16 @@ mod massive;
 mod plan;
 mod portals;
 pub(super) mod step;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum DueKind {
+    Effects,
+    Massive,
+    PortalCycle,
+    PortalItem,
+    Footprint,
+    BakFirstThink,
+}
 #[derive(Debug, Clone)]
 struct Player {
     actor: ExactActorRef,
@@ -43,7 +53,7 @@ struct AdvancedBoss {
     next_player: u64,
     teleport: chag::TeleportCycle,
     essence_count: Option<u8>,
-    portal_source: crate::durability::creature_source_items::RottenPortalSource,
+    portal_source: Arc<crate::durability::creature_source_items::RottenPortalSource>,
     portal_ordinal: u64,
     paused: bool,
 }
@@ -89,9 +99,9 @@ pub(super) struct AgonyCommit {
 #[derive(Debug, Default)]
 pub(in crate::gameplay_transport) struct AdvancedCallbacks {
     bosses: Vec<AdvancedBoss>,
-    pending: VecDeque<AdvancedEffect>,
+    pending: VecDeque<(u64, AdvancedEffect)>,
     pending_due: Option<u64>,
-    portals: Vec<Arc<crate::durability::creature_source_items::RottenPortalCallback>>,
+    portals: Vec<portals::Pending>,
     active_portals: Vec<Arc<crate::durability::creature_source_items::RottenPortalCallback>>,
     steps: Vec<step::PendingStep>,
     massive: Vec<massive::Pending>,
@@ -104,6 +114,71 @@ pub(in crate::gameplay_transport) struct AdvancedCallbacks {
     massive_commits: Vec<(ExactActorRef, u8, u32, u32, u32)>,
 }
 impl AdvancedCallbacks {
+    #[cfg(test)]
+    pub(super) fn portal_clock_for_test(&self, actor: ExactActorRef) -> Option<PortalClockForTest> {
+        let boss = self.bosses.iter().find(|boss| boss.actor == actor)?;
+        Some(PortalClockForTest {
+            cycle_due: boss
+                .teleport
+                .next_at_ms()
+                .and_then(|due| due.checked_mul(1000)),
+            think_sequence: boss.last,
+            callbacks: self
+                .portals
+                .iter()
+                .map(|pending| {
+                    (
+                        pending.original_due,
+                        pending.callback.due_us(),
+                        pending.callback.is_create(),
+                    )
+                })
+                .collect(),
+        })
+    }
+    pub(super) fn next_source_due(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<(u64, DueKind)>, ()> {
+        let movement = runtime.pending_rotten_movement(1).map_err(|_| ())?;
+        Ok(self
+            .pending
+            .front()
+            .map(|(due, _)| (*due, DueKind::Effects))
+            .into_iter()
+            .chain(
+                self.massive
+                    .iter()
+                    .map(|pending| (pending.due_us, DueKind::Massive)),
+            )
+            .chain(
+                self.portals
+                    .iter()
+                    .map(|pending| (pending.original_due, DueKind::PortalItem)),
+            )
+            .chain(
+                self.footprints
+                    .iter()
+                    .map(|pending| (pending.due_us(), DueKind::Footprint)),
+            )
+            .chain(
+                movement
+                    .first()
+                    .map(|pending| (pending.observed_us(), DueKind::Footprint)),
+            )
+            .chain(
+                self.first_think
+                    .as_ref()
+                    .map(|pending| (pending.started_us, DueKind::BakFirstThink)),
+            )
+            .chain(self.bosses.iter().filter_map(|boss| {
+                boss.teleport
+                    .next_at_ms()
+                    .and_then(|due| due.checked_mul(1000))
+                    .map(|due| (due, DueKind::PortalCycle))
+            }))
+            .min_by_key(|(due, _)| *due))
+    }
     pub(super) fn pending_for_player(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.first_think.is_some()
             || self.footprints.iter().any(footprints::Pending::blocking)
@@ -165,10 +240,10 @@ impl AdvancedCallbacks {
     pub(super) fn next_due_time(&self) -> Option<u64> {
         self.pending_due
             .into_iter()
-            .chain(self.portals.iter().map(|p| p.due_us()))
+            .chain(self.portals.iter().map(|p| p.callback.due_us()))
             .chain(self.footprints.iter().map(|p| p.due_us()))
             .chain(self.massive.iter().map(|pending| pending.due_us))
-            .chain(self.first_think.as_ref().map(|_| 0))
+            .chain(self.first_think.as_ref().map(|pending| pending.started_us))
             .chain(
                 self.bosses
                     .iter()
@@ -176,16 +251,38 @@ impl AdvancedCallbacks {
             )
             .min()
     }
-    // PARTIAL: feeds the source-fenced death getter, not an invented count.
-    #[allow(
-        dead_code,
-        reason = "PARTIAL Rotten Blood: captured Bakragore death-loot count consumer is pending"
-    )]
-    pub(super) fn actual_bakragore_essence_count(&self, target: ExactActorRef) -> Option<u8> {
-        self.bosses
+    pub(super) fn actual_bakragore_essence_count(&self, target: ExactActorRef) -> Result<u8, ()> {
+        if self
+            .first_think
+            .as_ref()
+            .is_some_and(|pending| pending.occurrence.actor == target)
+        {
+            return Err(());
+        }
+        let Some(boss) = self
+            .bosses
             .iter()
             .find(|boss| boss.actor == target && boss.key == bak::BAKRAGORE_KEY)
-            .and_then(|boss| boss.essence_count)
+        else {
+            // No source FIRST Think ran: storage88888 is still unset. Entry or
+            // a later global flame read must not invent a count for this death.
+            return Ok(0);
+        };
+        boss.essence_count.filter(|count| *count <= 4).ok_or(())
+    }
+
+    pub(super) fn reset_mechanics_death_flags(&mut self, key: &str) -> Result<(), ()> {
+        if !matches!(
+            key,
+            vem::VEMIATH_KEY | chag::CHAGORZ_KEY | bak::BAKRAGORE_KEY
+        ) {
+            return Err(());
+        }
+        // The source resets both named pause flags. Its GlobalRottenBloodStates
+        // cleanup is distinct from each monster file's local bossStates timer:
+        // preserve the local90s cycle, physical portals and retained callback tails.
+        massive::set_paused(self, center(key), false);
+        Ok(())
     }
     #[cfg(test)]
     pub(super) fn agony_commit(&self, actor: ExactActorRef) -> Option<AgonyCommit> {
@@ -214,32 +311,56 @@ fn center(key: &str) -> RoomPosition {
         _ => bak::BAKRAGORE_ROOM_CENTRE,
     }
 }
-// PARTIAL: the parent due-only port awaits actual source-death arbiter wiring;
-// retain its refusal rather than manufacture a timer execution or fresh Think.
-#[allow(
-    dead_code,
-    reason = "PARTIAL Rotten Blood: original-deadline advanced arbiter is not wired yet"
-)]
 #[allow(
     clippy::too_many_arguments,
     reason = "due-only work retains the same separately fenced physical owners"
 )]
 pub(super) async fn drive_due_through(
-    _runtime: &mut ChannelRuntimeV1,
+    runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
-    _room: &QualifiedNativeEntryRoom,
-    _native: &NativeGameplayState,
-    _map: &mut CurrentMonsterMap<'_, '_>,
+    attack: &mut super::super::attack::ChannelAttackStates,
+    notices: &super::super::raid_notices::ServerMessageHub,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
     eligible_through_us: u64,
     now: u64,
-) -> Result<Option<u64>, ()> {
-    let due = states.rotten_blood_callbacks.advanced.next_due_time();
-    // Keep this boundary refusing until the actual death-notice regression
-    // proves the retained original deadline, independently of retry wakes.
-    if due.is_some_and(|due| due <= eligible_through_us.min(now)) {
-        return Err(());
+) -> Result<(), ()> {
+    if let Some((due, kind)) = states
+        .rotten_blood_callbacks
+        .advanced
+        .next_source_due(runtime)?
+        .filter(|(due, _)| *due <= eligible_through_us && *due <= now)
+    {
+        match kind {
+            DueKind::Effects => {
+                effects::drain_through(runtime, states, room, native, map, due, now).await?
+            }
+            DueKind::Massive => {
+                massive::drive_one_due(
+                    runtime, states, attack, notices, room, native, map, due, now,
+                )
+                .await?
+            }
+            DueKind::PortalCycle => {
+                portals::plan_through(runtime, states, room, native, due, now, true)?
+            }
+            DueKind::BakFirstThink => {
+                if !states
+                    .rotten_blood_callbacks
+                    .advanced
+                    .first_think
+                    .as_ref()
+                    .is_some_and(|p| p.resolved)
+                {
+                    return Err(());
+                }
+                drive_thinks(runtime, states, room, native, map, &[], now).await?;
+            }
+            DueKind::PortalItem | DueKind::Footprint => return Err(()),
+        }
     }
-    Ok(due)
+    Ok(())
 }
 #[allow(
     clippy::too_many_arguments,
@@ -258,6 +379,22 @@ pub(super) async fn drive(
 ) -> Result<Option<u64>, ()> {
     effects::drain(runtime, states, room, native, map, now).await?;
     massive::drive(runtime, states, attack, notices, room, native, map, now).await?;
+    drive_thinks(runtime, states, room, native, map, occurrences, now).await?;
+    effects::drain(runtime, states, room, native, map, now).await?;
+    portals::plan(runtime, states, room, native, now)?;
+    Ok(states.rotten_blood_callbacks.advanced.next_due_time())
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn drive_thinks(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    occurrences: &[ThinkOccurrence],
+    now: u64,
+) -> Result<(), ()> {
     let retained = states
         .rotten_blood_callbacks
         .advanced
@@ -276,6 +413,13 @@ pub(super) async fn drive(
     }
     for occurrence in &work {
         let actor = occurrence.actor;
+        let retained_sources = states
+            .rotten_blood_callbacks
+            .advanced
+            .first_think
+            .as_ref()
+            .filter(|pending| pending.resolved && pending.occurrence == *occurrence)
+            .map(|pending| pending.sources.clone());
         let Some(key) = super::super::soul_war_callbacks::source_actor(runtime, native, actor)
         else {
             continue;
@@ -284,12 +428,18 @@ pub(super) async fn drive(
             continue;
         };
         if room.pinned_activity_source_room() != Some(kind)
-            || !runtime.contains_live_creature(actor)
+            || if retained_sources.is_some() {
+                !runtime
+                    .source_creature_is_registered(actor)
+                    .map_err(|_| ())?
+            } else {
+                !runtime.contains_live_creature(actor)
+            }
         {
             continue;
         }
         if key == bak::BAKRAGORE_KEY
-            && bak_preparation::await_claim(runtime, states, native, *occurrence, now)?
+            && bak_preparation::await_claim(runtime, states, room, native, *occurrence, now)?
         {
             // This synchronous source callback has not committed its global
             // decision. Do not advance native AI/ordinary casts past it.
@@ -305,11 +455,20 @@ pub(super) async fn drive(
             if states.rotten_blood_callbacks.advanced.bosses.len() >= 8 {
                 return Err(());
             }
-            let source = Arc::new(
-                runtime
-                    .qualify_rotten_blood_spawn_source(actor, native)
-                    .map_err(|_| ())?,
-            );
+            let source = if let Some(sources) = &retained_sources {
+                Arc::clone(&sources.spawn)
+            } else {
+                Arc::new(
+                    runtime
+                        .qualify_rotten_blood_spawn_source(actor, native)
+                        .map_err(|_| ())?,
+                )
+            };
+            let portal_source = if let Some(sources) = &retained_sources {
+                Arc::clone(&sources.portal)
+            } else {
+                Arc::new(crate::durability::creature_source_items::RottenPortalSource::from_current_native_think(runtime,room,native,occurrence).map_err(|_| ())?)
+            };
             let engine = match key.as_str() {
                 vem::VEMIATH_KEY => Engine::Vemiath {
                     think: Default::default(),
@@ -340,7 +499,7 @@ pub(super) async fn drive(
                     next_player: 0,
                     teleport: chag::TeleportCycle::new(center(&key)),
                     essence_count: None,
-                    portal_source: crate::durability::creature_source_items::RottenPortalSource::from_current_native_think(runtime,room,native,occurrence).map_err(|_| ())?,
+                    portal_source,
                     portal_ordinal: 0,
                     paused,
                 });
@@ -444,11 +603,15 @@ pub(super) async fn drive(
             },
         );
         let mushroom_count = count(bak::MUSHROOM_KEY, 20);
-        let icon = Arc::new(
-            runtime
-                .qualify_rotten_blood_icon_source(actor, native)
-                .map_err(|_| ())?,
-        );
+        let icon = if let Some(sources) = &retained_sources {
+            Arc::clone(&sources.icon)
+        } else {
+            Arc::new(
+                runtime
+                    .qualify_rotten_blood_icon_source(actor, native)
+                    .map_err(|_| ())?,
+            )
+        };
         let active_essences = if key == bak::BAKRAGORE_KEY {
             let mask = states
                 .rotten_blood_callbacks
@@ -552,7 +715,7 @@ pub(super) async fn drive(
                 .rotten_blood_callbacks
                 .advanced
                 .pending
-                .push_back(effect);
+                .push_back((callback_now, effect));
         }
         let boss = &mut states.rotten_blood_callbacks.advanced.bosses[index];
         boss.engine = engine;
@@ -567,9 +730,7 @@ pub(super) async fn drive(
             states.rotten_blood_callbacks.advanced.first_think = None;
         }
     }
-    effects::drain(runtime, states, room, native, map, now).await?;
-    portals::plan(runtime, states, room, native, now)?;
-    Ok(states.rotten_blood_callbacks.advanced.next_due_time())
+    Ok(())
 }
 
 #[cfg(test)]

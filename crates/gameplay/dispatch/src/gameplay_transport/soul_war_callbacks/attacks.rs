@@ -6,32 +6,82 @@ use crate::content::native_soul_war::QualifiedSoulWarAttackKind as Kind;
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::foundation::{GameSessionId, RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use crate::player_lethal::PlayerLethalVitals;
+use std::sync::Arc;
 
-#[derive(Debug)]
-struct Delayed {
-    issuer: ExactActorRef,
-    target: ExactActorRef,
-    due: u64,
-    occurrence: String,
-    kind: Kind,
-}
+mod area;
+pub(in crate::gameplay_transport) use area::PreparedSoulWarArea;
+
 type AttackOwnerBinding = (
     RuntimeScopeRefV1,
     ScopeOwnershipGeneration,
     [u8; 32],
     [u8; 32],
     [u8; 32],
+    [u8; 32],
+    u64,
 );
+fn binding(runtime: &ChannelRuntimeV1) -> AttackOwnerBinding {
+    (
+        runtime.binding().runtime_scope(),
+        runtime.binding().scope_generation(),
+        runtime.content_pin().server_artifact_digest(),
+        runtime.content_pin().client_artifact_digest(),
+        runtime.content_pin().frame_binding_digest(),
+        runtime.map_revision_digest(),
+        runtime.content_pin().activation_sequence(),
+    )
+}
+
+#[derive(Debug)]
+pub(in crate::gameplay_transport) struct RetainedSoulWarAttack {
+    binding: AttackOwnerBinding,
+    stamp: crate::foundation::RuntimeWorkStamp,
+    issuer: ExactActorRef,
+    occurrence: String,
+    kind: Kind,
+    observed_at_us: u64,
+}
+impl RetainedSoulWarAttack {
+    fn current(&self, runtime: &ChannelRuntimeV1, native: &NativeGameplayState) -> bool {
+        self.binding == binding(runtime)
+            && native.source_digest() == runtime.content_pin().server_artifact_digest()
+            && runtime
+                .owner_fence()
+                .is_ok_and(|fence| fence.accepts_stamp(self.stamp))
+    }
+}
+
+#[derive(Debug)]
+struct Scheduled {
+    source: Arc<RetainedSoulWarAttack>,
+    original_due: u64,
+    due: u64,
+    target: Option<(ExactActorRef, GameSessionId)>,
+    telegraph: Option<MovementLocalPosition>,
+    geometry: Option<area::Geometry>,
+    area: Option<PreparedSoulWarArea>,
+}
+impl Scheduled {
+    fn next_due(&self) -> u64 {
+        if self.telegraph.is_some() {
+            self.original_due
+        } else {
+            self.due
+        }
+    }
+}
 
 #[derive(Debug, Default)]
 pub(super) struct SoulWarAttacks {
     binding: Option<AttackOwnerBinding>,
-    delayed: Vec<Delayed>,
+    scheduled: Vec<Scheduled>,
     seen: Vec<(ExactActorRef, String)>,
+    #[cfg(test)]
+    pause_after_player_commit: bool,
 }
 impl SoulWarAttacks {
     pub(super) fn next_due(&self) -> Option<u64> {
-        self.delayed.iter().map(|d| d.due).min()
+        self.scheduled.iter().map(Scheduled::next_due).min()
     }
 }
 fn in_zone(kind: Kind, p: MovementLocalPosition) -> bool {
@@ -116,19 +166,16 @@ fn current_source(
     source.kind(&proposal.ability)
 }
 
-#[allow(clippy::too_many_arguments)]
-pub(in crate::gameplay_transport) async fn drive(
-    runtime: &mut ChannelRuntimeV1,
+fn ensure_context(
+    runtime: &ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
-    map: &mut CurrentMonsterMap<'_, '_>,
-    proposals: &[ProfileAbilityProposal],
-    now: u64,
-) -> Result<Option<u64>, ()> {
-    let scope = runtime.binding().runtime_scope();
-    if !matches!(scope, RuntimeScopeRefV1::Instance { .. })
-        || runtime.content_pin().frame_binding_digest() != room.frame_binding().digest()
+) -> bool {
+    if !matches!(
+        runtime.binding().runtime_scope(),
+        RuntimeScopeRefV1::Instance { .. }
+    ) || runtime.content_pin().frame_binding_digest() != room.frame_binding().digest()
         || runtime.map_revision_digest() != room.map_revision_digest()
         || native.source_digest() != runtime.content_pin().server_artifact_digest()
         || !matches!(
@@ -137,184 +184,358 @@ pub(in crate::gameplay_transport) async fn drive(
         )
     {
         states.soul_war_callbacks.attacks = SoulWarAttacks::default();
-        return Ok(None);
+        return false;
     }
-    let binding = (
-        scope,
-        runtime.binding().scope_generation(),
-        native.source_digest(),
-        runtime.content_pin().frame_binding_digest(),
-        runtime.map_revision_digest(),
-    );
-    let mut owner = std::mem::take(&mut states.soul_war_callbacks.attacks);
-    if owner.binding != Some(binding) {
-        owner = SoulWarAttacks {
-            binding: Some(binding),
+    let current = binding(runtime);
+    if states.soul_war_callbacks.attacks.binding != Some(current) {
+        states.soul_war_callbacks.attacks = SoulWarAttacks {
+            binding: Some(current),
             ..Default::default()
         };
     }
-    let result = drive_owned(
-        &mut owner, runtime, states, room, native, map, proposals, now,
-    )
-    .await;
-    states.soul_war_callbacks.attacks = owner;
-    result
+    true
 }
 
+/// One original due callback, without accepting a fresh native Think/attack.
+/// The caller selects this family's deadline against every other source owner.
 #[allow(clippy::too_many_arguments)]
-async fn drive_owned(
-    owner: &mut SoulWarAttacks,
+pub(in crate::gameplay_transport) async fn drive_due_through(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
-    proposals: &[ProfileAbilityProposal],
+    through: u64,
     now: u64,
 ) -> Result<Option<u64>, ()> {
-    let census = runtime.positioned_actor_census().map_err(|_| ())?;
-    owner
+    if !ensure_context(runtime, states, room, native) {
+        return Ok(None);
+    }
+    drive_one_due(runtime, states, room, native, map, through, now).await?;
+    Ok(states.soul_war_callbacks.attacks.next_due())
+}
+
+/// Synchronous DATA intake immediately beside the original AI report commit.
+/// Target selection and all outward effects wait for the shared proposal cursor.
+pub(in crate::gameplay_transport) fn capture_attack_proposal(
+    runtime: &mut ChannelRuntimeV1,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    proposal: &ProfileAbilityProposal,
+    observed_at_us: u64,
+) -> Result<Option<RetainedSoulWarAttack>, ()> {
+    if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack
+        || !proposal
+            .ability
+            .key
+            .starts_with("oteryn:ability.srx3.soul-war.")
+        || !matches!(
+            runtime.binding().runtime_scope(),
+            RuntimeScopeRefV1::Instance { .. }
+        )
+        || !matches!(
+            room.pinned_activity_source_room(),
+            Some(Room::GoshnarsCruelty | Room::GoshnarsMegalomania)
+        )
+    {
+        return Ok(None);
+    }
+    if runtime.content_pin().frame_binding_digest() != room.frame_binding().digest()
+        || runtime.map_revision_digest() != room.map_revision_digest()
+        || native.source_digest() != runtime.content_pin().server_artifact_digest()
+    {
+        return Err(());
+    }
+    let kind = current_source(runtime, native, proposal).ok_or(())?;
+    let expected = if kind == Kind::CrueltyElemental {
+        Room::GoshnarsCruelty
+    } else {
+        Room::GoshnarsMegalomania
+    };
+    if room.pinned_activity_source_room() != Some(expected) {
+        return Err(());
+    }
+    Ok(Some(RetainedSoulWarAttack {
+        binding: binding(runtime),
+        stamp: runtime.issue_owner_work().map_err(|_| ())?,
+        issuer: proposal.issuer,
+        occurrence: proposal.occurrence.id().as_str().to_owned(),
+        kind,
+        observed_at_us,
+    }))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) async fn drive_retained_attack_proposal(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    source: Arc<RetainedSoulWarAttack>,
+    now: u64,
+) -> Result<Option<u64>, ()> {
+    if !ensure_context(runtime, states, room, native)
+        || !source.current(runtime, native)
+        || source.observed_at_us > now
+    {
+        return Err(());
+    }
+    // This is an already accepted proposal from the original AI pass. A retry
+    // may execute much later, but must not drain newer callbacks ahead of this
+    // pass or of another source owner's earlier deadline.
+    let through = source.observed_at_us;
+    let registered = runtime
+        .source_registered_creature_census()
+        .map_err(|_| ())?;
+    states
+        .soul_war_callbacks
+        .attacks
         .seen
-        .retain(|(actor, _)| runtime.contains_live_creature(*actor));
-    // Due events keep their original source combat even if setType changed the issuer.
-    let mut index = 0;
-    while index < owner.delayed.len() {
-        let delayed = &owner.delayed[index];
-        if delayed.due > now {
-            index += 1;
-            continue;
-        }
-        if runtime.contains_live_creature(delayed.issuer)
-            && let Some((_, position, Some(_))) =
-                census.iter().find(|(actor, _, _)| *actor == delayed.target)
-            && !states.is_dead(delayed.target)
-        {
-            execute_area(
-                runtime,
-                states,
-                room,
-                native,
-                map,
-                delayed.issuer,
-                position.position(),
-                delayed.kind,
-                &delayed.occurrence,
-                now,
-            )
-            .await?;
-        }
-        // Remove only after a completed attempt, preserving other work on refusal.
-        owner.delayed.remove(index);
+        .retain(|(actor, _)| registered.iter().any(|(current, _)| current == actor));
+    while states
+        .soul_war_callbacks
+        .attacks
+        .next_due()
+        .is_some_and(|due| due <= through)
+    {
+        drive_one_due(runtime, states, room, native, map, through, now).await?;
     }
-    for proposal in proposals {
-        let Some(kind) = current_source(runtime, native, proposal) else {
-            continue;
-        };
-        let expected = if kind == Kind::CrueltyElemental {
-            Room::GoshnarsCruelty
-        } else {
-            Room::GoshnarsMegalomania
-        };
-        if room.pinned_activity_source_room() != Some(expected) {
-            continue;
-        }
-        let id = proposal.occurrence.id().as_str();
-        if owner
-            .seen
+    accept_retained(runtime, states, room, native, source, now)?;
+    while states
+        .soul_war_callbacks
+        .attacks
+        .next_due()
+        .is_some_and(|due| due <= through)
+    {
+        drive_one_due(runtime, states, room, native, map, through, now).await?;
+    }
+    Ok(states.soul_war_callbacks.attacks.next_due())
+}
+
+fn accept_retained(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    source: Arc<RetainedSoulWarAttack>,
+    now: u64,
+) -> Result<(), ()> {
+    if !source.current(runtime, native) || source.observed_at_us > now {
+        return Err(());
+    }
+    let kind = source.kind;
+    let expected = if kind == Kind::CrueltyElemental {
+        Room::GoshnarsCruelty
+    } else {
+        Room::GoshnarsMegalomania
+    };
+    if room.pinned_activity_source_room() != Some(expected) {
+        return Err(());
+    }
+    let issuer = source.issuer;
+    let id = source.occurrence.as_str();
+    if states
+        .soul_war_callbacks
+        .attacks
+        .seen
+        .iter()
+        .any(|(actor, last)| *actor == issuer && last == id)
+        || states
+            .soul_war_callbacks
+            .attacks
+            .scheduled
             .iter()
-            .any(|(actor, last)| *actor == proposal.issuer && last == id)
-        {
-            continue;
-        }
-        if let Some((_, last)) = owner
-            .seen
-            .iter_mut()
-            .find(|(actor, _)| *actor == proposal.issuer)
-        {
-            *last = id.to_owned();
-        } else {
-            owner.seen.push((proposal.issuer, id.to_owned()));
-        }
-        if kind == Kind::MegalomaniaBlue {
-            let at = runtime
-                .read_actor_position(proposal.issuer)
-                .map_err(|_| ())?
-                .position();
-            execute_area(
-                runtime,
-                states,
-                room,
-                native,
-                map,
-                proposal.issuer,
-                at,
-                kind,
-                id,
-                now,
-            )
-            .await?;
-        } else {
-            let players = census
-                .iter()
-                .filter_map(|(actor, position, session)| {
-                    session
-                        .filter(|_| in_zone(kind, position.position()) && !states.is_dead(*actor))
-                        .map(|s| (*actor, s, position.position()))
-                })
-                .collect::<Vec<_>>();
-            if players.is_empty() {
-                continue;
-            }
-            let Some(index) = draw(
-                native.source_digest(),
-                proposal.issuer,
-                id,
-                0,
-                players.len().try_into().map_err(|_| ())?,
-            ) else {
-                continue;
-            };
-            let (target, session, at) = players[index as usize];
-            // Stage bounded scheduling before publishing its correlated outfit.
-            if owner.delayed.len() >= 64 {
-                continue;
-            }
-            let Some(due) = now.checked_add(7_000_000) else {
-                continue;
-            };
-            // The source ignores addCondition's false result, still telegraphing
-            // and scheduling its delayed combat. Missing immutable appearance
-            // qualification refuses the ability; a current owner refusal does
-            // not invent an extra Lua gameplay prerequisite.
-            if native
-                .spell_appearances()
-                .and_then(|a| a.for_look_type(242))
-                .is_none()
-            {
-                continue;
-            }
-            let _ = apply_outfit(
-                runtime,
-                states,
-                native,
-                proposal.issuer,
-                target,
-                session,
-                id,
-                now,
-            );
-            scene::emit_effect(room, at, 13);
-            owner.delayed.push(Delayed {
-                issuer: proposal.issuer,
-                target,
-                due,
-                occurrence: id.to_owned(),
-                kind,
-            });
-        }
+            .any(|pending| pending.source.issuer == issuer && pending.source.occurrence == id)
+    {
+        return Ok(());
     }
-    let next = owner.next_due();
-    Ok(next)
+    if !runtime
+        .source_registered_creature_census()
+        .map_err(|_| ())?
+        .iter()
+        .any(|(actor, _)| *actor == issuer)
+    {
+        remember(states, issuer, id)?;
+        return Ok(());
+    }
+    let mut selected = None;
+    let mut geometry = None;
+    let mut telegraph = None;
+    let due = if kind == Kind::MegalomaniaBlue {
+        let at = runtime
+            .read_actor_position(issuer)
+            .map_err(|_| ())?
+            .position();
+        geometry = Some(area::Geometry {
+            caster: at,
+            target: at,
+        });
+        source.observed_at_us
+    } else {
+        let players = runtime
+            .positioned_melee_census()
+            .map_err(|_| ())?
+            .into_iter()
+            .filter_map(|(actor, position, session)| {
+                session
+                    .filter(|_| in_zone(kind, position.position()))
+                    .map(|session| (actor, session, position.position()))
+            })
+            .collect::<Vec<_>>();
+        if players.is_empty() {
+            remember(states, issuer, id)?;
+            return Ok(());
+        }
+        let index = draw(
+            native.source_digest(),
+            issuer,
+            id,
+            0,
+            players.len().try_into().map_err(|_| ())?,
+        )
+        .ok_or(())?;
+        let (actor, session, at) = players[index as usize];
+        runtime
+            .player_control_facts(actor, session)
+            .map_err(|_| ())?;
+        native
+            .spell_appearances()
+            .and_then(|a| a.for_look_type(242))
+            .ok_or(())?;
+        selected = Some((actor, session));
+        telegraph = Some(at);
+        now.checked_add(7_000_000).ok_or(())?
+    };
+    let owner = &mut states.soul_war_callbacks.attacks;
+    if owner.scheduled.len() >= 64 {
+        return Err(());
+    }
+    owner.scheduled.try_reserve(1).map_err(|_| ())?;
+    owner.seen.try_reserve(1).map_err(|_| ())?;
+    if let Some((actor, session)) = selected {
+        // The source ignores addCondition's false result. It still publishes
+        // its telegraph and schedules the same seven-second callback, including
+        // when Zone:getRandomPlayer selected a still registered HP0 Player.
+        let _ = apply_outfit(runtime, states, native, issuer, actor, session, id, now);
+    }
+    states.soul_war_callbacks.attacks.scheduled.push(Scheduled {
+        source: Arc::clone(&source),
+        original_due: source.observed_at_us,
+        due,
+        target: selected,
+        telegraph,
+        geometry,
+        area: None,
+    });
+    // No await separates acceptance, original due retention and replay marking.
+    remember(states, issuer, id)
+}
+
+fn remember(states: &mut ChannelSpellStates, actor: ExactActorRef, id: &str) -> Result<(), ()> {
+    let owner = &mut states.soul_war_callbacks.attacks;
+    if let Some((_, last)) = owner.seen.iter_mut().find(|(current, _)| *current == actor) {
+        *last = id.to_owned();
+    } else {
+        owner.seen.try_reserve(1).map_err(|_| ())?;
+        owner.seen.push((actor, id.to_owned()));
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn drive_one_due(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    through: u64,
+    now: u64,
+) -> Result<(), ()> {
+    let Some(index) = states
+        .soul_war_callbacks
+        .attacks
+        .scheduled
+        .iter()
+        .enumerate()
+        .filter(|(_, task)| task.next_due() <= through && task.next_due() <= now)
+        .min_by_key(|(_, task)| task.next_due())
+        .map(|(index, _)| index)
+    else {
+        return Ok(());
+    };
+    let task = &states.soul_war_callbacks.attacks.scheduled[index];
+    if !task.source.current(runtime, native) {
+        return Err(());
+    }
+    if let Some(at) = task.telegraph {
+        if !scene::emit_effect(room, at, 13) {
+            return Err(());
+        }
+        states.soul_war_callbacks.attacks.scheduled[index].telegraph = None;
+        return Ok(());
+    }
+    if task.geometry.is_none() {
+        // Literal Creature(id)/Player(id) test registration, not current HP or
+        // the source's possibly changed monster type. A replacement is excluded.
+        let registered = runtime
+            .source_registered_creature_census()
+            .map_err(|_| ())?;
+        let target = task.target.ok_or(())?;
+        let census = runtime.positioned_melee_census().map_err(|_| ())?;
+        let caster = registered
+            .iter()
+            .find(|(actor, _)| *actor == task.source.issuer);
+        let target = census
+            .iter()
+            .find(|(actor, _, session)| *actor == target.0 && *session == Some(target.1));
+        let (Some((_, caster)), Some((_, target, _))) = (caster, target) else {
+            states.soul_war_callbacks.attacks.scheduled.remove(index);
+            return Ok(());
+        };
+        let geometry = area::Geometry {
+            caster: caster.position(),
+            target: target.position(),
+        };
+        if geometry.caster.floor != geometry.target.floor {
+            states.soul_war_callbacks.attacks.scheduled.remove(index);
+            return Ok(());
+        }
+        states.soul_war_callbacks.attacks.scheduled[index].geometry = Some(geometry);
+    }
+    if states.soul_war_callbacks.attacks.scheduled[index]
+        .area
+        .is_none()
+    {
+        let task = &states.soul_war_callbacks.attacks.scheduled[index];
+        let prepared = area::prepare(
+            runtime,
+            room,
+            native,
+            map,
+            &task.source,
+            task.geometry.ok_or(())?,
+        )
+        .await?;
+        states.soul_war_callbacks.attacks.scheduled[index].area = Some(prepared);
+    }
+    // Taking the task is restricted to this synchronous commit section; every
+    // refusal restores its cursor and exact cohort before the function returns.
+    let mut task = states.soul_war_callbacks.attacks.scheduled.remove(index);
+    let result = task
+        .area
+        .as_mut()
+        .ok_or(())
+        .and_then(|pending| area::finish(runtime, states, room, native, pending, now));
+    if result.is_err() {
+        states
+            .soul_war_callbacks
+            .attacks
+            .scheduled
+            .insert(index, task);
+    }
+    result
 }
 
 #[allow(
@@ -391,134 +612,40 @@ fn apply_outfit(
         .is_some()
 }
 
-#[allow(clippy::too_many_arguments)]
-async fn execute_area(
-    runtime: &mut ChannelRuntimeV1,
-    states: &mut ChannelSpellStates,
-    room: &QualifiedNativeEntryRoom,
-    native: &NativeGameplayState,
-    map: &mut CurrentMonsterMap<'_, '_>,
-    issuer: ExactActorRef,
-    target: MovementLocalPosition,
-    kind: Kind,
-    occurrence: &str,
-    now: u64,
-) -> Result<(), ()> {
-    let caster = runtime
-        .read_actor_position(issuer)
-        .map_err(|_| ())?
-        .position();
-    if caster.floor != target.floor {
-        return Ok(());
+#[cfg(test)]
+impl SoulWarCallbacks {
+    /// Observe the real accepted queue; this creates no source proposal or timer.
+    pub(in crate::gameplay_transport) fn source_attack_schedule_for_test(
+        &self,
+    ) -> Vec<(ExactActorRef, String, u64, u64)> {
+        self.attacks
+            .scheduled
+            .iter()
+            .map(|pending| {
+                (
+                    pending.source.issuer,
+                    pending.source.occurrence.clone(),
+                    pending.original_due,
+                    pending.due,
+                )
+            })
+            .collect()
     }
-    let blue = kind == Kind::MegalomaniaBlue;
-    // AreaCombat::getList's LOS origin is one step from target toward caster.
-    let dx = caster.x - target.x;
-    let dy = caster.y - target.y;
-    let (sx, sy) = if dx.abs() > dy.abs() {
-        (dx.signum(), 0)
-    } else if dy.abs() > dx.abs() {
-        (0, dy.signum())
-    } else {
-        (dx.signum(), dy.signum())
-    };
-    let sight = MovementLocalPosition {
-        x: target.x + sx,
-        y: target.y + sy,
-        ..target
-    };
-    let mut tiles = Vec::new();
-    for (dx, dy) in shape(blue) {
-        let at = MovementLocalPosition {
-            x: target.x + dx,
-            y: target.y + dy,
-            ..target
-        };
-        let _ = map.read(runtime, at).await;
-        map.read_sight(runtime, sight, at).await;
-        let cells = room.movement_cells();
-        let Ok(tile) = cells.spell_tiles().lookup(
-            cells.scope(),
-            crate::content::LogicalCell {
-                x: at.x,
-                y: at.y,
-                z: i32::from(at.floor),
-            },
-        ) else {
-            continue;
-        };
-        if tile.flags().floor_change
-            || tile.flags().protection_zone
-            || map.view().blocks_projectile(at) != Some(false)
-            || crate::map::floor::is_teleport(
-                cells,
-                crate::content::LogicalCell {
-                    x: at.x,
-                    y: at.y,
-                    z: i32::from(at.floor),
-                },
-            )
-            || !map.view().sight(sight, at)
-        {
-            continue;
-        }
-        tiles.push(at);
+
+    pub(in crate::gameplay_transport) fn pause_attack_after_player_commit_for_test(&mut self) {
+        self.attacks.pause_after_player_commit = true;
     }
-    if !map.validate_transaction(runtime).await {
-        return Ok(());
+
+    pub(in crate::gameplay_transport) fn source_attack_seen_for_test(
+        &self,
+        issuer: ExactActorRef,
+        occurrence: &str,
+    ) -> bool {
+        self.attacks
+            .seen
+            .iter()
+            .any(|(actor, seen)| *actor == issuer && seen == occurrence)
     }
-    let census = runtime.positioned_actor_census().map_err(|_| ())?;
-    // Lua queues death; keep the cast's top actor rather than exposing a lower stack after lethal HP.
-    let targets = census
-        .iter()
-        .filter_map(|(actor, position, session)| {
-            let at = position.position();
-            session
-                .filter(|_| {
-                    (!blue || in_zone(kind, at))
-                        && runtime.current_top_actor_on_cell(at).ok().flatten() == Some(*actor)
-                })
-                .map(|s| (*actor, s, at))
-        })
-        .collect::<Vec<_>>();
-    for (ordinal, at) in tiles.into_iter().enumerate() {
-        for (actor, session, position) in &targets {
-            if states.is_dead(*actor) || (!blue && *position != at) {
-                continue;
-            }
-            if blue {
-                if !scene::current_ground(room, *position).is_some_and(|g| g.appearance_id != 409) {
-                    continue;
-                }
-                let _ = states.apply_soul_war_lua_health_loss(
-                    runtime,
-                    native,
-                    issuer,
-                    *actor,
-                    *session,
-                    6000,
-                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
-                );
-            } else if let Some(value) = draw(
-                native.source_digest(),
-                issuer,
-                occurrence,
-                ordinal as u64 + 1,
-                701,
-            ) {
-                let _ = states.apply_source_player_heal(
-                    runtime,
-                    *actor,
-                    *session,
-                    2300 + value,
-                    &format!("{occurrence}:tile:{ordinal}"),
-                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
-                );
-            }
-        }
-        scene::emit_effect(room, at, if blue { 158 } else { 7 });
-    }
-    Ok(())
 }
 
 #[cfg(test)]

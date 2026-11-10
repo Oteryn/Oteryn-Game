@@ -50,17 +50,20 @@ pub(super) struct PreparedGlobalGroundOperations {
 pub(super) enum ScopedGroundCauseRef<'a> {
     Creature(&'a CreatureGroundCause),
     Global(&'a ScopedGlobalGroundCause),
+    SourceStep(&'a super::source_step::SourceGroundCause),
 }
 #[derive(Clone, Copy)]
 pub(super) enum ScopedGroundPreparedRef<'a> {
     Creature(&'a PreparedCreatureGroundOperations),
     Global(&'a PreparedGlobalGroundOperations),
+    SourceStep(&'a super::source_step::PreparedSourceGroundOperations),
 }
 impl<'a> ScopedGroundPreparedRef<'a> {
     pub(super) fn operations(self) -> &'a [SpellItemOperation] {
         match self {
             Self::Creature(p) => &p.operations,
             Self::Global(p) => &p.operations,
+            Self::SourceStep(p) => &p.operations,
         }
     }
     pub(super) fn matches(self, cause: ScopedGroundCauseRef<'_>) -> bool {
@@ -76,6 +79,7 @@ impl<'a> ScopedGroundPreparedRef<'a> {
                     && p.body == c.body
                     && p.cast == c.cast
             }
+            (Self::SourceStep(p), ScopedGroundCauseRef::SourceStep(c)) => p.binding == c.cast,
             _ => false,
         }
     }
@@ -86,6 +90,7 @@ macro_rules! shared_digest {
             match self {
                 Self::Creature(c) => c.$name,
                 Self::Global(c) => c.$name,
+                Self::SourceStep(c) => c.$name,
             }
         }
     };
@@ -100,66 +105,74 @@ impl<'a> ScopedGroundCauseRef<'a> {
         match self {
             Self::Creature(c) => c.world,
             Self::Global(c) => *c.identity.scope.world_id().as_bytes(),
+            Self::SourceStep(c) => *c.scope.world_id().as_bytes(),
         }
     }
     pub(super) fn scope(self) -> RuntimeScopeRefV1 {
         match self {
             Self::Creature(c) => c.scope,
             Self::Global(c) => c.identity.scope,
+            Self::SourceStep(c) => c.scope,
         }
     }
     pub(super) fn generation(self) -> u64 {
         match self {
             Self::Creature(c) => c.scope_generation,
             Self::Global(c) => c.identity.ownership_generation,
+            Self::SourceStep(c) => c.generation,
         }
     }
     pub(super) fn source_items(self) -> &'a [TypedDefinitionRef] {
         match self {
             Self::Creature(c) => &c.source_items,
             Self::Global(c) => &c.source_items,
+            Self::SourceStep(c) => &c.source_items,
         }
     }
     pub(super) fn definition(self) -> &'a TypedDefinitionRef {
         match self {
             Self::Creature(c) => &c.ability,
             Self::Global(c) => &c.definition,
+            Self::SourceStep(c) => &c.definition,
         }
     }
     pub(super) fn occurrence(self) -> &'a str {
         match self {
             Self::Creature(c) => &c.occurrence,
             Self::Global(c) => &c.occurrence,
+            Self::SourceStep(c) => &c.occurrence,
         }
     }
     pub(super) fn creature(self) -> Option<&'a TypedDefinitionRef> {
         match self {
             Self::Creature(c) => Some(&c.creature),
-            Self::Global(_) => None,
+            Self::Global(_) | Self::SourceStep(_) => None,
         }
     }
     pub(super) fn actor_placement(self) -> Option<&'a [u8]> {
         match self {
             Self::Creature(c) => Some(c.placement.as_slice()),
-            Self::Global(_) => None,
+            Self::Global(_) | Self::SourceStep(_) => None,
         }
     }
     pub(super) fn actor_generation(self) -> Option<String> {
         match self {
             Self::Creature(c) => Some(c.generation.to_string()),
-            Self::Global(_) => None,
+            Self::Global(_) | Self::SourceStep(_) => None,
         }
     }
     pub(super) fn lock_identity(self) -> (&'a [u8; 16], u64) {
         match self {
             Self::Creature(c) => (&c.placement, c.generation),
             Self::Global(c) => (&c.identity.scope_identity, c.identity.ownership_generation),
+            Self::SourceStep(c) => (&c.placement, c.actor.actor_local_generation()),
         }
     }
     pub(super) fn cause_kind(self) -> i16 {
         match self {
             Self::Creature(c) => c.cause_kind(),
             Self::Global(_) => 4,
+            Self::SourceStep(_) => super::source_step::SOURCE_STEP_CAUSE,
         }
     }
     pub(super) fn channel_bytes(self) -> Option<[u8; 16]> {
@@ -185,12 +198,14 @@ impl<'a> ScopedGroundCauseRef<'a> {
         match self {
             Self::Creature(_) => PhysicalItemOwner::Creature(authority),
             Self::Global(_) => PhysicalItemOwner::RegisteredGlobal(authority),
+            Self::SourceStep(_) => PhysicalItemOwner::SourceStep(authority),
         }
     }
     pub(super) fn physical_cause(self, transaction: [u8; 16]) -> PhysicalItemCause<'a> {
         match self {
             Self::Creature(_) => PhysicalItemCause::Creature(transaction),
             Self::Global(_) => PhysicalItemCause::RegisteredGlobal(transaction),
+            Self::SourceStep(_) => PhysicalItemCause::SourceStep(transaction),
         }
     }
     pub(super) fn valid_shape(self) -> bool {
@@ -239,6 +254,31 @@ impl<'a> ScopedGroundCauseRef<'a> {
                     && c.source_items[0].family == "Item"
                     && c.source_items[0].production_key == "oteryn:item.tibia.i33877"
                     && c.source_items[0].revision_ref == "definition-r1"
+            }
+            Self::SourceStep(c) => {
+                c.definition.family == "Encounter"
+                    && c.definition.production_key == "oteryn:encounter.soul_war_taint_zones"
+                    && c.definition.revision_ref == "definition-r1"
+                    && c.source_items.len() == 1
+                    && super::source_step::SourceGroundStepKind::from_definition(&c.source_items[0])
+                        .is_some()
+                    && uuid_v7(&c.item)
+                    && uuid_v7(&c.node)
+                    && c.node_revision != 0
+                    && c.assignment_revision != 0
+                    && c.activation != 0
+                    && c.body == super::source_step::SOURCE_BODY
+                    && c.cast != [0; 32]
+                    && c.client != [0; 32]
+                    && c.actor.runtime_scope() == c.scope
+                    && c.actor.scope_generation().get() == c.generation
+                    && c.fence.runtime_scope == c.scope
+                    && c.fence.scope_ownership_generation.get() == c.generation
+                    && c.movement.last_translation_revision() != 0
+                    && c.movement.revision() == c.movement.last_translation_revision()
+                    && c.committed.mover() == c.actor
+                    && c.committed.after() == c.movement
+                    && c.committed.before().revision() < c.movement.revision()
             }
         }
     }
@@ -291,6 +331,19 @@ impl<'a> ScopedGroundCauseRef<'a> {
                 "world":hex(&world),"channel":self.channel_bytes().as_ref().map(|value|hex(value)),"instance":self.instance_bytes().as_ref().map(|value|hex(value)),"runtime_scope_kind":self.scope_kind(),
                 "ownership_generation":ownership_generation.to_string(),"ability":reference(&cause.definition),"occurrence":cause.occurrence,
                 "global_event":{"name":"CreateGoshnarSpiteFire","action":cause.action.key(),"registration_scope":hex(&cause.identity.scope_identity),"node":hex(&cause.identity.node),"node_registration_revision":cause.identity.node_registration_revision.to_string(),"assignment_revision":cause.identity.assignment_revision.to_string(),"work_ordinal":cause.identity.stamp.ordinal().get().to_string()},
+                "content":hex(&cause.content),"client_content":hex(&cause.client),"activation_sequence":cause.activation.to_string(),"map":hex(&cause.map),"frame":hex(&cause.frame),"source_body":hex(&cause.body),"source_cast":hex(&cause.cast),"operations":operations,
+            }),
+            Self::SourceStep(cause) => serde_json::json!({
+                "schema":"OTERYN_SOURCE_GROUND_STEP/v1", "player":null,"cost":null,"caster_origin":null,"creature":null,
+                "world":hex(&world),"channel":self.channel_bytes().as_ref().map(|value|hex(value)),"instance":self.instance_bytes().as_ref().map(|value|hex(value)),"runtime_scope_kind":self.scope_kind(),
+                "ownership_generation":ownership_generation.to_string(),"ability":reference(&cause.definition),"occurrence":cause.occurrence,
+                "source_step":{"actor_kind":"player","actor":hex(&cause.placement),"actor_generation":cause.actor.actor_local_generation().to_string(),
+                    "character":hex(cause.fence.character_id.as_bytes()),"session":hex(cause.fence.game_session_id.as_bytes()),"connection":cause.fence.connection_generation.get().to_string(),"lease":cause.fence.character_lease_generation.to_string(),
+                    "movement_revision":cause.movement.revision().to_string(),"translation_revision":cause.movement.last_translation_revision().to_string(),
+                    "movement_binding":hex(&cause.committed.binding()),"previous_revision":cause.committed.before().revision().to_string(),
+                    "node":hex(&cause.node),"node_registration_revision":cause.node_revision.to_string(),"assignment_revision":cause.assignment_revision.to_string(),
+                    "item":hex(&cause.item),"definition":reference(&cause.source_items[0]),"epoch":cause.reset_epoch.to_string(),
+                    "position":cause.target.spatial_position,"map_revision":cause.target.map_revision,"content_revision":cause.target.content_revision,"placement_context":cause.target.placement_context},
                 "content":hex(&cause.content),"client_content":hex(&cause.client),"activation_sequence":cause.activation.to_string(),"map":hex(&cause.map),"frame":hex(&cause.frame),"source_body":hex(&cause.body),"source_cast":hex(&cause.cast),"operations":operations,
             }),
         }

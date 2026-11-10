@@ -289,7 +289,7 @@ pub(super) async fn execute_proposals(
     now: u64,
     charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
-) {
+) -> Result<(), ()> {
     for proposal in proposals {
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack {
             continue;
@@ -310,7 +310,7 @@ pub(super) async fn execute_proposals(
                     charms,
                     native_health_names,
                 )
-                .await;
+                .await?;
             }
             continue;
         };
@@ -329,34 +329,49 @@ pub(super) async fn execute_proposals(
         {
             continue;
         }
-        let Ok(stamp) = runtime.issue_owner_work() else {
-            return;
-        };
-        let Some(mut reader) = prepare_reader(
+        let stamp = runtime.issue_owner_work().map_err(|_| ())?;
+        let reader = prepare_source_reader_checked(
             runtime,
             states,
             attack,
             room,
             native,
             map,
-            source,
+            SourceShape::Spell(source),
             proposal,
             parties,
             now,
             stamp,
             source.chain.is_some(),
             None,
+            None,
         )
-        .await
-        else {
-            continue;
+        .await;
+        let mut reader = match reader {
+            Ok(reader) => reader,
+            Err(PreparationError::Unavailable) => return Err(()),
+            Err(PreparationError::Refused) => {
+                // This branch has not published HP. An aborted/lost read is not
+                // a known source refusal that may consume the retained proposal.
+                if !map.validate_transaction(runtime).await {
+                    return Err(());
+                }
+                continue;
+            }
         };
         if source.chain.is_some() {
-            let Some(mut facts) =
+            let prepared =
                 timers::prepare_chain_map(runtime, map, &reader, proposal, stamp, attack, now)
-                    .await
-            else {
-                continue;
+                    .await;
+            let mut facts = match prepared {
+                Ok(facts) => facts,
+                Err(PreparationError::Unavailable) => return Err(()),
+                Err(PreparationError::Refused) => {
+                    if !map.validate_transaction(runtime).await {
+                        return Err(());
+                    }
+                    continue;
+                }
             };
             if states.monster_chains.is_none() {
                 states.monster_chains =
@@ -430,6 +445,7 @@ pub(super) async fn execute_proposals(
             }
         }
     }
+    Ok(())
 }
 
 pub(in crate::gameplay_transport) fn record_native_player_hit(
@@ -634,8 +650,8 @@ async fn prepare_reader<'native>(
     stamp: RuntimeWorkStamp,
     chain_candidates: bool,
     chain_origin: Option<MovementLocalPosition>,
-) -> Option<CurrentTarget<'native>> {
-    prepare_source_reader(
+) -> Result<CurrentTarget<'native>, PreparationError> {
+    prepare_source_reader_checked(
         runtime,
         states,
         attack,
@@ -687,6 +703,14 @@ pub(super) async fn prepare_composed_reader<'native>(
     .await
 }
 
+// A known blocked/absent source cell can complete a proposal as a refusal.
+// Missing current DATA or a lost transaction must retain it before any HP write.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PreparationError {
+    Refused,
+    Unavailable,
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn prepare_source_reader<'native>(
     runtime: &ChannelRuntimeV1,
@@ -704,6 +728,43 @@ async fn prepare_source_reader<'native>(
     chain_origin: Option<MovementLocalPosition>,
     callback: Option<&oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackStagePlan>,
 ) -> Option<CurrentTarget<'native>> {
+    prepare_source_reader_checked(
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        map,
+        source,
+        proposal,
+        parties,
+        now,
+        stamp,
+        chain_candidates,
+        chain_origin,
+        callback,
+    )
+    .await
+    .ok()
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn prepare_source_reader_checked<'native>(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &'native NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    source: SourceShape<'_>,
+    proposal: &ProfileAbilityProposal,
+    parties: &ReferenceParties,
+    now: u64,
+    stamp: RuntimeWorkStamp,
+    chain_candidates: bool,
+    chain_origin: Option<MovementLocalPosition>,
+    callback: Option<&oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackStagePlan>,
+) -> Result<CurrentTarget<'native>, PreparationError> {
     let retained = callback.is_some_and(|plan| {
         matches!((plan.retained_caster(),plan.native_stage()),(Some(caster),Some(stage))
             if caster.matches_stage(runtime,proposal.issuer,stage))
@@ -711,24 +772,27 @@ async fn prepare_source_reader<'native>(
     if !runtime.matches_live_creature_identity(proposal.issuer, source.creature_key().as_bytes())
         && !retained
     {
-        return None;
+        return Err(PreparationError::Refused);
     }
     let record = native
         .creature_profiles()
         .records
         .iter()
-        .find(|record| record.profile.target.key == source.creature_key())?;
+        .find(|record| record.profile.target.key == source.creature_key())
+        .ok_or(PreparationError::Refused)?;
     let Ok(census) = runtime.positioned_melee_census() else {
-        return None;
+        return Err(PreparationError::Refused);
     };
     let (Ok(from), Ok(to)) = (
         runtime.read_actor_position(proposal.issuer),
         runtime.read_actor_position(proposal.target),
     ) else {
-        return None;
+        return Err(PreparationError::Refused);
     };
     let anchor = match callback {
-        Some(plan) => plan.anchor_position(runtime).ok()?,
+        Some(plan) => plan
+            .anchor_position(runtime)
+            .map_err(|_| PreparationError::Refused)?,
         None => None,
     };
     let physical_facing = from.facing();
@@ -759,19 +823,24 @@ async fn prepare_source_reader<'native>(
     let facing = if retained {
         // The actual AI scheduler may have forgotten the dead actor. Its
         // registered canonical pose remains authoritative; create no new think.
-        canonical_facing.or_else(scheduled_facing)?
+        canonical_facing
+            .or_else(scheduled_facing)
+            .ok_or(PreparationError::Refused)?
     } else {
-        let scheduled = scheduled_facing()?;
+        let scheduled = scheduled_facing().ok_or(PreparationError::Refused)?;
         canonical_facing.unwrap_or(scheduled)
     };
     let (Ok(center), Ok(mut cast_tiles)) = (
         source.cast_center(from, to, Some(facing)),
         source.target_tiles(from, to, Some(facing)),
     ) else {
-        return None;
+        return Err(PreparationError::Refused);
     };
     if chain_candidates {
-        let chain = source.spell()?.chain.as_ref()?;
+        let chain = source
+            .spell()
+            .and_then(|spell| spell.chain.as_ref())
+            .ok_or(PreparationError::Refused)?;
         let reach = i64::from(chain.range_tiles) * i64::from(chain.max_targets);
         cast_tiles = census
             .iter()
@@ -794,7 +863,8 @@ async fn prepare_source_reader<'native>(
         area_sight_origin(from, center)
     } else {
         Some(chain_origin.unwrap_or(from))
-    })?;
+    })
+    .ok_or(PreparationError::Refused)?;
     let mut tiles = BTreeMap::new();
     for (x, y, floor) in cast_tiles {
         let at = MovementLocalPosition { x, y, floor };
@@ -825,40 +895,38 @@ async fn prepare_source_reader<'native>(
         // Sight excludes its endpoints. An area needs the actual current tile too:
         // ground, PZ, floor changes and Item blockers come from the same transaction.
         let area_tile = if area {
-            map.read(runtime, at).await
+            map.read(runtime, at)
+                .await
+                .ok_or(PreparationError::Unavailable)?
         } else {
-            Some(true)
+            true
         };
         map.read_sight(runtime, sight_origin, at).await;
-        let allowed = room
-            .movement_cells()
-            .spell_tiles()
-            .lookup(
-                room.movement_cells().scope(),
-                crate::content::LogicalCell {
-                    x,
-                    y,
-                    z: i32::from(at.floor),
-                },
-            )
-            .is_ok_and(|tile| !tile.flags().protection_zone && !tile.flags().floor_change);
-        let sight = crate::durability::native_world_read::source_sight_steps(sight_origin, at)
-            .ok()
-            .and_then(|steps| {
-                steps
-                    .iter()
-                    .all(|(at, exempt)| *exempt || map.view().known(*at))
-                    .then(|| {
-                        area_tile.map(|admitted| {
-                            admitted && allowed && map.view().sight(sight_origin, at)
-                        })
-                    })
-                    .flatten()
-            });
-        tiles.insert((x, y, at.floor), sight);
+        let allowed = match room.movement_cells().spell_tiles().lookup(
+            room.movement_cells().scope(),
+            crate::content::LogicalCell {
+                x,
+                y,
+                z: i32::from(at.floor),
+            },
+        ) {
+            Ok(tile) => !tile.flags().protection_zone && !tile.flags().floor_change,
+            Err(crate::content::SpellTileLookupError::Absent) => false,
+            Err(_) => return Err(PreparationError::Unavailable),
+        };
+        let steps = crate::durability::native_world_read::source_sight_steps(sight_origin, at)
+            .map_err(|_| PreparationError::Refused)?;
+        if steps
+            .iter()
+            .any(|(at, exempt)| !*exempt && !map.view().known(*at))
+        {
+            return Err(PreparationError::Unavailable);
+        }
+        let sight = area_tile && allowed && map.view().sight(sight_origin, at);
+        tiles.insert((x, y, at.floor), Some(sight));
     }
     if !map.validate_transaction(runtime).await {
-        return None;
+        return Err(PreparationError::Unavailable);
     }
     let mut players = Vec::new();
     let mut facts = Vec::new();
@@ -944,9 +1012,9 @@ async fn prepare_source_reader<'native>(
     if (players.is_empty() && callback.is_none() && !source.allows_empty_players())
         || players.len() > 64
     {
-        return None;
+        return Err(PreparationError::Refused);
     }
-    Some(CurrentTarget {
+    Ok(CurrentTarget {
         native,
         retained_caster: callback.and_then(|plan| plan.retained_caster()).cloned(),
         source_draw: callback
@@ -1307,11 +1375,29 @@ pub(super) async fn prepare_callback_reader<'native>(
     .await
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "existing ordinary spell timer owner shares one physical scope read"
-)]
-pub(super) async fn drain_due(
+/// Original pending deadlines from the actual current windup and chain owners.
+pub(in crate::gameplay_transport) fn next_source_due_time(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+) -> Result<Option<u64>, ()> {
+    let windup = states
+        .monster_spells
+        .next_windup_due_time_current(runtime)
+        .map_err(|_| ())?;
+    let chain = states
+        .monster_chains
+        .as_ref()
+        .map(|owner| owner.next_due_time_current(runtime))
+        .transpose()
+        .map_err(|_| ())?
+        .flatten();
+    Ok(windup.into_iter().chain(chain).map(|due| due.get()).min())
+}
+
+/// The arbiter limits original deadlines; fresh Map/combat facts and committed
+/// effects use the independent actual execution time.
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) async fn drain_due_through(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     attack: &mut ChannelAttackStates,
@@ -1319,13 +1405,24 @@ pub(super) async fn drain_due(
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
     parties: &ReferenceParties,
-    now: u64,
+    through: u64,
+    execution_now: u64,
     charms: &crate::content::charm_source::CanonicalCharmCatalogue,
-) {
-    timers::drain(
-        runtime, states, attack, room, native, map, parties, now, charms,
+) -> Result<(), ()> {
+    let _ = next_source_due_time(runtime, states)?;
+    timers::drain_through(
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        map,
+        parties,
+        through,
+        execution_now,
+        charms,
     )
-    .await;
+    .await
 }
 
 #[cfg(test)]

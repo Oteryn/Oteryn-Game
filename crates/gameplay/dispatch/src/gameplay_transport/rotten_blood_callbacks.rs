@@ -23,6 +23,170 @@ mod mushroom;
 type BossSpawnPlan = (&'static str, RoomPosition, u8, bool);
 type BossSummonChange = (Option<BossSpawnPlan>, Option<u64>);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct SourceDue {
+    at: u64,
+    kind: SourceDueKind,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SourceDueKind {
+    Effects,
+    Mushroom,
+    Advanced(advanced::DueKind),
+}
+
+#[derive(Debug, Clone)]
+enum SourcePrefixBoundary {
+    Death(oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathNotice),
+    Profile {
+        original: Arc<super::monster_profile_cycle::retained::PendingProfilePass>,
+        due: u64,
+    },
+}
+#[derive(Debug, Clone)]
+struct SourcePrefix {
+    boundary: SourcePrefixBoundary,
+    through: u64,
+}
+impl SourcePrefix {
+    fn current(&self, runtime: &ChannelRuntimeV1, states: &ChannelSpellStates) -> bool {
+        match &self.boundary {
+            SourcePrefixBoundary::Death(notice) => {
+                runtime.next_source_creature_death().ok().flatten().as_ref() == Some(notice)
+            }
+            SourcePrefixBoundary::Profile { original, due } => {
+                runtime.next_source_creature_death().ok() == Some(None)
+                    && states
+                        .native_profile_pass
+                        .pending()
+                        .is_some_and(|current| Arc::ptr_eq(&current, original))
+                    // next_due validates the original batch's current owner
+                    // and every content/frame pin before exposing its clock.
+                    && states.native_profile_pass.next_due(runtime).ok() == Some(Some(*due))
+            }
+        }
+    }
+}
+
+/// Ordinary detached entry points use the same source-death minimum as the
+/// native owner. A retained Profile is also a bounded, immutable prefix.
+fn source_prefix(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    native: &NativeGameplayState,
+    kind: advanced::DueKind,
+    now: u64,
+) -> Result<Option<SourcePrefix>, ()> {
+    let Some(notice) = runtime.next_source_creature_death().map_err(|_| ())? else {
+        let Some(profile) = states.native_profile_pass.next_due(runtime)? else {
+            return Ok(None);
+        };
+        let selected = states
+            .rotten_blood_callbacks
+            .next_source_due(runtime)?
+            .ok_or(())?;
+        if selected.kind != SourceDueKind::Advanced(kind)
+            || selected.at > profile
+            || selected.at > now
+            || super::source_death::next_source_work(runtime, states, native)?
+                != Some((
+                    super::source_death::SourceWorkFamily::RottenBlood,
+                    selected.at,
+                ))
+        {
+            return Err(());
+        }
+        let original = states.native_profile_pass.pending().ok_or(())?;
+        return Ok(Some(SourcePrefix {
+            boundary: SourcePrefixBoundary::Profile {
+                original,
+                due: profile,
+            },
+            through: selected.at,
+        }));
+    };
+    let cutoff = notice.enqueued_at_us().ok_or(())?;
+    let selected = states
+        .rotten_blood_callbacks
+        .next_source_due(runtime)?
+        .ok_or(())?;
+    if selected.kind != SourceDueKind::Advanced(kind) || selected.at > cutoff || selected.at > now {
+        return Err(());
+    }
+    if states
+        .native_callbacks
+        .next_source_due_time()?
+        .into_iter()
+        .chain(super::monster_profile_cycle::physical_spell::next_source_due_time(runtime, states)?)
+        .chain(states.soul_war_callbacks.next_native_due())
+        .chain(
+            states
+                .soul_war_callbacks
+                .next_splinter_due(runtime, native)?,
+        )
+        .chain(states.spite_global.next_due_us())
+        .chain(states.primal_callbacks.next_source_due_time()?)
+        .chain(states.native_profile_pass.next_due(runtime)?)
+        .any(|due| due < selected.at && due <= now)
+    {
+        return Err(());
+    }
+    Ok(Some(SourcePrefix {
+        boundary: SourcePrefixBoundary::Death(notice),
+        through: selected.at,
+    }))
+}
+
+impl super::ComposedFreshAdmission<'_, '_, '_> {
+    /// Consume one selected physical Item continuation outside the runtime lock.
+    /// FIRST-think publication keeps its existing Source-before-Instance lanes
+    /// and is admitted by its separate entry point before this permit is held.
+    pub(super) async fn drain_detached_rotten_before_source_death(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        now: u64,
+    ) -> Result<bool, ()> {
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .ok_or(())?;
+        let kind = {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.try_lock().map_err(|_| ())?;
+            if !runtime.has_pending_source_creature_deaths()
+                && !states.native_profile_pass.has_pending()
+            {
+                return Ok(false);
+            }
+            let Some(SourceDue {
+                kind: SourceDueKind::Advanced(kind),
+                at,
+            }) = states.rotten_blood_callbacks.next_source_due(&runtime)?
+            else {
+                return Ok(false);
+            };
+            if !matches!(
+                kind,
+                advanced::DueKind::PortalItem | advanced::DueKind::Footprint
+            ) || super::source_death::next_source_work(&runtime, &states, native)?
+                != Some((super::source_death::SourceWorkFamily::RottenBlood, at))
+                || source_prefix(&runtime, &states, native, kind, now).is_err()
+            {
+                return Ok(false);
+            }
+            kind
+        };
+        match kind {
+            advanced::DueKind::PortalItem => self.resolve_rotten_portal_callbacks(permit).await,
+            advanced::DueKind::Footprint => {
+                self.resolve_rotten_movement_callbacks(permit).await;
+            }
+            _ => return Err(()),
+        }
+        Ok(true)
+    }
+}
+
 #[cfg(test)]
 pub(super) struct MassiveStateForTest {
     pub(super) deadlines: Vec<(u8, u64)>,
@@ -37,6 +201,13 @@ pub(super) struct MushroomProgressForTest {
     pub(super) cursor: usize,
     pub(super) total: usize,
     pub(super) players: Vec<(ExactActorRef, GameSessionId)>,
+}
+
+#[cfg(test)]
+pub(super) struct PortalClockForTest {
+    pub(super) cycle_due: Option<u64>,
+    pub(super) think_sequence: Option<u64>,
+    pub(super) callbacks: Vec<(u64, u64, bool)>,
 }
 
 #[derive(Debug)]
@@ -72,10 +243,11 @@ pub(super) struct RottenBloodCallbacks {
     pub(super) advanced: advanced::AdvancedCallbacks,
     mushrooms: mushroom::Mushrooms,
     bosses: Vec<Boss>,
-    pending: VecDeque<Effect>,
+    pending: VecDeque<(u64, Effect)>,
     pending_due: Option<u64>,
     current_taints: Vec<crate::durability::quest_state::rotten_blood::CurrentRottenBloodTaintFacts>,
     prepared_bak: Option<crate::durability::quest_state::rotten_flame::PreparedBakEssences>,
+    source_loot: Option<crate::durability::item_mint::BakragoreDeathLoot>,
     read_stamp: Option<crate::foundation::RuntimeWorkStamp>,
     read_context: Option<ReadContext>,
 }
@@ -100,6 +272,37 @@ fn context(runtime: &ChannelRuntimeV1) -> ReadContext {
     )
 }
 impl RottenBloodCallbacks {
+    fn next_source_due(&self, runtime: &ChannelRuntimeV1) -> Result<Option<SourceDue>, ()> {
+        Ok(self
+            .pending
+            .front()
+            .map(|(due, _)| SourceDue {
+                at: *due,
+                kind: SourceDueKind::Effects,
+            })
+            .into_iter()
+            .chain(self.mushrooms.next_due_time().map(|due| SourceDue {
+                at: due,
+                kind: SourceDueKind::Mushroom,
+            }))
+            .chain(
+                self.advanced
+                    .next_source_due(runtime)?
+                    .map(|(at, kind)| SourceDue {
+                        at,
+                        kind: SourceDueKind::Advanced(kind),
+                    }),
+            )
+            .min_by_key(|work| work.at))
+    }
+    /// Original source occurrence time, including committed onMove records not
+    /// yet wrapped by the Item consumer. Retry wakes are scheduling hints only.
+    pub(super) fn next_source_due_time(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<u64>, ()> {
+        Ok(self.next_source_due(runtime)?.map(|work| work.at))
+    }
     #[cfg(test)]
     pub(super) fn pause_mushroom_after_player_commit_for_test(&mut self) {
         self.mushrooms.pause_after_player_commit_for_test();
@@ -107,6 +310,10 @@ impl RottenBloodCallbacks {
     #[cfg(test)]
     pub(super) fn mushroom_progress_for_test(&self) -> Option<MushroomProgressForTest> {
         self.mushrooms.progress_for_test()
+    }
+    #[cfg(test)]
+    pub(super) fn portal_clock_for_test(&self, actor: ExactActorRef) -> Option<PortalClockForTest> {
+        self.advanced.portal_clock_for_test(actor)
     }
     pub(super) fn critical_scope_pending(&self) -> bool {
         self.advanced.critical_scope_pending()
@@ -139,33 +346,107 @@ impl RottenBloodCallbacks {
             .agony_commit(actor)
             .map(|commit| (commit.before, commit.after, commit.amount))
     }
-    // PARTIAL: the copied Bakragore death/loot handler will consume this
-    // current-owner count; a test-only gate would hide the missing live caller.
-    #[allow(
-        dead_code,
-        reason = "PARTIAL Rotten Blood: copied Bakragore death-loot consumer is pending"
-    )]
-    pub(super) fn actual_bakragore_essence_count_at_death(
+    fn accepts_source_death(
         &self,
         runtime: &ChannelRuntimeV1,
-        target: ExactActorRef,
-    ) -> Option<u8> {
-        if self.read_context != Some(context(runtime))
-            || runtime.owner_fence().is_err()
-            || !runtime
-                .companion_snapshot_including_dead(target)
-                .is_ok_and(|s| {
-                    s.health == 0
-                        && s.state.master.is_none()
-                        && s.state.policy.definition_key == "oteryn:creature.bakragore"
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> bool {
+        let Ok(owner) = runtime.owner_fence() else {
+            return false;
+        };
+        begin.current_for(runtime)
+            && self
+                .read_context
+                .is_none_or(|previous| previous == context(runtime))
+            && self
+                .read_stamp
+                .is_none_or(|stamp| owner.accepts_stamp(stamp))
+            && runtime.source_creature_is_registered(begin.actor()) == Ok(true)
+            && runtime
+                .companion_snapshot_including_dead(begin.actor())
+                .is_ok_and(|snapshot| {
+                    snapshot.health == 0
+                        && snapshot.state.master.is_none()
+                        && snapshot.state.policy.definition_key == begin.definition_key()
+                        && snapshot.state.policy.definition_revision == begin.definition_revision()
                 })
-            || runtime.native_summon_master(target).is_some()
+            && runtime.native_summon_master(begin.actor()).is_none()
+    }
+
+    pub(super) fn capture_bakragore_death_essences(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<u8, ()> {
+        if begin.definition_key() != "oteryn:creature.bakragore"
+            || !self.accepts_source_death(runtime, begin)
         {
-            return None;
+            return Err(());
+        }
+        self.advanced.actual_bakragore_essence_count(begin.actor())
+    }
+
+    pub(super) fn retain_bakragore_death_loot(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        native: &NativeGameplayState,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+        loot: &crate::durability::item_mint::BakragoreDeathLoot,
+    ) -> Result<(), ()> {
+        if begin.has_reward_damage_credit()
+            || !self.accepts_source_death(runtime, begin)
+            || !loot.matches_source(begin)
+            || !loot.current_for(runtime, native)
+            || self
+                .source_loot
+                .as_ref()
+                .is_some_and(|retained| retained != loot)
+        {
+            return Err(());
+        }
+        self.source_loot = Some(loot.clone());
+        Ok(())
+    }
+
+    pub(super) fn pending_bakragore_death_loot(
+        &self,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<Option<crate::durability::item_mint::BakragoreDeathLoot>, ()> {
+        if self
+            .source_loot
+            .as_ref()
+            .is_some_and(|retained| !retained.matches_source(begin))
+        {
+            return Err(());
+        }
+        Ok(self.source_loot.clone())
+    }
+
+    pub(super) fn clear_bakragore_death_loot(
+        &mut self,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<(), ()> {
+        if self
+            .source_loot
+            .as_ref()
+            .is_some_and(|retained| !retained.matches_source(begin))
+        {
+            return Err(());
+        }
+        self.source_loot = None;
+        Ok(())
+    }
+
+    pub(super) fn publish_mechanics_death(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<(), ()> {
+        if !self.accepts_source_death(runtime, begin) {
+            return Err(());
         }
         self.advanced
-            .actual_bakragore_essence_count(target)
-            .filter(|n| *n <= 4)
+            .reset_mechanics_death_flags(begin.definition_key())
     }
     pub(super) fn next_due_time(&self) -> Option<u64> {
         self.pending_due
@@ -272,39 +553,67 @@ fn draw(
 /// Deferred-death barrier port. A due callback remains pending until its
 /// original-deadline consumer has been qualified; this port never reserves a
 /// fresh think or advances the owner with a synthetic time.
-// PARTIAL: preserve the source barrier port while the original-deadline
-// arbiter and its real canonical-notice regression are completed.
-#[allow(
-    dead_code,
-    reason = "PARTIAL Rotten Blood: canonical source-death due-only arbiter is not wired yet"
-)]
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn drive_due_before(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
-    _attack: &mut super::attack::ChannelAttackStates,
+    attack: &mut super::attack::ChannelAttackStates,
+    notices: &super::raid_notices::ServerMessageHub,
     room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
     eligible_through_us: u64,
     now: u64,
 ) -> Result<Option<u64>, ()> {
-    let cutoff = eligible_through_us.min(now);
-    if states
-        .rotten_blood_callbacks
-        .pending_due
-        .is_some_and(|due| due <= cutoff)
-        || states
+    let fence = runtime.owner_fence().map_err(|_| ())?;
+    if !native.qualifies_rotten_blood_callbacks(runtime.content_pin().server_artifact_digest())
+        || states.rotten_blood_callbacks.read_context != Some(context(runtime))
+        || !states
             .rotten_blood_callbacks
-            .mushrooms
-            .next_due_time()
-            .is_some_and(|due| due <= cutoff)
+            .read_stamp
+            .is_some_and(|stamp| fence.accepts_stamp(stamp))
+        || room.frame_binding().digest() != runtime.content_pin().frame_binding_digest()
+        || room.map_revision_digest() != runtime.map_revision_digest()
     {
         return Err(());
     }
-    advanced::drive_due_through(runtime, states, room, native, map, eligible_through_us, now)
-        .await?;
-    Ok(states.rotten_blood_callbacks.next_due_time())
+    let selected = states.rotten_blood_callbacks.next_source_due(runtime)?;
+    if let Some(selected) = selected.filter(|work| work.at <= eligible_through_us && work.at <= now)
+    {
+        match selected.kind {
+            SourceDueKind::Effects => {
+                drain_pending_through(runtime, states, native, map, selected.at, now).await?
+            }
+            SourceDueKind::Mushroom => {
+                mushroom::drive_one_due(
+                    runtime,
+                    states,
+                    attack,
+                    room,
+                    native,
+                    map,
+                    selected.at,
+                    now,
+                )
+                .await?
+            }
+            SourceDueKind::Advanced(_) => {
+                advanced::drive_due_through(
+                    runtime,
+                    states,
+                    attack,
+                    notices,
+                    room,
+                    native,
+                    map,
+                    selected.at,
+                    now,
+                )
+                .await?
+            }
+        }
+    }
+    states.rotten_blood_callbacks.next_source_due_time(runtime)
 }
 
 /// Executes only reserved source occurrences. Queued effects stay in the existing
@@ -511,22 +820,27 @@ pub(super) async fn drive(
         let count = effects.len();
         for (index, (spawn, remove)) in effects.into_iter().enumerate() {
             if let Some((key, around, offset, close)) = spawn {
-                owner.pending.push_back(Effect::Spawn {
-                    source: boss.source.clone(),
-                    parent: actor,
-                    sequence: occurrence.sequence,
-                    ordinal: index as u64 + 1,
-                    key,
-                    around,
-                    offset,
-                    close,
-                    wave: waved && index + 3 >= count,
-                });
+                owner.pending.push_back((
+                    now,
+                    Effect::Spawn {
+                        source: boss.source.clone(),
+                        parent: actor,
+                        sequence: occurrence.sequence,
+                        ordinal: index as u64 + 1,
+                        key,
+                        around,
+                        offset,
+                        close,
+                        wave: waved && index + 3 >= count,
+                    },
+                ));
             }
             if let Some(id) = remove
                 && let Some((_, actor)) = boss.wave.iter().find(|(n, _)| *n == id)
             {
-                owner.pending.push_back(Effect::Remove { actor: *actor });
+                owner
+                    .pending
+                    .push_back((now, Effect::Remove { actor: *actor }));
                 boss.wave.retain(|(n, _)| *n != id);
             }
         }
@@ -559,10 +873,25 @@ async fn drain_pending(
     map: &mut CurrentMonsterMap<'_, '_>,
     now: u64,
 ) -> Result<(), ()> {
+    drain_pending_through(runtime, states, native, map, now, now).await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn drain_pending_through(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    through: u64,
+    now: u64,
+) -> Result<(), ()> {
     if !states.rotten_blood_callbacks.pending.is_empty() {
         states.rotten_blood_callbacks.pending_due = Some(now.saturating_add(1_000_000));
     }
-    while let Some(effect) = states.rotten_blood_callbacks.pending.front().cloned() {
+    while let Some((due, effect)) = states.rotten_blood_callbacks.pending.front().cloned() {
+        if due > through || due > now {
+            return Ok(());
+        }
         match effect {
             Effect::Remove { actor } => {
                 if runtime.contains_live_creature(actor) {
@@ -588,10 +917,6 @@ async fn drain_pending(
                 close,
                 wave,
             } => {
-                if !runtime.contains_live_creature(parent) {
-                    states.rotten_blood_callbacks.pending.pop_front();
-                    continue;
-                }
                 if let Some(actor) = spawn_child(
                     runtime, states, native, map, &source, parent, sequence, ordinal, key, around,
                     offset, close, now,

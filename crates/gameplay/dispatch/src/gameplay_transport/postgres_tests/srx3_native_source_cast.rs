@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+use crate::map::boot::BundleCollisionIndexExt;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[path = "srx3_native_source_cast/uncredited_capacity.rs"]
@@ -22,7 +23,7 @@ pub(super) async fn drain_source_death(
         .runtime
         .lock()
         .await
-        .companion_snapshot(actor)
+        .companion_snapshot_including_dead(actor)
         .map_err(debug)?
         .state
         .policy;
@@ -167,10 +168,20 @@ fn source_cast_case_inner(
             let content = ChannelContentPin::from_activation(deps.admitted.world_id, 1,
                 active.identity().server_artifact_digest(), active.identity().client_artifact_digest(),
                 room.frame_binding().digest(), room.map_revision_digest(), (origin.x,origin.y,origin.floor));
+            let activation_pin = pin.into_channel_pin();
+            assert_ne!(activation_pin.frame_binding_digest(), content.frame_binding_digest(),
+                "real native ENTRY activation and source Bundle runtime keep distinct frames");
+            let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(bundle) = cells.index() else {
+                return Err("actual source Bundle map".into());
+            };
+            let map_revision = crate::map::overlay::map_revision(bundle.map().overlay.base());
             // Current SQL/session/lease proofs follow the expensive native catalogue load.
             let h = Harness::create_with_admission_seed(admin, &format!("srx3_native_cast_{slug}"), false, false).await?;
             super::reset();
             prepare_current_session(&h).await?;
+            super::boss_activity::issue_content_and_reset_with_runtime_pin(
+                &h, &activation_pin, &content, &map_revision,
+            ).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
             let mut runtime = ChannelRuntimeV1::from_committed_assignment(deps.admitted.world_id, deps.admitted.channel_id,

@@ -234,6 +234,22 @@ impl ChannelRuntimeV1 {
 
     /// Existing sealed onThink source for the three bosses' COMBAT_AGONYDAMAGE.
     /// This grants no arbitrary element, magnitude, Item or source actor.
+    fn rotten_blood_icon_parent_current(&self, source: &RottenBloodIconSource) -> bool {
+        self.companion_snapshot_including_dead(source.parent)
+            .is_ok_and(|parent| {
+                let present = match source.role {
+                    IconSourceRole::Agony => {
+                        self.source_creature_is_registered(source.parent).ok() == Some(true)
+                    }
+                    IconSourceRole::Area => parent.health > 0,
+                };
+                present
+                    && parent.state.policy.definition_key == source.parent_key
+                    && parent.state.master.is_none()
+                    && self.native_summon_master(source.parent).is_none()
+            })
+    }
+
     pub fn rotten_blood_agony_source_current(&self, source: &RottenBloodIconSource) -> bool {
         self.owner_fence()
             .is_ok_and(|fence| fence.accepts_stamp(source.stamp))
@@ -242,12 +258,7 @@ impl ChannelRuntimeV1 {
             && self.content_pin().client_artifact_digest() == source.client
             && self.content_pin().frame_binding_digest() == source.frame
             && self.map_revision_digest() == source.map
-            && self.companion_snapshot(source.parent).is_ok_and(|parent| {
-                parent.health > 0
-                    && parent.state.policy.definition_key == source.parent_key
-                    && parent.state.master.is_none()
-                    && self.native_summon_master(source.parent).is_none()
-            })
+            && self.rotten_blood_icon_parent_current(source)
     }
 
     pub fn set_rotten_blood_player_icon(
@@ -270,12 +281,7 @@ impl ChannelRuntimeV1 {
             || pin.client_artifact_digest() != source.client
             || pin.frame_binding_digest() != source.frame
             || self.map_revision_digest() != source.map
-            || !self.companion_snapshot(source.parent).is_ok_and(|parent| {
-                parent.health > 0
-                    && parent.state.policy.definition_key == source.parent_key
-                    && parent.state.master.is_none()
-                    && self.native_summon_master(source.parent).is_none()
-            })
+            || !self.rotten_blood_icon_parent_current(source)
         {
             return Err(CarrierError::CreatureTargetMismatch);
         }

@@ -1582,7 +1582,7 @@ fn srx3_primal_actual_instance_publishes_current_hazard_source_icon_postgres() -
 
 /// The normal owner batch must carry the same current Player DATA as a real
 /// native cast; source health callbacks may never receive a fabricated vocation.
-async fn publish_native_fixture_player_source(
+pub(super) async fn publish_native_fixture_player_source(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     actor: crate::foundation::ExactActorRef,

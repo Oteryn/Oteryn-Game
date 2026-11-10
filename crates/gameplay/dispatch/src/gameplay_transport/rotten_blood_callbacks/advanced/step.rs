@@ -109,7 +109,9 @@ pub(in crate::gameplay_transport) async fn step_in(
             actor,
             session,
         });
-        advanced.portals.push(callback);
+        advanced
+            .portals
+            .push(portals::Pending::from_callback(callback));
         states.owner_wake.notify_one();
     }
     owner.resolve_rotten_portal_callbacks(permit).await;

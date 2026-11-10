@@ -430,6 +430,53 @@ impl ChannelRuntimeV1 {
         prepared.installed = true;
         Ok(())
     }
+    /// A retained movement may resolve a source name through a fenced read.
+    /// Add that exact target to the same reservation before issuing its Item
+    /// write, without releasing or reconstructing the original Player slot.
+    #[allow(
+        clippy::expect_used,
+        reason = "all original and added slots and allocation are validated before atomic publication"
+    )]
+    pub fn extend_source_actor_reservation(
+        &mut self,
+        prepared: &mut SourceActorReservation,
+        proof: &impl SourceActorReservationProof,
+        affected: &[ExactActorRef],
+    ) -> Result<(), CarrierError> {
+        self.validate_source_actor_reservation(prepared, proof)?;
+        if !prepared.installed || affected.len() > self.carrier.slots.len() {
+            return Err(CarrierError::PlanConflict);
+        }
+        let mut additions = Vec::new();
+        additions
+            .try_reserve_exact(affected.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for actor in affected {
+            let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+            if prepared.originals.iter().any(|(slot, _)| *slot == index)
+                || additions.iter().any(|(slot, _)| *slot == index)
+            {
+                continue;
+            }
+            self.assert_actor_spell_unreserved(*actor)?;
+            state(&self.carrier.slots[index])?;
+            additions.push((index, self.carrier.slots[index].clone()));
+        }
+        prepared
+            .originals
+            .try_reserve_exact(additions.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for (index, original) in &mut additions {
+            state_mut(&mut self.carrier.slots[*index])
+                .expect("validated added source slot")
+                .pending_source = Some(Arc::clone(&prepared.identity));
+            state_mut(original)
+                .expect("validated added source original")
+                .pending_source = Some(Arc::clone(&prepared.identity));
+        }
+        prepared.originals.extend(additions);
+        Ok(())
+    }
     /// The registered compositor calls this only after genuine COMMIT or proven
     /// rollback, followed immediately by source installation in the same owner turn.
     /// Unknown COMMIT retains this reservation; dropping its data never releases it.
@@ -826,6 +873,98 @@ mod tests {
                 .iter()
                 .all(|a| !runtime.actor_spell_reserved(*a))
         );
+    }
+
+    #[test]
+    fn source_name_target_extension_keeps_original_owner_and_refuses_partial_additions() {
+        let world = WorldId::decode(&id(1)).unwrap();
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&id(2)).unwrap(),
+            NodeId::decode(&id(3)).unwrap(),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            4,
+            ChannelContentPin::test(world),
+        )
+        .unwrap();
+        let session = GameSessionId::decode(&id(4)).unwrap();
+        let player = runtime.reserve_fresh_session(session).unwrap();
+        let player = runtime.commit_fresh_session(player).unwrap();
+        let position = match runtime.initialize_first_entry_position(player).unwrap() {
+            super::super::FirstEntryPosition::Initialized(p)
+            | super::super::FirstEntryPosition::Reconciled(p) => p,
+        };
+        let target = runtime
+            .admit_test_creature(MovementLocalPosition {
+                x: 1,
+                y: 0,
+                floor: 0,
+            })
+            .unwrap();
+        let stale = runtime
+            .admit_test_creature(MovementLocalPosition {
+                x: 2,
+                y: 0,
+                floor: 0,
+            })
+            .unwrap();
+        runtime.remove_test_actor(stale).unwrap();
+        let proof = Proof {
+            actor: player,
+            session,
+            position,
+            affected: Vec::new(),
+            event: id(5),
+        };
+        let mut reservation = runtime.prepare_source_actor_reservation(&proof).unwrap();
+        runtime
+            .reserve_source_actors(&mut reservation, &proof)
+            .unwrap();
+        let identity = Arc::clone(&reservation.identity);
+        assert!(
+            runtime
+                .extend_source_actor_reservation(&mut reservation, &proof, &[target, stale])
+                .is_err()
+        );
+        assert!(runtime.actor_spell_reserved(player));
+        assert!(
+            !runtime.actor_spell_reserved(target),
+            "a later invalid addition cannot partially reserve the first target"
+        );
+        runtime
+            .validate_source_actor_reservation(&reservation, &proof)
+            .unwrap();
+        runtime
+            .extend_source_actor_reservation(&mut reservation, &proof, &[target])
+            .unwrap();
+        assert!(
+            Arc::ptr_eq(&identity, &reservation.identity),
+            "original movement proof identity remains the owner"
+        );
+        assert!(runtime.actor_spell_reserved(player));
+        assert!(runtime.actor_spell_reserved(target));
+        runtime
+            .extend_source_actor_reservation(&mut reservation, &proof, &[target])
+            .unwrap();
+        assert_eq!(
+            reservation.originals.len(),
+            2,
+            "exact target replay adds no second slot"
+        );
+        assert_eq!(
+            runtime.remove_test_actor(target),
+            Err(CarrierError::PlanConflict)
+        );
+        // No SQL was issued: this is a proven pre-write release of the one reservation.
+        runtime
+            .release_source_actors_after_observed_outcome(reservation, &proof)
+            .unwrap();
+        assert!(!runtime.actor_spell_reserved(player));
+        assert!(!runtime.actor_spell_reserved(target));
+        runtime.remove_test_actor(target).unwrap();
     }
 }
 

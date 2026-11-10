@@ -137,9 +137,9 @@ BEGIN
     AND ready.ready AND ready.ownership_generation=p.scope_generation
     AND ((p.activity_instance_id IS NULL AND a.scope_kind=1 AND a.channel_id=p.channel_id AND a.activity_instance_id IS NULL)
      OR (p.activity_instance_id IS NOT NULL AND a.scope_kind=3 AND a.channel_id IS NULL AND a.activity_instance_id=p.activity_instance_id)))
-  OR NOT EXISTS(SELECT 1 FROM game_content_activations c WHERE c.world_id=p.world_id
+  OR (p.activity_instance_id IS NULL AND NOT EXISTS(SELECT 1 FROM game_content_activations c WHERE c.world_id=p.world_id
    AND c.activation_sequence=p.activation_sequence AND c.server_artifact_digest=p.server_digest AND c.client_artifact_digest=p.client_digest
-   AND (p.activity_instance_id IS NOT NULL OR (c.channel_id=p.channel_id AND
+   AND c.channel_id=p.channel_id AND
     (c.frame_binding_digest=p.frame_digest OR EXISTS(
      -- The node's native-entry issuance and its full World runtime have
      -- distinct frames. Only the independently current reset map can qualify
@@ -148,9 +148,30 @@ BEGIN
      WHERE active.world_id=p.world_id AND game_world_reset_map_epoch_current(active.world_id,active.reset_epoch)
       AND epoch.server_digest=p.server_digest AND epoch.client_digest=p.client_digest
       AND p.map_digest=sha256(convert_to(epoch.map_revision,'UTF8'))
-      AND game_elemental_placement_frame_matches(p.world_id,epoch.map_revision,p.frame_digest,c.frame_binding_digest)))))
+      AND game_elemental_placement_frame_matches(p.world_id,epoch.map_revision,p.frame_digest,c.frame_binding_digest)))
    AND NOT EXISTS(SELECT 1 FROM game_content_activations later WHERE later.world_id=c.world_id
-    AND later.channel_id=c.channel_id AND later.activation_sequence>c.activation_sequence)) THEN
+    AND later.channel_id=c.channel_id AND later.activation_sequence>c.activation_sequence)))
+  -- A running Instance keeps the exact accepted destination pins. A later
+  -- Channel activation cannot invalidate this separate current scope owner.
+  OR (p.activity_instance_id IS NOT NULL AND NOT EXISTS(
+   SELECT 1 FROM game_activity_handoff_groups h
+   JOIN game_activity_runtime_entries e USING(handoff_id)
+   JOIN game_activity_handoff_participants origin ON origin.handoff_id=h.handoff_id
+    AND origin.character_id=e.initiating_character_id
+   JOIN game_activity_handoff_participants participant ON participant.handoff_id=h.handoff_id
+    AND participant.character_id=p.character_id AND participant.destination_game_session_id=p.game_session_id
+   JOIN game_content_activations c ON c.world_id=h.world_id AND c.channel_id=origin.origin_channel_id
+   WHERE h.world_id=p.world_id AND h.instance_id=p.activity_instance_id
+    AND h.ownership_generation=p.scope_generation AND h.state=2
+    AND e.holder_node_id=p.node_id AND e.holder_registration_revision=p.node_registration
+    AND e.destination_server_artifact_digest=p.server_digest
+    AND e.destination_map_revision_digest=p.map_digest
+    AND e.destination_coordinate_frame_digest=p.frame_digest
+    AND origin.server_artifact_digest=p.server_digest
+    AND c.activation_sequence=p.activation_sequence
+    AND c.server_artifact_digest=p.server_digest AND c.client_artifact_digest=p.client_digest
+    AND NOT EXISTS(SELECT 1 FROM game_activity_runtime_returns returned
+     WHERE returned.handoff_id=participant.handoff_id AND returned.character_id=participant.character_id))) THEN
   RAISE EXCEPTION 'source USE requires its exact current session and qualified source scope' USING ERRCODE='23514';
  END IF;
 

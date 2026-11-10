@@ -29,7 +29,8 @@ impl std::fmt::Debug for PendingNormalPrimal {
     }
 }
 impl PendingNormalPrimal {
-    fn prepare(batch: ReservedNativeThinkBatch) -> Result<Arc<Self>, ()> {
+    fn prepare(batch: impl Into<Arc<ReservedNativeThinkBatch>>) -> Result<Arc<Self>, ()> {
+        let batch = batch.into();
         let count = batch.occurrences().len();
         let bound = count
             .checked_mul(
@@ -41,7 +42,7 @@ impl PendingNormalPrimal {
         results.proposals.try_reserve_exact(bound).map_err(|_| ())?;
         results.actors.try_reserve_exact(count).map_err(|_| ())?;
         Ok(Arc::new(Self {
-            batch: Arc::new(batch),
+            batch,
             source_known: AtomicBool::new(false),
             ai_known: AtomicBool::new(false),
             due_known: AtomicBool::new(false),
@@ -50,6 +51,9 @@ impl PendingNormalPrimal {
     }
     pub(in crate::gameplay_transport) fn batch(&self) -> &ReservedNativeThinkBatch {
         &self.batch
+    }
+    pub(in crate::gameplay_transport) fn shared_batch(&self) -> Arc<ReservedNativeThinkBatch> {
+        Arc::clone(&self.batch)
     }
     pub(in crate::gameplay_transport) fn source_known(&self) -> bool {
         self.source_known.load(Ordering::Acquire)
@@ -118,13 +122,19 @@ impl PrimalCallbacks {
     }
     pub(in crate::gameplay_transport) fn prepare_normal(
         &mut self,
-        batch: ReservedNativeThinkBatch,
+        batch: impl Into<Arc<ReservedNativeThinkBatch>>,
     ) -> Result<(), ()> {
         if self.normal.is_some() {
             return Err(());
         }
         self.normal = Some(PendingNormalPrimal::prepare(batch)?);
         Ok(())
+    }
+    pub(in crate::gameplay_transport) fn prepare_normal_shared(
+        &mut self,
+        batch: Arc<ReservedNativeThinkBatch>,
+    ) -> Result<(), ()> {
+        self.prepare_normal(batch)
     }
     pub(in crate::gameplay_transport) fn complete_normal(
         &mut self,

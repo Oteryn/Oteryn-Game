@@ -51,6 +51,7 @@ oteryn-gameplay-weather = { version = "=0.1.0", path = "../weather" }
 oteryn-gameplay-world = { version = "=0.1.0", path = "../world" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../protocol-oteryn" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }
+oteryn-task-supervisor = { version = "=0.1.0", path = "../../task-supervisor" }
 oteryn-world-bundle = { version = "=0.1.0", path = "../../world-bundle", features = ["writer"] }
 rustls.workspace = true
 serde = { workspace = true, features = ["derive"] }

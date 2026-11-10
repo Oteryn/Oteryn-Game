@@ -1,8 +1,9 @@
 //! Retain the canonical completion through the existing fenced empty-corpse writer.
 use super::*;
 use crate::durability::item_mint::{
-    CORPSE_MATERIALIZATION_PURPOSE_KEY, CommittedItemMint, GroundPlacement, ItemMintCandidate,
-    ItemMintCause, ItemMintError, ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
+    BakragoreDeathLoot, CORPSE_MATERIALIZATION_PURPOSE_KEY, CommittedItemMint, GroundPlacement,
+    ItemMintCandidate, ItemMintCause, ItemMintError, ItemMintOutcome, ItemMintRequest,
+    TypedDefinitionRef,
 };
 use crate::durability::item_mint_audit::RL08_RETRY_WORK_UNITS_MAX;
 use oteryn_gameplay_entities::carrier::native_source_death::{
@@ -15,6 +16,8 @@ pub(in crate::gameplay_transport) struct PendingSourceCorpse {
     request: ItemMintRequest,
     candidate: Option<ItemMintCandidate>,
     mint: SourceCorpseMint,
+    rotten_loot: Option<BakragoreDeathLoot>,
+    children: Vec<ItemMintCandidate>,
 }
 
 #[derive(Debug)]
@@ -175,7 +178,17 @@ impl PendingSourceCorpse {
             mint: SourceCorpseMint::Ready {
                 absence_proven: false,
             },
+            rotten_loot: None,
+            children: Vec::new(),
         }
+    }
+
+    // This private step attaches retained data after the canonical completion. The physical
+    // SourceCorpseMintProof::freeze independently validates it against that completion and the
+    // exact native item requests before SQL, so attachment must not discard the completion.
+    pub(super) fn with_rotten_loot(mut self, source: BakragoreDeathLoot) -> Self {
+        self.rotten_loot = Some(source);
+        self
     }
 }
 
@@ -223,26 +236,82 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             pending.candidate = Some(candidate);
         }
+        if matches!(pending.mint, SourceCorpseMint::Ready { .. })
+            && pending.children.is_empty()
+            && let Some(source) = &pending.rotten_loot
+        {
+            let Some(corpse) = pending.candidate.as_ref() else {
+                return true;
+            };
+            let Ok(request) = source.uncredited_child_request(native, &pending.completed, corpse)
+            else {
+                return true;
+            };
+            if let Some(request) = request {
+                let Ok(child) = self
+                    .root
+                    .freeze_kill_loot_entry(self.character, self.holder, request)
+                    .await
+                else {
+                    return true;
+                };
+                pending.children.push(child);
+            }
+        }
         if let Some(absence_before_attempt) = pending.mint.begin_attempt() {
             let PendingSourceCorpse {
                 completed,
                 candidate,
+                rotten_loot,
+                children,
                 ..
             } = &mut *pending;
             let Some(candidate) = candidate.as_mut() else {
                 return true;
             };
-            let outcome = self
-                .root
-                .commit_uncredited_source_corpse_mint(
-                    permit,
-                    self.character,
-                    self.holder,
-                    native,
-                    completed,
-                    candidate,
-                )
-                .await;
+            let outcome = if let Some(source) = rotten_loot {
+                self.root
+                    .commit_uncredited_bakragore_corpse_loot(
+                        permit,
+                        self.character,
+                        self.holder,
+                        native,
+                        completed,
+                        source,
+                        candidate,
+                        children,
+                    )
+                    .await
+                    .and_then(|outcomes| {
+                        if outcomes.len() != children.len() + 1
+                            || outcomes.iter().any(|outcome| {
+                                !matches!(
+                                    outcome,
+                                    ItemMintOutcome::Committed(_)
+                                        | ItemMintOutcome::AlreadyCommitted(_)
+                                )
+                            })
+                        {
+                            // A malformed success cannot establish absence after a write.
+                            return Err(ItemMintError::ConflictingCandidate);
+                        }
+                        outcomes
+                            .into_iter()
+                            .next()
+                            .ok_or(ItemMintError::ConflictingCandidate)
+                    })
+            } else {
+                self.root
+                    .commit_uncredited_source_corpse_mint(
+                        permit,
+                        self.character,
+                        self.holder,
+                        native,
+                        completed,
+                        candidate,
+                    )
+                    .await
+            };
             pending.mint.attempted(outcome, absence_before_attempt);
         }
         if matches!(pending.mint, SourceCorpseMint::Reconcile { .. }) {
@@ -251,6 +320,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             // Exhaustion without a successful cause-locked read remains Unknown.
             // Never re-freeze this cause to obtain new identities or work units.
+            // The retained Bakragore batch commits its parent, source witness and exact
+            // selected child in one transaction; the cause-locked parent read therefore
+            // proves that whole batch committed or that none of it did.
             if candidate.work_units_used() >= RL08_RETRY_WORK_UNITS_MAX {
                 return true;
             }

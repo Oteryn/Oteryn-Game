@@ -137,9 +137,11 @@ impl RottenPortalSource {
             ));
         }
         let snapshot = runtime
-            .companion_snapshot(parent)
+            .companion_snapshot_including_dead(parent)
             .map_err(|_| SpellItemError::Rejected("Rotten portal current named boss"))?;
-        if snapshot.health <= 0
+        if !runtime
+            .source_creature_is_registered(parent)
+            .map_err(|_| SpellItemError::Rejected("Rotten portal registered named boss"))?
             || snapshot.state.policy.definition_key != self.key
             || snapshot.state.master.is_some()
             || runtime.native_summon_master(parent).is_some()

@@ -112,6 +112,7 @@ macro_rules! bind_cause {
 }
 
 mod source_death;
+pub use source_death::BakragoreDeathLoot;
 
 pub use crate::domain::item_definition::TypedDefinitionRef;
 
@@ -1121,23 +1122,58 @@ impl DurabilityRoot {
             children,
             Some(top_damage_character_id),
             boss,
+            None,
         )
         .await
     }
 
     /// Internal physical writer port. Its sole source-event facade validates
     /// the opaque uncredited death completion before reaching this method.
-    pub(super) async fn commit_uncredited_corpse_mint_inner(
+    async fn commit_uncredited_corpse_mint_inner(
         &self,
         permit: &SpellLanePermit,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         candidate: &mut ItemMintCandidate,
+        source: source_death::SourceCorpseMintProof<'_>,
     ) -> Result<ItemMintOutcome> {
         let mut result = self
-            .commit_kill_loot_mints_inner(permit, authority, node, candidate, &mut [], None, None)
+            .commit_kill_loot_mints_inner(
+                permit,
+                authority,
+                node,
+                candidate,
+                &mut [],
+                None,
+                None,
+                Some(source),
+            )
             .await?;
         result.pop().ok_or(ItemMintError::InvalidInput)
+    }
+
+    /// Closed Rotten facade supplies the original source-selected child. This
+    /// remains the same atomic corpse/loot writer and its existing ceilings.
+    async fn commit_uncredited_corpse_loot_inner(
+        &self,
+        permit: &SpellLanePermit,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        corpse: &mut ItemMintCandidate,
+        loot: &mut [ItemMintCandidate],
+        source: source_death::SourceCorpseMintProof<'_>,
+    ) -> Result<Vec<ItemMintOutcome>> {
+        self.commit_kill_loot_mints_inner(
+            permit,
+            authority,
+            node,
+            corpse,
+            loot,
+            None,
+            None,
+            Some(source),
+        )
+        .await
     }
 
     #[allow(
@@ -1153,6 +1189,7 @@ impl DurabilityRoot {
         children: &mut [ItemMintCandidate],
         top_damage_character_id: Option<[u8; 16]>,
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
+        source: Option<source_death::SourceCorpseMintProof<'_>>,
     ) -> Result<Vec<ItemMintOutcome>> {
         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
             return Err(ItemMintError::InvalidInput);
@@ -1174,11 +1211,23 @@ impl DurabilityRoot {
         {
             return Err(ItemMintError::InvalidInput);
         }
-        if let Some(owner) = top_damage_character_id {
+        let source = if let Some(owner) = top_damage_character_id {
+            if source.is_some() {
+                return Err(ItemMintError::InvalidInput);
+            }
             audit::check_uuid_v7(&owner)?;
-        } else if !children.is_empty() || boss.is_some() {
-            return Err(ItemMintError::InvalidInput);
-        }
+            None
+        } else {
+            if boss.is_some() {
+                return Err(ItemMintError::InvalidInput);
+            }
+            Some(
+                source
+                    .as_ref()
+                    .ok_or(ItemMintError::InvalidInput)?
+                    .freeze(candidate, children)?,
+            )
+        };
         // SPELL-LOCK-2 §1.2: the Ground (or corpse entry) this writes takes advisory key 33,
         // so the lane must be the death's exact scope, held to the end of the transaction.
         permit.check_scope(candidate.request.cause.death.runtime_scope)?;
@@ -1233,6 +1282,11 @@ impl DurabilityRoot {
                             .map(|value| uuid_text(&value))
                             .transpose()?;
                         if stored_top_damage != top_damage_character_id {
+                            return Ok(Err(ItemMintError::ConflictingCause));
+                        }
+                        if let Some(source) = &source
+                            && !source.matches_committed(&mut tx, &frozen).await?
+                        {
                             return Ok(Err(ItemMintError::ConflictingCause));
                         }
                         let committed = decode_receipt(&row)?;
@@ -1321,6 +1375,9 @@ impl DurabilityRoot {
                             )
                             .await?
                         }
+                    }
+                    if let Some(source) = &source {
+                        source.insert(&mut tx, &frozen).await?;
                     }
                     if let Some((spawn, cycle, policy)) = &boss {
                         let death = &frozen.request.cause.death;

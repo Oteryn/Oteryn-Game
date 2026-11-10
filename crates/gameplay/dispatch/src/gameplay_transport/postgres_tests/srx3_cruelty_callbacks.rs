@@ -12,12 +12,16 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 
 #[test]
 fn srx3_cruelty_actual_source_entry_and_native_defense_chain_postgres() -> TestResult {
+    run_source_entry(false)
+}
+
+pub(super) fn run_source_entry(attack_cancellation: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-cruelty-native", || {
-        run(async |admin| {
+    super::kill_reward_e2e::scenario_thread::run("srx3-cruelty-native", move || {
+        run(async move |admin| {
             reset();
             // Crystal201189f lib/quests/soul_war.lua:422-448: literal first
             // waiting tile and its real source map; no seeded catalogue recipe.
@@ -30,8 +34,12 @@ fn srx3_cruelty_actual_source_entry_and_native_defense_chain_postgres() -> TestR
                 },
             )?;
             let deps: Dependencies = scene.dependencies()?;
-            let h = Harness::create_with_admission_seed(admin, "srx3_cruelty_native", false, false)
-                .await?;
+            let seed = if attack_cancellation {
+                "srx3_soul_war_attack_cancellation"
+            } else {
+                "srx3_cruelty_native"
+            };
+            let h = Harness::create_with_admission_seed(admin, seed, false, false).await?;
             // Imported prior quest access is a historical fixture fact, following
             // srx3_taints. New admission/callback writes keep all normal guards.
             let mut historical = h.pool.begin().await?;
@@ -130,6 +138,22 @@ fn srx3_cruelty_actual_source_entry_and_native_defense_chain_postgres() -> TestR
                     .ok_or("actual source Cruelty actor")?
                     .actor
             };
+            if attack_cancellation {
+                super::srx3_soul_war_attacks::actual_source_suffix(
+                    &view,
+                    admitted
+                        .runtime_actor
+                        .ok_or("actual source attack Player")?,
+                    admitted.game_session_id,
+                    boss,
+                )
+                .await?;
+                drop(view);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             let initial_defense = {
                 let runtime = view.runtime.lock().await;
                 runtime
@@ -340,9 +364,16 @@ fn srx3_cruelty_actual_source_entry_and_native_defense_chain_postgres() -> TestR
             h.cleanup().await
         })
     })?;
-    eprintln!(
-        "SRX3_CRUELTY_NATIVE_POSTGRES_CASE_EXECUTED duration={:?}",
-        started.elapsed()
-    );
+    if attack_cancellation {
+        eprintln!(
+            "SRX3_SOUL_WAR_ATTACKS_POSTGRES_CASE_EXECUTED duration={:?}",
+            started.elapsed()
+        );
+    } else {
+        eprintln!(
+            "SRX3_CRUELTY_NATIVE_POSTGRES_CASE_EXECUTED duration={:?}",
+            started.elapsed()
+        );
+    }
     Ok(())
 }

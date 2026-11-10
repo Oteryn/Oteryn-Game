@@ -26,7 +26,10 @@ mod taint_one;
 mod taints;
 pub(super) mod torment;
 pub(super) mod white;
-pub(super) use attacks::drive as drive_attacks;
+pub(super) use attacks::{
+    PreparedSoulWarArea, RetainedSoulWarAttack, capture_attack_proposal,
+    drive_due_through as drive_attack_due_through, drive_retained_attack_proposal,
+};
 pub(super) use player_source::publish_command_source;
 pub(super) use taint_one::drive_due_through as drive_taint_one_due_through;
 
@@ -34,7 +37,7 @@ pub(super) use taint_one::drive_due_through as drive_taint_one_due_through;
 enum OmittedTimer {
     Malice,
     Megalomania,
-    TaintOne,
+    InlineCallbacks,
 }
 pub(super) use taint_five::QualifiedFifthTaint;
 pub(super) use taints::refresh as refresh_taints;
@@ -136,11 +139,14 @@ impl SoulWarCallbacks {
     pub(super) fn next_native_due_without_megalomania(&self) -> Option<u64> {
         self.next_native_due_except(Some(OmittedTimer::Megalomania))
     }
-    pub(super) fn next_native_due_without_taint_one(&self) -> Option<u64> {
-        self.next_native_due_except(Some(OmittedTimer::TaintOne))
+    pub(super) fn next_native_due_without_inline_callbacks(&self) -> Option<u64> {
+        self.next_native_due_except(Some(OmittedTimer::InlineCallbacks))
     }
     pub(super) fn next_taint_one_due(&self) -> Option<u64> {
         self.taint_one.next_due()
+    }
+    pub(super) fn next_attack_due(&self) -> Option<u64> {
+        self.attacks.next_due()
     }
     fn next_native_due_except(&self, omitted: Option<OmittedTimer>) -> Option<u64> {
         self.greed
@@ -168,11 +174,15 @@ impl SoulWarCallbacks {
                     .and_then(|owner| owner.next_due_ms()),
             )
             .filter_map(|ms| ms.checked_mul(1_000))
-            .chain(self.attacks.next_due())
+            .chain(
+                self.attacks
+                    .next_due()
+                    .filter(|_| omitted != Some(OmittedTimer::InlineCallbacks)),
+            )
             .chain(
                 self.taint_one
                     .next_due()
-                    .filter(|_| omitted != Some(OmittedTimer::TaintOne)),
+                    .filter(|_| omitted != Some(OmittedTimer::InlineCallbacks)),
             )
             .min()
     }

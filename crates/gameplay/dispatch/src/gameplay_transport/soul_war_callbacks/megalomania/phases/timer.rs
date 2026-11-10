@@ -68,10 +68,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || (matches!(&timer, PreparedTimer::Phase(_))
                     && (owner.phases.aspect.is_some()
                         || states.soul_war_callbacks.sanity.pending.is_some()))
-                || (notice.is_some()
+                || ((notice.is_some() || states.native_profile_pass.has_pending())
                     && states
                         .native_callbacks
-                        .next_due_time()
+                        .next_source_due_time()?
                         .into_iter()
                         .chain(
                             states
@@ -79,9 +79,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .next_native_due_without_megalomania(),
                         )
                         .chain(states.spite_global.next_due_us())
-                        .chain(states.primal_callbacks.next_due_us())
-                        .chain(states.rotten_blood_callbacks.next_due_time())
+                        .chain(states.primal_callbacks.next_source_due_time()?)
+                        .chain(crate::gameplay_transport::monster_profile_cycle::physical_spell::next_source_due_time(&runtime, &states)?)
+                        .chain(
+                            states
+                                .rotten_blood_callbacks
+                                .next_source_due_time(&runtime)?,
+                        )
                         .any(|other| other <= due_us && other <= now))
+                || states
+                    .native_profile_pass
+                    .next_due(&runtime)?
+                    .is_some_and(|other| other < due_us && other <= now)
             {
                 return Ok(false);
             }

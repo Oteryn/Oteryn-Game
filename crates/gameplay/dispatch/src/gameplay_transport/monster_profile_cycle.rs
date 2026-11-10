@@ -5,10 +5,12 @@ use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplaySt
 use crate::foundation::ChannelRuntimeV1;
 use crate::movement::monster_map::CurrentMonsterMap;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
+use std::sync::Arc;
 
 mod bloodjaw_targeting;
 pub(super) mod native_callbacks;
 pub(super) mod physical_spell;
+pub(in crate::gameplay_transport) mod retained;
 pub(in crate::gameplay_transport) mod rotten_area;
 pub(super) mod rotten_waves;
 pub(super) mod source_heals;
@@ -105,23 +107,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use crate::durability::spell_item_transaction::{
             assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
         };
+        let execution_now = now;
+        let native_pending = states.native_profile_pass.pending();
         let primal_pending = states.primal_callbacks.normal_pending();
-        let now = primal_pending
-            .as_ref()
-            .map_or(now, |pending| pending.batch().observed_at_us());
+        let _ = states.native_profile_pass.next_due(runtime)?;
+        let now = native_pending.as_ref().map_or_else(
+            || {
+                primal_pending
+                    .as_ref()
+                    .map_or(now, |pending| pending.batch().observed_at_us())
+            },
+            |pending| pending.batch().observed_at_us(),
+        );
+        if now > execution_now {
+            return Err(());
+        }
         if primal_pending
             .as_ref()
             .is_some_and(|pending| !pending.source_ready() || !pending.batch().current_for(runtime))
         {
             return Err(());
         }
-        runtime.note_rotten_movement_time(now).map_err(|_| ())?;
-        if runtime.rotten_movement_pending() {
-            return Err(());
-        }
-        if self.source_death_can_begin_without_timer_read(runtime, states, now)? {
-            return if self.prepare_source_death_head(runtime, states, attack, room, native, now)? {
-                Ok((Some(now), Vec::new()))
+        runtime
+            .note_rotten_movement_time(execution_now)
+            .map_err(|_| ())?;
+        let resume_profile =
+            self.source_profile_pass_can_resume(runtime, states, native, execution_now)?;
+        if native_pending.is_none()
+            && self.source_death_can_begin_without_timer_read(runtime, states, execution_now)?
+        {
+            return if self.prepare_source_death_head(
+                runtime,
+                states,
+                attack,
+                room,
+                native,
+                execution_now,
+            )? {
+                Ok((Some(execution_now), Vec::new()))
             } else {
                 // The outer native loop drops its guards before executing the
                 // exact retained copied action, including all physical SQL.
@@ -129,7 +152,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         }
         let pass = self.root.try_issue_semantic_pass().map_err(|_| ())?;
-        let (next_due, proposals, native_actors) = {
+        let (next_due, proposals, native_actors, ran_profile) = {
             let mut context = (
                 self,
                 &mut *runtime,
@@ -141,11 +164,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 revisions,
                 candidates,
                 primal_pending.as_ref(),
+                native_pending.as_ref(),
                 native_health_names,
             );
             pass.run_with_context(&mut context, move |holder, deadline, context| {
             Box::pin(async move {
-                let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_health_names) =
+                let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names) =
                     context;
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
                 let binding = runtime.binding();
@@ -164,7 +188,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Deferred source tasks precede fresh movement/thinks. Read the
                 // same current party basis only when their retained older casts
                 // can need it, then release this read transaction after one task.
-                let source_parties = if runtime.has_pending_source_creature_deaths() {
+                let source_parties = if runtime.has_pending_source_creature_deaths()
+                    || native_pending.is_some() {
                     let required = native.creature_profiles().records.iter().any(|record| {
                         matches!(&record.profile.data, crate::content::ProjectV2AuthoringProfileData::Creature(creature)
                             if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()
@@ -188,9 +213,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let objects = owner.door.lock().await;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
-                if runtime.has_pending_source_creature_deaths() {
+                if !resume_profile && (runtime.has_pending_source_creature_deaths()
+                    || native_pending.is_some()) {
                     let complete = owner.drive_one_source_creature_death(runtime, states, attack,
-                        room, native, &mut map, &source_parties, now, native_health_names).await
+                        room, native, &mut map, &source_parties, execution_now, native_health_names).await
                         .map_err(|()|crate::durability::DurabilityError::Unavailable)?;
                     if !complete || !map.validate_transaction(runtime).await {
                         return Err(crate::durability::DurabilityError::Unavailable);
@@ -199,7 +225,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tx.rollback().await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                     // Immediate continuation names actual remaining source/AI
                     // work; it does not replace a source timer deadline.
-                    return Ok((Some(now), Vec::new(), Vec::new()));
+                    return Ok((Some(now), Vec::new(), Vec::new(), false));
+                }
+                // A raw STEP must not hide an older selected timer. Check it
+                // only after the due-only branch, immediately before Think.
+                // Later movement still waits behind this retained original pass.
+                if runtime.pending_rotten_movement(1)
+                    .map_err(|_|crate::durability::DurabilityError::Unavailable)?
+                    .first().is_some_and(|event| native_pending.is_none() || event.observed_us() <= now) {
+                    return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 let root = GameplayDecisionRoot::from_bytes(native.source_digest());
                 let bloodjaw_players = if wave_enabled {
@@ -216,7 +250,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     objects.collision_cells()
                 };
                 let player_waiting = attack.players_waiting(now);
-                if primal_pending.is_none() {
+                if native_pending.is_none() && primal_pending.is_none() {
                 // Carried creature requests precede player chase and fresh thinks.
                 table
                     .drive_current_movement(
@@ -261,12 +295,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Crystal game.cpp:7051-7053 runs source onThink before onAttacking.
                 // Reserve the existing bounded occurrences, release the table borrow,
                 // then re-read physical type/HP before their native schedules run.
-                let mut owned_batch = if primal_pending.is_none() { Some(table.reserve_current_thinks(runtime,now)
-                    .ok_or(crate::durability::DurabilityError::Unavailable)?) } else { None };
-                let batch = match primal_pending.as_ref() {
-                    Some(pending) => pending.batch(),
-                    None => owned_batch.as_ref().ok_or(crate::durability::DurabilityError::Unavailable)?,
+                let pending = match native_pending.as_ref() {
+                    Some(pending) => Arc::clone(pending),
+                    None => {
+                        let batch = match primal_pending.as_ref() {
+                            Some(pending) => pending.shared_batch(),
+                            None => Arc::new(table.reserve_current_thinks(runtime,now)
+                                .ok_or(crate::durability::DurabilityError::Unavailable)?),
+                        };
+                        // Retain the SAME bounded reservation before the first
+                        // source/Map await; AI reports will append synchronously.
+                        states.native_profile_pass.prepare(batch)
+                            .map_err(|_|crate::durability::DurabilityError::Unavailable)?
+                    }
                 };
+                let batch = pending.batch();
+                if !pending.source_known() {
                 if let Some(claim) = super::rotten_blood_callbacks::prepare_bak_first_think(
                     runtime, states, room, native, batch.occurrences(), now,
                 ).map_err(|()|crate::durability::DurabilityError::Unavailable)? {
@@ -281,7 +325,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &mut tx, owner.holder, &claim,
                     ).await?;
                     tx.commit().await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
-                    return Ok((Some(0), Vec::new(), Vec::new()));
+                    return Ok((Some(0), Vec::new(), Vec::new(), false));
                 }
                 let published_soul_war_world = owner.active_generation
                     .and_then(|active|active.qualify_published_world_context(room,runtime.content_pin()));
@@ -294,7 +338,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // the detached scoped read outside runtime/state guards.
                     drop(map);
                     drop(tx);
-                    return Ok((Some(0),Vec::new(),Vec::new()));
+                    return Ok((Some(0),Vec::new(),Vec::new(), false));
                 }
                 super::soul_war_callbacks::refresh_taints(owner.root,runtime,states,room,native,&mut map,now,published_soul_war_world.as_ref())
                     .await.map_err(|()|crate::durability::DurabilityError::Unavailable)?;
@@ -304,10 +348,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let primal_due = if room.pinned_activity_source_room() == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal)
                     && matches!(runtime.binding().runtime_scope(),crate::foundation::RuntimeScopeRefV1::Instance{..}) {
                     if primal_pending.is_none() {
-                        let batch = owned_batch.take().ok_or(crate::durability::DurabilityError::Unavailable)?;
-                        states.primal_callbacks.prepare_normal(batch).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                        states.primal_callbacks.prepare_normal_shared(pending.shared_batch())
+                            .map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                         drop(map); drop(tx);
-                        return Ok((Some(0),Vec::new(),Vec::new()));
+                        return Ok((Some(0),Vec::new(),Vec::new(), false));
                     }
                     states.primal_callbacks.next_retained_due_us()
                 } else { None };
@@ -333,13 +377,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &mut states.monster_melee.creature_ai,batch.occurrences(),now).await
                         .map_err(|()|crate::durability::DurabilityError::Unavailable)?;
                 }
+                pending.finish_source(primal_due, rotten_due);
+                }
                 let table = &mut states.monster_melee.creature_ai;
-                for occurrence in batch.occurrences() {
+                if !pending.ai_known() { for occurrence in batch.occurrences() {
                     if runtime.contains_live_creature(occurrence.actor) {
                         table.refresh_current_native_creature(runtime, native, occurrence.actor)
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                     }
-                }
+                } }
                 if wave_enabled { rotten_waves::warm(runtime, &mut map).await; }
                 let mut reader = NativeMonsterThinkRead::new(
                     map,
@@ -396,8 +442,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect::<std::collections::BTreeSet<_>>();
                 let summons = &mut states.monster_summons;
                 let waves = &mut states.rotten_waves;
-                let mut proposals = Vec::new();
-                let native_reports = if primal_pending.as_ref().is_some_and(|pending|pending.ai_known()) { Vec::new() } else { table
+                if !pending.ai_known() { table
                     .run_reserved_current_thinks_borrowed(
                         runtime,
                         batch,
@@ -410,10 +455,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             let selected = report.proposals.iter().filter(|proposal| {
                                 source_attack_abilities.contains(&proposal.ability)
                                     || accepts_source_overlay(runtime,native,actor,&proposal.ability)
-                            }).cloned();
-                            if let Some(pending) = primal_pending.as_ref() {
-                                pending.record_report(actor,selected);
-                            } else { proposals.extend(selected); }
+                            }).cloned().collect::<Vec<_>>();
+                            if let Some(primal) = primal_pending.as_ref() {
+                                primal.record_report(actor,selected.iter().cloned());
+                            }
+                            pending.record_report(runtime,room,native,actor,selected);
                             summons
                                 .consume_report(runtime, table, native, actor, report, reader, now);
                             if wave_enabled && !report.over_budget && bloodjaw_targeting::retarget(runtime, table,
@@ -426,14 +472,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             }
                         },
                     )
-                    .await };
-                let native_actors = if let Some(pending) = primal_pending.as_ref() {
-                    pending.finish_ai();
-                    let retained = pending.results().map_err(|_|crate::durability::DurabilityError::Unavailable)?;
-                    proposals = retained.0;
-                    retained.1
-                } else { native_reports.into_iter().map(|(actor,_)|actor).collect::<Vec<_>>() };
-                let next_step = table
+                    .await; }
+                if !batch.current_for(runtime) {
+                    return Err(crate::durability::DurabilityError::Unavailable);
+                }
+                pending.finish_ai().map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                let (proposals,native_actors)=if let Some(primal)=primal_pending.as_ref() {
+                    primal.finish_ai();
+                    primal.results().map_err(|_|crate::durability::DurabilityError::Unavailable)?
+                } else {
+                    pending.results().map_err(|_|crate::durability::DurabilityError::Unavailable)?
+                };
+                let next_step = match pending.movement() {
+                    Some(due) => due,
+                    None => { let due = table
                     .drive_current_movement(
                         runtime,
                         room.movement_cells(),
@@ -446,16 +498,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &mut reader.map,
                     )
                     .await;
+                    pending.finish_movement(due);
+                    due }
+                };
                 if !reader.map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 // Transaction is read-only. Keep its scope lock until every synchronous consumer ends.
                 let mut map = reader.map;
                 let next_due = table.earliest_due().into_iter().chain(next_step).min();
-                source_heals::execute(runtime, &mut states.native_self_heals, &mut states.native_self_heal_content, native, &proposals);
+                if !pending.heals_known() {
+                    source_heals::execute(runtime, &mut states.native_self_heals, &mut states.native_self_heal_content, native, &proposals);
+                    pending.finish_heals();
+                }
+                if !pending.fields_known() {
                 owner
                     .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
                     .await?;
+                pending.finish_fields();
+                }
                 if !map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
@@ -473,34 +534,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 // Preserve the native scheduler's proposal order across ordinary
                 // attacks and source callbacks. Delayed work also runs on idle turns.
-                let callbacks = states.native_callbacks.clone();
-                let mut soul_war_attack_due = None;
                 let callback_result: Result<(), ()> = async {
-                    for current in std::iter::once(&[][..]).chain(proposals.iter().map(std::slice::from_ref)) {
-                        let due = super::soul_war_callbacks::drive_attacks(
-                            runtime, states, room, native, &mut map, current, now,
-                        ).await?;
-                        soul_war_attack_due = soul_war_attack_due.into_iter().chain(due).min();
-                        if let Some(active) = owner.active_generation {
-                            callbacks.execute(active, runtime, states, attack, room, native,
-                                &mut map, current, &parties, now, native_health_names).await?;
+                    while !pending.items_ready() {
+                        if !retained::resume_one_due(owner,runtime,states,attack,room,native,
+                            &mut map,&parties,now,execution_now,native_health_names).await? {
+                            return Err(());
                         }
-                        physical_spell::execute_proposals(runtime, states, attack, room, native,
-                            &mut map, current, &parties, now, owner.imported_charms, native_health_names).await;
                     }
-                    physical_spell::drain_due(runtime, states, attack, room, native,
-                        &mut map, &parties, now, owner.imported_charms).await;
                     Ok(())
                 }.await;
                 callback_result.map_err(|()| crate::durability::DurabilityError::Unavailable)?;
 
                 drop(map);
                 let next_due = next_due.into_iter()
-                    .chain(primal_due)
-                    .chain(rotten_due)
+                    .chain(pending.source_due())
                     .chain(states.rotten_blood_callbacks.next_due_time())
                     .chain(states.native_callbacks.next_due_time())
-                    .chain(soul_war_attack_due)
                     .chain(states.soul_war_callbacks.next_native_due())
                     .chain(states.soul_war_callbacks.next_splinter_due(runtime, native)
                         .map_err(|_| crate::durability::DurabilityError::Unavailable)?)
@@ -510,23 +559,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tx.rollback()
                     .await
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                Ok((next_due, proposals, native_actors))
+                Ok((next_due, proposals, native_actors, true))
             })
         })
         .await
         .map_err(|_| ())?
         };
+        // A due-only turn can finish while an older cancelled pass already owns
+        // its Item suffix. Do not acknowledge that suffix with empty results.
+        if !ran_profile {
+            return Ok((next_due, native_actors));
+        }
         if states.rotten_blood_callbacks.critical_scope_pending() {
             return Err(());
         }
+        let Some(pending) = states
+            .native_profile_pass
+            .pending()
+            .filter(|pending| pending.items_ready())
+        else {
+            return Ok((next_due, native_actors));
+        };
         // End the read transaction and semantic pass before the existing durable Item
         // owner opens its own fenced write transaction for the same source occurrence.
         source_items::execute(self, runtime, room, native, permit, &proposals)
             .await
             .map_err(|_| ())?;
+        if !pending.batch().current_for(runtime) {
+            return Err(());
+        }
         if let Some(pending) = primal_pending.as_ref() {
             states.primal_callbacks.complete_normal(pending)?;
         }
+        states.native_profile_pass.complete(&pending)?;
         Ok((next_due, native_actors))
     }
 }

@@ -10,9 +10,11 @@ mod cloak_blood_step;
 pub use cloak_blood_step::{CloakBloodPlayerStep, CloakBloodStepReceipt, cloak_blood_percentage};
 mod primal_pod;
 mod scoped_global;
+mod source_step;
 mod spite_global;
 mod w01_death;
 use scoped_global::{ScopedGroundCauseRef, ScopedGroundPreparedRef};
+pub use source_step::{SourceGroundStep, SourceGroundStepKind, SourceGroundStepReceipt};
 pub use spite_global::{
     PreparedSpiteGlobalWrite, SpiteGlobalFireCallback, SpiteGlobalFireOutcome,
     SpiteGlobalFireReceipt, execute_spite_global_fire_in_transaction,
@@ -241,7 +243,12 @@ where
         || [cause.content(), cause.map(), cause.frame(), cause.body()].contains(&[0; 32])
         || !uuid_v7(&transaction)
         || !uuid_v7(&event)
-        || operations.len() > if cause.cause_kind() == 4 { 1 } else { 500 }
+        || operations.len()
+            > if matches!(cause.cause_kind(), 4 | 6) {
+                1
+            } else {
+                500
+            }
     {
         return Err(SpellItemError::Rejected("scoped source ground cause shape"));
     }
@@ -316,7 +323,8 @@ where
                 blocks_projectile,
                 description,
             } => {
-                if !definition.materializable
+                if matches!(cause, ScopedGroundCauseRef::SourceStep(_))
+                    || !definition.materializable
                     || !definition.ground_destination
                     || definition.content_generation_digest != cause.content()
                     || !item_definition_valid(&definition.definition)
@@ -339,8 +347,9 @@ where
                 )
             }
             SpellItemOperation::RemoveGround(r) => {
-                if (matches!(cause.cause_kind(), 3 | 4)
+                if (matches!(cause.cause_kind(), 3 | 4 | 6)
                     && !cause.source_items().contains(&r.definition))
+                    || (matches!(cause, ScopedGroundCauseRef::SourceStep(c) if c.item != r.item_instance_id || r.quantity != 1))
                     || !r.contents.is_empty()
                     || r.quantity == 0
                     || r.state_revision == 0

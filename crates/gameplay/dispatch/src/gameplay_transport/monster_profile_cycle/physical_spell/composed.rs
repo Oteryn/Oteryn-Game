@@ -55,31 +55,49 @@ pub(super) async fn execute(
     now: u64,
     charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
-) {
-    let Ok(stamp) = runtime.issue_owner_work() else {
-        return;
-    };
-    let Some(base) = prepare_composed_reader(
-        runtime, states, attack, room, native, map, source, proposal, parties, now, stamp,
+) -> Result<(), ()> {
+    let stamp = runtime.issue_owner_work().map_err(|_| ())?;
+    let prepared = prepare_source_reader_checked(
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        map,
+        SourceShape::Composed(source),
+        proposal,
+        parties,
+        now,
+        stamp,
+        false,
+        None,
+        None,
     )
-    .await
-    else {
-        return;
+    .await;
+    let base = match prepared {
+        Ok(base) => base,
+        Err(PreparationError::Unavailable) => return Err(()),
+        Err(PreparationError::Refused) => {
+            if !map.validate_transaction(runtime).await {
+                return Err(());
+            }
+            return Ok(());
+        }
     };
     let Some(mut reader) = CurrentComposed::prepare(runtime, attack, room, source, base, now)
     else {
-        return;
+        return Ok(());
     };
     if reader
         .bind_native_health_names(runtime, native_health_names)
         .is_none()
     {
-        return;
+        return Ok(());
     }
     let Ok(catalog) =
         crate::creature_area_heal::CreatureHealCatalog::from_current_native(runtime, native)
     else {
-        return;
+        return Ok(());
     };
     let mut owner = std::mem::take(&mut states.monster_composed);
     let result = owner.execute_current(
@@ -99,7 +117,7 @@ pub(super) async fn execute(
     );
     states.monster_composed = owner;
     let Ok(outcome) = result else {
-        return;
+        return Ok(());
     };
     if let Some(primary) = outcome.primary {
         record_hits(
@@ -124,6 +142,7 @@ pub(super) async fn execute(
             attack.record_hit_taken(runtime, target, *session, semantic_now);
         }
     }
+    Ok(())
 }
 
 struct CurrentCreature {

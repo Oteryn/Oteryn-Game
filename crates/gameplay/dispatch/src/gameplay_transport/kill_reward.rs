@@ -135,6 +135,9 @@ pub struct PendingKillSettlement {
     /// Frozen callback facts survive corpse replay and actor-slot reuse.
     pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
     pub(super) callback_loot: Vec<crate::combat::LootDefinitionRef>,
+    /// The actual copied Bakragore handler freezes one source draw before its
+    /// ACK; the ordinary corpse writer remains the sole physical loot owner.
+    pub(super) source_callback_loot: Option<crate::durability::item_mint::BakragoreDeathLoot>,
     /// Frozen under the existing party/Character locks before the first commit attempt.
     /// Clones and a requeued entry retain the original recipients and occurrence IDs.
     pub(super) task_board_recipients: Arc<OnceLock<Vec<TaskBoardKillRecipient>>>,
@@ -234,6 +237,7 @@ impl PendingKillSettlement {
             forge: None,
             echo: None,
             callback_loot: Vec::new(),
+            source_callback_loot: None,
             task_board_recipients: Arc::default(),
             talisman: Arc::default(),
             boss_reward: None,
@@ -559,6 +563,97 @@ impl KillSettlementQueue {
                 .replace_source_drop_reward(begin.actor(), row);
         }
         Ok(())
+    }
+
+    pub(super) fn retain_bakragore_source_loot(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+        source: &crate::durability::item_mint::BakragoreDeathLoot,
+    ) -> Result<bool, ()> {
+        if !source.matches_source(begin) || !source.current_for(runtime, native) {
+            return Err(());
+        }
+        let item = source
+            .source_item_id()
+            .map(|id| {
+                native
+                    .reward_table()
+                    .admitted_source_item(id)
+                    .cloned()
+                    .ok_or(())
+            })
+            .transpose()?;
+        let matches = |entry: &PendingKillSettlement| {
+            entry.target == begin.actor() && entry.facts.death == begin.death_key()
+        };
+        let mut state = self.state();
+        if state
+            .in_flight
+            .iter()
+            .any(|(death, _, actor, _)| *death == begin.death_key() || *actor == begin.actor())
+        {
+            return Err(());
+        }
+        let mut found = false;
+        for entry in state
+            .queued
+            .iter()
+            .chain(
+                state
+                    .releasing
+                    .iter()
+                    .flat_map(|mark| mark.parked.iter().map(|(entry, _)| entry)),
+            )
+            .filter(|entry| matches(entry))
+        {
+            if !entry.source_death_pending
+                || entry.creature != "oteryn:creature.bakragore"
+                || entry
+                    .source_callback_loot
+                    .as_ref()
+                    .is_some_and(|old| old != source)
+            {
+                return Err(());
+            }
+            found = true;
+        }
+        let reserve = |entry: &mut PendingKillSettlement| -> Result<(), ()> {
+            if entry.source_callback_loot.is_none() && item.is_some() {
+                entry.callback_loot.try_reserve(1).map_err(|_| ())?;
+            }
+            Ok(())
+        };
+        for entry in state.queued.iter_mut().filter(|entry| matches(entry)) {
+            reserve(entry)?;
+        }
+        for mark in &mut state.releasing {
+            for (entry, _) in &mut mark.parked {
+                if matches(entry) {
+                    reserve(entry)?;
+                }
+            }
+        }
+        let publish = |entry: &mut PendingKillSettlement| {
+            if entry.source_callback_loot.is_none() {
+                if let Some(item) = &item {
+                    entry.callback_loot.push(item.clone());
+                }
+                entry.source_callback_loot = Some(source.clone());
+            }
+        };
+        for entry in state.queued.iter_mut().filter(|entry| matches(entry)) {
+            publish(entry);
+        }
+        for mark in &mut state.releasing {
+            for (entry, _) in &mut mark.parked {
+                if matches(entry) {
+                    publish(entry);
+                }
+            }
+        }
+        Ok(found)
     }
 
     pub(super) fn has_source_drop(
@@ -1897,6 +1992,7 @@ pub fn record_creature_kill(
                             forge: None,
                             echo,
                             callback_loot: Vec::new(),
+                            source_callback_loot: None,
                             task_board_recipients: Arc::default(),
                             talisman: Arc::default(),
                             boss_reward: None,
@@ -2230,6 +2326,7 @@ pub fn record_creature_kill(
         forge,
         echo,
         callback_loot,
+        source_callback_loot: None,
         task_board_recipients: Arc::default(),
         talisman: Arc::default(),
         grizzly: None,
