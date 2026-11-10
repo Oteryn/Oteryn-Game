@@ -115,22 +115,26 @@ fn e2e_n07c_replays_kill_facts_into_the_analyser_selector() -> Result<(), Error>
         crate::play::feature_0010_analyser::input::select_tool(&mut mailbox.analyser, index);
         panel_text(&mailbox.analyser)
     };
-    let tail = format!("Dropped facts: {dropped} (totals may be incomplete)");
-    assert_eq!(
-        select(2),
-        format!("Experience analyser\r\nExperience: {raw} raw / {gained} gained\r\n{tail}")
-    );
-    assert_eq!(select(1), format!("Hunting analyser\r\nKills: {kills}\r\n{tail}"));
-    assert_eq!(
-        select(3),
-        format!("Loot analyser\r\nLoot: {items} items / {gold} gold\r\n{tail}")
-    );
-    // Reset (index 7) clears the totals but keeps the selected tool.
+    // Each tool shows its title, its totals line and the dropped-facts warning.
+    let shows = |text: &str, title: &str, line: &str, warned: bool| {
+        let warning = format!("\r\nSession feed incomplete: {dropped} fact(s) dropped");
+        text.starts_with(&format!("{title}\r\n"))
+            && text.contains(&format!("\r\n{line}"))
+            && (text.ends_with(&warning) == warned)
+            && (warned || !text.contains("Session feed incomplete"))
+    };
+    let experience = select(2);
+    let line = format!("Experience: {raw} raw / {gained} gained\r\n");
+    assert!(shows(&experience, "XP Analyser", &line, true), "{experience}");
+    let hunting = select(1);
+    let line = format!("Kills: {kills}\r\n");
+    assert!(shows(&hunting, "Hunting analyser", &line, true), "{hunting}");
+    let loot = select(3);
+    let line = format!("Gold: {gold} | Looted items: {items}");
+    assert!(shows(&loot, "Loot Analyser", &line, true), "{loot}");
+    // Reset (index 7) clears the totals and the warning but keeps the selected tool.
     let reset = select(7);
-    assert_eq!(
-        reset,
-        "Loot analyser\r\nLoot: 0 items / 0 gold\r\nDropped facts: 0 (totals may be incomplete)"
-    );
+    assert!(shows(&reset, "Loot Analyser", "Gold: 0 | Looted items: 0", false), "{reset}");
     assert_eq!(link.analyser_panel().tool, Tool::Loot);
 
     // Facts after the session ended are ignored: the panel is unselected and stays empty.

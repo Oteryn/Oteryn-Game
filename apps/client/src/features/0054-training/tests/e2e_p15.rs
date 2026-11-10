@@ -118,7 +118,7 @@ fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error:
     assert_eq!(running.summary, summary(running_charges));
     assert_eq!(
         panel_text(&running),
-        format!("Training\r\n{}\r\nExercise training is running", summary(running_charges))
+        format!("Training\r\n\r\n{}\r\nExercise training is running", summary(running_charges))
     );
 
     // STOP settles the run; the charges never exceed the running count.

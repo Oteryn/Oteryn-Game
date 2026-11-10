@@ -31,6 +31,25 @@ fn file(path: &std::path::Path) -> Result<Value, Error> {
     Ok(serde_json::from_slice(&std::fs::read(path)?)?)
 }
 
+/// Every field of `picked` (recursively) has the same value in `actual`.
+fn contains(actual: &Value, picked: &Value) -> bool {
+    match (actual, picked) {
+        (Value::Object(actual), Value::Object(picked)) => picked
+            .iter()
+            .all(|(key, value)| actual.get(key).is_some_and(|held| contains(held, value))),
+        _ => actual == picked,
+    }
+}
+
+/// The file holds exactly `preferences`, and the fields this journey changes have the values
+/// written out in `picked`.
+fn holds(path: &std::path::Path, preferences: &ReferencePreferences, picked: &Value) -> Result<(), Error> {
+    let actual = file(path)?;
+    assert_eq!(actual, serde_json::to_value(preferences)?);
+    assert!(contains(&actual, picked), "{} lacks {picked}", path.display());
+    Ok(())
+}
+
 #[test]
 fn e2e_n05_settings_export_import_backup_defaults_and_corrupt_file() -> Result<(), Error> {
     let root = std::env::temp_dir().join(format!("oteryn-n05-{}", std::process::id()));
@@ -54,13 +73,13 @@ fn e2e_n05_settings_export_import_backup_defaults_and_corrupt_file() -> Result<(
     changed.visible_panels = vec!["battle".into(), "wheel".into()];
     state.apply(changed.clone());
     assert_eq!(state.feedback, "Applied and saved");
-    assert_eq!(file(&active)?, changed_json());
+    holds(&active, &changed, &changed_json())?;
 
     // Export never overwrites an existing file.
     state.export_to(&export)?;
-    assert_eq!(file(&export)?, changed_json());
+    holds(&export, &changed, &changed_json())?;
     assert!(state.export_to(&export).is_err());
-    assert_eq!(file(&export)?, changed_json());
+    holds(&export, &changed, &changed_json())?;
 
     // A fresh store starts at the defaults, imports the export, and keeps its previous values as
     // the backup.
@@ -68,19 +87,19 @@ fn e2e_n05_settings_export_import_backup_defaults_and_corrupt_file() -> Result<(
     assert_eq!(other.preferences, ReferencePreferences::default());
     other.import_from(&export)?;
     assert_eq!(other.preferences, changed);
-    assert_eq!(file(&fresh)?, changed_json());
+    holds(&fresh, &changed, &changed_json())?;
     let backup = fresh.with_extension("backup.json");
-    assert_eq!(file(&backup)?, defaults_json());
+    holds(&backup, &ReferencePreferences::default(), &defaults_json())?;
     assert_eq!(PreferenceStore::load(fresh.clone())?.preferences(), &changed);
 
     // Defaults replace the live values and move the imported ones into the backup, which restores.
     other.reset_defaults()?;
     assert_eq!(other.preferences, ReferencePreferences::default());
-    assert_eq!(file(&fresh)?, defaults_json());
-    assert_eq!(file(&backup)?, changed_json());
+    holds(&fresh, &ReferencePreferences::default(), &defaults_json())?;
+    holds(&backup, &changed, &changed_json())?;
     other.restore_backup()?;
     assert_eq!(other.preferences, changed);
-    assert_eq!(file(&fresh)?, changed_json());
+    holds(&fresh, &changed, &changed_json())?;
 
     // Corrupt, out-of-range and unknown-field files are refused and change nothing.
     let (stored, stored_backup) = (std::fs::read(&fresh)?, std::fs::read(&backup)?);

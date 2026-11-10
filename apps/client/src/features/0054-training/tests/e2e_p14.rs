@@ -108,7 +108,7 @@ fn e2e_p14_replays_offline_training_replies() -> Result<(), Box<dyn std::error::
     assert_eq!(
         panel_text(&after_select),
         format!(
-            "Training\r\nRemaining charges: {charges}\r\nOffline pool: {pool} seconds\r\nOffline training selected; the server is logging you out"
+            "Training\r\n\r\nRemaining charges: {charges}\r\nOffline pool: {pool} seconds\r\nOffline training selected; the server is logging you out"
         )
     );
 

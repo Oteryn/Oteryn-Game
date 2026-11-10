@@ -162,7 +162,10 @@ fn e2e_n01_house_owner_guest_update_and_stale_refusal() -> Result<(), Box<dyn st
     outbox.properties_result(&resend, &reply(&capture.stale));
     let panel = link.house_panel();
     assert!(panel.model.pending.is_none());
-    assert_eq!(panel.model.feedback, "The server refused the action");
+    assert_eq!(
+        panel.model.feedback,
+        "The server refused the action: catalogue changed; refresh before retrying"
+    );
     assert_eq!(panel.model.page.rows[position].acl_revision, capture.acl_revision);
     Ok(())
 }

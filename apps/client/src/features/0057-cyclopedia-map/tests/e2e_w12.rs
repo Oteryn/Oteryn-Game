@@ -73,7 +73,7 @@ fn pending(kind: u32) -> Panel {
 fn summary(expected: &str, prefix: &str) -> Result<String, Error> {
     let field = |name: &str| value(expected, &format!("{prefix}_{name}"));
     Ok(format!(
-        "Area 1 | Revision {} | Discovered: {}\r\nFound {}/7 | Area {}% | Pool {} | Epoch {} | Improved: {}\r\nVisible points: {}",
+        "Current exploration area | Revision {} | Discovered: {}\r\nFound {}/7 | Area {}% | Pool {} | Epoch {} | Improved: {}\r\nVisible points: {}",
         field("revision")?,
         field("discovered")?,
         field("found")?,
