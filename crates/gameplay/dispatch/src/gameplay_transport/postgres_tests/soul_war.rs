@@ -238,6 +238,7 @@ pub(super) async fn settle_captured_endgame_death<K: AsRef<[u8]>>(
                 party_id: None,
                 party_revision: None,
                 members: vec![PartyKillXpMember {
+                    task_board_eligible: true,
                     fence,
                     request: ExperienceAwardRequest {
                         occurrence: ExperienceRewardOccurrence::from_bytes(source.occurrence)

@@ -45,6 +45,8 @@ fn imbuement_elapsed_dispatch_pauses_expires_replays_and_reloads() -> TestResult
     spawn(true, true)
 }
 
+#[path = "imbuement/catalogue.rs"]
+mod catalogue;
 #[path = "imbuement/elapsed.rs"]
 mod elapsed;
 
@@ -54,19 +56,32 @@ fn spawn(shrine: bool, elapsed: bool) -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(shrine, elapsed, false).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(shrine, elapsed, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "imbuement wire e2e panic")??;
+    Ok(())
+}
+
+#[test]
+fn t174_shrine_dispatch_exposes_all_48_scroll_recipes() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true, false, false, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "scroll catalogue panic")??;
     Ok(())
 }
 
 /// The test map holds the sword's bag at x 6, where the actor stands, and at x 7 either a
 /// loose gold coin or an imbuing shrine.
 pub(super) fn details_scenario() -> TestResult {
-    scenario(false, false, true)
+    scenario(false, false, true, false)
 }
 
-fn scenario(shrine: bool, elapsed: bool, details: bool) -> TestResult {
+fn scenario(shrine: bool, elapsed: bool, details: bool, catalogue: bool) -> TestResult {
     run(async move |admin| {
         let name = if details {
             "imbuement_details"
@@ -190,7 +205,31 @@ fn scenario(shrine: bool, elapsed: bool, details: bool) -> TestResult {
             )
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        let (consumer, clock, activation, _) =
+            crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+        if catalogue {
+            harness
+                .root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+        }
+        let premium =
+            crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(harness.root.clone()),
+            );
         let mut owner = deps.owner(&harness, &authority);
+        if catalogue {
+            owner.premium_coordinator = Some(&premium);
+            owner.admit_premium(id(40), deps.admitted.game_session_id);
+        }
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
@@ -204,7 +243,17 @@ fn scenario(shrine: bool, elapsed: bool, details: bool) -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        if shrine {
+        if catalogue {
+            super::item_look::seed_main_backpack(
+                &harness,
+                &[
+                    (SWORD, 1),
+                    ("oteryn:item.tibia.i3079", 1),
+                    ("oteryn:item.tibia.i51442", 1),
+                ],
+            )
+            .await?;
+        } else if shrine {
             super::item_look::seed_main_backpack(
                 &harness,
                 &[(SWORD, 1), (CHARM, 25), (CRYSTAL, 3), (ETCHER, 1)],
@@ -213,12 +262,17 @@ fn scenario(shrine: bool, elapsed: bool, details: bool) -> TestResult {
         } else {
             super::item_look::seed_main_backpack(&harness, &[(SWORD, 1), (coin, 100)]).await?;
         }
-        seed_imbuement(&harness).await?;
+        if !catalogue {
+            seed_imbuement(&harness).await?;
+        }
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         let mut capabilities = vec![4, 6, 11, 12, 14, 15, 18, CAPABILITY_IMBUE_V1];
+        if catalogue {
+            capabilities.push(CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1);
+        }
         if details {
             capabilities
                 .push(oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1);
@@ -226,7 +280,9 @@ fn scenario(shrine: bool, elapsed: bool, details: bool) -> TestResult {
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &capabilities)
                 .ok_or("imbuement capability selectable")?;
-        if details {
+        if catalogue {
+            catalogue::exercise(&harness, &owner, admitted, index).await?;
+        } else if details {
             super::imbuement_details::exercise(&harness, &owner, admitted).await?;
         } else if elapsed {
             elapsed::exercise(&harness, &mut owner, sword_ref, admitted, deps.actor).await?;

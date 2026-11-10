@@ -3,6 +3,7 @@
 //! area:u32, amount:u32 (zero except donate). Results are documented in the contract.
 pub mod atlas;
 
+pub const COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY: u32 = 6178;
 pub const COMMAND_TYPE_CYCLOPEDIA_QUERY: u32 = 72;
 pub const COMMAND_TYPE_CYCLOPEDIA_INTENT: u32 = 73;
 pub const CAPABILITY_CYCLOPEDIA_MAP_V1: u32 = 57;

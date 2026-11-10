@@ -35,7 +35,7 @@ pub(in crate::play) fn purchase(
     store::purchase(panel)
 }
 
-// Game identities replace Crystal's modal selection of an owned Hireling.
+// An optional Game identity bypasses the server's owned-Hireling selection modal.
 pub(in crate::play) fn customization(
     panel: &mut StorePanel,
     name: &str,

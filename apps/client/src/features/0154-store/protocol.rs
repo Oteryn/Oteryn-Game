@@ -1,12 +1,32 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
-    pub(in crate::play) fn store_initialize(&self, selected: bool) {
+    pub(in crate::play) fn store_modal_answered(
+        &self,
+        answer: oteryn_client_runtime::server_modal::Answer,
+    ) {
+        let mut mailbox = lock(&self.0);
+        if mailbox.store.hireling_modal_id == Some(answer.dialog_id) {
+            mailbox.store.hireling_modal_id = None;
+            mailbox.store.confirmed_purchase = None;
+            mailbox.store.feedback = None;
+        }
+    }
+    pub(in crate::play) fn store_initialize(&self, selected: bool, hireling_modal_selected: bool) {
         let mut mailbox = lock(&self.0);
         mailbox.store.selected = selected;
+        mailbox.store.cosmetic_tokens = None;
+        mailbox.store.token_supported = false;
+        mailbox.store.token_balance_refresh = false;
+        mailbox.store.hireling_modal_selected = hireling_modal_selected;
         mailbox.store.gift_open = false;
         mailbox.store.gift_fields = Default::default();
         mailbox.store.gift_reviewed = None;
         mailbox.store.gift = Default::default();
+    }
+    pub(in crate::play) fn store_tokens_initialize(&self, selected: bool) {
+        let mut mailbox = lock(&self.0);
+        mailbox.store.token_supported = selected && mailbox.store.selected;
+        mailbox.store.token_balance_refresh = mailbox.store.token_supported;
     }
     pub(in crate::play) fn store_result(
         &self,
@@ -17,7 +37,7 @@ impl Outbox {
         oteryn_client_ui::store::apply_result(&mut mailbox.store, response);
         let text = if let Some(feedback) = &mailbox.store.feedback {
             feedback.clone()
-        } else if action == 185
+        } else if matches!(action, 185 | 6188)
             && let Some(purchase) = &mailbox.store.purchase
         {
             format!("Purchase: {:?}", purchase.code)

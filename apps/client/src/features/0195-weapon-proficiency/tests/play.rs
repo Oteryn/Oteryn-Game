@@ -45,7 +45,25 @@ fn native_proficiency_actions_and_input_gates() {
         (108, 395),
     ] {
         p.pending = false;
+        if id == 108 {
+            p.shaping = Some(oteryn_client_runtime::weapon_proficiency_state::State {
+                definition: 258,
+                revision: 9,
+                slots: [None, None],
+                modify_dust: [250, 1000],
+                rank_dust: [25; 10],
+                reshape_dust: 100,
+                clear_dust: 10,
+                orbs: 1,
+            });
+        }
         let c = native_controls::submit(&mut p, id, ["258", "2", "1", "1", "9", "2"], false);
+        let c = if id == 108 {
+            assert!(c.is_none());
+            native_controls::submit(&mut p, 117, ["258", "2", "1", "1", "9", "2"], false)
+        } else {
+            c
+        };
         assert_eq!(c.map(|c| c.kind), Some(kind));
         assert!(
             native_controls::submit(&mut p, id, ["258", "2", "1", "1", "9", "2"], false).is_none()

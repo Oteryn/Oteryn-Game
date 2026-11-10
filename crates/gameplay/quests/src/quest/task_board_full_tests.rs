@@ -568,18 +568,18 @@ fn bounty_selection_completion_and_claim_use_own_state_and_rewards() -> Result<(
 }
 
 #[test]
-fn bounty_grade_boundaries_and_difficulty_reward_tables_match_crystal()
+fn bounty_grade_boundaries_match_owner_provisional_profile_and_crystal_rewards()
 -> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
     let ctx = context(&catalogue);
     for (difficulty, min_exp, points) in [(0, 30, 3), (1, 70, 7), (2, 150, 16), (3, 300, 27)] {
         for (roll, grade, multiplier) in [
             (0, 2, 4),
-            (1, 2, 4),
-            (2, 1, 2),
-            (9, 1, 2),
-            (10, 0, 1),
-            (99, 0, 1),
+            (99, 2, 4),
+            (100, 1, 2),
+            (599, 1, 2),
+            (600, 0, 1),
+            (9999, 0, 1),
         ] {
             let mut data = TaskBoardData::default();
             let mut balances = TaskBoardBalances::default();
@@ -647,10 +647,10 @@ fn bounty_completion_preserves_existing_wide_token_owner() -> Result<(), TaskBoa
         apply(
             &mut data,
             &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
+            TaskBoardAction::RetiredDailyReroll,
             &ctx
         ),
-        Err(TaskBoardRefusal::LimitReached)
+        Err(TaskBoardRefusal::RetiredAction)
     );
     Ok(())
 }
@@ -877,10 +877,10 @@ fn bounty_rerolls_use_twenty_hour_free_timer_before_spending_one_token()
         apply(
             &mut data,
             &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
+            TaskBoardAction::RetiredDailyReroll,
             &ctx
         ),
-        Err(TaskBoardRefusal::Cooldown)
+        Err(TaskBoardRefusal::RetiredAction)
     );
     ctx.now_unix_seconds += 72_000;
     ctx.reroll_tokens = 10;
@@ -888,21 +888,20 @@ fn bounty_rerolls_use_twenty_hour_free_timer_before_spending_one_token()
         apply(
             &mut data,
             &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
+            TaskBoardAction::RetiredDailyReroll,
             &ctx
         ),
-        Err(TaskBoardRefusal::LimitReached)
+        Err(TaskBoardRefusal::RetiredAction)
     );
     ctx.reroll_tokens = 9;
     assert_eq!(
         apply(
             &mut data,
             &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
+            TaskBoardAction::RetiredDailyReroll,
             &ctx
-        )?
-        .reroll_tokens_granted,
-        1
+        ),
+        Err(TaskBoardRefusal::RetiredAction)
     );
     Ok(())
 }
@@ -1555,5 +1554,47 @@ fn bounty_points_last_valid_reward_then_overflow_keeps_completed_task()
             );
         }
     }
+    Ok(())
+}
+
+#[test]
+fn elite_offers_freeze_rewards_and_rarity_survives_serialization_and_resets_per_race()
+-> Result<(), Box<dyn std::error::Error>> {
+    let policy = elite::Policy::checked_in().map_err(|e| format!("{e:?}"))?;
+    assert_eq!(policy.weights(0), [500, 100, 0]);
+    assert_eq!(policy.weights(20), [2500, 1000, 200]);
+    assert_eq!(policy.grade(0, 1), 2);
+    assert_eq!(policy.grade(1, 1), 3);
+    let catalogue = creatures();
+    let ctx = context(&catalogue);
+    let mut data = TaskBoardData::default();
+    let mut balances = TaskBoardBalances::default();
+    let mut run = |data: &mut TaskBoardData, action| {
+        apply(data, &mut balances, action, &ctx).map_err(|e| format!("{e:?}"))
+    };
+    run(&mut data, TaskBoardAction::OpenBounty)?;
+    let original = data.bounty.offers.clone();
+    run(&mut data, TaskBoardAction::SetElite { enabled: true })?;
+    assert_eq!(data.bounty.offers, original);
+    run(&mut data, TaskBoardAction::RerollBounty)?;
+    assert!(data.bounty.offers.iter().all(|task| task.elite
+        && task.grade == 3
+        && task.points == 24
+        && task.experience == 48000
+        && task.dust == 8));
+    let selected = data.bounty.offers[0].clone();
+    let other = data.bounty.offers[1].race.clone();
+    let loaded: TaskBoardData = serde_json::from_slice(&serde_json::to_vec(&data)?)?;
+    assert_eq!(loaded, data);
+    run(&mut data, TaskBoardAction::SetElite { enabled: false })?;
+    run(&mut data, TaskBoardAction::SelectBounty { slot: 0 })?;
+    assert!(
+        data.bounty
+            .active
+            .as_ref()
+            .is_some_and(|task| task.elite && task.experience == selected.experience)
+    );
+    assert!(!data.bounty.rarity.contains_key(&selected.race));
+    assert_eq!(data.bounty.rarity.get(&other), Some(&2));
     Ok(())
 }

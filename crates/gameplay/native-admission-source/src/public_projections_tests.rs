@@ -372,7 +372,7 @@ fn highscores_outside_the_contract_are_refused() {
     zero.level = 0;
     assert!(refused(vec![zero]));
     assert!(refused(vec![row(1, 1, "Al\"dric")]));
-    for (category, filter) in [(0, 0), (13, 0), (15, 0), (16, 0), (18, 0), (255, 0), (1, 6)] {
+    for (category, filter) in [(0, 0), (13, 0), (15, 0), (18, 0), (255, 0), (1, 6)] {
         let mut snapshot = highscores(vec![]);
         snapshot.category = category;
         snapshot.filter = filter;
@@ -1472,7 +1472,7 @@ fn highscores_accept_boss_points_category_twelve() {
 
 #[test]
 fn highscores_accept_drome_fourteen_seventeen_with_canonical_snapshot_retries() {
-    for category in [14, 17] {
+    for category in [14, 16, 17] {
         for rows in [vec![], vec![row(1, 1, "Aldric")]] {
             let mut snapshot = highscores(rows);
             snapshot.category = category;
@@ -1485,7 +1485,7 @@ fn highscores_accept_drome_fourteen_seventeen_with_canonical_snapshot_retries() 
     }
     assert!(HIGHSCORE_CATEGORIES.contains(&("drome", 14)));
     assert!(HIGHSCORE_CATEGORIES.contains(&("drome_current", 17)));
-    for reserved in [13, 15, 16] {
+    for reserved in [13, 15] {
         assert!(!HIGHSCORE_CATEGORIES.iter().any(|(_, id)| *id == reserved));
     }
 }
@@ -1504,7 +1504,7 @@ fn highscores_filters_and_categories_match_the_platform_consumer() {
         }
     }
     // Platform base ids 1..9 remain unchanged; Game also exports 10..12,
-    // reserved Drome Score14 and new current Drome17. Loyalty13 and future15/16 stay absent.
+    // reserved Drome Score14 and new current Drome17. Loyalty13 and future15 stay absent.
     let platform = [
         ("experience", 1),
         ("magic", 2),
@@ -1520,7 +1520,7 @@ fn highscores_filters_and_categories_match_the_platform_consumer() {
         assert!(HIGHSCORE_CATEGORIES.contains(&(name, id)), "{name}");
     }
     let ids: Vec<_> = HIGHSCORE_CATEGORIES.iter().map(|(_, id)| *id).collect();
-    assert_eq!(ids, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17]);
+    assert_eq!(ids, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 17]);
     for (_, id) in &HIGHSCORE_CATEGORIES {
         let mut snapshot = highscores(vec![]);
         snapshot.category = *id;

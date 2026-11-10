@@ -35,7 +35,7 @@ message CharmProgressionReplyV1 {
 // as the loot offset. Category 0 means all, otherwise a 1-based category index.
 // The active generation supplies names, classes, combat facts and base loot.
 // These public definition facts grant no discovery, charm or gameplay authority.
-// Request <=7 bytes; the response retains the existing command reply byte limit.
+// Request is 7 bytes, or 8 with the Echo opt-in below; the existing reply byte limit holds.
 // Legacy request/reply bytes and all progression mutation guards are unchanged.
 message BestiaryCataloguePageV1 {
   optional uint32 next = 1; // positive race ordinal or loot offset, <=8192
@@ -43,6 +43,11 @@ message BestiaryCataloguePageV1 {
   repeated string categories = 3; // <=64 unique ascending names, <=128 UTF-8 bytes each
 }
 message BestiaryCatalogueCardV1 {
+  // T185: character-owned first-species Echo Warden reward, independent of
+  // ordinary discovery kills. Append byte 01 to the seven-byte ff 01 request
+  // to opt in on browse/detail pages. Legacy requests (including named cards)
+  // and Charm replies omit this field. Strict boolean (0 or 1).
+  optional bool echo_warden_completed = 7;
   uint32 outfit_look_type = 5; // 0 if unavailable or object appearance
   optional uint32 object_look_type = 6; // nonzero; mutually exclusive with outfit
   uint32 race = 1; // 1..1024, the same canonical ordinal used for charm assignment

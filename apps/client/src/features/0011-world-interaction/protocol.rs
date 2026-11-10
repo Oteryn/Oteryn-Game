@@ -18,6 +18,8 @@ impl Outbox {
         let result = session.world_context(command).await;
         let mut mailbox = lock(&self.0);
         mailbox.world_context.pending = false;
+        // The ordinary use owns the result; refresh advisory multiaction data afterwards.
+        mailbox.bar_actions.item_cooldowns.clear();
         match result {
             Ok(text) => {
                 mailbox

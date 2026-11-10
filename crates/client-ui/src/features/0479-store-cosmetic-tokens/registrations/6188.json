@@ -1,0 +1,19 @@
+{
+  "mechanic": "0479-store-cosmetic-tokens",
+  "kind": "handlers",
+  "id": "0479-store-cosmetic-tokens-6188",
+  "status": "supported",
+  "commands": [
+    6188
+  ],
+  "direction": "client_to_server",
+  "capability": 479,
+  "entry": "mod.rs::request",
+  "not_applicable": {
+    "settings": "Payment is selected per confirmed Store quote.",
+    "input": "Native Store Cosmetic Tokens payment control and balance refresh use the Store play queue.",
+    "state": "The character balance, pending quote and selected currency are owned by 0154-store::StorePanel.",
+    "protocol": "mod.rs forwards the registered commands through the shared Store request reducer.",
+    "view": "The existing Store view displays the character balance and confirmed payment currency."
+  }
+}

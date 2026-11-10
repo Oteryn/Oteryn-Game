@@ -1,18 +1,18 @@
 //! Docked action rows. HWNDs and pointer tracking stay on the shell thread.
 #![allow(unsafe_code)] // Child HWNDs are created and destroyed on this thread.
-use oteryn_client::play::{BarDock, BarGesture, BarLayout};
+use oteryn_client::play::{BarDock, BarGesture, BarLayout, SpellAim};
 use windows_sys::Win32::{
     Foundation::{HWND, POINT, RECT},
     UI::{
-        Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LBUTTON},
+        Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LBUTTON, VK_RBUTTON},
         WindowsAndMessaging::*,
     },
 };
 #[path = "tooltips_native.rs"]
 mod tips;
-const ROW_SLOTS: usize = 12;
+const ROW_SLOTS: usize = 50;
 const ROWS: usize = 3;
-const TOOLS: usize = 5;
+const TOOLS: usize = 7;
 pub(super) struct SpellRow {
     tips: tips::Tips,
     buttons: Vec<HWND>,
@@ -21,6 +21,7 @@ pub(super) struct SpellRow {
     parent: HWND,
     drag: Option<usize>,
     mouse_down: bool,
+    right_down: bool,
 }
 fn wide(text: &str) -> Vec<u16> {
     text.encode_utf16().chain(Some(0)).collect()
@@ -53,6 +54,7 @@ impl SpellRow {
             parent,
             drag: None,
             mouse_down: false,
+            right_down: false,
         };
         for _ in 0..ROWS * ROW_SLOTS {
             let handle = unsafe { button(parent) };
@@ -84,12 +86,14 @@ impl SpellRow {
             GetClientRect(self.parent, &mut rect);
             for (bar, row) in layout.rows.iter().enumerate() {
                 let horizontal = row.dock == BarDock::Bottom;
-                let count = if horizontal {
+                let capacity = if horizontal {
                     ((rect.right - 180) / 62).clamp(1, 12)
                 } else {
                     ((rect.bottom - 180) / 54).clamp(1, 12)
                 } as usize;
-                let offset = usize::from(row.offset).min(ROW_SLOTS - count);
+                let slots = row.visible_slots(capacity);
+                let count = slots.len();
+                let offset = slots.start;
                 let width = if horizontal {
                     (rect.right - 180).max(62) / count as i32
                 } else {
@@ -100,7 +104,7 @@ impl SpellRow {
                     let handle = self.buttons[slot];
                     let label = labels
                         .and_then(|labels| labels.get(slot))
-                        .filter(|_| row.enabled && (offset..offset + count).contains(&local));
+                        .filter(|_| row.enabled && slots.contains(&local));
                     visible[slot] = label.is_some();
                     ShowWindow(handle, if label.is_some() { SW_SHOWNA } else { SW_HIDE });
                     let display = local.saturating_sub(offset) as i32;
@@ -143,12 +147,14 @@ impl SpellRow {
                         .into(),
                         2 => if row.locked { "Locked" } else { "Edit/drag" }.into(),
                         3 => "<".into(),
-                        _ => ">".into(),
+                        4 => ">".into(),
+                        5 => format!("{} −", row.count),
+                        _ => "+".into(),
                     };
-                    let columns = (rect.right / 220).max(1) as usize;
+                    let columns = (rect.right / 310).max(1) as usize;
                     MoveWindow(
                         handle,
-                        8 + (bar % columns) as i32 * 220 + tool as i32 * 43,
+                        8 + (bar % columns) as i32 * 310 + tool as i32 * 43,
                         (rect.bottom - 28 - (bar / columns) as i32 * 26).max(0),
                         42,
                         24,
@@ -183,12 +189,81 @@ impl SpellRow {
                                 locked: !row.locked,
                             },
                             3 => BarGesture::Scroll { bar, by: -1 },
-                            _ => BarGesture::Scroll { bar, by: 1 },
+                            4 => BarGesture::Scroll { bar, by: 1 },
+                            5 => BarGesture::Count {
+                                bar,
+                                count: row.count.saturating_sub(1).max(1),
+                            },
+                            _ => BarGesture::Count {
+                                bar,
+                                count: row.count.saturating_add(1).min(50),
+                            },
                         });
                     }
                     self.pressed[index] = down;
                 }
             }
+            let right_down = GetAsyncKeyState(i32::from(VK_RBUTTON)) < 0;
+            if right_down && !self.right_down {
+                let mut cursor = POINT { x: 0, y: 0 };
+                if GetCursorPos(&mut cursor) != 0 {
+                    for (slot, button) in self
+                        .buttons
+                        .iter()
+                        .enumerate()
+                        .filter(|(slot, _)| visible[*slot])
+                    {
+                        let mut bounds: RECT = std::mem::zeroed();
+                        GetWindowRect(*button, &mut bounds);
+                        if cursor.x >= bounds.left
+                            && cursor.x < bounds.right
+                            && cursor.y >= bounds.top
+                            && cursor.y < bounds.bottom
+                        {
+                            let menu = CreatePopupMenu();
+                            if !menu.is_null() {
+                                AppendMenuW(
+                                    menu,
+                                    MF_STRING,
+                                    1,
+                                    wide("Assign Multiaction").as_ptr(),
+                                );
+                                for (id, label) in [
+                                    (2, "Spell: in facing direction"),
+                                    (3, "Spell: towards cursor"),
+                                    (4, "Spell: at target"),
+                                ] {
+                                    AppendMenuW(menu, MF_STRING, id, wide(label).as_ptr());
+                                }
+                                let selected = TrackPopupMenu(
+                                    menu,
+                                    TPM_RETURNCMD | TPM_RIGHTBUTTON,
+                                    cursor.x,
+                                    cursor.y,
+                                    0,
+                                    self.parent,
+                                    std::ptr::null(),
+                                );
+                                DestroyMenu(menu);
+                                match selected {
+                                    1 => gestures.push(BarGesture::AssignMultiaction { slot }),
+                                    2..=4 => gestures.push(BarGesture::Aim {
+                                        slot,
+                                        aim: match selected {
+                                            2 => SpellAim::Facing,
+                                            3 => SpellAim::Cursor,
+                                            _ => SpellAim::Target,
+                                        },
+                                    }),
+                                    _ => {}
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            self.right_down = right_down;
             let down = GetAsyncKeyState(i32::from(VK_LBUTTON)) < 0;
             if self.mouse_down
                 && !down

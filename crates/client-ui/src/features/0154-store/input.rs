@@ -17,6 +17,10 @@ pub fn categories() -> Vec<String> {
             env!("CARGO_MANIFEST_DIR"),
             "/../../rulesets/economy/store/hirelings.json"
         )),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../rulesets/economy/store/cosmetics.json"
+        )),
     ] {
         let Ok(document) = serde_json::from_str::<serde_json::Value>(source) else {
             return Vec::new();

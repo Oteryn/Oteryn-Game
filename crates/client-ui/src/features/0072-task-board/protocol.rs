@@ -5,6 +5,7 @@ use oteryn_client_runtime::raw_feature::{CommandStatus, FeatureCommand, GatedCom
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FullIntent {
     Refresh,
+    Elite(bool),
     StartWeekly(u8),
     Deliver(u8),
     OpenBounty,
@@ -12,7 +13,6 @@ pub enum FullIntent {
     ClaimBounty,
     BountyDifficulty(u8),
     Reroll,
-    DailyReroll,
     Preferred(u8, String),
     Unwanted(u8, String),
     UnlockList,
@@ -20,7 +20,12 @@ pub enum FullIntent {
 }
 
 pub fn full_request(panel: &mut TaskBoardPanel, intent: FullIntent) -> Option<FeatureCommand> {
+    let elite = matches!(intent, FullIntent::Elite(_));
+    if elite && !panel.weekly_results_selected {
+        return None;
+    }
     let (action, selection, race) = match intent {
+        FullIntent::Elite(enabled) => (19, u16::from(enabled), String::new()),
         FullIntent::Refresh => (4, 0, String::new()),
         FullIntent::StartWeekly(v) => (5, u16::from(v), String::new()),
         FullIntent::Deliver(v) => (6, u16::from(v), String::new()),
@@ -29,20 +34,24 @@ pub fn full_request(panel: &mut TaskBoardPanel, intent: FullIntent) -> Option<Fe
         FullIntent::ClaimBounty => (9, 0, String::new()),
         FullIntent::BountyDifficulty(v) => (10, u16::from(v), String::new()),
         FullIntent::Reroll => (11, 0, String::new()),
-        FullIntent::DailyReroll => (12, 0, String::new()),
         FullIntent::Preferred(v, race) => (13, u16::from(v), race),
         FullIntent::Unwanted(v, race) => (14, u16::from(v), race),
         FullIntent::UnlockList => (15, 0, String::new()),
         FullIntent::BuyShop(v) => (16, v, String::new()),
     };
-    command(
+    let mut result = command(
         panel,
         task_board::full::Request {
             action,
             selection,
             race,
         },
-    )
+    )?;
+    if elite {
+        result.capability = task_board::full::CAPABILITY_WEEKLY_RESULTS_V1;
+        result.kind = task_board::full::COMMAND_ELITE_BOUNTY;
+    }
+    Some(result)
 }
 
 pub(super) fn command(

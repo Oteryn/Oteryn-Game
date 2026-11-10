@@ -11,15 +11,14 @@ pub(super) fn select_epoch(pool: u64) -> (bool, u64) {
     }
 }
 
-
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
-struct CanonicalProgress {
-    legacy: MapProgress,
-    subareas: BTreeMap<u32, MapProgress>,
+pub(super) struct CanonicalProgress {
+    pub(super) legacy: MapProgress,
+    pub(super) subareas: BTreeMap<u32, MapProgress>,
 }
 impl CanonicalProgress {
-    fn decode(text: &str) -> Result<Self, DurabilityError> {
+    pub(super) fn decode(text: &str) -> Result<Self, DurabilityError> {
         serde_json::from_str(text)
             .or_else(|_| {
                 serde_json::from_str(text).map(|legacy| Self {
@@ -205,8 +204,8 @@ pub(super) async fn save(
     result: &[u8],
 ) -> Result<(), DurabilityError> {
     let character = fence.character_id.as_bytes().as_slice();
-    sqlx::query("INSERT INTO game_character_cyclopedia_receipts(occurrence,character_id,world_id,command_session_id,command_id,binding,result,fee_transaction_id,donation,pool_before,pool_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,area_id) SELECT encode($1,'hex')::uuid,s.character_id,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,encode($7,'hex')::uuid,$8,$9,$10,s.character_revision,CASE WHEN $11 THEN s.character_revision+1 ELSE NULL END,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,$13 FROM game_character_progression_state s WHERE s.character_id=encode($12,'hex')::uuid")
-        .bind(request.occurrence.as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(request.binding.as_slice()).bind(result).bind((donation>0).then_some(request.transaction.as_slice())).bind(donation as i64).bind(pool as i64).bind(pool_after as i64).bind(advanced).bind(character).bind(i64::from(request.area)).execute(&mut ***tx).await?;
+    sqlx::query("INSERT INTO game_character_cyclopedia_receipts(occurrence,character_id,world_id,command_session_id,command_id,binding,result,fee_transaction_id,donation,pool_before,pool_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,area_id,reset_subarea) SELECT encode($1,'hex')::uuid,s.character_id,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,encode($7,'hex')::uuid,$8,$9,$10,s.character_revision,CASE WHEN $11 THEN s.character_revision+1 ELSE NULL END,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,$13,$14 FROM game_character_progression_state s WHERE s.character_id=encode($12,'hex')::uuid")
+        .bind(request.occurrence.as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(request.binding.as_slice()).bind(result).bind((donation>0).then_some(request.transaction.as_slice())).bind(donation as i64).bind(pool as i64).bind(pool_after as i64).bind(advanced).bind(character).bind(i64::from(request.area)).bind((advanced && request.action == MapAction::Shuffle).then_some(request.subarea.map(i64::from)).flatten()).execute(&mut ***tx).await?;
     if advanced {
         let mut all = load_all(tx, fence, request).await?;
         all.convert(request);

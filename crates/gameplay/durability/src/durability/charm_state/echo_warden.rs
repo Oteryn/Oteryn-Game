@@ -16,6 +16,53 @@ pub struct EchoWardenRewardOutcome {
 }
 
 impl DurabilityRoot {
+    /// Character-owned first-species completions, read under the current session/lease/scope.
+    pub async fn read_current_echo_warden_completions(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> std::result::Result<Vec<String>, CharacterProgressionError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if let Err(error) =
+                        crate::durability::character_progression::assert_item_only_fence(
+                            &mut tx, &fence, &node,
+                        )
+                        .await?
+                    {
+                        return Ok(Err(error));
+                    }
+                    let keys: Vec<String> = sqlx::query_scalar(
+                        "SELECT species_key FROM game_character_echo_warden_rewards \
+                     WHERE character_id=encode($1,'hex')::uuid \
+                     ORDER BY species_key COLLATE \"C\" LIMIT $2",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(
+                        i64::try_from(MAX_VIEW_RACES + 1)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?,
+                    )
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    if keys.len() > MAX_VIEW_RACES {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(keys))
+                })
+            })
+            .await?
+    }
+
     /// Credit one captured Warden death while holding the character's revision slot.
     /// As for Bosstiary counters, the root lock serializes the earning with Charm spends;
     /// this monotonic earning does not advance CharacterRevision. Historical replay never

@@ -536,12 +536,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // CREATURE-RESIST-MELEE-1: a creature immune to physical damage meets the swing
                 // before its block (`Creature::blockHit` `isImmune`): no block, no training, no hit.
                 if selected.weapon.ranged.is_none()
+                    && offence.elemental_conversion.is_none()
                     && creature_physically_immune(&snapshot.state.policy)
                 {
                     continue;
                 }
                 if let Some(ranged) = &selected.weapon.ranged
-                    && ranged::immune(ranged, &snapshot.state.policy)
+                    && ranged::immune(ranged, &snapshot.state.policy, &offence)
                 {
                     if matches!(ranged.damage, ranged::RangedDamage::Distance { .. }) {
                         ranged::train_distance(
@@ -557,11 +558,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
                 let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
-                let ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
+                let mut resolved_element = crate::content::ProjectV2RangedElement::Physical;
+                let mut ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
                     ranged::creature_damage(
                         ranged,
                         &snapshot.state.policy,
                         damage,
+                        &offence,
                         (&root, constants, entry.actor, swing.lineage, ordinal),
                         states
                             .get(&runtime, entry.actor, entry.session)
@@ -579,6 +582,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 ))
                             }),
                     )
+                    .map(|(parts, element)| {
+                        resolved_element = element;
+                        parts
+                    })
                 } else {
                     None
                 };
@@ -595,7 +602,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let blocked = selected.weapon.ranged.is_none()
                     && blocks[index].1.try_block(&constants.block, swing.at);
-                let Some(magnitude) = (if selected.weapon.ranged.is_some() {
+                if selected.weapon.ranged.is_none() && offence.elemental_conversion.is_some() {
+                    ranged_magnitude = {
+                        use crate::content::ProjectV2RangedElement as E;
+                        offence.convert_physical(damage, 0, E::Physical).and_then(|(physical, elemental, element)| {
+                        let physical = creature_mitigated(&root, constants, entry.actor, swing.lineage, ordinal, physical, blocked, defense, armor)?;
+                        let physical = creature_physical_response(&snapshot.state.policy, physical)?;
+                        let key = match element {E::Fire=>"fire",E::Earth=>"earth",E::Ice=>"ice",E::Energy=>"energy",E::Death=>"death",E::Physical=>"physical"};
+                        let elemental = oteryn_gameplay_combat_rules::resolution::creature_damage_response(&snapshot.state.policy, elemental, key)?;
+                        resolved_element = element;
+                        Some([physical,elemental])
+                    })
+                    };
+                }
+                let Some(magnitude) = (if selected.weapon.ranged.is_some()
+                    || offence.elemental_conversion.is_some()
+                {
                     ranged_magnitude.and_then(|parts| parts[0].checked_add(parts[1]))
                 } else {
                     creature_mitigated(
@@ -615,38 +637,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
                 // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
                 // Training already counted the swing by its block, so it trains by `magnitude`.
-                let landed = if selected.weapon.ranged.is_some() {
-                    magnitude
-                } else if magnitude > 0 {
-                    let Some(landed) =
-                        creature_physical_response(&snapshot.state.policy, magnitude)
-                    else {
-                        continue;
+                let landed =
+                    if selected.weapon.ranged.is_some() || offence.elemental_conversion.is_some() {
+                        magnitude
+                    } else if magnitude > 0 {
+                        let Some(landed) =
+                            creature_physical_response(&snapshot.state.policy, magnitude)
+                        else {
+                            continue;
+                        };
+                        landed
+                    } else {
+                        magnitude
                     };
-                    landed
-                } else {
-                    magnitude
-                };
                 let landed = if selected.weapon.ranged.is_none() {
                     if let Some(state) = states.get(&runtime, entry.actor, entry.session) {
-                        let Some((primary, _)) = state.finish_wheel_attack_components(
-                            landed,
-                            0,
-                            u64::try_from(snapshot.health).unwrap_or(0),
-                            u64::try_from(snapshot.maximum_health).unwrap_or(0),
-                            now.get(),
-                            match crate::spell::cast::wheel_adjacent_target(
-                                &runtime,
-                                entry.actor,
-                                target,
-                            ) {
-                                Some(adjacent) => adjacent,
-                                None => continue,
+                        let Some(parts) = finish_melee_components(
+                            ranged_magnitude.unwrap_or([landed, 0]),
+                            |primary, secondary| {
+                                state.finish_wheel_attack_components(
+                                    primary,
+                                    secondary,
+                                    u64::try_from(snapshot.health).unwrap_or(0),
+                                    u64::try_from(snapshot.maximum_health).unwrap_or(0),
+                                    now.get(),
+                                    crate::spell::cast::wheel_adjacent_target(
+                                        &runtime,
+                                        entry.actor,
+                                        target,
+                                    )?,
+                                )
                             },
                         ) else {
                             continue;
                         };
-                        primary
+                        if ranged_magnitude.is_some() {
+                            ranged_magnitude = Some(parts);
+                        }
+                        parts[0].saturating_add(parts[1])
                     } else {
                         landed
                     }
@@ -671,7 +699,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     } else {
                         landed
                     };
-                let analyser_before_prey = landed;
+
                 let prey = states.prey_percent(
                     &runtime,
                     entry.actor,
@@ -680,26 +708,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     1,
                     now.get(),
                 );
-                let landed = if let Some(parts) = ranged_magnitude.filter(|_| talisman_damage > 0) {
-                    // Talisman scales primary and secondary separately, after Prey.
-                    // Perfect Shot is the flat addition to the primary component.
-                    let primary = parts[0]
-                        .saturating_add(landed.saturating_sub(magnitude))
+                let final_parts = if let Some(mut parts) = ranged_magnitude {
+                    // Wheel has already resolved each component. Perfect Shot adds to primary.
+                    parts[0] = parts[0]
+                        .saturating_add(landed.saturating_sub(parts[0].saturating_add(parts[1])))
                         .max(0);
-                    bounty_talisman::damage(
-                        super::super::prey::damage(primary, prey),
-                        talisman_damage,
-                    )
-                    .saturating_add(bounty_talisman::damage(
-                        super::super::prey::damage(parts[1], prey),
-                        talisman_damage,
-                    ))
+                    boost_attack_components(parts, prey, talisman_damage, talisman.elite(&race_key))
                 } else {
-                    bounty_talisman::damage(
-                        super::super::prey::damage(landed, prey),
+                    boost_attack_components(
+                        [landed, 0],
+                        prey,
                         talisman_damage,
+                        talisman.elite(&race_key),
                     )
                 };
+                let landed = final_parts[0].saturating_add(final_parts[1]);
                 if landed <= 0 {
                     train_swing(
                         &mut states,
@@ -767,35 +790,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .max(0),
                     )
                     .unwrap_or(0);
-                    let (primary, element) = match selected.weapon.ranged.as_ref() {
-                        Some(ranged) => {
-                            let primary = ranged_magnitude.map_or(0, |parts| {
-                                bounty_talisman::damage(
-                                    super::super::prey::damage(
-                                        parts[0]
-                                            .saturating_add(
-                                                analyser_before_prey.saturating_sub(magnitude),
-                                            )
-                                            .max(0),
-                                        prey,
-                                    ),
-                                    talisman_damage,
-                                )
-                            });
-                            let element = match ranged.damage {
-                                ranged::RangedDamage::Magic { element, .. }
-                                | ranged::RangedDamage::Distance { element, .. } => element,
-                            };
-                            (
-                                u32::try_from(primary).unwrap_or(0).min(value),
-                                ranged::analyser_element(element),
-                            )
-                        }
-                        None => (
-                            value,
-                            oteryn_protocol_oteryn::damage_element::DamageElement::Physical,
-                        ),
-                    };
+                    let primary = reported_primary(final_parts, value);
+                    let element = ranged::analyser_element(resolved_element);
                     states.analyser.impact(
                         entry.actor,
                         entry.session,
@@ -976,6 +972,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .filter(|n| *n > 0) else {
                             continue;
                         };
+                        let amount = if talisman.elite(&race_key) {
+                            amount / 2
+                        } else {
+                            amount
+                        };
+                        if amount == 0 {
+                            continue;
+                        }
                         let stream = format!(
                             "charm-attack:{}:{}",
                             swing.lineage.command_id().get(),
@@ -1067,6 +1071,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .filter(|amount| *amount > 0) else {
                                 continue;
                             };
+                            let amount =
+                                if runtime
+                                    .companion_snapshot(neighbour)
+                                    .is_ok_and(|candidate| {
+                                        talisman.elite(&candidate.state.policy.definition_key)
+                                    })
+                                {
+                                    amount / 2
+                                } else {
+                                    amount
+                                };
+                            if amount == 0 {
+                                continue;
+                            }
                             let stream = format!(
                                 "charm-carnage:{}:{}:{}",
                                 swing.lineage.command_id().get(),
@@ -1249,6 +1267,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return;
         };
+        let offence = equipped_offence::attacker_offence(states, runtime, hit.actor, hit.session);
         let ranged_damage = if let Some(ranged) = &hit.weapon.ranged {
             self.ranged_player_damage(
                 permit,
@@ -1256,6 +1275,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 content,
                 target_session,
                 ranged,
+                &offence,
                 &hit,
                 constants,
                 root,
@@ -1286,6 +1306,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let armor = vitals.target_armor(runtime, hit.target, target_session);
         let protection = vitals.target_physical_protection(runtime, hit.target, target_session);
+        let Some((physical_raw, secondary_raw, converted_element)) = offence.convert_physical(
+            hit.magnitude,
+            0,
+            crate::content::ProjectV2RangedElement::Physical,
+        ) else {
+            return;
+        };
         let Some(mitigated) = (if hit.weapon.ranged.is_some() {
             ranged_damage
                 .as_ref()
@@ -1306,7 +1333,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     hit.lineage.command_id().get(),
                 ),
                 hit.ordinal,
-                hit.magnitude,
+                physical_raw,
                 defence,
                 armor,
             )
@@ -1345,7 +1372,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             crate::spell::cast::WheelAttackComponents {
                 primary: (primary, crate::player_lethal::PlayerHitKind::Physical),
-                secondary: (0, crate::player_lethal::PlayerHitKind::Physical),
+                secondary: (
+                    u32::try_from(secondary_raw).unwrap_or(0),
+                    match converted_element {
+                        crate::content::ProjectV2RangedElement::Fire => {
+                            crate::player_lethal::PlayerHitKind::Fire
+                        }
+                        crate::content::ProjectV2RangedElement::Earth => {
+                            crate::player_lethal::PlayerHitKind::Earth
+                        }
+                        crate::content::ProjectV2RangedElement::Ice => {
+                            crate::player_lethal::PlayerHitKind::Ice
+                        }
+                        crate::content::ProjectV2RangedElement::Energy => {
+                            crate::player_lethal::PlayerHitKind::Energy
+                        }
+                        crate::content::ProjectV2RangedElement::Death => {
+                            crate::player_lethal::PlayerHitKind::Death
+                        }
+                        crate::content::ProjectV2RangedElement::Physical => {
+                            crate::player_lethal::PlayerHitKind::Physical
+                        }
+                    },
+                ),
             }
         };
         let Some(attacker) = states.get(runtime, hit.actor, hit.session) else {
@@ -1369,7 +1418,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let sum = ranged_damage
                 .as_ref()
                 .and_then(|read| read.protections.get(&kind).copied())
-                .or_else(|| hit.weapon.ranged.is_none().then_some(protection).flatten());
+                .or_else(|| {
+                    if hit.weapon.ranged.is_none() {
+                        if kind == Kind::Physical {
+                            protection
+                        } else {
+                            target.equipped_element_protection(kind)
+                        }
+                    } else {
+                        None
+                    }
+                });
             let magnitude = match sum {
                 Some(sum) => apply_protection(i64::from(magnitude), sum)?,
                 None => i64::from(magnitude),
@@ -1876,6 +1935,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         content: &NativeGameplayState,
         session: GameSessionId,
         ranged: &ranged::RangedLoadout,
+        offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
         hit: &PvpSwing,
         constants: &AttackConstants,
         root: &GameplayDecisionRoot,
@@ -1900,7 +1960,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let equipment = equipment::read_equipment_in_transaction(&mut tx, &authority).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
             crate::gameplay_transport::equipment_move::equipment_effects_owner::equipment_effects(&equipment, content).ok_or(crate::durability::DurabilityError::Unavailable)
         })).await.ok()?;
-        let (physical, elemental, element) = ranged.split(hit.magnitude)?;
+        let (physical, elemental, element) = ranged
+            .split(hit.magnitude)
+            .and_then(|(p, s, e)| offence.convert_physical(p, s, e))?;
         let physical = if physical > 0 {
             oteryn_gameplay_combat_rules::resolution::swing_mitigated(
                 root,
@@ -2005,9 +2067,164 @@ fn publish_hit_sound(
         .record(runtime, actor, position.position(), cue, secondary);
 }
 
+// Keep the mitigated components separate when entering the shared Wheel owner.
+fn finish_melee_components(
+    parts: [i64; 2],
+    finish: impl FnOnce(i64, i64) -> Option<(i64, i64)>,
+) -> Option<[i64; 2]> {
+    let (primary, secondary) = finish(parts[0], parts[1])?;
+    Some([primary, secondary])
+}
+
+fn boost_attack_components(parts: [i64; 2], prey: u8, talisman: u16, elite: bool) -> [i64; 2] {
+    let boosted =
+        parts.map(|part| bounty_talisman::damage(super::super::prey::damage(part, prey), talisman));
+    let boosted = if talisman == 0 {
+        // Preserve the existing whole-hit Prey rounding when no Talisman is active.
+        let total = super::super::prey::damage(parts[0].saturating_add(parts[1]), prey);
+        let primary = boosted[0].min(total);
+        [primary, total.saturating_sub(primary)]
+    } else {
+        boosted
+    };
+    if elite {
+        boosted.map(|part| part / 2)
+    } else {
+        boosted
+    }
+}
+
+// The owner may further scale damage (or clip a lethal hit). Attribute only the
+// committed health loss, preserving the final physical/elemental proportions.
+fn reported_primary(parts: [i64; 2], committed: u32) -> u32 {
+    let total = i128::from(parts[0]) + i128::from(parts[1]);
+    if total <= 0 {
+        return 0;
+    }
+    u32::try_from(i128::from(committed) * i128::from(parts[0]) / total)
+        .unwrap_or(0)
+        .min(committed)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{melee_swing_formula, swing_lands};
+
+    #[test]
+    fn t174_converted_melee_wheel_preserves_both_mitigated_components()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_progression::{
+            wheel::{WHEEL_SLOTS, WheelAllocation, WheelSlots},
+            wheel_effects::derive_runtime_effects,
+            wheel_gem_data::WheelGemData,
+        };
+        let data = WheelGemData::embedded()?;
+        let mut points = [0; WHEEL_SLOTS];
+        let mut remaining = 250u16;
+        for (index, slot) in data.wheel()["topology"]
+            .as_array()
+            .ok_or("topology")?
+            .iter()
+            .enumerate()
+        {
+            if slot["domain"] == "green" {
+                let capacity = u16::try_from(slot["capacity"].as_u64().ok_or("capacity")?)?;
+                points[index] = capacity.min(remaining);
+                remaining -= points[index];
+            }
+        }
+        assert_eq!(remaining, 0);
+        let allocation = WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().to_owned()),
+            wheel_revision: 1,
+            slots: WheelSlots::new(points).map_err(|_| "wheel slots")?,
+            current: true,
+        };
+        let effects = derive_runtime_effects(data.wheel(), &allocation, "knight", 1000, true, true)
+            .ok_or("effects")?;
+        assert_eq!(effects.flat_damage_bonus(), Some(4));
+        let parts = super::finish_melee_components([50, 50], |primary, secondary| {
+            effects.finish_damage_pair(primary, secondary, 1000, 1000, false)
+        });
+        assert_eq!(parts, Some([54, 54]));
+        assert_eq!(parts.map(|parts| parts[0] + parts[1]), Some(108));
+        Ok(())
+    }
+
+    #[test]
+    fn t174_converted_melee_analyser_uses_final_scaled_components() {
+        let boosted = super::boost_attack_components([50, 50], 20, 2500, false);
+        assert_eq!(boosted, [75, 75]);
+        assert_eq!(
+            super::boost_attack_components([50, 50], 25, 0, false),
+            [63, 62]
+        );
+        assert_eq!(super::reported_primary(boosted, 150), 75);
+        // A later owner modifier scales both components, including Elite reduction.
+        assert_eq!(super::reported_primary(boosted, 120), 60);
+        assert_eq!(super::reported_primary(boosted, 0), 0);
+    }
+
+    #[test]
+    fn t174_elite_bounty_converted_melee_reports_halved_components() -> Result<(), &'static str> {
+        use crate::content::ProjectV2RangedElement as E;
+        use crate::durability::task_board::BountyTalismanSnapshot;
+        use oteryn_gameplay_quests::quest::task_board::full::{
+            BountyStatus, BountyTask, TaskBoardData,
+        };
+        let mut board = TaskBoardData::default();
+        board.bounty.state = BountyStatus::Active;
+        board.bounty.active = Some(BountyTask {
+            elite: true,
+            dust: 0,
+            race: "oteryn:creature.rat".into(),
+            required: 25,
+            current: 0,
+            experience: 1850,
+            points: 25,
+            grade: 0,
+            difficulty: 0,
+            slot: 0,
+        });
+        let talisman = BountyTalismanSnapshot::from_board(&board, &Default::default(), true);
+        let offence = oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence {
+            elemental_conversion: Some((E::Fire, 50)),
+            ..Default::default()
+        };
+        let (physical, elemental, element) = offence
+            .convert_physical(100, 0, E::Physical)
+            .ok_or("conversion")?;
+        let parts = super::boost_attack_components(
+            [physical, elemental],
+            20,
+            2500,
+            talisman.elite("oteryn:creature.rat"),
+        );
+        // 50 -> 60 after Prey -> 75 after Talisman -> 37 per component.
+        // Halving the combined 150 would incorrectly land 75 instead of 74.
+        assert_eq!(parts, [37, 37]);
+        let landed = u32::try_from(parts[0] + parts[1]).map_err(|_| "landed")?;
+        let reported_physical = super::reported_primary(parts, landed);
+        let reported_elemental = landed - reported_physical;
+        assert_eq!(
+            (reported_physical, reported_elemental, landed),
+            (37, 37, 74)
+        );
+        assert_eq!(
+            super::ranged::analyser_element(element),
+            oteryn_protocol_oteryn::damage_element::DamageElement::Fire
+        );
+        assert_eq!(
+            super::boost_attack_components(
+                [physical, elemental],
+                20,
+                2500,
+                talisman.elite("oteryn:creature.cave_rat")
+            ),
+            [75, 75]
+        );
+        Ok(())
+    }
 
     #[test]
     fn autoatk_monk_and_knight_select_their_own_formula() -> Result<(), Box<dyn std::error::Error>>

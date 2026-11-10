@@ -153,10 +153,31 @@ pub(super) fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayComm
         let mut held: Option<BattlePanel> = None;
         let mut held_lists = None;
         let mut displayed: Vec<Vec<oteryn_session::WorldSpatialEntity>> = Vec::new();
+        let mut bar_keys = Vec::new();
         let mut message: MSG = std::mem::zeroed();
         loop {
             while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
                 if IsDialogMessageW(hwnd, &message) == 0 {
+                    if matches!(message.message, WM_KEYDOWN | WM_SYSKEYDOWN)
+                        && (lists.contains(&message.hwnd) || message.hwnd == hwnd)
+                        && message.lParam & (1 << 30) == 0
+                    {
+                        use oteryn_input_actions::{Modifier, Modifiers};
+                        use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetKeyState;
+                        let mut modifiers = Modifiers::NONE;
+                        for (key, modifier) in [
+                            (0x10, Modifier::Shift),
+                            (0x11, Modifier::Control),
+                            (0x12, Modifier::Alt),
+                            (0x5b, Modifier::Super),
+                            (0x5c, Modifier::Super),
+                        ] {
+                            if GetKeyState(key) < 0 {
+                                modifiers = modifiers.with(modifier);
+                            }
+                        }
+                        bar_keys.push((message.wParam as u32, modifiers));
+                    }
                     TranslateMessage(&message);
                     DispatchMessageW(&message);
                 }
@@ -172,6 +193,54 @@ pub(super) fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayComm
                 break;
             }
             crate::play::feature_0017_attack::view::metadata::refresh(&mut mailbox, &commands);
+            if !bar_keys.is_empty() {
+                use oteryn_client_runtime::world_interaction::{Selection, Target};
+                let mut cursor = windows_sys::Win32::Foundation::POINT { x: 0, y: 0 };
+                GetCursorPos(&mut cursor);
+                let hovered = lists.iter().enumerate().find_map(|(index, list)| {
+                    let mut point = cursor;
+                    windows_sys::Win32::Graphics::Gdi::ScreenToClient(*list, &mut point);
+                    let mut rect: windows_sys::Win32::Foundation::RECT = std::mem::zeroed();
+                    GetClientRect(*list, &mut rect);
+                    if point.x < 0 || point.y < 0 || point.x >= rect.right || point.y >= rect.bottom
+                    {
+                        return None;
+                    }
+                    let row = SendMessageW(
+                        *list,
+                        LB_ITEMFROMPOINT,
+                        0,
+                        ((point.y as u32) << 16 | point.x as u32) as isize,
+                    );
+                    if row >> 16 != 0 {
+                        return None;
+                    }
+                    displayed.get(index)?.get((row & 0xffff) as usize).copied()
+                });
+                mailbox.bar_actions.cursor = hovered
+                    .filter(|row| {
+                        mailbox.battle.rows.iter().any(|current| {
+                            current.entity == row.entity && current.position == row.position
+                        })
+                    })
+                    .map(|row| {
+                        (
+                            Target::Creature(row.entity),
+                            Selection {
+                                position: row.position,
+                                binding: None,
+                            },
+                        )
+                    });
+                for (key, modifiers) in bar_keys.drain(..) {
+                    crate::play::feature_local_spell_action_bar::view::native_key(
+                        &mut mailbox,
+                        &commands,
+                        key,
+                        modifiers,
+                    );
+                }
+            }
             for id in std::mem::take(&mut actions.0) {
                 if id == 300 || (307..=309).contains(&id) {
                     let state = &mut mailbox.battle_lists;

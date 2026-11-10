@@ -33,9 +33,13 @@ pub async fn run_session<T: Stepper>(
         super::feature_0450_server_modal::protocol::Driver::new(session.feature_selected(450));
     let mut held = Vec::new();
     loop {
-        if let Err(error) = modal.poll(&mut session).await {
-            outbox.end(public_class(&error));
-            return;
+        match modal.poll(&mut session).await {
+            Ok(Some(answer)) => outbox.store_modal_answered(answer),
+            Ok(None) => {}
+            Err(error) => {
+                outbox.end(public_class(&error));
+                return;
+            }
         }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.death_command(&mut commands), session, outbox, held, publish;
@@ -47,6 +51,15 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
+            Ok(PlayCommand::SupportDelivery(command, path)) => {
+                if session.feature_selected(command.capability) {
+                    match session.feature(&command).await {
+                        Ok(result) => crate::support_delivery::acknowledge(&path, &command, &result),
+                        Err(error) => { outbox.end(public_class(&error)); return; }
+                    }
+                }
+                continue;
+            },
             Ok(PlayCommand::Feature(command)) => {
                 let started = std::time::Instant::now();
                 match session.feature(&command).await {
@@ -57,7 +70,7 @@ pub async fn run_session<T: Stepper>(
                         10 => outbox.analyser_result(&command, &result),
                         63 => outbox.market_details_result(&command, &result),
                         72 if command.kind==oteryn_client_runtime::task_board::task_board::soulpit::COMMAND_TYPE => outbox.soulseal_result(&command,&result),
-                        72 => outbox.task_board_full_result(&result),
+                        72 | 474 => outbox.task_board_full_result(&result),
                         14 => outbox.player_trade_container_result(&result),
                         25 | 67 | 87 => outbox.properties_result(&command, &result),
                         53 => outbox.world_event_result(&result),
@@ -91,6 +104,7 @@ pub async fn run_session<T: Stepper>(
                         381 => outbox.potion_durations_result(&result),
                         382 => outbox.death_protection_result(&result),
                         449 => outbox.spellbook_details_result(&result),
+                        463 => outbox.bar_item_cooldowns_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);
@@ -126,7 +140,8 @@ pub async fn run_session<T: Stepper>(
                             152 => outbox.item_forge_result(&response),
                             153 => outbox.depot_search_result(&response),
                             154 if request.command_type==oteryn_client_runtime::coin_transfer::COMMAND => outbox.coin_gift_result(&response),
-                            154 => outbox.store_result(&response),
+                            154 | 479 => outbox.store_result(&response),
+                            450 if request.command_type == oteryn_client_runtime::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION => outbox.store_result(&response),
                             179 => outbox.hotkey_equip_result(&response),
                             230 => outbox.browse_field_result(&response),
                             _ => {}

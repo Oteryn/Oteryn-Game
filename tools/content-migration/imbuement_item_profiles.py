@@ -31,6 +31,7 @@ FAMILIES = {
     'elemental protection holy': 'PROTECTION_HOLY', 'elemental protection ice': 'PROTECTION_ICE',
     'increase capacity': 'INCREASE_CAPACITY', 'increase speed': 'INCREASE_SPEED',
     'life leech': 'LIFE_LEECH', 'mana leech': 'MANA_LEECH', 'paralysis deflection': 'PARALYSIS_REMOVAL',
+    'paralysis removal': 'PARALYSIS_REMOVAL',  # Crystal's name for the same boots category.
     'skillboost axe': 'SKILL_AXE', 'skillboost club': 'SKILL_CLUB', 'skillboost distance': 'SKILL_DISTANCE',
     'skillboost fist': 'SKILL_FIST', 'skillboost magic level': 'SKILL_MAGIC_LEVEL',
     'skillboost shielding': 'SKILL_SHIELDING', 'skillboost sword': 'SKILL_SWORD',
@@ -98,7 +99,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     crystal = json.loads((root / CRYSTAL_FACTS).read_bytes())
     if (crystal['source']['revision'] != CRYSTAL_REVISION
             or crystal['source']['sha256'] != CRYSTAL_SHA256
-            or crystal['records'] != {str(i): row for i, row in sorted(canary.items())}):
+            or any(crystal['records'].get(str(i)) != row for i, row in canary.items())):
         raise ValueError('IMBUEMENT_CRYSTAL_CROSS_CHECK')
     for record in document['records']:
         binding = record.get('production_binding')
@@ -122,12 +123,66 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     generated[manifest_path] = canonical(manifest)
 
 
+def complete_boots(root, generated, profile_path, manifest_path, order, canonical):
+    """Later shop/loot cohorts add boots after the original three Item profiles.
+
+    Fill only their missing imbuement allowance, from the same pinned item donors.
+    Canary adds Swiftness to boots of haste and Vibrancy to depth calcei; retain
+    those explicit Canary differences rather than inheriting Crystal's omissions.
+    """
+    raw = (root / CANARY).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != CANARY_SHA256:
+        raise ValueError('IMBUEMENT_CANARY_SOURCE')
+    document = json.loads(generated[profile_path])
+    source = slots(raw, native_ids(document))
+    boots = {i: row for i, row in source.items() if 'PARALYSIS_REMOVAL' in row['families']}
+    crystal = json.loads((root / CRYSTAL_FACTS).read_bytes())
+    for item, row in boots.items():
+        expected = row
+        if item == 3079:
+            expected = {'slot_count': 1, 'families': {'PARALYSIS_REMOVAL': '3'}}
+        elif item == 13997:
+            expected = {'slot_count': 1, 'families': {}}
+        if crystal['records'].get(str(item)) != expected:
+            raise ValueError(f'IMBUEMENT_BOOT_CROSS_CHECK {item}')
+    for record in document['records']:
+        binding = record.get('production_binding')
+        row = binding and binding['external_id'].isdigit() and boots.get(int(binding['external_id']))
+        if not row:
+            continue
+        expected = {'state': 'KNOWN', 'value': {
+            'slot_count': {'state': 'KNOWN', 'value': row['slot_count']},
+            'allowed_family_tiers': {'state': 'KNOWN', 'value': [
+                {'family': family, 'tier': TIERS[row['families'][family]]}
+                for family in ORDER if family in row['families']]},
+            'excluded_families': {'state': 'KNOWN', 'value': []},
+        }}
+        existing = record['semantics']['imbuement']
+        unknown_families = {'state': 'KNOWN', 'value': {
+            'slot_count': expected['value']['slot_count'],
+            'allowed_family_tiers': {'state': 'UNKNOWN'},
+            'excluded_families': {'state': 'UNKNOWN'},
+        }}
+        if existing not in ({'state': 'UNKNOWN'}, unknown_families, expected):
+            raise ValueError(f"IMBUEMENT_BOOT_PROFILE {binding['external_id']}")
+        record['semantics']['imbuement'] = expected
+    document['records'].sort(key=order)
+    encoded = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    generated[profile_path] = encoded
+    manifest = json.loads(generated[manifest_path])
+    manifest['item_profiles']['sha256'] = hashlib.sha256(encoded).hexdigest()
+    generated[manifest_path] = canonical(manifest)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--stage-crystal', type=Path, required=True)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     ids = native_ids(json.loads((root / PROFILES).read_bytes()))
+    canary = slots((root / CANARY).read_bytes(), ids)
+    # Preserve the original three-profile cross-check and qualify the admitted boots.
+    ids = {2854, 3264, 3349} | {i for i, row in canary.items() if 'PARALYSIS_REMOVAL' in row['families']}
     facts = crystal_facts(args.stage_crystal.read_bytes(), ids)
     (root / CRYSTAL_FACTS).write_text(json.dumps(facts, indent=2, sort_keys=True) + '\n')
     return 0

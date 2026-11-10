@@ -12,6 +12,7 @@
 77 house_move_out
 72 cyclopedia
 73 cyclopedia
+6178 cyclopedia
 40 guild
 41 guild
 68 guild

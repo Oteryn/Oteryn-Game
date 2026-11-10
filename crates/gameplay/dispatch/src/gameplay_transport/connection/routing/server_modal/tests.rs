@@ -25,6 +25,7 @@ impl FreshAdmissionAuthority for Authority {
     async fn server_modal_execute(
         &self,
         admitted: AdmittedSession,
+        _command_id: u64,
         kind: u32,
         payload: &[u8],
     ) -> Option<Vec<u8>> {

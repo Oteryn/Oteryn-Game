@@ -1,0 +1,7 @@
+{
+  "mechanic": "0461-party-list",
+  "kind": "panels",
+  "id": "0461-party-list-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

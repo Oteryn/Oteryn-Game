@@ -116,3 +116,71 @@ fn communication_control_filters_live_lines_and_propagates_whitelist_exceptions(
     assert!(link.chat_panel().console.communication.blacklist.is_empty());
     assert!(!link.chat_communication(Some(CommunicationList::Ignore), "", true));
 }
+
+#[test]
+fn dragged_channel_mirror_tracks_live_history_and_closes_with_original() -> Result<(), Error> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+            runtime.block_on(async {
+                let commands = Arc::new(Mutex::new(Vec::new()));
+                let (link, incoming, outbox) = play_channel();
+                let task = tokio::spawn(run_session(
+                    Peer {
+                        commands: commands.clone(),
+                        rooms: ChatRoomSet::default(),
+                        lines: vec![ChatLine::Private {
+                            speaker_name: "Alice".into(),
+                            text: "existing history".into(),
+                        }],
+                    },
+                    incoming,
+                    outbox,
+                ));
+                wait_for(&link, |panel| panel.selected && !panel.lines.is_empty()).await?;
+                link.open_chat();
+                link.chat_console_tab(ConsoleTab::Private);
+                assert!(!link.chat_console_drop(ConsoleTab::Private, 400, 1100));
+                assert!(oteryn_client_ui::chat::mirror_text(&link.chat_panel()).is_none());
+                assert!(link.chat_console_drop(ConsoleTab::Private, 1000, 1100));
+                assert_eq!(
+                    oteryn_client_ui::chat::mirror_text(&link.chat_panel()).as_deref(),
+                    Some(panel_text(&link.chat_panel()).as_str())
+                );
+                // The copy stays on Private while the original changes tabs and sends.
+                link.chat_console_tab(ConsoleTab::Local);
+                link.chat_text("new live message".into());
+                link.chat_request(Mode::Private, "Player One");
+                wait_for(&link, |panel| panel.lines.len() == 2 && !panel.pending).await?;
+                let mirror = oteryn_client_ui::chat::mirror_text(&link.chat_panel())
+                    .ok_or("mirror missing")?;
+                assert!(mirror.contains("existing history"));
+                assert!(mirror.contains("new live message"));
+                assert!(!panel_text(&link.chat_panel()).contains("new live message"));
+                assert_eq!(
+                    commands
+                        .lock()
+                        .unwrap_or_else(PoisonError::into_inner)
+                        .len(),
+                    1
+                );
+                link.chat_console_tab(ConsoleTab::Private);
+                link.chat_console_filter();
+                assert!(
+                    !oteryn_client_ui::chat::mirror_text(&link.chat_panel())
+                        .ok_or("mirror missing")?
+                        .contains("new live message")
+                );
+                assert!(link.window_toggle("0007-chat-keybindings", &[]));
+                assert!(oteryn_client_ui::chat::mirror_text(&link.chat_panel()).is_none());
+                link.open_chat();
+                assert!(oteryn_client_ui::chat::mirror_text(&link.chat_panel()).is_none());
+                drop(link);
+                task.await?;
+                Ok::<(), Error>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "mirror console test thread failed")?
+}

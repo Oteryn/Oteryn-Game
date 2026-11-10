@@ -34,6 +34,8 @@ const BOSS: &str = "oteryn:boss.native_activity";
 const CREATURE: &str = "fixture:activity_boss";
 const TEMPLATE: &str = "oteryn:room.native_activity_fixture";
 
+#[path = "boss_activity/difficulty.rs"]
+mod difficulty;
 #[path = "boss_activity/endgame.rs"]
 mod endgame;
 #[path = "boss_activity/endgame_receipts.rs"]
@@ -56,6 +58,7 @@ mod state_effects;
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     Entry,
+    Difficulty,
     AwardContinuity,
     EndgameReceipts,
     Rewards,
@@ -215,6 +218,11 @@ fn run_scenario(case: Case) -> TestResult {
 }
 
 #[test]
+fn boss_difficulty_postgres_unlock_start_native_victory_and_phosphorus_record() -> TestResult {
+    run_scenario(Case::Difficulty)
+}
+
+#[test]
 fn endgame_progression_fixture_keeps_corpse_without_personal_loot() -> TestResult {
     // Pure content activation: this regression test never opens PostgreSQL.
     super::kill_reward_e2e::scenario_thread::run("endgame-progression-content", || {
@@ -284,6 +292,12 @@ fn endgame_progression_generation(
 }
 
 fn scenario(case: Case) -> TestResult {
+    let difficulty = case == Case::Difficulty;
+    let case = if difficulty {
+        Case::NonRewardDefeat
+    } else {
+        case
+    };
     run(async |admin| {
         let started = std::time::Instant::now();
         let with_live_progression = matches!(case, Case::AwardContinuity | Case::EndgameReceipts);
@@ -386,6 +400,9 @@ fn scenario(case: Case) -> TestResult {
         } else {
             (BOSS.to_owned(), fixture_policy())
         };
+        if difficulty {
+            boss_key = "oteryn:boss.phosphorus".to_owned();
+        }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = item_fence_of(
@@ -394,7 +411,13 @@ fn scenario(case: Case) -> TestResult {
                 .await?
                 .0,
         );
-        let requested = if case == Case::CapabilityMismatch || with_death {
+        let requested = if difficulty {
+            vec![
+                9,
+                wire::CAPABILITY_BOSS_ENCOUNTER_V1,
+                oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_V1,
+            ]
+        } else if case == Case::CapabilityMismatch || with_death {
             vec![
                 wire::CAPABILITY_BOSS_ENCOUNTER_V1,
                 oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_V1,
@@ -578,22 +601,24 @@ fn scenario(case: Case) -> TestResult {
             .bind(TEMPLATE).bind(serde_json::json!([cell_json(entry)]))
             .bind(cell_json(source_cell)).bind(cell_json(boss_cell)).bind(if late || matches!(case, Case::Entry | Case::OfflineDeathDeadline) { 1_i32 } else if case == Case::NonRewardDefeat { 5 } else { 900 }).execute(&h.pool).await?;
 
-        let (_, refused, switch) = exchange(&owner, &mut admitted, &boss_key, false).await?;
-        assert_eq!(
-            refused,
-            BossActivityReply::Refused(BossActivityRefusal::ContentUnavailable)
-        );
-        assert!(switch.is_none());
-        assert_eq!(
-            owner
-                .runtime
-                .lock()
-                .await
-                .read_actor_position(deps.actor)
-                .map_err(debug)?
-                .position(),
-            source_cell
-        );
+        if !difficulty {
+            let (_, refused, switch) = exchange(&owner, &mut admitted, &boss_key, false).await?;
+            assert_eq!(
+                refused,
+                BossActivityReply::Refused(BossActivityRefusal::ContentUnavailable)
+            );
+            assert!(switch.is_none());
+            assert_eq!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position(),
+                source_cell
+            );
+        }
         owner
             .register_activity_runtime(
                 ActivityTemplateKey {
@@ -792,6 +817,10 @@ fn scenario(case: Case) -> TestResult {
         } else {
             None
         };
+        if difficulty {
+            difficulty::exercise(&h, &owner, &mut admitted, &boss_key, &policy).await?;
+            return Ok(());
+        }
         let old = admitted;
         let (command, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, true).await?;
         let BossActivityReply::Accepted {
@@ -946,6 +975,7 @@ fn scenario(case: Case) -> TestResult {
             Case::EndgameReceipts => {
                 endgame_receipts::assert_receipts(&h, &destination, admitted).await?
             }
+            Case::Difficulty => return Err("normalized difficulty case".into()),
             Case::Entry => {
                 state_continuity::assert_entry_and_timeout_return(
                     &h,

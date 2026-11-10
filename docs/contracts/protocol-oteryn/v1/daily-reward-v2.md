@@ -19,6 +19,15 @@ Protobuf varints: 1 lane_day (1..30), 2 streak (0..100000), 3 jokers
 (0..3), 4 claimed (boolean), 5 claim_enabled (boolean). The former field 6
 seven-day choice plan is absent. Maximum 128 bytes.
 
+The client presents the weapon proficiency XP bonus from this server-confirmed
+streak: streak 0 has 0% chance, 1–7 has 1% per day, 8–13 has 7%, 14–20 has
+8%, 21–27 has 9%, and 28 onward has 10%. Each eligible proficiency XP award
+can be doubled; this is a chance to double an award, not a guaranteed XP rate
+increase. This mirrors `gameplay/progression/src/daily_reward.rs`; Game rolls
+and awards the bonus in `gameplay_transport/kill_reward.rs`. The panel explains
+the milestones and asks the player to refresh after claiming, since a claim
+result contains no updated streak. No client-supplied chance enters a command.
+
 ## result
 
 Protobuf varint field 1 disposition (1..7), bytes field 2 UUIDv7 only for

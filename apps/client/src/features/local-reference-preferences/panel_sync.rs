@@ -1,6 +1,14 @@
 use super::*;
 
 impl SettingsState {
+    pub fn sync_stash_sort(&mut self, link: &crate::play::PlayLink) {
+        let mut prefs = self.preferences.clone();
+        if let Some(edit) = link.sync_stash_sort(&mut prefs.stash_stock_order, self.stash_sort_edit) {
+            self.apply(prefs);
+            self.stash_sort_edit = edit;
+        }
+    }
+
     pub fn sync_archive_bindings(&mut self, link: &crate::play::PlayLink) {
         let mut prefs = self.preferences.clone();
         if let Some(edit) =

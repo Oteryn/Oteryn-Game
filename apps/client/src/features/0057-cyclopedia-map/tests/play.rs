@@ -69,7 +69,10 @@ impl Stepper for Peer {
 }
 async fn ready(link: &PlayLink) -> Result<(), Error> {
     tokio::time::timeout(Duration::from_secs(3), async {
-        while !link.cyclopedia_map_panel().selected || link.cyclopedia_map_panel().pending {
+        while !link.cyclopedia_map_panel().selected
+            || link.cyclopedia_map_panel().pending
+            || link.cyclopedia_map_panel().speed_pending
+        {
             tokio::task::yield_now().await;
         }
     })
@@ -86,11 +89,28 @@ async fn send(
     status: CommandStatus,
     reply: Vec<u8>,
 ) -> Result<(), Error> {
-    exchanges
+    let speed_query = matches!(
+        intent,
+        Intent::Query | Intent::Start | Intent::Shuffle | Intent::Find | Intent::Atlas
+    );
+    let bonus = wire::decode_result(&reply).ok().map_or(0u16, |state| {
+        if state.area_percent == 100 { 195 } else { 0 }
+    });
+    {
+    let mut entries = exchanges
         .entries
         .lock()
-        .unwrap_or_else(PoisonError::into_inner)
-        .push_back((kind, payload, status, reply));
+        .unwrap_or_else(PoisonError::into_inner);
+    entries.push_back((kind, payload, status, reply));
+    if speed_query {
+        entries.push_back((
+            wire::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY,
+            Vec::new(),
+            CommandStatus::Accepted,
+            bonus.to_le_bytes().to_vec(),
+        ));
+    }
+    }
     link.cyclopedia_map_request(intent);
     assert!(link.cyclopedia_map_panel().pending);
     let draft = link.cyclopedia_map_panel().fields;
@@ -98,7 +118,9 @@ async fn send(
     assert_eq!(link.cyclopedia_map_panel().fields, draft);
     // A second click before a response must not produce another command.
     link.cyclopedia_map_request(intent);
-    exchanges.release.add_permits(1);
+    exchanges
+        .release
+        .add_permits(if speed_query { 2 } else { 1 });
     ready(link).await.checked()?;
     assert!(
         exchanges
@@ -201,6 +223,52 @@ fn pc06_cyclopedia_map_scenario() -> Result<(), Error> {
                         .await
                         .checked()?;
                     }
+                    let mut completed = reply.clone();
+                    completed[9] = 1;
+                    completed[10] = 7;
+                    completed[11] = 100;
+                    completed[29] = 0;
+                    completed.truncate(30);
+                    send(
+                        &link,
+                        &exchanges,
+                        Intent::Find,
+                        73,
+                        {
+                            let mut bytes = vec![3];
+                            bytes.extend_from_slice(&1u32.to_le_bytes());
+                            bytes.extend_from_slice(&0u32.to_le_bytes());
+                            bytes
+                        },
+                        CommandStatus::Accepted,
+                        completed,
+                    )
+                    .await
+                    .checked()?;
+                    assert!(
+                        link.cyclopedia_map_panel()
+                            .feedback
+                            .contains("Subarea discovered")
+                    );
+                    assert!(
+                        oteryn_client_ui::cyclopedia_map::panel_text(&link.cyclopedia_map_panel())
+                            .contains("100–195")
+                    );
+                    assert!(
+                        oteryn_client_ui::cyclopedia_map::panel_text(&link.cyclopedia_map_panel())
+                            .contains("Current discovery speed bonus: +195")
+                    );
+                    send(
+                        &link,
+                        &exchanges,
+                        Intent::Query,
+                        72,
+                        vec![],
+                        CommandStatus::Accepted,
+                        reply.clone(),
+                    )
+                    .await
+                    .checked()?;
                     let confirmed = link.cyclopedia_map_panel().summary;
                     for code in 1..=7 {
                         let mut refused = reply.clone();

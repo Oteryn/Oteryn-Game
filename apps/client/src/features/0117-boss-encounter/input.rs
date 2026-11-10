@@ -28,6 +28,13 @@ impl PlayLink {
     pub fn boss_encounter_edit(&self, field: usize, value: String) {
         edit(&mut lock(&self.mailbox).boss_encounter, field, value);
     }
+    pub fn boss_encounter_difficulty_request(
+        &self,
+        intent: oteryn_client_ui::boss_difficulty::Intent,
+        difficulty: u16,
+    ) {
+        enqueue_difficulty(&mut lock(&self.mailbox), &self.commands, intent, difficulty);
+    }
     pub fn boss_encounter_request(&self, intent: Intent) {
         enqueue(&mut lock(&self.mailbox), &self.commands, intent);
     }
@@ -95,4 +102,34 @@ pub(in crate::play) fn browse(
     panel.browser_search = search.to_owned();
     panel.browser_category = category;
     panel.select_boss(previous);
+}
+
+/// The integrated Archfoe controls use the same server context as the standalone window.
+pub(in crate::play) fn enqueue_difficulty(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    intent: oteryn_client_ui::boss_difficulty::Intent,
+    difficulty: u16,
+) {
+    let Some(oteryn_client_runtime::boss_difficulty::Reply::Window {
+        boss_key,
+        boss_creature_key,
+        ..
+    }) = &mailbox.boss_difficulty.reply
+    else {
+        return;
+    };
+    if mailbox.boss_encounter.fields[0] != *boss_key
+        && mailbox.boss_encounter.fields[0] != *boss_creature_key
+    {
+        return;
+    }
+    mailbox.boss_difficulty.difficulty = difficulty;
+    if let Some(command) =
+        oteryn_client_ui::boss_difficulty::request(&mut mailbox.boss_difficulty, intent)
+        && commands.send(PlayCommand::Feature(command)).is_err()
+    {
+        mailbox.boss_difficulty.pending = false;
+        mailbox.boss_difficulty.feedback = Some(tr!("The session has ended"));
+    }
 }
