@@ -1,4 +1,5 @@
 //! Session task phases: receive one shell command, service the session, and publish its result.
+use super::feature_0450_server_modal::protocol::Completion as ModalCompletion;
 use super::{
     Outbox, feature_0043_vip::protocol::send_vip, public_class, session_stepper::publish,
     step_direction,
@@ -51,9 +52,20 @@ fn initialize<T: Stepper>(
 
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
+    session: T,
+    commands: UnboundedReceiver<PlayCommand>,
+    outbox: Outbox,
+) {
+    let modal =
+        super::feature_0450_server_modal::protocol::Driver::new(session.feature_selected(450));
+    run_session_with_modal(session, commands, outbox, modal).await;
+}
+
+pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     mut session: T,
     commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
+    mut modal: super::feature_0450_server_modal::protocol::Driver,
 ) {
     outbox.performance_reset();
     let personal_marks_selected = session.feature_selected(451);
@@ -72,13 +84,15 @@ pub async fn run_session<T: Stepper>(
             Err(_) => outbox.returner_unavailable(),
         }
     }
-    let mut modal =
-        super::feature_0450_server_modal::protocol::Driver::new(session.feature_selected(450));
     let mut held = Vec::new();
     let mut personal_marks_refresh = std::time::Instant::now();
     loop {
         match modal.poll(&mut session).await {
-            Ok(Some(answer)) => outbox.store_modal_answered(answer),
+            Ok(Some(ModalCompletion::Answered(answer))) => outbox.store_modal_answered(answer),
+            Ok(Some(ModalCompletion::LoggedOut)) => {
+                outbox.logged_out();
+                return;
+            }
             Ok(None) => {}
             Err(error) => {
                 if publish_scope_transition(&error, &mut session, &outbox, &mut held, &mut modal) {

@@ -43,6 +43,13 @@ impl State {
         }
         if matches!(
             command.command_type,
+            oteryn_protocol_oteryn::server_modal::COMMAND_TYPE_SERVER_MODAL_QUERY
+                | oteryn_protocol_oteryn::server_modal::COMMAND_TYPE_SERVER_MODAL_ANSWER
+        ) {
+            return Some(routing::server_modal::route(authority, admitted, command).await);
+        }
+        if matches!(
+            command.command_type,
             store::COMMAND_TYPE_STORE_CATALOGUE_PAGE
                 | store::COMMAND_TYPE_STORE_HISTORY_PAGE
                 | store::COMMAND_TYPE_STORE_PURCHASE_HISTORY_PAGE
@@ -88,6 +95,31 @@ impl State {
         }
         match command.command_type {
             world_object::COMMAND_TYPE_USE_INTENT => {
+                if let Ok(intent) = decode_use_intent_target(
+                    admitted.continuity.selected_capabilities.as_slice(),
+                    command.payload,
+                ) && matches!(intent.target, UseTarget::WorldObject(_))
+                    && intent.use_with.is_none()
+                    && intent.use_with_map_item.is_none()
+                    && intent.use_with_position.is_none()
+                    && admitted
+                        .continuity
+                        .selected_capabilities
+                        .contains(oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1)
+                    && admitted
+                        .continuity
+                        .selected_capabilities
+                        .contains(CAPABILITY_WORLD_INTERACTION_V1)
+                {
+                    // Static beds have a base ordinal, not an inventory handle. Only
+                    // the bed rule is admitted here; other House world USE stays closed.
+                    return Some(Dispatch::Use(
+                        authority
+                            .server_modal_offer_bed(*admitted, intent.target, None)
+                            .await
+                            .unwrap_or_else(UseOutcome::rejected),
+                    ));
+                }
                 // The same item directory contains carried and actual House map handles.
                 // The House event owner classifies exact bed kits with native bed
                 // map targets; creature/rune and other map targets keep their owners.

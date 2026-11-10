@@ -51,6 +51,7 @@ pub(super) fn open(link: &PlayLink) {
                     SetWindowLongPtrW(h, GWLP_WNDPROC, procedure as *const () as isize);
                     let image = control(h, "STATIC", "", 90, [700, 15, 96, 96], SS_BITMAP);
                     let art_status = control(h, "STATIC", "", 91, [680, 115, 135, 55], 0);
+                    let echo_progress = controls::EchoProgress::new(h);
                     let category = control(
                         h,
                         "COMBOBOX",
@@ -176,6 +177,7 @@ pub(super) fn open(link: &PlayLink) {
                             }
                             m.properties.charm_progression.clone()
                         };
+                        echo_progress.refresh(p.catalogue.echo_warden_progress(&p.fields[1]));
                         if category_seen.as_ref() != Some(&p.catalogue.page.categories) {
                             SendMessageW(category, CB_RESETCONTENT, 0, 0);
                             for name in std::iter::once("All categories")

@@ -133,6 +133,29 @@
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "transport_close",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "outcome",
+        "served",
+        "ms",
+        "session_gen"
+      ],
+      "codes": [],
+      "note": "The terminal outcome of an accepted transport."
+    },
+    {
+      "event": "transport_diagnostic",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "detail"
+      ],
+      "codes": [],
+      "note": "A bounded structured replacement for legacy transport operator diagnostics."
     }
   ]
 }

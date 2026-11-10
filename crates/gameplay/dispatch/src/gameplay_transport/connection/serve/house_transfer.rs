@@ -369,7 +369,17 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 admitted.continuity.gameplay_idle.activity(activity_at);
             }
             authority.observe_gameplay_idle(admitted);
-            if matches!(effects, Some(Dispatch::Logout(LogoutResult::Accepted))) {
+            if matches!(
+                effects,
+                Some(
+                    Dispatch::Logout(LogoutResult::Accepted)
+                        | Dispatch::ServerModal(
+                            crate::gameplay_transport::server_modal::ServerModalOutcome::LoggedOut(
+                                _
+                            )
+                        )
+                )
+            ) {
                 // The native release already committed. A failed final write
                 // remains a logout, never a second control-loss transition.
                 if write_frame(stream, &result).await.is_ok()

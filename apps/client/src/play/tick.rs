@@ -35,6 +35,7 @@ impl PlayView {
             }
         }
         link.cyclopedia_atlas_pump();
+        self.present_cyclopedia_discovery(link);
         self.project_arena_hazards(link, std::time::Instant::now())
             .map_err(|_error| UNAVAILABLE)?;
         link.arena_refresh(std::time::Instant::now());

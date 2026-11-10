@@ -29,12 +29,14 @@ impl ApplicationHandler for Application {
             event_loop.exit();
             return;
         }
-        self.hud = hud::Hud::new(&window);
+        self.hud = match hud::Hud::new(&window) {
+            Ok(hud) => Some(hud),
+            Err(error) => {
+                self.fail(event_loop, ShellError::HudInitialization(error));
+                return;
+            }
+        };
         self.settings.attach(&window);
-        if self.hud.is_none() {
-            self.fail(event_loop, ShellError::WindowCreation);
-            return;
-        }
         let size = window.inner_size();
         // The map is loaded on the first resume and kept across suspends.
         let center = self

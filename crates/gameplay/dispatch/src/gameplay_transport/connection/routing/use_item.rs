@@ -115,6 +115,26 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             return Some(Dispatch::Use(UseOutcome::rejected()));
         }
     }
+    if let Ok(intent) = &decoded
+        && intent.use_with.is_none()
+        && intent.use_with_map_item.is_none()
+        && intent.use_with_position.is_none()
+        && matches!(intent.target, UseTarget::Item(_) | UseTarget::WorldObject(_))
+        && admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+        )
+        && admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
+        )
+    {
+        let resolved = match intent.target {
+            UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
+            _ => None,
+        };
+        if let Some(outcome) = authority.server_modal_offer_bed(*admitted, intent.target.clone(), resolved).await {
+            return Some(Dispatch::Use(outcome));
+        }
+    }
     // A map handle reaches only its explicit world owner. It never widens the
     // carried-item or container admissions below; stale handles keep their refusal.
     if let Ok(UseIntent {

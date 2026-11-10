@@ -7,6 +7,11 @@ use tokio::{
     time::{Duration, Instant},
 };
 pub(super) type Submission = (Answer, oneshot::Sender<bool>);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::play) enum Completion {
+    Answered(Answer),
+    LoggedOut,
+}
 pub(in crate::play) struct Driver {
     panel: Panel,
     answers: mpsc::Receiver<Submission>,
@@ -37,7 +42,7 @@ impl Driver {
     pub(in crate::play) async fn poll<T: Stepper>(
         &mut self,
         session: &mut T,
-    ) -> Result<Option<Answer>, SessionError> {
+    ) -> Result<Option<Completion>, SessionError> {
         if !self.panel.selected {
             return Ok(None);
         }
@@ -49,7 +54,11 @@ impl Driver {
             } else {
                 false
             };
-            completed = accepted.then_some(answer);
+            completed = accepted.then_some(if self.panel.logged_out {
+                Completion::LoggedOut
+            } else {
+                Completion::Answered(answer)
+            });
             let _ = acknowledged.send(accepted);
         } else if Instant::now() >= self.next_query {
             self.next_query = Instant::now() + Duration::from_secs(5);

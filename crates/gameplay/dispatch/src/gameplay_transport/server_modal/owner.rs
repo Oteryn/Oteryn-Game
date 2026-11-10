@@ -10,7 +10,9 @@ struct Entry {
     pending: Option<Dialog>,
     seen: Option<[u8; 32]>,
     answered: Option<Answer>,
-    selection: Option<super::store::Selection>,
+    answered_terminal: bool,
+    terminal_replies: bool,
+    selection: Option<super::rules::Selection>,
     notification: Option<Dialog>,
     submitted: Option<Answer>,
 }
@@ -24,16 +26,24 @@ pub(in crate::gameplay_transport) struct ModalHub {
     state: Mutex<State>,
 }
 impl ModalHub {
-    pub(super) fn offer_store(
+    pub(super) fn offer_rule(
         &self,
         root: Root,
         mut dialog: Dialog,
-        selection: super::store::Selection,
+        selection: super::rules::Selection,
     ) -> Option<Vec<u8>> {
         if root.1 == 0 || !dialog.valid() {
             return None;
         }
         let mut state = self.state.lock().ok()?;
+        if matches!(&selection, super::rules::Selection::Bed(_))
+            && !state
+                .entries
+                .get(&root)
+                .is_some_and(|entry| entry.terminal_replies)
+        {
+            return None;
+        }
         if let Some(entry) = state.entries.get(&root) {
             if let Some(pending) = &entry.pending {
                 return (entry.selection.as_ref() == Some(&selection))
@@ -53,15 +63,16 @@ impl ModalHub {
         entry.pending = Some(dialog);
         entry.selection = Some(selection);
         entry.answered = None;
+        entry.answered_terminal = false;
         entry.submitted = None;
         Some(bytes)
     }
 
-    pub(super) fn store_selection(
+    pub(super) fn rule_selection(
         &self,
         root: Root,
         answer: Answer,
-    ) -> Option<super::store::Selection> {
+    ) -> Option<super::rules::Selection> {
         let mut state = self.state.lock().ok()?;
         let entry = state.entries.get_mut(&root)?;
         if !entry.pending.as_ref()?.accepts(answer)
@@ -76,10 +87,20 @@ impl ModalHub {
         Some(selection)
     }
 
-    pub(super) fn finish_store(&self, root: Root, answer: Answer) -> Option<Vec<u8>> {
+    pub(super) fn finish_rule(&self, root: Root, answer: Answer) -> Option<Vec<u8>> {
+        self.finish(root, answer, false)
+    }
+
+    pub(super) fn finish_terminal_rule(&self, root: Root, answer: Answer) -> Option<Vec<u8>> {
+        self.finish(root, answer, true)
+    }
+
+    fn finish(&self, root: Root, answer: Answer, terminal: bool) -> Option<Vec<u8>> {
         let mut state = self.state.lock().ok()?;
         let entry = state.entries.get_mut(&root)?;
         if entry.selection.is_none()
+            || (terminal && !entry.terminal_replies)
+            || (terminal && entry.pending.as_ref()?.cancel_button == Some(answer.button_id))
             || !entry.pending.as_ref()?.accepts(answer)
             || entry.submitted.is_some_and(|sent| sent != answer)
         {
@@ -89,7 +110,28 @@ impl ModalHub {
         entry.selection = None;
         entry.submitted = None;
         entry.answered = Some(answer);
-        Reply::Answered(answer).encode().ok()
+        entry.answered_terminal = terminal;
+        accepted(answer, terminal).encode().ok()
+    }
+
+    pub(super) fn accepts_terminal_reply(&self, root: Root) -> bool {
+        self.state.lock().ok().is_some_and(|state| {
+            state
+                .entries
+                .get(&root)
+                .is_some_and(|entry| entry.terminal_replies)
+        })
+    }
+
+    /// A proved refusal performed no mutation, so the player may correct or cancel it.
+    pub(super) fn refused_rule(&self, root: Root, answer: Answer) -> Option<()> {
+        let mut state = self.state.lock().ok()?;
+        let entry = state.entries.get_mut(&root)?;
+        if entry.submitted != Some(answer) || entry.selection.is_none() {
+            return None;
+        }
+        entry.submitted = None;
+        Some(())
     }
 
     pub(super) fn notify(&self, root: Root, dialog: Dialog) -> Option<()> {
@@ -114,7 +156,13 @@ impl ModalHub {
         }
         let mut state = self.state.lock().ok()?;
         let reply = match kind {
-            COMMAND_TYPE_SERVER_MODAL_QUERY if payload.is_empty() => {
+            COMMAND_TYPE_SERVER_MODAL_QUERY => {
+                if oteryn_protocol_oteryn::server_modal::decode_query(payload).ok()? {
+                    if !state.entries.contains_key(&root) && state.entries.len() >= 256 {
+                        return None;
+                    }
+                    state.entries.entry(root).or_default().terminal_replies = true;
+                }
                 if let Some(dialog) = state
                     .entries
                     .get(&root)
@@ -157,7 +205,7 @@ impl ModalHub {
                 let answer = Answer::decode(payload).ok()?;
                 let entry = state.entries.get_mut(&root)?;
                 if entry.answered == Some(answer) {
-                    return Reply::Answered(answer).encode().ok();
+                    return accepted(answer, entry.answered_terminal).encode().ok();
                 }
                 // Gameplay answers must finish through their rule callback, including
                 // retries after an uncertain debit; they cannot fall back to an info ack.
@@ -170,10 +218,19 @@ impl ModalHub {
                 entry.pending = None;
                 entry.selection = None;
                 entry.answered = Some(answer);
+                entry.answered_terminal = false;
                 Reply::Answered(answer)
             }
             _ => return None,
         };
         reply.encode().ok()
+    }
+}
+
+fn accepted(answer: Answer, terminal: bool) -> Reply {
+    if terminal {
+        Reply::AnsweredAndLoggedOut(answer)
+    } else {
+        Reply::Answered(answer)
     }
 }
