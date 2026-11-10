@@ -22,15 +22,15 @@ def main():
     recipe = (
         "lower_wiki_stack_default_successor8_packet",
         "RECEIPT",
-        "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v13.json",
-        "a71fb9c397cd73840dbab918299b4246816443de7951c77d1e36bb4699908c26",
-        14,
+        "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v14.json",
+        "ea1a9eabe07fa69884e56f27b2ea47e71b5b089df9493a56a47dce8de6035a67",
+        15,
     )
     previous.refresh(
         previous.ROOT,
         recipe,
-        base_head="874dcf4ea8a8c27979ff30875abf6ac90961ce5d",
-        reason="QMECH qualified terrain publisher and complete Item input footprint refresh; frozen source facts unchanged",
+        base_head="d75ade6cc7ceb0d2c8aa2e0a3b0f39d8e74e0c2f",
+        reason="QMECH preserves the pre-existing i23049 Item-to-Terrain route; complete Item input footprint refreshed with frozen source facts unchanged",
         generator=previous.HERE + Path(__file__).name,
         require_new_or_identical=True,
     )

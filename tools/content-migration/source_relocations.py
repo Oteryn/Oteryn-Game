@@ -17,20 +17,26 @@ from pathlib import Path
 
 # (pinned path, pinned sha256) -> (current path, current sha256)
 RELOCATIONS = {
+    # The source-qualified Anomaly ground retains its pre-existing Item route;
+    # the complete terrain row otherwise remains byte-identical.
+    ("content/world/terrain/terrain-05500-05999.json", "7ba587fc470273980e0a75f0d597a13543b827d39e7f948ec469d1473a40d6c9"): (
+        "content/world/terrain/terrain-05500-05999.json",
+        "08e0c9e30efbdfb15637e43cda5f5e20b5e862035e459a6f9b25436cdedf142b",
+    ),
     # Exact QMECH owner-input transitions preserve closed Item rows. The helper
     # aliases below cover their reviewed formatting/import cleanup.
     ('content/world/terrain/index.json', '704991a60238795986358b6d2bcb7ac25f2172a04723b541e3f959a50eb9d768'): ('content/world/terrain/index.json', 'ce986ca83b92f5ea2b7aeaa5bdc75b591cb28d63ab1a93dce0077215ce90979f'),
-    ('content/world/terrain/terrain-05500-05999.json', 'c5081d0589d6e65a40baf89178c4e29f81089147d463d168474ac286d546a66a'): ('content/world/terrain/terrain-05500-05999.json', '7ba587fc470273980e0a75f0d597a13543b827d39e7f948ec469d1473a40d6c9'),
+    ('content/world/terrain/terrain-05500-05999.json', 'c5081d0589d6e65a40baf89178c4e29f81089147d463d168474ac286d546a66a'): ('content/world/terrain/terrain-05500-05999.json', '08e0c9e30efbdfb15637e43cda5f5e20b5e862035e459a6f9b25436cdedf142b'),
     ('tools/content-schema/item-authoring/historical_world_owner_context.py', 'db9150a3639c4d6bcd596c040b7d2ad39047fbc3f51c925761bebfbb6def26fd'): ('tools/content-schema/item-authoring/historical_world_owner_context.py', '96b24f0cbedb168d73aeca26644536693d97b7fe2d2f49ecbd150bdfd4f3037b'),
     ('tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py', '3f6a78aece8db60a19f0114c4ed9998c28c4330cc598319936e3eb0446740182'): ('tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py', 'ebfe6d0f0f1a141f5b3cf3a3606edba091845c0913acc570953fa29d46f55fde'),
     ('tools/content-schema/item-authoring/check_stack_default_historical_context.py', 'd0b52da99de9ffff5ab0804ac13f293cc77f9d654b9291a59f56119f47d21575'): ('tools/content-schema/item-authoring/check_stack_default_historical_context.py', '0304232dbc524a5088976178acbe2e7a86a1b607cf6c13a7952d084fb73be529'),
     ('tools/content-schema/item-authoring/test_stack_default_historical_context.py', 'bf74e7cb74521fa6ed7e506dba9d32a1c552c09a670de62cbe152df79d18d14b'): ('tools/content-schema/item-authoring/test_stack_default_historical_context.py', 'b7dc47b1f179fd919950be1cb0beadece76db594e0968f41bb53356172325210'),
-    ('docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json', '82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba'): ('docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json', 'cd0a993b003b565d70a0f1f3e02e1f476909c35c89207ce85f0b7fe6a2da51d6'),
+    ('docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json', '82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba'): ('docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json', 'f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684'),
     # The closed139 name packet changes only terrain fingerprints. Its Rust
     # consumer changes only that packet's digest; qualification and rows are exact.
-    ('docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json', 'a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9'): ('docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json', '5b517f5dceb7f26056c5c8086fd8156232152a220b55bbe85a942d96d85df6ef'),
-    ('crates/gameplay/content/src/content/item_name_promotion.rs', '36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d'): ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '6e46c31080d4aec13f1894c0256bdef7417aa10db22a56d88e73cc6ee5cb2203'),
-    ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d'): ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '6e46c31080d4aec13f1894c0256bdef7417aa10db22a56d88e73cc6ee5cb2203'),
+    ('docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json', 'a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9'): ('docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json', '1b1703361f64fb7ff2ff7c9551f6c7f84ef55b20f13ed04131af4d648c399641'),
+    ('crates/gameplay/content/src/content/item_name_promotion.rs', '36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d'): ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '5499116a0add5dcb0518eb1f86c59a90987a0c1322d35ac1f201069dafd04dba'),
+    ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d'): ('crates/gameplay/content-promotion/src/content/item_name_promotion.rs', '5499116a0add5dcb0518eb1f86c59a90987a0c1322d35ac1f201069dafd04dba'),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are
     # byte-equivalent; the consumer still rebuilds and checks their whole scope.

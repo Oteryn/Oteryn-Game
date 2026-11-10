@@ -3,6 +3,34 @@
 use super::*;
 use oteryn_protocol_oteryn::activity_scope::STATE_DOMAIN_ACTIVITY_SCOPE;
 
+/// A retained handoff may have removed its source while still publishing the
+/// destination. Finish that exact work before interpreting a failed refresh as
+/// control loss; the existing barrier, not the failed source read, changes owner.
+pub(super) async fn refresh_staff<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<Option<(AdmittedSession, Option<u64>)>, ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    if authority.staff_refresh(session.admitted).await {
+        return Ok(None);
+    }
+    let current = authority
+        .settle_activity_connection(session.admitted)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+    if current.game_session_id == session.admitted.game_session_id {
+        return Err(ServeEnd::Disconnected);
+    }
+    pending(stream, authority, session)
+        .await?
+        .map(Some)
+        .ok_or(ServeEnd::Disconnected)
+}
+
 pub(super) async fn pending<S, A>(
     stream: &mut S,
     authority: &A,

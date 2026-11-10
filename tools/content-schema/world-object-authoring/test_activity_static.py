@@ -2,6 +2,7 @@
 
 import copy
 import json
+import sys
 import unittest
 from pathlib import Path
 
@@ -196,9 +197,66 @@ class ActivityStaticTests(unittest.TestCase):
             "actual Anomaly restore target must have pinned source terrain facts",
         )
         self.assertEqual(record["identity"]["family"], "Terrain")
-        self.assertNotIn("item_pointer", record["catalogue_record"]["provenance"])
+        pointer = {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i23049",
+            "revision": "definition-r1",
+        }
+        self.assertEqual(
+            record["catalogue_record"]["provenance"]["item_pointer"], pointer
+        )
+        self.assertEqual(activity_static.preserved_restore_item_pointer(), pointer)
         self.assertEqual(record["policy"]["ground_speed"], 150)
         self.assertFalse(record["policy"]["block_projectile"])
+        self.assertEqual(
+            record["catalogue_record"]["kind"], world_objects.known("ground")
+        )
+        self.assertEqual(
+            record["catalogue_record"]["walkable"], world_objects.known(True)
+        )
+        for row in registry["records"]:
+            if row["source_item_id"] != 23049:
+                self.assertNotIn("item_pointer", row["catalogue_record"]["provenance"])
+        for replacement in [None, pointer | {"key": "oteryn:item.tibia.i23054"}]:
+            changed = copy.deepcopy(record["catalogue_record"])
+            if replacement is None:
+                del changed["provenance"]["item_pointer"]
+            else:
+                changed["provenance"]["item_pointer"] = replacement
+            self.assertTrue(world_objects.validate_record(changed))
+
+        # The genuine public breach start retains its source stack and Item
+        # palette identity, whose ground facts require this exact Terrain route.
+        sys.path.insert(0, str(ROOT / "tools/content-schema/world-authoring"))
+        import world_region_codec
+
+        z, rx, ry, sectors = world_region_codec.decode_region(
+            (ROOT / "content/world/placements/region-z13-x125-y122.b3").read_bytes()
+        )
+        self.assertEqual((z, rx, ry), (13, 125, 122))
+        tiles = [
+            tile
+            for _, rows in sectors
+            for tile in rows
+            if tile[:2] == (32119, 31355)
+        ]
+        self.assertEqual(len(tiles), 1)
+        palette = json.loads(
+            (ROOT / "content/world/placements/index.json").read_bytes()
+        )["palette"]
+        self.assertEqual(
+            [
+                (palette[index], depth, attributes)
+                for index, depth, attributes in tiles[0][5]
+            ],
+            [
+                (
+                    {"key": pointer["key"], "provisional": False, "source_item_id": 23049},
+                    0,
+                    None,
+                )
+            ],
+        )
 
     def test_vemiath_teleport_destination_is_actual_static_source_tile(self):
         capture = json.loads(
