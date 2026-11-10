@@ -235,10 +235,7 @@ class ActivityStaticTests(unittest.TestCase):
         )
         self.assertEqual((z, rx, ry), (13, 125, 122))
         tiles = [
-            tile
-            for _, rows in sectors
-            for tile in rows
-            if tile[:2] == (32119, 31355)
+            tile for _, rows in sectors for tile in rows if tile[:2] == (32119, 31355)
         ]
         self.assertEqual(len(tiles), 1)
         palette = json.loads(
@@ -251,7 +248,11 @@ class ActivityStaticTests(unittest.TestCase):
             ],
             [
                 (
-                    {"key": pointer["key"], "provisional": False, "source_item_id": 23049},
+                    {
+                        "key": pointer["key"],
+                        "provisional": False,
+                        "source_item_id": 23049,
+                    },
                     0,
                     None,
                 )
