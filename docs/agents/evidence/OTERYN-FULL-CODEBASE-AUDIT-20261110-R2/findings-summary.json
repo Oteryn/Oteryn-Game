@@ -121,13 +121,22 @@
       "report": "Restricted independent evidence retained privately under SECURITY.md",
       "public_safe": false,
       "public_abstract": "A delayed-effect completion can omit required reward settlement after a post-application storage-cleanup failure; bounded conditional integration defect, without a deployed-incident or durable-corruption claim."
+    },
+    {
+      "id": "GR-EQUIP-001",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent actual native paid caller, current maintained item/resource producers, committed durable state, legal equipment and primary damage consumer proof; read-only source/data checks, no native/Cargo/SQL execution or deployed-incident assertion.",
+      "report": "Restricted independent evidence retained privately under SECURITY.md",
+      "public_safe": false,
+      "public_abstract": "A legitimately upgraded weapon retains its durable Forge tier, but the current equipment projection omits the expected primary auto-attack contribution for a supported weapon placement. This is a conditional source-confirmed integration defect; no live incident, item loss, payment loss or duplication is asserted."
     }
   ],
   "prior_checkpoint": "1c39ebc3347319fe08eaf58299a8a9e9339b0367",
   "cumulative_confirmed_counts": {
     "P0": 0,
     "P1": 4,
-    "P2": 17,
+    "P2": 18,
     "P3": 0
   },
   "prior_likely": 2,

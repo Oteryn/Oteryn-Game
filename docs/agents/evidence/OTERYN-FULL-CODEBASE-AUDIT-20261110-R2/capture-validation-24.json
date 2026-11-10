@@ -1,0 +1,105 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T19:49:04.090695+00:00",
+  "captures": {
+    "durability": {
+      "path": "protocol-session/durability/captures/checkpoint-50-ledger.json",
+      "sha256": "4fdb43477aefdac4adbc679b8c1f91406769ead34deba052f7eb5f6f8599ddc4",
+      "full_files": 721,
+      "full_file_physical_lines": 216548,
+      "all_scope_text_lines_union": 216548,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "server": {
+      "path": "protocol-session/game-server-worker-captures/checkpoint-873-ledger.json",
+      "sha256": "0272f69956687e04b05e6a6461fa4dc5e8e3e40217335596abde763ea68e4e7b",
+      "full_files": 873,
+      "full_file_physical_lines": 489700,
+      "all_scope_text_lines_union": 489700,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 2703,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_client": {
+      "path": "client-support/dispatch-checkpoint56-ledger.json",
+      "sha256": "66773a2b7dc3c6fea90bad0bb8b4f5dd912a583d0efcf424dc111d6647c15836",
+      "full_files": 766,
+      "full_file_physical_lines": 198083,
+      "all_scope_text_lines_union": 201576,
+      "partial_reviewed_lines": 3493,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_social_world": {
+      "path": "protocol-session/dispatch-social-world/captures/checkpoint-26-ledger.json",
+      "sha256": "0fd3f2f9679cb7e58f83252b4009f6c3b5f74c93bf02ad296897775bbd019ffa",
+      "full_files": 226,
+      "full_file_physical_lines": 67091,
+      "all_scope_text_lines_union": 67091,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_items_economy": {
+      "path": "protocol-session/game-server-worker/dispatch-items-economy/captures/checkpoint-11-ledger.json",
+      "sha256": "ee1893c093627ac10793fa4aa93b291479ca6aa0e634fcd5817d3c0b2e4dde70",
+      "full_files": 131,
+      "full_file_physical_lines": 45566,
+      "all_scope_text_lines_union": 45566,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_root": {
+      "path": "lead/dispatch-quests-npc-encounters/checkpoint-109-ledger.json",
+      "sha256": "fa508740e26ba21f9bd1fa1cd74218b1203f534ec34290709800096b2e6ee025",
+      "full_files": 109,
+      "full_file_physical_lines": 31043,
+      "all_scope_text_lines_union": 31245,
+      "partial_reviewed_lines": 202,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    }
+  },
+  "server_method_maps": {
+    "game-server-appearance-capture-method-map.md": "90fb804da69c6658b0276f7c488d6862b2d09d3dc371795f3f51dbda51308aa8",
+    "game-server-spawn-fixture-method-map.md": "2219981460bf6bd58cf0e9ddf7306a90584b0bb9fe239b1ae4cdf8b087be9df3",
+    "game-server-seven-fixture-method-map.md": "348390d50ea1da0dd25ae206bd8c550cc9120851d94c0d0067e267359311480b",
+    "game-server-auto-attack-fixture-method-map.md": "d7593104034863d3328a3bef6c649fbcd83965e39db31e895e639f3cdb126ba5",
+    "game-server-callback-cast-fixture-method-map.md": "3fbba196681354508896b1f61c4cb865a8ec62b53118d75943b982b32e9c3538",
+    "game-server-tls-fixture-method-map.md": "51e1efbd633d88829848ddd3653328cbc985da328a24383dc47d1f9187d92836",
+    "game-server-transport-tls-method-map.md": "429224a77cf514e99c1b92d4872b99d6b9a5f52529c2bf3a7edf2f8a0cf9366f"
+  },
+  "social": {
+    "new_notes_read_by_root": 69,
+    "note_set_sha256": "9fe6d41809cdf324195ee51b94a91258ebab1ad5c4a570edb8826175806927d8",
+    "complete_report_read_by_root": true,
+    "completed_reservation_files": 226,
+    "completed_reservation_lines": 67091,
+    "remaining_reservation_files": 0,
+    "capture_manifest_sha256": "d51fd4e01fa7825560044484cdadcc989c6baab2ca68ca0babab0c5fb0354800"
+  },
+  "client_and_items_secondary_qualification": {
+    "reviewer": "/root/r2_dispatch_social_continue",
+    "manifest_sha256": "c130a610833dbec12fdfd43f16658534106b5a7309c9675fb2bb9e611d0f675b",
+    "qualification_sha256": "5ff7f4c98dad1dfa733a0707c5b72d6083319526b2dbe31b756cb66ec2c0eb20",
+    "report_sha256": "5b361540b36fc52f5386170a52830681c392163d3fa1f0b43e1c010b7b8e11f1",
+    "client_new_or_expanded_notes_read": 85,
+    "items_new_notes_read": 100,
+    "items_changed_cross_reference_notes_read": 25,
+    "root_read_complete_qualification_report_and_checked_exact_manifest": true,
+    "source_identity_checks": 4161,
+    "original_authorship_preserved": true
+  },
+  "root_scope": "Root directly reviewed109 full reserved files and supporting ranges at this cutoff; read all69 new social notes and complete social report; independently read and checked the delegated client/items secondary qualification. Exact source hashes, Git blob identities, ranges and frozen inclusion are checked here. No claim of a second full reading of every delegated file.",
+  "runtime_execution": false
+}

@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "target_sha": "c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f",
+  "exact_changed_blobs": 14,
+  "dependency_edges": [
+    "dispatch -> task-supervisor",
+    "durability -> task-supervisor"
+  ],
+  "checks": [
+    "exact target Git/captured SHA equality",
+    "TOML manifests/lock/boundary edge consistency",
+    "boundary member/path/key shape",
+    "independent Python reproduction of the source lexical raw-spawn selection"
+  ],
+  "raw_spawn_actual": {
+    "crates/identity": [
+      "crates/identity/src/lib.rs:241"
+    ]
+  },
+  "candidate_files_examined_by_lexical_checker": 24,
+  "scope_limit": "Candidate scanning grants no source-review credit and is not execution of the Rust architecture-check tool. Lexical omissions remain possible.",
+  "cargo_native_sql_tests_run": [],
+  "source_edits": false
+}

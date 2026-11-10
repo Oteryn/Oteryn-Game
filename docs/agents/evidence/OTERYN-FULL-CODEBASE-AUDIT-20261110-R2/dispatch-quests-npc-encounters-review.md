@@ -1,6 +1,6 @@
 # Dispatch NPC, quests and encounters — partial review
 
-Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. The root reservation contains 356 files; its current validation records **74 complete files / 22,494 full-file lines**, plus selected supporting ranges totaling **23,065 reviewed lines**. The exact per-file notes and source identities are retained in the private lane ledger. Range/hash validation confirms attribution and completeness of recorded ranges; it does not perform the review.
+Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. The root reservation contains 356 files; its current validation records **109 complete files / 31,043 full-file lines**, plus selected supporting ranges totaling **31,245 reviewed lines**. The exact per-file notes and source identities are retained in the private lane ledger. Range/hash validation confirms attribution and completeness of recorded ranges; it does not perform the review.
 
 ## Completed source groups
 
@@ -25,3 +25,15 @@ Closed quest adapters, seasonal Santa/Baker owners and Grizzly task/boss recover
 The remaining reservation covers further NPC conversations, quests, Soulpit, endgame encounters and their separate test bodies. Includes, neighbouring-module completion and catalogue names grant no automatic coverage. Cross-module questions about delayed reward retention, activity availability and source qualification are tracked separately; this partial group establishes no additional confirmed finding.
 
 No Cargo, PostgreSQL, native client/server, external process, TLS handshake or live gameplay test was executed for this group. The immutable application source remains unchanged.
+
+## Death, visit and journal continuation
+
+The complete Grizzly/native/Hive kill adapters preserve the pre-death source roster, task revision, occurrence and current settlement fences. Grizzly room entry, vacancy/expiry retirement and return recovery retain the exact visit and original exit; acknowledged return closes with current LastPosition in the durable owner. Test bodies cover room bounds, original-principal and immutable-capture behavior but were not run.
+
+Echo portal, loot and first-species adapters were read in full. Source draw assumptions remain explicit. The actual Charm earning writer was independently read: it deliberately does not advance CharacterRevision, so an unadvanced dispatch cursor alone does not establish a failure. All other source-qualification questions keep their earlier unconfirmed status.
+
+Quest admission, pending-XP refresh, journal copy source, wire projection and complete pure/framed/PostgreSQL scenario definitions were reviewed. Terminal and unknown authority differ; refresh after removal cannot recreate a session. Journal rates, tracking and revision continuity survive reconnect while the visible view closes. The source XP fixture deliberately modifies an embedded transition and is not a maintained reward producer. No tests in this continuation were executed.
+
+## Callback continuation
+
+The nine complete callback owner files now cover literal USE, STEP, original-cause recovery, world observations, physical projections, immediate/timed encounter entry and Monk/Soul War collection. Actual native identity, custody, actor state, source revision and prepared movement proof were traced through the caller. Historical receipts and live physical authority remain distinct. Timers bind current content/map/scope and retain one source-owned spawn attempt; Soul War preserves its full MINT request before uncertain work. The Monk delivery recovery difference is an open question requiring its writer and outer ingress, not a confirmed failure. No runtime tests were executed.

@@ -1,0 +1,21 @@
+{
+  "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+  "target_sha": "c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f",
+  "status": "REVIEWED; successor delta complete",
+  "changed_files": 14,
+  "full_target_files": 12,
+  "delta_only_files": 2,
+  "reviewed_target_lines": 3320,
+  "cross_reference_files": 1,
+  "cross_reference_lines": 27,
+  "remaining_files": 0,
+  "original_audit_credit": false,
+  "source_edits": false,
+  "remote_writes": false,
+  "tests_run": [],
+  "structural_checks": "checks.json; Python only",
+  "validated_at_utc": "2026-11-10T19:14:15.234140+00:00",
+  "validation_status": "PASS",
+  "ledger_sha256": "4e412285772560d3dbc427e7cc2282b319dfc386acace461a32833e344e86ae5",
+  "checks": "All14 exact target Git/capture hashes and changed hunk coverage; complete target ranges only where actually read/reasoned. Original HEAD and tracked source worktree unchanged."
+}

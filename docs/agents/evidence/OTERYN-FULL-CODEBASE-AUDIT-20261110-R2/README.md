@@ -1,4 +1,4 @@
-# OTERYN FULL AUDIT — continuation checkpoint 23
+# OTERYN FULL AUDIT — continuation checkpoint 24
 
 Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues across all remaining packages and supplementary domains.
 
@@ -6,7 +6,7 @@ Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues acro
 
 - 67 workspace packages; 11 supplementary domains; 27900 tracked input files.
 - **66 packages REVIEWED / 1 IN PROGRESS / 0 NOT STARTED / 0 VERIFIED**.
-- **7,516 distinct substantively analyzed files**: 7,464 full and 52 selected-range files; 1,801,185 deduplicated text line positions.
+- **7,761 distinct substantively analyzed files**: 7,722 full and 39 selected-range files; 1,867,133 deduplicated text line positions.
 - Seven binary fixtures were semantically decoded in full, totaling 3,178 bytes. Their exact ranges use bytes and are excluded from line counts.
 - 192 historical files retain their exact ranges only because their Git blobs are identical. Four changed historical files receive no automatic carryover credit; fresh review is attributed separately.
 - REVIEWED requires every tracked package file and a substantive report. File discovery, text search, hash checks and test-source inspection are not runtime execution.
@@ -15,7 +15,7 @@ Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues acro
 
 The [first published checkpoint](https://github.com/Oteryn/Oteryn-Game/tree/1c39ebc3347319fe08eaf58299a8a9e9339b0367/docs/agents/evidence/OTERYN-FULL-CODEBASE-AUDIT-20261110) retains three confirmed P1, three confirmed P2, two LIKELY findings and four rejected hypotheses.
 
-Fifteen additional findings have independent lead verification:
+Sixteen additional findings have independent lead verification:
 
 | ID | Confirmed bounded effect | Evidence |
 |---|---|---|
@@ -34,20 +34,23 @@ Fifteen additional findings have independent lead verification:
 | CL-018 | The actual sex-qualified appearance path omits the correctly earned permanent Newly Wed grant | `verify-marriage-outfit.md` |
 | PS-R2-010 | A supported state transition prevents a subsequent feature-state refresh; bounded integration effect, without a permanent account-lock claim | Restricted independent evidence retained privately under SECURITY.md |
 | GR-KILL-001 | A delayed-effect completion can omit required reward settlement after a post-application cleanup failure; conditional integration defect, without a deployed-incident or durable-corruption claim | Restricted independent evidence retained privately under SECURITY.md |
+| GR-EQUIP-001 | A legitimately upgraded weapon retains its durable tier but its supported equipment placement omits the expected primary auto-attack contribution; conditional source-level defect | Restricted independent evidence retained privately under SECURITY.md |
 
-Cumulative confirmed counts: **P0=0 / P1=4 / P2=17 / P3=0**. Existing LIKELY=2 and earlier rejected hypotheses=4 remain. New unconfirmed hardening and integration candidates are excluded. Static confirmation does not claim a deployed incident, permanent reconnect failure or native end-to-end reproduction.
+Cumulative confirmed counts: **P0=0 / P1=4 / P2=18 / P3=0**. Existing LIKELY=2 and earlier rejected hypotheses=4 remain. New unconfirmed hardening and integration candidates are excluded. Static confirmation does not claim a deployed incident, permanent reconnect failure or native end-to-end reproduction.
 
 ## Current main and scope
 
-Fresh main observed at **19:07:45 UTC** is now `c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f` (#3096, LOG-17), with sole parent `43f48d1f3bf932bfaef6ca47334aa72117db6c81`. Its **14-path successor delta** is under separate review and is not yet root-qualified in this frozen checkpoint. The immutable input scope and findings remain bound to `4f0b6c62a789489fca6c37dd36d5917d096f328e`.
+Fresh main observed at **19:37 UTC** remains `c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f` (#3096, LOG-17), sole parent `43f48d1f3bf932bfaef6ca47334aa72117db6c81`. Its complete14-path successor delta is now **REVIEWED and independently root-qualified**:12 complete target files and2 complete deltas, totaling3,320 target lines plus27 cross-reference lines. The two delta files are not claimed as full target rereads. Return/panic preservation, held blocking permits, signature-before-decode, acknowledgement ordering and lexical-check limitations were examined. No new confirmed finding or Rust/native/SQL execution follows from this review. See `latest-main-log17-review.md` and its exact validation/check/root packets.
 
-The previous main `43f48d1f3bf932bfaef6ca47334aa72117db6c81` remains separately reviewed: 133 changed paths from the immutable input, with all 117 successor paths since the earlier b028 main substantively covered at 43f48. Its 64 final-commit paths contain 54 client/modal and 10 Task Board files / 19,875 lines. The other 53 paths contain 27 full target-file reviews and 26 complete delta reviews with selected context / 9,414 reviewed target lines. The 26 delta reviews are not full target-file rereads. The exact historical reconciliation is retained as `latest-main-reconciliation-43f48.json`.
+The prior main `43f48d1f3bf932bfaef6ca47334aa72117db6c81` retains its separately attributed117 successor-path reviews and historical reconciliation `latest-main-reconciliation-43f48.json`:64 final-commit full targets/19,875 lines, with another27 full targets and26 complete deltas/9,414 lines at that cutoff. Overlapping successor versions are not blindly summed as unique files. Immutable input counts and findings remain bound to `4f0b6c62a789489fca6c37dd36d5917d096f328e`.
 
 The new report is `latest-main-protocol-delta.md`, with `latest-main-protocol-validation.json`, `latest-main-protocol-checks.json` and independent `latest-main-protocol-root-validation.json`. It covers optional connection-trace negotiation, terminal error handling, structured-log producers, task supervision and CI failure capture/pins. **Two original unchanged redactor tests passed**, and shell syntax plus bounded schema/pin/dependency checks passed. One stale diagnostic line label is an observation, not a failure of the actual count-based logger policy. No Rust/native/SQL/Actions execution is inferred.
 
 Prior client/modal and Task Board reports and their root validations remain included, with **three original unchanged modal codec tests passed**. All successor reviews establish no additional confirmed finding and do not automatically close existing findings. Historical inventory remains marked as such; current completion is in `latest-main-reconciliation.json`. The prior HUD/diagnostic reviews retain their exact version attribution. Primary counts and findings remain tied to `4f0b6c62a789489fca6c37dd36d5917d096f328e`; source review is distinct from current deployment or runtime qualification.
 
-The newly confirmed delayed-effect finding has a public bounded summary in `delayed-settlement-review-summary.md`; its detailed source/producer proof remains private.
+The delayed-effect finding has a public bounded summary in `delayed-settlement-review-summary.md`; its detailed source/producer proof remains private.
+
+The newly confirmed Forge/equipment finding has a bounded public summary in `forge-equipment-review-summary.md`; its maintained producer and complete integration proof remain private.
 
 ## Reports
 
@@ -58,7 +61,7 @@ The newly confirmed delayed-effect finding has a public bounded summary in `dela
 - Complete spell source: `spell-review.md`, `spell-coverage-validation.json`, `spell-embedded-source-validation.json`; complete content: `content.md`, `content-completion-validation.json`; complete items: `items-review.md`, `items-coverage-validation.json`, `items-imbuement-unchanged-tests.json`.
 - Complete encounters: `encounters-review.md`, `encounters-coverage-validation.json`, `encounters-entry-unchanged-tests.json`; partial dispatch: `dispatch-progress.md`; complete quests: `quests-review.md`, `quests-coverage-validation.json`, `quests-calendar-unchanged-tests.json`.
 - Complete social: `social-review.md`, `social-coverage-validation.json`, `social-rate-window-unchanged-tests.json`; Task Board durable-owner closure: `task-board-owner-links.md`, `task-board-owner-links.json`, `task-board-owner-validation.json`.
-- Complete World: `world-review.md`, `world-root-validation.json`, three `world-*-unchanged-tests.json` records, floor validation and immovable method map/semantic validation; delegated capture qualification: `capture-validation-23.json` and seven `game-server-*-method-map.md` files.
+- Complete World: `world-review.md`, `world-root-validation.json`, three `world-*-unchanged-tests.json` records, floor validation and immovable method map/semantic validation; delegated capture qualification: `capture-validation-24.json` and seven `game-server-*-method-map.md` files.
 - Native client application: `apps-client.md`; 1,180 full files, with unresolved candidates separated from confirmed findings.
 - Protocol/session: `protocol-session.md`, `platform-client.md`, `session.md`, `protocol.md`; complete `durability-review.md` and `durability-completion-validation.json`; complete `game-server-review.md` and `game-server-completion-root-validation.json`; complete `harness-review.md` and `harness-coverage-validation.json`.
 - Gameplay: `characters.md`, `node-files.md`, `weather.md`, `source-critical-baseline.md`, `housing.md`, `economy.md`, `combat-rules.md`, `encounter-rules.md`, `social-rules.md`, `spell-rules.md`, `world-change.md`, `npc.md`.
@@ -66,7 +69,7 @@ The newly confirmed delayed-effect finding has a public bounded summary in `dela
 
 ## Continuation
 
-Protocol retains full REVIEWED status: 596 files, 81,639 text lines and two binary fixtures totaling 302 bytes. The protocol lane has completed durability and all 53 assigned successor deltas and now reviews dispatch social/world; its server worker has completed all 873 server files and now reviews dispatch items/economy. New worker output enters coverage only after exact hash/range validation and integration.
+Protocol retains full REVIEWED status: 596 files, 81,639 text lines and two binary fixtures totaling 302 bytes. The protocol lane has completed durability and all 53 assigned successor deltas and has completed its226-file dispatch social/world reservation and now reviews a separate99-file quest-test assignment; its server worker has completed all 873 server files and now reviews dispatch items/economy. New worker output enters coverage only after exact hash/range validation and integration.
 
 The client application is now **REVIEWED: 1,180/1,180 full files and 143,488 lines**. Its delegated 422-file batch is complete and parent-validated. All 1,334 client-ui files retain full review. Gameplay foundation is now **REVIEWED: 55/55 files and 38,117 lines**; content-promotion is **REVIEWED: 36/36 files and 13,600 lines**. The promotion packet checks passed 106 read-only assertions, including all 34 embedded byte pins. Native-admission-source is now **REVIEWED: 81/81 files and 21,163 lines**; 267 complete local Store fixture/schema checks passed. The client lane has completed content and continues dispatch.
 
@@ -86,12 +89,12 @@ Encounters is now **REVIEWED: 93/93 files and 22,624 lines**. The complete sourc
 
 Frozen durability remains **721/721 full files / 216,548 lines — REVIEWED**. Game-server is now **REVIEWED: 873/873 files / 489,700 text lines / 2,703 binary bytes**, comprising **862 manual and 11 mixed semantic reviews**. All migrations, source, tests/support, examples and package root files are covered. The final substantive report, independent root qualification and earlier method maps distinguish source/data review from execution.
 
-Frozen dispatch coverage is **982/1668 full files**, 1,009 with ranges and **280,034 deduplicated lines**. Stable client-support checkpoint 47 contains 681 full files plus 23 partial files, totaling 184,538 reviewed lines. Social/world checkpoint 15 has 157 full files / 48,941 lines; items/economy checkpoint 02 has 31 / 13,724. Root has completed 74 files / 22,494 full-file lines in its NPC/quests/encounters reservation, with 23,065 lines including supporting ranges. All these captures are included and independently qualified; later delegated work can exceed the stable named counts. See `dispatch-progress.md`, `capture-validation-23.json` and the root reservation report.
+Frozen dispatch coverage is **1,240/1,668 full files**,1,254 with ranges and **345,982 deduplicated lines**. Stable client-support56 has766 full files plus20 partial, totaling201,576 reviewed lines. Social/world26 closes its complete226-file/67,091-line reservation. Items/economy11 has131 full files/45,566 lines. Root109 has109 complete files/31,043 full-file lines, with31,245 including supporting ranges. Exact frozen captures and original source authorship are qualified in `capture-validation-24.json`; later live progress is excluded. See `dispatch-progress.md` and the separate root report.
 
 The synthetic client harness is now **REVIEWED: 40/40 files / 10,454 lines**, all manually analyzed and independently checked for exact Git/worktree/full-range closure. Entry/CLI/controller/model and every native/qualification test source are included. Scripted TLS, duplex and mocked Stepper peers are explicitly distinguished from real gameplay owners, database transactions and actual test execution. The replacement-chat producer question remains unconfirmed. No harness test was executed.
 
 World remains **REVIEWED: 73/73 files / 28,966 lines**, with 72 manual and one documented mixed semantic review, 29 original unchanged-source Rust tests and the original ladder check passed. Quests remains **103/103 files / 30,058 lines** with three original calendar tests passed; Social remains **56/56 / 11,871 lines** with one original rate-window test passed. Their reports and exact version attribution remain retained.
 
-All 67 packages have substantive coverage; **one remains incomplete: dispatch**. Supplementary domains remain **5 IN PROGRESS / 6 NOT STARTED**; all eleven and all 27,900 input files remain mandatory. Dispatch has four disjoint reservations: root NPC/quests/encounters, client combat/spells, protocol social/world and server-worker items/economy. Confirmed counts remain **P0=0 / P1=4 / P2=17 / P3=0**. Restricted proof stays private. No SQL, full Cargo, native Windows, live server or deployment execution is claimed.
+All 67 packages have substantive coverage; **one remains incomplete: dispatch**. Supplementary domains remain **5 IN PROGRESS / 6 NOT STARTED**; all eleven and all 27,900 input files remain mandatory. Dispatch has four disjoint reservations: root NPC/quests/encounters, client combat/spells, protocol social/world and server-worker items/economy. Confirmed counts remain **P0=0 / P1=4 / P2=18 / P3=0**. Restricted proof stays private. No SQL, full Cargo, native Windows, live server or deployment execution is claimed.
 
 The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and lifecycle. Repairs remain separate work; this branch changes audit evidence only.

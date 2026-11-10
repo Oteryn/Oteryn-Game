@@ -1,8 +1,9 @@
 {
   "input_base": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
   "observed_main": "c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f",
-  "observed_at_utc": "2026-11-10T19:07:45Z",
-  "latest_connector_confirmation_utc": "2026-11-10T19:07:45Z",
+  "observed_at_utc": "2026-11-10T19:37:00Z",
+  "latest_connector_confirmation_utc": "2026-11-10T19:37:00Z",
+  "observation_precision": "minute; exact connector result retained privately",
   "observed_tree": "deb7dcbebfce0d0fe427e8fbd5ed9d91b58acb99",
   "sole_parent": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
   "changed_paths": [
@@ -151,8 +152,8 @@
     "tools/test_redact_ci_log.py",
     "workspace-boundaries.toml"
   ],
-  "last_fully_reviewed_main": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
-  "last_fully_reviewed_reconciliation": "latest-main-reconciliation-43f48.json",
+  "last_fully_reviewed_main": "c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f",
+  "prior_reconciliation": "latest-main-reconciliation-43f48.json",
   "latest_successor_changed_paths": [
     "Cargo.lock",
     "apps/game-server/src/main.rs",
@@ -169,24 +170,13 @@
     "tools/architecture-check/src/logging.rs",
     "workspace-boundaries.toml"
   ],
-  "remaining_successor_paths": [
-    "Cargo.lock",
-    "apps/game-server/src/main.rs",
-    "apps/game-server/src/node/serve/audit_collector.rs",
-    "crates/gameplay/dispatch/Cargo.toml",
-    "crates/gameplay/dispatch/src/gameplay_transport/bulletin.rs",
-    "crates/gameplay/durability/Cargo.toml",
-    "crates/gameplay/durability/src/durability/bazaar/preload.rs",
-    "crates/gameplay/durability/src/durability/staff.rs",
-    "crates/gameplay/durability/src/durability/staff/retained.rs",
-    "crates/identity/src/lib.rs",
-    "crates/task-supervisor/src/lib.rs",
-    "tools/architecture-check/logging-raw-spawn-baseline.json",
-    "tools/architecture-check/src/logging.rs",
-    "workspace-boundaries.toml"
-  ],
-  "remaining_successor_count": 14,
-  "delta_review_status": "IN PROGRESS: LOG-17 delta assigned to protocol-session; not yet root-qualified at checkpoint freeze.",
+  "remaining_successor_paths": [],
+  "remaining_successor_count": 0,
+  "delta_review_status": "REVIEWED: exact LOG-17 successor; delegated12 full targets and2 complete deltas, independently root-qualified.",
   "delta_owner": "protocol-session/latest-main-log17",
-  "scope": "Primary counts remain bound to input_base. Prior117 successor reviews remain at43f48; no automatic credit for later versions or runtime/deployment."
+  "latest_successor_target_lines": 3320,
+  "latest_successor_cross_reference_lines": 27,
+  "root_qualification": "latest-main-log17-root-validation.json",
+  "prior_scope_retained": "The previous117 successor reviews remain attributed to43f48 and their exact prior packets; overlapping files are not blindly added to latest target-file counts.",
+  "scope": "Primary counts remain bound to input_base. This separate successor review adds no immutable-base review credit or runtime/deployment assertion."
 }

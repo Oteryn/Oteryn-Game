@@ -25,7 +25,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-combat-rules | REVIEWED | 29 | 29 | 29 | 5131 |
 | oteryn-gameplay-content | REVIEWED | 139 | 139 | 139 | 71505 |
 | oteryn-gameplay-content-promotion | REVIEWED | 36 | 36 | 36 | 13600 |
-| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 1009 | 982 | 280034 |
+| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 1254 | 1240 | 345982 |
 | oteryn-gameplay-domain | REVIEWED | 67 | 67 | 67 | 33806 |
 | oteryn-gameplay-durability | REVIEWED | 721 | 721 | 721 | 216548 |
 | oteryn-gameplay-economy | REVIEWED | 28 | 28 | 28 | 3978 |
