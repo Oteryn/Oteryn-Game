@@ -236,6 +236,79 @@ include!("full_row_m09_mount.rs");
 include!("full_row_m06_mount.rs");
 include!("full_row_c15_mount.rs");
 include!("full_row_c08_mount.rs");
+include!("full_row_c19b_mount.rs");
+include!("full_row_g01_mount.rs");
+include!("full_row_g02_mount.rs");
+include!("full_row_g03_mount.rs");
+include!("full_row_g04_mount.rs");
+include!("full_row_g05_mount.rs");
+include!("full_row_g06_mount.rs");
+include!("full_row_g07_mount.rs");
+include!("full_row_g08_mount.rs");
+include!("full_row_g09_mount.rs");
+include!("full_row_g10_mount.rs");
+include!("full_row_g11_mount.rs");
+include!("full_row_g12_mount.rs");
+include!("full_row_g13_mount.rs");
+include!("full_row_g14_mount.rs");
+include!("full_row_g15_mount.rs");
+include!("full_row_g16_mount.rs");
+include!("full_row_g17_mount.rs");
+include!("full_row_g18_mount.rs");
+include!("full_row_g19_mount.rs");
+include!("full_row_g20_mount.rs");
+include!("full_row_g21_mount.rs");
+include!("full_row_g22_mount.rs");
+include!("full_row_g23_mount.rs");
+include!("full_row_g24_mount.rs");
+include!("full_row_g25_mount.rs");
+include!("full_row_g26_mount.rs");
+include!("full_row_g27_mount.rs");
+include!("full_row_g28_mount.rs");
+include!("full_row_g29_mount.rs");
+include!("full_row_g30_mount.rs");
+include!("full_row_g31_mount.rs");
+include!("full_row_g32_mount.rs");
+include!("full_row_g33_mount.rs");
+include!("full_row_g34_mount.rs");
+include!("full_row_g35_mount.rs");
+include!("full_row_g36_mount.rs");
+include!("full_row_g37_mount.rs");
+include!("full_row_g38_mount.rs");
+include!("full_row_i17a_mount.rs");
+include!("full_row_i17b_mount.rs");
+include!("full_row_i17c_mount.rs");
+include!("full_row_i17d_mount.rs");
+include!("full_row_i18a_mount.rs");
+include!("full_row_i18b_mount.rs");
+include!("full_row_i18c_mount.rs");
+include!("full_row_i19_mount.rs");
+include!("full_row_p12b_mount.rs");
+include!("full_row_p22a_mount.rs");
+include!("full_row_p22b_mount.rs");
+include!("full_row_p22c_mount.rs");
+include!("full_row_p22d_mount.rs");
+include!("full_row_s14a_mount.rs");
+include!("full_row_s14b_mount.rs");
+include!("full_row_s14c_mount.rs");
+include!("full_row_s15a_mount.rs");
+include!("full_row_s16c_mount.rs");
+include!("full_row_s16d_mount.rs");
+include!("full_row_s17a_mount.rs");
+include!("full_row_s17b_mount.rs");
+include!("full_row_s17c_mount.rs");
+include!("full_row_s19_mount.rs");
+include!("full_row_w05b_mount.rs");
+include!("full_row_w05d_mount.rs");
+include!("full_row_w06_mount.rs");
+include!("full_row_w07_mount.rs");
+include!("full_row_w09_mount.rs");
+include!("full_row_w15c_mount.rs");
+include!("full_row_w19b_mount.rs");
+include!("full_row_w19c_mount.rs");
+include!("full_row_w19d_mount.rs");
+include!("full_row_w19e_mount.rs");
+include!("full_row_w21_mount.rs");
 include!("full_e2ef19_mount.rs");
 include!("full_e2ef18_mount.rs");
 include!("full_e2ef20_mount.rs");
@@ -1429,6 +1502,298 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     }
     if e2e_row_selected(232) {
         include!("full_e2ef4_mount.rs");
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(233) {
+        full_row_g01::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(234) {
+        full_row_g02::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(235) {
+        full_row_g03::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(236) {
+        full_row_g04::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(237) {
+        full_row_g05::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(238) {
+        full_row_g06::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(239) {
+        full_row_g07::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(240) {
+        full_row_g08::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(241) {
+        full_row_g09::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(242) {
+        full_row_g10::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(243) {
+        full_row_g11::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(244) {
+        full_row_g12::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(245) {
+        full_row_g13::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(246) {
+        full_row_g14::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(247) {
+        full_row_g15::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(248) {
+        full_row_g16::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(249) {
+        full_row_g17::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(250) {
+        full_row_g18::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(251) {
+        full_row_g19::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(252) {
+        full_row_g20::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(253) {
+        full_row_g21::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(254) {
+        full_row_g22::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(255) {
+        full_row_g23::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(256) {
+        full_row_g24::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(257) {
+        full_row_g25::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(258) {
+        full_row_g26::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(259) {
+        full_row_g27::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(260) {
+        full_row_g28::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(261) {
+        full_row_g29::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(262) {
+        full_row_g30::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(263) {
+        full_row_g31::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(264) {
+        full_row_g32::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(265) {
+        full_row_g33::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(266) {
+        full_row_g34::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(267) {
+        full_row_g35::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(268) {
+        full_row_g36::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(269) {
+        full_row_c19b::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(270) {
+        full_row_i17a::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(271) {
+        full_row_i17b::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(272) {
+        full_row_i17c::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(273) {
+        full_row_i17d::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(274) {
+        full_row_i18a::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(275) {
+        full_row_i18b::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(276) {
+        full_row_i18c::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(277) {
+        full_row_i19::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(278) {
+        full_row_p12b::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(279) {
+        full_row_p22a::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(280) {
+        full_row_p22b::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(281) {
+        full_row_p22c::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(282) {
+        full_row_p22d::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(283) {
+        full_row_s14a::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(284) {
+        full_row_s14b::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(285) {
+        full_row_s14c::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(286) {
+        full_row_s15a::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(287) {
+        full_row_s16c::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(288) {
+        full_row_s16d::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(289) {
+        full_row_s17a::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(290) {
+        full_row_s17b::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(291) {
+        full_row_s17c::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(292) {
+        full_row_s19::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(293) {
+        full_row_w05b::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(294) {
+        full_row_w05d::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(295) {
+        full_row_w06::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(296) {
+        full_row_w07::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(297) {
+        full_row_w09::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(298) {
+        full_row_w15c::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(299) {
+        full_row_w19b::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(300) {
+        full_row_w19c::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(301) {
+        full_row_w19d::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(302) {
+        full_row_w19e::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(303) {
+        full_row_w21::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(304) {
+        full_row_g37::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(305) {
+        full_row_g38::run_packet(clients).await;
         release_row_characters(clients).await;
     }
     let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;

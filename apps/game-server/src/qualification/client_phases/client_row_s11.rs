@@ -37,6 +37,8 @@ fn row_text(row: &wire::HighscoreRow) -> String {
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x40).await?;
     let query = wire::HighscoresQuery {
+        world: None,
+        details: false,
         category: 1,
         vocation: 0,
         page: 1,
@@ -68,6 +70,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let refused = exchange(
         &mut client,
         wire::HighscoresQuery {
+            world: None,
+            details: false,
             category: 13,
             ..query
         },

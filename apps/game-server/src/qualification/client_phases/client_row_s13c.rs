@@ -164,6 +164,8 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     }
     let ranking = oteryn_dev_client::client_runtime::highscores::command(
         oteryn_dev_client::client_runtime::highscores::wire::HighscoresQuery {
+            world: None,
+            details: false,
             category: 1,
             vocation: 0,
             page: 1,

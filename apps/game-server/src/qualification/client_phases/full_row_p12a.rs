@@ -45,6 +45,7 @@ async fn command(
 // Keep this packet-local encoder byte-for-byte aligned with protocol-oteryn's operation shape.
 fn encode_operation(operation: CharacterInfoOperation) -> Vec<u8> {
     match operation {
+        CharacterInfoOperation::QueryPremium => vec![5],
         CharacterInfoOperation::QuerySelf(page) => {
             let [a, b] = page.offset.to_le_bytes();
             vec![0, a, b, page.limit]

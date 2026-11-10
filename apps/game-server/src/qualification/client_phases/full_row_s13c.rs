@@ -259,6 +259,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let ranking = oteryn_dev_client::client_runtime::highscores::command(
         oteryn_dev_client::client_runtime::highscores::wire::HighscoresQuery {
+            world: None,
+            details: false,
             category: 1,
             vocation: 0,
             page: 1,
