@@ -18,7 +18,7 @@ type Result<T> = std::result::Result<T, DurabilityError>;
 
 impl DurabilityRoot {
     /// The client may identify a catalogue key or a context. It supplies no revision, owner,
-    /// scope, stat multiplier or encounter grant. Start is explicitly source-unavailable.
+    /// scope, stat multiplier or encounter grant. Start is composed with native room admission.
     pub async fn boss_difficulty_command(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -79,8 +79,9 @@ impl DurabilityRoot {
                 return Ok(Some(reply));
             }
             let reply = match &request {
-                Request::Open { boss_key } => open(&mut tx, fence, boss_key).await?,
-                _ => act(&mut tx, fence, &request).await?,
+                Request::Open { boss_key } => open(&mut tx, fence, boss_key, false).await?,
+                Request::OpenWithProgress { boss_key } => open(&mut tx, fence, boss_key, true).await?,
+                _ => act(&mut tx, fence, command_id, &request).await?,
             };
             let reply = encode(&reply)?;
             sqlx::query("INSERT INTO game_boss_difficulty_receipts(character_id,game_session_id,connection_generation,command_id,request,reply) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6)")
@@ -101,6 +102,7 @@ async fn open(
     tx: &mut Transaction<'_, Postgres>,
     fence: CurrentCharacterItemFence,
     boss_key: &str,
+    progress_details: bool,
 ) -> Result<Reply> {
     let revision: Option<String> = sqlx::query_scalar(
         "SELECT content_revision FROM game_boss_room_catalogue WHERE boss_key=$1 AND enabled FOR SHARE"
@@ -111,28 +113,36 @@ async fn open(
             reason: Refusal::BossUnavailable,
         });
     };
+    let (personal_highest, unlocked_max, maximum_difficulty, boss_creature_key) =
+        progress(tx, fence, boss_key, progress_details).await?;
+    let selected_difficulty = u16::from(unlocked_max > 0);
     // At most one row is affected, enforced by the partial unique index.
     sqlx::query("UPDATE game_boss_difficulty_contexts SET closed=true WHERE character_id=encode($1,'hex')::uuid AND NOT closed")
         .bind(fence.character_id.as_bytes().as_slice()).execute(&mut **tx).await?;
     let context: Vec<u8> = sqlx::query_scalar(
-        "INSERT INTO game_boss_difficulty_contexts(context_id,character_id,game_session_id,connection_generation,character_lease_generation,scope_key,scope_ownership_generation,boss_key,content_revision) VALUES(gen_random_uuid(),encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6::text::numeric,$7,$8) RETURNING decode(replace(context_id::text,'-',''),'hex')"
+        "INSERT INTO game_boss_difficulty_contexts(context_id,character_id,game_session_id,connection_generation,character_lease_generation,scope_key,scope_ownership_generation,boss_key,content_revision,selected_difficulty,progress_details) VALUES(gen_random_uuid(),encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6::text::numeric,$7,$8,$9,$10) RETURNING decode(replace(context_id::text,'-',''),'hex')"
     ).bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice())
         .bind(fence.connection_generation.get().to_string()).bind(fence.character_lease_generation.to_string())
         .bind(assignment_scope_key(fence.runtime_scope).as_slice()).bind(fence.scope_ownership_generation.get().to_string())
-        .bind(boss_key).bind(&content_revision).fetch_one(&mut **tx).await?;
+        .bind(boss_key).bind(&content_revision).bind(i16::try_from(selected_difficulty).map_err(|_|DurabilityError::InvalidStoredState)?).bind(progress_details).fetch_one(&mut **tx).await?;
     Ok(Reply::Window {
         context: context
             .try_into()
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         boss_key: boss_key.to_owned(),
+        boss_creature_key,
         content_revision,
-        selected_difficulty: 0,
+        selected_difficulty,
+        personal_highest,
+        unlocked_max,
+        maximum_difficulty,
     })
 }
 
 async fn act(
     tx: &mut Transaction<'_, Postgres>,
     fence: CurrentCharacterItemFence,
+    command_id: u64,
     request: &Request,
 ) -> Result<Reply> {
     let context = request
@@ -143,7 +153,7 @@ async fn act(
         reason,
     };
     let row = sqlx::query(
-        "SELECT boss_key,content_revision,closed FROM game_boss_difficulty_contexts WHERE context_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND game_session_id=encode($3,'hex')::uuid AND connection_generation=$4::text::numeric AND character_lease_generation=$5::text::numeric AND scope_key=$6 AND scope_ownership_generation=$7::text::numeric FOR UPDATE"
+        "SELECT boss_key,content_revision,closed,progress_details FROM game_boss_difficulty_contexts WHERE context_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND game_session_id=encode($3,'hex')::uuid AND connection_generation=$4::text::numeric AND character_lease_generation=$5::text::numeric AND scope_key=$6 AND scope_ownership_generation=$7::text::numeric FOR UPDATE"
     ).bind(context.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice())
         .bind(fence.connection_generation.get().to_string()).bind(fence.character_lease_generation.to_string())
         .bind(assignment_scope_key(fence.runtime_scope).as_slice()).bind(fence.scope_ownership_generation.get().to_string())
@@ -167,21 +177,59 @@ async fn act(
     if current.as_ref() != Some(&content_revision) {
         return Ok(refusal(Refusal::ContentChanged));
     }
+    let (personal_highest, unlocked_max, maximum_difficulty, boss_creature_key) =
+        progress(tx, fence, &boss_key, row.try_get("progress_details")?).await?;
     match request {
-        Request::Preview { difficulty, .. } => {
-            sqlx::query("UPDATE game_boss_difficulty_contexts SET selected_difficulty=$2 WHERE context_id=encode($1,'hex')::uuid")
-                .bind(context.as_slice()).bind(i16::try_from(*difficulty).map_err(|_| DurabilityError::InvalidStoredState)?)
+        Request::Start { .. } if unlocked_max == 0 => Ok(refusal(Refusal::NoAcceptedProfile)),
+        Request::Start { difficulty, .. } if *difficulty == 0 || *difficulty > unlocked_max => {
+            Ok(refusal(Refusal::DifficultyLocked))
+        }
+        Request::Preview { difficulty, .. } | Request::Start { difficulty, .. } => {
+            let difficulty = (*difficulty).min(maximum_difficulty);
+
+            sqlx::query("UPDATE game_boss_difficulty_contexts SET selected_difficulty=$2,start_command_id=$3::text::numeric WHERE context_id=encode($1,'hex')::uuid")
+                .bind(context.as_slice()).bind(i16::try_from(difficulty).map_err(|_| DurabilityError::InvalidStoredState)?)
+                .bind(matches!(request, Request::Start { .. }).then(|| command_id.to_string()))
                 .execute(&mut **tx).await?;
             Ok(Reply::Window {
                 context,
                 boss_key,
+                boss_creature_key,
                 content_revision,
-                selected_difficulty: *difficulty,
+                selected_difficulty: difficulty,
+                personal_highest,
+                unlocked_max,
+                maximum_difficulty,
             })
         }
-        // ANSWER 6542714759: even base-zero cannot claim a started fight without its accepted
-        // profile. Neither donor implements a scaling/start owner. No state is changed here.
-        Request::Start { .. } => Ok(refusal(Refusal::NoAcceptedProfile)),
         _ => Err(DurabilityError::InvalidStoredState),
     }
+}
+
+async fn progress(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: CurrentCharacterItemFence,
+    boss: &str,
+    progress_details: bool,
+) -> Result<(u16, u16, u16, String)> {
+    let creature: String = sqlx::query_scalar(
+        "SELECT boss_creature_key FROM game_boss_room_catalogue WHERE boss_key=$1",
+    )
+    .bind(boss)
+    .fetch_one(&mut **tx)
+    .await?;
+    if !progress_details {
+        return Ok((0, 0, 25, creature));
+    }
+    let maximum = wire::boss_maximum(boss).or_else(|| wire::boss_maximum(&creature));
+    let highest: Option<i16> = sqlx::query_scalar("SELECT highest_defeated FROM game_character_boss_difficulty_records WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(boss).fetch_optional(&mut **tx).await?;
+    let highest =
+        u16::try_from(highest.unwrap_or(0)).map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok((
+        highest,
+        maximum.map_or(0, |m| (highest + 1).min(m)),
+        maximum.unwrap_or(25),
+        creature,
+    ))
 }

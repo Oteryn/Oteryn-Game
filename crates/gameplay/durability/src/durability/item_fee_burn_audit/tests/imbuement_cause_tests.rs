@@ -204,7 +204,7 @@ fn imbuement_audit_refuses_each_malformed_cause() {
         |v| v.item.as_mut().unwrap().quantity = 2,
         |v| v.placement_ordinal = 0,
         |v| v.slot = 3,
-        |v| v.category = 20,
+        |v| v.category = 26,
         |v| v.tier = 0,
         |v| v.imbuement_key = String::new(),
         |v| v.materials.clear(),
@@ -241,4 +241,17 @@ fn imbuement_audit_refuses_each_malformed_cause() {
         imbuement_cause::check(&value),
         Err(AuditError::InvalidInput)
     );
+}
+
+#[test]
+fn t174_imbuement_audit_accepts_each_explicit_scroll_category() {
+    for category in 20..=25 {
+        assert_eq!(
+            imbuement_cause::check(&OneItemImbuementV1 {
+                category,
+                ..apply()
+            }),
+            Ok(())
+        );
+    }
 }

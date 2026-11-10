@@ -1,0 +1,16 @@
+{
+  "id": 474,
+  "name": "TASK_BOARD_WEEKLY_RESULTS_V1",
+  "owner_decision": "T184: Monday results and next-week difficulty",
+  "owner": "Task Board weekly results; existing reset and fenced Task Board owner.",
+  "requires": [
+    72
+  ],
+  "command_types": [
+    6172,
+    6174
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; the Task Board catalogue and durable Character/session fence remain mandatory."
+}

@@ -23,6 +23,8 @@ pub enum Intent {
     ReshapeChoose,
     DeclineOffer,
     Clear,
+    ConfirmClear,
+    CancelClear,
 }
 pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<FeatureCommand> {
     if !p.selected {
@@ -44,6 +46,7 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
                 | Intent::ReshapeChoose
                 | Intent::DeclineOffer
                 | Intent::Clear
+                | Intent::ConfirmClear
         )
     {
         p.feedback = Some(tr!(
@@ -51,6 +54,40 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
         ));
         return None;
     }
+    let intent = match intent {
+        Intent::CancelClear => {
+            p.clear_confirmation = None;
+            p.feedback = None;
+            return None;
+        }
+        Intent::Clear => {
+            let state = p
+                .shaping
+                .as_ref()
+                .filter(|state| state.definition == p.weapon && state.revision != 0)?;
+            p.clear_confirmation = Some((p.weapon, p.slot, state.revision));
+            p.feedback = Some(tr!(
+                "Confirm Clear to remove this slot modification and spend the displayed dust cost"
+            ));
+            return None;
+        }
+        Intent::ConfirmClear => {
+            let confirmed = p.clear_confirmation.take()?;
+            if p.shaping
+                .as_ref()
+                .is_none_or(|state| confirmed != (p.weapon, p.slot, state.revision))
+            {
+                p.feedback = Some(tr!("Slot changed. Review it before confirming Clear"));
+                return None;
+            }
+            p.revision = confirmed.2;
+            Intent::Clear
+        }
+        other => {
+            p.clear_confirmation = None;
+            other
+        }
+    };
     if intent == Intent::State {
         if !p.state_selected || p.weapon == 0 {
             p.feedback = Some(tr!("Shaping state is unavailable in this session"));
@@ -97,6 +134,8 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
         });
     }
     if intent == Intent::Catalogue {
+        p.next_poll = Some(std::time::Instant::now() + std::time::Duration::from_secs(5));
+        p.catalogue_next = None;
         p.pending = true;
         p.command_kind = 660;
         p.feedback = None;
@@ -132,7 +171,9 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
             },
             Intent::DeclineOffer => ModificationOperation::ReshapeChoose { choice: None },
             Intent::Clear => ModificationOperation::Clear,
-            Intent::State
+            Intent::ConfirmClear
+            | Intent::CancelClear
+            | Intent::State
             | Intent::SelectPerk
             | Intent::Catalogue
             | Intent::Browse
@@ -165,6 +206,7 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
 }
 pub fn apply_result(p: &mut WeaponProficiencyPanel, result: &GatedCommandResult) -> bool {
     p.pending = false;
+    p.clear_confirmation = None;
     if !matches!(
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
@@ -197,6 +239,11 @@ pub fn apply_result(p: &mut WeaponProficiencyPanel, result: &GatedCommandResult)
     if p.command_kind == 641 {
         match oteryn_client_runtime::weapon_proficiency::ProficiencyPage::decode(&result.payload) {
             Some(page) if page.offset == p.requested_offset => {
+                for row in &page.rows {
+                    p.observe_progress(row.definition.get(), row.experience);
+                }
+                let next = page.offset.saturating_add(page.rows.len() as u32);
+                p.progress_next = (!page.rows.is_empty() && next < page.total).then_some(next);
                 p.page = Some(page);
                 p.feedback = None;
                 return true;
@@ -219,17 +266,28 @@ pub fn apply_result(p: &mut WeaponProficiencyPanel, result: &GatedCommandResult)
         if page.offset != p.catalogue_offset {
             return false;
         }
-        if !page
-            .entries
-            .iter()
-            .any(|entry| entry.definition == p.weapon)
-        {
+        let next = page.offset.saturating_add(page.entries.len() as u32);
+        p.catalogue_next = (!page.entries.is_empty() && next < page.total).then_some(next);
+        if page.offset == 0 {
+            for entry in &page.entries {
+                p.observe_progress(entry.definition, entry.experience);
+            }
+            p.catalogue = Some(page);
+        } else if let Some(catalogue) = &mut p.catalogue {
+            if catalogue.entries.len() as u32 != page.offset || catalogue.total != page.total {
+                p.catalogue_next = None;
+                p.feedback = Some(tr!("Catalogue changed. Refresh the catalogue"));
+                return false;
+            }
+            catalogue.entries.extend(page.entries);
+        }
+        if p.catalogue_next.is_none() && p.weapon != 0 && p.weapon_entry().is_none() {
             p.weapon = 0;
             p.shaping = None;
             p.revision = 0;
             p.state_refresh_needed = false;
+            p.clear_confirmation = None;
         }
-        p.catalogue = Some(page);
         p.feedback = None;
         return true;
     }
@@ -271,5 +329,32 @@ pub fn apply_result(p: &mut WeaponProficiencyPanel, result: &GatedCommandResult)
             }
             false
         }
+    }
+}
+
+/// Run by the HUD and native panel; uses the same bounded play queue as manual requests.
+pub fn tick(p: &mut WeaponProficiencyPanel, now: std::time::Instant) -> Option<FeatureCommand> {
+    if !p.selected || p.pending || p.clear_confirmation.is_some() {
+        return None;
+    }
+    if let Some(offset) = p.catalogue_next.take() {
+        p.catalogue_offset = offset;
+        return request(p, Intent::Catalogue);
+    }
+    if p.state_refresh_needed && p.state_selected && p.weapon != 0 {
+        return request(p, Intent::State);
+    }
+    if p.progress_next.take().is_some() {
+        return request(p, Intent::NextPage);
+    }
+    if p.next_poll.is_some_and(|deadline| now < deadline) {
+        return None;
+    }
+    p.next_poll = Some(now + std::time::Duration::from_secs(5));
+    if p.catalogue.is_none() {
+        p.catalogue_offset = 0;
+        request(p, Intent::Catalogue)
+    } else {
+        request(p, Intent::Browse)
     }
 }

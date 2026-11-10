@@ -6,6 +6,15 @@ use oteryn_client_runtime::{
         COMMAND_TYPE_SERVER_MODAL_QUERY, Reply,
     },
 };
+pub fn hireling_store(
+    payload: Vec<u8>,
+) -> oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
+    oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
+        capability: CAPABILITY_SERVER_MODAL_V1,
+        command_type: oteryn_client_runtime::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION,
+        payload,
+    }
+}
 pub fn query(panel: &mut Panel) -> Option<FeatureCommand> {
     if !panel.selected || panel.pending.is_some() || panel.active.is_some() {
         return None;

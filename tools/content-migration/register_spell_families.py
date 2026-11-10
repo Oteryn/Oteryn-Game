@@ -564,6 +564,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Carry the exact explicit-empty Lua witness into the frozen native provider too.
     import primal_reference_overlay
     primal_reference_overlay.apply_native(root, generated, NATIVE_MANIFEST, spell_import.canonical_bytes)
+    # T174: qualify boot slots only after every shop/loot Item cohort is present.
+    imbuement_item_profiles.complete_boots(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions

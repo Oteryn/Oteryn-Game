@@ -1,5 +1,14 @@
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct WeaponProficiencyPanel {
+    pub search: String,
+    pub progress_filter: u8,
+    pub sort_progress: bool,
+    pub catalogue_next: Option<u32>,
+    pub progress_next: Option<u32>,
+    pub next_poll: Option<std::time::Instant>,
+    pub advancements: Vec<u32>,
+    pub progress_weapon: u32,
+    pub clear_confirmation: Option<(u32, u8, u64)>,
     pub selected: bool,
     pub state_selected: bool,
     pub shaping: Option<oteryn_client_runtime::weapon_proficiency_state::State>,
@@ -28,6 +37,12 @@ impl WeaponProficiencyPanel {
         if self.pending && matches!(self.command_kind, 379 | 380 | 392..=395) {
             self.mutation_uncertain = true;
         }
+        self.clear_confirmation = None;
+        self.advancements.clear();
+        self.next_poll = None;
+        self.catalogue = None;
+        self.catalogue_next = None;
+        self.progress_next = None;
         self.pending = false;
         self.shaping = None;
         self.revision = 0;
@@ -48,7 +63,9 @@ impl WeaponProficiencyPanel {
             self.feedback = Some(tr!("This weapon is not admitted by the server"));
             return false;
         }
+        self.clear_confirmation = None;
         self.weapon = entry.definition;
+        self.progress_weapon = entry.definition;
         self.level = 0;
         self.perk = entry
             .levels

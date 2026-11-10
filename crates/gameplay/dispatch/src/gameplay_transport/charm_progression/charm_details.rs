@@ -119,7 +119,7 @@ pub(super) fn page(source: &CanonicalCharmCatalogue, after: u8) -> Option<Page> 
                 definition.stage_costs[usize::from(stage - 1)]
             );
         }
-        cards.push(Card {
+        cards.push(Card { echo_warden_completed: None,
             race: (index + 1).try_into().ok()?,
             name: definition
                 .key

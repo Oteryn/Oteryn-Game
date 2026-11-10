@@ -170,7 +170,67 @@ impl ItemUseGate {
 #[derive(Debug, Default)]
 pub struct ItemUseGates(Vec<(ExactActorRef, GameSessionId, ItemUseGate)>);
 
+#[derive(Clone, Copy)]
+pub(super) enum CooldownClass {
+    Food,
+    Potion,
+    Other,
+}
 impl ItemUseGates {
+    pub(super) fn cooldown_remaining(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        class: CooldownClass,
+        now_ms: u64,
+    ) -> Option<u64> {
+        runtime.player_control_facts(actor, session).ok()?;
+        let Some((_, _, gate)) = self
+            .0
+            .iter()
+            .find(|(present, held, _)| *present == actor && *held == session)
+        else {
+            return Some(0);
+        };
+        let own = match class {
+            CooldownClass::Food => gate.food_ready_ms,
+            CooldownClass::Potion => gate.potion_ready_ms,
+            CooldownClass::Other => 0,
+        }
+        .saturating_sub(now_ms);
+        let in_flight = gate.in_flight_since_ms.map_or(0, |since| {
+            since
+                .saturating_add(ITEMUSE0_RL_04_AMBIGUOUS_MS)
+                .saturating_sub(now_ms)
+        });
+        let recent = gate
+            .recent_ms
+            .iter()
+            .filter(|time| now_ms.saturating_sub(**time) < 1000);
+        let rate = if recent.clone().count() >= ITEMUSE0_RL_01_USES_PER_SECOND {
+            recent
+                .map(|time| time.saturating_add(1000).saturating_sub(now_ms))
+                .min()
+                .unwrap_or(0)
+        } else {
+            0
+        };
+        Some(own.max(in_flight).max(rate))
+    }
+    #[cfg(test)]
+    pub(super) fn start_test_potion(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now_ms: u64,
+    ) -> Option<()> {
+        let gate = self.gate(runtime, actor, session)?;
+        gate.start(ItemUseKind::Potion, now_ms).ok()?;
+        gate.settle(1, UseDisposition::Committed, &[]);
+        Some(())
+    }
     pub(in crate::gameplay_transport) fn house_transfer_ready(
         &self,
         actor: ExactActorRef,
@@ -287,7 +347,7 @@ enum UseSource {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    fn owner_ms(&self) -> u64 {
+    pub(super) fn owner_ms(&self) -> u64 {
         u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX)
     }
 
@@ -1503,5 +1563,50 @@ impl ItemUseGates {
             gate.source_last = None;
             self.0.push((actor, session, gate));
         }
+    }
+}
+
+#[cfg(test)]
+mod action_bar_cooldown_tests {
+    use super::*;
+    #[test]
+    fn action_bar_read_preserves_prepare_in_flight_rate_and_expiry() -> Result<(), &'static str> {
+        let (runtime, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x7b);
+        let mut gates = ItemUseGates::default();
+        {
+            let gate = gates.gate(&runtime, actor, session).ok_or("gate")?;
+            gate.admit(1, 0).map_err(|_| "admit")?;
+            gate.start(ItemUseKind::Potion, 0).map_err(|_| "prepare")?;
+        }
+        assert_eq!(
+            gates.cooldown_remaining(&runtime, actor, session, CooldownClass::Other, 500),
+            Some(1500)
+        );
+        gates.gate(&runtime, actor, session).ok_or("gate")?.settle(
+            1,
+            UseDisposition::Committed,
+            &[],
+        );
+        assert_eq!(
+            gates.cooldown_remaining(&runtime, actor, session, CooldownClass::Potion, 500),
+            Some(500)
+        );
+        for command in 2..=5 {
+            gates
+                .gate(&runtime, actor, session)
+                .ok_or("gate")?
+                .admit(command, 100 + command)
+                .map_err(|_| "rate")?;
+        }
+        assert_eq!(
+            gates.cooldown_remaining(&runtime, actor, session, CooldownClass::Food, 105),
+            Some(895)
+        );
+        assert_eq!(
+            gates.cooldown_remaining(&runtime, actor, session, CooldownClass::Other, 1105),
+            Some(0)
+        );
+        Ok(())
     }
 }

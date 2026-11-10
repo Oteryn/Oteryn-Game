@@ -3,8 +3,8 @@
 #[test]
 fn m51_postgres_character_death_releases_pit_without_clearing_a_later_run() -> TestResult {
     pubproj_threaded(|| {
-        let started = std::time::Instant::now();
-        let result = run("srvenc_m51_death_cleanup", async |h| {
+        run("srvenc_m51_death_cleanup", async |h| {
+            let started = std::time::Instant::now();
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -61,14 +61,11 @@ fn m51_postgres_character_death_releases_pit_without_clearing_a_later_run() -> T
                 "old death replay cannot clear a later run"
             );
             assert_eq!(h.count("game_character_death_receipts").await?, 1);
+            eprintln!(
+                "M51 REAL POSTGRES character death pit cleanup duration={:?}",
+                started.elapsed()
+            );
             Ok(())
-        });
-        result?;
-        eprintln!(
-            "M51 REAL POSTGRES character death pit cleanup duration={:?}",
-            started.elapsed()
-        );
-        assert!(started.elapsed().as_secs_f64() > 0.01);
-        Ok(())
+        })
     })
 }

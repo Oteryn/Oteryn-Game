@@ -40,6 +40,7 @@ impl Application {
                 return;
             }
             play.view.observe_creature_pointer(events);
+            play.view.observe_bar_pointer(&play.link);
             if play.link.use_with_cancel_input(events) {
                 return;
             }

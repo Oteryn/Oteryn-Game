@@ -34,6 +34,18 @@ fn fixture_with_phase(
     ExactActorRef,
     GameSessionId,
 ) {
+    fixture_with_percent(attackable, 50)
+}
+fn fixture_with_percent(
+    attackable: bool,
+    percent: u32,
+) -> (
+    ChannelRuntimeV1,
+    ChannelSpellStates,
+    ExactActorRef,
+    ExactActorRef,
+    GameSessionId,
+) {
     let (mut runtime, source, session) = super::tests::runtime_with_player(0x41);
     runtime
         .initialize_first_entry_position(source)
@@ -116,7 +128,7 @@ fn fixture_with_phase(
             duration_ms: 5000,
             critical_chance_percent: 0,
             critical_extra_percentage_points: 0,
-            damage_dealt_percent: 50,
+            damage_dealt_percent: percent,
             incoming_reduction_percent: 0,
         },
     )
@@ -456,4 +468,37 @@ fn analyser_creature_element_absorption_does_not_credit_player_healing() {
     let health = receipt.effects[0].health.expect("applied creature HP");
     assert_eq!((health.health_before, health.health_after), (5, 10));
     assert_no_player_healing(&states, source, session);
+}
+
+#[test]
+fn elite_player_fire_field_tick_halves_damage_and_replays() {
+    let (mut runtime, mut states, source, target, session) = fixture_with_percent(true, 100);
+    states.set_elite_bounty(&runtime, session, Some("creature:source-healing-target"));
+    let receipt = states
+        .tick_source_creature_conditions(
+            &mut runtime,
+            target,
+            crate::foundation::TickFacts::default(),
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000_000),
+        )
+        .expect("field tick owner");
+    assert_eq!(
+        receipt
+            .impacts
+            .iter()
+            .map(|impact| impact.damage)
+            .sum::<u64>(),
+        5
+    );
+    let health = runtime.live_creature_health(target);
+    states
+        .tick_source_creature_conditions(
+            &mut runtime,
+            target,
+            crate::foundation::TickFacts::default(),
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000_000),
+        )
+        .expect("replay");
+    assert_eq!(runtime.live_creature_health(target), health);
+    assert!(states.get(&runtime, source, session).is_some());
 }

@@ -69,7 +69,7 @@ fn uuid_text(bytes: &[u8; 16]) -> String {
     )
 }
 
-/// One stored imbuement slot; `category` is the stored 0-19 category.
+/// One stored imbuement slot; `category` is the stored 0-25 category.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StoredImbuement {
     pub slot: u8,

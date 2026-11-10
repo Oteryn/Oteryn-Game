@@ -232,7 +232,9 @@ pub(super) async fn house_scenario(
 }
 
 #[derive(Debug,Clone,Copy)]
-enum Case{Hire,Skill,Outfit,Rename,Sex,Uncertain,Refusals,FullInbox,DeliveryRetry,Limit,LocalEncode}
+enum Case{Hire,Skill,Outfit,Rename,Sex,Uncertain,Refusals,FullInbox,DeliveryRetry,Limit,LocalEncode,Modal}
+#[path="hireling_store/modal.rs"]
+mod modal;
 fn enabled()->bool {std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some()}
 #[test]
 fn hireling_store_purchase_lamp_once_and_replay()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-hire",||scenario(Case::Hire))}
@@ -279,6 +281,13 @@ fn scenario(case:Case)->TestResult {
             OfferedCapability{id:3,requires:&[]},OfferedCapability{id:51,requires:&[]},
             OfferedCapability{id:154,requires:&[]},OfferedCapability{id:165,requires:&[3,51]},OfferedCapability{id:250,requires:&[165]},
         ],&[3,51,154,165,250]).ok_or("capability selection")?;
+        if matches!(case,Case::Modal) {
+            admitted.continuity.selected_capabilities=SelectedCapabilities::select(&[
+                OfferedCapability{id:3,requires:&[]},OfferedCapability{id:51,requires:&[]},OfferedCapability{id:92,requires:&[]},
+                OfferedCapability{id:154,requires:&[]},OfferedCapability{id:165,requires:&[3,51]},OfferedCapability{id:250,requires:&[165]},
+                OfferedCapability{id:450,requires:&[92]},
+            ],&[3,51,92,154,165,250,450]).ok_or("modal selection")?;
+        }
         let ledger=Arc::new(SyncMutex::new(Ledger{balance:10000,world:uuid(admitted.world_id.as_bytes()),..Ledger::default()}));
         owner.store=Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(FakePlatform(ledger.clone())), "oteryn-game/store-consumer".into()))));
 
@@ -294,6 +303,7 @@ fn scenario(case:Case)->TestResult {
         assert_eq!(lamps,1);
         let customize=|name:Option<&str>|wire::StoreHirelingCustomization{hireling_id:Some(hireling),name:name.map(str::to_owned),sex:None};
         match case {
+            Case::Modal=>modal::scenario(&harness,&owner,&mut admitted,&ledger).await?,
             Case::Hire=>{
                 let replay=purchase(&owner,&mut admitted,command(51,25440,150,Some(new_hire("Alex Moon")))?).await?;assert_eq!(replay,hired);
                 assert_eq!(ledger.lock().expect("ledger").debits,1);

@@ -44,13 +44,13 @@ fn t080_bestiary_catalogue_caller_keeps_confirmed_art_combat_and_loot()
         next: Some(9),
         categories: vec!["Forest dwellers".into()],
         cards: vec![
-            wire::Card {
+            wire::Card { echo_warden_completed: None,
                 race: 7, outfit_look_type: 128, object_look_type: None,
                 name: "Grove watcher".into(),
                 category: "Forest dwellers".into(),
                 detail: String::new(),
             },
-            wire::Card {
+            wire::Card { echo_warden_completed: None,
                 race: 9, outfit_look_type: 0, object_look_type: Some(3058),
                 name: "Moss keeper".into(),
                 category: "Forest dwellers".into(),
@@ -93,7 +93,7 @@ fn t080_bestiary_catalogue_caller_keeps_confirmed_art_combat_and_loot()
             .race,
         7
     );
-    let page = wire::Page { next: None, categories: page.categories, cards: vec![wire::Card {
+    let page = wire::Page { next: None, categories: page.categories, cards: vec![wire::Card { echo_warden_completed: None,
         race: 7, outfit_look_type: 128, object_look_type: None, name: "Grove watcher".into(), category: "Forest dwellers".into(),
         detail: "Health: 90\r\nExperience: 25\r\nResistance fire: 20/1%\r\nLoot:\r\nTwig: 1-2, 250000 ppm".into(),
     }] };
@@ -123,5 +123,30 @@ fn t080_bestiary_catalogue_caller_keeps_confirmed_art_combat_and_loot()
             .cards
             .is_empty()
     );
+    Ok(())
+}
+
+#[test]
+fn t185_echo_warden_progress_survives_real_play_queue() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut receiver, outbox) = play_channel();
+    crate::play::mailbox::lock(&link.mailbox).properties.charm_progression.selected = true;
+    link.charm_progression_edit(1, "7".into());
+    for (completed, expected) in [(0, "Echo Warden: incomplete"), (1, "Echo Warden: complete")] {
+        link.bestiary_catalogue_request(2);
+        let PlayCommand::Feature(command) = receiver.try_recv()? else { return Err("missing detail request".into()); };
+        assert_eq!(command.payload.len(), 8);
+        assert_eq!(command.payload[7], 1);
+        // A server creature card with the explicit optional boolean at field 7.
+        let row = [8, 7, 18, 3, b'R', b'a', b't', 26, 1, b'F', 34, 0, 56, completed];
+        let mut payload = vec![18, u8::try_from(row.len())?];
+        payload.extend(row);
+        payload.extend([26, 1, b'F']);
+        outbox.properties_result(&command, &GatedCommandResult {
+            command_id: 1, server_sequence: 1, status: CommandStatus::Accepted, payload,
+        });
+        assert!(link.charm_progression_panel().catalogue.detail.contains(expected));
+    }
+    outbox.logged_out();
+    assert!(link.charm_progression_panel().catalogue.detail.is_empty());
     Ok(())
 }

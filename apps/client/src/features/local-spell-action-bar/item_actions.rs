@@ -8,13 +8,15 @@ pub enum ItemUseMode {
     SelfActor,
     Target,
     Cursor,
+    CursorPosition,
 }
 impl ItemUseMode {
     pub(super) const fn label(self) -> &'static str {
         match self {
             Self::SelfActor => "self",
             Self::Target => "current target",
-            Self::Cursor => "cursor",
+            Self::Cursor => "crosshair",
+            Self::CursorPosition => "cursor position",
         }
     }
 }
@@ -39,18 +41,33 @@ pub(super) fn use_item(
         mailbox.world_context.rune_targeting = false;
         return;
     }
-    let target = item_target(mailbox, mode);
-    let Some(target) = target else {
-        mailbox.spell_bar.feedback = "No current server target is available".into();
-        return;
-    };
-    let command = Command {
-        target: Target::Creature(target.entity),
-        action: Action::UseOn(source),
-        selection: Some(Selection {
-            position: target.position,
-            binding: None,
-        }),
+    let command = if mode == ItemUseMode::CursorPosition {
+        let Some((target, selection)) = mailbox.bar_actions.cursor.clone() else {
+            mailbox.world_context.set_feedback(
+                "Cursor is outside the game window or battle list".into(),
+                std::time::Instant::now(),
+            );
+            mailbox.spell_bar.feedback = "Cursor is outside the game window or battle list".into();
+            return;
+        };
+        Command {
+            target,
+            action: Action::UseOn(source),
+            selection: Some(selection),
+        }
+    } else {
+        let Some(target) = item_target(mailbox, mode) else {
+            mailbox.spell_bar.feedback = "No current server target is available".into();
+            return;
+        };
+        Command {
+            target: Target::Creature(target.entity),
+            action: Action::UseOn(source),
+            selection: Some(Selection {
+                position: target.position,
+                binding: None,
+            }),
+        }
     };
     if commands
         .send(crate::combat_input::PlayCommand::WorldContext(command))
@@ -105,6 +122,6 @@ pub(in crate::play) fn item_target(
                     .find(|row| row.entity == target)
                     .copied()
             }),
-        ItemUseMode::Cursor => None,
+        ItemUseMode::Cursor | ItemUseMode::CursorPosition => None,
     }
 }

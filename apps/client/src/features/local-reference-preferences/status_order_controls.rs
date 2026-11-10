@@ -79,7 +79,11 @@ impl OrderControls {
                 return false;
             };
             let down = button % 2 == 1;
-            if !preferences.move_status_entry(button < 2, index, down) {
+            if !(if button < 2 {
+                preferences.move_status_entry(true, index, down)
+            } else {
+                preferences.move_special_condition(index, down)
+            }) {
                 return false;
             }
             SendMessageW(
@@ -96,23 +100,24 @@ impl OrderControls {
             for (list, skills) in self.lists.into_iter().zip([true, false]) {
                 let selected = SendMessageW(list, LB_GETCURSEL, 0, 0).max(0) as usize;
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
-                let order = if skills {
-                    &preferences.skill_order
-                } else {
-                    &preferences.condition_order
-                };
-                let default: Vec<u8> = if skills {
-                    (0..8).collect()
-                } else {
-                    (1..=27).collect()
-                };
-                for id in if order.is_empty() { &default } else { order } {
-                    let label = if skills {
-                        oteryn_client_ui::skill_progress::SKILL_LABELS[usize::from(*id)]
+                let labels: Vec<String> = if skills {
+                    let order: Vec<_> = if preferences.skill_order.is_empty() {
+                        (0..8).collect()
                     } else {
-                        oteryn_client_ui::condition_status::icon_label(*id).1
+                        preferences.skill_order.clone()
                     };
-                    SendMessageW(list, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
+                    order
+                        .into_iter()
+                        .map(|id| {
+                            oteryn_client_ui::skill_progress::SKILL_LABELS[usize::from(id)]
+                                .to_owned()
+                        })
+                        .collect()
+                } else {
+                    preferences.ordered_condition_keys()
+                };
+                for label in labels {
+                    SendMessageW(list, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                 }
                 SendMessageW(list, LB_SETCURSEL, selected, 0);
             }

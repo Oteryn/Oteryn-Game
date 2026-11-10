@@ -267,7 +267,12 @@ async fn apply(
                 materials,
             } => {
                 if stored.iter().any(|(stored_slot, stored_category, ..)| {
-                    *stored_slot == i64::from(*slot) || *stored_category == i64::from(*category)
+                    *stored_slot == i64::from(*slot)
+                        || oteryn_gameplay_items::imbuement::imbuement_category_group(
+                            u8::try_from(*stored_category).unwrap_or(u8::MAX),
+                        ) == oteryn_gameplay_items::imbuement::imbuement_category_group(
+                            *category,
+                        )
                 }) {
                     return Ok(ImbuementResult::SlotOccupied);
                 }

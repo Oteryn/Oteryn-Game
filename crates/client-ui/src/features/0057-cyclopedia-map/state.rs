@@ -26,6 +26,8 @@ pub struct Panel {
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
+    pub speed_pending: bool,
+    pub speed_bonus: u16,
     pub pending_kind: u32,
     pub fields: [String; 1],
     pub feedback: String,
@@ -37,7 +39,7 @@ impl Panel {
             self.feedback = tr!("Unavailable in this session").into();
             return false;
         }
-        if self.pending {
+        if self.pending || self.speed_pending {
             self.feedback = tr!("Waiting for the server").into();
             return false;
         }
@@ -48,6 +50,7 @@ impl Panel {
     }
     pub fn failed(&mut self, message: &str) {
         self.pending = false;
+        self.speed_pending = false;
         self.feedback = message.into();
     }
 }
@@ -135,6 +138,8 @@ impl Panel {
         self.region_atlas = None;
         self.atlas = None;
         self.map = None;
+        self.speed_bonus = 0;
+        self.speed_pending = false;
         self.summary.clear();
     }
 }

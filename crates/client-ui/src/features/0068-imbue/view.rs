@@ -1,4 +1,5 @@
 use super::ImbuePanel;
+use super::family_name;
 
 #[must_use]
 pub fn slot_label(panel: &ImbuePanel, slot: u8) -> String {
@@ -18,7 +19,7 @@ pub fn slot_label(panel: &ImbuePanel, slot: u8) -> String {
                 lfmt!(
                     "Slot {}: family {}, tier {}, {} seconds left{}",
                     slot + 1,
-                    applied.family,
+                    family_name(applied.family),
                     applied.tier,
                     applied.remaining_ms / 1000,
                     time_alert(applied.remaining_ms)
@@ -38,7 +39,7 @@ pub fn selected_detail_text(panel: &ImbuePanel) -> String {
         window.clear_gold
     );
     if let Some(offer) = window.offers.get(panel.offer) {
-        text.push_str(&lfmt!("Selected offer: family {}, tier {}\nApply cost: {} gold{}\nSuccess chance: 100% (no protection charge)\n", offer.family, offer.tier, offer.gold, if offer.requires_premium { tr!(" (premium required)") } else { "" }));
+        text.push_str(&lfmt!("Selected offer: family {}, tier {}\nApply cost: {} gold{}\nSuccess chance: 100% (no protection charge)\n", family_name(offer.family), offer.tier, offer.gold, if offer.requires_premium { tr!(" (premium required)") } else { "" }));
         if let Some(quote) = panel
             .details
             .as_ref()
@@ -89,7 +90,7 @@ pub fn panel_text(panel: &ImbuePanel) -> String {
             text.push_str(&lfmt!(
                 "Slot {}: family {}, tier {}, {} ms remaining{}\n",
                 applied.slot + 1,
-                applied.family,
+                family_name(applied.family),
                 applied.tier,
                 applied.remaining_ms,
                 time_alert(applied.remaining_ms)
@@ -98,7 +99,7 @@ pub fn panel_text(panel: &ImbuePanel) -> String {
         for (index, offer) in window.offers.iter().enumerate() {
             text.push_str(&lfmt!(
                 "Offer {index}: family {}, tier {}, {} gold{}\n",
-                offer.family,
+                family_name(offer.family),
                 offer.tier,
                 offer.gold,
                 if offer.requires_premium {

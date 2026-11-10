@@ -259,6 +259,7 @@ impl PlayLink {
 
     /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.
     pub fn poll(&self) -> Option<PlayEvent> {
+        self.poll_weekly_results();
         #[cfg(windows)]
         super::super::feature_0148_wheel_allocation::view::poll_gems(&self.mailbox, &self.commands);
         #[cfg(windows)]
@@ -299,15 +300,15 @@ impl PlayLink {
 pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
     let (commands, command_rx) = tokio::sync::mpsc::unbounded_channel();
     let mailbox = SharedMailbox::default();
-    (
-        PlayLink {
-            owns_session: true,
-            commands,
-            mailbox: Arc::clone(&mailbox),
-        },
-        command_rx,
-        Outbox(mailbox),
-    )
+    let link = PlayLink {
+        owns_session: true,
+        commands,
+        mailbox: Arc::clone(&mailbox),
+    };
+    if let Some(directory) = crate::support_delivery::directory() {
+        link.queue_support_at(&directory);
+    }
+    (link, command_rx, Outbox(mailbox))
 }
 
 impl Drop for PlayLink {

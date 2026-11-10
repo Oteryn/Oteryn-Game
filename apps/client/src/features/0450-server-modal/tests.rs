@@ -80,7 +80,7 @@ fn scope_reset_closes_source_answers_and_allows_a_fresh_destination_query()
 
             let mut peer = Peer { answers: 0 };
             driver.next_query = Instant::now();
-            driver.poll(&mut peer).await?;
+            assert_eq!(driver.poll(&mut peer).await?, None);
             assert_eq!(
                 driver.panel.active.as_ref().map(|dialog| dialog.id),
                 Some(73)
@@ -98,7 +98,7 @@ fn server_modal_session_caller_delivers_inline_image_and_exact_answer_ack()
         .block_on(async {
             let mut peer = Peer { answers: 0 };
             let mut driver = Driver::new(true);
-            driver.poll(&mut peer).await?;
+            assert_eq!(driver.poll(&mut peer).await?, None);
             let dialog = driver
                 .panel
                 .active
@@ -121,12 +121,12 @@ fn server_modal_session_caller_delivers_inline_image_and_exact_answer_ack()
                 },
                 tx,
             ))?;
-            driver.poll(&mut peer).await?;
+            assert_eq!(driver.poll(&mut peer).await?, None);
             assert!(!rx.await?);
             assert_eq!(peer.answers, 0);
             let (tx, rx) = oneshot::channel();
             driver.sender.try_send((answer, tx))?;
-            driver.poll(&mut peer).await?;
+            assert_eq!(driver.poll(&mut peer).await?, Some(answer));
             assert!(rx.await?);
             assert_eq!(peer.answers, 1);
             assert!(driver.panel.active.is_none());

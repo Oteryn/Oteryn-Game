@@ -7,6 +7,44 @@ use oteryn_client_ui::stash::{Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 
 impl PlayLink {
+    pub fn stash_sort(&self) {
+        Self::stash_enqueue_sort(&mut lock(&self.mailbox), &self.commands);
+    }
+
+    pub(in crate::play) fn stash_enqueue_sort(
+        mailbox: &mut Mailbox,
+        commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+    ) {
+        use oteryn_client_ui::stash::Sort;
+        if !mailbox.stash.selected || mailbox.stash.pending {
+            return;
+        }
+        mailbox.stash.sort = match mailbox.stash.sort {
+            Sort::Name => Sort::Stock,
+            Sort::Stock => Sort::Name,
+        };
+        mailbox.stash.sort_edit = crate::play::feature_0017_attack::view::next_edit();
+        if let Some(command) = request(&mut mailbox.stash, Intent::Filter)
+            && commands.send(PlayCommand::Stash(command)).is_err()
+        {
+            mailbox.stash.pending = false;
+            mailbox.stash.feedback = Some(tr!("The session has ended").into());
+        }
+    }
+
+    pub fn sync_stash_sort(&self, stock_order: &mut bool, edit: u64) -> Option<u64> {
+        use oteryn_client_ui::stash::Sort;
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.stash.sort_edit > edit {
+            *stock_order = mailbox.stash.sort == Sort::Stock;
+            Some(mailbox.stash.sort_edit)
+        } else {
+            mailbox.stash.sort = if *stock_order { Sort::Stock } else { Sort::Name };
+            mailbox.stash.sort_edit = edit;
+            None
+        }
+    }
+
     pub fn stash_stow_selected(
         &self,
         displayed: &[oteryn_client_runtime::depot::ItemEntry],

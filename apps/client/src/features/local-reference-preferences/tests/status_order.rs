@@ -77,3 +77,36 @@ fn status_order_settings_reach_confirmed_panels_and_survive_restart()
     std::fs::remove_file(path)?;
     Ok(())
 }
+
+#[test]
+fn t176_condition_matrix_persists_independent_columns_and_shared_group_order()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{ReferencePreferences, SettingsState};
+    let path = std::env::temp_dir().join(format!("cg-cond-matrix-{}.json", std::process::id()));
+    let mut settings = SettingsState::new(Some(path.clone()));
+    let mut preferences = ReferencePreferences::default();
+    for key in ReferencePreferences::special_condition_keys() {
+        preferences.set_condition_visible(&key, true, false);
+        assert!(preferences.condition_hud_hidden.contains(&key));
+        assert!(!preferences.condition_status_hidden.contains(&key));
+    }
+    preferences.set_condition_visible("Mana Shield", true, true);
+    preferences.set_condition_visible("Soul War", false, false);
+    preferences.set_condition_visible("Rotten Blood", false, false);
+    preferences.set_condition_visible("Resting Area", false, false);
+    assert!(preferences.move_special_condition(29, false));
+    assert_eq!(preferences.ordered_condition_keys()[28], "Rotten Blood");
+    settings.apply(preferences);
+    let restarted = SettingsState::new(Some(path.clone()));
+    assert_eq!(restarted.preferences, settings.preferences);
+    let (link, _, outbox) = play_channel();
+    outbox.condition_status_initialize(true);
+    settings.sync_local_preferences(&link);
+    assert!(link.condition_status_panel().hidden.is_empty());
+    let mut invalid = settings.preferences.clone();
+    invalid.special_condition_order[0] = "invented".into();
+    settings.apply(invalid);
+    assert_eq!(settings.preferences, restarted.preferences);
+    std::fs::remove_file(path)?;
+    Ok(())
+}

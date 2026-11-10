@@ -27,6 +27,7 @@ pub(super) struct ActorConditionState {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PlayerRuntimeState {
+    pub(super) discovery_speed: u16,
     pub(super) rotten_presentation: super::rotten_blood_presentation::RottenBloodPresentation,
     pub(super) tile_entry_order: u64,
     pub(super) control_loss: Option<ControlLossMark>,
@@ -429,7 +430,32 @@ impl ChannelRuntimeV1 {
         if now.get() < current.at {
             return Err(ConditionOwnerError::TimeMismatch);
         }
-        Ok(current.store.active_speed_delta(now.get()))
+        let discovery = match &self.carrier.slots[index] {
+            Slot::Occupied { lifecycle, .. } => lifecycle.discovery_speed,
+            _ => 0,
+        };
+        Ok(current
+            .store
+            .active_speed_delta(now.get())
+            .saturating_add(i64::from(discovery)))
+    }
+
+    /// Replace the single discovery contribution, independently of timed haste/paralysis.
+    pub fn set_player_discovery_speed(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        bonus: u16,
+    ) -> Result<(), ConditionOwnerError> {
+        let index = self.condition_index(actor, Some(session))?;
+        let Slot::Occupied { lifecycle, .. } = &mut self.carrier.slots[index] else {
+            return Err(ConditionOwnerError::FactsMismatch);
+        };
+        if lifecycle.control_loss.is_some() {
+            return Err(ConditionOwnerError::FactsMismatch);
+        }
+        lifecycle.discovery_speed = bonus;
+        Ok(())
     }
 
     /// Prepare only non-ticking expiry under the same actor revision as other transitions.

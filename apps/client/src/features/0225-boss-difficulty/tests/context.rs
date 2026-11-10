@@ -19,15 +19,19 @@ fn difficulty_real_caller_uses_server_context_and_invalidates_refused_or_reopene
     assert_eq!((command.capability, command.kind), (225, 431));
     assert_eq!(
         decode_request(&command.payload),
-        Ok(Request::Open {
+        Ok(Request::OpenWithProgress {
             boss_key: "oteryn:dragon".into()
         })
     );
     let window = Reply::Window {
         context: [7; 16],
         boss_key: "oteryn:dragon".into(),
+        boss_creature_key: "oteryn:dragon".into(),
         content_revision: "r1".into(),
         selected_difficulty: 7,
+        personal_highest: 0,
+        unlocked_max: 1,
+        maximum_difficulty: 25,
     };
     let reply = |reply: &Reply| GatedCommandResult {
         command_id: 1,
@@ -74,6 +78,59 @@ fn difficulty_real_caller_uses_server_context_and_invalidates_refused_or_reopene
     assert!(
         incoming.try_recv().is_err(),
         "failed open must not start previous boss"
+    );
+    Ok(())
+}
+
+#[test]
+fn difficulty_unlock_state_reaches_play_queue_and_archfoe_view()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.boss_difficulty_initialize(true);
+    lock(&link.mailbox).boss_difficulty.boss_key = "oteryn:boss.mimar_haffar".into();
+    link.boss_difficulty_request(Intent::Open);
+    assert!(matches!(incoming.try_recv(), Ok(PlayCommand::Feature(_))));
+    let payload = encode_reply(&Reply::Window {
+        context: [7; 16],
+        boss_key: "oteryn:boss.mimar_haffar".into(),
+        boss_creature_key: "oteryn:creature.mimar_haffar".into(),
+        content_revision: "r1".into(),
+        selected_difficulty: 1,
+        personal_highest: 3,
+        unlocked_max: 4,
+        maximum_difficulty: 25,
+    })
+    .map_err(|e| format!("{e:?}"))?;
+
+    outbox.boss_difficulty_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload,
+    });
+    lock(&link.mailbox).boss_encounter.fields[0] = "oteryn:creature.mimar_haffar".into();
+    lock(&link.mailbox).boss_encounter.browser_category =
+        oteryn_client_ui::boss_encounter::BossCategory::Archfoe;
+    let mailbox = lock(&link.mailbox);
+    assert!(
+        oteryn_client_ui::boss_difficulty::panel_text(&mailbox.boss_difficulty)
+            .contains("Personal highest: 3")
+    );
+    assert!(
+        oteryn_client_ui::boss_encounter::browser_text(&mailbox.boss_encounter)
+            .contains("Unlocked difficulty: 4")
+    );
+    drop(mailbox);
+    lock(&link.mailbox).boss_encounter.fields[0] = "oteryn:creature.other".into();
+    link.boss_encounter_difficulty_request(Intent::Start, 1);
+    assert!(
+        incoming.try_recv().is_err(),
+        "a different boss cannot borrow the confirmed context"
+    );
+    lock(&link.mailbox).boss_encounter.fields[0] = "oteryn:creature.mimar_haffar".into();
+    link.boss_encounter_difficulty_request(Intent::Start, 1);
+    assert!(
+        matches!(incoming.try_recv(), Ok(PlayCommand::Feature(c)) if decode_request(&c.payload) == Ok(Request::Start { context: [7;16], difficulty: 1 }))
     );
     Ok(())
 }

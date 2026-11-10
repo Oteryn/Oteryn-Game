@@ -519,6 +519,8 @@ fn equipped_offence_inner(
         return None;
     }
     let mut tiers = (0, 0);
+    let mut conversion = None;
+    let mut vibrancy = 0;
     let mut sums = [0_i64; 7];
     let mut shots = std::collections::BTreeMap::<u16, i64>::new();
     for item in &equipment.items {
@@ -565,6 +567,22 @@ fn equipped_offence_inner(
             .filter(|b| b.item == item.item_instance_id && b.remaining_ms > 0)
         {
             let tier = usize::from(installed.tier.checked_sub(1)?);
+            use crate::content::ProjectV2RangedElement as E;
+            if (20..=24).contains(&installed.category) && matches!(item.slot, 5 | 6) {
+                let element = match installed.category {
+                    20 => E::Fire,
+                    21 => E::Earth,
+                    22 => E::Ice,
+                    23 => E::Energy,
+                    _ => E::Death,
+                };
+                conversion = Some((element, *[10, 25, 50].get(tier)?));
+                continue;
+            }
+            if matches!(installed.category, 12 | 25) && item.slot == 4 {
+                vibrancy = vibrancy.max(*[15, 25, 50].get(tier)?);
+                continue;
+            }
             let values = match installed.category {
                 0 => [500, *[500, 1500, 4000].get(tier)?, 0, 0],
                 10 => [0, 0, *[500, 1000, 2500].get(tier)?, 0],
@@ -593,6 +611,8 @@ fn equipped_offence_inner(
         }
     }
     let mut offence = EquippedOffence::from_sums(sums[0], sums[1], sums[2], sums[3]);
+    offence.elemental_conversion = conversion;
+    offence.paralysis_deflection_percent = vibrancy;
     offence.cleave = u64::try_from(sums[4].max(0)).ok()?;
     offence.reflect_percent = u64::try_from(sums[5].max(0)).ok()?;
     offence.reflect_flat = u32::try_from(sums[6].clamp(0, i64::from(u32::MAX))).ok()?;

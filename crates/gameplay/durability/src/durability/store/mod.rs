@@ -3,6 +3,7 @@
 //! These journals are not a purchase or coin ledger. Platform owns both.
 mod charm_expansion;
 mod codec;
+mod cosmetic_tokens;
 mod hireling_capacity;
 mod hireling_delivery;
 mod hireling_model;
@@ -23,6 +24,6 @@ pub use hireling_model::{
 pub(crate) use prey_expansion::write_prey_expansion_receipt;
 pub use purchase_history::{StorePurchaseHistoryEntry, StorePurchaseHistoryRow};
 pub use storage::{PurchaseRequestState, StoreDurabilityError};
+mod popularity;
 #[cfg(test)]
 mod tests;
-mod popularity;

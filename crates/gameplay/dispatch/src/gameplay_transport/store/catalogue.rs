@@ -139,7 +139,7 @@ impl RuntimeCatalogue {
                         if matches!(
                             unlock_key.as_str(),
                             PREY_EXPANSION_UNLOCK | CHARM_EXPANSION_UNLOCK
-                        ) =>
+                        ) || crate::content::store_cosmetics::offers().is_some_and(|offers| offers.iter().any(|o| o.unlock_key == *unlock_key)) =>
                     {
                         let eligibility = rules::Eligibility {
                             reject_if_unlock_owned: Some(unlock_key.clone()),

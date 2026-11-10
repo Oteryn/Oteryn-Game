@@ -11,7 +11,7 @@ fn imbuement_request_strict_codec() {
         ImbuementAction::Query,
         ImbuementAction::Apply {
             slot: 2,
-            imbuement: 59,
+            imbuement: u8::try_from(MAX_OFFERS - 1).expect("bounded offer index"),
         },
         ImbuementAction::Clear { slot: 0 },
     ] {
@@ -39,7 +39,16 @@ fn imbuement_request_strict_codec() {
         &[8, 1, 16, 0][..],
         &[8, 4, 16, 1],
         &[8, 2, 16, 1, 24, 3, 32, 0],
-        &[8, 2, 16, 1, 24, 0, 32, 60],
+        &[
+            8,
+            2,
+            16,
+            1,
+            24,
+            0,
+            32,
+            u8::try_from(MAX_OFFERS).expect("bounded offer count"),
+        ],
         &[8, 1, 16, 1, 24, 0],
         &[8, 3, 16, 1, 24, 0, 32, 0],
         &[8, 2, 16, 1, 24, 0],

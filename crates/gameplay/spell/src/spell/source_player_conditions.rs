@@ -5,6 +5,48 @@ use oteryn_gameplay_domain::domain::condition as values;
 use oteryn_gameplay_domain::domain::condition::attributes;
 use oteryn_gameplay_foundation::foundation::condition as native;
 
+/// Vibrancy uses the incoming condition's real decision stream and the current equipment read.
+/// A repeated PvP paralysis is deflected and the existing paralysis is removed.
+pub fn deflect_equipped_paralysis<S: Clone>(
+    store: &mut native::ConditionStore<S>,
+    definition: &native::ConditionDefinition,
+    percent: u8,
+    player_source: bool,
+    facts: &native::ApplicationFacts<'_>,
+) -> Result<bool, values::ConditionRefusal> {
+    if percent == 0
+        || !facts.target_is_player
+        || facts.target_reentry_protected
+        || definition.condition_type() != values::ConditionType::Paralysis
+    {
+        return Ok(false);
+    }
+    if !store.accepts_time(facts.now) || percent > 100 {
+        return Err(values::ConditionRefusal::ArithmeticBounds);
+    }
+    let repeated = player_source
+        && store.instances().iter().any(|instance| {
+            instance.definition().condition_type() == values::ConditionType::Paralysis
+                && instance
+                    .remaining_duration_ms(facts.now)
+                    .is_some_and(|remaining| remaining != 0)
+        });
+    let roll = oteryn_simulation_determinism::deterministic_decision_u64(
+        facts.decision_root,
+        facts.occurrence,
+        "oteryn.imbuement.vibrancy.v1",
+        0,
+    )
+    .map_err(|_| values::ConditionRefusal::DrawFailed)?
+        % 100
+        + 1;
+    if repeated || roll <= u64::from(percent) {
+        store.remove_type(values::ConditionType::Paralysis);
+        return Ok(true);
+    }
+    Ok(false)
+}
+
 fn element(value: source::DotElement) -> values::DotElement {
     match value {
         source::DotElement::Poison => values::DotElement::Poison,
@@ -283,6 +325,17 @@ impl PlayerSpellState {
         };
         let mut next = self.clone();
         for definition in definitions {
+            if deflect_equipped_paralysis(
+                &mut next.conditions,
+                &definition,
+                self.equipped_offence.paralysis_deflection_percent,
+                false,
+                &facts,
+            )
+            .ok()?
+            {
+                continue;
+            }
             let applied = match historical_source {
                 Some(historical) => next.conditions.apply_with_historical_source(
                     &definition,

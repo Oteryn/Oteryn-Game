@@ -1,0 +1,38 @@
+[
+  {
+    "mechanic": "0474-task-board-weekly-results",
+    "kind": "handlers",
+    "id": "0474-task-board-elite",
+    "status": "supported",
+    "commands": [
+      6174
+    ],
+    "direction": "client_to_server",
+    "capability": 474,
+    "entry": "protocol.rs::set_elite",
+    "not_applicable": {
+      "settings": "The Character Task Board owner persists Elite preference.",
+      "input": "The Task Board checkbox submits the preference through its existing play queue.",
+      "state": "The existing TaskBoardPanel owns the response state.",
+      "view": "The Task Board feature renders the checkbox and Platinum offers."
+    }
+  },
+  {
+    "mechanic": "0474-task-board-weekly-results",
+    "kind": "handlers",
+    "id": "0474-task-board-weekly-results",
+    "status": "supported",
+    "commands": [
+      6172
+    ],
+    "direction": "client_to_server",
+    "capability": 474,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Monday rewards and task generation are server-owned.",
+      "input": "Admission triggers the query; the result window chooses the next difficulty.",
+      "state": "The existing TaskBoardPanel owns weekly results and command pending state.",
+      "view": "The Task Board feature owns the separate native Weekly Results window."
+    }
+  }
+]

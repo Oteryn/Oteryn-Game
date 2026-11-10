@@ -1,8 +1,119 @@
 use crate::play::play_channel;
 #[test]
+fn cosmetic_token_balance_uses_real_store_input_queue() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.store_initialize(true, false);
+    outbox.store_tokens_initialize(true);
+    link.store_request(6187, vec![]);
+    let command = incoming.try_recv()?;
+    assert!(matches!(command, crate::combat_input::PlayCommand::ServerMechanic(c) if c.capability == 479 && c.command_type == 6187));
+    use oteryn_client_runtime::{cui3::store::*, server_mechanic::{CommandStatus, ServerMechanicResponse}};
+    outbox.store_result(&ServerMechanicResponse { command_id: 1, status: CommandStatus::Accepted, server_sequence: 1, payload: 870_u64.to_le_bytes().to_vec() });
+    assert_eq!(link.store_panel().cosmetic_tokens, Some(870));
+    link.store_browse("cosmetics.outfits", "", 0, 0);
+    assert!(matches!(incoming.try_recv(), Ok(crate::combat_input::PlayCommand::ServerMechanic(c)) if c.command_type == browse::COMMAND_TYPE));
+    let page = browse::Page { categories: vec![browse::Category { key: "cosmetics".into(), parent: String::new(), title: "Cosmetics".into() }, browse::Category { key: "cosmetics.outfits".into(), parent: "cosmetics".into(), title: "Outfits".into() }], products: vec![browse::Product {
+        category: "cosmetics.outfits".into(), revision: "reference-revision".into(), artwork: browse::Artwork { kind: 2, looks: [1814,1815] },
+        offer: StoreOffer { offer_key: "store:outfit:field-surgeon".into(), title: "Field Surgeon (full outfit)".into(), price: 870, currency: "TIBIA_COIN".into() }
+    }], next: String::new(), total: 1000, transferable: 0, transferable_known: false };
+    outbox.store_result(&ServerMechanicResponse { command_id: 2, status: CommandStatus::Accepted, server_sequence: 2, payload: page.encode().map_err(|e| format!("{e:?}"))? });
+    assert!(link.store_payment(true));
+    let quote = oteryn_client_ui::store::confirmation_quote(&link.store_panel()).ok_or("displayed quote")?;
+    assert_eq!(quote.offers[0].currency, "COSMETIC_TOKEN");
+    assert!(link.store_confirm_purchase(&quote, "", "", ""));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = incoming.try_recv()? else { return Err("wrong queue command".into()); };
+    assert_eq!((command.capability,command.command_type),(479,6188));
+    let request = decode_purchase_request(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!((request.price, request.currency.as_str()), (870,"COSMETIC_TOKEN"));
+    assert!(!link.store_payment(false), "an uncertain confirmed payment cannot change currency");
+    outbox.store_result(&ServerMechanicResponse { command_id: 3, status: CommandStatus::Accepted, server_sequence: 3, payload: encode_purchase_result(&StorePurchaseResult { code: StorePurchaseCode::Accepted, order_id: Some(request.purchase_request_id), operation_id: Some(request.purchase_request_id) }).map_err(|e| format!("{e:?}"))? });
+    assert!(link.store_panel().token_balance_refresh);
+    link.store_request(6187, vec![]);
+    assert!(incoming.try_recv().is_ok());
+    outbox.store_result(&ServerMechanicResponse { command_id: 4, status: CommandStatus::Accepted, server_sequence: 4, payload: 0_u64.to_le_bytes().to_vec() });
+    assert_eq!(link.store_panel().cosmetic_tokens, Some(0));
+    assert!(oteryn_client_ui::store::panel_text(&link.store_panel()).contains("Cosmetic Tokens (this character): 0"));
+    Ok(())
+}
+
+#[test]
+fn store_hireling_confirmation_queues_server_modal_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cui3::store::*;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.store_initialize(true, true);
+    let page = StoreCataloguePage {
+        catalog_revision: "revision".into(),
+        offers: vec![StoreOffer {
+            offer_key: "store:hireling:25438".into(),
+            title: "Name Change".into(),
+            price: 250,
+            currency: "TIBIA_COIN".into(),
+        }],
+        next_page_cursor: String::new(),
+        total_coins: 1000,
+        transferable_coins: 0,
+    };
+    crate::play::mailbox::lock(&link.mailbox).store.catalogue = Some(page.clone());
+    assert!(link.store_confirm_purchase(&page, "Morgan", "1", ""));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("modal command".into());
+    };
+    assert_eq!((command.capability, command.command_type), (450, 6196));
+    let (_, custom) =
+        decode_purchase_request_with_hireling(&command.payload).map_err(|_| "request")?;
+    assert_eq!(custom.and_then(|c| c.name), Some("Morgan".into()));
+    let answer = oteryn_client_runtime::server_modal::Answer {
+        dialog_id: 42,
+        button_id: 1,
+        choice_id: Some(1),
+    };
+    let dialog = oteryn_client_runtime::server_modal::Dialog {
+        id: 42,
+        title: "Choose a Hireling".into(),
+        message: "Select a hireling below".into(),
+        choices: vec![(1, "Alex".into())],
+        buttons: vec![(1, "Select".into()), (2, "Cancel".into())],
+        cancel_button: Some(2),
+        image: None,
+    };
+    outbox.store_result(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: oteryn_client_runtime::server_modal::Reply::Dialog(dialog).encode()?,
+        },
+    );
+    assert!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .store
+            .confirmed_purchase
+            .is_some()
+    );
+    outbox.store_modal_answered(oteryn_client_runtime::server_modal::Answer {
+        dialog_id: 43,
+        ..answer
+    });
+    assert!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .store
+            .confirmed_purchase
+            .is_some()
+    );
+    outbox.store_modal_answered(answer);
+    assert!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .store
+            .confirmed_purchase
+            .is_none()
+    );
+    Ok(())
+}
+#[test]
 fn store_panel_opens_and_sends() {
     let (link, mut rx, outbox) = play_channel();
-    outbox.store_initialize(true);
+    outbox.store_initialize(true, false);
     link.store_request(183, vec![]);
     assert!(matches!(
         rx.try_recv(),
@@ -159,7 +270,7 @@ fn store_native_preview_remains_visible_after_catalogue_feedback() {
 fn coin_gift_real_caller_requires_server_review_and_retries_exact_confirmation()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, outbox) = play_channel();
-    outbox.store_initialize(true);
+    outbox.store_initialize(true, false);
     let fields = ["Alice".into(), "25".into()];
     assert!(!link.coin_gift_control(1, fields.clone()));
     assert!(commands.try_recv().is_err());
@@ -208,7 +319,7 @@ fn store_category_navigation_sends_server_key_with_fresh_cursor()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client_runtime::cui3::store::*;
     let (link, mut rx, outbox) = play_channel();
-    outbox.store_initialize(true);
+    outbox.store_initialize(true, false);
     {
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
         mailbox.store.catalogue_category = "consumables.exercise-weapons".into();
@@ -232,3 +343,6 @@ fn store_category_navigation_sends_server_key_with_fresh_cursor()
 }
 #[path = "browser.rs"]
 mod browser;
+
+#[path = "cosmetic_tokens.rs"]
+mod cosmetic_tokens;

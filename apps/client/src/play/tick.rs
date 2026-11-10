@@ -88,7 +88,13 @@ impl PlayView {
         self.pump_touch_step(link);
         // One chronological queue: each input goes out in the order it was given. A step still
         // in flight holds back the arrow and what was given after it.
+        link.pump_bar_item_cooldowns(self.inputs.is_empty());
         while let Some(&input) = self.inputs.front() {
+            if link.bar_activation_pending()
+                || (matches!(input, Input::Cast(_)) && link.bar_item_read_pending())
+            {
+                break;
+            }
             match input {
                 Input::CastAt(spell, position) => {
                     feature_local_cursor_spells::input::send_cast_at(link, spell, position);

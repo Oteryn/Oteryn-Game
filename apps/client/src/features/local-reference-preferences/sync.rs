@@ -31,6 +31,7 @@ pub struct SettingsState {
     minimap_edit: u64,
     hud_edit: u64,
     spellbook_edit: u64,
+    stash_sort_edit: u64,
     archive_edit: u64,
     hud_toggle: Option<crate::play::HudPanel>,
     battle_edit: u64,

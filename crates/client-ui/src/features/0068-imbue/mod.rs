@@ -1,13 +1,19 @@
 //! Imbuement shrine panel state and command construction.
+#[path = "../0470-imbuement-scroll-catalogue/protocol.rs"]
+mod catalogue_protocol;
 #[path = "../0447-imbuement-details/protocol.rs"]
 pub mod details;
 #[path = "state/equipment_tracker.rs"]
 pub mod equipment_tracker;
+#[path = "../0470-imbuement-scroll-catalogue/view.rs"]
+mod family_names;
+pub use catalogue_protocol::apply_result;
 mod input;
 mod view;
+pub use family_names::{family_name, panel_text};
 pub use input::{open_key, tracker_key};
 pub use oteryn_client_runtime::imbue::{ImbueCommand, ImbueResponse, ItemHandle, imbuement};
-pub use view::{panel_text, selected_detail_text, slot_label, tracker_text};
+pub use view::{selected_detail_text, slot_label, tracker_text};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
@@ -172,42 +178,6 @@ pub fn request(panel: &mut ImbuePanel, intent: Intent) -> Option<ImbueCommand> {
     panel.pending = true;
     panel.feedback = None;
     Some(ImbueCommand(imbuement::ImbuementRequest { item, action }))
-}
-
-pub fn apply_result(panel: &mut ImbuePanel, response: &ImbueResponse) {
-    panel.pending = false;
-    let Some(reply) = &response.reply else {
-        panel.feedback = Some(tr!("The server refused the imbuement request"));
-        return;
-    };
-    panel.feedback = match reply.result {
-        imbuement::ImbuementResult::Ok => None,
-        imbuement::ImbuementResult::RequirementNotMet => Some(tr!("Requirements are not met")),
-        imbuement::ImbuementResult::MaterialsMissing => Some(tr!("Required materials are missing")),
-        imbuement::ImbuementResult::InsufficientFunds => Some(tr!("Insufficient funds")),
-        imbuement::ImbuementResult::SlotOccupied => Some(tr!("That slot is occupied")),
-        imbuement::ImbuementResult::NotAllowed => Some(tr!("This imbuement is not allowed")),
-        imbuement::ImbuementResult::RevisionChanged => Some(tr!("The item changed; refresh it")),
-    };
-    if let Some(window) = &reply.window {
-        panel.window = Some(window.clone());
-        panel.details = None;
-        panel.details_pending = None;
-        panel.details_attempted = false;
-        panel.details_feedback = None;
-        panel.slot = panel.slot.min(window.slot_count.saturating_sub(1));
-        panel.offer = panel.offer.min(window.offers.len().saturating_sub(1));
-    } else if matches!(
-        reply.result,
-        imbuement::ImbuementResult::Ok | imbuement::ImbuementResult::RevisionChanged
-    ) {
-        // Mutation replies carry no new slot snapshot. Never present the old quote as current.
-        panel.window = None;
-        panel.details = None;
-        panel.details_pending = None;
-        panel.details_attempted = false;
-        panel.refresh_required = true;
-    }
 }
 
 #[cfg(test)]

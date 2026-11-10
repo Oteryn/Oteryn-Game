@@ -42,7 +42,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .boss_difficulty_command(self.character, self.holder, fence, command_id, payload)
             .await
         {
-            Ok(Some(reply)) => GuildReply::Payload(reply),
+            Ok(Some(reply)) => {
+                if let Ok(wire::Request::Start { context, .. }) = wire::decode_request(payload)
+                    && let Ok(wire::Reply::Window { boss_key, .. }) = wire::decode_reply(&reply)
+                {
+                    let Ok(key) =
+                        oteryn_protocol_oteryn::boss_encounter::encode_boss_key(&boss_key)
+                    else {
+                        return GuildReply::Rejected;
+                    };
+                    let Some((status, _)) =
+                        self.boss_activity_start(admitted, command_id, &key).await
+                    else {
+                        return GuildReply::Unavailable;
+                    };
+                    let outcome = if status == crate::foundation::CommandStatus::Accepted {
+                        wire::Reply::Closed { context }
+                    } else {
+                        wire::Reply::Refused {
+                            context: Some(context),
+                            reason: wire::Refusal::AdmissionRefused,
+                        }
+                    };
+                    return match wire::encode_reply(&outcome) {
+                        Ok(bytes) => GuildReply::Payload(bytes),
+                        Err(_) => GuildReply::Unavailable,
+                    };
+                }
+                GuildReply::Payload(reply)
+            }
             Ok(None) => GuildReply::Rejected,
             Err(_) => GuildReply::Unavailable,
         }

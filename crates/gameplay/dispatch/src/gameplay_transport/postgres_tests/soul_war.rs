@@ -238,6 +238,7 @@ pub(super) async fn settle_captured_endgame_death<K: AsRef<[u8]>>(
                 party_id: None,
                 party_revision: None,
                 members: vec![PartyKillXpMember {
+                    task_board_eligible: true,
                     fence,
                     request: ExperienceAwardRequest {
                         occurrence: ExperienceRewardOccurrence::from_bytes(source.occurrence)
@@ -669,8 +670,12 @@ fn scenario() -> TestResult {
             floor: -10,
         };
         let world = super::quest_world_callbacks::world(
-            &Callback { track_initials: Default::default(), character_requirements: None, required_completed_quests: Vec::new(),
-                admission: None, requires_premium: false,
+            &Callback {
+                track_initials: Default::default(),
+                character_requirements: None,
+                required_completed_quests: Vec::new(),
+                admission: None,
+                requires_premium: false,
                 world_change: None,
                 actor_kind: Default::default(),
                 opening_only: false,

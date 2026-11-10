@@ -30,8 +30,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Houses",
                 "Analytics",
                 "Query map",
-                "Start",
-                "Shuffle",
+                "Exploration status",
+                "Reset POIs",
                 "Find",
                 "Donate",
                 "Query Houses",
@@ -232,7 +232,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 }
                 let intent = match action.saturating_sub(8) {
                     0 => oteryn_client_ui::cyclopedia_map::Intent::Query,
-                    1 => oteryn_client_ui::cyclopedia_map::Intent::Start,
+                    1 => oteryn_client_ui::cyclopedia_map::Intent::Query,
                     2 => oteryn_client_ui::cyclopedia_map::Intent::Shuffle,
                     3 => oteryn_client_ui::cyclopedia_map::Intent::Find,
                     4 => oteryn_client_ui::cyclopedia_map::Intent::Donate,
