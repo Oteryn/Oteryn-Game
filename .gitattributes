@@ -50,7 +50,6 @@ rulesets/items/imbuements/index.json merge=oteryn-regen
 *.md merge=oteryn-additive
 docs/contracts/*.json merge=oteryn-additive
 .github/workflows/*.yml merge=oteryn-additive
-
-# The client build checks this file's raw sha256 against content/spells.manifest.json; a CRLF
-# checkout (Windows runners default to core.autocrlf=true) would change the bytes.
-content/abilities/definitions/player-spells.json -text
+# Client build.rs hashes these bytes against content/spells.manifest.json; keep LF on Windows checkouts.
+content/spells.manifest.json text eol=lf
+content/abilities/definitions/player-spells.json text eol=lf

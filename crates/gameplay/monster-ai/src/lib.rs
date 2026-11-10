@@ -8,6 +8,7 @@ pub mod monster_combat_lane;
 pub mod monster_lab;
 pub mod monster_owner_cycle;
 pub mod monster_summon;
+pub mod observability;
 
 #[allow(unused_imports, reason = "preserve the former server module path")]
 use crate::durability::creature_source_items;
