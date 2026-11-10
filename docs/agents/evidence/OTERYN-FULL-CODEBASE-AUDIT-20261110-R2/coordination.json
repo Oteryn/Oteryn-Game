@@ -1,6 +1,6 @@
 {
   "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
-  "observed_at_utc": "2026-11-10T21:19:55.584629+00:00",
+  "observed_at_utc": "2026-11-10T21:40:01.051042+00:00",
   "lifecycle": "AUTHORING",
   "branch": "audit/full-codebase-20261110-4f0b6c62",
   "sole_writer": "lead /root",
@@ -73,7 +73,7 @@
     },
     {
       "lane": "client-support",
-      "ledger_rows": 4095,
+      "ledger_rows": 4258,
       "reported_completed_modules": [
         "oteryn-client-domain",
         "oteryn-synthetic-assets",
@@ -100,11 +100,11 @@
       ]
     }
   ],
-  "checkpoint": 28,
-  "allocation_comment": 6779513688,
-  "predecessor": "5a322ea510c7c45df472f6a26e2ffba6feba4a28",
-  "predecessor_tree": "1ec77c410546f245265dda1114d49b2cb6ca0ab5",
-  "expected_sha": "5a322ea510c7c45df472f6a26e2ffba6feba4a28",
+  "checkpoint": 29,
+  "allocation_comment": 6779981954,
+  "predecessor": "9def1e0bc4d657979858b610860b76d736222dd8",
+  "predecessor_tree": "7c0c9e4cdffaeee5ee78daef0420a75e157dda43",
+  "expected_sha": "9def1e0bc4d657979858b610860b76d736222dd8",
   "latest_main": "c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f",
-  "latest_main_freshness": "Connector reconfirmed2026-11-10 21:17:52 UTC; earlier LOG-17 successor qualification retained."
+  "latest_main_freshness": "Connector reconfirmed 2026-11-10 21:40:26 UTC; earlier LOG-17 successor qualification retained."
 }

@@ -1,0 +1,25 @@
+# Imports — qualified semantic review, capture09
+
+Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Original reviewer: `/root/r2_dispatch_client_resume`; independently qualified by root. **163 of 565 import files are FULL, covering 292,492 physical UTF-8 lines; 402 import files remain. Status: IN PROGRESS.** The separate 793-file vendor domain and all compressed archives have zero new review credit in this cut.
+
+## Method and evidence
+
+The 163 files comprise 26 manual, 22 mixed and 115 whole-corpus semantic reviews. Whole-corpus review follows every record, field and variant through explicit source, identity, reference, precedence and conservation rules under fully read concrete producers and consumers. Physical line counts measure the source extent; compact JSON can contain many records, and repeated XML was not represented as a manual reading of every repeated line. Parsing and byte hashes alone do not establish semantic review.
+
+Root read all 163 primary notes, all 32 supporting records across nine cuts, all nine complete evidence/limits sections and the nine bespoke review programs. Exact reconstruction proves that the cumulative reports contain those same notes plus pinned metadata. Qualification checked 195 source identities, nine historical manifests with 102 artifact pins, and nine sidecar pins. Two immutable wording amendments correct the Crystal binding description to six top-level fields with three target fields, and replace unsupported field meanings in 55 CipSoft shard method descriptions with literal shapes and actual checks. Root independently checked all 33,971 binding shapes and all 8,566 records in those 55 shards. Original evidence and authorship remain preserved. Supporting tools and other cross-references receive no additional primary credit here.
+
+## Reviewed relationships
+
+- CipSoft staging covers all 80 retained files: appearance families, houses, achievements, creatures, bosses, quests, map declarations and proficiency data. Raw protobuf fields remain raw where their meaning is unestablished. Actual producer checks reproduce the selected outputs; they do not establish bitmap rendering, client behavior or runtime admission.
+- Official membership review covers 171,123 triples across four retained versions, the current 43,516 IDs and all 6,249 asset manifest records. The current DAT was redecoded; three historical DATs and the whole minimap ZIP were unavailable. Present asset byte checks confer no art or binary review credit.
+- Both retained Tibiacom snapshots and their full producer/workflow were reviewed. Their clipped values, record caps, disconnected table cells and pending spell-library coverage remain explicit. Offline validation does not re-establish historical HTTP bodies or fresh public-source truth.
+- Imbuement review reconciles 72 recipes in 24 families, declared fee/ingredient differences, all material/scroll identities and concrete generated policy. Canary items review covers 17,109 elements, all 37,527 expanded IDs, duplicate-key precedence, all narrative descriptions, nested structures and exact timed-field output. Historical source anomalies are not automatically current gameplay defects.
+- Canary and Crystal source indexes, batches and bindings retain concrete source authority and identity boundaries. The Crystal Item producer rederives 33,971 bindings while preserving unbound definitions and retirements. Provenance labels do not establish fresh upstream availability or legal rights.
+- The summer-map review reconstructs the complete repeated source data and proposal joins. Its current producer check **fails on four of 36 outputs**, including stale palette identities and one presentation join; the other 32 outputs rederive exactly. FULL means the review is complete, not that the source is correct. No runtime defect is promoted without the relevant admission path.
+- Crystal Item facts were checked against the maintained weapon-proficiency and writable producers, including held and unresolved values. All 168 embedded raid source files were reviewed with complete XML timing/rectangle/quantity relations and full Lua/narrative reading. The catalogue check reproduces 240 records with 137 marked active in data; this is not a claim that raids executed. The 100 retained creature completion entries remain execution/parity-unverified.
+
+## Findings and limits
+
+No new confirmed finding is promoted in this cut. Existing confirmed totals remain P1=4 and P2=19. Exact private evidence preserves producer failures, source discrepancies, unavailable historical inputs and unverified claims rather than treating every data inconsistency as a production failure.
+
+No source fix, game runtime, Cargo, SQL, Lua execution, deployment or new upstream acquisition was performed. Binary rendering, unavailable source bodies, external rights, world/tile admission, live gameplay parity and source-only quest/NPC behavior remain outside the verified scope. Later import captures and all later tool/content cuts require separate qualification.

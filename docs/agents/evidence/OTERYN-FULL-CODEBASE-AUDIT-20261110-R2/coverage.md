@@ -78,7 +78,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | content | IN PROGRESS | 8032 | 3 | 2 | 78 |
 | deploy | REVIEWED | 16 | 16 | 16 | 1694 |
 | docs | IN PROGRESS | 7398 | 46 | 24 | 3712 |
-| imports | NOT STARTED | 565 | 0 | 0 | 0 |
+| imports | IN PROGRESS | 565 | 163 | 163 | 292492 |
 | repository-root | REVIEWED | 16 | 16 | 16 | 7392 |
 | rulesets | REVIEWED | 77 | 77 | 77 | 124738 |
 | tests | REVIEWED | 12 | 12 | 12 | 852 |

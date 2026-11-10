@@ -5,10 +5,10 @@
     "workspace_packages": 67,
     "supplementary_domains": 11,
     "tracked_files": 27900,
-    "unique_substantively_analyzed_files": 8511,
-    "fully_analyzed_files": 8483,
+    "unique_substantively_analyzed_files": 8674,
+    "fully_analyzed_files": 8646,
     "selected_range_files": 28,
-    "analyzed_lines_union": 2211616,
+    "analyzed_lines_union": 2504108,
     "binary_files_analyzed": 7,
     "analyzed_binary_bytes_union": 3178,
     "workspace_statuses": {
@@ -16,8 +16,8 @@
     },
     "supplementary_statuses": {
       "REVIEWED": 5,
-      "IN PROGRESS": 4,
-      "NOT STARTED": 2
+      "IN PROGRESS": 5,
+      "NOT STARTED": 1
     }
   },
   "counting_rule": "Only explicit substantive source-analysis ranges count. Union is deduplicated by path/range; source reads/searches/inventory alone do not count. Independent security verification reports are retained separately and do not inflate this ledger. Full-file review does not imply completed module or runtime validation.",
@@ -20568,175 +20568,12 @@
       "rust_files": 0,
       "sql_files": 0,
       "kind": "supplementary domain",
-      "status": "NOT STARTED",
-      "analyzed_files": 0,
-      "fully_analyzed_files": 0,
-      "analyzed_lines": 0,
+      "status": "IN PROGRESS",
+      "analyzed_files": 163,
+      "fully_analyzed_files": 163,
+      "analyzed_lines": 292492,
       "analyzed_binary_bytes": 0,
       "remaining_files": [
-        "imports/canary/batches.json",
-        "imports/canary/bindings/creatures.json",
-        "imports/canary/imbuements-xml/.gitattributes",
-        "imports/canary/imbuements-xml/LICENSE",
-        "imports/canary/imbuements-xml/README.md",
-        "imports/canary/imbuements-xml/imbuements.xml",
-        "imports/canary/imbuements-xml/manifest.json",
-        "imports/canary/index.json",
-        "imports/canary/items-xml/.gitattributes",
-        "imports/canary/items-xml/LICENSE",
-        "imports/canary/items-xml/README.md",
-        "imports/canary/items-xml/items.xml",
-        "imports/canary/items-xml/manifest.json",
-        "imports/canary/sources.json",
-        "imports/cipsoft-appearances/README.md",
-        "imports/cipsoft-appearances/effects/effects-00000-00149.json",
-        "imports/cipsoft-appearances/effects/effects-00150-00242.json",
-        "imports/cipsoft-appearances/effects/manifest.json",
-        "imports/cipsoft-appearances/missiles/manifest.json",
-        "imports/cipsoft-appearances/missiles/missiles-00000-00075.json",
-        "imports/cipsoft-appearances/outfits/manifest.json",
-        "imports/cipsoft-appearances/outfits/outfits-00000-00149.json",
-        "imports/cipsoft-appearances/outfits/outfits-00150-00299.json",
-        "imports/cipsoft-appearances/outfits/outfits-00300-00449.json",
-        "imports/cipsoft-appearances/outfits/outfits-00450-00599.json",
-        "imports/cipsoft-appearances/outfits/outfits-00600-00749.json",
-        "imports/cipsoft-appearances/outfits/outfits-00750-00899.json",
-        "imports/cipsoft-appearances/outfits/outfits-00900-01049.json",
-        "imports/cipsoft-appearances/outfits/outfits-01050-01199.json",
-        "imports/cipsoft-appearances/outfits/outfits-01200-01349.json",
-        "imports/cipsoft-appearances/outfits/outfits-01350-01479.json",
-        "imports/cipsoft-staticdata/achievements/README.md",
-        "imports/cipsoft-staticdata/achievements/achievements-00000-00367.json",
-        "imports/cipsoft-staticdata/achievements/manifest.json",
-        "imports/cipsoft-staticdata/bestiary-classes/README.md",
-        "imports/cipsoft-staticdata/bestiary-classes/bestiary-classes-00000-00020.json",
-        "imports/cipsoft-staticdata/bestiary-classes/manifest.json",
-        "imports/cipsoft-staticdata/bosses/README.md",
-        "imports/cipsoft-staticdata/bosses/bosses-00000-00249.json",
-        "imports/cipsoft-staticdata/bosses/bosses-00250-00446.json",
-        "imports/cipsoft-staticdata/bosses/manifest.json",
-        "imports/cipsoft-staticdata/creatures/README.md",
-        "imports/cipsoft-staticdata/creatures/creatures-00000-00249.json",
-        "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
-        "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
-        "imports/cipsoft-staticdata/creatures/creatures-00750-00832.json",
-        "imports/cipsoft-staticdata/creatures/manifest.json",
-        "imports/cipsoft-staticdata/houses/README.md",
-        "imports/cipsoft-staticdata/houses/houses-00000-00249.json",
-        "imports/cipsoft-staticdata/houses/houses-00250-00499.json",
-        "imports/cipsoft-staticdata/houses/houses-00500-00749.json",
-        "imports/cipsoft-staticdata/houses/houses-00750-00994.json",
-        "imports/cipsoft-staticdata/houses/manifest.json",
-        "imports/cipsoft-staticdata/map/README.md",
-        "imports/cipsoft-staticdata/map/areas/areas-00000-00149.json",
-        "imports/cipsoft-staticdata/map/areas/areas-00150-00299.json",
-        "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
-        "imports/cipsoft-staticdata/map/areas/areas-00450-00464.json",
-        "imports/cipsoft-staticdata/map/areas/manifest.json",
-        "imports/cipsoft-staticdata/map/bounds.json",
-        "imports/cipsoft-staticdata/map/markers/manifest.json",
-        "imports/cipsoft-staticdata/map/markers/markers-00000-00149.json",
-        "imports/cipsoft-staticdata/map/markers/markers-00150-00299.json",
-        "imports/cipsoft-staticdata/map/markers/markers-00300-00449.json",
-        "imports/cipsoft-staticdata/map/markers/markers-00450-00599.json",
-        "imports/cipsoft-staticdata/map/markers/markers-00600-00749.json",
-        "imports/cipsoft-staticdata/map/markers/markers-00750-00899.json",
-        "imports/cipsoft-staticdata/map/markers/markers-00900-01049.json",
-        "imports/cipsoft-staticdata/map/markers/markers-01050-01199.json",
-        "imports/cipsoft-staticdata/map/markers/markers-01200-01269.json",
-        "imports/cipsoft-staticdata/map/subareas/manifest.json",
-        "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
-        "imports/cipsoft-staticdata/map/subareas/subareas-00150-00299.json",
-        "imports/cipsoft-staticdata/map/subareas/subareas-00300-00449.json",
-        "imports/cipsoft-staticdata/map/subareas/subareas-00450-00599.json",
-        "imports/cipsoft-staticdata/map/subareas/subareas-00600-00749.json",
-        "imports/cipsoft-staticdata/map/subareas/subareas-00750-00899.json",
-        "imports/cipsoft-staticdata/map/subareas/subareas-00900-01049.json",
-        "imports/cipsoft-staticdata/map/subareas/subareas-01050-01156.json",
-        "imports/cipsoft-staticdata/proficiencies/README.md",
-        "imports/cipsoft-staticdata/proficiencies/manifest.json",
-        "imports/cipsoft-staticdata/proficiencies/proficiencies-00000-00149.json",
-        "imports/cipsoft-staticdata/proficiencies/proficiencies-00150-00299.json",
-        "imports/cipsoft-staticdata/proficiencies/proficiencies-00300-00442.json",
-        "imports/cipsoft-staticdata/quest-lines/README.md",
-        "imports/cipsoft-staticdata/quest-lines/manifest.json",
-        "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
-        "imports/cipsoft-staticdata/weapon-proficiency-bindings/README.md",
-        "imports/cipsoft-staticdata/weapon-proficiency-bindings/manifest.json",
-        "imports/cipsoft-staticdata/weapon-proficiency-bindings/weapon-proficiency-bindings-00000-00149.json",
-        "imports/cipsoft-staticdata/weapon-proficiency-bindings/weapon-proficiency-bindings-00150-00299.json",
-        "imports/cipsoft-staticdata/weapon-proficiency-bindings/weapon-proficiency-bindings-00300-00449.json",
-        "imports/cipsoft-staticdata/weapon-proficiency-bindings/weapon-proficiency-bindings-00450-00599.json",
-        "imports/cipsoft-staticdata/weapon-proficiency-bindings/weapon-proficiency-bindings-00600-00665.json",
-        "imports/crystalserver/batches.json",
-        "imports/crystalserver/bindings/creatures.json",
-        "imports/crystalserver/bindings/items.json",
-        "imports/crystalserver/creature-completion-evidence-20261004.json",
-        "imports/crystalserver/facts/imbuement-materials.json",
-        "imports/crystalserver/facts/items-imbuement-slots.json",
-        "imports/crystalserver/facts/items-weapon-vocations.json",
-        "imports/crystalserver/index.json",
-        "imports/crystalserver/raids-201189f.json",
-        "imports/crystalserver/seasonal-raids-201189f.json",
-        "imports/crystalserver/sources.json",
-        "imports/crystalserver/summer-update/README.md",
-        "imports/crystalserver/summer-update/map-content-linking/assets/catalog.json",
-        "imports/crystalserver/summer-update/map-content-linking/assets/files.json",
-        "imports/crystalserver/summer-update/map-content-linking/graphics/existing-presentation-joins.json",
-        "imports/crystalserver/summer-update/map-content-linking/graphics/map-appearance-links.json",
-        "imports/crystalserver/summer-update/map-content-linking/manifest.json",
-        "imports/crystalserver/summer-update/map-content-linking/report.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/index.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-00000-01999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-02000-03999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-04000-05999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-06000-07999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-08000-09999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-10000-11999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-12000-13999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-14000-15999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-16000-17999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-18000-19999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-20000-21999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-22000-23999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-24000-25999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-26000-27999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-28000-29999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-30000-31999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-32000-33999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-34000-35999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-36000-37999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-38000-39999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-40000-41999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-42000-43999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-44000-45999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-46000-47999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-48000-49999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-50000-51999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-52000-53999.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-54000-54687.json",
-        "imports/crystalserver/summer-update/map-content-linking/spawns/held-groups.json",
-        "imports/crystalserver/summer-update/raw/LICENSE",
-        "imports/crystalserver/summer-update/raw/data-global/world/world-monster.xml",
-        "imports/crystalserver/summer-update/raw/source-commit",
-        "imports/crystalserver/summer-update/source-tree.json",
-        "imports/crystalserver/writable-item-facts.json",
-        "imports/legacy/index.json",
-        "imports/official/appearance-membership/README.md",
-        "imports/official/appearance-membership/admitted.json",
-        "imports/official/appearance-membership/appearances-17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1.json",
-        "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json",
-        "imports/official/appearance-membership/appearances-6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1.json",
-        "imports/official/appearance-membership/appearances-aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50.json",
-        "imports/official/client-assets/15.30/README.md",
-        "imports/official/client-assets/15.30/appearance-ids.json",
-        "imports/official/client-assets/15.30/manifest.json",
-        "imports/official/index.json",
-        "imports/official/tibia-com/2026-09-28-160207Z/facts.json",
-        "imports/official/tibia-com/2026-09-28-160207Z/manifest.json",
-        "imports/official/tibia-com/2026-09-28/facts.json",
-        "imports/official/tibia-com/2026-09-28/manifest.json",
-        "imports/official/tibia-com/README.md",
         "imports/ots-native-admission/solo-source-item-recovery-20261005/README.md",
         "imports/ots-native-admission/solo-source-item-recovery-20261005/audit/main-existing-charges127-qualified-reuse.json",
         "imports/ots-native-admission/solo-source-item-recovery-20261005/audit/reconciliation-summary.json",
@@ -306334,6 +306171,5385 @@
         }
       ],
       "analyzed_lines": 32,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/batches.json",
+      "blob_sha": "ba901dfd6d0327d594f5c1aa3c841f82fd5a8933",
+      "sha256": "982c9519245f68f256a34f2c26bb59e8ad79469df589dd84602a713af90d80fc",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 45880,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/bindings/creatures.json",
+      "blob_sha": "b65f87c6145c3b50f8728728d4fcf7b8b2ba9ccc",
+      "sha256": "716a3ea96690e7a8dff73185637db4f61ef971ba70a419cadc46809025f89cff",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 512392,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/imbuements-xml/.gitattributes",
+      "blob_sha": "84daacbdcfc86868659c61d178e84732be00b832",
+      "sha256": "467e2ab0e92d5492aeca7aa864e43ae48ae9143668425ae1c7df17f65a33175d",
+      "range_unit": "lines",
+      "file_lines": 2,
+      "file_bytes": 131,
+      "range_extent": 2,
+      "analyzed_ranges": [
+        [
+          1,
+          2
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 2,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/imbuements-xml/LICENSE",
+      "blob_sha": "d159169d1050894d3ea3b98e1c965c4058208fe1",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
+      "range_unit": "lines",
+      "file_lines": 339,
+      "file_bytes": 18092,
+      "range_extent": 339,
+      "analyzed_ranges": [
+        [
+          1,
+          339
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              339
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 339,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/imbuements-xml/README.md",
+      "blob_sha": "47ad46b9537605b6b00e0b1900f900b1c2a2fcb6",
+      "sha256": "e58e2033ae77bc4688fdd90ba056400cb4773ed99722ad15ec8bb6ec802d26fe",
+      "range_unit": "lines",
+      "file_lines": 18,
+      "file_bytes": 1122,
+      "range_extent": 18,
+      "analyzed_ranges": [
+        [
+          1,
+          18
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              18
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 18,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/imbuements-xml/imbuements.xml",
+      "blob_sha": "fb881e4a6c30a91356c33bf8de759bb5889bad3b",
+      "sha256": "82ea7b6c28b47b1b3d631ecff6d0015d5019d41327656945609d84340bf95d63",
+      "range_unit": "lines",
+      "file_lines": 517,
+      "file_bytes": 30041,
+      "range_extent": 517,
+      "analyzed_ranges": [
+        [
+          1,
+          517
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              517
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 517,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/imbuements-xml/manifest.json",
+      "blob_sha": "9c815e2a41e3c68d882e71d6621f4c57b861c0c8",
+      "sha256": "b5fade044c1500a55f01c9d02b903b585c360f9e810c0e3bde2191367c01a0b0",
+      "range_unit": "lines",
+      "file_lines": 26,
+      "file_bytes": 1126,
+      "range_extent": 26,
+      "analyzed_ranges": [
+        [
+          1,
+          26
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              26
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 26,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/index.json",
+      "blob_sha": "4e4931170845534589c75c4f594abfc6d862bc0e",
+      "sha256": "c5721ec83cff00852a72308786e148a5499ae4e16818adbde7d3744180eea53f",
+      "range_unit": "lines",
+      "file_lines": 10,
+      "file_bytes": 450,
+      "range_extent": 10,
+      "analyzed_ranges": [
+        [
+          1,
+          10
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              10
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 10,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/items-xml/.gitattributes",
+      "blob_sha": "113cbd1157e13df70bd5a04f5521b2f11e48d3be",
+      "sha256": "6746b20fd9d4d4402d11dddbabc2242d12e4c2c0722fbfe235d65e677704e7c3",
+      "range_unit": "lines",
+      "file_lines": 2,
+      "file_bytes": 126,
+      "range_extent": 2,
+      "analyzed_ranges": [
+        [
+          1,
+          2
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 2,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/items-xml/LICENSE",
+      "blob_sha": "d159169d1050894d3ea3b98e1c965c4058208fe1",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
+      "range_unit": "lines",
+      "file_lines": 339,
+      "file_bytes": 18092,
+      "range_extent": 339,
+      "analyzed_ranges": [
+        [
+          1,
+          339
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              339
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 339,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/items-xml/README.md",
+      "blob_sha": "a6c768d0d8be12e3263a06c48b267326c963721d",
+      "sha256": "e809f60c19c4cae954813799f14a85d151773b4aa3260f500f1ddd062b8d179e",
+      "range_unit": "lines",
+      "file_lines": 18,
+      "file_bytes": 1202,
+      "range_extent": 18,
+      "analyzed_ranges": [
+        [
+          1,
+          18
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              18
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 18,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/items-xml/items.xml",
+      "blob_sha": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "range_unit": "lines",
+      "file_lines": 85286,
+      "file_bytes": 3637462,
+      "range_extent": 85286,
+      "analyzed_ranges": [
+        [
+          1,
+          85286
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              85286
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 85286,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/items-xml/manifest.json",
+      "blob_sha": "c246ebf76fff00040237485385d618eb9205613a",
+      "sha256": "4b90ba08044dc4637d5917ad0042f7b6f48eae9d76215da6368c76824c3aa273",
+      "range_unit": "lines",
+      "file_lines": 26,
+      "file_bytes": 1041,
+      "range_extent": 26,
+      "analyzed_ranges": [
+        [
+          1,
+          26
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              26
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 26,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/canary/sources.json",
+      "blob_sha": "84c0bb6e88a428699172089370f0ded807fc4ad2",
+      "sha256": "151cf74856ad25da747ef6e2275560157926b176b39ba22f2dc19ed533396067",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 851,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/README.md",
+      "blob_sha": "8e0e72ad633ce0c672c19001b055833e55391f39",
+      "sha256": "89cdba5ba23c6c00d0c79cd3dd569214abfb5c3be0505a97ae885bc4925a83c0",
+      "range_unit": "lines",
+      "file_lines": 25,
+      "file_bytes": 1586,
+      "range_extent": 25,
+      "analyzed_ranges": [
+        [
+          1,
+          25
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              25
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 25,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/effects/effects-00000-00149.json",
+      "blob_sha": "fa2e8ab82178f0745cd078f1a88096ce7be43c5d",
+      "sha256": "8fd0ce544965d3c322d0717e06229aff57772c583f249798dcaf1809b61a8ada",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 125938,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/effects/effects-00150-00242.json",
+      "blob_sha": "5ca22023fe737ffb0ce3091e4f977b7594e0f2fb",
+      "sha256": "a321d87413733653101a0851353f60c116caa635867b9becb1cf4c2d40566e1e",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 76901,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/effects/manifest.json",
+      "blob_sha": "a3fbbfcb6a1b07f3f686742788fa2927e1986941",
+      "sha256": "031ab7ec474a351e4c777b0d759df57089ca2ed23453f0dac4fa60f07eac2739",
+      "range_unit": "lines",
+      "file_lines": 36,
+      "file_bytes": 1166,
+      "range_extent": 36,
+      "analyzed_ranges": [
+        [
+          1,
+          36
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              36
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 36,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/missiles/manifest.json",
+      "blob_sha": "761570f4a48356c1dab6f8967e1f4da0c844bc65",
+      "sha256": "235ebfd99e2e5c2bdf25e42daa382b50cc5e098a549a3c5670ed5156f7fc66ac",
+      "range_unit": "lines",
+      "file_lines": 31,
+      "file_bytes": 1009,
+      "range_extent": 31,
+      "analyzed_ranges": [
+        [
+          1,
+          31
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              31
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 31,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/missiles/missiles-00000-00075.json",
+      "blob_sha": "11076ee37ab81313ad6e0e9b28a75bfe854f01ec",
+      "sha256": "b970317b1f61605962fdca5b6377b714081306a5fcd4ee2cea45e9210845c32d",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 57559,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/outfits/manifest.json",
+      "blob_sha": "65a3eb5b6d4a813544dc7e2ab2032e9c3d444650",
+      "sha256": "097cd666b8878f604bf30314080790c4b03866e3a99f4e80c0ca019807b24958",
+      "range_unit": "lines",
+      "file_lines": 76,
+      "file_bytes": 2448,
+      "range_extent": 76,
+      "analyzed_ranges": [
+        [
+          1,
+          76
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              76
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 76,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/outfits/outfits-00000-00149.json",
+      "blob_sha": "733ce7e57dee384e373999b7ef2e4b12e1ba1c7c",
+      "sha256": "96366490dc5c35a5d00f7b1989d3c5831015a4cadac54ade45251f6ed98b568a",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 313391,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/outfits/outfits-00150-00299.json",
+      "blob_sha": "7e3763a439b9e6a9272c10f52d9b3d2bbdf6a80c",
+      "sha256": "2392fd16b3c384e8d30142f1af0b00ecc8dba4d1eddeffaa279b344092d6b526",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 313048,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/outfits/outfits-00300-00449.json",
+      "blob_sha": "75d4529d7937183e3b446b6c757724bd08b1a3f3",
+      "sha256": "83709109f9f4f5c6e61e5403658de63df58f7a2ce1ec06acf67135866a421269",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 295570,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/outfits/outfits-00450-00599.json",
+      "blob_sha": "d921b1d14bf67deca269ea76d93cf9bdead17fbb",
+      "sha256": "f300edd2035e6d691656eb01735c729a4c6c805ee4bd9e6220a8b9fc749ffad3",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 328288,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/outfits/outfits-00600-00749.json",
+      "blob_sha": "7a762c0d5f4743436867c8774f3193ff79ad0343",
+      "sha256": "dfec25f5d44a0e486ab087d8833cdb7b5be46c67d2211581ab0a185b91f5628e",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 378451,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/outfits/outfits-00750-00899.json",
+      "blob_sha": "2e01bfa7841512d3a2b4d334efa38f186cf6d91b",
+      "sha256": "7f25c72179c6646788bdea5e21bfe5e954eeb26290587d4ca73dd66fb37b4960",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 367144,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/outfits/outfits-00900-01049.json",
+      "blob_sha": "57c11ab3085641b72bf7af08f4dcbc4345820c7c",
+      "sha256": "0f6473ea078f516f3a5b877b8a38c47bdc22d6848d44349d47a7e3c75794aada",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 416260,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/outfits/outfits-01050-01199.json",
+      "blob_sha": "72a762dcc916e6d57ce0ab65c8644bf9bc44426c",
+      "sha256": "291f591df0016a330c7b9571c2ea5a5adac22a441073b5ea99475c93b4f4fddc",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 407923,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/outfits/outfits-01200-01349.json",
+      "blob_sha": "7037caed1d8a864bcc4fb0bb448cf7ede85cbf1b",
+      "sha256": "8bade550af7f491c402b011d9f7d9f6ff5889949acb463dc4037b2c3db5cb940",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 424517,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-appearances/outfits/outfits-01350-01479.json",
+      "blob_sha": "90a3690815111d00cb8719dcca985840f9921c2f",
+      "sha256": "2bb91cf5c3522d72acfc088a23f87ee9b058b7d9514c2c6280999867924f11eb",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 369252,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/achievements/README.md",
+      "blob_sha": "09c899c74474ce081117ae601433e2a1727ccccb",
+      "sha256": "d232d2a34a6565c1e999c7dd883cc7d7678c1d7ba8c649d39738b3cf9c5664cc",
+      "range_unit": "lines",
+      "file_lines": 16,
+      "file_bytes": 876,
+      "range_extent": 16,
+      "analyzed_ranges": [
+        [
+          1,
+          16
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              16
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 16,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/achievements/achievements-00000-00367.json",
+      "blob_sha": "6fd5ff497aab23424a3579cba386d0d400a02362",
+      "sha256": "517061404f4c5448c9c5aea76e2ef87f76643986c6664179eb72f030ff387862",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 117002,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/achievements/manifest.json",
+      "blob_sha": "5e9b2cc7995840dccef9f3c811d7c5e6d36b6624",
+      "sha256": "9c3a2ef891ff522b2acbf2c9dc994a4a9c036f3d109d584e96e62d51c065f06f",
+      "range_unit": "lines",
+      "file_lines": 22,
+      "file_bytes": 775,
+      "range_extent": 22,
+      "analyzed_ranges": [
+        [
+          1,
+          22
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              22
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 22,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/bestiary-classes/README.md",
+      "blob_sha": "da5d4f4084ca6e3ab80f14ff41f4b4d6aaef67ae",
+      "sha256": "33361ea88c70f2347af5c6c2631c5519fdc6c54485be051c8b38f0f1e392255e",
+      "range_unit": "lines",
+      "file_lines": 15,
+      "file_bytes": 963,
+      "range_extent": 15,
+      "analyzed_ranges": [
+        [
+          1,
+          15
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              15
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 15,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/bestiary-classes/bestiary-classes-00000-00020.json",
+      "blob_sha": "7e987f2cbd2c842a8130b46d611c1f7548aa12b2",
+      "sha256": "134599f8b4f2cbd18038040cf275de0397410b825d285bbde35dbb3394b9346a",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 3012,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/bestiary-classes/manifest.json",
+      "blob_sha": "400046c797cdfbfc8ec0e448d8d0695e16502666",
+      "sha256": "33716cc4aa7d54c81b638ed5a315170900aeb62cbdaf70fa00411e00a32efc99",
+      "range_unit": "lines",
+      "file_lines": 22,
+      "file_bytes": 784,
+      "range_extent": 22,
+      "analyzed_ranges": [
+        [
+          1,
+          22
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              22
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 22,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/bosses/README.md",
+      "blob_sha": "aa8ee87d08477205c361cd6a9fff0513be5cb843",
+      "sha256": "ac48da0b3572d33bf0d5335982aeadabd0ba7701f35910e3682efaf51d3dd940",
+      "range_unit": "lines",
+      "file_lines": 15,
+      "file_bytes": 1016,
+      "range_extent": 15,
+      "analyzed_ranges": [
+        [
+          1,
+          15
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              15
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 15,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/bosses/bosses-00000-00249.json",
+      "blob_sha": "f65b3f4b54313652b52b6fd201a99ce17d9ed2d2",
+      "sha256": "4bd71cf4b80740c184183366afdea9208c8d3176229bab2f1d09ac76587cb484",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 49924,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/bosses/bosses-00250-00446.json",
+      "blob_sha": "bfdb8df0b791690a228e6f128b8c72966e93f0c4",
+      "sha256": "ec3806370dc2fbda86b71ff8c8106e7743ffd195276ee56496ebdf3d33892268",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 40104,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/bosses/manifest.json",
+      "blob_sha": "d0abfe5ec6228856d674017552bf4fa7847547b2",
+      "sha256": "adc839c162915eaf2ff7f6933e308fbcbdaf8d8554b3e76debda2a672a377688",
+      "range_unit": "lines",
+      "file_lines": 27,
+      "file_bytes": 907,
+      "range_extent": 27,
+      "analyzed_ranges": [
+        [
+          1,
+          27
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              27
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 27,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/creatures/README.md",
+      "blob_sha": "9ba63c6007f10f392bde758ac1e38dfa244dba39",
+      "sha256": "75f2922dbec885ba653de38c5f49fc7303c58507abc022e072d969867124f494",
+      "range_unit": "lines",
+      "file_lines": 15,
+      "file_bytes": 1244,
+      "range_extent": 15,
+      "analyzed_ranges": [
+        [
+          1,
+          15
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              15
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 15,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/creatures/creatures-00000-00249.json",
+      "blob_sha": "c9b560a3f19e25db38c01dfd2f2632f2570768f6",
+      "sha256": "3da6a83a2c3ce3e3b9551379e2dd6c22693365a20059dfba3209d0f2255cef6e",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 54876,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+      "blob_sha": "5520abd6a655d467ce652e2fa8060c73ed102994",
+      "sha256": "8bda35e885f85779ecec50eaec6d65ea2077f76505b2b4a5fb86938a47b06e75",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 55793,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+      "blob_sha": "cb213e148c1900efe3139e1439d5f0cd9198fee0",
+      "sha256": "2c81949301abe20b4867220decc7195182c43470e0d976d6b46e13c0b062b04b",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 56290,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/creatures/creatures-00750-00832.json",
+      "blob_sha": "65d65d20c7d6c0c4efdac539fe476d35e9192d42",
+      "sha256": "eed18ff5ae82fcefdf6893ff2078ac893451a7fee849c9416b87db594b0044f6",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 18885,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/creatures/manifest.json",
+      "blob_sha": "9c78ce95f7b2364849b61d8e95656533c9e399c8",
+      "sha256": "a6b5aed22da5d5dd3bc6549a2856e670471cb6979d9649c5e0a6e0bb206ddacd",
+      "range_unit": "lines",
+      "file_lines": 37,
+      "file_bytes": 1248,
+      "range_extent": 37,
+      "analyzed_ranges": [
+        [
+          1,
+          37
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              37
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 37,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/houses/README.md",
+      "blob_sha": "af0b4bc75c64865702b403d9a21ceabb11e4bd38",
+      "sha256": "6f83d4e4e56a8623a20e334d9468f90d55d5aa0bd9899b9dd197e66763ac13f6",
+      "range_unit": "lines",
+      "file_lines": 49,
+      "file_bytes": 2442,
+      "range_extent": 49,
+      "analyzed_ranges": [
+        [
+          1,
+          49
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              49
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 49,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/houses/houses-00000-00249.json",
+      "blob_sha": "fad7f894ee282144ff4a679a3c9c76100704250f",
+      "sha256": "38d11169b0b7afd10e63bad503a5b0fe530a742fdb824ab7abb6b2fb2cf5cde4",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 1080955,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/houses/houses-00250-00499.json",
+      "blob_sha": "528adf35a36171b3c697a97a9d1505d777f9a3c1",
+      "sha256": "62c54e8b3b1ac5ab337beb999789a898ccbf35f3a9eaf0716dfc8f35ac6b48cb",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 1161666,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/houses/houses-00500-00749.json",
+      "blob_sha": "d8ab8f92fc14ce6fc4b674eb873f8fe6227d80be",
+      "sha256": "8d731cedcdb5e2fb191865aeca9d88a43fd72195f8ff44f54ff12c1563a8e826",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 939455,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/houses/houses-00750-00994.json",
+      "blob_sha": "5d9e332cfd3d4ec90a8a181b880574e316bac81c",
+      "sha256": "94c43e965825a286dff7e22de9d8ba255a13f20ea96680f9ef376e7a89514cc9",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 698859,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/houses/manifest.json",
+      "blob_sha": "d3ef8bdb17966a2307897d87b10dad85f1d4b6e4",
+      "sha256": "673a53213c29a535869a6013e74a666f6c25965c4d86927a0b31d5832c0817f3",
+      "range_unit": "lines",
+      "file_lines": 41,
+      "file_bytes": 1462,
+      "range_extent": 41,
+      "analyzed_ranges": [
+        [
+          1,
+          41
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              41
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 41,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/README.md",
+      "blob_sha": "0375dd708a21d12829d0be725920b2b64c4cffea",
+      "sha256": "96cf5abf98615e03ec06874b2ea5bd457b91abbdadd435120679fae544346288",
+      "range_unit": "lines",
+      "file_lines": 44,
+      "file_bytes": 3059,
+      "range_extent": 44,
+      "analyzed_ranges": [
+        [
+          1,
+          44
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              44
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 44,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/areas/areas-00000-00149.json",
+      "blob_sha": "e51c38abf073a25c9de853c88bad8eea1dcac837",
+      "sha256": "ff00f0b2e08928e94143446935fc8f581054089ea6f6ebb68ff25b1cfff43add",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 63388,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/areas/areas-00150-00299.json",
+      "blob_sha": "bbd747e2d638ec75ad3b6b2f760f3f2a5a9e64a4",
+      "sha256": "17d2be0cf71efe35c31db228c68bf904c14da28d0296f1ef220a044017e22588",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 54150,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+      "blob_sha": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+      "sha256": "644a7346ed568fd696d6aa725e484191ee84cc960e4c3f4fa6b90350e116a3aa",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 52149,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/areas/areas-00450-00464.json",
+      "blob_sha": "8696f13149882ce70ebb9d4019021ce19168eae1",
+      "sha256": "c8b44e08a7af1111716700648bd1ed7ffeaa310033ee5a11827c0edde08fedd0",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 5367,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/areas/manifest.json",
+      "blob_sha": "6739c701ec2f3cac9e9d70b26495d2f58eaff668",
+      "sha256": "01bd0f9aeef44fbc9c08437b41f041b77def0a4b7051f7fbc2cf7b2905406f99",
+      "range_unit": "lines",
+      "file_lines": 37,
+      "file_bytes": 1187,
+      "range_extent": 37,
+      "analyzed_ranges": [
+        [
+          1,
+          37
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              37
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 37,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/bounds.json",
+      "blob_sha": "b92618abf26a655c4fe5fbb5641b1224aadd0765",
+      "sha256": "8488ce84a55ef9aa6f256776d9ddf0d14fc2d8c4ef7b8588badb21818bbb5c4a",
+      "range_unit": "lines",
+      "file_lines": 15,
+      "file_bytes": 377,
+      "range_extent": 15,
+      "analyzed_ranges": [
+        [
+          1,
+          15
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              15
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 15,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/markers/manifest.json",
+      "blob_sha": "1b92f4aea2e35f0ece48d199e1365e78579821e1",
+      "sha256": "3d65ecfc0a2219ee884bc3565d3c1b22f86d50b7f34b83f6f60dce08b83b03a9",
+      "range_unit": "lines",
+      "file_lines": 62,
+      "file_bytes": 2002,
+      "range_extent": 62,
+      "analyzed_ranges": [
+        [
+          1,
+          62
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              62
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 62,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/markers/markers-00000-00149.json",
+      "blob_sha": "472d9b93accb0c97b41bcaab2a73a764751bf42e",
+      "sha256": "be135d593c4c49fb167108db751998ed9b8c57d906a31b3293f05fbf64bd7b00",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 27499,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/markers/markers-00150-00299.json",
+      "blob_sha": "298930c0cb750ff2c3599005058bd2d4376dd832",
+      "sha256": "3445331c5bdfa4752e662f9e257108aa0aeaaa28306abb91233b7b845aa63f6c",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 27521,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/markers/markers-00300-00449.json",
+      "blob_sha": "1f9091c9f832e16bae9f9f3399c991fb62cb2342",
+      "sha256": "bc30d4e982f8268460bcb74bd87f6d5d865f9081f632fbeca9a4e756af9086e1",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 27623,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/markers/markers-00450-00599.json",
+      "blob_sha": "577b414b5310ad33663345b40704e669a53f3cc3",
+      "sha256": "af2b665dcf1daf4ede288386021686403aa7514d1f1891f9695f6f65c8b9c49b",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 27368,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/markers/markers-00600-00749.json",
+      "blob_sha": "e4614590477083028568f93fa2081c01bf22ddb7",
+      "sha256": "31a9e997b8ad97657a9ce03a2927f4ee654dcc72e5b52f7a043ce2dc12fd89e2",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 27308,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/markers/markers-00750-00899.json",
+      "blob_sha": "49304f2585f9e9b857c4121c4a6631e5e4f01440",
+      "sha256": "8ef25eec91d570e33c2b16c00fed3c43d47c358ccfe5ae3c5f695feb0e672638",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 27481,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/markers/markers-00900-01049.json",
+      "blob_sha": "465477ca47702dd1b5db3740a3a92b61ca1e6072",
+      "sha256": "3c9f93b033d81f0cd73daeaa215c5afe12915023eb41bb170e12213e801c90ee",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 27440,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/markers/markers-01050-01199.json",
+      "blob_sha": "a7796391dfaea843d6101b33549e11708231e395",
+      "sha256": "7ce0128352423e982d2ea81af3b4ad6abce43feedb5b8ff1a95f1c3badb09275",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 28248,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/markers/markers-01200-01269.json",
+      "blob_sha": "ae982b76735859826f7e6e327eb2992150c699f6",
+      "sha256": "e1bf4016cb602552757592d4153b2d87e1b1c40a2f757c348659aa88ad14048d",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 13157,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/subareas/manifest.json",
+      "blob_sha": "0a82badd97c36bcea2f9ad336d8522f87d0fe584",
+      "sha256": "1e912b163dc8b98f9d71a4c465c26ad5d053f398348de1882af244c1f6fb862b",
+      "range_unit": "lines",
+      "file_lines": 62,
+      "file_bytes": 1919,
+      "range_extent": 62,
+      "analyzed_ranges": [
+        [
+          1,
+          62
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              62
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 62,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+      "blob_sha": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+      "sha256": "ab7d067fcc50cc14991d42ed9477cc2b55ab9db5222451ac39b98f11167b07b9",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 72734,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/subareas/subareas-00150-00299.json",
+      "blob_sha": "e197dbd8ab4674afdd9844f8f47be712603fc569",
+      "sha256": "e307de13234ccd2d80c0a8599409a085749eb067afc22b5105e9726362e29ee4",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 74369,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/subareas/subareas-00300-00449.json",
+      "blob_sha": "521a659fa74e9e8abc71d98212ee592321faa381",
+      "sha256": "c753af0ed61dd24f8a2c3292c201bf66a96aae605834f79a0ae5bda1374c5ac8",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 75389,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/subareas/subareas-00450-00599.json",
+      "blob_sha": "84e5a3fc22893f21bd126366a9e81c21a796c7b8",
+      "sha256": "ea0b72636678a4d51838cf05410a69dade15403b70644ad30047fec61c43772c",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 75388,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/subareas/subareas-00600-00749.json",
+      "blob_sha": "6aa3ad717f6b01a5211888cc070b22c194e89017",
+      "sha256": "ccdc512e96d86cb0b5043f0ec3924d28cf5563f60de6b1f84a7c307748ba3464",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 75394,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/subareas/subareas-00750-00899.json",
+      "blob_sha": "5d25fae34b8807a669bd414c7c7b762a3254e7a5",
+      "sha256": "e1faad301a4c430d2b2a7f3ebdb08f20cfa0554f95b511d2fca3b22e938bccc5",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 75542,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/subareas/subareas-00900-01049.json",
+      "blob_sha": "539077304bcc9a315a382164fae84c00e17f849a",
+      "sha256": "9bb7242fd7292dd4e92f2698c37e6d03d62ad69daf3fe09d5240bff32710df74",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 75520,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/map/subareas/subareas-01050-01156.json",
+      "blob_sha": "4ca7d59abd1000d3c5ff8c8c4a36336939a652b4",
+      "sha256": "9dca64337ba425c215d78395e8e2de3bceb5c802d2d9a1b9f9fe883cc14accb1",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 53934,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/proficiencies/README.md",
+      "blob_sha": "4a4f2380e58d3ab8e065016c4527778c34786560",
+      "sha256": "2fa3992428de41ed15b225499c658f362f59dd1d5003ed2552b453d55e969dd4",
+      "range_unit": "lines",
+      "file_lines": 23,
+      "file_bytes": 1377,
+      "range_extent": 23,
+      "analyzed_ranges": [
+        [
+          1,
+          23
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              23
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 23,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/proficiencies/manifest.json",
+      "blob_sha": "1372cbcd04257fe36133e082347dca7b2fe29a3c",
+      "sha256": "d43c0e15c62928fd8bdda7d0929edd1084e0f6fd86636b91322e684c3946e37f",
+      "range_unit": "lines",
+      "file_lines": 32,
+      "file_bytes": 1089,
+      "range_extent": 32,
+      "analyzed_ranges": [
+        [
+          1,
+          32
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              32
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 32,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/proficiencies/proficiencies-00000-00149.json",
+      "blob_sha": "cf37132ec9d725be8d66384ef74e50ca79a50408",
+      "sha256": "821ef167065e5d270290bf0493b28507cb2a6bfa2bc79ed2fd00833be1135df5",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 96279,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/proficiencies/proficiencies-00150-00299.json",
+      "blob_sha": "bb3cf81162716ce1b961ad2c375cd71220638aa1",
+      "sha256": "23c462bf5fdc6d841e657a79d72c64c16100e8e2c21bc0cca3dd1e1bed473c76",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 65082,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/proficiencies/proficiencies-00300-00442.json",
+      "blob_sha": "9d7405685cb1309bb46cc29a4da1ed69cf22c75e",
+      "sha256": "cbdf675e28a57d2ee0548a3181aa3d9142ceeb293021147af30cf089f9de9cb8",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 80219,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/quest-lines/README.md",
+      "blob_sha": "36aa3c3bfa8ae00a41e34b3898f74ccf1d362535",
+      "sha256": "aa5de86a15003a1fd98d055fc3c84311befedc69dc8017b632d0547715ace5f7",
+      "range_unit": "lines",
+      "file_lines": 15,
+      "file_bytes": 892,
+      "range_extent": 15,
+      "analyzed_ranges": [
+        [
+          1,
+          15
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              15
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 15,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/quest-lines/manifest.json",
+      "blob_sha": "7fb62411958e7494fd11ace2381252c8ce329500",
+      "sha256": "9981215b80e23062e0779adeae454f7f1b9bf42c63cdece71899d2bedae65fb9",
+      "range_unit": "lines",
+      "file_lines": 22,
+      "file_bytes": 769,
+      "range_extent": 22,
+      "analyzed_ranges": [
+        [
+          1,
+          22
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              22
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 22,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+      "blob_sha": "6bc526485e3a54678077b86681b5119447f5c5cf",
+      "sha256": "a30646107aa4165816101b36ec4fab60d1a8134e6dc3189202767a566c64604d",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 15336,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/weapon-proficiency-bindings/README.md",
+      "blob_sha": "3e9430221ffca7053655c881867e502c35d30326",
+      "sha256": "87abc868bb880c42b181323a2e9b6ef038f4b91c31af8656f64e5f4cb6d6d42a",
+      "range_unit": "lines",
+      "file_lines": 23,
+      "file_bytes": 1507,
+      "range_extent": 23,
+      "analyzed_ranges": [
+        [
+          1,
+          23
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              23
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 23,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/weapon-proficiency-bindings/manifest.json",
+      "blob_sha": "36cb3d702cd7c7d84d96c35a3fb388af090722d2",
+      "sha256": "9d7cf61472f9970b7b0232edb83e83ab593f1fbedf27832ca7dfe93e3c2c0324",
+      "range_unit": "lines",
+      "file_lines": 46,
+      "file_bytes": 1752,
+      "range_extent": 46,
+      "analyzed_ranges": [
+        [
+          1,
+          46
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              46
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 46,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/weapon-proficiency-bindings/weapon-proficiency-bindings-00000-00149.json",
+      "blob_sha": "51a4c492a27c0a2ae89264bfacc58b22f8e4065d",
+      "sha256": "ca3703d45d02d142b8391ce40bfb256f3f6792fff50c050143b248daf03f11d0",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 26430,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/weapon-proficiency-bindings/weapon-proficiency-bindings-00150-00299.json",
+      "blob_sha": "187739fd0d0879032d9ecce4cd8ad884f0f1602a",
+      "sha256": "c50ba2700f3d09befdb65b3b48c07e50a5113cfa202a5c64cb053801e1f0a050",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 26991,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/weapon-proficiency-bindings/weapon-proficiency-bindings-00300-00449.json",
+      "blob_sha": "8cdd694ef340a253254fe23f61bbe39aca0961a5",
+      "sha256": "5631b7ae28bedf40f8f4a473a33bc11ddce4ea9cb32668e519bf65a0c0dfb13d",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 28211,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/weapon-proficiency-bindings/weapon-proficiency-bindings-00450-00599.json",
+      "blob_sha": "af36ac38da9464d6dbed6df58b1ef653a334904a",
+      "sha256": "02b92b3822e6a9891f87f3979e295e78ff8da2b80c41bc7166f16096b7a8d7dc",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 27463,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/cipsoft-staticdata/weapon-proficiency-bindings/weapon-proficiency-bindings-00600-00665.json",
+      "blob_sha": "dbbd18040238d378c1929e5dd797d0a14e3df2df",
+      "sha256": "3bc82986d3498eced740741aafe5bd47eb2ff6eb886bc7e775d0d5ed905f2a3b",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 12246,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/batches.json",
+      "blob_sha": "3fc9d83c3eeea0e67773ef0fcd1585c1b2893d62",
+      "sha256": "e6db6296bbf9a973c7ec6b6717a5dac6c59afddb83ca4130f15098146045066d",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 6852,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/bindings/creatures.json",
+      "blob_sha": "7d062dc2f5a8a8f000871228c4feb7c38bc5df0e",
+      "sha256": "9aed187dbba34b31fb1501f2acdfe977a6166f94fcc53b5aafb538cea8dbc7b5",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 74989,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/bindings/items.json",
+      "blob_sha": "a3161acbd8cee0130439e4cbb9f579cc4aa5d3f6",
+      "sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 9456726,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/creature-completion-evidence-20261004.json",
+      "blob_sha": "ee4e127d5ed3b1dd06534ce92cd5bc531a9ad47c",
+      "sha256": "4662d2956b802255e22963647f438b579d53e95f1cfc5c167f1f32ab8a795748",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 31594,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/facts/imbuement-materials.json",
+      "blob_sha": "ee654a1d97ec373279c23974ca68b4d9748971ff",
+      "sha256": "d00c20e39e02dd81205a302201c4b640239c203c136056b31a854cfe85cf8f25",
+      "range_unit": "lines",
+      "file_lines": 1204,
+      "file_bytes": 18005,
+      "range_extent": 1204,
+      "analyzed_ranges": [
+        [
+          1,
+          1204
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              1204
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1204,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/facts/items-imbuement-slots.json",
+      "blob_sha": "f183e4a6e0a6da16d76e753a962a7e9a75b35aba",
+      "sha256": "27db22e165446d4f8bf515509a1bae4a3a5ca38b50c988969cc5ea69bd5c8c0b",
+      "range_unit": "lines",
+      "file_lines": 197,
+      "file_bytes": 4001,
+      "range_extent": 197,
+      "analyzed_ranges": [
+        [
+          1,
+          197
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              197
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 197,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/facts/items-weapon-vocations.json",
+      "blob_sha": "3a5fb3748ac35058d5262e18cfde450758315f47",
+      "sha256": "048572bc4eab032b6c274fadf4c87cbe9256e43917c2040a7c5a2a866eb65fbe",
+      "range_unit": "lines",
+      "file_lines": 653,
+      "file_bytes": 56916,
+      "range_extent": 653,
+      "analyzed_ranges": [
+        [
+          1,
+          653
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              653
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 653,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/index.json",
+      "blob_sha": "98ed535cb2f7ea99ecf092b643613d16d4d37e78",
+      "sha256": "7c5ebd821b19ee87aa68c19e7d4078beb67f55781b3a94582b7b9421cbbabe67",
+      "range_unit": "lines",
+      "file_lines": 10,
+      "file_bytes": 367,
+      "range_extent": 10,
+      "analyzed_ranges": [
+        [
+          1,
+          10
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              10
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 10,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/raids-201189f.json",
+      "blob_sha": "1c562970e7c25bc97b0ab4967c6cbb6b7d8b4cf3",
+      "sha256": "902319f52a2825e1f7722b919d44526377657e8201139b512e4b9bb178f9b720",
+      "range_unit": "lines",
+      "file_lines": 1003,
+      "file_bytes": 152876,
+      "range_extent": 1003,
+      "analyzed_ranges": [
+        [
+          1,
+          1003
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              1003
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1003,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/seasonal-raids-201189f.json",
+      "blob_sha": "5d7e9f5b188e52aae55c0a1c756304e582c2e3fb",
+      "sha256": "2ca657c6f475b093923210e092d04e9ec38b8ed60c0d995671aae588403d261c",
+      "range_unit": "lines",
+      "file_lines": 9,
+      "file_bytes": 24912,
+      "range_extent": 9,
+      "analyzed_ranges": [
+        [
+          1,
+          9
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              9
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 9,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/sources.json",
+      "blob_sha": "d0a7d73280500cdb5ebbcdcd68e656e8e2d16f0d",
+      "sha256": "d038a2bee4f8817306b34adb65912785d135b420fc205544fda81eff947ea12e",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 1700,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/README.md",
+      "blob_sha": "a6cc1c53233a635ff06830adc5fbf1f03bbf7af9",
+      "sha256": "ef91823f564d86d82d8bb5efcbda9f997eb70b29bda35c135288ffeefe1c74ae",
+      "range_unit": "lines",
+      "file_lines": 25,
+      "file_bytes": 1407,
+      "range_extent": 25,
+      "analyzed_ranges": [
+        [
+          1,
+          25
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              25
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 25,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/assets/catalog.json",
+      "blob_sha": "9d2f81bc77aea16d00f57b264c3e8a980998db47",
+      "sha256": "b9da742683e3b80f9f4f537d5800b9493439c5ce585d0e6f5be368f77d16345d",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 1368367,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/assets/files.json",
+      "blob_sha": "6950a5cbe28f5396e92f772dcca01ab31d83ea81",
+      "sha256": "e06f80fd5067a9bac5a0d834b9581ad5987e9c563387760495633a1aa2aec3f3",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 1970925,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/graphics/existing-presentation-joins.json",
+      "blob_sha": "2bdbde3faa2a1287d128930e6047b99d8483550f",
+      "sha256": "14b82ad7a4227f5783fef4c6002596e6222ffa213086e8fa86425e0ba91703ea",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 798475,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/graphics/map-appearance-links.json",
+      "blob_sha": "3c44f743fb5f84b204ab410ad13cd06f163c4304",
+      "sha256": "c67ad7b3363d84e193fd80bbcc1a1344aeee950acf2b7b1793db468812565036",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 22336140,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/manifest.json",
+      "blob_sha": "8cf16b25a1ea7c85ead96c04bc393c06e5927750",
+      "sha256": "0597bbad448aaef03b358ff83992e001def83b5158dbe8a37bf7be52770cce23",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 1248040,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/report.json",
+      "blob_sha": "8362f547b95ba5c444b0db9afc71993d208b641f",
+      "sha256": "51ad3d1530634e372e0dc06a37359ce5c95ac261dc8af5ec19f368c2ee3fccec",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 1302,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/index.json",
+      "blob_sha": "1f8a2c8854010a62e292ac1ed487cc3493fe55f3",
+      "sha256": "093175a910a63debc5d3194717089b175b1c0481dab8fb7068d6d60c311df7e6",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 1876,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-00000-01999.json",
+      "blob_sha": "7d233f045c21c9800f90a2426a3fb404ba3031f2",
+      "sha256": "df45372774ec5214bb9cb85e55f811dd9347786e6f1106222f21b7d5f34064d5",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 633446,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-02000-03999.json",
+      "blob_sha": "8c7509ddc8bfec24b06747aa4c658cdade2de9c8",
+      "sha256": "49fa16b540326c5b698321cf631992498aa9c3322006b28be3df02d18e1493cb",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 640425,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-04000-05999.json",
+      "blob_sha": "da0e7b059c7a827126822e3789458d074225de80",
+      "sha256": "0bef63291bbdf8b975d1dad7b9bdf291ced4ea49c0bedb37d00af21fcb2c4948",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 666063,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-06000-07999.json",
+      "blob_sha": "38b39bea64a7ae169c6b81507ce58b64d18b141f",
+      "sha256": "17e1665ae9eb475e879c89839b7dd9c4b3885ad3d40a9d41c5e10748353bbc94",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 609363,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-08000-09999.json",
+      "blob_sha": "cc653ec4b4bec447f48b065d75a3aeeabc1e98df",
+      "sha256": "bf90bc7f291cbf36fcec532c6f009dd2bbcdca6d995c7422f27214855d811902",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 605501,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-10000-11999.json",
+      "blob_sha": "72b7d05a7c6edbf5526e7e0669077c92540dd5c3",
+      "sha256": "afe0e14a5970e8b7a21a06cf2859520af1fbf72083852cf5cac138b9d2724762",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 709199,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-12000-13999.json",
+      "blob_sha": "76e62e9580867d09f7dd77e8bba6ed21db5beed2",
+      "sha256": "152d8239e788384ce80a07a61c38f29966ede66764758d3bb79b4f2d62fa5a75",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 639628,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-14000-15999.json",
+      "blob_sha": "1b0f4c1b8a38372788abc8f8ef82fa1cb99f0d8e",
+      "sha256": "d8044ed909f734b6e0502da42a74d4cc40c4e4c04cee381a65f825f7a6ce1411",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 668146,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-16000-17999.json",
+      "blob_sha": "eafba6eec1e8332e184cafa40f82da02b9cb7d25",
+      "sha256": "7a52a578684999725d2f0cb4523a4d299d2501320d9d7ed0562c25c320492ee3",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 687368,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-18000-19999.json",
+      "blob_sha": "e1692bf6066816e702dfda2488bca03ae9058f2f",
+      "sha256": "4667d12bbe95927e3b81bb67c5d0903f33e6866325bdfc24c43c0868cdcf4e42",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 658749,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-20000-21999.json",
+      "blob_sha": "66585f72c8030b0c11533ee7acbe212c3f902b46",
+      "sha256": "86cdd9e77648931d394b48262aba92dc4bbb7fd1ad41cb60b19e25fc426d2225",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 736936,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-22000-23999.json",
+      "blob_sha": "05a2108decfba53e3500b6e884d96e9ef2304618",
+      "sha256": "00819b8517fc6a3cd2ceba36702d9961288f2d6f3c9a2ed0aeaccf5d925aecd9",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 701473,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-24000-25999.json",
+      "blob_sha": "4558253c2e23d6e220f3f5431592dc31d73cbd83",
+      "sha256": "d4308ade48bc559bca7169c61317ec4b51fbfbe6f808d55dce0afa1764090a5b",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 674310,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-26000-27999.json",
+      "blob_sha": "50d7d4768864a87bd09a7f18d4021f6e95fd748d",
+      "sha256": "7b09f629f4b99067886447e220c54693496e17d51e076fe225691821d2cd7b73",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 661254,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-28000-29999.json",
+      "blob_sha": "aef77bb9ee44e6a5e8150428ad57b30f0f3414bc",
+      "sha256": "d2a68105a416cbc6aebae449c161d056506a9f22e7d8377924117906da0a453e",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 716280,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-30000-31999.json",
+      "blob_sha": "a382c0186e31268b507b9612cbfa9e1f338ae3cc",
+      "sha256": "ff293919d01a4bd641db18589f7f9cc244201b47aa11a4e3ececcbb642fbe54b",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 699816,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-32000-33999.json",
+      "blob_sha": "f84cfca953c88bff65609cdce985f99d564d145c",
+      "sha256": "3b8e589ad3cb6840653f9b03c44ea808dc93b052252bdb92f3393e399e943de7",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 655948,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-34000-35999.json",
+      "blob_sha": "0b765c8a94978c5988ec3b6a890fdf7865725f03",
+      "sha256": "313d78a4adcd7e2bd03304779d0bd81fb9c581897f3733161067fae675c2d4a2",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 748020,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-36000-37999.json",
+      "blob_sha": "c395fc1ec564fff0c2231ea1c0243443f689c8cf",
+      "sha256": "193f399b49e22d363ea3776317d5ffde3abb608293bc686dc62239f0b825deb6",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 707880,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-38000-39999.json",
+      "blob_sha": "e57093310087343faf802471a28b5d273cdb0df1",
+      "sha256": "2198f982116d50021006aa9e6e8178c8f73450ab914f86e5c08543cb0091561b",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 683466,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-40000-41999.json",
+      "blob_sha": "54447595944c62a721a9d3297023db98c5f52ffa",
+      "sha256": "e30d50b14b9368c81b3009e6347dbfa2248ecd9fe75c0410c3adaf3b0b544db7",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 720338,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-42000-43999.json",
+      "blob_sha": "712f4d40e94d39fc62a4416c68574ce5bab8b484",
+      "sha256": "8c62f0280ff59027570d55eb47437f3cfbf6d91eb5d68ca16fe7c682b2bcc149",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 660243,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-44000-45999.json",
+      "blob_sha": "63f62c1cc7c1413bf074a49d01d0761a77a20329",
+      "sha256": "d09dfc67ab79edd7c74d4c71aa9546096d24400b9a6431019938920cb4d2817d",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 700543,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-46000-47999.json",
+      "blob_sha": "ce63ce9c04d10cd16bae5cd0756cb26f606b4dd7",
+      "sha256": "1e4988a0c3a50d60253f1b1662f0f4dfec82033ad9ca8c4f8ff3775c0647ee37",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 729340,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-48000-49999.json",
+      "blob_sha": "9f6aceaef8f795c80434c7bd55d41be14e4d79fb",
+      "sha256": "9ccdee5a96eda37ad47a6e589c690a3c1c1f7c7b6adaa5a057acfcd857f175e3",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 690473,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-50000-51999.json",
+      "blob_sha": "416e0e87aead39834309a3b684e81e68666b81da",
+      "sha256": "bca14cf51ec8b7a38773764337adce75828953b980c02647a78a660094d76c3e",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 793500,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-52000-53999.json",
+      "blob_sha": "afae75440b66a5fd3dd0b7d871952fae8cebaf49",
+      "sha256": "83da697613f66b9db006cccf06691d1c0ddce53da2c43dc889675855460fbd82",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 790220,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/candidate/content/world/spawns/spawns-54000-54687.json",
+      "blob_sha": "61a5cbcd48b14dc62654c8917b293ed9fcbad7e5",
+      "sha256": "6ca268711d6c412b27e73f0235f5ef3c0f793c2cc0e7240140d08a147f67ca59",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 250028,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/map-content-linking/spawns/held-groups.json",
+      "blob_sha": "ee632d45b918e88c238a4cd035e0087044d02f9d",
+      "sha256": "8a666c3d409edda5ac5996d6dec64cce24b30d5f43c75aa9a1175f1d07297c57",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 37947,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/raw/LICENSE",
+      "blob_sha": "d159169d1050894d3ea3b98e1c965c4058208fe1",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
+      "range_unit": "lines",
+      "file_lines": 339,
+      "file_bytes": 18092,
+      "range_extent": 339,
+      "analyzed_ranges": [
+        [
+          1,
+          339
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              339
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 339,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/raw/data-global/world/world-monster.xml",
+      "blob_sha": "6b85224fc15cee88cc5bcecfe496e4388aafcf80",
+      "sha256": "a3188bc1275fbf5bac1ff5c06cc26b1d2999e51c088a7ffa464c40a1aff81570",
+      "range_unit": "lines",
+      "file_lines": 197690,
+      "file_bytes": 10241363,
+      "range_extent": 197690,
+      "analyzed_ranges": [
+        [
+          1,
+          197690
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              197690
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 197690,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/raw/source-commit",
+      "blob_sha": "9c1f62e5cba7afca9a2548be74a158c344173eff",
+      "sha256": "3acb36a627966cc3c42cff91dfea8c8b8d693998b6f2e04a8d6d5ee39418007d",
+      "range_unit": "lines",
+      "file_lines": 7,
+      "file_bytes": 299,
+      "range_extent": 7,
+      "analyzed_ranges": [
+        [
+          1,
+          7
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              7
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 7,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/summer-update/source-tree.json",
+      "blob_sha": "d824b0e18074c53e0ab6b1cbf617bffe7d34b351",
+      "sha256": "40eeb39b4d01b0f5ed5134734ee08bdd6148fad44385c47ee05473282b718878",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 2538948,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/crystalserver/writable-item-facts.json",
+      "blob_sha": "2b7030c20460d29547239f8cf3d407c3ec499eca",
+      "sha256": "d1d738adf2d3626219d02e0c9408a3c459552d7956dd97c8c631d4640cd1c55f",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 6585,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/legacy/index.json",
+      "blob_sha": "36c23977b6d7edfd52055253d4afde35cf123361",
+      "sha256": "ee0ad39661286ed7ce36a6e82f9bbdff803e9cc4aab4bef04bcb7334fe69b80e",
+      "range_unit": "lines",
+      "file_lines": 10,
+      "file_bytes": 360,
+      "range_extent": 10,
+      "analyzed_ranges": [
+        [
+          1,
+          10
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              10
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 10,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/appearance-membership/README.md",
+      "blob_sha": "fb806ad523e4147c089d1188832db82f398a50d1",
+      "sha256": "1a5e9271c64c34cdd36e5a38be989c5fe403cf812f4218c46f2ead0ef214c6fa",
+      "range_unit": "lines",
+      "file_lines": 40,
+      "file_bytes": 2338,
+      "range_extent": 40,
+      "analyzed_ranges": [
+        [
+          1,
+          40
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              40
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 40,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/appearance-membership/admitted.json",
+      "blob_sha": "de41973cc05c8af973915888d4fe4d5e279552c7",
+      "sha256": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 1545,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/appearance-membership/appearances-17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1.json",
+      "blob_sha": "580c9234fe37dc8bc1722a5711ee52e0828a7277",
+      "sha256": "5d5d50c4dfbb527f73cc0993cb37f18d3ce83f4a8a72376df7c71b6b7d165f2a",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 6151574,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json",
+      "blob_sha": "6c1da4550369f4867a99abe04d4b825045d34aeb",
+      "sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 6169165,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/appearance-membership/appearances-6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1.json",
+      "blob_sha": "054e4b621b27cb5be661264fa16f1dd4cd1474a8",
+      "sha256": "59455ce0dc9319f89ffd6eb4474c456c7ddfbc7d133c219b576008f32e758dd5",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 5969246,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/appearance-membership/appearances-aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50.json",
+      "blob_sha": "7bb0f2adb0d9fe1cd051243e35bb63c3a95e9fcf",
+      "sha256": "466fdef535e3b7a8e8e574e2838d729a0f7386f4ffa2dbd7074c043a6e611c58",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 5969100,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/client-assets/15.30/README.md",
+      "blob_sha": "73975e999b0be19d76c705b6e0b1e8244ed9683e",
+      "sha256": "ec0821b8af762f07d28d7195b22a1b387777bd5f2e27e336acd3271046fd0851",
+      "range_unit": "lines",
+      "file_lines": 62,
+      "file_bytes": 3746,
+      "range_extent": 62,
+      "analyzed_ranges": [
+        [
+          1,
+          62
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              62
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 62,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/client-assets/15.30/appearance-ids.json",
+      "blob_sha": "b0b11b595360a9cc437aecb819a68f865effc32f",
+      "sha256": "efffdfb7d41f78b8e43e8d3825d8b904c46cce9e1cd28396568e5e615758d866",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 250841,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/client-assets/15.30/manifest.json",
+      "blob_sha": "2c703ac5c32aa4bb892fe7ce4e48fccc1cea764e",
+      "sha256": "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 1158899,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "whole-corpus-semantic",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/index.json",
+      "blob_sha": "49aca1a81cc1e40d945f57055c6317937ee8b228",
+      "sha256": "de801ba1947051df5dd6abcd92a02a40efa0d5e9e06ab243c6a5bf7b74bd98df",
+      "range_unit": "lines",
+      "file_lines": 10,
+      "file_bytes": 1204,
+      "range_extent": 10,
+      "analyzed_ranges": [
+        [
+          1,
+          10
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              10
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 10,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/tibia-com/2026-09-28-160207Z/facts.json",
+      "blob_sha": "b5b9f2c6044e622ed5e303359af3c380a951bdd0",
+      "sha256": "6435363ef324b36a389170aaa658afd32b82be31dee3656b9dab8daa5d290914",
+      "range_unit": "lines",
+      "file_lines": 2382,
+      "file_bytes": 120189,
+      "range_extent": 2382,
+      "analyzed_ranges": [
+        [
+          1,
+          2382
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              2382
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 2382,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/tibia-com/2026-09-28-160207Z/manifest.json",
+      "blob_sha": "a62234fa1d697289849f35181716af5fbe633195",
+      "sha256": "191b8952e616b57479f851a29afa5ec05179be63bf06cb9c91b25d568132063a",
+      "range_unit": "lines",
+      "file_lines": 159,
+      "file_bytes": 5685,
+      "range_extent": 159,
+      "analyzed_ranges": [
+        [
+          1,
+          159
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              159
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 159,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/tibia-com/2026-09-28/facts.json",
+      "blob_sha": "a35bea4305597664646e6c0ab84149bcccf9877b",
+      "sha256": "054ed6c95a360d65686cc8a12eb1e8db229399582633599dd74609a00b2b5632",
+      "range_unit": "lines",
+      "file_lines": 1086,
+      "file_bytes": 49646,
+      "range_extent": 1086,
+      "analyzed_ranges": [
+        [
+          1,
+          1086
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              1086
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1086,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/tibia-com/2026-09-28/manifest.json",
+      "blob_sha": "87665cc77c0c1b9a3a1e5256ce53831fb856d0be",
+      "sha256": "4afbb76cdb69641732ca65411efed8b8f13807b7a118f4f996b6e34e2255b55e",
+      "range_unit": "lines",
+      "file_lines": 55,
+      "file_bytes": 1891,
+      "range_extent": 55,
+      "analyzed_ranges": [
+        [
+          1,
+          55
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "mixed-full",
+          "ranges": [
+            [
+              1,
+              55
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 55,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "imports/official/tibia-com/README.md",
+      "blob_sha": "3fbf0825eaa0881b300619d44fd9dde1d3ed33c3",
+      "sha256": "1bec6ac0fe5bbbe57fb27c21aa34c65fd64e3900c0d2a6acfbfb927f3ddf30fe",
+      "range_unit": "lines",
+      "file_lines": 52,
+      "file_bytes": 3011,
+      "range_extent": 52,
+      "analyzed_ranges": [
+        [
+          1,
+          52
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-full",
+          "ranges": [
+            [
+              1,
+              52
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 52,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
