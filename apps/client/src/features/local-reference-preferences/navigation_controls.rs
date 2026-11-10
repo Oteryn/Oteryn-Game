@@ -51,15 +51,6 @@ pub(super) fn page_help(page: SettingsPage) -> &'static str {
     }
 }
 
-pub(super) unsafe fn feedback(handle: HWND, page: SettingsPage, message: &str) {
-    unsafe {
-        SetWindowTextW(
-            handle,
-            wide(&format!("{}\r\n{message}", page_help(page))).as_ptr(),
-        );
-    }
-}
-
 pub(super) unsafe fn refresh_bindings(
     list: HWND,
     bindings: &[oteryn_client::play::PreferenceBinding],
