@@ -78,7 +78,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let mark = match facts {
                 Ok(facts) => facts.control_loss,
-                Err(_) => return GraceExpiryResult::Unknown,
+                Err(_) => {
+                    // Retirement can remove the actor before its offline acknowledgement
+                    // succeeds. Retry that exact terminal cleanup, not the release write.
+                    // Missing/stale native facts alone never prove terminality or absence
+                    // in the current scope; the existing reconciler checks both.
+                    return match self.reconcile_terminal_session(admitted).await {
+                        GraceExpiryResult::Released => GraceExpiryResult::Released,
+                        _ => GraceExpiryResult::Unknown,
+                    };
+                }
             };
             // The lost epoch was resumed: nothing is this transition's to release.
             let Some(ControlLossMark {
