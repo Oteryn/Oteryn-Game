@@ -1,0 +1,224 @@
+{
+  "status": "PASS",
+  "method": "Actual Python world_region_codec.parse_region/decode_region; asserted exact fixture cells; values read and compared with Rust integration test intent. Not a Rust decoder execution.",
+  "files": [
+    {
+      "path": "tools/world-bundle-compiler/tests/fixtures/codec-region-z07-x000-y000.b3",
+      "bytes": 111,
+      "sha256": "603b64dab115f575d6e19e2343e7e13387d86f123317bc59cc559446a26bc449",
+      "header_and_table": [
+        7,
+        0,
+        0,
+        [
+          [
+            0,
+            30,
+            61
+          ],
+          [
+            9,
+            91,
+            20
+          ]
+        ]
+      ],
+      "decoded": [
+        7,
+        0,
+        0,
+        [
+          [
+            0,
+            [
+              [
+                1,
+                0,
+                0,
+                0,
+                [],
+                [
+                  [
+                    0,
+                    0,
+                    null
+                  ]
+                ]
+              ],
+              [
+                3,
+                2,
+                16,
+                77,
+                [
+                  1,
+                  300
+                ],
+                [
+                  [
+                    5,
+                    0,
+                    {
+                      "count": 0,
+                      "action": 1000,
+                      "unique": 60000,
+                      "door": 3
+                    }
+                  ],
+                  [
+                    6,
+                    1,
+                    {
+                      "text": "ząb",
+                      "charges": 12,
+                      "description": ""
+                    }
+                  ],
+                  [
+                    200,
+                    2,
+                    {
+                      "teleport": [
+                        32000,
+                        31000,
+                        7
+                      ],
+                      "depot": 4
+                    }
+                  ]
+                ]
+              ],
+              [
+                31,
+                31,
+                0,
+                0,
+                [],
+                []
+              ]
+            ]
+          ],
+          [
+            9,
+            [
+              [
+                34,
+                36,
+                1,
+                0,
+                [],
+                [
+                  [
+                    1,
+                    0,
+                    null
+                  ],
+                  [
+                    1,
+                    0,
+                    null
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "path": "tools/world-bundle-compiler/tests/fixtures/subarea-z07-x126-y121.b3",
+      "bytes": 62,
+      "sha256": "e8b01d36016d26f2fe8add8089433b31f0dd46fe2d970d32fc338d992928a0bb",
+      "header_and_table": [
+        7,
+        126,
+        121,
+        [
+          [
+            10,
+            30,
+            13
+          ],
+          [
+            11,
+            43,
+            19
+          ]
+        ]
+      ],
+      "decoded": [
+        7,
+        126,
+        121,
+        [
+          [
+            10,
+            [
+              [
+                32348,
+                31010,
+                0,
+                0,
+                [],
+                [
+                  [
+                    0,
+                    0,
+                    null
+                  ]
+                ]
+              ]
+            ]
+          ],
+          [
+            11,
+            [
+              [
+                32361,
+                31009,
+                0,
+                0,
+                [],
+                [
+                  [
+                    0,
+                    0,
+                    null
+                  ]
+                ]
+              ],
+              [
+                32362,
+                31009,
+                0,
+                0,
+                [],
+                [
+                  [
+                    0,
+                    0,
+                    null
+                  ]
+                ]
+              ],
+              [
+                32363,
+                31009,
+                0,
+                0,
+                [],
+                [
+                  [
+                    0,
+                    0,
+                    null
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    }
+  ]
+}

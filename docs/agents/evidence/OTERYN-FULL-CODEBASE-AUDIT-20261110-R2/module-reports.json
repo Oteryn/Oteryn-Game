@@ -102,6 +102,16 @@
       "auditor": "lead"
     },
     {
+      "module": "oteryn-world-bundle-compiler",
+      "path": "tools/world-bundle-compiler",
+      "report": "world-compiler-review.md",
+      "verification": "All31tracked files reviewed including two decoded binary fixtures; exact existing cargo_inputs5 and Python converter9 tests PASS; full Cargo/world/native integration not run.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
       "module": "oteryn-identity",
       "status": "REVIEWED",
       "report": "protocol-session.md",
@@ -285,6 +295,40 @@
       "report": "npc.md",
       "runtime_tests_run": 0,
       "module": "oteryn-gameplay-npc",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-domain",
+      "path": "crates/gameplay/domain",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "IN PROGRESS",
+      "reviewed_files": 46,
+      "remaining_files": [
+        "crates/gameplay/domain/src/domain/echo_warden.rs",
+        "crates/gameplay/domain/src/domain/echo_warden/tests.rs",
+        "crates/gameplay/domain/src/domain/hireling.rs",
+        "crates/gameplay/domain/src/domain/hireling/catalogue.rs",
+        "crates/gameplay/domain/src/domain/hireling/catalogue/generated.rs",
+        "crates/gameplay/domain/src/domain/hireling/catalogue/wrapped.rs",
+        "crates/gameplay/domain/src/domain/hireling/dialogue.rs",
+        "crates/gameplay/domain/src/domain/hireling/food.rs",
+        "crates/gameplay/domain/src/domain/soulpit.rs",
+        "crates/gameplay/domain/src/domain/soulpit/encounter.rs",
+        "crates/gameplay/domain/src/domain/soulpit/items.rs",
+        "crates/gameplay/domain/src/domain/soulpit/items/catalog.rs",
+        "crates/gameplay/domain/src/domain/soulpit/passages.rs",
+        "crates/gameplay/domain/src/domain/soulpit/roster_tests.rs",
+        "crates/gameplay/domain/src/domain/soulpit/source_bestiary.rs",
+        "crates/gameplay/domain/src/domain/soulpit/source_bestiary_catalogue.rs",
+        "crates/gameplay/domain/src/domain/soulpit/tests.rs",
+        "crates/gameplay/domain/src/domain/timed_item.rs",
+        "crates/gameplay/domain/src/domain/timed_item_host.rs",
+        "crates/gameplay/domain/src/domain/timed_item_property_tests.rs",
+        "crates/gameplay/domain/src/domain/weapon_proficiency.rs"
+      ],
+      "report": "domain.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-domain",
       "auditor": "gameplay-rules"
     },
     {

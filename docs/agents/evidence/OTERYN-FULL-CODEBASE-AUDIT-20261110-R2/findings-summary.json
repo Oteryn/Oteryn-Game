@@ -13,7 +13,7 @@
       "id": "PS-R2-001",
       "severity": "P2",
       "status": "CONFIRMED",
-      "verification": "Independent Game caller plus exact pinned Platform producer; native HTTPS/SQL tests not run",
+      "verification": "Independent static source and relevant pinned-data verification; no native runtime execution or deployed-state assertion",
       "report": "Restricted independent evidence retained privately under SECURITY.md",
       "public_safe": false
     },
@@ -48,16 +48,48 @@
       "verification": "Independent real native support/caller, durable producer, frame order and Session poison proof; native async/TLS/database tests not run",
       "report": "verify-house-handoff.md",
       "public_safe": true
+    },
+    {
+      "id": "CL-005",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent actual Windows input/reexport/opener flag order and counterguard proof; no native Windows execution",
+      "report": "verify-client-windows.md",
+      "public_safe": true
+    },
+    {
+      "id": "GR-ECON-001",
+      "severity": "P1",
+      "status": "CONFIRMED",
+      "verification": "Independent static source and relevant pinned-data verification; no native runtime execution or deployed-state assertion",
+      "report": "Restricted independent evidence retained privately under SECURITY.md",
+      "public_safe": false
+    },
+    {
+      "id": "CL-004",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent actual nonterminal Platform error, usable Session, catalogue replacement and native final-modal/frozen-request mismatch; no native Windows execution or proven loss",
+      "report": "verify-client-store-retry.md",
+      "public_safe": true
+    },
+    {
+      "id": "CL-006",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent reachable native form, exact encoder and common terminal client-loop proof; no native Windows execution or server mutation",
+      "report": "verify-guild-input.md",
+      "public_safe": true
     }
   ],
   "prior_checkpoint": "1c39ebc3347319fe08eaf58299a8a9e9339b0367",
   "cumulative_confirmed_counts": {
     "P0": 0,
-    "P1": 3,
-    "P2": 9,
+    "P1": 4,
+    "P2": 12,
     "P3": 0
   },
   "prior_likely": 2,
   "prior_false_positive": 4,
-  "scope": "No runtime/deployed incident implied; hardening candidates are not confirmed counts."
+  "scope": "No runtime/deployed incident implied; hardening and new unconfirmed candidates are not confirmed counts."
 }

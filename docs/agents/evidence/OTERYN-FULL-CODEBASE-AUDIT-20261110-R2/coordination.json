@@ -1,14 +1,14 @@
 {
   "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
-  "observed_at_utc": "2026-11-10T11:03:41.895202+00:00",
-  "lifecycle": "MATERIAL_FREEZE",
+  "observed_at_utc": "2026-11-10T11:37:12.361276+00:00",
+  "lifecycle": "FROZEN_CANDIDATE",
   "branch": "audit/full-codebase-20261110-4f0b6c62",
   "sole_writer": "lead /root",
   "owned_prefix": "docs/agents/evidence/OTERYN-FULL-CODEBASE-AUDIT-20261110-R2",
   "lanes": [
     {
       "lane": "lead",
-      "ledger_rows": 135,
+      "ledger_rows": 218,
       "reported_completed_modules": [
         "oteryn-admin-contracts",
         "oteryn-admin-agent",
@@ -19,12 +19,13 @@
         "oteryn-world-bundle",
         "oteryn-dev-client",
         "oteryn-player-bots",
-        "oteryn-architecture-check"
+        "oteryn-architecture-check",
+        "oteryn-world-bundle-compiler"
       ]
     },
     {
       "lane": "protocol-session",
-      "ledger_rows": 501,
+      "ledger_rows": 642,
       "reported_completed_modules": [
         "oteryn-identity",
         "oteryn-platform-contracts",
@@ -36,7 +37,7 @@
     },
     {
       "lane": "gameplay-rules",
-      "ledger_rows": 309,
+      "ledger_rows": 353,
       "reported_completed_modules": [
         "oteryn-gameplay-source-critical-baseline",
         "oteryn-gameplay-node-files",
@@ -54,7 +55,7 @@
     },
     {
       "lane": "client-support",
-      "ledger_rows": 1138,
+      "ledger_rows": 1626,
       "reported_completed_modules": [
         "oteryn-client-domain",
         "oteryn-synthetic-assets",
@@ -72,8 +73,9 @@
       ]
     }
   ],
-  "publication_predecessor": "765f34f18f56dd95d06359b1c15e27b5a7e5e243",
-  "publication_route": "API-native new candidate; sole parent, expected-SHA non-force ref update, actual remote-head requalification",
-  "checkpoint": 3,
-  "allocation_issue_comment": 6765699424
+  "checkpoint": 4,
+  "predecessor": "63e2ec563610555d7d4fd6763bbf1f95cf2c0432",
+  "predecessor_tree": "63cebbc050ca8ac3c7073a449c169caed8414bc3",
+  "allocation_comment_id": 6766311181,
+  "qualification": "Pending actual remote-head readback and checks; return to AUTHORING will be recorded in central issue after qualification."
 }
