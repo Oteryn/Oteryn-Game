@@ -800,6 +800,26 @@ fn expected_light(minute: u32) -> u8 {
     }
 }
 
+// WORLDINT0-RL-18: a delta is owed at an hour boundary or a light change,
+// subject to the ten-second pacing limit. Walk at most one hour of the
+// independent light oracle; a known full hour always crosses a boundary.
+// Only explicitly injected time is used, so receive latency cannot invent a
+// change. A silent advance remains outstanding until a real frame arrives.
+fn clock_delta_expected_after_advance(
+    clock: oteryn_protocol_oteryn::world_clock::WorldClock,
+    advance: Duration,
+) -> bool {
+    if advance < Duration::from_secs(10) {
+        return false;
+    }
+    (1..=60_u32)
+        .take_while(|minutes| u128::from(*minutes) * 2_500 <= advance.as_millis())
+        .any(|minutes| {
+            let minute = (u32::from(clock.tibian_minute) + minutes) % 1_440;
+            minute.is_multiple_of(60) || expected_light(minute) != clock.light_level
+        })
+}
+
 fn admitted_clock(
     client: &mut DevClientSession,
 ) -> TestResult<oteryn_protocol_oteryn::world_clock::WorldClock> {
@@ -891,7 +911,8 @@ async fn clock_journey(
         if previous_session == Some(current_session) {
             return Err("world-clock fresh admission reused the old game session".into());
         }
-        let clock = admitted_clock(client)?;
+        let mut clock = admitted_clock(client)?;
+        let mut observed_offset = qualification_offset();
         row.observe(clock, qualification_elapsed(started, offset))?;
         row.pass("snapshot");
         if previous_session.is_some() {
@@ -900,6 +921,10 @@ async fn clock_journey(
         let reconnect_at = qualification_elapsed(started, offset) + Duration::from_secs(90);
         loop {
             advance_qualification_time(qualification_step())?;
+            let expects_delta = clock_delta_expected_after_advance(
+                clock,
+                qualification_offset().saturating_sub(observed_offset),
+            );
             let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
             loop {
                 client.service_liveness(Duration::from_secs(1)).await?;
@@ -908,10 +933,15 @@ async fn clock_journey(
                     if let oteryn_dev_client::SessionEvent::WorldClock(delta) = event {
                         row.observe(delta.value, qualification_elapsed(started, offset))?;
                         row.pass("clock-delta");
+                        clock = delta.value;
+                        observed_offset = qualification_offset();
                         observed = true;
                     }
                 }
-                if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_none() || observed {
+                if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_none()
+                    || observed
+                    || !expects_delta
+                {
                     break;
                 }
                 if tokio::time::Instant::now() >= deadline {
@@ -961,6 +991,54 @@ mod clock_tests {
                 row.observe(source.reading(now).ok_or("clock reading")?, elapsed)?;
             }
             for action in ["day", "night", "sunrise", "sunset", "midnight-wrap", "full-cycle"] {
+                assert!(row.passed.contains(action), "missing {action}");
+            }
+            assert!(!row.complete(), "transport and relog are still required");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn accelerated_clock_allows_silent_steps_without_losing_required_deltas() -> TestResult {
+        let source = crate::world_clock::WorldClockSource::new(0);
+        for initial_minute in [0_u64, 359, 479, 1_049, 1_439] {
+            let initial_ms = initial_minute * 2_500;
+            let mut clock = source.reading(initial_ms).ok_or("clock reading")?;
+            let mut pacer = crate::world_clock::WorldClockDeltaPacer::default();
+            pacer.reset(clock, initial_ms);
+            let mut row = ClockRow::default();
+            row.observe(clock, Duration::ZERO)?;
+            let mut observed_offset = Duration::ZERO;
+            let mut saw_silent_step = false;
+            let mut saw_delta = false;
+            for step in 1..=50_u32 {
+                let elapsed = qualification_step() * step;
+                let expects_delta =
+                    clock_delta_expected_after_advance(clock, elapsed - observed_offset);
+                let delta = pacer.due(&source, initial_ms + u64::try_from(elapsed.as_millis())?);
+                assert_eq!(
+                    expects_delta,
+                    delta.is_some(),
+                    "initial={initial_minute} step={step}"
+                );
+                if let Some(delta) = delta {
+                    row.observe(delta, elapsed)?;
+                    clock = delta;
+                    observed_offset = elapsed;
+                    saw_delta = true;
+                } else {
+                    saw_silent_step = true;
+                }
+            }
+            assert!(saw_silent_step && saw_delta);
+            for action in [
+                "day",
+                "night",
+                "sunrise",
+                "sunset",
+                "midnight-wrap",
+                "full-cycle",
+            ] {
                 assert!(row.passed.contains(action), "missing {action}");
             }
             assert!(!row.complete(), "transport and relog are still required");
