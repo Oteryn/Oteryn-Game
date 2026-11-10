@@ -44,7 +44,7 @@ export class SceneStore {
   lastFrame = 0; lastRecord = performance.now();
   accept(body) {
     if (this.status === 'unavailable') throw Error('closed presentation');
-    const kind = body.toString('ascii', 0, 4);
+    const kind = body.toString('latin1', 0, 4); // ASCII decoding would mask corrupt high bits.
     if (kind === 'OTAT') {
       const id = body.readUInt32LE(4), w = body.readUInt32LE(8), h = body.readUInt32LE(12);
       if (!id || id <= (this.current?.readUInt32LE(4) ?? 0) || this.pending ||
@@ -82,7 +82,9 @@ export function inputByte(direction) {
   return byte;
 }
 
-export function createServer(store, send, stop, { now = () => performance.now(), onView = () => {} } = {}) {
+export function createServer(store, send, stop, {
+  now = () => performance.now(), onView = () => {}, onConnect = () => 503, assets,
+} = {}) {
   let lastInput = -Infinity;
   const server = httpServer({ maxHeaderSize: 8192, requestTimeout: 5000, headersTimeout: 5000 }, async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
@@ -98,7 +100,7 @@ export function createServer(store, send, stop, { now = () => performance.now(),
     const path = req.url;
     if (req.method === 'GET' && staticFiles.has(path)) {
       const [file, type] = staticFiles.get(path);
-      try { return reply(200, await readFile(new URL(file, import.meta.url)), type); }
+      try { return reply(200, assets?.get(path) ?? await readFile(new URL(file, import.meta.url)), type); }
       catch { return reply(503, 'Static dependency unavailable. Install the pinned npm dependency.'); }
     }
     if (req.headers['x-oteryn-view'] !== '1') return reply(403);
@@ -112,10 +114,15 @@ export function createServer(store, send, stop, { now = () => performance.now(),
       const bytes = store.atlas(Number(path.slice(7)));
       return bytes ? reply(200, bytes, 'application/octet-stream') : reply(410);
     }
-    if (req.method !== 'POST' || !['/input', '/disconnect'].includes(path)) return reply(404);
+    if (req.method !== 'POST' || !['/input', '/connect', '/disconnect'].includes(path)) return reply(404);
     if (req.headers.origin !== origin) return reply(403);
     if (req.headers['content-type'] !== 'application/json') return reply(415);
-    if (path === '/disconnect') { store.fail(); stop(); return reply(204); }
+    if (path !== '/input') {
+      // A ready/close signal carries no endpoint, credential or other configuration.
+      if (req.headers['transfer-encoding'] || Number(req.headers['content-length'] ?? 0) !== 0) return reply(413);
+      if (path === '/disconnect') { store.fail(); stop(); return reply(204); }
+      return reply(store.status === 'unavailable' ? 409 : onConnect());
+    }
     if (store.status !== 'playing') return reply(409);
     try {
       // Also bound chunked bodies; Content-Length is not trusted.
@@ -128,6 +135,8 @@ export function createServer(store, send, stop, { now = () => performance.now(),
       const value = JSON.parse(body);
       if (!value || typeof value !== 'object' || Object.keys(value).join() !== 'direction') return reply(400);
       const byte = inputByte(value.direction);
+      // Reading a slow request can yield to disconnect/native failure. Recheck before dispatch.
+      if (store.status !== 'playing') return reply(409);
       if (now() - lastInput < 100) return reply(429);
       if (!send(byte)) return reply(503);
       lastInput = now(); reply(202);
@@ -137,31 +146,60 @@ export function createServer(store, send, stop, { now = () => performance.now(),
   return server;
 }
 
+/** Check dependency presence/version before any native process can read an admission grant. */
+async function prepareAssets(root) {
+  const manifest = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
+  const installed = JSON.parse(await readFile(new URL('node_modules/three/package.json', root), 'utf8'));
+  if (installed.version !== manifest.dependencies.three) throw Error('pinned Three.js version unavailable');
+  const assets = new Map();
+  for (const [path, [file]] of staticFiles) assets.set(path, await readFile(new URL(file, root)));
+  return assets;
+}
+
 // The executable and arguments are operator-supplied once, never accepted over HTTP.
-export function launch(binary, args) {
-  const store = new SceneStore();
-  const child = spawn(binary, args, { shell: false, windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
-  let lastView = performance.now();
-  const stop = () => { store.fail(); child.stdin.destroy(); child.kill(); };
+export async function launch(binary, args, { root = new URL('./', import.meta.url), log = console.log } = {}) {
+  const assets = await prepareAssets(root);
+  const store = new SceneStore(); store.status = 'idle';
+  let child, started = false, stopped = false, startedAt = 0, lastView = performance.now();
+  const stop = () => {
+    if (stopped) return;
+    stopped = true; store.fail(); child?.stdin.destroy(); child?.kill();
+  };
+  // Invoked only after the page has loaded Three.js and initialized WebGL2. Reloading
+  // an already active page attaches to the same host; a terminal session cannot restart.
+  const activate = () => {
+    if (stopped) return 409;
+    if (started) return 200;
+    started = true; startedAt = lastView = performance.now(); store.status = 'starting';
+    try {
+      child = spawn(binary, args, { shell: false, windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
+      const decoder = new RecordDecoder(bytes => store.accept(bytes));
+      child.stdout.on('data', chunk => { try { decoder.push(chunk); } catch { stop(); } });
+      child.stdout.on('end', () => { try { decoder.finish(); } catch { /* unavailable below */ } stop(); });
+      child.stdin.on('error', stop); child.stdout.on('error', stop); child.on('error', stop);
+      child.on('exit', stop);
+      return 202;
+    } catch { stop(); return 503; }
+  };
   const server = createServer(store, byte => {
-    if (child.stdin.destroyed || child.stdin.writableLength > 0) return false;
+    if (!child || stopped || child.stdin.destroyed || child.stdin.writableLength > 0) return false;
     child.stdin.write(byte); return true;
-  }, stop, { onView: () => { lastView = performance.now(); } });
-  const decoder = new RecordDecoder(bytes => store.accept(bytes));
-  child.stdout.on('data', chunk => { try { decoder.push(chunk); } catch { stop(); } });
-  child.stdout.on('end', () => { try { decoder.finish(); } catch { /* unavailability below */ } stop(); });
-  child.stdin.on('error', stop); child.stdout.on('error', stop); child.on('error', stop);
-  child.on('exit', () => store.fail());
+  }, stop, { assets, onConnect: activate, onView: () => { lastView = performance.now(); } });
   const watchdog = setInterval(() => {
-    const idleLimit = store.status === 'starting' ? 90000 : 15000;
-    if (performance.now() - lastView > idleLimit ||
-        (store.status === 'playing' && performance.now() - store.lastRecord > 10000)) stop();
+    const now = performance.now();
+    const idleLimit = store.status === 'playing' ? 15000 : 90000;
+    if (now - lastView > idleLimit ||
+        (store.status === 'starting' && now - startedAt > 90000) ||
+        (store.status === 'playing' && now - store.lastRecord > 10000)) stop();
   }, 1000);
   watchdog.unref();
-  server.on('close', () => { clearInterval(watchdog); stop(); });
-  server.on('error', () => { stop(); clearInterval(watchdog); });
-  server.listen(0, '127.0.0.1', () => console.log(`OTERYN development view: http://127.0.0.1:${server.address().port}/`));
   const shutdown = () => { server.closeAllConnections(); server.close(); };
+  server.on('close', () => {
+    clearInterval(watchdog); stop();
+    process.removeListener('SIGINT', shutdown); process.removeListener('SIGTERM', shutdown);
+  });
+  server.on('error', () => { stop(); clearInterval(watchdog); });
+  server.listen(0, '127.0.0.1', () => log(`OTERYN development view: http://127.0.0.1:${server.address().port}/`));
   process.once('SIGINT', shutdown); process.once('SIGTERM', shutdown);
   return server;
 }
@@ -171,5 +209,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (!binary || args.length !== 5) {
     console.error('Usage: node bridge.mjs HOST_BINARY LOOPBACK_GAME_ADDR TLS_NAME ROOT_DER GRANT_FILE CHARACTER_HEX');
     process.exitCode = 2;
-  } else launch(binary, args);
+  } else {
+    launch(binary, args).catch(() => {
+      console.error('Client files unavailable. Run npm ci --ignore-scripts before starting the native session.');
+      process.exitCode = 1;
+    });
+  }
 }

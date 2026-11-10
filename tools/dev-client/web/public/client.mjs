@@ -19,7 +19,10 @@ async function step(direction) {
   try {
     const result = await request('/input', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ direction }) });
     if (![202, 429].includes(result.status)) throw Error('Wejście niedostępne');
-  } catch { stop('Połączenie przerwane. Uruchom ponownie klienta lokalnego.'); }
+  } catch {
+    stop('Połączenie przerwane. Uruchom ponownie klienta lokalnego.');
+    await closeHost();
+  }
   finally { sending = false; }
 }
 const keys = new Map([['ArrowUp', 'north'], ['KeyW', 'north'], ['ArrowRight', 'east'], ['KeyD', 'east'], ['ArrowDown', 'south'], ['KeyS', 'south'], ['ArrowLeft', 'west'], ['KeyA', 'west']]);
@@ -40,6 +43,7 @@ canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); s
 async function boot() {
   try {
     const T = await import('/vendor/three.module.js');
+    if (!running) return;
     const context = canvas.getContext('webgl2', { alpha: false, antialias: false });
     if (!context) throw Error('Ta przeglądarka nie udostępnia WebGL2.');
     const renderer = new T.WebGLRenderer({ canvas, context, antialias: false });
@@ -90,6 +94,11 @@ async function boot() {
       status.textContent = 'Sesja Rust · scena serwera';
       details.textContent = `${frame.width} × ${frame.height} · ${frame.count} sprite’ów · atlas ${atlasId}`;
     };
+    // Only a successfully initialized presentation surface may start the native session.
+    // This carries no credentials and never retries a consumed grant.
+    if (!running) return;
+    const connected = await request('/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    if (![200, 202].includes(connected.status)) throw Error('Sesja lokalna nie może zostać uruchomiona');
     while (running) {
       if (document.hidden) { await sleep(250); continue; }
       const response = await request('/frame');
