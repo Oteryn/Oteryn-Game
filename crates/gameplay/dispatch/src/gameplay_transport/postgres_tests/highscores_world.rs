@@ -30,9 +30,6 @@ async fn snapshot(
     }
     sqlx::query("INSERT INTO game_world_highscore_heads(world_id,category,current_snapshot_id) VALUES(encode($1,'hex')::uuid,$2,$3)")
         .bind(world.as_bytes().as_slice()).bind(category).bind(snapshot).execute(pool).await?;
-    // Publish only after both filter lists are complete; published snapshots cannot acquire rows.
-    sqlx::query("INSERT INTO game_world_highscore_heads(world_id,category,current_snapshot_id) VALUES(encode($1,'hex')::uuid,$2,$3)")
-        .bind(world.as_bytes().as_slice()).bind(category).bind(snapshot).execute(pool).await?;
     Ok(u64::try_from(snapshot)?)
 }
 fn result(reply: HighscoresReply) -> TestResult<HighscoresResult> {
