@@ -97,6 +97,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// them is settled by the release's own saves, as for a closed client whose deadline just
     /// ended.
     pub(super) async fn logout_session(&self, admitted: AdmittedSession) -> LogoutReply {
+        let Ok(_foreground) = self.root.foreground_demand() else {
+            return LogoutReply::Result(LogoutResult::Busy);
+        };
         let (actor, controller) = match self.logout_preflight(admitted).await {
             Ok(proven) => proven,
             Err(reply) => return reply,

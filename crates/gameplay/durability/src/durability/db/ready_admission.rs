@@ -7,6 +7,7 @@ impl DurabilityRoot {
     /// pass can retire its connection during cleanup. Maintenance remains the
     /// only connector, and the issued pass keeps its ordinary independent budget.
     pub async fn issue_ready_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
+        let _foreground = self.foreground_demand()?;
         let deadline = tokio::time::Instant::now() + ROOT_RECOVERY_WINDOW;
         loop {
             if self.pool.is_closed() {

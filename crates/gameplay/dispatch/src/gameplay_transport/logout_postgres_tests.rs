@@ -144,7 +144,18 @@ fn nbeof_logout_busy_holder_postgres() -> TestResult {
             assert!(owner.runtime.try_lock().is_ok());
             assert!(owner.states.spell_states.try_lock().is_ok());
             held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            // Do not yield after the return: the scheduled owner must refuse the
+            // idle holder until the real logout, including its saves, progresses.
+            assert!(matches!(
+                owner.root.try_issue_background_semantic_pass(),
+                Err(crate::durability::DurabilityError::RootUnavailable)
+            ));
             assert_eq!(logout.await, LogoutReply::Result(LogoutResult::Accepted));
+            owner
+                .root
+                .try_issue_background_semantic_pass()?
+                .run(|_, _| Box::pin(async { Ok(()) }))
+                .await?;
         }
         assert_eq!(
             session_state(&harness, &dependencies).await?,

@@ -44,6 +44,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         command: Option<u64>,
     ) -> LogoutReply {
+        // Instance logout also owns the durable return before ordinary release.
+        // Keep its preference across that handoff and the destination logout.
+        let Ok(_foreground) = self.root.foreground_demand() else {
+            return LogoutReply::Result(LogoutResult::Busy);
+        };
         let admitted = self.activity_runtimes.current_connection(admitted);
         let scoped = match self.resolve_runtime_view(admitted).await {
             Ok(scoped) => scoped,
