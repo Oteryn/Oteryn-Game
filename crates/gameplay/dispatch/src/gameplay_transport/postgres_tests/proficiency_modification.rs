@@ -5,6 +5,7 @@
 //! `NO_ORB`.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::content::ChannelContentPin;
 use crate::durability::character_proficiency::ProficiencyDefinitions;
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
@@ -71,9 +72,19 @@ fn scenario_with_state(project_state: bool) -> TestResult {
         let map = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
             .map_err(debug)?;
         let cells = map.movement_cells(room.movement_cells()).map_err(debug)?;
-        let frame_digest = pin.frame_binding().digest();
+        // The runtime pin must identify the same bundle as the protection-zone lookup.
+        let frame_digest = map.frame_binding_digest(world);
+        let pin = ChannelContentPin::from_activation(
+            world,
+            pin.activation_sequence(),
+            pin.identity().server_artifact_digest(),
+            pin.identity().client_artifact_digest(),
+            frame_digest,
+            map.map_revision_digest(),
+            (5, 1, 8),
+        );
         let deps = Dependencies::with_content(
-            pin.into_channel_pin(),
+            pin,
             room,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;

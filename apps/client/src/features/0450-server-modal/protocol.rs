@@ -28,6 +28,12 @@ impl Driver {
             shown: None,
         }
     }
+    pub(in crate::play) fn reset_scope(&mut self, selected: bool) {
+        // Closing the source receiver also closes its native window and queued answers.
+        // A query interrupted by the handoff must not leave Pending::Query set forever.
+        *self = Self::new(selected);
+        self.next_query = Instant::now() + Duration::from_secs(5);
+    }
     pub(in crate::play) async fn poll<T: Stepper>(
         &mut self,
         session: &mut T,

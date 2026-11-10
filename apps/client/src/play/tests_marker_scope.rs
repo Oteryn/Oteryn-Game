@@ -1,23 +1,24 @@
-//! Automatic marker reads must publish the same destination barrier as commands.
+//! Automatic feature reads must publish the same destination barrier as commands.
 use super::*;
 use oteryn_session::activity_scope::{ActivityScope, ActivityScopeSnapshot, encode_activity_scope};
 
-struct MarkerHandoff {
+struct AutomaticQueryHandoff {
     scope: ActivityScopeSnapshot,
     changed: bool,
     activity: bool,
+    capability: u32,
     pending: Vec<SessionEvent>,
     serves: Arc<AtomicUsize>,
 }
-impl Stepper for MarkerHandoff {
+impl Stepper for AutomaticQueryHandoff {
     fn feature_selected(&self, capability: u32) -> bool {
-        capability == 451
+        capability == self.capability
     }
     async fn feature(
         &mut self,
         command: &oteryn_client_runtime::raw_feature::FeatureCommand,
     ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
-        assert_eq!(command.capability, 451);
+        assert_eq!(command.capability, self.capability);
         assert!(
             !self.changed,
             "automatic refresh must not immediately replay its source query"
@@ -62,7 +63,7 @@ impl Stepper for MarkerHandoff {
     }
 }
 
-fn marker_handoff_continues(activity: bool) -> Result<(), String> {
+fn automatic_query_handoff_continues(capability: u32, activity: bool) -> Result<(), String> {
     let mut source = [1; 16];
     source[6] = 0x70;
     source[8] = 0x80;
@@ -79,7 +80,7 @@ fn marker_handoff_continues(activity: bool) -> Result<(), String> {
         scope_generation: 2,
         connection_generation: 1,
         lease_generation: 2,
-        selection: vec![117, 451],
+        selection: vec![117, capability],
         requires_ack: false,
     };
     let serves = Arc::new(AtomicUsize::new(0));
@@ -87,10 +88,11 @@ fn marker_handoff_continues(activity: bool) -> Result<(), String> {
     let runtime = ClientRuntime::new().map_err(|error| error.to_string())?;
     runtime
         .spawn(run_session(
-            MarkerHandoff {
+            AutomaticQueryHandoff {
                 scope,
                 changed: false,
                 activity,
+                capability,
                 pending: Vec::new(),
                 serves: Arc::clone(&serves),
             },
@@ -111,7 +113,7 @@ fn marker_handoff_continues(activity: bool) -> Result<(), String> {
                 link.scope_presented(destination);
             }
             Some(PlayEvent::Ended(error)) => {
-                return Err(format!("marker handoff ended play: {error:?}"));
+                return Err(format!("automatic query handoff ended play: {error:?}"));
             }
             _ => {}
         }
@@ -135,9 +137,20 @@ fn marker_handoff_continues(activity: bool) -> Result<(), String> {
 #[test]
 fn marker_refresh_activity_scope_changed_publishes_destination_and_continues() -> Result<(), String>
 {
-    marker_handoff_continues(true)
+    automatic_query_handoff_continues(451, true)
 }
 #[test]
 fn marker_refresh_scope_changed_publishes_destination_and_continues() -> Result<(), String> {
-    marker_handoff_continues(false)
+    automatic_query_handoff_continues(451, false)
+}
+
+#[test]
+fn modal_refresh_activity_scope_changed_publishes_destination_and_continues() -> Result<(), String>
+{
+    automatic_query_handoff_continues(450, true)
+}
+
+#[test]
+fn modal_refresh_scope_changed_publishes_destination_and_continues() -> Result<(), String> {
+    automatic_query_handoff_continues(450, false)
 }

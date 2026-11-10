@@ -785,7 +785,8 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // registered coin-only destination; never creates an Inbox row.
                 "game_house_container_coin_pouch_destination",
                 "game_house_disposition_delivery_proven",
-                "game_house_disposition_native_removal_proven",
+                // T135 delegates the existing Inbox read to this renamed proof.
+                "game_house_disposition_native_removal_proven_before_t135",
                 // W18: verify final Inbox custody before removing only private
                 // House reclaim metadata; no Inbox row or delivery changes.
                 "game_house_nested_reclaim_reconcile",
@@ -821,6 +822,8 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
         // helper fails even if its name remains in the registered reader set.
         for reader in [
             "game_house_container_coin_pouch_destination",
+            "game_house_disposition_native_removal_proven",
+            "game_house_disposition_native_removal_proven_before_t135",
             "game_house_nested_reclaim_reconcile",
             "game_daily_reward_pick_guard",
             "game_returner_claim_guard",

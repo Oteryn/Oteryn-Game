@@ -19,6 +19,7 @@ fn publish_scope_transition<T: Stepper>(
     session: &mut T,
     outbox: &Outbox,
     held: &mut Vec<oteryn_session::WorldSpatialEntity>,
+    modal: &mut super::feature_0450_server_modal::protocol::Driver,
 ) -> bool {
     if matches!(
         error,
@@ -28,6 +29,7 @@ fn publish_scope_transition<T: Stepper>(
         // Publish the destination and discard unsent source actions through the
         // same scope barrier, whether a command or an automatic query saw it.
         publish(session, outbox, held);
+        modal.reset_scope(session.feature_selected(450));
         true
     } else {
         false
@@ -76,6 +78,9 @@ pub async fn run_session<T: Stepper>(
     let mut personal_marks_refresh = std::time::Instant::now();
     loop {
         if let Err(error) = modal.poll(&mut session).await {
+            if publish_scope_transition(&error, &mut session, &outbox, &mut held, &mut modal) {
+                continue;
+            }
             outbox.end(public_class(&error));
             return;
         }
@@ -90,7 +95,13 @@ pub async fn run_session<T: Stepper>(
                     publish(&mut session, &outbox, &mut held);
                 }
                 Err(error) => {
-                    if publish_scope_transition(&error, &mut session, &outbox, &mut held) {
+                    if publish_scope_transition(
+                        &error,
+                        &mut session,
+                        &outbox,
+                        &mut held,
+                        &mut modal,
+                    ) {
                         personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
                         continue;
                     }
@@ -451,7 +462,7 @@ pub async fn run_session<T: Stepper>(
                 Err(error) => error,
             },
         };
-        if publish_scope_transition(&ended, &mut session, &outbox, &mut held) {
+        if publish_scope_transition(&ended, &mut session, &outbox, &mut held, &mut modal) {
             continue;
         }
         outbox.end(public_class(&ended));
