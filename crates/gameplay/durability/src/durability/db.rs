@@ -1237,6 +1237,13 @@ impl DurabilityRoot {
             )
             .await;
         }
+        // A live holder that is idle again needs no re-establishment, so it gets no schema
+        // check either: taking it here would only hand the returned holder to this window
+        // instead of the owner whose refused checkout raised the demand. Under steady use every
+        // refusal did so, and that owner then lost the holder on each return.
+        if self.pool.size() > 0 {
+            return Ok(true);
+        }
         let fresh = self.pool.size() == 0;
         let remaining = deadline.saturating_duration_since(Instant::now());
         let acquired = tokio::time::timeout(remaining, self.pool.acquire())
