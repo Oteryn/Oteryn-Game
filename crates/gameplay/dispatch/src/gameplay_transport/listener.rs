@@ -240,7 +240,7 @@ where
     // The owning authority's decision is never cancelled midway.
     if cast_observer::ingress(&frame) {
         if let Some(node) = authority.cast_node() {
-            let _ = cast_observer::serve(stream, &frame, node, shutdown).await;
+            let _ = cast_observer::serve(stream, &frame, node, shutdown, unit).await;
         }
         observer.ended(ConnectionEnd::AdmissionRefused(
             connection::AdmissionRefusal::Unavailable,

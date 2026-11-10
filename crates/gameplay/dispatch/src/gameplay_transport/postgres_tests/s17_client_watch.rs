@@ -24,14 +24,24 @@ async fn viewer(
 ) -> TestResult<(Viewer, tokio::task::JoinHandle<Result<(), Error>>)> {
     let (client, mut server) = tokio::io::duplex(65536);
     let ticket = format!("ocv1.{marker:02x}{}{nonce:02x}", "ab".repeat(30));
+    let units = Arc::new(tokio::sync::Semaphore::new(1));
+    let admission_units = Arc::clone(&units);
     let task = tokio::task::spawn_local(async move {
+        let unit = admission_units
+            .acquire()
+            .await
+            .map_err(|_| Error::Unavailable)?;
         let first = read_frame(&mut server)
             .await
             .map_err(|_| Error::Unavailable)?;
         let stop = crate::gameplay_transport::CancellationToken::new();
-        crate::gameplay_transport::cast_observer::serve(server, &first, node, &stop).await
+        crate::gameplay_transport::cast_observer::serve(server, &first, node, &stop, unit).await
     });
     let viewer = Viewer::join(client, ticket.as_bytes(), Duration::from_secs(5)).await?;
+    assert!(!task.is_finished(), "the joined observer remains active");
+    let _next_admission = units
+        .try_acquire()
+        .map_err(|_| "a joined observer must release its admission unit")?;
     Ok((viewer, task))
 }
 async fn moderate(peer: &mut Peer, subject: [u8; 16], action: u8) -> TestResult {

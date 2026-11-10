@@ -28,6 +28,7 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin + Send + 'static>(
     frame: &[u8],
     node: CastNode,
     shutdown: &super::CancellationToken,
+    admission_unit: tokio::sync::SemaphorePermit<'_>,
 ) -> Result<(), Error> {
     let first = Envelope::decode(frame, true).map_err(|_| Error::Invalid)?;
     let Message::Join(ticket) = first.message else {
@@ -54,6 +55,9 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin + Send + 'static>(
             return Err(Error::Unavailable);
         }
     };
+    // The listener still owns the connection slot; only admission work needs
+    // this unit, not the lifetime of the admitted observer.
+    drop(admission_unit);
     let result = serve_joined(stream, &node, id, reservation, shutdown, chat_selected).await;
     let _ = node.service.apply(Operation::Leave(id)).await;
     let _ = node.access.release(reservation).await;
