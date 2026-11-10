@@ -4,17 +4,22 @@ use std::net::{IpAddr, Ipv4Addr};
 #[test]
 fn foreground_waiter_wins_against_continuous_background_reacquisition() {
     let priority = ForegroundWaiterPriority::default();
-    let holder_available = AtomicBool::new(false);
-    let waiter = priority.register();
-
-    holder_available.store(true, Ordering::Release);
-    for _ in 0..10_000 {
-        if priority.background_may_acquire() {
-            let _ = holder_available.swap(false, Ordering::AcqRel);
+    let foreground_acquires = |gate: Option<&ForegroundWaiterPriority>| {
+        let holder_available = AtomicBool::new(true);
+        for _ in 0..10_000 {
+            if gate.is_none_or(ForegroundWaiterPriority::background_may_acquire) {
+                let _ = holder_available.swap(false, Ordering::AcqRel);
+            }
         }
-    }
+        holder_available.swap(false, Ordering::AcqRel)
+    };
 
-    assert!(holder_available.swap(false, Ordering::AcqRel));
+    // Runnable control for the old, ungated policy: continuous background reacquisition
+    // consumes every return before the bounded foreground attempt can take the holder.
+    assert!(!foreground_acquires(None));
+
+    let waiter = priority.register();
+    assert!(foreground_acquires(Some(&priority)));
     drop(waiter);
 }
 

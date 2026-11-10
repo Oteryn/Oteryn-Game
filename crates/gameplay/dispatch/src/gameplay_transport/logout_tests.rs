@@ -22,7 +22,7 @@ fn nbeof_logout_storage_and_unknown_commit_fail_without_retry()
                 backoff: super::RECONCILE_BACKOFF,
                 stale_rounds: super::FRESH_ADMISSION_ROUNDS,
                 root: None,
-                _foreground_waiter: None,
+                foreground_waiter: std::sync::OnceLock::new(),
             };
             let mut failure = Some(error);
             let mut attempts = 0;

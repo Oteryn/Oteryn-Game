@@ -16,6 +16,10 @@ use std::sync::{Arc, Mutex as StdMutex, OnceLock};
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, Notify};
 
+tokio::task_local! {
+    static BACKGROUND_SEMANTIC_PASSES: ();
+}
+
 mod ready_admission;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -1339,6 +1343,13 @@ impl DurabilityRoot {
         self.foreground_waiters.register()
     }
 
+    /// Marks every semantic-pass checkout performed by `future` as skippable cadence work.
+    /// The marker follows nested durability methods, so a cadence cannot accidentally bypass
+    /// foreground priority by using the ordinary checkout API.
+    pub async fn background_semantic_passes<F: Future>(&self, future: F) -> F::Output {
+        BACKGROUND_SEMANTIC_PASSES.scope((), future).await
+    }
+
     #[must_use]
     pub fn has_ready_demand(&self) -> bool {
         self.ready_demand.load(Ordering::Acquire)
@@ -1375,6 +1386,11 @@ impl DurabilityRoot {
 
     #[track_caller]
     pub fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
+        if BACKGROUND_SEMANTIC_PASSES.try_with(|()| ()).is_ok()
+            && !self.foreground_waiters.background_may_acquire()
+        {
+            return Err(DurabilityError::RootUnavailable);
+        }
         let caller = std::panic::Location::caller();
         let holder = self.try_acquire_ready().inspect_err(|_| {
             record_holder_usage(Some(caller), None);

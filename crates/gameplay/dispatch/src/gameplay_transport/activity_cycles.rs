@@ -69,14 +69,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // Each method retains its existing clocks/deadlines. The
                     // heartbeat below only discovers newly occupied scopes.
                     let task = Box::pin(async move {
-                        let _ = super::first(
-                            super::first(
-                                view.run_source_owner_cycles(&running),
-                                view.run_last_position_writes(&running),
-                            ),
-                            view.states.kill_source_owner.cancelled(),
-                        )
-                        .await;
+                        view.root
+                            .background_semantic_passes(async {
+                                let _ = super::first(
+                                    super::first(
+                                        view.run_source_owner_cycles(&running),
+                                        view.run_last_position_writes(&running),
+                                    ),
+                                    view.states.kill_source_owner.cancelled(),
+                                )
+                                .await;
+                            })
+                            .await;
                         // first() has dropped both child futures before the join
                         // acknowledgement; a terminal snapshot cannot race them.
                         view.states.kill_source_owner.complete();

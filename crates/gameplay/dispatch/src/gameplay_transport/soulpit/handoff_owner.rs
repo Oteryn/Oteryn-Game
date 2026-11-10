@@ -556,7 +556,7 @@ mod read_retry_tests {
                 backoff: Duration::from_millis(50),
                 stale_rounds: 1,
                 root: None,
-                _foreground_waiter: None,
+                foreground_waiter: std::sync::OnceLock::new(),
             };
             let mut calls = 0;
             let result = read_with_budget(&budget, async || {

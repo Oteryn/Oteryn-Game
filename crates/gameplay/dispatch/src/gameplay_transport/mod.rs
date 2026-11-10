@@ -1328,7 +1328,7 @@ struct AdmissionRetryBudget<'r> {
     /// The root whose holder a retry waits for (NODEBOOT-1); without one a retry sleeps the
     /// whole backoff.
     root: Option<&'r DurabilityRoot>,
-    _foreground_waiter: Option<crate::durability::ForegroundWaiterGuard>,
+    foreground_waiter: std::sync::OnceLock<crate::durability::ForegroundWaiterGuard>,
 }
 
 /// The earliest retry after a step that found the holder busy, measured from the failure
@@ -1347,7 +1347,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: fresh_admission_backoff(game_session_id),
             stale_rounds: 1,
             root: None,
-            _foreground_waiter: None,
+            foreground_waiter: std::sync::OnceLock::new(),
         }
     }
 
@@ -1360,7 +1360,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
-            _foreground_waiter: Some(root.foreground_waiter()),
+            foreground_waiter: std::sync::OnceLock::new(),
         }
     }
 
@@ -1383,6 +1383,11 @@ impl<'r> AdmissionRetryBudget<'r> {
         let now = tokio::time::Instant::now();
         if refusal != AdmissionRefusal::Unavailable || now + self.backoff >= self.deadline {
             return false;
+        }
+        if let Some(root) = self.root {
+            let _ = self
+                .foreground_waiter
+                .get_or_init(|| root.foreground_waiter());
         }
         match self.root {
             Some(root) => {
