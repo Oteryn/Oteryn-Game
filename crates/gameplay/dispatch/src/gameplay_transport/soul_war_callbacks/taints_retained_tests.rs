@@ -11,6 +11,47 @@ fn setup_error(error: impl std::fmt::Debug) -> String {
 }
 
 #[test]
+fn srx3_taint_timer_read_distinguishes_unavailable_stale_and_known_empty() -> Result<(), String> {
+    let world = crate::foundation::WorldId::decode(&id(81)).map_err(setup_error)?;
+    let runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        crate::foundation::ChannelId::decode(&id(82)).map_err(setup_error)?,
+        crate::foundation::NodeId::decode(&id(83)).map_err(setup_error)?,
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        1,
+        crate::foundation::ChannelContentPin::test(world),
+    )
+    .map_err(setup_error)?;
+    let mut facts = CurrentTaints {
+        context: Some((binding(&runtime), Geometry::Boss(Room::GoshnarsMalice))),
+        ..Default::default()
+    };
+    let now = 2_000_000;
+    assert!(facts.geometry(&runtime).is_some());
+    assert!(facts.current_player_read(&runtime, now).is_none());
+    facts.observed_at = Some(now);
+    assert!(
+        facts
+            .current_player_read(&runtime, now)
+            .is_some_and(<[_]>::is_empty),
+        "a successful empty census can complete the real periodic check"
+    );
+    assert!(
+        facts.current_player_read(&runtime, now + 1).is_none(),
+        "an older empty read cannot consume the next source occurrence"
+    );
+    facts.observed_at = None;
+    assert!(
+        facts.current_player_read(&runtime, now).is_none(),
+        "a failed refresh must leave the timer pending even in a valid geometry"
+    );
+    Ok(())
+}
+
+#[test]
 fn srx3_actual_native_retained_foam_component_keeps_current_policy_after_lethal()
 -> Result<(), String> {
     std::thread::Builder::new().stack_size(64<<20).spawn(|| -> Result<(), String> {

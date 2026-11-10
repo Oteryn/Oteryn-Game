@@ -116,20 +116,18 @@ impl CurrentTaints {
             .filter(|(expected, _)| *expected == binding(runtime))
             .map(|(_, geometry)| geometry)
     }
-    pub(super) fn current_players(
+    /// A failed or stale read is distinct from a successful empty census. Timer
+    /// owners must retain their original occurrence until this read is known.
+    pub(super) fn current_player_read(
         &self,
         runtime: &ChannelRuntimeV1,
         now: u64,
-    ) -> &[CurrentSoulWarTaintFacts] {
-        if self
+    ) -> Option<&[CurrentSoulWarTaintFacts]> {
+        (self
             .context
             .is_some_and(|(expected, _)| expected == binding(runtime))
-            && self.observed_at == Some(now)
-        {
-            &self.players
-        } else {
-            &[]
-        }
+            && self.observed_at == Some(now))
+        .then_some(self.players.as_slice())
     }
     fn third_policy(
         &self,

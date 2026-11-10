@@ -129,7 +129,8 @@ pub(super) async fn drive_due_through(
     let players = states
         .soul_war_callbacks
         .taints
-        .current_players(runtime, now)
+        .current_player_read(runtime, now)
+        .ok_or(())?
         .to_vec();
     let dead_players = states
         .soul_war_callbacks
