@@ -90,6 +90,7 @@ fn death_tree_retirement_preserves_the_existing_corpse_capacity()
     assert_eq!(
         corpse_capacity
             .sql
+            .as_str()
             .matches(&format!(
                 "CHECK (placement_ordinal BETWEEN 1 AND {corpse_max})"
             ))
@@ -101,12 +102,13 @@ fn death_tree_retirement_preserves_the_existing_corpse_capacity()
         .iter()
         .find(|migration| migration.version == 2731)
         .ok_or("death tree retirement migration")?;
-    assert!(retirement.sql.contains(&format!(
+    assert!(retirement.sql.as_str().contains(&format!(
         "AND (cause_kind<>''CORPSE_DECAY'' OR placement_ordinal<={corpse_max})"
     )));
     assert!(
         retirement
             .sql
+            .as_str()
             .contains(&format!("placement_ordinal BETWEEN 1 AND {}", u64::MAX))
     );
     Ok(())
