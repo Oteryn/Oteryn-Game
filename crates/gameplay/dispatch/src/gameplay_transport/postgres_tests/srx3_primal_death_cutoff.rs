@@ -211,11 +211,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                 );
                 owner.clock_origin = owner
                     .clock_origin
-                    .checked_sub(std::time::Duration::from_secs(if pod_expiry_case {
-                        21
-                    } else {
-                        11
-                    }))
+                    .checked_sub(std::time::Duration::from_secs(11))
                     .ok_or("source first wave clock")?;
                 let native_drain: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + '_>> =
                     Box::pin(async {
@@ -225,6 +221,58 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                 let mut old_pod = None;
                 let mut future_pod = None;
                 if pod_expiry_case {
+                    // Finish the actual first Beast wave before the first Pod
+                    // wave. Only Pod count draws then lead this source Think.
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_secs(3))
+                        .ok_or("actual first Beast callbacks clock")?;
+                    {
+                        let view = owner.runtime_view(&registered);
+                        drain_prior_primal_work(&view, view.owner_now()).await?;
+                        assert!(
+                            view.states
+                                .spell_states
+                                .lock()
+                                .await
+                                .primal_callbacks
+                                .pods
+                                .is_empty()
+                        );
+                    }
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_secs(7))
+                        .ok_or("actual first Pod wave clock")?;
+                    {
+                        let view = owner.runtime_view(&registered);
+                        let now = two_pod_wave_time(&view, boss)?;
+                        for _ in 0..256 {
+                            view.drain_monster_melee_at(now).await;
+                            if !view
+                                .states
+                                .spell_states
+                                .lock()
+                                .await
+                                .primal_callbacks
+                                .pods
+                                .is_empty()
+                            {
+                                break;
+                            }
+                        }
+                        assert_eq!(
+                            view.states
+                                .spell_states
+                                .lock()
+                                .await
+                                .primal_callbacks
+                                .pods
+                                .len(),
+                            2,
+                            "actual hazard1 source Think must schedule two real Pod callbacks before ordering them"
+                        );
+                    }
                     let pod_due = owner
                         .runtime_view(&registered)
                         .states
@@ -264,6 +312,23 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         .ok_or("prerequisite: first actual Pod create committed")?;
                     assert_eq!(first.2, first.1.checked_add(4_000_000).ok_or("source TTL")?);
                     if lock_normal_read {
+                        let view = owner.runtime_view(&registered);
+                        let prefix_now =
+                            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(first.1);
+                        drain_prior_primal_work(&view, prefix_now).await?;
+                        let think_now =
+                            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+                                first
+                                    .1
+                                    .checked_add(
+                                        crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000,
+                                    )
+                                    .ok_or("next actual Primal Think clock")?,
+                            );
+                        assert!(
+                            think_now.get() < first.2,
+                            "normal map read precedes the actual Pod expiry"
+                        );
                         let mut blocker = h.pool.begin().await?;
                         let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
                             .fetch_one(&mut *blocker)
@@ -271,7 +336,6 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         sqlx::query("SELECT i.item_instance_id FROM game_item_instances i JOIN game_primal_pod_callbacks p USING(item_instance_id) WHERE p.source_transaction_id=encode($1,'hex')::uuid FOR UPDATE OF i")
                             .bind(first.0.as_slice()).fetch_one(&mut *blocker).await?;
                         let epoch_before = crate::gameplay_transport::primal_callbacks::normal_map_read_epoch_for_test();
-                        let view = owner.runtime_view(&registered);
                         {
                             let runtime = view.runtime.lock().await;
                             let states = view.states.spell_states.lock().await;
@@ -292,9 +356,19 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         }
                         // pg_stat_activity truncates at configured1kB. Match the
                         // exact visible TILE_ROWS prefix, not its FROM at byte1959.
-                        let (_, observed) = tokio::join!(
-                            Box::pin(view.drain_monster_melee())
-                                as std::pin::Pin<Box<dyn std::future::Future<Output = ()> + '_>>,
+                        let (native, observed) = tokio::join!(
+                            Box::pin(async {
+                                for _ in 0..256 {
+                                    view.drain_monster_melee_at(think_now).await;
+                                    if crate::gameplay_transport::primal_callbacks::normal_map_read_epoch_for_test() > epoch_before {
+                                        return Ok(());
+                                    }
+                                }
+                                Err("actual Primal normal map read did not run within 256 native owner turns".into())
+                            })
+                                as std::pin::Pin<
+                                    Box<dyn std::future::Future<Output = TestResult> + '_>,
+                                >,
                             Box::pin(async {
                                 let observation: TestResult = async {
                                     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(8);
@@ -335,6 +409,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                                 >
                         );
                         observed?;
+                        native?;
                         drop(view);
                         drop(registered);
                         drop(owner);
@@ -360,6 +435,12 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         .into_iter()
                         .find(|row| row.0 != first.0 && row.3)
                         .ok_or("prerequisite: actual second Pod create at later execution")?;
+                    let created: i64 = sqlx::query_scalar("SELECT count(*) FROM game_primal_pod_callbacks p JOIN game_item_instances i USING(item_instance_id) JOIN game_item_ground_locations g USING(item_instance_id) WHERE p.source_transaction_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid) AND i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i39176'")
+                        .bind(first.0.as_slice()).bind(second.0.as_slice()).fetch_one(&h.pool).await?;
+                    assert_eq!(
+                        created, 2,
+                        "two actual durable Pod creates precede the expiry/core ordering assertions"
+                    );
                     assert!(second.2 > first.2);
                     owner
                         .runtime_view(&registered)
@@ -686,6 +767,83 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
         result.is_ok()
     );
     result
+}
+
+async fn drain_prior_primal_work(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    now: oteryn_simulation_determinism::SemanticTimeMicros,
+) -> TestResult {
+    // Each native turn owns one selected original callback. Stop as soon as
+    // that due prefix is complete, before reserving a fresh source Think.
+    for _ in 0..256 {
+        let pending = {
+            let states = owner.states.spell_states.lock().await;
+            states.primal_callbacks.normal_pending().is_some()
+                || states
+                    .primal_callbacks
+                    .next_source_due_time()
+                    .map_err(|_| "actual Primal source deadline unavailable")?
+                    .is_some_and(|due| due <= now.get())
+        };
+        if !pending {
+            return Ok(());
+        }
+        owner.drain_monster_melee_at(now).await;
+    }
+    Err("actual prior Primal callbacks did not drain within 256 native owner turns".into())
+}
+
+fn two_pod_wave_time(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    boss: crate::foundation::ExactActorRef,
+) -> TestResult<oteryn_simulation_determinism::SemanticTimeMicros> {
+    use oteryn_gameplay_encounters::bosses::hazard_primal::primal_menace_think as source;
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros, deterministic_decision_u64,
+    };
+    use sha2::{Digest, Sha256};
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("actual Primal source generation")?;
+    let root = GameplayDecisionRoot::from_bytes(
+        Sha256::new()
+            .chain_update(b"srx3:primal:callbacks:v1")
+            .chain_update(native.source_digest())
+            .chain_update(boss.placement_identity())
+            .finalize()
+            .into(),
+    );
+    let base = owner.owner_now().get();
+    let limit = u64::MAX - u64::MAX % u64::from(source::DRAW_PPM);
+    // Constrain only the source-clock input, as other deterministic branch
+    // fixtures do. The real reserved Think performs its original draws and
+    // must independently publish both callbacks; no source work is injected.
+    for offset in 0..1024_u64 {
+        let now = base
+            .checked_add(offset)
+            .ok_or("actual Pod wave clock bounds")?;
+        let mut occurrence = [0; 16];
+        occurrence[..8].copy_from_slice(&now.to_be_bytes());
+        let occurrence = DecisionOccurrenceId::from_bytes(occurrence);
+        let variance =
+            deterministic_decision_u64(&root, occurrence, "primal_waves", 0).map_err(debug)?;
+        let sign =
+            deterministic_decision_u64(&root, occurrence, "primal_waves", 1).map_err(debug)?;
+        if variance >= limit || sign >= limit {
+            continue;
+        }
+        if source::wave_count(
+            &source::POD_WAVE,
+            1,
+            (variance % u64::from(source::DRAW_PPM)) as u32,
+            (sign % u64::from(source::DRAW_PPM)) as u32,
+        ) == 2
+        {
+            return Ok(SemanticTimeMicros::from_micros(now));
+        }
+    }
+    Err("actual hazard1 source clock did not select two Pods within 1024 occurrences".into())
 }
 
 async fn wait_actual_pod_sql_due(pool: &sqlx::PgPool, source: [u8; 16]) -> TestResult {
