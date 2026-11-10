@@ -1,0 +1,1175 @@
+{
+  "task_id": "questpc-n3",
+  "branch": "claude/happy-davinci-ijz3wy-qm-questpc",
+  "base_main": "e9276ad7e",
+  "historical_packet_commit": "b22d52b5b18267a2a454f94372d476e214573c1e",
+  "packet_rows": 178,
+  "owner_exclusions_or_transfers": 51,
+  "current_owned_rows": 127,
+  "counts": {
+    "WAITING-ENGINE": 110,
+    "DONE": 5,
+    "BLOCKED": 51,
+    "TODO": 12
+  },
+  "batch_state": "Chakoya s3 chamber native PG GREEN66.819570055s; first-visit regression GREEN64.969116186s;2 passed,0 failed,0 ignored.38 routes/45 stages/59 anchors PG-proven;8 routes/11 stages remain.124 modules/1234 authoring tests,checks,tree,pins,duplicates,strict all-feature Clippy,workspace all-targets and fmt PASS. M01b PARTIAL;no whole-quest completion claim.",
+  "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
+  "local_ledger": ".lane/rows.md (not committed)",
+  "quests": [
+    {
+      "title": "A Father's Burden Quest",
+      "canonical": "oteryn:quest.a_father_s_burden_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGITEM/WPKG3: native11545-11552 material admission (real PG RED DefinitionNotFound87.09s); ENGNPC: source NPC final receipts/journal completion currently hardcoded false. Local reproduction retained."
+    },
+    {
+      "title": "A Piece of Cake",
+      "canonical": "oteryn:quest.a_piece_of_cake",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGITEM/map identity: source bridge item48227 remains typed unavailable by explicit owner decision (#2781 comment6549960114); merged SEASON W05d supplies independent Cake mechanics but retains this full-path dependency."
+    },
+    {
+      "title": "A Pirate's Death to Me",
+      "canonical": "oteryn:quest.authored.a_pirate_s_death_to_me",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "A Pirate's Tail Quest",
+      "canonical": "oteryn:quest.a_pirates_tail",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Adorned UH Rune Quest",
+      "canonical": "oteryn:quest.adorned_uh_rune_quest",
+      "state": "DONE",
+      "reason": "Native claim completion and replay PG green;17cases730.43s; published with qmech batch. Existing QREADY1 selectors/tests reused."
+    },
+    {
+      "title": "Adventures of Galthen Quest",
+      "canonical": "oteryn:quest.adventures_of_galthen_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Afflicted Outfits Quest",
+      "canonical": "oteryn:quest.afflicted_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Against the Spider Cult Quest",
+      "canonical": "oteryn:quest.tibia_tales",
+      "state": "BLOCKED",
+      "reason": "Ownership transferred by coordinator to a newer quest lane; do not duplicate."
+    },
+    {
+      "title": "Alawar's Vault Quest",
+      "canonical": "oteryn:quest.alawar_s_vault_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "An Interest In Botany Quest",
+      "canonical": "oteryn:quest.an_interest_in_botany_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: atomic multiple root physical rewards (11700x1 +3035x10), still absent in925d8480."
+    },
+    {
+      "title": "An Uneasy Alliance Quest",
+      "canonical": "oteryn:quest.an_uneasy_alliance_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGITEM: revision-fenced10s ground-object reset."
+    },
+    {
+      "title": "Ancient Aucar Outfits Quest",
+      "canonical": "oteryn:quest.ancient_aucar_outfits_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Annual Autumn Vintage",
+      "canonical": "oteryn:quest.authored.annual_autumn_vintage",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Arito's Task Quest",
+      "canonical": "oteryn:quest.tibia_tales",
+      "state": "BLOCKED",
+      "reason": "Ownership transferred by coordinator to a newer quest lane; do not duplicate."
+    },
+    {
+      "title": "Assassin Outfits Quest",
+      "canonical": "oteryn:quest.assassin_outfit",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Asura Palace Quest",
+      "canonical": "oteryn:quest.authored.asura_palace_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Awash World Change",
+      "canonical": "oteryn:quest.awash_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Bank Robbery Mini World Change",
+      "canonical": "oteryn:quest.authored.bank_robbery_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Barbarian Arena Quest",
+      "canonical": "oteryn:quest.barbarian_arena_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGENC: credited arena death triggers source pillar removal/next-pit portal creation with exclusive pit lease and timed kick/reset."
+    },
+    {
+      "title": "Barbarian Axe Quest",
+      "canonical": "oteryn:quest.barbarian_axe_quest",
+      "state": "DONE",
+      "reason": "Native claim completion and replay PG green;17cases730.43s; published with qmech batch. Existing QREADY1 selectors/tests reused."
+    },
+    {
+      "title": "Barbarian Outfits Quest",
+      "canonical": "oteryn:quest.outfit_and_addon_quests",
+      "state": "BLOCKED",
+      "reason": "Ownership transferred by coordinator to a newer quest lane; do not duplicate."
+    },
+    {
+      "title": "Barbarian Test Quest",
+      "canonical": "oteryn:quest.barbarian_test",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGITEM/QENGINE2: replay-bound random mead outcomes and live drunk-condition mammoth action."
+    },
+    {
+      "title": "Battle Axe Quest",
+      "canonical": "oteryn:quest.battle_axe_quest",
+      "state": "DONE",
+      "reason": "Native claim completion and replay PG green;17cases730.43s; published with qmech batch. Existing QREADY1 selectors/tests reused."
+    },
+    {
+      "title": "Battle Mage Outfits Quest",
+      "canonical": "oteryn:quest.battle_mage_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Bear Room Quest",
+      "canonical": "oteryn:quest.bear_room_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Beggar Outfits Quest",
+      "canonical": "oteryn:quest.beggar_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Behemoth Quest",
+      "canonical": "oteryn:quest.behemoth_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Berserk Potion Quest",
+      "canonical": "oteryn:quest.berserk_potion_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Berserker Treasure Quest",
+      "canonical": "oteryn:quest.berserker_treasure_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Between the Lines Quest",
+      "canonical": "oteryn:quest.between_the_lines_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Bewitched",
+      "canonical": "oteryn:quest.authored.bewitched",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Bigfoot's Burden Quest",
+      "canonical": "oteryn:quest.bigfoot_s_burden_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: atomic multiple root item rewards and read-only STEP_IN gates with source-ordered refusals."
+    },
+    {
+      "title": "Black Knight Quest",
+      "canonical": "oteryn:quest.black_knight_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Blood Brothers Quest",
+      "canonical": "oteryn:quest.blood_brothers_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGNPC: locked live necklace-slot3083 predicate; carried evidence is insufficient."
+    },
+    {
+      "title": "Blood Herb Quest",
+      "canonical": "oteryn:quest.blood_herb_quest",
+      "state": "DONE",
+      "reason": "Native claim completion and replay PG green;17cases730.43s; published with qmech batch. Existing QREADY1 selectors/tests reused."
+    },
+    {
+      "title": "Bloody Tusks Quest",
+      "canonical": "oteryn:quest.bloody_tusks_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Bored Mini World Change",
+      "canonical": "oteryn:quest.bored_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Braindeath Quest",
+      "canonical": "oteryn:quest.authored.braindeath_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Brotherhood Outfits Quest",
+      "canonical": "oteryn:quest.brotherhood_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Captain Iglues Treasure Quest",
+      "canonical": "oteryn:quest.captain_iglues_treasure_quest",
+      "state": "DONE",
+      "reason": "Native claim completion and replay PG green;17cases730.43s; published with qmech batch. Existing QREADY1 selectors/tests reused."
+    },
+    {
+      "title": "Cartography 101 Quest",
+      "canonical": "oteryn:quest.authored.cartography_101_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Cave Explorer Outfits Quest",
+      "canonical": "oteryn:quest.cave_explorer_outfits_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Chakoya Iceberg Mini World Change",
+      "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Child of Destiny Quest",
+      "canonical": "oteryn:quest.authored.child_of_destiny_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Children of the Revolution Quest",
+      "canonical": "oteryn:quest.children_of_the_revolution_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGITEM: five-lever four-cell conditional toggles, revision-fenced5s lever reset and public player speech."
+    },
+    {
+      "title": "Chyllfroest Mini World Change",
+      "canonical": "oteryn:quest.chyllfroest_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Circle Room Quest",
+      "canonical": "oteryn:quest.circle_room_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Citizen Outfits Quest",
+      "canonical": "oteryn:quest.outfit_and_addon_quests",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2/ENGNPC: source-saga completion must preserve mainland/Rook/source-alias boundaries under the shared canonical outfit key; reward-only scoped proof cannot close the aggregate."
+    },
+    {
+      "title": "Citizen Outfits Quest on Rook",
+      "canonical": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Citizen of Issavi Outfits Quest",
+      "canonical": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Combat Knife Quest",
+      "canonical": "oteryn:quest.combat_knife_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Crusader Helmet Quest",
+      "canonical": "oteryn:quest.crusader_helmet_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Crystal Wand Quest",
+      "canonical": "oteryn:quest.crystal_wand_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Crystal Warlord Outfits Quest",
+      "canonical": "oteryn:quest.crystal_warlord_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Cults of Tibia Quest",
+      "canonical": "oteryn:quest.cults_of_tibia_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Dangerous Depths Quest",
+      "canonical": "oteryn:quest.dangerous_depths_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Darashia Dragon Quest",
+      "canonical": "oteryn:quest.darashia_dragon_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Dark Armor Quest",
+      "canonical": "oteryn:quest.dark_armor_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Dark Trails Quest",
+      "canonical": "oteryn:quest.dark_trails_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Dawnport Quest",
+      "canonical": "oteryn:quest.dawnport_quest",
+      "state": "BLOCKED",
+      "reason": "Owner exclusion: Dawnport."
+    },
+    {
+      "title": "Dead Archer Quest",
+      "canonical": "oteryn:quest.dead_archer_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Decaying Defender Outfits Quest",
+      "canonical": "oteryn:quest.decaying_defender_outfits_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Deeper Fibula Quest",
+      "canonical": "oteryn:quest.deeper_fibula_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Deeplings World Change",
+      "canonical": "oteryn:quest.deeplings_worldchange",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Demon Helmet Quest",
+      "canonical": "oteryn:quest.demon_helmet_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Demon Outfits Quest",
+      "canonical": "oteryn:quest.demon_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Demon Wars World Change",
+      "canonical": "oteryn:quest.authored.demon_wars_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Demon's Lullaby",
+      "canonical": "oteryn:quest.authored.demon_s_lullaby",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Demona Ring Quest",
+      "canonical": "oteryn:quest.demona_ring_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Devil Helmet Quest",
+      "canonical": "oteryn:quest.devil_helmet_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Devovorga's Essence Mini World Change",
+      "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Double Hero Quest",
+      "canonical": "oteryn:quest.double_hero_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Doublet Quest",
+      "canonical": "oteryn:quest.doublet_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Down the Drain Mini World Change",
+      "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Draccoon Herald Outfits Quest",
+      "canonical": "oteryn:quest.authored.draccoon_herald_outfits_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Draconia Quest",
+      "canonical": "oteryn:quest.draconia_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Dragon Corpse Quest",
+      "canonical": "oteryn:quest.dragon_corpse_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Dragon Slayer Outfits Quest",
+      "canonical": "oteryn:quest.authored.dragon_slayer_outfits_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Dragon Tower Quest",
+      "canonical": "oteryn:quest.dragon_tower_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Dream Warden Outfits Quest",
+      "canonical": "oteryn:quest.dream_warden_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Dream Warrior Outfits Quest",
+      "canonical": "oteryn:quest.dream_warrior_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Dreamer's Challenge Quest",
+      "canonical": "oteryn:quest.dreamer_s_challenge_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Druid Outfits Quest",
+      "canonical": "oteryn:quest.druid_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Druid Outfits Quest on Rook",
+      "canonical": "oteryn:quest.druid_outfits_quest_on_rook",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Edron Goblin Quest",
+      "canonical": "oteryn:quest.edron_goblin_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Elemental Spheres Quest",
+      "canonical": "oteryn:quest.elemental_spheres_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGITEM/ENGENC: item-arrival event, seven-altars world readset, corpse consumption and boss summon in one fence."
+    },
+    {
+      "title": "Elementalist Outfits Quest",
+      "canonical": "oteryn:quest.elementalist_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Elephant Tusk Quest",
+      "canonical": "oteryn:quest.elephant_tusk_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Elvenbane Quest",
+      "canonical": "oteryn:quest.authored.elvenbane_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Emperor's Cookies Quest",
+      "canonical": "oteryn:quest.emperor_s_cookies_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Exchange Quests",
+      "canonical": "oteryn:quest.friends_and_traders",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Explorer Brooch Quest",
+      "canonical": "oteryn:quest.explorer_brooch_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Falconer Outfits Quest",
+      "canonical": "oteryn:quest.falconer_outfits_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Fanfare Quest",
+      "canonical": "oteryn:quest.fanfare_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Feaster of Souls Quest",
+      "canonical": "oteryn:quest.feaster_of_souls_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Feral Trappers Quest",
+      "canonical": "oteryn:quest.feral_trappers_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Ferumbras' Ascension Quest",
+      "canonical": "oteryn:quest.ferumbras_ascension_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Festive Outfits Quest",
+      "canonical": "oteryn:quest.festive_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Fiend Slayer Outfits Quest",
+      "canonical": "oteryn:quest.fiend_slayer_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Fire Axe Quest",
+      "canonical": "oteryn:quest.fire_axe_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Fire from the Earth Mini World Change",
+      "canonical": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Fire-Fighter Outfits Quest",
+      "canonical": "oteryn:quest.fire_fighter_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Fishing Box Quest",
+      "canonical": "oteryn:quest.fishing_box_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Forgotten Knowledge Quest",
+      "canonical": "oteryn:quest.forgotten_knowledge_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Formal Dress Outfits Quest",
+      "canonical": "oteryn:quest.formal_dress_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Formorgar Mines Hoist Quest",
+      "canonical": "oteryn:quest.formogar_mine_hoist",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Formorgar Mines Quest",
+      "canonical": "oteryn:quest.the_ice_islands_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Frost Dragon Quest",
+      "canonical": "oteryn:quest.frost_dragon_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Fury Gates Mini World Change",
+      "canonical": "oteryn:quest.fury_gates_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Geomancer Quest",
+      "canonical": "oteryn:quest.geomancer_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Ghoul Room Quest",
+      "canonical": "oteryn:quest.ghoul_room_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Giant Smithhammer Quest",
+      "canonical": "oteryn:quest.giant_smithhammer_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Glooth Engineer Outfits Quest",
+      "canonical": "oteryn:quest.glooth_engineer_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Goblin Merchant Quest",
+      "canonical": "oteryn:quest.goblin_merchant_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGITEM: cross-floor elevator batch item movement and displacement of every platform occupant."
+    },
+    {
+      "title": "Goblin Temple Quest",
+      "canonical": "oteryn:quest.goblin_temple_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Golden Outfits Quest",
+      "canonical": "oteryn:quest.golden_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Grave Danger Quest",
+      "canonical": "oteryn:quest.grave_danger_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Griffin Shield Quest",
+      "canonical": "oteryn:quest.griffin_shield_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Grimvale Mini World Change",
+      "canonical": "oteryn:quest.grimvale_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGENC/QENGINE2: source Feroxa occurrence RNG/boss lifecycle; existing full-moon gate explicitly does not create the source encounter."
+    },
+    {
+      "title": "Grimvale Quest",
+      "canonical": "oteryn:quest.grimvale_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Hand of the Inquisition Outfits Quest",
+      "canonical": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Heart of Destruction Quest",
+      "canonical": "oteryn:quest.heart_of_destruction_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Heaven Blossom Quest",
+      "canonical": "oteryn:quest.heaven_blossom_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Hero of Rathleton Quest",
+      "canonical": "oteryn:quest.hero_of_rathleton_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Hidden Threats Quest",
+      "canonical": "oteryn:quest.hidden_threats_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Hive Born World Change",
+      "canonical": "oteryn:quest.authored.hive_born_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Hive Outpost Mini World Change",
+      "canonical": "oteryn:quest.authored.hive_outpost_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Horse Station World Change",
+      "canonical": "oteryn:quest.horse_station_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Hot Cuisine Quest",
+      "canonical": "oteryn:quest.hot_cuisine_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGNPC: authoritative current-year projection and once-per-calendar-year source bonus writes; existing UTC month alone is insufficient."
+    },
+    {
+      "title": "Hunter Outfits Quest",
+      "canonical": "oteryn:quest.hunter_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Hunting for Tokens Quest",
+      "canonical": "oteryn:quest.hunting_for_tokens",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Hydra Egg Quest",
+      "canonical": "oteryn:quest.hydra_egg_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Illuminated Warrior Outfits Quest",
+      "canonical": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Illuminator Outfit Quest",
+      "canonical": "oteryn:quest.illuminator_outfit_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Illuminator Outfits Quest",
+      "canonical": "oteryn:quest.illuminator_outfits_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "In Service of Yalahar Quest",
+      "canonical": "oteryn:quest.in_service_of_yalahar_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Insectoid Invasion World Change",
+      "canonical": "oteryn:quest.authored.insectoid_invasion_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Insectoid Outfits Quest",
+      "canonical": "oteryn:quest.authored.insectoid_outfits_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Into The Bone Pit Quest",
+      "canonical": "oteryn:quest.tibia_tales",
+      "state": "BLOCKED",
+      "reason": "Ownership transferred by coordinator to a newer quest lane; do not duplicate."
+    },
+    {
+      "title": "Inukaya Quest",
+      "canonical": "oteryn:quest.inukaya_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Iron Hammer Quest",
+      "canonical": "oteryn:quest.iron_hammer_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Iron Helmet Quest",
+      "canonical": "oteryn:quest.iron_helmet_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Iron Ore Quest",
+      "canonical": "oteryn:quest.iron_ore_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Isle of the Mists Quest",
+      "canonical": "oteryn:quest.isle_of_the_mists_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Jack to the Future Quest",
+      "canonical": "oteryn:quest.tibia_tales",
+      "state": "BLOCKED",
+      "reason": "Ownership transferred by coordinator to a newer quest lane; do not duplicate."
+    },
+    {
+      "title": "Jungle Camp Mini World Change",
+      "canonical": "oteryn:quest.authored.jungle_camp_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Katana Quest",
+      "canonical": "oteryn:quest.katana_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Killing in the Name of... Quest",
+      "canonical": "oteryn:quest.killing_in_the_name_of_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Kilmaresh Quest",
+      "canonical": "oteryn:quest.kilmaresh_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Kingdom of Kormarak Quest",
+      "canonical": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Kingsday Mini World Change",
+      "canonical": "oteryn:quest.authored.kingsday_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Kissing a Pig Quest",
+      "canonical": "oteryn:quest.authored.kissing_a_pig_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGITEM: objective receipt coupled to successful native machete transform and decay."
+    },
+    {
+      "title": "Knight Outfits Quest",
+      "canonical": "oteryn:quest.knight_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Koshei the Deathless Quest",
+      "canonical": "oteryn:quest.koshei_the_deathless_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Krailos Quest",
+      "canonical": "oteryn:quest.krailos_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Last Creep Standing",
+      "canonical": "oteryn:quest.authored.last_creep_standing",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Life Ring Quest",
+      "canonical": "oteryn:quest.life_ring_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Lion Trophy Quest",
+      "canonical": "oteryn:quest.lion_trophy_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Lion's Rock Quest",
+      "canonical": "oteryn:quest.lions_rock",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGITEM: pagoda/amphora15s reset and flower60s regrowth."
+    },
+    {
+      "title": "Liquid Black Quest",
+      "canonical": "oteryn:quest.liquid_black_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Lone Medusa Quest",
+      "canonical": "oteryn:quest.lone_medusa_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Longsword Quest",
+      "canonical": "oteryn:quest.longsword_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Loose Ends Quest",
+      "canonical": "oteryn:quest.tibia_tales",
+      "state": "BLOCKED",
+      "reason": "Ownership transferred by coordinator to a newer quest lane; do not duplicate."
+    },
+    {
+      "title": "Lumberjack Mini World Change",
+      "canonical": "oteryn:quest.authored.lumberjack_mini_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: occurrence-scoped personal quest progress/completion for repeatable world events, composed with existing WorldCounter owners and source shared mutations/resets. Current quest state is keyed only by character and canonical quest."
+    },
+    {
+      "title": "Machinery of War Quest",
+      "canonical": "oteryn:quest.machinery_of_war_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Mad Mage Room Quest",
+      "canonical": "oteryn:quest.mad_mage_room_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Mage Outfits Quest",
+      "canonical": "oteryn:quest.outfit_and_addon_quests",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Magic Sword Quest",
+      "canonical": "oteryn:quest.authored.magic_sword_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Make Believe Quest",
+      "canonical": "oteryn:quest.authored.make_believe_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Makeshift Warrior Outfits Quest",
+      "canonical": "oteryn:quest.makeshift_warrior_outfits_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Marlin Trophy Quest",
+      "canonical": "oteryn:quest.marlin_trophy_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "ENGNPC: final source NPC item receipt must set canonical journal completion in the same fenced operation; current npc_program writer hardcodes completes=false."
+    },
+    {
+      "title": "Mastermind Potion Quest",
+      "canonical": "oteryn:quest.authored.mastermind_potion_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Measuring Tibia Quest",
+      "canonical": "oteryn:quest.authored.measuring_tibia_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Medusa Shield Quest",
+      "canonical": "oteryn:quest.medusa_shield_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    },
+    {
+      "title": "Minotaur Hell Quest",
+      "canonical": "oteryn:quest.minotaur_hell_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: source-declared unordered required/alternative reward-set completion; each placement currently binds one fixed transition and failed prerequisite obligations become terminal REFUSED. Do not complete on the first chest."
+    },
+    {
+      "title": "Minotaur Leather Quest",
+      "canonical": "oteryn:quest.minotaur_leather_quest",
+      "state": "TODO",
+      "reason": "Full-path proof required; historical QUALIFIED is scoped."
+    },
+    {
+      "title": "Mintwallin Cyclops Quest",
+      "canonical": "oteryn:quest.mintwallin_cyclops_quest",
+      "state": "BLOCKED",
+      "reason": "Ownership: preserved explicit SKIP / qualification in another lane; do not duplicate."
+    },
+    {
+      "title": "Mystery of the Valley Quest",
+      "canonical": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "QENGINE2: canonical authored stage binding API delivery on main (Bindings::attach, MapUse/StepIn/Kill/NpcDialogue). Qualified source925d8480 includes it, merged main e9276ad7e does not. Historical reward-only proof is insufficient for the full authored route."
+    }
+  ],
+  "publication_branch": "claude/happy-davinci-ijz3wy-qm-questpc",
+  "active_assignment": {
+    "id": "M01b",
+    "owner": "questpc",
+    "scope": "EXPLORE bindings for46 assigned routes /56 stages",
+    "migration_range": "2000-2009",
+    "state": "IN_PROGRESS",
+    "claim_push": "a17567dbf03d295a9601f04ff0cb1efd5876143e",
+    "wired_explore_stages": 3,
+    "wired_routes": [
+      "Longsword Quest",
+      "Geomancer Quest",
+      "Asura Palace Quest"
+    ],
+    "validation": "4realPGcases PASS190.89s on PostgreSQL18.6;Asura61.343279739s;4Rust profile tests and11Python authoring tests PASS"
+  },
+  "publication_validation": {
+    "postgres_cases": 17,
+    "postgres_seconds": 730.43,
+    "postgres_scope": "five-binding lane candidate before package merge; test SHA and claim hashes revalidated after merge",
+    "authoring_modules": 106,
+    "authoring_checks": "PASS",
+    "content_tree": "PASS",
+    "workspace_all_targets": "PASS on6b40568d1 tree",
+    "strict_dispatch_clippy": "PASS4m31s on preceding package merge",
+    "fmt": "PASS",
+    "world_pin_refresh": "PASS, unchanged b79b1d74fa63d9b986edcf0688a8070de1ffa5b2c3b0f8a61268fbe4bcd55b6e",
+    "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
+  },
+  "m01b_latest_batch": "Chakoya s3 chamber native PG GREEN66.819570055s; first-visit regression GREEN64.969116186s;2 passed,0 failed,0 ignored.38 routes/45 stages/59 anchors PG-proven;8 routes/11 stages remain.124 modules/1234 authoring tests,checks,tree,pins,duplicates,strict all-feature Clippy,workspace all-targets and fmt PASS. M01b PARTIAL;no whole-quest completion claim.",
+  "m01b_latest_slice": "Chakoya s3 chamber native PG GREEN66.819570055s; first-visit regression GREEN64.969116186s;2 passed,0 failed,0 ignored.38 routes/45 stages/59 anchors PG-proven;8 routes/11 stages remain.124 modules/1234 authoring tests,checks,tree,pins,duplicates,strict all-feature Clippy,workspace all-targets and fmt PASS. M01b PARTIAL;no whole-quest completion claim.",
+  "native_anchor_generation": {
+    "state": "SLICE_GREEN",
+    "behavior": "M01b callback generation rejects missing native regions/tiles, changed ground appearance and house-owned tiles before emitting any selector; retained B3 sectors are read without mutation.",
+    "red": "Two real callback-factory tests failed: changed ground and missing region were accepted.",
+    "focused": "4 new tests GREEN1.616s; all65 existing binding tests GREEN59.795s.",
+    "postgres": "m01b_horse_station_native_landmark_visit_never_activates_escape_state GREEN118.467654971s; real dispatch STEP, once/replay/revisit, no World escape activation.",
+    "remaining": "No new route qualification.36routes/39stages proven,10routes/17stages unwired.",
+    "final_gates": "PASS120authoringmodules1222tests,0failingmodules;authoringchecks;content-tree;callbackregeneration/check;equipment5795pin;dupmigrations;workspacealltargets7m15s;fmt;diff-check. Python-only production change;no changed Rust crate or SQL."
+  },
+  "bewitched_cauldron_survey": {
+    "state": "FIRST_SURVEY_NATIVE_PG_QUALIFIED",
+    "scope": "Bewitched s1 only: exact authored personal-daily adaptation, first objective, pinned spoiler and retained huge cauldron corner required; global event and later stages are untouched.",
+    "native_landmark": "32732,31935,z12 source stack[7272,12023];clear entry32733,31935,-12ground7272;startEast32734,31935,-12.",
+    "red_green": "Liveactivation RED0vs1->GREEN3focusedtests1.275s;full121modules1225tests0failingmodules.",
+    "pending": "Dailyreentry,ingredients,brewing,combat,reward/completion remain separate later-stage obligations;allfirst-surveypublicationgatespassed.",
+    "native_postgres": "m01b_bewitched_native_personal_cauldron_visit_does_not_credit_the_brew GREEN71.68814649s,0ignored;exactnativecauldron[7272,12023]preserved;realSTEPonce/replay/revisit,no laterstage/completion/globaleventcredit.",
+    "publication_gates": "PASS121modules1225authoringtests;checks;content-tree;nativeproviderregeneration;callbackcheck;equipment5795pin;dupmigrations;fmt;strictquests+dispatchalltargetsClippy5m11s;workspacealltargets4m49s.",
+    "additional_feature_gate": "Post-publication strictdispatchall-targets/all-featuresClippyGREEN4m12s on07594a170;no source fix required."
+  },
+  "iceberg_fixed_expedition": {
+    "state": "FIRST_SURVEY_NATIVE_PG_QUALIFIED",
+    "scope": "Chakoya s1 fixed personal expedition only;canonical Premium retained;no global World-owner promotion. Other stages/dynamic expedition/repeat/objective/source changes reject.",
+    "native": "ExactArea75507rev1117033 marker32623,32584,z7;retained stack[799,7152];clear approach32622,32585,-7ground6585;startSouth32622,32586ground6582.",
+    "red_green": "LiveactivationRED0vs1->GREEN4focusedtests1.679s;full122modules1229tests0failingmodules.",
+    "regression_postgres": "ExistingBewitched realnativeSTEPcase GREEN181.037823667s,0ignored. This isNOTaChakoyaPGqualification.",
+    "pending": "Kill stage,chamber visit,reward/completionremainunqualified. First-surveypublicationgatesallGREEN;no syntheticglobalWorldflag/HELDownerpromotion.",
+    "workspace": "GREENworkspacealltargets8m23s andfmt. No Rust/SQLcontentchange in thispreparedslice.",
+    "publication_gates": "GREEN122authoringmodules1229tests,0failingmodules;checks;content-tree;nativeproviderregeneration;callbackcheck;equipment5795pin;dupmigrations;fmt+explicitauto-mountedparent/newcaseformatchecks;strictquests+dispatchalltargetsALLFEATURESClippy5m02s;workspacealltargets5m32s;nativePG78.48657683s.",
+    "native_postgres": "m01b_chakoya_native_personal_iceberg_entry_requires_current_premium GREEN78.48657683s,0ignored;exactlandmark[799,7152]preserved;realCurrentPremium/refusedreplay/freshonce/revisit;laterstage/completion/globalstate0."
+  },
+  "remaining_stage_audit": "46routes56stagescountedfrompacketandcanonicaldefs;45boundandPG-proven. Remaining11:Chyll1,Deeplings4,DevEssence1,DownDrain1,Fury2,Hive1,Insectoid1,Jungle1+3,Kingsday1,Lumberjack1.",
+  "later_native_surveys": {
+    "state": "LATER_VISITS_NATIVE_PG_QUALIFIED",
+    "scope": "DragonCorpse s3 fire corridor,DragonTower s3 lastfloor,EdronGoblin s3 throneapproach;real s1STEPbeforeevidence,onlyseparateUSE/KILLconditionarranged;noExplore/receipt/rootrevisionseeding;EdronCurrentPremium;freshonce/refusedreplay/revisit/wholecomplete0.",
+    "postgres": {
+      "dragon_corpse_s3_seconds": 67.987155645,
+      "dragon_tower_s3_seconds": 68.044933223,
+      "edron_goblin_s3_seconds": 68.476461392,
+      "result": "3passed0failed0ignored,total204.51s"
+    },
+    "red_green": "2focusedtestsRED3unsupportedclaims+3missingbindings->GREEN2.059s. Initialfullauthoringfound2failures:prependedS3shadoweds1andlegacyone-callbacktotal. Appendedlaterbindings;nowexact2DragonCorpsekeyswithoriginals1assertionretained+news3assertion. Focused65GREEN47.055s;FULLretry123modules1231tests0failures.",
+    "build_recovery": "FirstdispatchtestbuildSIGKILLbeforerunningPG;16GiBcgroup. ReranwithCARGO_BUILD_JOBS=2afterdependencycachecompleted;compileGREEN6m51s,all3realPGcasesGREEN.",
+    "pending": "No new reward/kill/action/transport/fullquestqualification;allpublicationgatesGREEN.",
+    "publication_gates": "PASS123modules1231testsafterfullretry;authoringchecks;content-tree;nativeproviderregeneration;callbackcheck/equipment5795pin/dupmigrations;strictquests+dispatchalltargetsALLFEATURESClippy4m17s;workspacealltargets4m47s;fmt+explicitauto-mountedparent/newfilechecks;3realPGcases204.51s."
+  },
+  "iceberg_chamber_survey": {
+    "state": "NATIVE_PG_GREEN_PUBLISHED_GATES",
+    "scope": "Authoredfixedpersonalnorthernice-walledalcove;frozenchair+threewallsSourcefootprintpreserved;actuals1STEP,onlynonExplorethree-killevidencearranged;Premium/refusedreplay/freshonce/revisit;wholecompletion0. No globalWorldownerpromotion.",
+    "postgres": {
+      "new_chamber_seconds": 66.819570055,
+      "first_visit_regression_seconds": 64.969116186,
+      "result": "2passed0failed0ignored,total131.79s"
+    },
+    "red_green": "3focusedtestsREDmissingresolver/currentWorldowner/live0vs1->GREEN1.523s;4firsttestsGREEN1.427s;65bindingtestsGREEN41.116s.124modules1234authoringtests0failures. FirstPGRED58.114248801s expectedsource4vs6 becausehalf-opencropmaxexcludedwall/start;expandedboundsretainingALL6assertions;BOTHnativePGcasesGREENafterfix.",
+    "pending": "First and chamber visits qualified;kill/reward/completion/transport qualification remains outside these visit proofs. All publication gates GREEN."
+  }
+}

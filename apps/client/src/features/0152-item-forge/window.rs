@@ -255,7 +255,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             effects_button::enable(effects, &panel, editable);
                             EnableWindow(retry, i32::from(!panel.pending && panel.retry.is_some()));
                             let mut text = oteryn_client_ui::item_forge::selected_pair_text(&panel);
-                            text.push_str("\n");
+                            text.push('\n');
                             text.push_str(&oteryn_client_ui::item_forge::panel_text(&panel));
                             for (index, handle) in [panel.first_item, panel.second_item]
                                 .into_iter()

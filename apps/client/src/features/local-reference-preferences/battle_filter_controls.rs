@@ -24,9 +24,9 @@ impl BattleFilterControls {
             });
             for source in 0..3 {
                 MoveWindow(labels[source], 10 + source as i32 * 230, 80, 220, 26, 1);
-                for class in 0..3 {
+                for (class, check) in checks[source].iter().enumerate() {
                     MoveWindow(
-                        checks[source][class],
+                        *check,
                         10 + source as i32 * 230,
                         120 + class as i32 * 40,
                         220,

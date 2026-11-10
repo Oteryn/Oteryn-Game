@@ -1,0 +1,100 @@
+{
+  "world_bundle": "/tmp/srx3-world-pins/oteryn-a25ff2dde36d61bf1a68fae74647616be38b6987bb5f3140de7feeb45c12441d.otwb",
+  "world_digest": "a25ff2dde36d61bf1a68fae74647616be38b6987bb5f3140de7feeb45c12441d",
+  "native_key_count": 34111,
+  "raw_definition_count": 34117,
+  "palette_item_count": 20030,
+  "palette_missing_native_keys": [],
+  "native_missing_definition_keys": [
+    "oteryn:item.tibia.i42851",
+    "oteryn:item.tibia.i42853",
+    "oteryn:item.tibia.i43589",
+    "oteryn:item.tibia.i43590",
+    "oteryn:item.tibia.i43625",
+    "oteryn:item.tibia.i43860"
+  ],
+  "world_vs_raw_definition_reference_mismatches": 0,
+  "world_vs_native_reference_mismatches": 4962,
+  "first16": [
+    {
+      "key": "oteryn:item.tibia.i429",
+      "world_reference": 25237,
+      "native_reference": 25235
+    },
+    {
+      "key": "oteryn:item.tibia.i430",
+      "world_reference": 25256,
+      "native_reference": 25254
+    },
+    {
+      "key": "oteryn:item.tibia.i431",
+      "world_reference": 25267,
+      "native_reference": 25265
+    },
+    {
+      "key": "oteryn:item.tibia.i432",
+      "world_reference": 25284,
+      "native_reference": 25282
+    },
+    {
+      "key": "oteryn:item.tibia.i433",
+      "world_reference": 25298,
+      "native_reference": 25296
+    },
+    {
+      "key": "oteryn:item.tibia.i434",
+      "world_reference": 25311,
+      "native_reference": 25309
+    },
+    {
+      "key": "oteryn:item.tibia.i435",
+      "world_reference": 25322,
+      "native_reference": 25320
+    },
+    {
+      "key": "oteryn:item.tibia.i436",
+      "world_reference": 25374,
+      "native_reference": 25370
+    },
+    {
+      "key": "oteryn:item.tibia.i437",
+      "world_reference": 25400,
+      "native_reference": 25395
+    },
+    {
+      "key": "oteryn:item.tibia.i438",
+      "world_reference": 25462,
+      "native_reference": 25457
+    },
+    {
+      "key": "oteryn:item.tibia.i439",
+      "world_reference": 25555,
+      "native_reference": 25549
+    },
+    {
+      "key": "oteryn:item.tibia.i440",
+      "world_reference": 25590,
+      "native_reference": 25584
+    },
+    {
+      "key": "oteryn:item.tibia.i441",
+      "world_reference": 25637,
+      "native_reference": 25631
+    },
+    {
+      "key": "oteryn:item.tibia.i442",
+      "world_reference": 25669,
+      "native_reference": 25663
+    },
+    {
+      "key": "oteryn:item.tibia.i443",
+      "world_reference": 25679,
+      "native_reference": 25673
+    },
+    {
+      "key": "oteryn:item.tibia.i444",
+      "world_reference": 25690,
+      "native_reference": 25684
+    }
+  ]
+}

@@ -5,25 +5,6 @@ pub(super) unsafe fn set_checked(handle: HWND, checked: bool) {
     }
 }
 
-pub(super) unsafe fn settings_window() -> HWND {
-    unsafe {
-        CreateWindowExW(
-            0,
-            wide("STATIC").as_ptr(),
-            wide("Oteryn Settings").as_ptr(),
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            760,
-            650,
-            null_mut(),
-            null_mut(),
-            null_mut(),
-            null(),
-        )
-    }
-}
-
 pub(super) unsafe fn refresh_hud_checks(
     hud_checks: &[HWND],
     preferences: &oteryn_client::play::ReferencePreferences,
