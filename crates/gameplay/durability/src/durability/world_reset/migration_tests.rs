@@ -113,3 +113,68 @@ fn death_tree_retirement_preserves_the_existing_corpse_capacity()
     );
     Ok(())
 }
+
+#[test]
+fn death_tree_bounds_remain_compulsory_at_both_terminal_root_proofs()
+-> Result<(), Box<dyn std::error::Error>> {
+    let migrations = &oteryn_gameplay_durability::GAME_MIGRATOR;
+    let retirement = migrations
+        .iter()
+        .find(|migration| migration.version == 2731)
+        .ok_or("death tree retirement migration")?;
+    let sql = retirement.sql.as_str();
+    let entry = sql
+        .split_once("CREATE FUNCTION game_player_death_retirement_entry_proven(")
+        .and_then(|(_, rest)| rest.split_once("$proof$;"))
+        .map(|(body, _)| body)
+        .ok_or("per-entry proof body")?;
+    assert!(!entry.contains("count(*)"));
+    assert!(!entry.contains("GROUP BY"));
+    let gate = sql
+        .split_once("root_gate:=$root_gate$")
+        .and_then(|(_, rest)| rest.split_once("$root_gate$;"))
+        .map(|(body, _)| body)
+        .ok_or("terminal root bounds gate")?;
+    assert!(gate.contains("IF r.placement_ordinal IS NULL THEN\n  IF NOT game_player_death_retirement_root_bounds_proven(p_item) THEN"));
+    assert!(gate.contains("USING ERRCODE='23514'"));
+    assert!(sql.contains("receipt_lookup||root_gate"));
+    for (version, proof) in [
+        (148, "game_world_reset_item_proven"),
+        (630, "game_activity_retirement_item_proven"),
+    ] {
+        let installed = migrations
+            .iter()
+            .find(|migration| migration.version == version)
+            .ok_or("installed terminal retirement proof")?;
+        let definition = installed
+            .sql
+            .as_str()
+            .split_once(&format!("CREATE FUNCTION {proof}("))
+            .and_then(|(_, rest)| rest.split_once("END $$;"))
+            .map(|(body, _)| body)
+            .ok_or("terminal proof definition")?;
+        assert!(definition.contains("created_xact_id=pg_current_xact_id()"));
+        assert_eq!(
+            definition
+                .matches("IF NOT FOUND THEN RETURN FALSE; END IF;")
+                .count(),
+            1,
+            "root bounds follow the exact current-transaction receipt lookup"
+        );
+        assert!(
+            installed
+                .sql
+                .as_str()
+                .contains("'game_item_decay_retire_consistency_guard'")
+        );
+        assert!(sql.contains(&format!("'{proof}(uuid)'")));
+    }
+    let receipts = migrations
+        .iter()
+        .find(|migration| migration.version == 15)
+        .ok_or("retirement receipt trigger migration")?;
+    assert!(receipts.sql.as_str().contains(
+        "CREATE CONSTRAINT TRIGGER game_item_decay_retire_consistent\n    AFTER INSERT ON game_item_decay_retire_receipts\n    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW\n    EXECUTE FUNCTION game_item_decay_retire_consistency_guard();"
+    ));
+    Ok(())
+}

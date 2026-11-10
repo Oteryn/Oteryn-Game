@@ -72,7 +72,17 @@ fn activity_player_death_postgres_partial_loss_recovers_through_empty_origin_lif
     run_case(Case::DepartedProcessDrop)
 }
 
+#[test]
+fn activity_player_death_postgres_retirement_requires_root_bounds_and_rolls_back_tree() -> TestResult
+{
+    run_case_with_root_bounds_fault(Case::RedSkullDrop, true)
+}
+
 fn run_case(case: Case) -> TestResult {
+    run_case_with_root_bounds_fault(case, false)
+}
+
+fn run_case_with_root_bounds_fault(case: Case, reject_root_bounds: bool) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         eprintln!("ACTIVITY_PLAYER_DEATH POSTGRES_CASE_SKIPPED: no configured admin");
         return Ok(());
@@ -91,7 +101,7 @@ fn run_case(case: Case) -> TestResult {
                 ))
                 .map_err(|error| error.to_string())?;
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                runtime.block_on(scenario(&h, case))
+                runtime.block_on(scenario(&h, case, reject_root_bounds))
             }));
             let cleanup = runtime
                 .block_on(h.cleanup())
@@ -133,7 +143,7 @@ fn cell_bytes(cell: LastPositionCell) -> Vec<u8> {
     .concat()
 }
 
-async fn scenario(h: &Harness, case: Case) -> TestResult {
+async fn scenario(h: &Harness, case: Case, reject_root_bounds: bool) -> TestResult {
     // Use the shared real admission/control fixture, choosing vocation while still
     // in its current Channel. No fabricated Instance session, assignment or receipt.
     let (_evidence, enter) = super::activity_runtime::prepare_activity_fixture(h).await?;
@@ -824,6 +834,90 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     );
     drop(channel_permit);
     let permit = lane.acquire().await.map_err(|_| "spell lane unavailable")?;
+    if reject_root_bounds {
+        // Match the real driver's first-root selection: this one step cannot
+        // commit the independent necklace root before the selected tree fails.
+        let (next_root, root_uuid, world_uuid, instance_uuid): (Vec<u8>, String, String, String) = sqlx::query_as("SELECT uuid_send(g.item_instance_id),g.item_instance_id::text,g.world_id::text,g.instance_id::text FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.scope_kind=2 AND g.world_id=encode($1,'hex')::uuid AND g.instance_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY g.item_instance_id LIMIT 1")
+            .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            next_root,
+            id(70).to_vec(),
+            "the real step selects the complete tree"
+        );
+        let before = activity_retirement_rollback_snapshot(h).await?;
+        assert_eq!(retirement_snapshot(h).await?, "[]");
+        let (original, body): (String, String) = sqlx::query_as("SELECT pg_get_functiondef(p.oid),p.prosrc FROM pg_proc p WHERE p.oid='game_player_death_retirement_root_bounds_proven(uuid)'::regprocedure")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(original.matches(body.as_str()).count(), 1);
+        sqlx::raw_sql(
+            "CREATE SEQUENCE test_activity_root_bounds_reached_seq; \
+             GRANT USAGE ON SEQUENCE test_activity_root_bounds_reached_seq TO oteryn_game_runtime;",
+        )
+        .execute(&h.pool)
+        .await?;
+        // Change only this root's predicate in the disposable database, keeping
+        // its OID, security/search-path settings and original body for other roots.
+        // The nontransactional marker proves the gate saw all three real terminal
+        // items, receipts and audits; an unrelated timeout cannot satisfy it.
+        let injected_body = format!(
+            "SELECT CASE WHEN p_root='{root_uuid}'::uuid THEN CASE WHEN ( \
+               SELECT count(*)=3 FROM game_item_decay_retire_receipts r \
+               JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id \
+                AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id \
+                AND a.envelope_sha256=r.envelope_sha256 AND a.created_xact_id=r.created_xact_id \
+               JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id \
+                AND i.quantity=0 AND i.lifecycle=2 AND i.last_transaction_id=r.transaction_id \
+               WHERE r.cause_kind='ACTIVITY_RETIREMENT' AND r.ground_root_item_instance_id=p_root \
+                AND r.world_id='{world_uuid}'::uuid AND r.scope_kind=2 AND r.channel_id IS NULL \
+                AND r.instance_id='{instance_uuid}'::uuid AND r.created_xact_id=pg_current_xact_id() \
+             ) THEN (nextval('test_activity_root_bounds_reached_seq'::regclass) IS NULL) \
+               ELSE FALSE END ELSE ({}) END",
+            body.trim().trim_end_matches(';'),
+        );
+        let injected_definition = original.replacen(body.as_str(), &injected_body, 1);
+        // Only a captured server definition and canonical UUIDs enter this script.
+        sqlx::raw_sql(sqlx::AssertSqlSafe(injected_definition))
+            .execute(&h.pool)
+            .await?;
+        let rejected = h
+            .root
+            .retire_activity_ground_step(&permit, &authority, &h.node, &proof)
+            .await;
+        // Replay only the definition just read from this disposable migrated DB.
+        sqlx::raw_sql(sqlx::AssertSqlSafe(original))
+            .execute(&h.pool)
+            .await?;
+        assert!(
+            matches!(
+                &rejected,
+                Err(
+                    crate::durability::item_decay_retire::DecayRetireError::Unavailable(
+                        crate::durability::DurabilityError::CommitRejected
+                    )
+                )
+            ),
+            "the mandatory root bounds proof must reject the real commit: {rejected:?}"
+        );
+        let reached: (i64, bool) = sqlx::query_as(
+            "SELECT last_value,is_called FROM test_activity_root_bounds_reached_seq",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            reached,
+            (1, true),
+            "the actual Instance root gate must see the whole retired tree before refusing COMMIT"
+        );
+        assert_eq!(
+            activity_retirement_rollback_snapshot(h).await?,
+            before,
+            "a rejected root proof restores every item and custody edge without a receipt or audit"
+        );
+        assert_eq!(retirement_snapshot(h).await?, "[]");
+        // A definite commit refusal can retire the holder. Use the existing
+        // bounded recovery before retrying the same reserved operation.
+        h.root.await_ready().await.map_err(debug)?;
+    }
     let mut retired = 0;
     while let ActivityGroundRetirement::Progress(_) = h
         .root
@@ -934,6 +1028,47 @@ async fn retained_snapshot(h: &Harness) -> TestResult<String> {
 async fn retirement_snapshot(h: &Harness) -> TestResult<String> {
     Ok(sqlx::query_scalar("SELECT coalesce(jsonb_agg(jsonb_build_array(to_jsonb(r),to_jsonb(a)) ORDER BY r.item_instance_id),'[]'::jsonb)::text FROM game_item_decay_retire_receipts r JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id WHERE r.cause_kind='ACTIVITY_RETIREMENT'")
         .fetch_one(&h.pool).await?)
+}
+
+async fn activity_retirement_rollback_snapshot(h: &Harness) -> TestResult<String> {
+    Ok(sqlx::query_scalar(
+        r#"WITH picked(item_instance_id) AS (
+        VALUES (encode($1,'hex')::uuid),(encode($2,'hex')::uuid),
+               (encode($3,'hex')::uuid),(encode($4,'hex')::uuid)
+      ) SELECT jsonb_build_object(
+        'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY item_instance_id)
+          FROM game_item_instances i JOIN picked USING(item_instance_id)),
+        'ground',(SELECT jsonb_agg(to_jsonb(g) ORDER BY item_instance_id)
+          FROM game_item_ground_locations g JOIN picked USING(item_instance_id)),
+        'direct',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id)
+          FROM game_item_container_entries e JOIN picked USING(item_instance_id)),
+        'nested',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id)
+          FROM game_item_nested_entries e JOIN picked USING(item_instance_id)),
+        'main',(SELECT jsonb_agg(to_jsonb(s) ORDER BY item_instance_id)
+          FROM game_item_container_slots s JOIN picked USING(item_instance_id)),
+        'equipment',(SELECT jsonb_agg(to_jsonb(s) ORDER BY item_instance_id)
+          FROM game_character_equipment_slots s JOIN picked USING(item_instance_id)),
+        'corpse',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id)
+          FROM game_item_corpse_container_entries e JOIN picked USING(item_instance_id)),
+        'retirement_edges',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id)
+          FROM game_player_death_retirement_edges e JOIN picked USING(item_instance_id)),
+        'receipts',(SELECT jsonb_agg(to_jsonb(r) ORDER BY item_instance_id)
+          FROM game_item_decay_retire_receipts r JOIN picked USING(item_instance_id)),
+        'audits',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.item_instance_id,a.event_id)
+          FROM game_item_audit_outbox a JOIN picked USING(item_instance_id)),
+        'ground_removal',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id)
+          FROM game_item_ground_removal_evidence e JOIN picked USING(item_instance_id)),
+        'corpse_removal',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id)
+          FROM game_item_corpse_entry_removal_evidence e JOIN picked USING(item_instance_id)),
+        'quantity',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id)
+          FROM game_item_transfer_quantity_evidence e JOIN picked USING(item_instance_id)))::text"#,
+    )
+    .bind(id(70).as_slice())
+    .bind(id(71).as_slice())
+    .bind(id(72).as_slice())
+    .bind(id(75).as_slice())
+    .fetch_one(&h.pool)
+    .await?)
 }
 
 async fn assert_activity_tree_audits(

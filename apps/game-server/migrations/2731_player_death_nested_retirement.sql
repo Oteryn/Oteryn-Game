@@ -176,29 +176,52 @@ LANGUAGE sql VOLATILE SECURITY DEFINER AS $proof$
        (r.world_id,r.scope_kind,r.channel_id,r.instance_id,r.cause_kind,
         r.reset_epoch,r.retirement_binding,r.target_digest,r.activity_handoff_id,r.activity_ownership_generation,
         r.fence_scope_ownership_generation)
-   AND (SELECT count(*) FROM game_player_death_retirement_edges all_edges
-        WHERE all_edges.ground_root_item_instance_id=root.item_instance_id
-         AND all_edges.created_xact_id=pg_current_xact_id())<=CASE d.source_slot WHEN 9 THEN 500 WHEN 0 THEN 499 ELSE 20 END
-   AND NOT EXISTS(SELECT 1 FROM game_player_death_retirement_edges all_edges
-        WHERE all_edges.ground_root_item_instance_id=root.item_instance_id
-         AND all_edges.created_xact_id=pg_current_xact_id()
-        GROUP BY all_edges.parent_item_instance_id HAVING count(*)>20)
  )
 $proof$;
+
+-- Every entry requires the root's same-transaction receipt above. Its mandatory
+-- deferred consistency proof checks the complete tree's bounds, without a cache
+-- or a whole-tree scan for each descendant. Ordinary roots have no such edges.
+CREATE FUNCTION game_player_death_retirement_root_bounds_proven(p_root UUID) RETURNS BOOLEAN
+LANGUAGE sql VOLATILE SECURITY DEFINER AS $bounds$
+ SELECT coalesce(sum(parent_entries),0)<=coalesce(min(descendants_limit),0)
+  AND coalesce(max(parent_entries),0)<=20
+ FROM (
+  SELECT e.parent_item_instance_id,count(*) AS parent_entries,
+   min(CASE d.source_slot WHEN 9 THEN 500 WHEN 0 THEN 499 ELSE 20 END) AS descendants_limit
+  FROM game_player_death_retirement_edges e
+  JOIN game_player_death_item_records d ON d.transaction_id=e.death_transaction_id
+  WHERE e.ground_root_item_instance_id=p_root AND e.created_xact_id=pg_current_xact_id()
+  GROUP BY e.parent_item_instance_id
+ ) parents
+$bounds$;
 
 -- Insert the new location alternative into the latest installed proof bodies;
 -- every conservation, authority and terminal predicate outside it is retained.
 DO $migration$
 DECLARE f TEXT; body TEXT; amended TEXT; at_begin INT; old_arm TEXT; new_arm TEXT;
+ receipt_lookup TEXT; root_gate TEXT;
 BEGIN
  old_arm:='OR (r.placement_ordinal IS NOT NULL AND (';
  new_arm:='OR (r.placement_ordinal IS NOT NULL AND NOT game_player_death_retirement_entry_proven(p_item) AND (';
+ receipt_lookup:='IF NOT FOUND THEN RETURN FALSE; END IF;';
+ root_gate:=$root_gate$
+ IF r.placement_ordinal IS NULL THEN
+  IF NOT game_player_death_retirement_root_bounds_proven(p_item) THEN
+   RAISE EXCEPTION 'death Ground retirement tree exceeds admitted bounds' USING ERRCODE='23514';
+  END IF;
+ END IF;
+$root_gate$;
  FOREACH f IN ARRAY ARRAY['game_world_reset_item_proven(uuid)','game_activity_retirement_item_proven(uuid)'] LOOP
   body:=pg_get_functiondef(to_regprocedure(f));
   IF (length(body)-length(replace(body,old_arm,'')))/length(old_arm)<>1 THEN
    RAISE EXCEPTION 'missing exact retirement entry proof in %',f;
   END IF;
-  EXECUTE replace(body,old_arm,new_arm);
+  amended:=replace(body,old_arm,new_arm);
+  IF (length(amended)-length(replace(amended,receipt_lookup,'')))/length(receipt_lookup)<>1 THEN
+   RAISE EXCEPTION 'missing exact retirement receipt lookup in %',f;
+  END IF;
+  EXECUTE replace(amended,receipt_lookup,receipt_lookup||root_gate);
  END LOOP;
  FOREACH f IN ARRAY ARRAY['game_item_container_entry_removal_proven','game_item_nested_entry_proven'] LOOP
   body:=pg_get_functiondef(to_regprocedure(f||'()'));
@@ -216,6 +239,7 @@ $arm$ from at_begin for 5);
   EXECUTE amended;
  END LOOP;
  FOREACH f IN ARRAY ARRAY['game_player_death_reset_entry_capture()','game_player_death_retirement_entry_proven(uuid)',
+  'game_player_death_retirement_root_bounds_proven(uuid)',
   'game_world_reset_item_proven(uuid)','game_activity_retirement_item_proven(uuid)',
   'game_item_container_entry_removal_proven()','game_item_nested_entry_proven()'] LOOP
   EXECUTE format('ALTER FUNCTION %s SECURITY DEFINER SET search_path=pg_catalog,%I,pg_temp',f,current_schema());

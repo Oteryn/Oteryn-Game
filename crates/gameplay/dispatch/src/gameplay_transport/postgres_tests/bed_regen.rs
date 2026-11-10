@@ -36,29 +36,22 @@ fn gr_soul_001_bed_admission_uses_current_account_premium_postgres() -> TestResu
                 let h = Harness::create_with_admission_seed(
                     admin.clone(),
                     &format!("gr_soul_001_{index}"),
-                    false,
+                    true,
                     false,
                 )
                 .await?;
                 let request = prepare_current_session(&h).await?;
+                if promoted {
+                    purchase_promotion_for_bed_fixture(&h)
+                        .await
+                        .map_err(|error| format!("case {index} historical promotion: {error}"))?;
+                }
                 // Historical input belongs to the previous sleeper's lease; this
                 // case qualifies native admission, not that previous session's writer.
                 seed(&h, false, 150).await?;
                 if slept == 899 {
                     sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=slept_at+899000,freed_cause='owner_wake' WHERE character_id=encode($1,'hex')::uuid")
                         .bind(id(41).as_slice()).execute(&h.pool).await?;
-                }
-                if promoted {
-                    // Historical promotion is fixture input; settlement still
-                    // resolves current account Premium and gameplay fences.
-                    // This fixture does not qualify SQL role privileges.
-                    let mut tx = h.pool.begin().await?;
-                    sqlx::query("SET LOCAL session_replication_role=replica")
-                        .execute(&mut *tx)
-                        .await?;
-                    sqlx::query("INSERT INTO game_character_promotions(character_id,purchase_occurrence_id) VALUES(encode($1,'hex')::uuid,game_character_uuid_v7())")
-                        .bind(id(41).as_slice()).execute(&mut *tx).await?;
-                    tx.commit().await?;
                 }
                 let (consumer, clock, activation, proof) = purchase_fixture::current(id(account));
                 h.root.accept_premium_evidence(&proof).await?;
@@ -73,7 +66,7 @@ fn gr_soul_001_bed_admission_uses_current_account_premium_postgres() -> TestResu
                     .root
                     .open_character_authority(&seal)
                     .await
-                    .map_err(debug)?;
+                    .map_err(|error| format!("case {index} reopen authority: {error:?}"))?;
                 let deps = Dependencies::new()?;
                 let mut owner = deps.owner(&h, &authority);
                 owner.premium_coordinator = Some(&coordinator);
@@ -108,6 +101,45 @@ fn gr_soul_001_bed_admission_uses_current_account_premium_postgres() -> TestResu
             Ok(())
         })
     })
+}
+
+async fn purchase_promotion_for_bed_fixture(h: &Harness) -> TestResult {
+    // The existing initialized fixture is level 50. The shared fixture supplies
+    // its purse; the real purchase owner commits the fee, receipt and promotion.
+    let purchase = super::atelier::fixture::prepare(h).await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let deps = Dependencies::new()?;
+    let owner = deps.owner(h, &authority);
+    let fence = owner
+        .current_quest_fence(deps.admitted.game_session_id)
+        .await
+        .map_err(|_| "current promotion fence")?
+        .ok_or("active promotion session")?;
+    // The existing pre-delivery promotion exception grants no session Premium
+    // registration or activation. The later matrix still decides current Premium.
+    let gate = SpellPremiumCoordinator::new(Default::default(), None, None, Some(h.root.clone()));
+    let outcome = owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_npc_purchase(&h.root, &authority, &h.node, fence, purchase, &gate)
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(
+            outcome,
+            crate::durability::npc_purchase::PurchaseOutcome::Committed(_)
+        ),
+        "the historical promotion must have its paid receipt: {outcome:?}"
+    );
+    // The caller reopens authority after all historical sleep inputs are ready,
+    // so the same complete verifier checks this paid history before bed admission.
+    Ok(())
 }
 
 async fn seed(h: &Harness, freed: bool, initial_soul: i32) -> TestResult {
