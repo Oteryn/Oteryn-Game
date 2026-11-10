@@ -23,6 +23,13 @@ mod mushroom;
 type BossSpawnPlan = (&'static str, RoomPosition, u8, bool);
 type BossSummonChange = (Option<BossSpawnPlan>, Option<u64>);
 
+#[cfg(test)]
+pub(super) struct MassiveStateForTest {
+    pub(super) deadlines: Vec<(u8, u64)>,
+    pub(super) paused: bool,
+    pub(super) commits: usize,
+}
+
 #[derive(Debug)]
 struct Boss {
     actor: ExactActorRef,
@@ -97,6 +104,14 @@ impl RottenBloodCallbacks {
         phase: u8,
     ) -> Option<(u32, u32, u32)> {
         self.advanced.massive_commit_for_test(actor, phase)
+    }
+    #[cfg(test)]
+    pub(super) fn massive_state_for_test(
+        &self,
+        centre: MovementLocalPosition,
+        actor: ExactActorRef,
+    ) -> MassiveStateForTest {
+        self.advanced.massive_state_for_test(pos(centre), actor)
     }
     #[cfg(test)]
     pub(super) fn actual_agony_commit_for_test(
@@ -282,6 +297,7 @@ pub(super) async fn drive(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     attack: &mut super::attack::ChannelAttackStates,
+    notices: &super::raid_notices::ServerMessageHub,
     room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
@@ -500,8 +516,18 @@ pub(super) async fn drive(
         boss.last = Some(*occurrence);
     }
     drain_pending(runtime, states, native, map, now).await?;
-    let advanced_due =
-        advanced::drive(runtime, states, room, native, map, occurrences, now).await?;
+    let advanced_due = advanced::drive(
+        runtime,
+        states,
+        attack,
+        notices,
+        room,
+        native,
+        map,
+        occurrences,
+        now,
+    )
+    .await?;
     Ok(advanced_due
         .into_iter()
         .chain(states.rotten_blood_callbacks.mushrooms.next_due_time())

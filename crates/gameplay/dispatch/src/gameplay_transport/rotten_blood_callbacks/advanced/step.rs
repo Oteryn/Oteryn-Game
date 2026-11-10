@@ -1,4 +1,4 @@
-//! Crystal teleport_step_event.lua:26–86. Only a committed Player STEP can
+//! Crystal teleport_step_event.lua:26–227. Only a committed Player STEP can
 //! consume this source-created action50001 Item. SQL work remains queued until
 //! its immutable receipt is reconciled; cancellation never loses the ingress.
 use super::*;
@@ -68,7 +68,10 @@ pub(in crate::gameplay_transport) async fn step_in(
         else {
             return;
         };
-        if advanced.portals.len() >= 32 || advanced.steps.len() >= 8 {
+        if advanced.portals.len() >= 32
+            || advanced.steps.len() >= 8
+            || advanced.massive.len() + 2 * advanced.steps.len() + 2 > massive::MAX_PENDING
+        {
             return;
         }
         let centre = pos(committed.position());
@@ -113,31 +116,37 @@ pub(in crate::gameplay_transport) async fn step_in(
 }
 
 pub(super) fn committed(
+    owner: &super::super::super::ComposedFreshAdmission<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     callback: &Arc<RottenPortalCallback>,
 ) -> Result<(), ()> {
-    let advanced = &mut states.rotten_blood_callbacks.advanced;
-    let Some(index) = advanced
+    let Some(index) = states
+        .rotten_blood_callbacks
+        .advanced
         .steps
         .iter()
         .position(|s| Arc::ptr_eq(&s.callback, callback))
     else {
         return Ok(());
     };
-    let step = &advanced.steps[index];
-    for elder in &step.elders {
+    let step = &states.rotten_blood_callbacks.advanced.steps[index];
+    let source = Arc::clone(&step.callback);
+    let centre = step.centre;
+    let elders = step.elders.clone();
+    if states.rotten_blood_callbacks.advanced.massive.len() + 2 > massive::MAX_PENDING {
+        return Err(());
+    }
+    massive::deadlines(source.due_us())?;
+    for elder in &elders {
         if runtime.contains_live_creature(*elder) {
             runtime.remove_encounter_actor(*elder).map_err(|_| ())?;
         }
     }
     // These are source-global flags scoped to this exact registered Instance.
     // Nil boss/target leaves both flags paused, exactly as the early Lua returns.
-    for boss in &mut advanced.bosses {
-        if center(&boss.key) == step.centre {
-            boss.paused = true;
-        }
-    }
-    advanced.steps.remove(index);
+    massive::set_paused(&mut states.rotten_blood_callbacks.advanced, centre, true);
+    massive::schedule(owner, runtime, states, source, centre)?;
+    states.rotten_blood_callbacks.advanced.steps.remove(index);
     Ok(())
 }

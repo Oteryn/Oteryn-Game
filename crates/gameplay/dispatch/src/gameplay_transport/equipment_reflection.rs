@@ -16,6 +16,58 @@ impl ChannelSpellStates {
         stream: &[u8],
         now: SemanticTimeMicros,
     ) -> bool {
+        self.reflect_equipment_with_sequence(
+            runtime, source, target, session, element, magnitude, stream, None, now,
+        )
+    }
+
+    /// A retained source occurrence keeps its replay sequence while attribution
+    /// and native death enqueue use the actual execution clock on every attempt.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source replay identity and the current attribution clock are independent"
+    )]
+    pub(super) fn reflect_equipment_for_source_occurrence(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        element: Option<&str>,
+        magnitude: u32,
+        stream: &[u8],
+        sequence: u64,
+        now: SemanticTimeMicros,
+    ) -> bool {
+        self.reflect_equipment_with_sequence(
+            runtime,
+            source,
+            target,
+            session,
+            element,
+            magnitude,
+            stream,
+            Some(sequence),
+            now,
+        )
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one reflection calculation preserves ordinary clocks and retained source sequences"
+    )]
+    fn reflect_equipment_with_sequence(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        element: Option<&str>,
+        magnitude: u32,
+        stream: &[u8],
+        source_sequence: Option<u64>,
+        now: SemanticTimeMicros,
+    ) -> bool {
         if element.is_none() {
             return true;
         }
@@ -67,14 +119,26 @@ impl ChannelSpellStates {
         {
             return false;
         }
-        let Ok(result) = runtime.commit_equipment_reflection(
-            source,
-            target,
-            session,
-            stream,
-            now.get(),
-            reflected,
-        ) else {
+        let result = match source_sequence {
+            Some(sequence) => runtime.commit_source_damage_at_us(
+                source,
+                target,
+                session,
+                stream,
+                sequence,
+                reflected,
+                now.get(),
+            ),
+            None => runtime.commit_equipment_reflection(
+                source,
+                target,
+                session,
+                stream,
+                now.get(),
+                reflected,
+            ),
+        };
+        let Ok(result) = result else {
             return false;
         };
         if result.applied {

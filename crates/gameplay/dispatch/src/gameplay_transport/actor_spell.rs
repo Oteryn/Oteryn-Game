@@ -2321,6 +2321,23 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             state.revision(),
         ))
     }
+    fn source_player_health_including_dead(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u32, u32, u64)> {
+        // DATA only. The native event's Combat reader separately proves the
+        // actual in-fight hold or rejects other control-loss states.
+        runtime.player_control_facts(target, session).ok()?;
+        let state = self.get(runtime, target, session)?;
+        let vitals = state.vitals();
+        (vitals.max_health > 0 && vitals.health <= vitals.max_health).then_some((
+            vitals.health,
+            vitals.max_health,
+            state.revision(),
+        ))
+    }
     fn apply_attack_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,

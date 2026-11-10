@@ -314,7 +314,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         | crate::content::bosses::activity_template::PinnedActivitySourceRoom::Bakragore)) {
                     super::rotten_blood_callbacks::refresh_taints(owner.root, runtime, states, &mut map)
                         .await.map_err(|()| crate::durability::DurabilityError::Unavailable)?;
-                    super::rotten_blood_callbacks::drive(runtime, states, attack, room, native, &mut map,
+                    super::rotten_blood_callbacks::drive(runtime, states, attack, &owner.states.server_messages, room, native, &mut map,
                         batch.occurrences(), now).await
                         .map_err(|()| crate::durability::DurabilityError::Unavailable)?
                 } else {

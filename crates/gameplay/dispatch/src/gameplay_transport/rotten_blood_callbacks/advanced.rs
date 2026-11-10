@@ -7,6 +7,7 @@ use oteryn_gameplay_entities::carrier::rotten_blood::{RottenBloodIconKey, Rotten
 pub(super) mod bak_preparation;
 mod effects;
 mod footprints;
+mod massive;
 mod plan;
 mod portals;
 pub(super) mod step;
@@ -93,6 +94,8 @@ pub(in crate::gameplay_transport) struct AdvancedCallbacks {
     portals: Vec<Arc<crate::durability::creature_source_items::RottenPortalCallback>>,
     active_portals: Vec<Arc<crate::durability::creature_source_items::RottenPortalCallback>>,
     steps: Vec<step::PendingStep>,
+    massive: Vec<massive::Pending>,
+    paused_centres: Vec<RoomPosition>,
     footprints: Vec<footprints::Pending>,
     first_think: Option<bak_preparation::Pending>,
     #[cfg(test)]
@@ -128,6 +131,29 @@ impl AdvancedCallbacks {
             })
     }
     #[cfg(test)]
+    pub(super) fn massive_state_for_test(
+        &self,
+        centre: RoomPosition,
+        actor: ExactActorRef,
+    ) -> super::MassiveStateForTest {
+        let mut deadlines: Vec<_> = self
+            .massive
+            .iter()
+            .filter(|pending| pending.centre == centre)
+            .map(|pending| (pending.phase, pending.due_us))
+            .collect();
+        deadlines.sort_unstable();
+        super::MassiveStateForTest {
+            deadlines,
+            paused: self.paused_centres.contains(&centre),
+            commits: self
+                .massive_commits
+                .iter()
+                .filter(|(target, ..)| *target == actor)
+                .count(),
+        }
+    }
+    #[cfg(test)]
     pub(in crate::gameplay_transport) fn source_state_for_test(
         &self,
     ) -> Vec<(String, Option<u64>, Option<u8>)> {
@@ -141,6 +167,7 @@ impl AdvancedCallbacks {
             .into_iter()
             .chain(self.portals.iter().map(|p| p.due_us()))
             .chain(self.footprints.iter().map(|p| p.due_us()))
+            .chain(self.massive.iter().map(|pending| pending.due_us))
             .chain(self.first_think.as_ref().map(|_| 0))
             .chain(
                 self.bosses
@@ -221,6 +248,8 @@ pub(super) async fn drive_due_through(
 pub(super) async fn drive(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
+    attack: &mut super::super::attack::ChannelAttackStates,
+    notices: &super::super::raid_notices::ServerMessageHub,
     room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
@@ -228,6 +257,7 @@ pub(super) async fn drive(
     now: u64,
 ) -> Result<Option<u64>, ()> {
     effects::drain(runtime, states, room, native, map, now).await?;
+    massive::drive(runtime, states, attack, notices, room, native, map, now).await?;
     let retained = states
         .rotten_blood_callbacks
         .advanced
@@ -291,6 +321,11 @@ pub(super) async fn drive(
                     agony: Default::default(),
                 },
             };
+            let paused = states
+                .rotten_blood_callbacks
+                .advanced
+                .paused_centres
+                .contains(&center(&key));
             states
                 .rotten_blood_callbacks
                 .advanced
@@ -307,7 +342,7 @@ pub(super) async fn drive(
                     essence_count: None,
                     portal_source: crate::durability::creature_source_items::RottenPortalSource::from_current_native_think(runtime,room,native,occurrence).map_err(|_| ())?,
                     portal_ordinal: 0,
-                    paused: false,
+                    paused,
                 });
         }
         let index = states

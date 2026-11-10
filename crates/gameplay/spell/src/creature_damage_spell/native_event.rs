@@ -4,6 +4,8 @@ use super::*;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::foundation::ThinkOccurrence;
 
+pub mod rotten_massive;
+
 const MUSHROOM: &str = "oteryn:creature.mushroom";
 
 #[derive(Debug, Clone)]
