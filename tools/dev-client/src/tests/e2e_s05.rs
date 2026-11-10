@@ -52,6 +52,7 @@ fn fixture() -> Result<Fixture, Error> {
         });
     }
     let private = HouseSummary {
+        details: None,
         house: "oteryn:house.thais.a".into(),
         kind: HouseKind::PrivateHouse,
         state: 2,
@@ -65,6 +66,7 @@ fn fixture() -> Result<Fixture, Error> {
         own_maximum: Some(60_000),
     };
     let guildhall = HouseSummary {
+        details: None,
         house: "oteryn:house.thais.guild".into(),
         kind: HouseKind::Guildhall,
         state: 1,

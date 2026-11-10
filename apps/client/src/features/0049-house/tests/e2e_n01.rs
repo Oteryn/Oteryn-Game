@@ -35,7 +35,7 @@ fn text(hex: &[u8]) -> String {
 }
 
 fn summary(house: &str, acl_revision: u64) -> wire::HouseSummary {
-    wire::HouseSummary {
+    wire::HouseSummary { details: None,
         house: house.into(),
         kind: wire::HouseKind::PrivateHouse,
         state: 1,

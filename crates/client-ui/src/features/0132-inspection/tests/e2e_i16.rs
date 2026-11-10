@@ -16,6 +16,7 @@ fn e2e_i16_inspection_replay() -> Result<(), Box<dyn std::error::Error>> {
         )
     } else {
         let reply = Reply {
+            catalogue: None,
             status: 1,
             items: vec![InspectedItem {
                 slot: 0,

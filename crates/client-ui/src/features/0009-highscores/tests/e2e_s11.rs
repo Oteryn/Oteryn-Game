@@ -53,6 +53,8 @@ fn capture() -> Result<Capture, BoxError> {
         });
     }
     let page = HighscoresResult {
+        own_page: None,
+        world: None,
         category: 1,
         snapshot_id: 77,
         computed_at: 1_700_000_000_000,

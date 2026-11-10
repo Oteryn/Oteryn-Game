@@ -26,6 +26,7 @@ fn fixture() -> Result<Captured, Error> {
         deliveries: Vec::new(),
     };
     let bounty = Bounty {
+        elite: false,
         state: 0,
         difficulty: 0,
         selected: 0,
@@ -46,6 +47,7 @@ fn fixture() -> Result<Captured, Error> {
         bought: false,
     }];
     let reply = |refusal: u8| Reply {
+        weekly_results: None,
         refusal,
         period: 2_913,
         points: 40,

@@ -22,6 +22,7 @@ fn value<'a>(text: &'a str, key: &str) -> Result<&'a str, Error> {
 
 fn entry(handle: u64, name: &str, leader: bool, expires_at: u64) -> party::PartyEntry {
     party::PartyEntry {
+        list: Vec::new(),
         handle,
         name: name.into(),
         leader,

@@ -29,6 +29,7 @@ fn fixture() -> Result<Captured, Error> {
         .map_err(|error| format!("{error:?}"))?;
     cooldowns.extend_from_slice(&[58, 8, 8, 1, 16, 2, 24, 5, 32, 0]);
     let slot = |status, bosses: [&str; 2]| BossSlotReply {
+        details: None,
         status,
         unlocked: 1,
         bonus: 4,

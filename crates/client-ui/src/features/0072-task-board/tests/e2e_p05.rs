@@ -15,6 +15,7 @@ struct Captured {
 
 fn reply(refusal: u8, bounty_points: u64, damage: TalismanPath) -> Reply {
     Reply {
+        weekly_results: None,
         refusal,
         period: 2_913,
         points: 0,
@@ -33,6 +34,7 @@ fn reply(refusal: u8, bounty_points: u64, damage: TalismanPath) -> Reply {
             deliveries: Vec::new(),
         },
         bounty: Bounty {
+            elite: false,
             state: 0,
             difficulty: 0,
             selected: 0,
