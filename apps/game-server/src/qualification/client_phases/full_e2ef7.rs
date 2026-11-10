@@ -688,11 +688,13 @@ impl ClockRow {
             .all(|action| self.passed.contains(action))
     }
 
-    fn observe(
-        &mut self,
+    // Pure validation is shared by epoch attribution and the single committed
+    // observation. A rejected candidate cannot add minutes or emit evidence.
+    fn validate_observation(
+        &self,
         clock: oteryn_protocol_oteryn::world_clock::WorldClock,
         elapsed: Duration,
-    ) -> TestResult {
+    ) -> TestResult<u32> {
         let minute = u32::from(clock.tibian_minute);
         if minute >= 1_440
             || clock.light_color != 215
@@ -700,6 +702,7 @@ impl ClockRow {
         {
             return Err(format!("world-clock minute/light/color mismatch: {clock:?}").into());
         }
+        let mut elapsed_minutes = self.elapsed_minutes;
         if let Some((previous, at)) = self.previous {
             let elapsed_ms = elapsed
                 .checked_sub(at)
@@ -716,38 +719,53 @@ impl ClockRow {
                 )
                 .into());
             }
-            self.elapsed_minutes += forward;
+            elapsed_minutes = elapsed_minutes
+                .checked_add(forward)
+                .ok_or("world-clock cumulative minutes overflow")?;
             let since_first = elapsed
                 .checked_sub(
                     self.first_observation
                         .ok_or("world-clock first sample absent")?,
                 )
                 .ok_or("world-clock cumulative time moved backwards")?;
-            if (u128::from(self.elapsed_minutes) * 2_500).abs_diff(since_first.as_millis()) > 10_000
+            if (u128::from(elapsed_minutes) * 2_500).abs_diff(since_first.as_millis()) > 10_000
             {
                 return Err("world-clock cumulative rate drift exceeds 10s".into());
             }
-            if forward > 0 {
-                if minute < u32::from(previous.tibian_minute) {
-                    self.pass("midnight-wrap");
-                }
-                // Both endpoints must be in the ramp. Day/night plateaux or
-                // reconnecting from night to day cannot stand in for a ramp.
-                let prior = u32::from(previous.tibian_minute);
-                if (360..480).contains(&prior)
-                    && (360..480).contains(&minute)
-                    && clock.light_level > previous.light_level
-                {
-                    self.pass("sunrise");
-                }
-                if (1_050..1_170).contains(&prior)
-                    && (1_050..1_170).contains(&minute)
-                    && clock.light_level < previous.light_level
-                {
-                    self.pass("sunset");
-                }
+        }
+        Ok(elapsed_minutes)
+    }
+
+    fn observe(
+        &mut self,
+        clock: oteryn_protocol_oteryn::world_clock::WorldClock,
+        elapsed: Duration,
+    ) -> TestResult {
+        let elapsed_minutes = self.validate_observation(clock, elapsed)?;
+        let minute = u32::from(clock.tibian_minute);
+        if let Some((previous, _)) = self.previous
+            && elapsed_minutes > self.elapsed_minutes
+        {
+            if minute < u32::from(previous.tibian_minute) {
+                self.pass("midnight-wrap");
+            }
+            // Both endpoints must be in the ramp. Day/night plateaux or
+            // reconnecting from night to day cannot stand in for a ramp.
+            let prior = u32::from(previous.tibian_minute);
+            if (360..480).contains(&prior)
+                && (360..480).contains(&minute)
+                && clock.light_level > previous.light_level
+            {
+                self.pass("sunrise");
+            }
+            if (1_050..1_170).contains(&prior)
+                && (1_050..1_170).contains(&minute)
+                && clock.light_level < previous.light_level
+            {
+                self.pass("sunset");
             }
         }
+        self.elapsed_minutes = elapsed_minutes;
         if (480..1_050).contains(&minute) && clock.light_level == 250 {
             self.pass("day");
         }
@@ -892,6 +910,117 @@ fn qualification_elapsed(started: std::time::Instant, offset: Duration) -> Durat
     started.elapsed().saturating_add(qualification_offset().saturating_sub(offset))
 }
 
+// A 90s session can contain its admission epoch and at most two 75s
+// advances. Retain silent epochs: a naturally emitted frame can still be in
+// the TLS queue when the next explicit advance is applied.
+struct ClockEpochs {
+    offsets: [Duration; 3],
+    len: usize,
+    observed: usize,
+    origin: Duration,
+}
+
+impl ClockEpochs {
+    fn new(origin: Duration, admitted_offset: Duration) -> Self {
+        Self {
+            offsets: [admitted_offset; 3],
+            len: 1,
+            observed: 0,
+            origin,
+        }
+    }
+
+    fn record(&mut self, offset: Duration) -> TestResult {
+        let current = self.offsets[self.len - 1];
+        if offset < current {
+            return Err("world-clock injected offset moved backwards".into());
+        }
+        if offset != current {
+            if self.len == self.offsets.len() {
+                return Err("world-clock session exceeded its bounded offset epochs".into());
+            }
+            self.offsets[self.len] = offset;
+            self.len += 1;
+        }
+        Ok(())
+    }
+
+    fn observe(
+        &mut self,
+        row: &mut ClockRow,
+        clock: oteryn_protocol_oteryn::world_clock::WorldClock,
+        received_elapsed: Duration,
+    ) -> TestResult {
+        let mut matched = None;
+        for index in self.observed..self.len {
+            // The independent input is real receive time plus a recorded
+            // injection, never time reconstructed from the received minute.
+            let injected = self.offsets[index]
+                .checked_sub(self.origin)
+                .ok_or("world-clock offset precedes journey origin")?;
+            let elapsed = received_elapsed
+                .checked_add(injected)
+                .ok_or("world-clock observation time overflow")?;
+            if row.validate_observation(clock, elapsed).is_ok() {
+                if matched.is_some() {
+                    return Err("world-clock frame matches multiple offset epochs".into());
+                }
+                matched = Some((index, elapsed));
+            }
+        }
+        let (index, elapsed) = matched.ok_or_else(|| {
+            format!(
+                "world-clock frame matches no retained offset epoch: clock={clock:?} received_ms={} observed_offset_ms={} current_offset_ms={}",
+                received_elapsed.as_millis(),
+                self.offsets[self.observed].as_millis(),
+                self.offsets[self.len - 1].as_millis(),
+            )
+        })?;
+        row.observe(clock, elapsed)?;
+        self.observed = index;
+        Ok(())
+    }
+
+    fn delta_owed(&self, clock: oteryn_protocol_oteryn::world_clock::WorldClock) -> bool {
+        clock_delta_expected_after_advance(
+            clock,
+            self.offsets[self.len - 1] - self.offsets[self.observed],
+        )
+    }
+}
+
+async fn service_clock_advance(
+    client: &mut DevClientSession,
+    row: &mut ClockRow,
+    epochs: &mut ClockEpochs,
+    started: std::time::Instant,
+    accelerated: bool,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    loop {
+        client.service_liveness(Duration::from_secs(1)).await?;
+        // Use actual elapsed time when the receive window completes. Transport
+        // and queueing jitter remain subject to the existing 10s rate tolerance.
+        let received_elapsed = started.elapsed();
+        for event in client.take_events() {
+            if let oteryn_dev_client::SessionEvent::WorldClock(delta) = event {
+                epochs.observe(row, delta.value, received_elapsed)?;
+                row.pass("clock-delta");
+            }
+        }
+        let (clock, _) = row.previous.ok_or("world-clock admission sample absent")?;
+        // An old queued frame does not acknowledge the latest advance. It can,
+        // however, prove that its remaining 75s stays on the same hour/light
+        // plateau. Recompute after the entire batch without renewing the bound.
+        if !accelerated || !epochs.delta_owed(clock) {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("world-clock advance did not produce a server delta".into());
+        }
+    }
+}
+
 async fn clock_journey(
     row: &mut ClockRow,
     connection: &mut Option<DevClientSession>,
@@ -911,9 +1040,13 @@ async fn clock_journey(
         if previous_session == Some(current_session) {
             return Err("world-clock fresh admission reused the old game session".into());
         }
-        let mut clock = admitted_clock(client)?;
-        let mut observed_offset = qualification_offset();
-        row.observe(clock, qualification_elapsed(started, offset))?;
+        let clock = admitted_clock(client)?;
+        let admitted_offset = qualification_offset();
+        let mut epochs = ClockEpochs::new(offset, admitted_offset);
+        row.observe(
+            clock,
+            started.elapsed() + admitted_offset.saturating_sub(offset),
+        )?;
         row.pass("snapshot");
         if previous_session.is_some() {
             row.pass("fresh-admission");
@@ -921,33 +1054,15 @@ async fn clock_journey(
         let reconnect_at = qualification_elapsed(started, offset) + Duration::from_secs(90);
         loop {
             advance_qualification_time(qualification_step())?;
-            let expects_delta = clock_delta_expected_after_advance(
-                clock,
-                qualification_offset().saturating_sub(observed_offset),
-            );
-            let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
-            loop {
-                client.service_liveness(Duration::from_secs(1)).await?;
-                let mut observed = false;
-                for event in client.take_events() {
-                    if let oteryn_dev_client::SessionEvent::WorldClock(delta) = event {
-                        row.observe(delta.value, qualification_elapsed(started, offset))?;
-                        row.pass("clock-delta");
-                        clock = delta.value;
-                        observed_offset = qualification_offset();
-                        observed = true;
-                    }
-                }
-                if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_none()
-                    || observed
-                    || !expects_delta
-                {
-                    break;
-                }
-                if tokio::time::Instant::now() >= deadline {
-                    return Err("world-clock advance did not produce a server delta".into());
-                }
-            }
+            epochs.record(qualification_offset())?;
+            service_clock_advance(
+                client,
+                row,
+                &mut epochs,
+                started,
+                std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some(),
+            )
+            .await?;
             // Final logout is checked by run_packet even on timeout or error.
             if CLOCK_ACTIONS
                 .iter()
@@ -1179,6 +1294,10 @@ mod clock_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "full_e2ef7_clock_epochs_tests.rs"]
+mod clock_epoch_tests;
 
 // Continuation rows keep their own action sets and cleanup outside timed futures.
 use native::world_spatial_entities as spatial;
