@@ -276,7 +276,10 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &checked).await?;
+                    observe_character_authority_check(
+                        CharacterAuthorityCheck::RecoveryFence,
+                        assert_recovery_fence(&mut tx, &checked).await,
+                    )?;
                     verify_character_integrity(&mut tx, definitions.as_deref()).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok::<(), CharacterAuthorityError>(()))
@@ -863,6 +866,62 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
     )
 });
 
+enum CharacterAuthorityCheck {
+    RecoveryFence,
+    OfflineTraining,
+    NpcPurchase,
+    Creation,
+    Bazaar,
+    RevisionChain,
+    Appearance,
+    BuildChain,
+    ProficiencyHistory,
+    FamiliarChain,
+    SpellFamiliarGroup,
+    SpellItemChain,
+    AuditPayload,
+}
+
+impl CharacterAuthorityCheck {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::RecoveryFence => "recovery_fence",
+            Self::OfflineTraining => "offline_training",
+            Self::NpcPurchase => "npc_purchase",
+            Self::Creation => "creation",
+            Self::Bazaar => "bazaar",
+            Self::RevisionChain => "revision_chain",
+            Self::Appearance => "appearance",
+            Self::BuildChain => "build_chain",
+            Self::ProficiencyHistory => "proficiency_history",
+            Self::FamiliarChain => "familiar_chain",
+            Self::SpellFamiliarGroup => "spell_familiar_group",
+            Self::SpellItemChain => "spell_item_chain",
+            Self::AuditPayload => "audit_payload",
+        }
+    }
+}
+
+fn observe_character_authority_check<T>(
+    stage: CharacterAuthorityCheck,
+    result: std::result::Result<T, DurabilityError>,
+) -> std::result::Result<T, DurabilityError> {
+    result.inspect_err(|_| {
+        oteryn_error_codes::emit(
+            "oteryn-game-server",
+            &oteryn_error_codes::Line::new(
+                oteryn_error_codes::Level::Warn,
+                "durability",
+                "character_authority_check_failed",
+            )
+            .field(
+                "stage",
+                oteryn_error_codes::FieldValue::Owned(stage.as_str().to_owned()),
+            ),
+        );
+    })
+}
+
 /// Complete first-slice integrity: each root has exactly one creation receipt, from the
 /// operator bootstrap with its reconstructed intent binding or from a committed create
 /// command (migration 0087), and no operation identity is in both receipt tables; every retained audit event binds to that
@@ -874,10 +933,22 @@ async fn verify_character_integrity(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
 ) -> std::result::Result<(), DurabilityError> {
-    super::offline_training_state::verify(tx).await?;
-    super::npc_purchase::verify_purchase_integrity(tx).await?;
-    creation_integrity::verify(tx).await?;
-    super::bazaar::recovery::verify(tx).await?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::OfflineTraining,
+        super::offline_training_state::verify(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::NpcPurchase,
+        super::npc_purchase::verify_purchase_integrity(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::Creation,
+        creation_integrity::verify(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::Bazaar,
+        super::bazaar::recovery::verify(tx).await,
+    )?;
     // P03 progression is optional at revision one because initialization is a
     // separate owner.  Once a Character advances, typed state and a complete,
     // gap-free immutable receipt chain must explain the global revision and the
@@ -887,23 +958,54 @@ async fn verify_character_integrity(
     // (0032), familiar state change (0033) or quest transition (0056), each
     // `before` equal to its predecessor's `after` across kinds.  The bootstrap
     // receipt remains bound to initial revision 1.
-    sqlx::query(CHARACTER_INTEGRITY_SQL.as_str())
-        .fetch_optional(&mut **tx)
-        .await?
-        .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
-    super::character_appearance::verify_character_appearance_integrity(tx)
-        .await
-        .map_err(|error| match error {
-            super::character_appearance::AppearanceReadError::InvalidStoredState => {
-                DurabilityError::InvalidStoredState
-            }
-            super::character_appearance::AppearanceReadError::Storage(error) => error.into(),
-        })?;
-    verify_character_build_chain(tx).await?;
-    verify_all_character_proficiency_histories(tx, definitions).await?;
-    super::character_familiar::verify_familiar_chain(tx).await?;
-    super::spell_familiar_group::verify_familiar_group(tx).await?;
-    super::spell_item_transaction::verify_spell_item_chain(tx).await?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::RevisionChain,
+        sqlx::query(CHARACTER_INTEGRITY_SQL.as_str())
+            .fetch_optional(&mut **tx)
+            .await
+            .map_err(DurabilityError::from)
+            .and_then(|row| row.map_or(Ok(()), |_| Err(DurabilityError::Unavailable))),
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::Appearance,
+        super::character_appearance::verify_character_appearance_integrity(tx)
+            .await
+            .map_err(|error| match error {
+                super::character_appearance::AppearanceReadError::InvalidStoredState => {
+                    DurabilityError::InvalidStoredState
+                }
+                super::character_appearance::AppearanceReadError::Storage(error) => error.into(),
+            }),
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::BuildChain,
+        verify_character_build_chain(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::ProficiencyHistory,
+        verify_all_character_proficiency_histories(tx, definitions).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::FamiliarChain,
+        super::character_familiar::verify_familiar_chain(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::SpellFamiliarGroup,
+        super::spell_familiar_group::verify_familiar_group(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::SpellItemChain,
+        super::spell_item_transaction::verify_spell_item_chain(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::AuditPayload,
+        verify_character_audit_payloads(tx).await,
+    )
+}
+
+async fn verify_character_audit_payloads(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> std::result::Result<(), DurabilityError> {
     // A self-consistent hash is not semantic evidence: every retained payload
     // must be exactly the registered encoding of its root's identities.
     let mut after = String::from("00000000-0000-0000-0000-000000000000");
