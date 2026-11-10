@@ -1,0 +1,299 @@
+{
+  "candidates": [
+    {
+      "item_key": "oteryn:item.tibia.i20088",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "crude umbral spellbook",
+      "new_budget": 8,
+      "old_budget": 8,
+      "old_direct": {
+        "EARTH": "2",
+        "ENERGY": "2",
+        "FIRE": "2",
+        "ICE": "2"
+      },
+      "percent": 2,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i20089",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "umbral spellbook",
+      "new_budget": 12,
+      "old_budget": 12,
+      "old_direct": {
+        "EARTH": "3",
+        "ENERGY": "3",
+        "FIRE": "3",
+        "ICE": "3"
+      },
+      "percent": 3,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i20090",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "umbral master spellbook",
+      "new_budget": 20,
+      "old_budget": 20,
+      "old_direct": {
+        "EARTH": "5",
+        "ENERGY": "5",
+        "FIRE": "5",
+        "ICE": "5"
+      },
+      "percent": 5,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i21183",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "glooth amulet",
+      "new_budget": 40,
+      "old_budget": 40,
+      "old_direct": {
+        "EARTH": "10",
+        "ENERGY": "10",
+        "FIRE": "10",
+        "ICE": "10"
+      },
+      "percent": 10,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i22085",
+      "largest_element_gain": 2,
+      "largest_element_loss": 3,
+      "mode": "review",
+      "name": "fur armor",
+      "new_budget": 8,
+      "old_budget": 10,
+      "old_direct": {
+        "EARTH": "5",
+        "ENERGY": "0",
+        "FIRE": "0",
+        "ICE": "5"
+      },
+      "percent": 2,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i25779",
+      "largest_element_gain": 5,
+      "largest_element_loss": 7,
+      "mode": "review",
+      "name": "swan feather cloak",
+      "new_budget": 20,
+      "old_budget": 24,
+      "old_direct": {
+        "EARTH": "12",
+        "ENERGY": "12",
+        "FIRE": "0",
+        "ICE": "0"
+      },
+      "percent": 5,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i3048",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "might ring",
+      "new_budget": 80,
+      "old_budget": 80,
+      "old_direct": {
+        "EARTH": "20",
+        "ENERGY": "20",
+        "FIRE": "20",
+        "ICE": "20"
+      },
+      "percent": 20,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i3082",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "elven amulet",
+      "new_budget": 20,
+      "old_budget": 20,
+      "old_direct": {
+        "EARTH": "5",
+        "ENERGY": "5",
+        "FIRE": "5",
+        "ICE": "5"
+      },
+      "percent": 5,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i39149",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "alicorn headguard",
+      "new_budget": 20,
+      "old_budget": 20,
+      "old_direct": {
+        "EARTH": "5",
+        "ENERGY": "5",
+        "FIRE": "5",
+        "ICE": "5"
+      },
+      "percent": 5,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i39179",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "spiritthorn ring",
+      "new_budget": 16,
+      "old_budget": 16,
+      "old_direct": {
+        "EARTH": "4",
+        "ENERGY": "4",
+        "FIRE": "4",
+        "ICE": "4"
+      },
+      "percent": 4,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i39182",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "alicorn ring",
+      "new_budget": 16,
+      "old_budget": 16,
+      "old_direct": {
+        "EARTH": "4",
+        "ENERGY": "4",
+        "FIRE": "4",
+        "ICE": "4"
+      },
+      "percent": 4,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i39185",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "arcanomancer sigil",
+      "new_budget": 16,
+      "old_budget": 16,
+      "old_direct": {
+        "EARTH": "4",
+        "ENERGY": "4",
+        "FIRE": "4",
+        "ICE": "4"
+      },
+      "percent": 4,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i39188",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "arboreal ring",
+      "new_budget": 16,
+      "old_budget": 16,
+      "old_direct": {
+        "EARTH": "4",
+        "ENERGY": "4",
+        "FIRE": "4",
+        "ICE": "4"
+      },
+      "percent": 4,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i50147",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "charged ethereal ring",
+      "new_budget": 16,
+      "old_budget": 16,
+      "old_direct": {
+        "EARTH": "4",
+        "ENERGY": "4",
+        "FIRE": "4",
+        "ICE": "4"
+      },
+      "percent": 4,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i50148",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "charged ethereal ring",
+      "new_budget": 16,
+      "old_budget": 16,
+      "old_direct": {
+        "EARTH": "4",
+        "ENERGY": "4",
+        "FIRE": "4",
+        "ICE": "4"
+      },
+      "percent": 4,
+      "source": "item_shard"
+    },
+    {
+      "item_key": "oteryn:item.tibia.i50149",
+      "largest_element_gain": 0,
+      "largest_element_loss": 0,
+      "mode": "exact",
+      "name": "ethereal ring",
+      "new_budget": 16,
+      "old_budget": 16,
+      "old_direct": {
+        "EARTH": "4",
+        "ENERGY": "4",
+        "FIRE": "4",
+        "ICE": "4"
+      },
+      "percent": 4,
+      "source": "item_shard"
+    }
+  ],
+  "formula": "floor(0.9 * sum(fire,ice,earth,energy)/4); exact for four equal",
+  "not_included": [
+    "runtime content overlays",
+    "imbuements",
+    "other equipment slots",
+    "monster damage distribution",
+    "player builds",
+    "source-held conflicts"
+  ],
+  "schema": "OTERYN_ELEMENTAL_BALANCE_PROPOSAL/v1",
+  "source_scope": [
+    "content/items/index.json shards",
+    "docs/agents/evidence/OTV2-20261003-equip-abilities-v1.json"
+  ],
+  "stats": {
+    "conflicts": 0,
+    "exact": 14,
+    "indexed": 34111,
+    "known_resistances": 402,
+    "needs_review": 2,
+    "overlay_filled": 0,
+    "proposals": 16
+  }
+}

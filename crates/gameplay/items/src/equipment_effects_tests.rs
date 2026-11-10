@@ -281,3 +281,42 @@ fn equipment_effects_every_equip_permutation_is_identical() {
     }
     assert_eq!(expected.map(|effects| effects.light), Some(Some((5, 1))));
 }
+
+#[test]
+fn equipment_effects_elemental_expands_without_changing_damage_or_other_resistances()
+-> Result<(), Box<dyn std::error::Error>> {
+    use ReferenceResistanceKind as Kind;
+    let elemental = ItemAbility::ElementalProtection {
+        percent: percent(4, 1),
+    };
+    let fire = ItemAbility::Protection {
+        element: Kind::Fire,
+        percent: percent(3, 1),
+        field_only: false,
+    };
+    let field = ItemAbility::Protection {
+        element: Kind::Fire,
+        percent: percent(8, 1),
+        field_only: true,
+    };
+    let effects = derive_equipment_effects(vec![input(
+        EquipmentSlot::Head,
+        vec![elemental, fire, field],
+    )])
+    .ok_or("valid elemental effects")?;
+    for kind in [Kind::Fire, Kind::Ice, Kind::Earth, Kind::Energy] {
+        let expected = if kind == Kind::Fire { 7 } else { 4 };
+        assert_eq!(effects.protections.get(&kind), Some(&percent(expected, 1)));
+    }
+    assert_eq!(effects.protections.get(&Kind::Death), None);
+    assert_eq!(effects.protections.get(&Kind::Physical), None);
+    assert_eq!(
+        effects.field_protections.get(&Kind::Fire),
+        Some(&percent(8, 1))
+    );
+    assert_eq!(
+        apply_protection(1000, effects.protections[&Kind::Fire]),
+        Some(930)
+    );
+    Ok(())
+}

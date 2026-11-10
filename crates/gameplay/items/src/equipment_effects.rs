@@ -109,6 +109,16 @@ pub fn derive_equipment_effects(
                     };
                     add_percent(sums, element, percent)?;
                 }
+                ItemAbility::ElementalProtection { percent } => {
+                    for element in [
+                        ReferenceResistanceKind::Fire,
+                        ReferenceResistanceKind::Ice,
+                        ReferenceResistanceKind::Earth,
+                        ReferenceResistanceKind::Energy,
+                    ] {
+                        add_percent(&mut effects.protections, element, percent)?;
+                    }
+                }
                 ItemAbility::Suppress(kind) => {
                     effects.suppressions.insert(kind);
                 }
