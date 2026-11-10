@@ -10,21 +10,43 @@ pub struct Observation {
     pub bindings: Vec<wire::Binding>,
 }
 
+/// Only a proven exhausted holder retry may defer an established observer's refresh.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ObservationError {
+    HolderBusy,
+    Unavailable,
+}
+
 pub(in crate::gameplay_transport) async fn observe(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     observer: ExactActorRef,
     session: GameSessionId,
     empty_outfit: bool,
-    mut entities: Vec<wire::EntityRef>,
+    entities: Vec<wire::EntityRef>,
 ) -> Option<Observation> {
+    observe_result(admission, observer, session, empty_outfit, entities)
+        .await
+        .ok()
+}
+
+pub(in crate::gameplay_transport) async fn observe_result(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    observer: ExactActorRef,
+    session: GameSessionId,
+    empty_outfit: bool,
+    mut entities: Vec<wire::EntityRef>,
+) -> Result<Observation, ObservationError> {
     if entities.len() > 256 {
-        return None;
+        return Err(ObservationError::Unavailable);
     }
     entities.sort_unstable();
     if entities.windows(2).any(|p| p[0] == p[1]) {
-        return None;
+        return Err(ObservationError::Unavailable);
     }
-    let _foreground = admission.root.foreground_demand().ok()?;
+    let _foreground = admission
+        .root
+        .foreground_demand()
+        .map_err(|_| ObservationError::Unavailable)?;
     {
         // Monster profiles hold both guards while using the durable holder. Wait
         // for that existing owner before starting the command's one-second retry
@@ -48,8 +70,11 @@ pub(in crate::gameplay_transport) async fn observe(
             }
         })
         .await
-        .ok()
-        .flatten()
+        .map_err(|error| match error {
+            crate::durability::DurabilityError::RootUnavailable => ObservationError::HolderBusy,
+            _ => ObservationError::Unavailable,
+        })?
+        .ok_or(ObservationError::Unavailable)
 }
 
 fn read_result<T>(
