@@ -91,7 +91,7 @@ fn srx3_soulpit_native_use_scope_and_return_render_source_scene() -> Result<(), 
                     &mut view,
                     &link,
                     TileCoord::new(32373, 31151),
-                    "Entered boss instance",
+                    tr!("Entered activity instance. Use the exit to return."),
                 )
                 .await?;
                 assert!(view.inputs.is_empty());
@@ -116,7 +116,7 @@ fn srx3_soulpit_native_use_scope_and_return_render_source_scene() -> Result<(), 
                     &mut view,
                     &link,
                     TileCoord::new(32373, 31158),
-                    "Returned to channel",
+                    tr!("Returned to the channel."),
                 )
                 .await?;
                 assert!(view.inputs.is_empty());

@@ -1,4 +1,4 @@
-//! Automatic feature reads must publish the same destination barrier as commands.
+//! Automatic reads and queued feature commands must publish the destination barrier.
 use super::*;
 use oteryn_session::activity_scope::{ActivityScope, ActivityScopeSnapshot, encode_activity_scope};
 
@@ -21,7 +21,7 @@ impl Stepper for AutomaticQueryHandoff {
         assert_eq!(command.capability, self.capability);
         assert!(
             !self.changed,
-            "automatic refresh must not immediately replay its source query"
+            "scope transition must not replay its source query"
         );
         self.changed = true;
         self.pending.push(SessionEvent::ActivityScope(AppliedDelta {
@@ -64,6 +64,14 @@ impl Stepper for AutomaticQueryHandoff {
 }
 
 fn automatic_query_handoff_continues(capability: u32, activity: bool) -> Result<(), String> {
+    query_handoff_continues(capability, activity, None)
+}
+
+fn query_handoff_continues(
+    capability: u32,
+    activity: bool,
+    queued: Option<crate::combat_input::PlayCommand>,
+) -> Result<(), String> {
     let mut source = [1; 16];
     source[6] = 0x70;
     source[8] = 0x80;
@@ -85,6 +93,11 @@ fn automatic_query_handoff_continues(capability: u32, activity: bool) -> Result<
     };
     let serves = Arc::new(AtomicUsize::new(0));
     let (link, commands, outbox) = play_channel();
+    if let Some(command) = queued {
+        link.commands
+            .send(command)
+            .map_err(|error| error.to_string())?;
+    }
     let runtime = ClientRuntime::new().map_err(|error| error.to_string())?;
     runtime
         .spawn(run_session(
@@ -153,4 +166,33 @@ fn modal_refresh_activity_scope_changed_publishes_destination_and_continues() ->
 #[test]
 fn modal_refresh_scope_changed_publishes_destination_and_continues() -> Result<(), String> {
     automatic_query_handoff_continues(450, false)
+}
+
+fn support_delivery_handoff_continues(activity: bool) -> Result<(), String> {
+    use oteryn_client_runtime::support_intake::{CAPABILITY_SUPPORT_INTAKE_V1, CRASH};
+    let command = oteryn_client_ui::support_intake::submission(
+        CRASH,
+        "Reference: scope-transition test",
+        true,
+    )
+    .ok_or("valid support submission")?;
+    query_handoff_continues(
+        CAPABILITY_SUPPORT_INTAKE_V1,
+        activity,
+        Some(crate::combat_input::PlayCommand::SupportDelivery(
+            command,
+            std::path::PathBuf::from("unused-scope-transition-report.txt"),
+        )),
+    )
+}
+
+#[test]
+fn support_delivery_scope_changed_publishes_destination_and_continues() -> Result<(), String> {
+    support_delivery_handoff_continues(false)
+}
+
+#[test]
+fn support_delivery_activity_scope_changed_publishes_destination_and_continues()
+-> Result<(), String> {
+    support_delivery_handoff_continues(true)
 }

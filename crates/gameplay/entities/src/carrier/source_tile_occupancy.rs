@@ -153,7 +153,7 @@ mod controls {
                 OwnerDamageCommand {
                     target: b"fixture:tile-count",
                     occurrence: b"raw-tile-hp0",
-                    binding: b"raw-tile-hp0",
+                    binding: b"raw-tile-hp0\0lethal",
                     damage: 20,
                 },
             )

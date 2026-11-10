@@ -143,6 +143,10 @@ fn scenario_category(category: u32) -> Result<(), String> {
             .as_ref()
             .is_some_and(|r| r.category == category)
     })?;
+    if category == 14 {
+        let text = highscores::panel_text(&link.highscores_panel());
+        assert!(text.contains("Tibiadrome lifetime") && text.contains("123456"));
+    }
     link.highscores_request(Action::ShowMe);
     wait(&|| {
         link.highscores_panel()
@@ -203,10 +207,6 @@ fn scenario_category(category: u32) -> Result<(), String> {
         let text = highscores::panel_text(&link.highscores_panel());
         assert!(text.contains(label) && text.contains("Ada Knight") && text.contains("123456"));
     }
-    if category == 13 {
-        let text = highscores::panel_text(&link.highscores_panel());
-        assert!(text.contains("Tibiadrome levels") && text.contains("123456"));
-    }
     drop(link);
     runtime.shutdown(Duration::from_millis(250));
     Ok(())
@@ -262,7 +262,7 @@ fn phosphorus_record_category_uses_real_play_queue_and_displays_victory() -> Res
 fn srx3_drome_lifetime_highscores_native_filter_crosses_session() -> Result<(), String> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario_category(13))
+        .spawn(|| scenario_category(14))
         .map_err(|error| error.to_string())?
         .join()
         .map_err(|_| "Drome lifetime native Highscores thread panicked".to_owned())?

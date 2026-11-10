@@ -825,6 +825,14 @@ mod encounter_credit_tests {
                 .map_err(|_| CarrierError::PlanConflict)?;
             let (carrier, continuity) = runtime.encounter_parts_mut();
             let actor = carrier.admit_bound_test_attacker(continuity, session, lease)?;
+            runtime.initialize_pinned_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                },
+            )?;
             let source = PartySnapshot {
                 world: *world.as_bytes(),
                 character: *character.as_bytes(),

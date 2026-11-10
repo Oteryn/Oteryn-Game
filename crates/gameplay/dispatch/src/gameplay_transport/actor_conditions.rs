@@ -514,6 +514,9 @@ impl ChannelSpellStates {
         let mut next = before.clone();
         let mut primary = None;
         if let Some(amount) = magnitude {
+            let amount = runtime
+                .soul_war_hatred_player_primary(source, amount)
+                .ok()?;
             let (successor, damage) = crate::spell::actor_conditions::stage_typed_hit_in_world(
                 runtime, target, &next, amount, kind, facts.now,
             )

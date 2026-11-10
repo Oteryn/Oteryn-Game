@@ -82,7 +82,32 @@ fn cl25j_feature_commands_cross_the_session_loop()
                     &mut self,
                     command: &FeatureCommand,
                 ) -> Result<GatedCommandResult, SessionError> {
-                    Ok(result(command.capability))
+                    let payload = match command.capability {
+                        382 => {
+                            assert_eq!(command.kind, 664);
+                            assert!(command.payload.is_empty());
+                            vec![0]
+                        }
+                        450 => {
+                            assert_eq!(command.kind, 736);
+                            assert!(command.payload.is_empty());
+                            oteryn_client_runtime::server_modal::Reply::None
+                                .encode()
+                                .map_err(|_| SessionError::SessionUnusable)?
+                        }
+                        451 => {
+                            assert_eq!(command.kind, 741);
+                            assert!(command.payload.is_empty());
+                            oteryn_client_runtime::personal_map_marks::PersonalMapMarks::default()
+                                .encode()
+                                .ok_or(SessionError::SessionUnusable)?
+                        }
+                        _ => return Ok(result(command.capability)),
+                    };
+                    Ok(GatedCommandResult {
+                        payload,
+                        ..result(command.capability)
+                    })
                 }
                 async fn server_mechanic(
                     &mut self,

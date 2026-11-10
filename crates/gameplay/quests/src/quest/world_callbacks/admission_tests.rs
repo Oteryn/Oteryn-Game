@@ -26,19 +26,31 @@ fn world_admission_predicates_require_personal_fenced_player_callbacks() -> Resu
 
 #[test]
 fn qm03_entrances_bind_live_guards_to_native_objects_and_personal_progress() -> Result<(), String> {
-    let callbacks = load()?;
+    let state = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let callbacks = load_for(state.catalogue())?;
     let machine: Vec<_> = callbacks
         .iter()
-        .filter(|c| c.key.starts_with("oteryn:quest-callback/qm03/anniversary"))
+        .filter(|c| c.quest == "oteryn:quest.25_years_of_tibia_quest" && c.admission.is_some())
         .collect();
     assert_eq!(machine.len(), 9);
+    let mut positions = BTreeSet::new();
     for part in &machine {
         assert_eq!(part.admission, machine[0].admission);
         assert_eq!(part.minimum_level, machine[0].minimum_level);
         assert_eq!(part.teleport, machine[0].teleport);
         assert_eq!(part.storage, machine[0].storage);
         assert!(part.requires_world_admission);
+        let native = part.selector.native.as_ref().ok_or("native machine part")?;
+        assert_eq!(part.selector.position, Some(native.position));
+        positions.insert(native.position);
     }
+    assert_eq!(
+        positions,
+        (32429..=32431)
+            .flat_map(|x| (32164..=32166).map(move |y| Position { x, y, floor: -8 }))
+            .collect::<BTreeSet<_>>()
+    );
     for (name, quest, trigger, level, promotion, blessings) in [
         (
             "anniversary",
@@ -94,7 +106,9 @@ fn qm03_entrances_bind_live_guards_to_native_objects_and_personal_progress() -> 
 #[test]
 fn qm03_entrances_bind_live_guards_to_native_objects_and_personal_progress_lane_1()
 -> Result<(), String> {
-    let callbacks = load()?;
+    let state = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let callbacks = load_for(state.catalogue())?;
     for (name, quest, trigger, level, promotion, blessings) in [
         (
             "anniversary",

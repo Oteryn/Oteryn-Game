@@ -312,6 +312,16 @@ mod tests {
         let session = GameSessionId::decode(&id(91)).unwrap();
         let reservation = runtime.reserve_fresh_session(session).unwrap();
         let caster = runtime.commit_fresh_session(reservation).unwrap();
+        runtime
+            .initialize_pinned_test_position(
+                caster,
+                MovementLocalPosition {
+                    x: 0,
+                    y: 0,
+                    floor: 7,
+                },
+            )
+            .unwrap();
         let target = runtime
             .admit_test_creature(MovementLocalPosition {
                 x: 1,

@@ -12,6 +12,7 @@ pub(super) struct HatredCallbacks {
     content: [u8; 32],
     entered: bool,
     removed: bool,
+    removing: Option<[Option<ExactActorRef>; 4]>,
 }
 impl HatredCallbacks {
     fn current_actors(
@@ -39,6 +40,7 @@ impl HatredCallbacks {
             content: native.source_digest(),
             entered: false,
             removed: false,
+            removing: None,
         })
     }
     pub(super) fn initialize(
@@ -178,13 +180,82 @@ impl HatredCallbacks {
     }
 }
 
-// Neutral canonical-owner seam until the real four-actor regression reaches it.
-fn remove_source_forms(
-    _runtime: &mut ChannelRuntimeV1,
-    _states: &mut ChannelSpellStates,
-    _native: &NativeGameplayState,
-) -> Result<(), ()> {
-    Ok(())
+impl HatredCallbacks {
+    fn remove_source_forms(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        native: &NativeGameplayState,
+    ) -> Result<(), ()> {
+        runtime.owner_fence().map_err(|_| ())?;
+        if self.boss.runtime_scope() != runtime.binding().runtime_scope()
+            || self.boss.scope_generation() != runtime.binding().scope_generation()
+            || self.content != runtime.content_pin().server_artifact_digest()
+            || !qualifies_source(runtime, native)
+        {
+            return Err(());
+        }
+        if self.removed {
+            return Ok(());
+        }
+        // Copied death handlers require their occupied slots until source completion.
+        // The native owner drains them before this onDisappear callback.
+        if runtime.has_pending_source_creature_deaths() {
+            return Err(());
+        }
+        let forms = [
+            BurningForm::Ashes,
+            BurningForm::Spark,
+            BurningForm::Flame,
+            BurningForm::Blaze,
+        ];
+        if self.removing.is_none() {
+            let mut actors = [None; 4];
+            for (actor, _) in runtime
+                .source_registered_creature_census()
+                .map_err(|_| ())?
+            {
+                let Some(key) = source_actor(runtime, native, actor) else {
+                    continue;
+                };
+                let Some(index) = forms.iter().position(|form| form.key() == key) else {
+                    continue;
+                };
+                // Creature(name) selects one actor. As with source_names, refuse
+                // an ambiguous name instead of inventing registry order or removing all.
+                if actors[index].replace(actor).is_some() {
+                    return Err(());
+                }
+            }
+            self.removing = Some(actors);
+        }
+        for retained in self.removing.as_mut().ok_or(())? {
+            let Some(actor) = *retained else {
+                continue;
+            };
+            match runtime.companion_snapshot_including_dead(actor) {
+                Ok(_) => {
+                    if !source_actor(runtime, native, actor)
+                        .is_some_and(|key| forms.iter().any(|form| form.key() == key))
+                    {
+                        return Err(());
+                    }
+                    runtime.remove_encounter_actor(actor).map_err(|_| ())?;
+                }
+                Err(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration
+                    | oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature,
+                ) => {}
+                Err(_) => return Err(()),
+            }
+            states.monster_melee.creature_ai.remove(actor);
+            // Retain exact refs across a partial refusal; a retry never captures
+            // another actor subsequently admitted under the same name or slot.
+            *retained = None;
+        }
+        self.removed = true;
+        Ok(())
+    }
 }
 
 /// Same native-owner pass and original think batch as the real attack dispatcher.
@@ -209,8 +280,7 @@ pub(super) fn drive(
             .companion_snapshot(owner.boss)
             .is_ok_and(|boss| boss.health > 0 && boss.state.policy.definition_key == HATRED);
         if !boss_present && !owner.removed {
-            remove_source_forms(runtime, states, native)?;
-            owner.removed = true;
+            owner.remove_source_forms(runtime, states, native)?;
             return Ok(());
         }
         if owner.removed {
@@ -409,14 +479,63 @@ mod tests {
             );
         }
         let mut states = ChannelSpellStates::default();
-        remove_source_forms(&mut runtime, &mut states, native)
+        let duplicate = runtime
+            .spawn_arena_opponent(
+                BurningForm::Spark.key(),
+                MovementLocalPosition {
+                    x: 33749,
+                    y: 31599,
+                    floor: 14,
+                },
+                |_, _| Some(true),
+            )
+            .map_err(|e| format!("duplicate current source name: {e:?}"))?;
+        runtime.remove_encounter_actor(boss)?;
+        assert!(
+            owner
+                .remove_source_forms(&mut runtime, &mut states, native)
+                .is_err(),
+            "ambiguous names cannot authorize an arbitrary actor or a bulk removal"
+        );
+        assert!(
+            forms
+                .iter()
+                .all(|&actor| runtime.contains_live_creature(actor))
+        );
+        assert!(runtime.contains_live_creature(duplicate));
+        runtime.remove_encounter_actor(duplicate)?;
+        owner
+            .remove_source_forms(&mut runtime, &mut states, native)
             .map_err(|_| "actual onDisappear cleanup")?;
         assert!(
             forms
-                .into_iter()
-                .all(|actor| !runtime.contains_live_creature(actor)),
+                .iter()
+                .all(|&actor| !runtime.contains_live_creature(actor)),
             "source onDisappear removes the four current named Burning forms through the physical owner"
         );
+        let replacement = runtime
+            .spawn_arena_opponent(
+                BurningForm::Ashes.key(),
+                MovementLocalPosition {
+                    x: 33743,
+                    y: 31599,
+                    floor: 14,
+                },
+                |_, _| Some(true),
+            )
+            .map_err(|e| format!("later source form incarnation: {e:?}"))?;
+        let previous = forms
+            .iter()
+            .find(|actor| actor.actor_local_id() == replacement.actor_local_id())
+            .ok_or("replacement reuses a removed physical slot")?;
+        assert_ne!(
+            previous.actor_local_generation(),
+            replacement.actor_local_generation()
+        );
+        owner
+            .remove_source_forms(&mut runtime, &mut states, native)
+            .map_err(|_| "completed cleanup replay")?;
+        assert!(runtime.contains_live_creature(replacement));
         Ok(())
     }
 }

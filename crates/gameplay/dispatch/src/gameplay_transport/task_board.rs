@@ -19,10 +19,10 @@ use oteryn_protocol_oteryn::task_board as wire;
 pub(super) mod bounty_talisman;
 #[path = "task_board_projection.rs"]
 mod projection;
-#[path = "task_board/soulseals.rs"]
-pub(crate) mod soulseals;
 #[path = "task_board_quest_entries.rs"]
 mod quest_entries;
+#[path = "task_board/soulseals.rs"]
+pub(crate) mod soulseals;
 
 #[derive(Debug)]
 pub enum TaskBoardReply {

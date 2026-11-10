@@ -44,8 +44,13 @@ fn ground_stack_guards_bind_progress_without_admitting_value_free_actions() -> R
     assert!(parse(&reward.to_string()).is_err());
     let mut invalid = doc;
     invalid["callbacks"][0]["world_requirements"][0]["appearance"] = 0.into();
-    // Portable Ground facts may omit an immutable appearance; neither kind of
-    // predicate may be omitted altogether. Preserve that distinction.
+    assert!(
+        parse(&invalid.to_string()).is_err(),
+        "generic Use cannot omit the immutable appearance"
+    );
+    invalid["callbacks"][0]["trigger"] = "step_in".into();
+    // Personal StepIn Ground facts may omit an immutable appearance; neither
+    // kind of predicate may be omitted altogether. Preserve that distinction.
     let ground_only = parse(&invalid.to_string())?.remove(0);
     assert!(gated_binding(&ground_only)?.is_some());
     invalid["callbacks"][0]["world_requirements"][0]

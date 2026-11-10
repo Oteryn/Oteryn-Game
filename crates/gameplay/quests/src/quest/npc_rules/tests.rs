@@ -757,8 +757,37 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
     // M04 adds seven -1 defaults: three per Djinn faction and one monastery diary.
+    // Paradox adds three source-backed Riddler tracks, also starting absent at -1.
     // Dream Courts, Tamoril, Gnomus, Julius and Citizen scopes remain registered.
-    assert_eq!(defaults, BTreeMap::from([(-1, 211), (0, 54)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 214), (0, 54)]));
+    let paradox = NpcRuleCatalog::embedded()
+        .map_err(|error| error.to_string())?
+        .program("oteryn:quest.the_paradox_tower_quest")
+        .ok_or("Paradox source programme")?;
+    for (suffix, line) in [
+        ("the_feared_hugo", 78),
+        ("favorite_colour", 109),
+        ("mathemagics", 129),
+    ] {
+        let key = format!("oteryn:quest-progress/quest/u7_24/the_paradox_tower/{suffix}");
+        let track = paradox
+            .document
+            .tracks
+            .iter()
+            .find(|track| track.key == key)
+            .ok_or("Paradox Riddler track")?;
+        assert_eq!(track.quest, "oteryn:quest.the_paradox_tower_quest");
+        assert_eq!(
+            (track.initial, track.min, track.max),
+            (-1, -1, i64::from(i32::MAX))
+        );
+        assert_eq!(
+            track.sources,
+            vec![format!(
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:{line}"
+            )]
+        );
+    }
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()

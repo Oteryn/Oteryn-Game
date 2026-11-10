@@ -17,18 +17,28 @@ impl MonsterThinkReader for NoSummonReads {
         None
     }
 }
-fn finish(
-    channel: &mut Channel,
-    batch: ReservedNativeThinkBatch,
-) -> Result<Vec<(ExactActorRef, crate::ai_think::ThinkReport)>, String> {
-    let players = [TargetCandidate {
+fn current_players(channel: &Channel) -> [TargetCandidate; 1] {
+    [TargetCandidate {
         actor: channel.player,
         position: channel.position(channel.player),
         eligible: true,
         invisible: false,
         health: 100,
         damage: 0,
-    }];
+    }]
+}
+fn finish(
+    channel: &mut Channel,
+    batch: ReservedNativeThinkBatch,
+) -> Result<Vec<(ExactActorRef, crate::ai_think::ThinkReport)>, String> {
+    let players = current_players(channel);
+    finish_with_players(channel, batch, &players)
+}
+fn finish_with_players(
+    channel: &mut Channel,
+    batch: ReservedNativeThinkBatch,
+    players: &[TargetCandidate],
+) -> Result<Vec<(ExactActorRef, crate::ai_think::ThinkReport)>, String> {
     let mut reader = NoSummonReads { called: false };
     let polled = {
         let future = channel.table.run_reserved_current_thinks(
@@ -36,7 +46,7 @@ fn finish(
             batch,
             &channel.root,
             &channel.revisions,
-            &players,
+            players,
             &mut reader,
             |_, _, _, _, _| {},
         );
@@ -98,8 +108,9 @@ fn srx3_reserved_native_think_cannot_publish_after_owner_retirement() -> Result<
         .table
         .reserve_current_thinks(&mut channel.runtime, 0)
         .expect("reserve");
+    let players = current_players(&channel);
     channel.runtime.retire_owner_cycle();
-    assert!(finish(&mut channel, batch)?.is_empty());
+    assert!(finish_with_players(&mut channel, batch, &players)?.is_empty());
     assert_eq!(
         channel
             .table
@@ -178,14 +189,14 @@ fn finish_borrowed(
     channel: &mut Channel,
     batch: &ReservedNativeThinkBatch,
 ) -> Result<Vec<(ExactActorRef, crate::ai_think::ThinkReport)>, String> {
-    let players = [TargetCandidate {
-        actor: channel.player,
-        position: channel.position(channel.player),
-        eligible: true,
-        invisible: false,
-        health: 100,
-        damage: 0,
-    }];
+    let players = current_players(channel);
+    finish_borrowed_with_players(channel, batch, &players)
+}
+fn finish_borrowed_with_players(
+    channel: &mut Channel,
+    batch: &ReservedNativeThinkBatch,
+    players: &[TargetCandidate],
+) -> Result<Vec<(ExactActorRef, crate::ai_think::ThinkReport)>, String> {
     let mut reader = NoSummonReads { called: false };
     let result = {
         let future = channel.table.run_reserved_current_thinks_borrowed(
@@ -193,7 +204,7 @@ fn finish_borrowed(
             batch,
             &channel.root,
             &channel.revisions,
-            &players,
+            players,
             &mut reader,
             |_, _, _, _, _| {},
         );
@@ -241,10 +252,11 @@ fn srx3_borrowed_original_native_batch_preserves_clock_and_refuses_reconsume() -
             .due_us,
         Some(SECOND)
     );
+    let players = current_players(&channel);
     channel.runtime.retire_owner_cycle();
     assert!(!retained.current_for(&channel.runtime));
     assert!(
-        finish_borrowed(&mut channel, &retained)?.is_empty(),
+        finish_borrowed_with_players(&mut channel, &retained, &players)?.is_empty(),
         "retained Arc is not fresh authority after owner retirement"
     );
     assert_eq!(retained.observed_at_us(), 0);

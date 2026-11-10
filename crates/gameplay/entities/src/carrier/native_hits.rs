@@ -100,6 +100,16 @@ mod tests {
         let session = GameSessionId::decode(&id(4)).expect("session");
         let reservation = runtime.reserve_fresh_session(session).expect("reservation");
         let player = runtime.commit_fresh_session(reservation).expect("player");
+        runtime
+            .initialize_pinned_test_position(
+                player,
+                MovementLocalPosition {
+                    x: 1,
+                    y: 1,
+                    floor: 7,
+                },
+            )
+            .expect("current physical attacker");
         let lease =
             CharacterLease::new(CharacterId::decode(&id(5)).expect("character"), 1).expect("lease");
         runtime

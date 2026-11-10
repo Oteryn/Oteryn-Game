@@ -279,12 +279,32 @@ mod tests {
     #[test]
     fn qm55_held_chakoya_and_admitted_premium_entry_credit_once() -> Result<(), String> {
         let callbacks = load()?;
-        assert!(
-            !callbacks
+        let chakoya: Vec<_> = callbacks
+            .iter()
+            .filter(|c| c.quest == "oteryn:quest.authored.chakoya_iceberg_mini_world_change")
+            .collect();
+        assert_eq!(chakoya.len(), 2);
+        assert_eq!(
+            chakoya
                 .iter()
-                .any(|c| c.quest == "oteryn:quest.authored.chakoya_iceberg_mini_world_change"),
-            "M31: the HELD World owner cannot supply an EXPLORE callback"
+                .map(|c| c.key.as_str())
+                .collect::<BTreeSet<_>>(),
+            BTreeSet::from([
+                "oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s1/entry",
+                "oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s3/entry",
+            ])
         );
+        for callback in chakoya {
+            assert!(super::admitted(callback));
+            assert!(callback.world_change.is_none());
+            assert_eq!(
+                callback.admission,
+                Some(Admission {
+                    premium: true,
+                    ..Default::default()
+                })
+            );
+        }
         let bindings = crate::quest::authored_bindings::Bindings::parse(include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../../content/quests/authored-bindings/engenc-asura-palace.json"

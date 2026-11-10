@@ -133,13 +133,16 @@ pub async fn run_session<T: Stepper>(
                 Err(error) => error,
             },
             Ok(PlayCommand::SupportDelivery(command, path)) => {
-                if session.feature_selected(command.capability) {
-                    match session.feature(&command).await {
-                        Ok(result) => crate::support_delivery::acknowledge(&path, &command, &result),
-                        Err(error) => { outbox.end(public_class(&error)); return; }
-                    }
+                if !session.feature_selected(command.capability) {
+                    continue;
                 }
-                continue;
+                match session.feature(&command).await {
+                    Ok(result) => {
+                        crate::support_delivery::acknowledge(&path, &command, &result);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
             },
             Ok(PlayCommand::Feature(command)) => {
                 let started = std::time::Instant::now();

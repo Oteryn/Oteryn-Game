@@ -9,7 +9,7 @@ fn srx3_soul_war_reflection_uses_post_resistance_damage_before_overkill_clamp_an
     use crate::spell::combat_batch::{OwnerCombatBatch, SpellOccurrenceBinding};
     use oteryn_gameplay_entities::carrier::soul_war::SoulWarCreatureChange;
 
-    let mut f = fixture_with_source(0, true, true);
+    let mut f = fixture_with_source_kind(0, true, true, Some("oteryn:creature.goshnar_s_greed"));
     f.attributes.policy = MagnitudePolicy::BaselineTest;
     f.attributes.owner_revisions = Some((1, 1, Some(1)));
     f.attributes.base_critical_chance_permyriad = Some(0);

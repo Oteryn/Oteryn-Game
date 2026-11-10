@@ -196,8 +196,8 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             f::fence(2)?,
             TaskBoardCommand {
                 cause: cause(44004)?,
-                action: TaskBoardAction::ClaimDailyReroll,
-                payload_binding: vec![12],
+                action: TaskBoardAction::SetElite { enabled: true },
+                payload_binding: vec![19, 1],
                 fee_change: None,
             },
             Arc::new(TaskBoardCatalogue {
@@ -213,6 +213,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .await
         .map_err(f::debug)?;
     assert!(unrelated.refusal.is_none());
+    assert!(unrelated.view.data.bounty.elite);
     assert!(
         unrelated.transition.is_some(),
         "a different mutating board action really committed"
@@ -230,7 +231,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .map_err(f::debug)?;
     assert!(
         matches!(wrong_action, QuestTransitionOutcome::Refused(_)),
-        "committed reroll grant is not programme acceptance"
+        "committed elite setting is not programme acceptance"
     );
     let below_level = slot
         .commit_quest_transition(

@@ -734,7 +734,7 @@ fn the_wake_view_box_holds_every_cell_a_player_sees() {
         for floor in -2..=17 {
             let wake_box = wake_view_box(player, floor);
             if let Some((columns, rows)) = &wake_box {
-                assert_eq!((columns.clone().count(), rows.clone().count()), (19, 19));
+                assert_eq!((columns.clone().count(), rows.clone().count()), (23, 23));
             }
             for dx in -30..=30 {
                 for dy in -30..=30 {
@@ -743,7 +743,8 @@ fn the_wake_view_box_holds_every_cell_a_player_sees() {
                         y: player.y + dy,
                         floor,
                     };
-                    if targeting::sees(player, creature) {
+                    if targeting::sees(player, creature) || targeting::sees_native(creature, player)
+                    {
                         let (columns, rows) = wake_box.clone().expect("seen floor in the box");
                         assert!(columns.contains(&creature.x) && rows.contains(&creature.y));
                     }

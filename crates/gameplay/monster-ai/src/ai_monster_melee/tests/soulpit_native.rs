@@ -69,8 +69,8 @@ fn scenario() -> Result<(), String> {
         .creature_profiles()
         .records
         .iter()
-        .find(|record| record.profile.target.key == "oteryn:creature.oppressor")
-        .ok_or("unchanged native Oppressor")?;
+        .find(|record| record.profile.target.key == "oteryn:creature.demon")
+        .ok_or("actual native Demon base species")?;
     let closure = record
         .attack_definitions
         .as_ref()

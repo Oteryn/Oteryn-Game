@@ -481,7 +481,7 @@ mod tests {
                 PlayerHitKind::Physical,
                 "source.hatred.primary.with-condition",
                 boss,
-                &[definition],
+                std::slice::from_ref(&definition),
                 &facts,
                 &[],
                 stamp,
@@ -497,6 +497,38 @@ mod tests {
                 .ok_or("actual target")?
                 .owned_conditions()
                 .has_status(crate::foundation::StatusKind::Drunk, now.get())
+        );
+        let settled = states
+            .get(&runtime, target, session)
+            .ok_or("settled composite target")?
+            .clone();
+        let current_boss = runtime.companion_snapshot(boss)?;
+        runtime.change_soul_war_hatred_percent(
+            &current_boss,
+            20,
+            oteryn_gameplay_entities::carrier::soul_war_hatred::HatredEmpowerment::Add(10),
+        )?;
+        let stamp = runtime.issue_owner_work()?;
+        let replay = states
+            .apply_typed_composite_attack_damage_current(
+                &mut runtime,
+                target,
+                session,
+                100,
+                PlayerHitKind::Physical,
+                "source.hatred.primary.with-condition",
+                boss,
+                std::slice::from_ref(&definition),
+                &facts,
+                &[],
+                stamp,
+            )
+            .ok_or("exact composite replay after source empowerment")?;
+        assert_eq!(replay, composite);
+        assert_eq!(
+            states.get(&runtime, target, session),
+            Some(&settled),
+            "replay retains the original primary receipt and secondary condition"
         );
         assert!(
             crate::domain::character_name::CharacterName::parse("Goshnar's Megalomania").is_err(),
