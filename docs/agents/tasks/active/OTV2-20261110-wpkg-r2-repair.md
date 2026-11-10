@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: PR3042 repair lead; publication and review-dispatch owner in comment 6767805546
 created_at: 2026-11-10T15:59:04Z
-updated_at: 2026-11-10T17:46:53Z
+updated_at: 2026-11-10T22:32:22Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/connection/serve/
@@ -31,6 +31,9 @@ owned_paths:
   - tools/qualification/node_boot/run.sh
   - tools/qualification/node_boot/test_diagnostics.py
   - docs/contracts/logging/events/durability.json
+  - .github/workflows/merge-gate.yml
+  - tools/repository/test_classify_pr_test_lanes.py
+  - tools/repository/validate_repository_policy_core.py
   - docs/agents/tasks/active/OTV2-20261110-wpkg-r2-repair.md
 public_contracts:
   - docs/contracts/protocol-oteryn/v1/cast/cast-v1.md
@@ -50,6 +53,41 @@ database validation on GitHub, and one grouped P2/P3 follow-up at the end.
 This record covers the repair continuation. Live PR/check evidence supplies
 the final SHA and qualification state; this file does not supersede it.
 
+## Current continuation: repeated CI metadata-count failure
+
+The owner resumed the same repair task. Direct exact-head readback of
+`268b9bbf2ff9bc6f62dc44b5dd66364b0e3d4d2d` now confirms all 24 PostgreSQL
+partitions and heavy-gate pass in run42868636377. The original merge gate
+42868635891 passes with Clippy and 10,904 unit tests. PG15 passes all 43 E2E
+and 198 library tests, including the repaired TARGET-MOVE case.
+
+The metadata companion42869075398 failed scope job130039738079 with
+`pull request file count changed during scope classification`. One retry,
+after stable exact head/base and 2507-file readback, failed the same condition
+in job130172723589. There is no further retry of that unchanged code.
+
+After explicitly returning to AUTHORING, this successor repairs only count
+handling in the scope job. Both live metadata reads still require valid integer
+counts. A valid count-only change invalidates transported file evidence while
+all state/repository/head/base fences remain mandatory. The protected-base
+classifier reconstructs the immutable Git diff; if unavailable it selects FULL.
+No required job, PostgreSQL partition, assertion or identity check is suppressed.
+The scope's canonical policy digest is regenerated from its actual job text.
+
+The executable regression reproduces the original failure before the change.
+It then checks count drift in both directions and across the 300-file boundary,
+strict refusal of malformed counts and real identity changes, clearing stale
+records, actual Git recovery of a server change, and FULL fallback without Git
+objects. Independent source review found no P0/P1 in this bounded delta.
+The exact successor's check and Codex receipts belong in control comment
+6767805546 after publication; predecessor results do not qualify its new SHA.
+
+Node130018822709 remains red with a visibility disconnect and replacement
+revision-chain refusal. Existing repairs remain owned by PR3076 and PR3093;
+the Node exception is not evidence of a runtime pass. Current main c255c6b8
+also has a separate Exiva fixture readiness failure; this patch does not claim
+to fix it. The 22-file P2/P3 batch stays separate from this CI repair.
+
 ## Architecture and source of truth
 
 - PROVEN: the bound META policy is Oteryn/Oteryn at
@@ -62,24 +100,13 @@ the final SHA and qualification state; this file does not supersede it.
 
 ## High-risk authority/recovery qualification
 
-Cast Join/Renew retry only `DurabilityError::RootUnavailable`; every attempt
-proves the current node incarnation and reads the durable ban. The retry window
-is one second; the existing SQL-pass budget remains unchanged. SQL/authority
-failures and persisted bans remain final. No cached ban, weaker proof, protocol
-field or durable write is introduced.
-
-The independent inputs are the recovered node proof, persistent ban row, opaque
-VerifiedAdmission and monotonic clock. Actual elapsed time advances `now` before
-existing Join/Renew checks, including removal of an expired existing observer.
-The actual-root regression holds a semantic pass, requires Pending, releases it,
-and checks Join/Renew, persisted-ban refusal, expiry and missing-table refusal.
-On746 it passes in7.165s (job129980996909); the original live observer journey
-passes in25.297s (job129980997020). The persistent-ban regression retains restart,
-idempotency and current-node checks. Extracted proofs do not replace database runs.
-
-The sibling inspection covered both operations and their direct test caller.
-Recovery changes only add closed diagnostics and propagate the same failures in
-the same order; no recovery acceptance or mutation predicate changes.
+Earlier repairs preserve current node/session-generation fences and the accepted
+S17 contracts. Cast Join/Renew retries only RootUnavailable within one second;
+each attempt rechecks node authority and persistent bans, and elapsed time still
+reduces admission lifetime. SQL/authority failures remain final. The actual-root
+regression covers held resources, bans, expiry and missing storage. The recovery
+change only adds closed, sanitized diagnostic labels; it changes no predicate.
+Full historical evidence and exact earlier job IDs remain in comment6767805546.
 
 ## Acceptance criteria
 
@@ -132,74 +159,45 @@ qualification. The separate Windows repair is PR #3094.
 
 ## TARGET-MOVE fixture repair after exact-head validation
 
-PROVEN: on `746ee8a124d68d1f2b06b3933f82cc5ea985eae7`, game-gate,
-Clippy, all 10,904 unit tests and 23/24 PostgreSQL partitions pass. PG15 job
-129980996991 has one failing library case out of 198 (all 43 E2E cases pass):
-`target_move_real_dispatch_walk_turn_follow_and_cancel_on_postgres`, at
-`target_move.rs:309`, observes `(6,3)` instead of `(6,4)` after the target returns
-from another floor. The fixture sleeps 350 ms without confirming that FOLLOW
-observed the target loss. Production removes the pending walk once that loss
-is observed; the original log does not identify the exact tick/relocation order.
-
-A small harness with unchanged production poll.rs and PendingWalk/tick, plus a
-modeled owner, reproduces the same position failure: target returns at 350 ms,
-owner completes at 600 ms, and the queued FOLLOW moves. A neutral retained-command
-replay barrier passes 4/4 cases, including a 1400 ms delayed validity read and a
-mutant which proves broken floor cancellation still fails the position assertion.
-This is a scheduling proof, not a PostgreSQL execution of the repaired fixture.
-
-The bounded repair replaces five unacknowledged waits in the existing fixture
-with replay ACK, the same 350 ms wait, then two replay ACKs. The helper verifies
-DuplicateReplay and the retained result; it never re-executes FOLLOW. The five
-observations cover target logout twice, floor loss/return, and death. Assertions,
-command numbering, delays and timeout budgets are preserved. Stop/manual-step
-observations already have cancellation ACKs. No production hook or logic changes.
-The separate unproven death-cell read/marker gap is collected with P2/P3, not
-silently repaired here.
+Commit268b9bbf replaces five unacknowledged FOLLOW observations with retained
+DuplicateReplay barriers, preserving all assertions, IDs, 350ms delays and timeouts.
+The isolated production poll/tick scheduling proof reproduced the y3/y4 failure;
+the barrier passed4/4 cases and detected a deliberately broken cancellation.
+Exact268 PG15 subsequently passed43/43E2E and198/198library cases, including
+TARGET-MOVE. The separate unproven death-cell/marker gap remains in the backlog.
 
 ## Validation
 
-Focused evidence before the next freeze:
+Current CI-scope repair: the real workflow regression is baseline-red/fixed-green.
+All12 existing routing test functions pass. The repository policy validator passes
+(23files,68workflows); the scope pin is computed from the actual job text. Focused
+applicability and PR-gate unit groups each pass10/10. Native PowerShell canaries
+are left to CI because this executor has no pwsh. Governance validation passes; the final whitespace check runs before publication.
 
-- Rust1.99.1 formatting/parser checks for the changed Rust files: pass.
-- `git diff --check`: pass.
-- `python3 tools/qualification/node_boot/test_diagnostics.py`: pass, 2/2.
-- `bash -n tools/qualification/node_boot/run.sh`: pass.
-- TARGET-MOVE scheduling proof: old sequence fails with y=3/y=4; neutral replay
-  barrier passes 4/4, including delayed validation and a broken-cancel mutant.
-- Exact cast retry helper: baseline held-resource failure, fixed 3/3 pass.
-- Existing highscore selection test with exact production tables/functions:
-  baseline reproduces Some(16)/Some(17), corrected test 1/1 pass.
-- Unmodified production logging validator in an isolated small runner:
-  baseline unregistered event, registered event pass.
-- `python tools/agents/validate_governance.py`: pass on this authoring batch.
-- Governance framework tests:129/129 passed on746; the validator code is unchanged.
-
-Component/integration/E2E: GitHub owns full crate and database/Node execution.
-On455c, all10,904unit tests, Clippy and24/24PG partitions pass; its missing logging
-registration was repaired in746. The exact746 results and its single blocking
-fixture failure are recorded above. Neither predecessor qualifies the upcoming
-fixture-only successor. No heavy local build or database test was run.
+Exact268 predecessor evidence: Clippy,10904units,24/24PG andheavy-gate pass.
+Its companion scope retry still fails; the new successor needs its own complete
+required checks. No local Rust workspace build or database execution is used.
+Earlier diagnostics, cast, highscore and scheduling proofs remain in control
+comment6767805546 and the preceding revisions of this task record.
 
 ## Self-review
 
-The lead inspected the fixture diff: only five waits and a neutral replay helper
-change; existing assertions, command numbering and budgets remain. Prior repairs
-have exact remote-tree readback. Peer inspection confirmed this bounded delta.
+The lead and an independent worker inspected the complete CI repair. Count drift
+cannot authorize stale narrowed lanes: transported records are discarded, exact
+Git recovery is verified, and missing evidence selects FULL. Real identity drift
+still fails. The canonical scope digest matches the modified job.
 
 ## Independent review
 
-Three Codex rounds have now completed. The owner-approved additional final
-review completed on `746ee8a124d68d1f2b06b3933f82cc5ea985eae7` with no findings
-(receipt 6773134030; sole trigger 6772999885). The additional authorization is
-used; no duplicate or fourth review is requested.
+Three historical Codex rounds completed; the latest clean receipt6773134030
+reviews746ee8a124. Commit268 only adjusted the fixture and record; its independent
+source review and exact-head CI are recorded separately from that receipt.
 
-The follow-up changes only fixture synchronization and this record. It changes
-no production/server logic, persistence, session fence, protocol or durable value.
-Under OWNER_FUNDED_AI_POLICY.md, unchanged-risk movement does not authorize
-another paid review. The existing receipt covers the unchanged production delta;
-it is not represented as a Codex review of the successor SHA. Focused independent
-source inspection and fresh exact-head CI still apply to the fixture repair.
+The owner's current task explicitly requests Codex Review for P0/P1 detection.
+This material CI-control delta will receive one fresh read-only review after
+publication, scoped to the new delta. The lead alone dispatches it after fresh
+same-head deduplication. A failed CLI initialization is not a completed review.
+No duplicate same-head invocation or automatic review loop is planned.
 
 ## PR and closeout
 
@@ -214,7 +212,8 @@ frozen head merely to copy CI/review status into this file.
 
 ## Context checkpoint
 
-The exact published head, run/job IDs, review authorization, next action and
-ownership are maintained in PR comment 6767805546. Current next action: finish
-and inspect the bounded TARGET-MOVE fixture repair, publish one successor, freeze
-its exact SHA and requalify it. No owner permission question is pending.
+Live comment6767805546 binds the exact published head, run/job IDs, review receipt,
+next action and sole publisher. Publish the bounded CI repair, freeze its exact
+remote SHA, obtain one scoped Codex review and inspect its required runner checks.
+Keep the22-file P2/P3 batch separate; do not conflate the owned Node fixes in3076
+and3093 with this repair. No owner permission question is pending.
