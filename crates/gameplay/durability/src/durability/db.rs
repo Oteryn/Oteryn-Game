@@ -1557,12 +1557,23 @@ pub async fn commit_semantic_transaction(
     transaction: Transaction<'_, Postgres>,
     deadline: Instant,
 ) -> Result<(), DurabilityError> {
+    commit_semantic_transaction_by(deadline, || transaction.commit()).await
+}
+
+async fn commit_semantic_transaction_by<F, Fut>(
+    deadline: Instant,
+    commit: F,
+) -> Result<(), DurabilityError>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<(), sqlx::Error>>,
+{
     let remaining = deadline.saturating_duration_since(Instant::now());
     if remaining.is_zero() {
-        return Err(DurabilityError::CommitOutcomeUnknown);
+        return Err(DurabilityError::RootPassDeadlineExceeded);
     }
 
-    match tokio::time::timeout(remaining, transaction.commit()).await {
+    match tokio::time::timeout(remaining, commit()).await {
         Ok(Ok(())) => Ok(()),
         Ok(Err(error)) => Err(DurabilityError::from_commit_error(error)),
         Err(_) => Err(DurabilityError::CommitOutcomeUnknown),

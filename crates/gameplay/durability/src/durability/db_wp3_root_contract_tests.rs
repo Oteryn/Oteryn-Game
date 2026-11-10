@@ -424,6 +424,26 @@ fn budgeted_pass_never_outlives_its_outer_budget() -> Result<(), Box<dyn std::er
 }
 
 #[test]
+fn expired_commit_deadline_is_known_uncommitted_and_does_not_send_commit()
+-> Result<(), Box<dyn std::error::Error>> {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let mut commit_sent = false;
+    let result = runtime.block_on(commit_semantic_transaction_by(Instant::now(), || {
+        commit_sent = true;
+        std::future::ready(Ok(()))
+    }));
+
+    assert!(matches!(
+        result,
+        Err(DurabilityError::RootPassDeadlineExceeded)
+    ));
+    assert!(!commit_sent);
+    Ok(())
+}
+
+#[test]
 fn boot_pass_deadline_is_bounded_shared_by_clones_and_ends_with_its_guard()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = DurabilityRoot::new(config()?)?;

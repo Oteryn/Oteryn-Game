@@ -866,12 +866,10 @@ fn item_loop_drop_is_blocked_at_the_channel_cap_until_a_pickup_frees_room() -> T
             request(stone, LoopDestination::Ground(ground())),
         )
         .await?;
-        let on_ground = harness
-            .root
-            .read_item_loop_ground(world, channel)
-            .await
-            .map_err(debug)?;
-        assert_eq!(i64::try_from(on_ground.len())?, ITEM_LOOP_CHANNEL_DROPS_MAX);
+        assert_eq!(
+            live_channel_loop_drop_count(&harness, world, channel).await?,
+            ITEM_LOOP_CHANNEL_DROPS_MAX
+        );
 
         // At the cap the next drop is BLOCKED and writes nothing.
         let committed = footprint(&harness).await?;
@@ -902,20 +900,32 @@ fn item_loop_drop_is_blocked_at_the_channel_cap_until_a_pickup_frees_room() -> T
         .await?;
         assert!(harness.on_ground(other).await?);
         assert_eq!(
-            i64::try_from(
-                harness
-                    .root
-                    .read_item_loop_ground(world, channel)
-                    .await
-                    .map_err(debug)?
-                    .len()
-            )?,
+            live_channel_loop_drop_count(&harness, world, channel).await?,
             ITEM_LOOP_CHANNEL_DROPS_MAX
         );
         drop(authority);
         drop(seal);
         harness.cleanup().await
     })
+}
+
+async fn live_channel_loop_drop_count(
+    harness: &Harness,
+    world: WorldId,
+    channel: ChannelId,
+) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_ground_locations g \
+           JOIN game_item_instances i USING (item_instance_id, world_id) \
+          WHERE g.world_id=encode($1,'hex')::uuid \
+            AND g.channel_id=encode($2,'hex')::uuid \
+            AND g.scope_kind=1 AND g.instance_id IS NULL \
+            AND i.lifecycle=1 AND game_item_loop_drop_ref(g.corpse_ref)",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(channel.as_bytes().as_slice())
+    .fetch_one(&harness.pool)
+    .await?)
 }
 
 /// `n` more live loop-dropped roots on the Ground cell of the dropped item `template`, each with
