@@ -27,16 +27,18 @@ pub(super) struct Drome {
 impl Drome {
     pub(in crate::gameplay_transport) fn test_exploding_corpses(
         &self,
+        runtime: &mut ChannelRuntimeV1,
         session: GameSessionId,
     ) -> Result<(), &'static str> {
-        modifiers::select_test_modifier(self, session,
+        modifiers::select_test_modifier(self, runtime, session,
             oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::DromeModifier::ExplodingCorpses)
     }
     pub(in crate::gameplay_transport) fn test_somersault(
         &self,
+        runtime: &mut ChannelRuntimeV1,
         session: GameSessionId,
     ) -> Result<(), &'static str> {
-        modifiers::select_test_modifier(self, session,
+        modifiers::select_test_modifier(self, runtime, session,
             oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::DromeModifier::Somersault)
     }
 }
@@ -206,17 +208,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if after.progress.rotation == before.progress.rotation
                         && battle.clears > after.completed
                     {
-                        // Manual combat.md:264: each missed clear adds one
-                        // starting level; the latest wave level is a single floor.
-                        // Match the durable server-cadence settlement calculation.
+                        // Use the same level/lifetime owner as one native clear,
+                        // then account for every previously unobserved clear once.
                         let count = battle.clears - after.completed;
-                        after.progress.level = after.progress.level.max(battle.completed);
-                        after.progress.start = after
-                            .progress
-                            .start
-                            .saturating_add(count)
-                            .max(battle.completed);
-                        after.progress.waves = after.progress.waves.saturating_add(count);
+                        let waves = after.progress.waves;
+                        after.progress.wave(battle.completed);
+                        after.progress.waves = waves.saturating_add(count);
                         after.completed = battle.clears;
                     }
                     after.wave = battle.wave;
@@ -866,6 +863,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     0
                 },
                 current.ended || battle.ended,
+                battle.wave,
             )
         };
         let mut fence = match self.current_quest_fence(session).await {
@@ -889,6 +887,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     completed: snapshot.2,
                     level: snapshot.3,
                     ended: snapshot.4,
+                    wave: snapshot.5,
                 },
             )
             .await

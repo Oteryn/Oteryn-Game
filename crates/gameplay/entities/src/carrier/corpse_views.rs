@@ -218,6 +218,29 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
+    /// Release a completed source after its physical writer has reconciled a
+    /// terminal refusal to no MINT. The dispatch owner retains that proof;
+    /// neither an Unknown outcome nor a capacity error alone permits this call.
+    /// An existing Item binding always wins over a claimed absence.
+    pub fn release_unminted_source_corpse_projection(
+        &mut self,
+        completed: &native_source_death::SourceCreatureDeathCompletion,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if !completed.current_for(self)
+            || self.carrier.source_corpse_projection_pin.as_ref() != Some(completed.begin())
+            || self
+                .carrier
+                .corpse_item_bindings
+                .iter()
+                .any(|binding| binding.actor == completed.actor())
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.carrier.source_corpse_projection_pin = None;
+        Ok(())
+    }
+
     /// Whether `actor`'s corpse projection is pinned against eviction.
     #[cfg(any(test, feature = "test-support"))]
     pub fn corpse_projection_pinned(&self, actor: ExactActorRef) -> bool {

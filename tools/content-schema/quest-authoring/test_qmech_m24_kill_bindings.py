@@ -1,3 +1,4 @@
+import copy
 import json
 import tempfile
 import unittest
@@ -33,6 +34,63 @@ class M24BindingsTest(unittest.TestCase):
             target=root/bindings.INPUT;target.parent.mkdir(parents=True);target.write_text(json.dumps(value))
             with self.assertRaisesRegex(ValueError,'preserve the selected kill stage/count'):
                 bindings.generate(root)
+
+    def test_herald_preserves_three_grouped_branches_for_top_damage_only(self):
+        document = bindings.herald_binding(bindings.ROOT)
+        rules = document['rules']
+        self.assertEqual(3, len(rules))
+        self.assertEqual({'mission-1', 'mission-2', 'progressed'},
+                         {r['transition'].removeprefix(bindings.HERALD_PREFIX) for r in rules})
+        committed = json.loads((bindings.ROOT / bindings.lowering.OUTPUT).read_text())
+        transitions = {t['key']: t for q in committed['quests'] for t in q['transitions']}
+        for rule in rules:
+            self.assertEqual('oteryn:creature.herald_of_fire', rule['creature'])
+            self.assertTrue(rule['top_damage_only'])
+            self.assertFalse(rule['define_transition'])
+            self.assertEqual(2, len(rule['effects']))
+            self.assertEqual(2, len(rule['sources']))
+            expected = transitions[rule['transition']]['effects']
+            actual = [{'track': e['track'],
+                       'from': {'op': e['from']['kind'].upper(), 'value': e['from']['value']},
+                       'from_exact': True,
+                       'effect': {'kind': 'SET' if 'set' in e else 'ADD',
+                                  'value': e.get('set', e.get('add'))}}
+                      for e in rule['effects']]
+            self.assertEqual(expected, actual)
+
+    def test_herald_rejects_source_witness_drift_before_binding(self):
+        original = json.loads((bindings.ROOT / bindings.HERALD_INPUT).read_text())
+        for field in ('blob_sha256', 'line_sha256', 'revision', 'target', 'write'):
+            document = copy.deepcopy(original)
+            definition = next(row['definition'] for row in document['records']
+                              if row['definition']['identity']['key'] == bindings.HERALD_QUEST)
+            progress = next(p for p in definition['source_data']['progress']
+                            if p['key'].endswith('burning_heart/mission'))
+            transition = next(t for t in progress['transitions'] if 'herald_of_fire' in t['script'])
+            transition['source_occurrences'][0][field] = 'wrong-source'
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                target = root / bindings.HERALD_INPUT
+                target.parent.mkdir(parents=True)
+                target.write_text(json.dumps(document))
+                with self.assertRaisesRegex(ValueError, 'Herald source witness changed'):
+                    bindings.herald_binding(root)
+
+    def test_herald_rejects_grouped_runtime_payload_drift(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / bindings.HERALD_INPUT
+            source.parent.mkdir(parents=True)
+            source.write_bytes((bindings.ROOT / bindings.HERALD_INPUT).read_bytes())
+            payload = json.loads((bindings.ROOT / bindings.lowering.OUTPUT).read_text())
+            transition = next(t for q in payload['quests'] for t in q['transitions']
+                              if t['key'] == bindings.HERALD_PREFIX + 'mission-1')
+            transition['effects'][0]['effect']['value'] = 2
+            target = root / bindings.lowering.OUTPUT
+            target.parent.mkdir(parents=True)
+            target.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, 'Herald grouped runtime payload drift'):
+                bindings.herald_binding(root)
 
 if __name__=='__main__':
     unittest.main()

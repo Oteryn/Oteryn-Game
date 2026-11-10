@@ -9,6 +9,7 @@ pub struct SpiteGlobalFireCallback {
     execution_us: u64,
     cause: ScopedGlobalGroundCause,
     operation: Option<SpellItemOperation>,
+    target: SpellGroundTarget,
     position: MovementLocalPosition,
     due_us: u64,
 }
@@ -23,6 +24,12 @@ pub struct PreparedSpiteGlobalWrite {
     pins: [[u8; 32]; 4],
     activation: u64,
     cast: [u8; 32],
+}
+/// The immutable physical receipt decides whether expiry found a current fire.
+/// A retry reads that result before inspecting the current tile again.
+pub struct SpiteGlobalFireReceipt {
+    pub receipt: CreatureGroundReceipt,
+    pub removed: bool,
 }
 impl PreparedSpiteGlobalWrite {
     pub fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
@@ -217,6 +224,7 @@ impl SpiteGlobalFireCallback {
             execution_us: now_us,
             cause,
             operation: Some(operation),
+            target,
             position,
             due_us,
         })
@@ -238,8 +246,11 @@ impl SpiteGlobalFireCallback {
             ));
         }
         // Reprove current geometry without fabricating a new field or actor.
-        SpellGroundTarget::for_native_tile_read(room, runtime, self.position)
+        let target = SpellGroundTarget::for_native_tile_read(room, runtime, self.position)
             .map_err(SpellItemError::Rejected)?;
+        if target != self.target {
+            return Err(SpellItemError::Rejected("Spite retained expiry geometry"));
+        }
         let mut cause = self.cause.clone();
         cause.action = GlobalFireAction::Expire;
         cause.occurrence = format!(
@@ -263,6 +274,7 @@ impl SpiteGlobalFireCallback {
             execution_us: now_us,
             cause,
             operation: None,
+            target,
             position: self.position,
             due_us: self.due_us,
         })
@@ -272,6 +284,9 @@ impl SpiteGlobalFireCallback {
     }
     pub fn due_us(&self) -> u64 {
         self.due_us
+    }
+    pub fn is_expiry(&self) -> bool {
+        self.cause.action == GlobalFireAction::Expire
     }
     pub fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
         let binding = runtime.binding();
@@ -298,7 +313,7 @@ pub async fn execute_spite_global_fire_in_transaction(
     authority: &SpellItemScopeAuthority,
     callback: &SpiteGlobalFireCallback,
     prepared: &PreparedSpiteGlobalWrite,
-) -> Result<CreatureGroundReceipt> {
+) -> Result<SpiteGlobalFireReceipt> {
     if !prepared.matches(callback)
         || authority.runtime_scope() != callback.cause.identity.scope
         || authority.generation() != callback.cause.identity.ownership_generation
@@ -322,20 +337,44 @@ pub async fn execute_spite_global_fire_in_transaction(
     if let Some(receipt) =
         reconcile_scoped_ground_in_transaction(tx, authority, cause, current).await?
     {
-        return Ok(receipt);
+        return receipt_result(tx, callback, receipt).await;
     }
-    let Some(operation) = &callback.operation else {
-        // Neutral until the actual retained five-second callback reaches the
-        // same physical writer; no current Ground selection is guessed here.
-        return Err(SpellItemError::Rejected(
-            "Spite real current-field expiry boundary",
-        ));
+    let operations = if let Some(operation) = &callback.operation {
+        vec![operation.clone()]
+    } else {
+        if callback.cause.action != GlobalFireAction::Expire
+            || callback.execution_us < callback.due_us
+        {
+            return Err(SpellItemError::Rejected(
+                "Spite retained expiry action/deadline",
+            ));
+        }
+        // Source Tile:getItemById selects the first CURRENT matching Thing,
+        // not necessarily the item minted by the original position callback.
+        let tile = read_creature_scope_tile_in_transaction(tx, authority, &callback.target).await?;
+        if let Some(item) = tile
+            .items
+            .iter()
+            .find(|item| callback.cause.source_items.contains(&item.definition))
+        {
+            vec![SpellItemOperation::RemoveGround(
+                prepare_creature_scope_removal_in_transaction(
+                    tx,
+                    authority,
+                    &callback.target,
+                    item.item_instance_id,
+                )
+                .await?,
+            )]
+        } else {
+            Vec::new()
+        }
     };
     let prepared = super::scoped_global::PreparedGlobalGroundOperations {
         scope_identity: callback.cause.identity.scope_identity,
         body: callback.cause.body,
         cast: callback.cause.cast,
-        operations: vec![operation.clone()],
+        operations,
     };
     let identity = |domain: &[u8]| {
         let digest = Sha256::new()
@@ -351,7 +390,7 @@ pub async fn execute_spite_global_fire_in_transaction(
         id[8] = (id[8] & 63) | 0x80;
         id
     };
-    apply_scoped_ground_in_transaction(
+    let receipt = apply_scoped_ground_in_transaction(
         tx,
         authority,
         cause,
@@ -360,7 +399,29 @@ pub async fn execute_spite_global_fire_in_transaction(
         ScopedGroundPreparedRef::Global(&prepared),
         current,
     )
-    .await
+    .await?;
+    receipt_result(tx, callback, receipt).await
+}
+
+async fn receipt_result(
+    tx: &mut Transaction<'_, Postgres>,
+    callback: &SpiteGlobalFireCallback,
+    receipt: CreatureGroundReceipt,
+) -> Result<SpiteGlobalFireReceipt> {
+    let count: i32 = sqlx::query_scalar(
+        "SELECT operation_count FROM game_spell_item_receipts WHERE transaction_id=encode($1,'hex')::uuid",
+    ).bind(receipt.transaction_id.as_slice()).fetch_one(&mut **tx).await?;
+    if !(0..=1).contains(&count)
+        || (callback.cause.action == GlobalFireAction::Create && count != 1)
+    {
+        return Err(SpellItemError::Rejected(
+            "Spite immutable physical receipt count",
+        ));
+    }
+    Ok(SpiteGlobalFireReceipt {
+        receipt,
+        removed: callback.cause.action == GlobalFireAction::Expire && count == 1,
+    })
 }
 
 struct GlobalScopeContext<'a> {
@@ -380,7 +441,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         callback: &SpiteGlobalFireCallback,
         prepared: &PreparedSpiteGlobalWrite,
-    ) -> Result<CreatureGroundReceipt> {
+    ) -> Result<SpiteGlobalFireReceipt> {
         if !prepared.matches(callback)
             || node.fact().node_id().as_bytes() != &callback.cause.identity.node
             || node.fact().registration_revision()
@@ -403,7 +464,7 @@ impl DurabilityRoot {
             .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
                     let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
-                    let outcome: Result<CreatureGroundReceipt> = async {
+                    let outcome: Result<SpiteGlobalFireReceipt> = async {
                         let authority = assert_spell_item_scope_with_recovery(
                             &mut tx,
                             context.permit,

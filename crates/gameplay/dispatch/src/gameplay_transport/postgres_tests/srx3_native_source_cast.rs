@@ -4,6 +4,8 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+mod uncredited_capacity;
+
 /// One current death: at most one detached turn per copied event, its completion,
 /// and the retained uncredited corpse ACK. Never advance the source clock here.
 pub(super) async fn drain_source_death(
@@ -66,7 +68,7 @@ pub(super) async fn drain_source_death(
             .await
             .source_death_corpse
             .is_none(),
-        "the retained physical corpse must have its real writer ACK"
+        "the retained corpse must have a committed or reconciled terminal writer ACK"
     );
     Ok(())
 }
@@ -96,6 +98,7 @@ fn source_cast_case(
         master_mode,
         false,
         false,
+        false,
     )
 }
 
@@ -114,6 +117,7 @@ fn source_cast_case_inner(
     master_mode: bool,
     prove_null_corpse: bool,
     prove_heart_death: bool,
+    prove_full_ground: bool,
 ) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -278,7 +282,13 @@ fn source_cast_case_inner(
                     runtime.matches_live_creature_identity(*actor,b"oteryn:creature.outburst")),
                     "default global zero must never leave a live replacement with Charging HP");
                 drop(runtime);
+                let full_ground = if prove_full_ground {
+                    Some(uncredited_capacity::fill_source_tile(&owner, &h, replacement).await?)
+                } else { None };
                 drain_source_death(&owner, replacement, owner.owner_now()).await?;
+                if let Some(ground) = full_ground {
+                    uncredited_capacity::assert_terminal_absence(&owner, &h, replacement, &ground).await?;
+                }
                 owner.clock_origin -= std::time::Duration::from_millis(1001);
                 owner.drain_monster_melee().await;
                 assert!(!owner.runtime.lock().await.contains_live_creature(caster),
@@ -500,6 +510,7 @@ fn srx3_outburst_actual_null_death_materializes_empty_uncredited_corpse_postgres
         false,
         true,
         false,
+        false,
     )
 }
 
@@ -524,6 +535,32 @@ fn srx3_outburst_actual_null_death_runs_copied_heart_vortex_and_current_player_p
         None,
         false,
         false,
+        true,
+        false,
+    )
+}
+
+#[test]
+fn srx3_outburst_full_ground_refusal_reconciles_and_releases_source_owner_postgres() -> TestResult {
+    source_cast_case_inner(
+        crate::content::bosses::activity_template::PinnedActivitySourceRoom::CallbackOutburst,
+        "charging_outburst",
+        "oteryn:ability.spell.outburst_explode",
+        MovementLocalPosition {
+            x: 32234,
+            y: 31285,
+            floor: 14,
+        },
+        MovementLocalPosition {
+            x: 32234,
+            y: 31284,
+            floor: 14,
+        },
+        true,
+        None,
+        false,
+        false,
+        true,
         true,
     )
 }

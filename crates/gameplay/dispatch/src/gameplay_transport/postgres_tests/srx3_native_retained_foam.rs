@@ -5,6 +5,115 @@ use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
+fn enter_retained_stage_area(
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    room: &crate::content::QualifiedNativeEntryRoom,
+    player: crate::foundation::ExactActorRef,
+    tiles: &[(i32, i32, i16)],
+) -> TestResult {
+    let qualified = tiles
+        .iter()
+        .copied()
+        .filter(|&(x, y, floor)| {
+            let cell = crate::content::LogicalCell {
+                x,
+                y,
+                z: i32::from(floor),
+            };
+            room.movement_cells()
+                .index()
+                .lookup(room.movement_cells().scope(), cell)
+                == Ok(crate::content::CollisionClass::Walkable)
+                && room
+                    .movement_cells()
+                    .spell_tiles()
+                    .lookup(room.movement_cells().scope(), cell)
+                    .is_ok_and(|tile| {
+                        let flags = tile.flags();
+                        !flags.protection_zone
+                            && !flags.floor_change
+                            && !flags.block_solid
+                            && !flags.block_projectile
+                    })
+                && runtime
+                    .position_occupied_by_other(player, MovementLocalPosition { x, y, floor })
+                    .is_ok_and(|occupied| !occupied)
+        })
+        .collect::<Vec<_>>();
+    if qualified.is_empty() {
+        return Err("actual first Foam stage has no qualified free Player cell".into());
+    }
+    let distance = |at: MovementLocalPosition| {
+        qualified
+            .iter()
+            .filter(|(_, _, floor)| *floor == at.floor)
+            .map(|(x, y, _)| u64::from(at.x.abs_diff(*x)) + u64::from(at.y.abs_diff(*y)))
+            .min()
+    };
+    for _ in 0..4 {
+        let before = runtime.read_actor_position(player).map_err(debug)?;
+        let at = before.position();
+        let remaining = distance(at).ok_or("Player and retained stage share a floor")?;
+        if remaining == 0 {
+            break;
+        }
+        use crate::movement::CardinalStep;
+        let step = [
+            (CardinalStep::North, 0, -1),
+            (CardinalStep::East, 1, 0),
+            (CardinalStep::South, 0, 1),
+            (CardinalStep::West, -1, 0),
+        ]
+        .into_iter()
+        .filter_map(|(step, dx, dy)| {
+            let next = MovementLocalPosition {
+                x: at.x.checked_add(dx)?,
+                y: at.y.checked_add(dy)?,
+                floor: at.floor,
+            };
+            let next_distance = distance(next)?;
+            (next_distance < remaining
+                && room.movement_cells().index().lookup(
+                    room.movement_cells().scope(),
+                    crate::content::LogicalCell {
+                        x: next.x,
+                        y: next.y,
+                        z: i32::from(next.floor),
+                    },
+                ) == Ok(crate::content::CollisionClass::Walkable)
+                && runtime
+                    .position_occupied_by_other(player, next)
+                    .is_ok_and(|occupied| !occupied))
+            .then_some((next_distance, step))
+        })
+        .min_by_key(|(distance, _)| *distance)
+        .map(|(_, step)| step)
+        .ok_or("qualified cardinal route into the actual retained Foam cross")?;
+        let selection = crate::movement::MovementEngineeringSelection {
+            owner_context: before.context(),
+            content_scope: room.movement_cells().scope(),
+        };
+        crate::movement::step_cardinal(
+            &mut runtime.borrow_movement_position(),
+            player,
+            before,
+            &selection,
+            room.movement_cells().index(),
+            step,
+        )
+        .map_err(debug)?;
+    }
+    let at = runtime
+        .read_actor_position(player)
+        .map_err(debug)?
+        .position();
+    assert!(
+        qualified.contains(&(at.x, at.y, at.floor)),
+        "the actual Player must occupy the retained first stage's qualified cross-cell"
+    );
+    Ok(())
+}
+
 #[test]
 fn srx3_native_foam_older_stage_runs_with_registered_hp0_caster_before_death_postgres() -> TestResult
 {
@@ -153,12 +262,38 @@ fn srx3_native_foam_older_stage_runs_with_registered_hp0_caster_before_death_pos
                             .await,
                         Some(vec![false, false, false])
                     );
-                    cast_at = Some(now);
+                    // This owner turn finishes Movement before scheduling the native
+                    // callback, whose SourcePositionAnchor retains this exact pose.
+                    cast_at = Some((
+                        now,
+                        runtime
+                            .read_actor_position(caster)
+                            .map_err(debug)?
+                            .position(),
+                    ));
                     break;
                 }
             }
-            let cast_at = cast_at
+            let (cast_at, cast_position) = cast_at
                 .ok_or("actual native AI must select and schedule the three-stage Foam callback")?;
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let first = &source.stages().first().ok_or("actual first Foam stage")?.1;
+                let tiles = first
+                    .target_tiles(cast_position, cast_position, None)
+                    .map_err(debug)?;
+                // Native Foam keeps distance2 while this first stage is only a
+                // radius1 cross. Enter its saved area after the real cast selection.
+                enter_retained_stage_area(&mut runtime, &scene.room, player, &tiles)?;
+                assert_eq!(
+                    runtime
+                        .read_actor_position(caster)
+                        .map_err(debug)?
+                        .position(),
+                    cast_position,
+                    "no owner driver may move the caster after its stage anchor was retained"
+                );
+            }
             let lethal_at = cast_at + 1_500_000;
             let before = {
                 let mut runtime = owner.runtime.lock().await;

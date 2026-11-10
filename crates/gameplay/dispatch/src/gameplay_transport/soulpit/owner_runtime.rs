@@ -5,11 +5,16 @@ use super::runtime::*;
 use crate::content::{LogicalCell, NativeEntryMovementCells};
 use crate::domain::soulpit::EncounterPhase;
 use crate::durability::activity_handoff::{ActivityReturnReason, soulpit::SoulpitMembership};
+use crate::durability::admission_journal::party_target_binding::{
+    CurrentVisibleActorObservation, observe_current_visible_actor_for_source_read,
+};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::soulpit::{
     SoulpitAction, SoulpitStepOutcome, SoulpitStepRequest, SoulpitStoredEncounter,
 };
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, MovementLocalPosition,
+};
 use crate::gameplay_transport::{
     ComposedFreshAdmission, activity_runtime::RegisteredRuntime, actor_spell::ChannelSpellStates,
     native_activity::NativeActivityOutcome,
@@ -89,6 +94,13 @@ struct Owner<'a, 'o, 'f, 's> {
     binding: SoulpitActivityBinding,
     members: &'o [SoulpitMembership],
     now: u64,
+    visible: Vec<VisibleSurvivor>,
+}
+
+struct VisibleSurvivor {
+    actor: ExactActorRef,
+    fence: CurrentCharacterGameplayFence,
+    observed: CurrentVisibleActorObservation,
 }
 
 fn durable(error: crate::durability::soulpit::SoulpitWriteError) -> SoulpitRuntimeError {
@@ -101,7 +113,7 @@ fn durable(error: crate::durability::soulpit::SoulpitWriteError) -> SoulpitRunti
     }
 }
 
-fn healthy(
+fn alive_in_arena(
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
     actor: ExactActorRef,
@@ -124,9 +136,107 @@ fn healthy(
     });
     in_arena
         && !states.is_dead(actor)
-        && runtime
-            .player_control_facts(actor, session)
-            .is_ok_and(|facts| facts.control_loss.is_none())
+        && states
+            .get(runtime, actor, session)
+            .is_some_and(|state| state.vitals().health > 0)
+}
+
+impl Owner<'_, '_, '_, '_> {
+    async fn refresh_survivors(&mut self) -> Result<(), SoulpitRuntimeError> {
+        let store = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+            self.admission.root.clone(),
+        );
+        let mut visible = Vec::with_capacity(self.members.len());
+        for member in self.members {
+            let (current, now) = store
+                .current_session_at(member.session)
+                .await
+                .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+            let lease = current.current_character_lease();
+            if current.current_game_session_id() != member.session
+                || lease.character_id().as_bytes() != member.character.as_bytes()
+            {
+                return Err(SoulpitRuntimeError::InvalidScope);
+            }
+            if current.session_state() == GameSessionState::Terminal {
+                continue;
+            }
+            if current.current_runtime_scope() != self.binding.scope
+                || current.current_scope_generation() != self.binding.generation
+            {
+                return Err(SoulpitRuntimeError::InvalidScope);
+            }
+            let runtime = self
+                .admission
+                .runtime
+                .try_lock()
+                .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+            let states = self
+                .admission
+                .states
+                .spell_states
+                .try_lock()
+                .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+            runtime.owner_fence()?;
+            if runtime.binding().runtime_scope() != self.binding.scope
+                || runtime.binding().scope_generation() != self.binding.generation
+            {
+                return Err(SoulpitRuntimeError::InvalidScope);
+            }
+            // Durable Entered may precede installation of its successor. Absence
+            // is uncertain until that canonical session actually becomes Terminal.
+            let actor = runtime
+                .positioned_melee_census()?
+                .into_iter()
+                .find_map(|(actor, _, session)| (session == Some(member.session)).then_some(actor))
+                .ok_or(SoulpitRuntimeError::AdapterUnavailable)?;
+            let control = runtime.player_control_facts(actor, member.session)?;
+            if runtime.bound_attacker_lease(actor, member.session)? != lease
+                || states.get(&runtime, actor, member.session).is_none()
+            {
+                return Err(SoulpitRuntimeError::AdapterUnavailable);
+            }
+            if !alive_in_arena(&runtime, &states, actor, member.session) {
+                continue;
+            }
+            let agrees = match (current.session_state(), control.control_loss) {
+                (GameSessionState::Active, None) => current.current_transport().is_some(),
+                (GameSessionState::Reconnectable, Some(loss)) => {
+                    current.current_transport().is_none()
+                        && current
+                            .current_control_loss_epoch()
+                            .map(|epoch| epoch.get())
+                            == Some(loss.epoch)
+                        && current.current_original_grace_deadline() == Some(loss.grace_deadline)
+                        && loss.grace_deadline > now
+                }
+                _ => false,
+            };
+            if !agrees {
+                return Err(SoulpitRuntimeError::AdapterUnavailable);
+            }
+            let observed =
+                observe_current_visible_actor_for_source_read(&runtime, actor, member.session)
+                    .ok_or(SoulpitRuntimeError::AdapterUnavailable)?;
+            visible.push(VisibleSurvivor {
+                actor,
+                observed,
+                fence: CurrentCharacterGameplayFence {
+                    character_id: member.character,
+                    game_session_id: member.session,
+                    connection_generation: current.current_connection_generation(),
+                    character_lease_generation: lease.generation(),
+                    runtime_scope: self.binding.scope,
+                    scope_ownership_generation: self.binding.generation,
+                    // Refreshed under its revision slot before every transaction.
+                    expected_character_revision: crate::domain::CharacterRevision::new(1)
+                        .map_err(|_| SoulpitRuntimeError::InvalidState)?,
+                },
+            });
+        }
+        self.visible = visible;
+        Ok(())
+    }
 }
 
 impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
@@ -227,35 +337,21 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
             .spell_states
             .try_lock()
             .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
-        Ok(self
-            .members
-            .iter()
-            .filter_map(|member| {
-                let admitted = self
-                    .admission
-                    .activity_runtimes
-                    .connection(member.session)?;
-                let actor = admitted.runtime_actor?;
-                let item = admitted.item_fence?;
-                if item.character_id != member.character
-                    || item.runtime_scope != self.binding.scope
-                    || item.scope_ownership_generation != self.binding.generation
-                    || !healthy(&runtime, &states, actor, member.session)
-                {
-                    return None;
-                }
-                Some(CurrentCharacterGameplayFence {
-                    character_id: item.character_id,
-                    game_session_id: item.game_session_id,
-                    connection_generation: item.connection_generation,
-                    character_lease_generation: item.character_lease_generation,
-                    runtime_scope: item.runtime_scope,
-                    scope_ownership_generation: item.scope_ownership_generation,
-                    // Replaced under the revision slot before every lifecycle transaction.
-                    expected_character_revision: crate::domain::CharacterRevision::new(1).ok()?,
-                })
-            })
-            .collect())
+        let mut survivors = Vec::with_capacity(self.visible.len());
+        for member in &self.visible {
+            if !member.observed.matches(&runtime) {
+                return Err(SoulpitRuntimeError::AdapterUnavailable);
+            }
+            if alive_in_arena(
+                &runtime,
+                &states,
+                member.actor,
+                member.fence.game_session_id,
+            ) {
+                survivors.push(member.fence);
+            }
+        }
+        Ok(survivors)
     }
     fn read_encounter(&mut self) -> ActivityFuture<'_, SoulpitStoredEncounter> {
         Box::pin(async move {
@@ -283,6 +379,7 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
                 .spell_lane_permit()
                 .await
                 .ok_or(SoulpitRuntimeError::AdapterUnavailable)?;
+            self.refresh_survivors().await?;
             let current = self.survivors()?;
             if request.survivors.iter().any(|expected| {
                 !current.iter().any(|actual| {
@@ -419,9 +516,11 @@ pub(super) async fn drive_registered<'a, 'f, 's>(
         binding,
         members,
         now,
+        visible: Vec::new(),
     };
     let mut stored = owner.read_encounter().await?;
     if !stored.encounter.snapshot().phase.is_terminal() {
+        owner.refresh_survivors().await?;
         let survivors = owner.survivors()?;
         let alive: Vec<_> = members
             .iter()
@@ -461,6 +560,60 @@ pub(super) async fn drive_registered<'a, 'f, 's>(
     }
 }
 
+/// The last return removes the group from the active traversal. Its exact
+/// terminal receipt remains the only authority to clean this private runtime.
+pub(super) async fn cleanup_terminal<'a, 'f, 's>(
+    admission: &ComposedFreshAdmission<'a, 'f, 's>,
+    registered: &RegisteredRuntime<'a>,
+) -> Result<(), SoulpitRuntimeError> {
+    if !registered
+        .runtime
+        .lock()
+        .await
+        .activity_retirement_empty()?
+    {
+        return Ok(());
+    }
+    let generation = crate::foundation::ScopeOwnershipGeneration::new(registered.generation)
+        .map_err(|_| SoulpitRuntimeError::InvalidScope)?;
+    let Some(cleanup) = admission
+        .root
+        .read_soulpit_terminal_cleanup(
+            admission.character,
+            admission.holder,
+            registered.scope,
+            generation,
+        )
+        .await
+        .map_err(durable)?
+    else {
+        return Ok(());
+    };
+    let view = admission.runtime_view(registered);
+    let _permit = view
+        .spell_lane_permit()
+        .await
+        .ok_or(SoulpitRuntimeError::AdapterUnavailable)?;
+    {
+        let mut runtime = registered.runtime.lock().await;
+        runtime.owner_fence()?;
+        if !cleanup.matches(
+            runtime.binding().runtime_scope(),
+            runtime.binding().scope_generation(),
+        ) {
+            return Err(SoulpitRuntimeError::InvalidScope);
+        }
+        if !runtime.activity_retirement_empty()? {
+            return Err(SoulpitRuntimeError::AdapterUnavailable);
+        }
+        let (carrier, continuity, _) = runtime.soulpit_kernel_parts()?;
+        carrier.retire_soulpit(continuity, cleanup.handoff_id())?;
+    }
+    view.reset_soulpit_obelisk()
+        .await
+        .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)
+}
+
 pub(super) async fn leave_registered<'a, 'f, 's>(
     admission: &ComposedFreshAdmission<'a, 'f, 's>,
     registered: &RegisteredRuntime<'a>,
@@ -475,6 +628,7 @@ pub(super) async fn leave_registered<'a, 'f, 's>(
         binding,
         members,
         now,
+        visible: Vec::new(),
     };
     let stored = owner.read_encounter().await?;
     if stored.encounter.snapshot().phase.is_terminal()
@@ -482,6 +636,7 @@ pub(super) async fn leave_registered<'a, 'f, 's>(
     {
         return Ok(());
     }
+    owner.refresh_survivors().await?;
     let survivors = owner
         .survivors()?
         .into_iter()

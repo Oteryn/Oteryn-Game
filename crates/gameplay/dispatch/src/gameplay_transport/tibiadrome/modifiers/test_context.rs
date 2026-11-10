@@ -53,6 +53,7 @@ pub(super) fn context(
 
 pub(in crate::gameplay_transport) fn select(
     drome: &Drome,
+    runtime: &mut ChannelRuntimeV1,
     session: GameSessionId,
     modifier: DromeModifier,
 ) -> Result<(), &'static str> {
@@ -79,5 +80,18 @@ pub(in crate::gameplay_transport) fn select(
     owner.hazards.clear();
     owner.ordinal = 0;
     owner.melee_ordinal = 0;
+    // The real HP consumer reads each exact actor's native policy. A test draw
+    // must install the same selection there before attempting any modifier.
+    let selected = owner.selected();
+    for actor in live
+        .values()
+        .filter(|member| member.run == current.run && !member.ended)
+        .map(|member| member.actor)
+        .chain(battle.opponents.iter().copied())
+    {
+        runtime
+            .bind_tibiadrome_modifiers(actor, current.run, selected)
+            .map_err(|_| "current native Drome modifier binding")?;
+    }
     Ok(())
 }

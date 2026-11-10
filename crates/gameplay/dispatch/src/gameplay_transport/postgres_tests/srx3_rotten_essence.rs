@@ -333,6 +333,83 @@ pub(super) async fn assert_scoped_use(
                 .is_none(),
             "a current-actor frame proof cannot be borrowed by a foreign session"
         );
+        // Keep the runtime resident unchanged while the durable current owner
+        // differs. Neither stale custody nor a non-Active session grants a frame.
+        for (change, restore, label) in [
+            (
+                "UPDATE game_durability_reconnect_sessions SET scope_ownership_generation=scope_ownership_generation+1 WHERE game_session_id=encode($1,'hex')::uuid",
+                "UPDATE game_durability_reconnect_sessions SET scope_ownership_generation=scope_ownership_generation-1 WHERE game_session_id=encode($1,'hex')::uuid",
+                "scope generation",
+            ),
+            (
+                "UPDATE game_durability_reconnect_sessions SET character_lease_generation=character_lease_generation+1 WHERE game_session_id=encode($1,'hex')::uuid",
+                "UPDATE game_durability_reconnect_sessions SET character_lease_generation=character_lease_generation-1 WHERE game_session_id=encode($1,'hex')::uuid",
+                "character lease",
+            ),
+            (
+                "UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE game_session_id=encode($1,'hex')::uuid",
+                "UPDATE game_durability_reconnect_sessions SET session_state=2 WHERE game_session_id=encode($1,'hex')::uuid",
+                "lost durable control",
+            ),
+        ] {
+            assert_eq!(
+                sqlx::query(change)
+                    .bind(admitted.game_session_id.as_bytes().as_slice())
+                    .execute(&h.pool)
+                    .await?
+                    .rows_affected(),
+                1
+            );
+            let refused = owner
+                .native_current_actor_map_cue_frame(actor, admitted.game_session_id)
+                .await;
+            assert_eq!(
+                sqlx::query(restore)
+                    .bind(admitted.game_session_id.as_bytes().as_slice())
+                    .execute(&h.pool)
+                    .await?
+                    .rows_affected(),
+                1
+            );
+            assert_eq!(
+                refused, None,
+                "stale {label} cannot borrow the origin Channel frame"
+            );
+            assert_eq!(
+                owner
+                    .native_current_actor_map_cue_frame(actor, admitted.game_session_id)
+                    .await,
+                Some(false),
+                "restored exact House custody: {label}"
+            );
+        }
+        owner
+            .runtime
+            .lock()
+            .await
+            .record_house_control_loss(
+                actor,
+                admitted.game_session_id,
+                crate::foundation::ControlLossMark {
+                    epoch: 1,
+                    grace_deadline: 90,
+                },
+            )
+            .map_err(debug)?;
+        assert_eq!(
+            owner
+                .native_current_actor_map_cue_frame(actor, admitted.game_session_id)
+                .await,
+            None,
+            "native control loss refuses a frame even before the durable session changes"
+        );
+        assert!(
+            owner
+                .observe_current_actor_movement_effects(actor, admitted.game_session_id, 0)
+                .await
+                .is_empty(),
+            "lost native control cannot expose the earlier private effect"
+        );
     }
     eprintln!(
         "SRX3_ESSENCE_TRANSFERRED_SCOPE_CASE_EXECUTED house={} duration={:?}",

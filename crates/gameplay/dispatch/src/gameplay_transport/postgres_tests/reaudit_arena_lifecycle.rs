@@ -403,8 +403,23 @@ enum Physical {
 }
 
 #[test]
-fn srvenc_tibiadrome_postgres_real_source_hall_runs_an_irregular_native_wave() -> TestResult {
+fn srvenc_tibiadrome_postgres_mechanics_fixture_runs_on_irregular_source_geometry() -> TestResult {
     run_physical_regression(Physical::Source)
+}
+
+#[test]
+fn srvenc_tibiadrome_postgres_svargrond_source_does_not_qualify_public_entry() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            physical_context(0, false, false, Physical::Source).map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "Drome source admission thread panicked")?
+        .map_err(Into::into)
 }
 
 #[test]
@@ -711,10 +726,11 @@ fn physical_context(
             sqlx::query("INSERT INTO game_character_tibiadrome(character_id,body) VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(character_id) DO UPDATE SET body=EXCLUDED.body")
                 .bind(id(41).as_slice()).bind(serde_json::to_value(seeded)?).execute(&harness.pool).await?;
         }
-        owner.states.tibiadrome.mechanics_test_context.store(
-            mechanics_test_context && !matches!(case, Physical::Source),
-            std::sync::atomic::Ordering::Release,
-        );
+        owner
+            .states
+            .tibiadrome
+            .mechanics_test_context
+            .store(mechanics_test_context, std::sync::atomic::Ordering::Release);
         owner
             .states
             .tibiadrome
@@ -814,7 +830,13 @@ fn physical_context(
             // The existing admitted physical fixture has a sealed ModifierOwner.
             // This exercises its real draw and pending-effect consumer, not a raw
             // Teleport effect or a second modifier engine.
-            owner.states.tibiadrome.test_somersault(session)?;
+            {
+                let mut runtime = deps.runtime.lock().await;
+                owner
+                    .states
+                    .tibiadrome
+                    .test_somersault(&mut runtime, session)?;
+            }
             let actor = *targets.first().ok_or("actual admitted Drome opponent")?;
             let baseline = world
                 .facts()
@@ -866,11 +888,19 @@ fn physical_context(
         }
 
         if matches!(case, Physical::ThreeWaveCommandCatchup) {
-            owner.states.tibiadrome.test_somersault(session)?;
+            let mut runtime = deps.runtime.lock().await;
+            owner
+                .states
+                .tibiadrome
+                .test_somersault(&mut runtime, session)?;
         }
         if exploding {
-            owner.states.tibiadrome.test_exploding_corpses(session)?;
             let mut runtime = deps.runtime.lock().await;
+            owner
+                .states
+                .tibiadrome
+                .test_exploding_corpses(&mut runtime, session)?;
+            assert!(runtime.permits_tibiadrome_health_loss(deps.actor, 25));
             let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
             let origin = before.position();
             let other = crate::foundation::GameSessionId::decode(&id(94)).map_err(debug)?;
@@ -1148,7 +1178,13 @@ fn physical_context(
                         .collect()
                 };
                 assert_eq!(targets.len(), 4, "native next-wave spawning");
-                owner.states.tibiadrome.test_somersault(session)?;
+                {
+                    let mut runtime = deps.runtime.lock().await;
+                    owner
+                        .states
+                        .tibiadrome
+                        .test_somersault(&mut runtime, session)?;
+                }
                 for target in targets {
                     fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
                 }
@@ -1174,9 +1210,13 @@ fn physical_context(
                 (3, 3),
                 "three native victories grant three starting levels, not five"
             );
-            let waves:i64=sqlx::query_scalar("SELECT (body->'progress'->>'waves')::bigint FROM game_character_tibiadrome WHERE character_id=encode($1,'hex')::uuid")
+            let waves:(i64,i64)=sqlx::query_as("SELECT (body->'progress'->>'waves')::bigint,(body->'progress'->>'lifetime_levels')::bigint FROM game_character_tibiadrome WHERE character_id=encode($1,'hex')::uuid")
                 .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
-            assert_eq!(waves, 3);
+            assert_eq!(
+                waves,
+                (3, 3),
+                "each native clear contributes once to rotation and lifetime"
+            );
         }
         if matches!(case, Physical::PendingCorpseEffects) {
             // Manual combat.md:255,264: native defeat earns the wave even
