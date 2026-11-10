@@ -218,7 +218,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let digest = runtime.content_pin().server_artifact_digest();
         if runtime.owner_fence().is_err()
             || content.source_digest() != digest
-            || room.compiled().server_digest() != digest
+            || room.movement_cells().scope().generation_digest != digest
         {
             return;
         }
