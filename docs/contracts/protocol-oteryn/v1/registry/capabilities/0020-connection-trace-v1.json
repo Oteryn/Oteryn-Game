@@ -1,0 +1,11 @@
+{
+  "id": 20,
+  "name": "CONNECTION_TRACE_V1",
+  "owner_decision": "ERR-TRACE-5 (ARCH-ERROR-CODES-0 §2.6 and FND-02 §18)",
+  "owner": "gameplay transport diagnostics",
+  "requires": [],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Offered after ERR-TRACE-5 server and client codecs passed capability-gating and malformed-value tests. It carries only the per-connection diagnostic UUIDv7."
+}

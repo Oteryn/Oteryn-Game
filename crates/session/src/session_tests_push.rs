@@ -54,6 +54,52 @@ fn a_probe_refreshes_the_silence_deadline() -> Result<(), BoxError> {
         .map_err(|_| "probe deadline test thread failed")?
 }
 
+#[test]
+fn idle_protocol_error_preserves_code_and_optional_trace() -> Result<(), BoxError> {
+    block_on(async {
+        for trace in [None, Some([1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16])] {
+            let (client, mut server) = tokio::io::duplex(256 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer_with(
+                    &mut server,
+                    CLIENT_SUPPORTED_CAPABILITIES,
+                    &[oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1],
+                    &[],
+                    (1, spatial(0)),
+                    &[],
+                )
+                .await?;
+                let frame = match trace {
+                    Some(trace) => oteryn_protocol_oteryn::encode_protocol_error_with_trace(
+                        FoundationProtocolError::MalformedFrame,
+                        1,
+                        &trace,
+                    )?,
+                    None => oteryn_protocol_oteryn::encode_protocol_error(
+                        FoundationProtocolError::MalformedFrame,
+                        1,
+                    )?,
+                };
+                write_frame(&mut server, &frame).await?;
+                Ok::<(), BoxError>(())
+            });
+            let mut admission = admission()?;
+            admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+            let mut session = Session::admit(client, admission).await?;
+            assert!(matches!(
+                session.service_liveness(Duration::from_millis(200)).await,
+                Err(SessionError::ServerProtocolError {
+                    code,
+                    connection_trace,
+                }) if code == FoundationProtocolError::MalformedFrame.code()
+                    && connection_trace == trace
+            ));
+            peer.await??;
+        }
+        Ok(())
+    })?
+}
+
 enum Step {
     Send(Vec<u8>),
     /// Frames written in one `write_all`, so the client can never read the first frame

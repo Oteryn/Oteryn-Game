@@ -250,6 +250,9 @@ fn the_advertised_set_carries_capability_4_with_its_requirement() {
     // Equipment and typed container-tree prerequisites remain advertised.
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&12));
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&14));
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(
+        &oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1
+    ));
 }
 
 #[test]

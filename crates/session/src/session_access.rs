@@ -318,6 +318,9 @@ impl<S: SessionStream> Session<S> {
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;
+            if let Some(error) = self.terminal_protocol_error(&envelope)? {
+                return Err(error);
+            }
             match envelope.message_type() {
                 MessageType::LivenessProbe => self.answer_probe(envelope.payload()).await?,
                 MessageType::SnapshotBegin => self.replace_snapshot(envelope.payload()).await?,

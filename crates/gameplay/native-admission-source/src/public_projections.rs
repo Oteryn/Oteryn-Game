@@ -1096,11 +1096,49 @@ pub struct Publisher<C, S, K, F> {
 fn log(family: Family, operation: &str, class: &str, elapsed: Duration) {
     // §7.4: family, operation, result class and timing only; never a name,
     // an id or a body.
-    eprintln!(
-        "oteryn-game-server event=public_projections family={} operation={operation} result={class} elapsed_ms={}",
-        family.wire(),
-        elapsed.as_millis()
+    oteryn_error_codes::emit(
+        "oteryn-game-server",
+        &oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Info,
+            "admission",
+            "public_projections",
+        )
+        .field(
+            "family",
+            oteryn_error_codes::FieldValue::Token(family.wire()),
+        )
+        .field(
+            "operation",
+            oteryn_error_codes::FieldValue::Token(operation),
+        )
+        .field("result", oteryn_error_codes::FieldValue::Token(class))
+        .field(
+            "ms",
+            oteryn_error_codes::FieldValue::U64(
+                u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX),
+            ),
+        ),
     );
+}
+
+fn log_hold(family: Family, operation: Option<&str>, alarms: u64) {
+    let mut line = oteryn_error_codes::Line::new(
+        oteryn_error_codes::Level::Warn,
+        "admission",
+        "public_projection_held",
+    )
+    .field(
+        "family",
+        oteryn_error_codes::FieldValue::Token(family.wire()),
+    )
+    .field("alarms", oteryn_error_codes::FieldValue::U64(alarms));
+    if let Some(operation) = operation {
+        line = line.field(
+            "operation",
+            oteryn_error_codes::FieldValue::Token(operation),
+        );
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
 }
 
 fn seconds(ms: i64) -> i64 {
@@ -1211,9 +1249,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             return false;
         }
         let alarms = self.alarm();
-        eprintln!(
-            "oteryn-game-server event=public_projections family=world_online result=held alarms={alarms}"
-        );
+        log_hold(Family::WorldOnline, None, alarms);
         state.held.retain(|h| h.subject != world_id);
         state.held.push(Held {
             family: Family::WorldOnline,
@@ -1238,10 +1274,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             Ok(_) => *gate = Gate::default(),
             Err(not_delivered) if definite(*not_delivered) => {
                 let alarms = self.alarm();
-                eprintln!(
-                    "oteryn-game-server event=public_projections family={} operation=PublishPublicProjectionWatermarkV1 result=held alarms={alarms}",
-                    family.wire()
-                );
+                log_hold(family, Some("PublishPublicProjectionWatermarkV1"), alarms);
                 *gate = Gate {
                     backoff: Duration::ZERO,
                     at: now + DEFINITE_HOLD,
@@ -1270,10 +1303,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             Ok(_) => state.backoff[lane] = Duration::ZERO,
             Err(not_delivered) if definite(*not_delivered) => {
                 let alarms = self.alarm();
-                eprintln!(
-                    "oteryn-game-server event=public_projections family={} result=held alarms={alarms}",
-                    family.wire()
-                );
+                log_hold(family, None, alarms);
                 state
                     .held
                     .retain(|h| !(h.family == family && h.subject == subject));

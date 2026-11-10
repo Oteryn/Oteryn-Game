@@ -92,7 +92,11 @@ impl CastService {
         let owner = CastOwner::new(capacity)?;
         let (tx, rx) = mpsc::channel(capacity.min(256));
         let origin = std::time::Instant::now();
-        tokio::spawn(run(owner, root, node, access, rx, origin));
+        oteryn_task_supervisor::spawn_supervised_with_heartbeat(
+            "cast_service",
+            None,
+            move |heartbeat| run(owner, root, node, access, rx, origin, heartbeat),
+        );
         Ok(Self { tx, origin })
     }
     pub fn clock(&self) -> (u64, u64) {
@@ -126,6 +130,7 @@ async fn run(
     access: Arc<access::CastAccessClient>,
     mut rx: mpsc::Receiver<Request>,
     clock: std::time::Instant,
+    heartbeat: oteryn_task_supervisor::Heartbeat,
 ) {
     // Canary livestream.cpp:249 starts the live service explicitly. S17 additionally
     // requires a consent-worker lease: retry only a busy durable holder, never
@@ -156,6 +161,7 @@ async fn run(
     let mut announced = std::collections::HashSet::new();
     let mut freshness = std::collections::HashMap::new();
     'worker: loop {
+        heartbeat.beat();
         let mut request =
             match tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await {
                 Ok(Some(request)) => Some(request),
