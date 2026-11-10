@@ -46,6 +46,7 @@ struct ServeState {
     push_due: Option<tokio::time::Instant>,
     chase_yielded: bool,
     input_after_refresh: bool,
+    refresh_cursor: usize,
     chase_due: Option<tokio::time::Instant>,
     held: std::collections::VecDeque<(Vec<u8>, bool, tokio::time::Instant)>,
     buffered: Option<BufferedStep>,

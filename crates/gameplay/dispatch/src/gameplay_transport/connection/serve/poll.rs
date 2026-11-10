@@ -98,6 +98,7 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             }
         });
         let input_after_refresh = session.input_after_refresh;
+        let mut refresh_cursor = session.refresh_cursor;
         let mut input = |context: &mut std::task::Context<'_>| {
             if step_due.as_mut().poll(context).is_ready() {
                 return Some(Next::StepDue);
@@ -135,23 +136,30 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             if server_message.as_mut().poll(context).is_ready() {
                 return std::task::Poll::Ready(Next::ServerMessage);
             }
-            if serene_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::Serene);
-            }
-            if quest_log_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::QuestLog);
-            }
-            if chat_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::Chat);
-            }
-            if visibility_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::Visibility);
-            }
-            if combat_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::Combat);
-            }
-            if npc_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::Npc);
+            // A refresh may outlast its own period. Give every ready periodic owner
+            // a turn before selecting that same owner again; input and probes retain
+            // their existing precedence.
+            for offset in 0..6 {
+                let owner = (refresh_cursor + offset) % 6;
+                let ready = match owner {
+                    0 => serene_tick.as_mut().poll(context).is_ready(),
+                    1 => quest_log_tick.as_mut().poll(context).is_ready(),
+                    2 => chat_tick.as_mut().poll(context).is_ready(),
+                    3 => visibility_tick.as_mut().poll(context).is_ready(),
+                    4 => combat_tick.as_mut().poll(context).is_ready(),
+                    _ => npc_tick.as_mut().poll(context).is_ready(),
+                };
+                if ready {
+                    refresh_cursor = (owner + 1) % 6;
+                    return std::task::Poll::Ready(match owner {
+                        0 => Next::Serene,
+                        1 => Next::QuestLog,
+                        2 => Next::Chat,
+                        3 => Next::Visibility,
+                        4 => Next::Combat,
+                        _ => Next::Npc,
+                    });
+                }
             }
             if let Some(next) = input(context) {
                 return std::task::Poll::Ready(next);
@@ -159,6 +167,7 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             std::task::Poll::Pending
         })
         .await;
+        session.refresh_cursor = refresh_cursor;
         session.input_after_refresh = matches!(
             next,
             Next::Probe
