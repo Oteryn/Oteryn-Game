@@ -1,0 +1,491 @@
+{
+  "status": "PASS",
+  "source_commit": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+  "baseline_commit": "b028bef4ddcc6d48bdd6cf61479c94e42435ed88",
+  "original_head_unchanged": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "file_count": 53,
+  "full_target_files": 27,
+  "delta_only_files": 26,
+  "remaining_count": 0,
+  "covered_target_lines": 9414,
+  "files": [
+    {
+      "path": ".github/workflows/merge-authority-audit.yml",
+      "sha256": "6c167d69e5a03ab6a38c8caff9797dd47310150b06c435810070855bb6352657",
+      "covered_lines": 286,
+      "target_lines": 286,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": ".github/workflows/merge-group-gate.yml",
+      "sha256": "6d856d5a7d5d5a7d81046163c667f39eaa0191e579f2db15d93fc466a782e68e",
+      "covered_lines": 131,
+      "target_lines": 1421,
+      "changed_target_lines": 27,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": ".github/workflows/node-boot-qualification.yml",
+      "sha256": "184cae25d3a37fd90815826b8d7cd592e385a568a6e28c3b3350861f80c48dbf",
+      "covered_lines": 87,
+      "target_lines": 87,
+      "changed_target_lines": 27,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": ".github/workflows/pr-postgres-harness.yml",
+      "sha256": "b41be5911ba40846519fb01d1edd976db42c31aab9035659e85a9637d55c6434",
+      "covered_lines": 103,
+      "target_lines": 852,
+      "changed_target_lines": 4,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "bf058cc4d3530289c763628b1776cb46e111d0c79c63169d197f89daca621bc7",
+      "covered_lines": 151,
+      "target_lines": 6318,
+      "changed_target_lines": 2,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "apps/game-server/Cargo.toml",
+      "sha256": "a6ead705e76f3b5008b42d031e0a79cbe69d667dc0c26307c307d8e8bfb257bc",
+      "covered_lines": 40,
+      "target_lines": 225,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "apps/game-server/src/node/runtime_status.rs",
+      "sha256": "0a50e1d285d05ba9743adc5fc9c8d7e88f6fc08affa2e66a500a41a088592125",
+      "covered_lines": 106,
+      "target_lines": 666,
+      "changed_target_lines": 11,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "apps/game-server/src/node/serve.rs",
+      "sha256": "c98d10756e425f2cbb18b16f4adf47d02015f54ee110a70c4aa0f3e1eb4deb11",
+      "covered_lines": 206,
+      "target_lines": 4471,
+      "changed_target_lines": 33,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/client-ui/src/features/0020-connection-trace/fixtures/registrations.json",
+      "sha256": "31f457243a17a69ce029e3ae2ccd298cdd346941bf97522ce59e13de63a2fc68",
+      "covered_lines": 17,
+      "target_lines": 17,
+      "changed_target_lines": 17,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/client-ui/src/features/0020-connection-trace/registrations/handlers.json",
+      "sha256": "f2cb89ccece5b081c581c30ae4982052ed15aeeee89c2982d94d7f7e3a964d04",
+      "covered_lines": 15,
+      "target_lines": 15,
+      "changed_target_lines": 15,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection.rs",
+      "sha256": "e622b1103a6beb459257409e0bdbc42b7944af99c9ab8d8aacddfd502cddc7a9",
+      "covered_lines": 671,
+      "target_lines": 1562,
+      "changed_target_lines": 104,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests.rs",
+      "sha256": "dda46345a1c616e22b579cb011ff9690946f13f83c3cca1c43b29440eca41597",
+      "covered_lines": 81,
+      "target_lines": 81,
+      "changed_target_lines": 26,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/liveness.rs",
+      "sha256": "b83e7311ce2d7d17d2080ef7ff52b29ab5e4c4ee23484aad7ef84d9d0f786284",
+      "covered_lines": 106,
+      "target_lines": 293,
+      "changed_target_lines": 12,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/listener.rs",
+      "sha256": "b688c56e5aee205c414cbb09f77b6d2097c227ae053b490f137dacb29330b7e5",
+      "covered_lines": 581,
+      "target_lines": 581,
+      "changed_target_lines": 156,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/mod.rs",
+      "sha256": "9bf4066fa3b22ef066d05d0f5a0eb6b956964b0861435e21456dff4d3651da86",
+      "covered_lines": 91,
+      "target_lines": 1888,
+      "changed_target_lines": 51,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/protocol.rs",
+      "sha256": "9d18f903fb08416ea7bb1c23ece6974cb495ea9a1fc1e6002dae52bdfa087069",
+      "covered_lines": 55,
+      "target_lines": 615,
+      "changed_target_lines": 2,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/account_characters.rs",
+      "sha256": "65b2f03a99590d64601fea0476d313939779aa00becdd36a084f39ee2a0266e5",
+      "covered_lines": 216,
+      "target_lines": 745,
+      "changed_target_lines": 18,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/public_projections.rs",
+      "sha256": "828315fb28e867d812d3cb53c5321964b872bb0a4bf1c8fb9a070a1fd0f1d677",
+      "covered_lines": 809,
+      "target_lines": 2097,
+      "changed_target_lines": 45,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/runtime_status.rs",
+      "sha256": "e54db773de2b6d7e52fc796d20d5b4a6d157facd7a18651140db553781cbc1ef",
+      "covered_lines": 177,
+      "target_lines": 637,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/world_event_outcomes/publisher.rs",
+      "sha256": "1c26b9603dc4517466112ba03788a7b52f16a9e75173e0994c343fdec8232800",
+      "covered_lines": 316,
+      "target_lines": 316,
+      "changed_target_lines": 16,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/gameplay/social/Cargo.toml",
+      "sha256": "7128e0f1d302be510d568ec1ca79d558a3d17148baa7fb75f2833fd14ae1172f",
+      "covered_lines": 50,
+      "target_lines": 50,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/gameplay/social/src/cast/service.rs",
+      "sha256": "6f1050c6fe11a4e5e9e12fc74787fefb9fddd6341fdd35d37e3eccb935c5dea0",
+      "covered_lines": 146,
+      "target_lines": 575,
+      "changed_target_lines": 7,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/gameplay/social/src/premium/refresh.rs",
+      "sha256": "eff389135356cc9d0916965bde505487e02f66e41f803db02cbe4d2fcd6ab6aa",
+      "covered_lines": 243,
+      "target_lines": 243,
+      "changed_target_lines": 15,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/protocol-oteryn/capabilities/0020-connection-trace-v1.json",
+      "sha256": "239b5457e420031ca2b36c1cb37a19f4385de46b117a873a53c73a5d3204fecc",
+      "covered_lines": 15,
+      "target_lines": 15,
+      "changed_target_lines": 15,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/protocol-oteryn/src/connection_trace.rs",
+      "sha256": "5193740408b654603f7ab418117fae231c5e692a6ce2e2b35e6a64654dbb68dd",
+      "covered_lines": 80,
+      "target_lines": 80,
+      "changed_target_lines": 80,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/protocol-oteryn/src/lib.rs",
+      "sha256": "0873cda0e4d3594c6a72311f156ca7d3356e24911974a0d266f0ab16102e82a9",
+      "covered_lines": 601,
+      "target_lines": 2842,
+      "changed_target_lines": 140,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/protocol-oteryn/src/recovery.rs",
+      "sha256": "6941c574d28d171491b17284153bea9689e7936506f6b91327770b8882882a3a",
+      "covered_lines": 215,
+      "target_lines": 215,
+      "changed_target_lines": 43,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/protocol-oteryn/src/tests/capabilities_golden/0020-connection-trace-v1.json",
+      "sha256": "239b5457e420031ca2b36c1cb37a19f4385de46b117a873a53c73a5d3204fecc",
+      "covered_lines": 15,
+      "target_lines": 15,
+      "changed_target_lines": 15,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/protocol-oteryn/src/tests/error_registry_tests.rs",
+      "sha256": "09b7a80a171870de5e2f861b7e1e594b3935ac9c16733ec4f0ac3fa25b5920b5",
+      "covered_lines": 46,
+      "target_lines": 306,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/session/src/capability_support.rs",
+      "sha256": "6df213a63f1bb442c3de1b6a18df168777768edec1abadc47e21bb247f5ce35c",
+      "covered_lines": 65,
+      "target_lines": 415,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/session/src/error.rs",
+      "sha256": "b4fa44f375511390c2171faf230f9a1c5e72fb778ff37fedc566eb89045798ed",
+      "covered_lines": 382,
+      "target_lines": 382,
+      "changed_target_lines": 19,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/session/src/session_access.rs",
+      "sha256": "0f431708a8adecfeaf6559b7a9f6e0c90442ca74e3e012def3d888cd0dbf8094",
+      "covered_lines": 82,
+      "target_lines": 341,
+      "changed_target_lines": 3,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/session/src/session_exchange.rs",
+      "sha256": "c20949dfa939b885502b9c2ef8dbf8565e31c9b2ae80634dd4c10ba59ddbfac3",
+      "covered_lines": 383,
+      "target_lines": 383,
+      "changed_target_lines": 24,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "crates/session/src/session_tests_chat.rs",
+      "sha256": "91318fdaeb4c29fea1a68993a44200a58fe1edccf1bf5a59902e4c476af2e2d8",
+      "covered_lines": 42,
+      "target_lines": 338,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/session/src/session_tests_items.rs",
+      "sha256": "6b7b17b0b94ca50793b0676922f61f918765393f58794ee7c00cd00199629052",
+      "covered_lines": 28,
+      "target_lines": 720,
+      "changed_target_lines": 3,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/session/src/session_tests_push.rs",
+      "sha256": "6c80350853bbf627380179f80fcee86ce74d76078529b101ae6e54c31915c911",
+      "covered_lines": 110,
+      "target_lines": 618,
+      "changed_target_lines": 46,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "crates/task-supervisor/src/lib.rs",
+      "sha256": "92b5ce4336df017f305154c863f16e0b5317faac1bb706f48dbca9a01cd38e27",
+      "covered_lines": 866,
+      "target_lines": 866,
+      "changed_target_lines": 230,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json",
+      "sha256": "6bf5b36bc2952a961ec018ae2bf1b4a60e64e25f41e82d218712b350fd4d6256",
+      "covered_lines": 41,
+      "target_lines": 417,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "docs/contracts/logging/events/admission.json",
+      "sha256": "6af77c1954f27ef39974aa68c08ab0c9e6e01b39c0d011a4b92f5a44b8a663d0",
+      "covered_lines": 87,
+      "target_lines": 87,
+      "changed_target_lines": 41,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "docs/contracts/logging/events/gameplay_transport.json",
+      "sha256": "72bc9e204efd035e60ca3723ad86be82d936af12629b0fe8ab294fa254624533",
+      "covered_lines": 141,
+      "target_lines": 141,
+      "changed_target_lines": 23,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "docs/contracts/protocol-oteryn/v1/foundation.proto",
+      "sha256": "61d6fabe6f0733eed983fcd2e753e816036844c7f05ca1f9514ba090f144ed38",
+      "covered_lines": 266,
+      "target_lines": 266,
+      "changed_target_lines": 12,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "docs/contracts/protocol-oteryn/v1/registry/capabilities/0020-connection-trace-v1.json",
+      "sha256": "8a9a1e3e94a21aa605692de052e55f1abcbe43837cf59924a5611f7a349fc44a",
+      "covered_lines": 11,
+      "target_lines": 11,
+      "changed_target_lines": 11,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "docs/contracts/protocol-oteryn/v1/registry/registry.json",
+      "sha256": "2d31fa51f0fc47856e2e83d0c6e377198c65dbe4266b84bc3c62c9c00a00383c",
+      "covered_lines": 108,
+      "target_lines": 108,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "tools/architecture-check/client-unsupported-baseline.d/0020-connection-trace.json",
+      "sha256": "5036971c24e2adc2a4eb36daacc844f7d5caa62a25e68b13129050dcbc0fa769",
+      "covered_lines": 1,
+      "target_lines": 1,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "tools/architecture-check/logging-eprintln-baseline.json",
+      "sha256": "7460d28d6fb1feb09b424d5f1a6e09815920b7e7b310823175a682d681ac21fa",
+      "covered_lines": 76,
+      "target_lines": 76,
+      "changed_target_lines": 6,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "tools/dev-client/src/client_tests_command_errors.rs",
+      "sha256": "1fa0ccc3cff23d6668e66e40be46b8b61b1a6507b44f8bc129602802da14386f",
+      "covered_lines": 71,
+      "target_lines": 463,
+      "changed_target_lines": 4,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "tools/qualification/node_boot/run.sh",
+      "sha256": "f00e3bafb7f285c83d80e11a9b2f33d93f2c50a8ac154f16817561af313b36d2",
+      "covered_lines": 370,
+      "target_lines": 958,
+      "changed_target_lines": 14,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "tools/redact_ci_log.py",
+      "sha256": "14a171fa18017700c1f1677080cc650014a863a0356ee729b3e6cb6f045d48df",
+      "covered_lines": 31,
+      "target_lines": 31,
+      "changed_target_lines": 31,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "tools/repository/test_heavy_gate.py",
+      "sha256": "186f6feb275e73f7673d16772f855f3c6c26e4dd0248bf01887ec1ca11c75939",
+      "covered_lines": 221,
+      "target_lines": 221,
+      "changed_target_lines": 7,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "tools/repository/test_validate_merge_group_pg_sim.py",
+      "sha256": "be53ecdc02a67715a011a87c2b00190c31a709a95ff595e61429c8659dddac0f",
+      "covered_lines": 81,
+      "target_lines": 670,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "tools/repository/validate_repository_policy_core.py",
+      "sha256": "9699febb31b26fb626de0b7209d36f825b046ce3e688f1eeb968170de14bbcca",
+      "covered_lines": 106,
+      "target_lines": 806,
+      "changed_target_lines": 1,
+      "changed_target_lines_covered": true,
+      "full_file_review": false
+    },
+    {
+      "path": "tools/test_redact_ci_log.py",
+      "sha256": "7b59b8faf769912edd552101155ef5bae8595d9efb99cc51a6c97de1655a348e",
+      "covered_lines": 53,
+      "target_lines": 53,
+      "changed_target_lines": 53,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    },
+    {
+      "path": "workspace-boundaries.toml",
+      "sha256": "537c52c2fd35ad5ebf70fac7c84752616b214f85cc5640ca0815729a13883b22",
+      "covered_lines": 136,
+      "target_lines": 136,
+      "changed_target_lines": 2,
+      "changed_target_lines_covered": true,
+      "full_file_review": true
+    }
+  ],
+  "limitations": "Hash/range/diff coverage checks validate evidence structure only; authored manual review notes carry semantic assessment. No runtime verification implied."
+}

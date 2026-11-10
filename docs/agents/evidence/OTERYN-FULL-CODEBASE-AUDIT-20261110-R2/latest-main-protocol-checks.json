@@ -1,0 +1,145 @@
+{
+  "source_commit": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+  "original_head_unchanged": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "status": "PASS_WITH_OBSERVATION",
+  "checks": [
+    {
+      "name": "two unchanged original redaction unit tests",
+      "status": "PASS",
+      "details": {
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n",
+        "source_hashes": {
+          "tools/redact_ci_log.py": "14a171fa18017700c1f1677080cc650014a863a0356ee729b3e6cb6f045d48df",
+          "tools/test_redact_ci_log.py": "7b59b8faf769912edd552101155ef5bae8595d9efb99cc51a6c97de1655a348e"
+        }
+      }
+    },
+    {
+      "name": "bash syntax only for target node_boot/run.sh",
+      "status": "PASS",
+      "details": {
+        "exit_code": 0,
+        "sha256": "f00e3bafb7f285c83d80e11a9b2f33d93f2c50a8ac154f16817561af313b36d2"
+      }
+    },
+    {
+      "name": "Python syntax only",
+      "status": "PASS",
+      "details": [
+        "tools/redact_ci_log.py",
+        "tools/test_redact_ci_log.py",
+        "tools/repository/test_heavy_gate.py",
+        "tools/repository/test_validate_merge_group_pg_sim.py",
+        "tools/repository/validate_repository_policy_core.py"
+      ]
+    },
+    {
+      "name": "three static protected workflow blob pins agree",
+      "status": "PASS",
+      "details": {
+        "git_blob_sha": "7b7f36b197a72a4317d6318b1cc4ec4ab9b602f6",
+        "paths": [
+          ".github/workflows/merge-authority-audit.yml",
+          "tools/repository/test_validate_merge_group_pg_sim.py",
+          "tools/repository/validate_repository_policy_core.py"
+        ],
+        "historical_approval": "UNKNOWN; no workflow/PR approval inferred"
+      }
+    },
+    {
+      "name": "foundation schema SHA256 matches both lock declarations",
+      "status": "PASS",
+      "details": "61d6fabe6f0733eed983fcd2e753e816036844c7f05ca1f9514ba090f144ed38"
+    },
+    {
+      "name": "two new local task-supervisor dependency edges agree",
+      "status": "PASS",
+      "details": {
+        "owners": [
+          "oteryn-game-server",
+          "oteryn-gameplay-social"
+        ],
+        "sources": [
+          "Cargo.lock",
+          "workspace-boundaries.toml",
+          "apps/game-server/Cargo.toml",
+          "crates/gameplay/social/Cargo.toml"
+        ],
+        "not_claimed": "No complete cargo metadata/workspace build was run."
+      }
+    },
+    {
+      "name": "logging baseline line reference diagnostic",
+      "status": "OBSERVATION",
+      "details": {
+        "count": 54,
+        "stale_sites": [
+          {
+            "site": "apps/game-server/src/node/serve.rs:3412",
+            "current_line_text": "            &committed,",
+            "actual_console_lines": [
+              241,
+              290,
+              345,
+              351,
+              386,
+              3438
+            ]
+          }
+        ],
+        "note": "Initial strict line-reference assertion failed. The actual architecture consumer enforces per-owner count, not exact site identity; a moved line is not a failure of that policy. This check gives no full source-review credit to referenced files."
+      }
+    }
+  ],
+  "source_sha256": {
+    "tools/redact_ci_log.py": "14a171fa18017700c1f1677080cc650014a863a0356ee729b3e6cb6f045d48df",
+    "tools/test_redact_ci_log.py": "7b59b8faf769912edd552101155ef5bae8595d9efb99cc51a6c97de1655a348e",
+    "tools/qualification/node_boot/run.sh": "f00e3bafb7f285c83d80e11a9b2f33d93f2c50a8ac154f16817561af313b36d2",
+    "tools/repository/test_heavy_gate.py": "186f6feb275e73f7673d16772f855f3c6c26e4dd0248bf01887ec1ca11c75939",
+    "tools/repository/test_validate_merge_group_pg_sim.py": "be53ecdc02a67715a011a87c2b00190c31a709a95ff595e61429c8659dddac0f",
+    "tools/repository/validate_repository_policy_core.py": "9699febb31b26fb626de0b7209d36f825b046ce3e688f1eeb968170de14bbcca",
+    ".github/workflows/merge-group-gate.yml": "6d856d5a7d5d5a7d81046163c667f39eaa0191e579f2db15d93fc466a782e68e",
+    ".github/workflows/merge-authority-audit.yml": "6c167d69e5a03ab6a38c8caff9797dd47310150b06c435810070855bb6352657",
+    "docs/contracts/protocol-oteryn/v1/foundation.proto": "61d6fabe6f0733eed983fcd2e753e816036844c7f05ca1f9514ba090f144ed38",
+    "docs/contracts/protocol-oteryn/v1/registry/registry.json": "2d31fa51f0fc47856e2e83d0c6e377198c65dbe4266b84bc3c62c9c00a00383c",
+    "docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json": "6bf5b36bc2952a961ec018ae2bf1b4a60e64e25f41e82d218712b350fd4d6256",
+    "workspace-boundaries.toml": "537c52c2fd35ad5ebf70fac7c84752616b214f85cc5640ca0815729a13883b22",
+    "Cargo.lock": "bf058cc4d3530289c763628b1776cb46e111d0c79c63169d197f89daca621bc7",
+    "apps/game-server/Cargo.toml": "a6ead705e76f3b5008b42d031e0a79cbe69d667dc0c26307c307d8e8bfb257bc",
+    "crates/gameplay/social/Cargo.toml": "7128e0f1d302be510d568ec1ca79d558a3d17148baa7fb75f2833fd14ae1172f",
+    "tools/architecture-check/logging-eprintln-baseline.json": "7460d28d6fb1feb09b424d5f1a6e09815920b7e7b310823175a682d681ac21fa",
+    "apps/game-server/src/bin/oteryn-game-ops.rs": "d32da322ad67b48aaf59598f7013660c3505093ae5ae43a53164a214940609ba",
+    "apps/game-server/src/main.rs": "d27c9ef3740b49d979eec74e40eaf9efd3e978823836a61c0787ee16750f5592",
+    "apps/game-server/src/node/raid_scheduler.rs": "1636ce16ac292d781a541479abacef7429a4317b000260cd900ed93a0a28cc93",
+    "apps/game-server/src/node/raid_scheduler/world_changes.rs": "98b37facc39f820d1bfca9f559956968d713e3bcc6f7679304c1a910f8718dec",
+    "apps/game-server/src/node/serve.rs": "c98d10756e425f2cbb18b16f4adf47d02015f54ee110a70c4aa0f3e1eb4deb11",
+    "apps/game-server/src/node/serve/world_reset.rs": "e101270273c9d0fd1cbdc70eab8908c90faa23d3c923375ea2a26bf873662335",
+    "crates/error-codes/build.rs": "2409de080733dc3b6408c186b1060fafb0193abb135e8e1fed889218ad58b01c",
+    "crates/error-codes/src/hook.rs": "0d0ef7a64719cf1172e7eb655971a0f6e04436722f7adf2bdc0b9c4093eabf27",
+    "crates/gameplay/content/build.rs": "f10c1a6bf292cf965886ae1144e63cf8238d09463c6ef65fb225c562f7c02ecb",
+    "crates/gameplay/content/src/bin/oteryn-game-platform-catalog.rs": "7433905ef112ef4bb5eec2be9b3a41e19482567c9561370853f3577e9875a647",
+    "crates/gameplay/content-promotion/build.rs": "37af7e5d8960e68876fdafedfd8ed975edc743acb7db56e81faa183b6d1bd1b1",
+    "crates/gameplay/dispatch/build_mechanics.rs": "da7f0ad3e3fb552ed4d678d398981d34989ad79fe75e67f483a12dae980026e7",
+    "crates/gameplay/durability/src/durability/character_equipment.rs": "aae6134967026fb0a6d170d0cffa11c39a0a6f5e873b045c11ac3ce057c58776",
+    "crates/gameplay/durability/src/durability/character_wheel.rs": "f9ceb84b65c514e2ee65b2f26372f41b0d3b3b7617ee84f1f38f2dcd701adf9d",
+    "crates/gameplay/durability/src/durability/guild_chat_fixture/schema.rs": "0e7550882054ebc2bcdf829cc3d0823d45949cdc46bea0ee0a5b0708e40e50fc",
+    "crates/gameplay/durability/src/durability/highscore_snapshot/job.rs": "e16e5a386f638c62c1bc1af4d58bcf841b5aa3cca2b410d32aa26231e5aa916d",
+    "crates/gameplay/durability/src/durability/house_ownership/guildhall.rs": "d3f192b4ac288352f7ee94ab709757319393043da3ef4e0226f519ac0d9c0422",
+    "crates/gameplay/durability/src/durability/quest_state.rs": "ed956add243c47198126fa493e040322cccecf430420842db7ba091f7babec88",
+    "crates/gameplay/durability/src/durability/world_event_outcomes.rs": "2d15925a62c7484b7fd1c6c510e33e77a4b7b3ba73c260504346c8b27ea9e0e9",
+    "crates/gameplay/durability/src/durability/world_event_outcomes/delivery.rs": "2eec6e27cd8f4b967abc3fb264006445dcb130a4841544a954fa3458394220ad",
+    "crates/gameplay/monster-ai/src/monster_lab.rs": "c9ee8ed2f73659c2603c5480dfb218def7749427adc5827d0cbeb0c8200bb9ee",
+    "crates/gameplay/quests/build_batch3_a.rs": "b21c2648c8d74e79cb533d2eaef191c8131e49c66e82aab840c6b74d72e415de",
+    "crates/gameplay/quests/build_npc_programs.rs": "4a4a320be3955e87a1ca69e8498a0cab23455c106c809d3158e059b9f2ac139e",
+    "crates/gameplay/world/src/map/spell_tiles.rs": "1ee7ce966ed62c50c5256fd7641e8f0acc5ac21d1c6cf323701be271cde02b70",
+    "crates/protocol-oteryn/build.rs": "105e16ff419d44acd532e5da084c47e552f9ee17135e8b15f8722089b6521bea"
+  },
+  "limitations": [
+    "No Rust workspace build or tests.",
+    "No GitHub Actions/native boot/PostgreSQL execution.",
+    "No general claim that the heuristic redactor removes every possible secret format.",
+    "Parsing, hashing and syntax validation do not establish semantic review or supporting file completeness."
+  ]
+}

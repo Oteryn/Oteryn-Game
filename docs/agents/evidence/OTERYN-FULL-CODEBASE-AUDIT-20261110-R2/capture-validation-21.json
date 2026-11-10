@@ -1,0 +1,63 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T18:05:26.937753+00:00",
+  "captures": {
+    "durability": {
+      "path": "protocol-session/durability/captures/checkpoint-50-ledger.json",
+      "sha256": "4fdb43477aefdac4adbc679b8c1f91406769ead34deba052f7eb5f6f8599ddc4",
+      "full_files": 721,
+      "full_file_physical_lines": 216548,
+      "all_scope_text_lines_union": 216548,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "server": {
+      "path": "protocol-session/game-server-worker-captures/checkpoint-815-ledger.json",
+      "sha256": "ed7379ab58fa90dbe5248e123632c1014e248c22ee2ddf28332a84ce05666fc9",
+      "full_files": 815,
+      "full_file_physical_lines": 431144,
+      "all_scope_text_lines_union": 431144,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 2703,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch": {
+      "path": "client-support/dispatch-checkpoint33-ledger.json",
+      "sha256": "b18942e19b3b0c28358ec4b194b7d58c93fae3cf294111aadf3f8213de49446d",
+      "full_files": 610,
+      "full_file_physical_lines": 141651,
+      "all_scope_text_lines_union": 146937,
+      "partial_reviewed_lines": 5286,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_social_world": {
+      "path": "protocol-session/dispatch-social-world/captures/checkpoint-01-ledger.json",
+      "sha256": "14439b970258fba9be347f9e2d574a05b1d54cb8f21e04580128d5c33e39f56c",
+      "full_files": 10,
+      "full_file_physical_lines": 1071,
+      "all_scope_text_lines_union": 1071,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    }
+  },
+  "server_method_maps": {
+    "game-server-appearance-capture-method-map.md": "90fb804da69c6658b0276f7c488d6862b2d09d3dc371795f3f51dbda51308aa8",
+    "game-server-spawn-fixture-method-map.md": "2219981460bf6bd58cf0e9ddf7306a90584b0bb9fe239b1ae4cdf8b087be9df3",
+    "game-server-seven-fixture-method-map.md": "348390d50ea1da0dd25ae206bd8c550cc9120851d94c0d0067e267359311480b",
+    "game-server-auto-attack-fixture-method-map.md": "d7593104034863d3328a3bef6c649fbcd83965e39db31e895e639f3cdb126ba5",
+    "game-server-callback-cast-fixture-method-map.md": "3fbba196681354508896b1f61c4cb865a8ec62b53118d75943b982b32e9c3538",
+    "game-server-tls-fixture-method-map.md": "51e1efbd633d88829848ddd3653328cbc985da328a24383dc47d1f9187d92836",
+    "game-server-transport-tls-method-map.md": "429224a77cf514e99c1b92d4872b99d6b9a5f52529c2bf3a7edf2f8a0cf9366f"
+  },
+  "new_semantic_note_review": "Root read all 44 server notes since capture 771, all 51 changed dispatch notes since checkpoint 27, and all 10 initial social/world notes. Prior complete data method maps retain byte-identical qualification.",
+  "root_scope": "Independent immutable byte/range/inclusion qualification and delegated report/note inspection; not a second manual source review of every delegated file.",
+  "runtime_execution": false
+}

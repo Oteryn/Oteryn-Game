@@ -1,0 +1,534 @@
+{
+  "status": "PASS",
+  "at_utc": "2026-11-10T17:59:34.567289+00:00",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "package": "oteryn-synthetic-client-harness",
+  "inventory_files": 40,
+  "full_files": 40,
+  "full_lines": 10454,
+  "remaining_files": [],
+  "runtime_tests_run": [],
+  "method": "Root manual source review of all forty files; this validator checks inventory/digest/range closure only. No substitute for semantic review and no compile/runtime claim.",
+  "files": [
+    {
+      "path": "tools/synthetic-client-harness/Cargo.toml",
+      "sha256": "22e334e042a0d362339648709826569996e97ae7ecf4a2569dd1b463c959326e",
+      "lines": 35,
+      "ranges": [
+        [
+          1,
+          35
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/cli.rs",
+      "sha256": "8350032ae207db25db2b62806595c448b172b357c06e42217b2bf34565d7ae14",
+      "lines": 603,
+      "ranges": [
+        [
+          1,
+          603
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/controller.rs",
+      "sha256": "4784d1459c3d1727a46069e6c48118c78bd06f4b749b39f9f49a293bece5684a",
+      "lines": 193,
+      "ranges": [
+        [
+          1,
+          193
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/guild_chat.rs",
+      "sha256": "947e0937e87df38df7dd346715465ac8ed4de20a441905014f867a520572d42a",
+      "lines": 26,
+      "ranges": [
+        [
+          1,
+          26
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/guild_chat_tests.rs",
+      "sha256": "484c77a853c31f2b63cc5ec1257adcb38d9fb3edf6ca0598093f047a40b4b97d",
+      "lines": 42,
+      "ranges": [
+        [
+          1,
+          42
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/input.rs",
+      "sha256": "2b6777789e870ec9be7b3a0b4c54d89354aec5440562b550a9c4444f7e6018b2",
+      "lines": 97,
+      "ranges": [
+        [
+          1,
+          97
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/mod.rs",
+      "sha256": "47c76ea5c352a601d79717f37907c5c7640b4fe31da51a5ff532380410bfd7a2",
+      "lines": 17,
+      "ranges": [
+        [
+          1,
+          17
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/model.rs",
+      "sha256": "db8bdad397c0bb1a0568519d984b7156991a5b8c2e159b295be2759d96487bab",
+      "lines": 882,
+      "ranges": [
+        [
+          1,
+          882
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/tests.rs",
+      "sha256": "be96e321871dff85d6a4cd05292231c20be917e7ce8e476b31572884e5dce05a",
+      "lines": 2039,
+      "ranges": [
+        [
+          1,
+          2039
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 2
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/main.rs",
+      "sha256": "e1c7f38a0ff37ddaa1802cfef93028f0e0338302668326d3f12e73d2733c6290",
+      "lines": 121,
+      "ranges": [
+        [
+          1,
+          121
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/native_context.rs",
+      "sha256": "683725cba9c945a3c8bb79691d3985e687ac216c015f31eafc2ae0425f8d8a97",
+      "lines": 187,
+      "ranges": [
+        [
+          1,
+          187
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/native_depot.rs",
+      "sha256": "a5ddbf8237abc5632209923076cb06a0c456f6314d5236321c1f0fd7b5c8e2d2",
+      "lines": 232,
+      "ranges": [
+        [
+          1,
+          232
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/native_floor_transition.rs",
+      "sha256": "54ac3171363b8dbf2b26e1233a1e53bf147e044511c3148051b4d1eef1073707",
+      "lines": 209,
+      "ranges": [
+        [
+          1,
+          209
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/native_light.rs",
+      "sha256": "e3bac766c7fc1f838234a9f441ebaadfc06bad205627cdd54548831d2a473858",
+      "lines": 75,
+      "ranges": [
+        [
+          1,
+          75
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/native_map.rs",
+      "sha256": "85a02cb3b37bb5f493841584dca024d369b6fcef4ab2a30a4a612a0ae717510b",
+      "lines": 343,
+      "ranges": [
+        [
+          1,
+          343
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/native_market.rs",
+      "sha256": "cbf16329e48ab63409f74b0e964f9a66913b87fd0264ebb5299082ede4b79226",
+      "lines": 125,
+      "ranges": [
+        [
+          1,
+          125
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/native_minimap.rs",
+      "sha256": "efba290b43154600e4af1a452fbdf072a591ce52d93aad269ed8404fbca644c1",
+      "lines": 148,
+      "ranges": [
+        [
+          1,
+          148
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/native_stash.rs",
+      "sha256": "dd5393533c7008a74eb39ac25ac696de486465a22a1cdbeea9a0c8eab3b194ba",
+      "lines": 170,
+      "ranges": [
+        [
+          1,
+          170
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/native_trade.rs",
+      "sha256": "171984447f9cfe406ab794618754bb04464cbceaa50f1ab1c13984f3a8c02c6f",
+      "lines": 404,
+      "ranges": [
+        [
+          1,
+          404
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/native_typing.rs",
+      "sha256": "f1f02a0d326c1dd48a38cfc23804ca2e925518d0c47ddfdd1708fdb722bc6628",
+      "lines": 197,
+      "ranges": [
+        [
+          1,
+          197
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/native_weather.rs",
+      "sha256": "1e2a135509c59241aae9f3da51ca56a4de034f7659b1cbdd77c119041aab8012",
+      "lines": 158,
+      "ranges": [
+        [
+          1,
+          158
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_battle.rs",
+      "sha256": "984785889adf51e40a84049700c28b627da993fe6fec978de54f1da75cac0c47",
+      "lines": 309,
+      "ranges": [
+        [
+          1,
+          309
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_combat_presentation.rs",
+      "sha256": "ef7b166f9882fb1cf20d7bb8d49b2cf52baab06b41f2333e2ecba3098d945882",
+      "lines": 106,
+      "ranges": [
+        [
+          1,
+          106
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_containers.rs",
+      "sha256": "95a8d09e17ad7e81244ef963a6fd81fbc585a71b1e2a70c3f7e157e564ea7870",
+      "lines": 189,
+      "ranges": [
+        [
+          1,
+          189
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_context_results.rs",
+      "sha256": "0446eee9d00d6d595b00b3078ee711f4faf8203511fbc88950296f6e2b115b40",
+      "lines": 586,
+      "ranges": [
+        [
+          1,
+          586
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_death_respawn.rs",
+      "sha256": "648c17d4a3bbccea8ad3029c70bef6ce6da29f8090223177fd31841ad8ef429a",
+      "lines": 111,
+      "ranges": [
+        [
+          1,
+          111
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_equipment.rs",
+      "sha256": "7f268841d0cd59f325daaad4ff436dfd3d37c74a4b96a07047df4fecdf718961",
+      "lines": 220,
+      "ranges": [
+        [
+          1,
+          220
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_inventory.rs",
+      "sha256": "438bd85e0a903092fdf3f905ea9fd7daefe885d4e3d10f39479a3c70f710ef72",
+      "lines": 116,
+      "ranges": [
+        [
+          1,
+          116
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_item_movement.rs",
+      "sha256": "131661c399046f3e1d783fd8f5980dda430935f276ab91fef0a1f4050251a243",
+      "lines": 162,
+      "ranges": [
+        [
+          1,
+          162
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_login.rs",
+      "sha256": "cef43d2cb1b163cb02c580423725e75c15890dc4a594a05c3664727bda57bf6a",
+      "lines": 43,
+      "ranges": [
+        [
+          1,
+          43
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_npc_dialogue.rs",
+      "sha256": "7e17b6f80b0916bd7e6cad22caf371d6193003181b85881bf348dcabfdb53c3c",
+      "lines": 331,
+      "ranges": [
+        [
+          1,
+          331
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_npc_shop.rs",
+      "sha256": "a58a564bf7dba25ac4e59c86601f1e9f85ff32ae39debec3d4ff8d00fa0a3bc3",
+      "lines": 216,
+      "ranges": [
+        [
+          1,
+          216
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_npc_shop/peer.rs",
+      "sha256": "533626d82157760a77376a32f64b0a3f4e9e9d67ed1ad15ecb4e2d14e8bdeb96",
+      "lines": 339,
+      "ranges": [
+        [
+          1,
+          339
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_party.rs",
+      "sha256": "db538513e28adb688d613dd8b487c969e18ed77dfde5f029444c82dcf21701d9",
+      "lines": 240,
+      "ranges": [
+        [
+          1,
+          240
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_private_channels.rs",
+      "sha256": "c65a48819f138014edcb35dddf00c22b837aacd4953194580ac56946717d023a",
+      "lines": 173,
+      "ranges": [
+        [
+          1,
+          173
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_public_channels.rs",
+      "sha256": "b3d2e4fc81a67e2d52b0d75c033c88c42c5d8f26dcc3384eba5bba897b2071e2",
+      "lines": 156,
+      "ranges": [
+        [
+          1,
+          156
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_settings.rs",
+      "sha256": "493c713a9137e0d5b5051ce8fa59ea97b010edc19205975bffcbc6650808e0f6",
+      "lines": 151,
+      "ranges": [
+        [
+          1,
+          151
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_target_move.rs",
+      "sha256": "3ba36d2506d4da4a70f90f944eb1ac119a5543a9ecb174d080d482b13592c010",
+      "lines": 245,
+      "ranges": [
+        [
+          1,
+          245
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/native_vitals.rs",
+      "sha256": "c639133e8c045fc7e9adffe6e9f80dbed9ec30f7feea88c624f40e8b237e7cdd",
+      "lines": 64,
+      "ranges": [
+        [
+          1,
+          64
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    },
+    {
+      "path": "tools/synthetic-client-harness/tests/qualification_player_trade.rs",
+      "sha256": "69040ce30f10b5a57d38be9e2aaa2ff6ccb7bd22240a78ba9af27e289b470e5c",
+      "lines": 394,
+      "ranges": [
+        [
+          1,
+          394
+        ]
+      ],
+      "method": "MANUAL_FULL_SOURCE_REVIEW",
+      "ledger_rows": 1
+    }
+  ]
+}
