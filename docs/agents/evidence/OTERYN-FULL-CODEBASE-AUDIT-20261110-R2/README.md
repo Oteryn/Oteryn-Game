@@ -1,4 +1,4 @@
-# OTERYN FULL AUDIT — continuation checkpoint 6
+# OTERYN FULL AUDIT — continuation checkpoint 7
 
 Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues across all remaining packages and supplementary domains.
 
@@ -6,7 +6,7 @@ Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues acro
 
 - 67 workspace packages; 11 supplementary domains; 27900 tracked input files.
 - **49 packages REVIEWED / 17 IN PROGRESS / 1 NOT STARTED / 0 VERIFIED**.
-- **3,663 distinct substantively analyzed files**: 3,437 full and 226 selected-range files; 424,323 deduplicated text line positions.
+- **3,981 distinct substantively analyzed files**: 3,755 full and 226 selected-range files; 497,388 deduplicated text line positions.
 - Four binary fixtures were semantically decoded in full, totaling 475 bytes. Their exact ranges use bytes and are excluded from line counts.
 - 192 historical files retain their exact ranges only because their Git blobs are identical. Four changed historical files receive no automatic carryover credit; fresh review is attributed separately.
 - REVIEWED requires every tracked package file and a substantive report. File discovery, text search, hash checks and test-source inspection are not runtime execution.
@@ -47,6 +47,10 @@ Fresh main is `af33fd3baeac15d9991bd24c91bcacc8733492e2`. Its complete diff from
 
 ## Continuation
 
-Protocol is now REVIEWED in full: 596 files, 81,639 text lines and two binary fixtures totaling 302 bytes. Its worker continues full durability and game-server scope. The client lane and delegated worker continue the application; frozen coverage and remaining paths are in the ledger. Gameplay domain, combat and all 1,334 client-ui files retain completed source review. The lead is reviewing actor and authority owners, remaining gameplay packages and supplementary scope after taking over the prior gameplay worker's unfinished allocation.
+Protocol retains full REVIEWED status: 596 files, 81,639 text lines and two binary fixtures totaling 302 bytes. The protocol lane continues durability; the released client worker now reviews game-server and migrations. New worker output enters coverage only after exact hash/range validation and integration.
 
-Two earlier combat cross-module hypotheses were refuted by actual caller and durable-owner inspection. The confirmed finding counts are unchanged; new candidates await independent verification. The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and lifecycle. Repairs remain separate work; this branch changes audit evidence only.
+Frozen client application coverage is 865/1,180 complete files. Its delegated 422-file batch is complete and parent-validated. All 1,334 client-ui files retain full review. Frozen entity coverage is 51/86 complete files and 19,958 lines; durability cumulative coverage is 92/721 complete files and 44,204 deduplicated lines, including earlier independently attributed cross-references. Server cumulative coverage remains 18/873 complete files while the new full-scope lane works.
+
+The lead continues actor lifecycle, remaining gameplay and supplementary scope. Two additional actor/combat candidates have separate private evidence and independent counterguard review; they are excluded from confirmed totals. No native or deployed-system reproduction is claimed. Earlier rejected combat hypotheses remain closed.
+
+The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and lifecycle. Repairs remain separate work; this branch changes audit evidence only.

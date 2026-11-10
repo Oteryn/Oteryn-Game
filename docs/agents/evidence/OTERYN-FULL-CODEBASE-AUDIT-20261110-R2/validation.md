@@ -23,3 +23,5 @@ Gameplay-domain semantic validation covers every field of 1,875 source monster r
 Gameplay-combat validation: complete unchanged `charm_desc_fence_gate_tests.rs` compiled directly with rustc and passed all 7 existing tests, including the repository unbound-attacker-write gate. This lexical scan provides no additional substantive coverage of the files it scans. Exact hash, scope and output: `combat-fence-gate-result.json`.
 
 Latest-main delta: the client lane read all four changed files in full at af33fd3baeac15d9991bd24c91bcacc8733492e2; the lead independently validated every latest/base hash and full range. Its source review stays separate from the immutable base coverage. No PowerShell, Windows, installer or relaunch tests were executed.
+
+Checkpoint 7 adds parent-validated integration of the completed 422-file client worker allocation and further entity/durability source review. New creature periodic-processing candidates have independent source counterguard checks and selected catalogue-value inspection; neither is a native runtime reproduction or a confirmed finding. No source tests were added or changed.

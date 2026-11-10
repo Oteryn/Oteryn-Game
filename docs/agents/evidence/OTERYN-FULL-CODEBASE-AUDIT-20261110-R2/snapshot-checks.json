@@ -10,10 +10,10 @@
     "workspace_packages": 67,
     "supplementary_domains": 11,
     "tracked_files": 27900,
-    "unique_substantively_analyzed_files": 3663,
-    "fully_analyzed_files": 3437,
+    "unique_substantively_analyzed_files": 3981,
+    "fully_analyzed_files": 3755,
     "selected_range_files": 226,
-    "analyzed_lines_union": 424323,
+    "analyzed_lines_union": 497388,
     "binary_files_analyzed": 4,
     "analyzed_binary_bytes_union": 475,
     "workspace_statuses": {

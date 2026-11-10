@@ -1,9 +1,8 @@
-# Durability audit — checkpoint 1
+# Durability — partial source review
 
-Base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**.
-Scope: `crates/gameplay/durability`, 721 tracked files. This checkpoint manually reviews 19 full files / 5,994 text lines. The exact 702 remaining files are in `coverage-ledger.json`; prior selective cross-references are not treated as completed files.
+Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**.
 
-This lane checkpoint is a subset of cumulative coverage: the main ledger also retains independently reviewed files and identical-blob historical evidence. Exact cumulative coverage and remaining paths are in `coverage-ledger.json`.
+Frozen cumulative coverage is **92/721 complete files**, 131 files with substantive ranges and **44,204 deduplicated lines**. This combines attributable earlier lead/cross-reference work with the current full-scope lane; the current lane's report separately covers 49 complete files and 24,069 lines. These figures are different scopes, not additive estimates. The remaining exact paths are in the coverage ledger.
 
 ## Entrypoints and reviewed behavior
 
@@ -13,24 +12,20 @@ This lane checkpoint is a subset of cumulative coverage: the main ledger also re
 
 The V2 reconnect adapter in `core_modules.rs` implements prepare, exact receipt replay, typed reconciliation and terminal replacement. It compares immutable record bindings, requires the supplied current authorization/claims, locks admission relations and ordered advisory domains, checks actor-epoch attempt budget and exact predecessor generation/lease/scope fields, fences predecessor attempts and stores replacement receipt/candidate/pending commands within one transaction. World and Channel/Instance identities remain separate. The stored predecessor scope may lag the authorized fence only in the explicit forward synchronization path; it must not be ahead. Continuity rebinding requires an exact current row and expected protection state.
 
+The full V1 journal and guard-store source were also reviewed. Current projections compare exact SQL mirrors against canonical records, transport reservation, pending-command order and retained protection state. Historical guard decoding does not confer authority. Guard publication invokes the sealed predicate under relation locks, checks permanent decision history and writes current/history rows atomically. Party target proofs separately bind the borrowed physical runtime and independently current SQL account/character/runtime guards. Spell reconnect evidence remains bound to its physical item transaction and exact old/current generations.
+
+The full fresh-admission store, lifecycle codecs and owner composition were reviewed. Canonical bounded history retains the original grant, distinct current session identity and exact loss/recovery protection; it never grants a controller by decoding. Fresh commit recomputes node, Channel assignment, Character recovery fence, S2 floors and the mandatory capability binding under its transaction. Recovery verifies current registered S2 floors and exact account/character claims before reserving or consuming transport/grant identities. House loss and terminal paths require the real named custody fence; access is additionally required when granting recovery. Activity and House histories preserve original recovery protection and original login clocks. Terminal release prepares bed/training/position work, exact claims and the retained receipt in one transaction.
+
 Schema compatibility compares the embedded migration ledger against at most N+1 rows. Checksum bytes are transferred only at the expected length for an expected version; version, success and checksum must all match. Runtime inspection does not execute DDL. This establishes ledger compatibility, not the correctness of every migration.
 
 The bosstiary kill API checks current character/custody/gameplay fences, retains an occurrence receipt and updates the boss counter. It does not increment CharacterRevision. The separate slot mutation API can burn a fee and writes a retained command receipt.
 
-## Cross-dependencies and findings
+The node assignment writer was reviewed end to end: launch-secret possession, exact SQL-role grants, checked assignment generations, durable pending slot, replay reconciliation and the atomic not-ready runtime fence. Character authority is issued only after the sealed recovery record and complete integrity checks match. The separate advisory recovery gate is acquired before the current admission read so an append-only successor cannot hide behind a stale SQL snapshot. Audit delivery is bounded and at-least-once, with exact acknowledgements and explicit retention expiry.
 
-Integration candidates remain in restricted evidence pending independent verification and complete downstream review. They are excluded from confirmed counts. The existing root-confirmed economy finding remains separately recorded; this partial scope neither strengthens nor replaces that evidence.
+## Findings and limits
 
-## Hypotheses and limitations
+Unconfirmed cross-module integration candidates remain in private evidence packets and are excluded from confirmed totals. Full subsequent migration and caller review continues, including counterguards to prior independently confirmed findings. No new confirmed finding is asserted in this progress report.
 
-The suspected stale CharacterRevision after bosstiary kill credit is **refuted in the reviewed owner chain**: the kill operation does not change the character revision, and the inspected owning table/receipt migrations add no such trigger. This conclusion does not apply to fee-paying slot operations.
+The suspected CharacterRevision mismatch after bosstiary kill credit was refuted in the inspected owner chain: that operation does not change CharacterRevision. This does not generalize to fee-paying slot mutations. The vendored timeout's inner-future-first poll order is a material counterguard to a proposed COMMIT timeout concern; no lost-outcome claim has been established.
 
-A simple assertion that the outer semantic timeout necessarily overrides the COMMIT timeout is not supported. The actual vendored Tokio timeout polls its inner future before its timer, which is a material counterguard. A residual scheduling question about differing constructed deadlines is unproven and is not a finding. No outcome-loss or duplicate-operation claim is made from this question.
-
-Reviewed schema-string tests and linkage tests have deliberately limited evidentiary value: they check text, symbols and selected pure bounds; their names do not establish atomicity, contention safety or SQL replay behavior. Include-only adapter files receive credit only for the adapter, not their included topic files.
-
-## Validation and exact remaining work
-
-All 19 entries in `ledger.json` have exact full ranges and SHA-256 matching both the immutable Git blob and worktree; `validation.json` contains the result. No source files were edited. No durability package tests, PostgreSQL fixtures, real TLS connection, Windows client or full-workspace build was run. Source review of tests is distinguished from execution.
-
-Remaining: 702 exact paths in `coverage-ledger.json`, including the admission journal and current authority owners, included reconnect test topics, most gameplay persistence APIs and their tests. The package is not REVIEWED and is not runtime VERIFIED.
+Included DB/foundation/reconnect tests were inspected. Their environment gates, multi-connection fixtures, source-string assertions and linkage checks have narrower scope than a production holder/replay test. No durability Cargo suite, SQL migration, PostgreSQL race, native client or live TLS connection was executed. Exact hashes/ranges were independently validated; remaining work stays IN PROGRESS.

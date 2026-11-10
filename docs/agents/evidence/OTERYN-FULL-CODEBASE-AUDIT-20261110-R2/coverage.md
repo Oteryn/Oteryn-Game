@@ -6,7 +6,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 
 | Module | Status | Tracked files | Analyzed files | Full files | Analyzed lines |
 |---|---|---:|---:|---:|---:|
-| oteryn-client | IN PROGRESS | 1180 | 659 | 635 | 63046 |
+| oteryn-client | IN PROGRESS | 1180 | 881 | 865 | 96449 |
 | oteryn-game-server | IN PROGRESS | 873 | 37 | 18 | 6486 |
 | oteryn-admin-agent | REVIEWED | 12 | 12 | 12 | 1865 |
 | oteryn-admin-contracts | REVIEWED | 7 | 7 | 7 | 834 |
@@ -25,22 +25,22 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-combat-rules | REVIEWED | 29 | 29 | 29 | 5131 |
 | oteryn-gameplay-content | IN PROGRESS | 139 | 7 | 1 | 923 |
 | oteryn-gameplay-content-promotion | NOT STARTED | 36 | 0 | 0 | 0 |
-| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 104 | 20 | 16958 |
+| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 117 | 26 | 20409 |
 | oteryn-gameplay-domain | REVIEWED | 67 | 67 | 67 | 33806 |
-| oteryn-gameplay-durability | IN PROGRESS | 721 | 90 | 50 | 22993 |
+| oteryn-gameplay-durability | IN PROGRESS | 721 | 131 | 92 | 44204 |
 | oteryn-gameplay-economy | REVIEWED | 28 | 28 | 28 | 3978 |
 | oteryn-gameplay-encounter-rules | REVIEWED | 21 | 21 | 21 | 4945 |
 | oteryn-gameplay-encounters | IN PROGRESS | 93 | 4 | 2 | 744 |
-| oteryn-gameplay-entities | IN PROGRESS | 86 | 11 | 11 | 5446 |
+| oteryn-gameplay-entities | IN PROGRESS | 86 | 51 | 51 | 19958 |
 | oteryn-gameplay-foundation | IN PROGRESS | 55 | 2 | 1 | 76 |
 | oteryn-gameplay-housing | REVIEWED | 24 | 24 | 24 | 2330 |
 | oteryn-gameplay-items | IN PROGRESS | 59 | 5 | 2 | 1358 |
-| oteryn-gameplay-monster-ai | IN PROGRESS | 64 | 3 | 2 | 427 |
+| oteryn-gameplay-monster-ai | IN PROGRESS | 64 | 4 | 2 | 698 |
 | oteryn-gameplay-native-admission-source | IN PROGRESS | 81 | 5 | 0 | 1133 |
 | oteryn-gameplay-node-files | REVIEWED | 4 | 4 | 4 | 736 |
 | oteryn-gameplay-npc | REVIEWED | 17 | 17 | 17 | 4359 |
 | oteryn-gameplay-progression | IN PROGRESS | 43 | 7 | 7 | 1246 |
-| oteryn-gameplay-quests | IN PROGRESS | 103 | 4 | 1 | 1578 |
+| oteryn-gameplay-quests | IN PROGRESS | 103 | 5 | 1 | 1795 |
 | oteryn-gameplay-social | IN PROGRESS | 56 | 2 | 0 | 156 |
 | oteryn-gameplay-social-rules | REVIEWED | 22 | 22 | 22 | 3479 |
 | oteryn-gameplay-source-critical-baseline | REVIEWED | 2 | 2 | 2 | 145 |
