@@ -12,5 +12,6 @@
   "all_other_input_blobs": "Identical by complete Git tree diff",
   "delta_review_status": "REVIEWED: all four changed files in full, separate exact hashes/ranges validated by lead",
   "delta_owner": "client-support, latest-main-delta.md and latest-main-delta.json",
-  "scope": "Primary audit counts remain bound to input_base. The complete four-file changed-source delta is separately reviewed; no automatic transfer and no native Windows/runtime execution claim."
+  "scope": "Primary audit counts remain bound to input_base. The complete four-file changed-source delta is separately reviewed; no automatic transfer and no native Windows/runtime execution claim.",
+  "latest_connector_confirmation_utc": "2026-11-10T12:20:10+00:00"
 }

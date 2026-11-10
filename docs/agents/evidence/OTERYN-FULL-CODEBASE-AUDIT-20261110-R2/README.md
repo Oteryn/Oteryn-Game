@@ -1,12 +1,12 @@
-# OTERYN FULL AUDIT — continuation checkpoint 5
+# OTERYN FULL AUDIT — continuation checkpoint 6
 
 Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues across all remaining packages and supplementary domains.
 
 ## Verified evidence at this checkpoint
 
 - 67 workspace packages; 11 supplementary domains; 27900 tracked input files.
-- **48 packages REVIEWED / 17 IN PROGRESS / 2 NOT STARTED / 0 VERIFIED**.
-- **3,309 distinct substantively analyzed files**: 3,072 full and 237 selected-range files; 376,298 deduplicated text line positions.
+- **49 packages REVIEWED / 17 IN PROGRESS / 1 NOT STARTED / 0 VERIFIED**.
+- **3,663 distinct substantively analyzed files**: 3,437 full and 226 selected-range files; 424,323 deduplicated text line positions.
 - Four binary fixtures were semantically decoded in full, totaling 475 bytes. Their exact ranges use bytes and are excluded from line counts.
 - 192 historical files retain their exact ranges only because their Git blobs are identical. Four changed historical files receive no automatic carryover credit; fresh review is attributed separately.
 - REVIEWED requires every tracked package file and a substantive report. File discovery, text search, hash checks and test-source inspection are not runtime execution.
@@ -40,11 +40,13 @@ Fresh main is `af33fd3baeac15d9991bd24c91bcacc8733492e2`. Its complete diff from
 
 - `coverage.md`, `coverage-ledger.json`: package/domain status, exact ranges, hashes, provenance and explicit remaining files.
 - `module-reports.json`: completed package reports; client-support reports are inline.
-- Lead: `admin-review.md`, `admission-recovery-review.md`, `determinism-ops-review.md`, `world-bundle-review.md`, `dev-client-bots-review.md`, `architecture-review.md`, `world-compiler-review.md`, `domain-review.md`, `combat-review.md`.
-- Protocol/session: `protocol-session.md`, `platform-client.md`, `session.md`.
+- Lead: `admin-review.md`, `admission-recovery-review.md`, `determinism-ops-review.md`, `world-bundle-review.md`, `dev-client-bots-review.md`, `architecture-review.md`, `world-compiler-review.md`, `domain-review.md`, `combat-review.md`; partial `entities-progress.md`.
+- Protocol/session: `protocol-session.md`, `platform-client.md`, `session.md`, `protocol.md`; partial `durability-progress.md` and `game-server-progress.md`.
 - Gameplay: `characters.md`, `node-files.md`, `weather.md`, `source-critical-baseline.md`, `housing.md`, `economy.md`, `combat-rules.md`, `encounter-rules.md`, `social-rules.md`, `spell-rules.md`, `world-change.md`, `npc.md`.
 - `findings-summary.json`, `inventory.json`, `carryover.json`, `coordination.json`, `snapshot-checks.json`, `validation.md`: findings, scope, allocation and verification.
 
 ## Continuation
 
-The active protocol and client lanes and their delegated worker continue with the lead. The lead has taken over unfinished gameplay scope after the previous worker encountered an authentication gate. Gameplay domain, combat and all 1,334 client-ui files are now REVIEWED. The client application continues with a validated 144-file delegated packet integrated into its parent ledger. Protocol, remaining gameplay owners, client app, server, dispatch, durability, content and tool scopes retain explicit remaining paths. The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and current lifecycle. Repairs are separate work; this report branch changes audit evidence only.
+Protocol is now REVIEWED in full: 596 files, 81,639 text lines and two binary fixtures totaling 302 bytes. Its worker continues full durability and game-server scope. The client lane and delegated worker continue the application; frozen coverage and remaining paths are in the ledger. Gameplay domain, combat and all 1,334 client-ui files retain completed source review. The lead is reviewing actor and authority owners, remaining gameplay packages and supplementary scope after taking over the prior gameplay worker's unfinished allocation.
+
+Two earlier combat cross-module hypotheses were refuted by actual caller and durable-owner inspection. The confirmed finding counts are unchanged; new candidates await independent verification. The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and lifecycle. Repairs remain separate work; this branch changes audit evidence only.

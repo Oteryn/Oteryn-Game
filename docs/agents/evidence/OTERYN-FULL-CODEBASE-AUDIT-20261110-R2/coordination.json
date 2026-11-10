@@ -1,14 +1,14 @@
 {
   "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
-  "observed_at_utc": "2026-11-10T12:00:22.994126+00:00",
-  "lifecycle": "FROZEN_CANDIDATE",
+  "observed_at_utc": "2026-11-10T12:20:04.712109+00:00",
+  "lifecycle": "FROZEN_FOR_PUBLICATION",
   "branch": "audit/full-codebase-20261110-4f0b6c62",
   "sole_writer": "lead /root",
   "owned_prefix": "docs/agents/evidence/OTERYN-FULL-CODEBASE-AUDIT-20261110-R2",
   "lanes": [
     {
       "lane": "lead",
-      "ledger_rows": 277,
+      "ledger_rows": 296,
       "reported_completed_modules": [
         "oteryn-admin-contracts",
         "oteryn-admin-agent",
@@ -27,14 +27,15 @@
     },
     {
       "lane": "protocol-session",
-      "ledger_rows": 742,
+      "ledger_rows": 776,
       "reported_completed_modules": [
         "oteryn-identity",
         "oteryn-platform-contracts",
         "oteryn-session-tcp",
         "oteryn-error-codes",
         "oteryn-platform-client",
-        "oteryn-session"
+        "oteryn-session",
+        "oteryn-protocol-oteryn"
       ]
     },
     {
@@ -57,7 +58,7 @@
     },
     {
       "lane": "client-support",
-      "ledger_rows": 1921,
+      "ledger_rows": 2239,
       "reported_completed_modules": [
         "oteryn-client-domain",
         "oteryn-synthetic-assets",
@@ -76,11 +77,8 @@
       ]
     }
   ],
-  "checkpoint": 5,
-  "frozen_at_utc": "2026-11-10T12:01:43.265177+00:00",
-  "allocation_comment_id": 6766753119,
-  "expected_predecessor": "347e6aaa04dd3f2c68420bbac2ee672b15288e01",
-  "expected_predecessor_tree": "2b49a695307bbc2f07fcab7876cb47957fb303eb",
-  "remote_update": "expected-SHA, non-force, sole-parent successor",
-  "qualification": "Exact remote-head validation is recorded in the live issue after publication; not preclaimed here."
+  "checkpoint": 6,
+  "allocation_comment_id": 6767141675,
+  "predecessor": "fa78f7ff81e7939032a32545a287d346325e56ea",
+  "base_tree": "4d72e7b4cbecd051f2e18a441cac4f30713b7bb3"
 }

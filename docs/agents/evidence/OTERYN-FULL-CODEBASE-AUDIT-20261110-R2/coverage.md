@@ -6,8 +6,8 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 
 | Module | Status | Tracked files | Analyzed files | Full files | Analyzed lines |
 |---|---|---:|---:|---:|---:|
-| oteryn-client | IN PROGRESS | 1180 | 362 | 321 | 30933 |
-| oteryn-game-server | IN PROGRESS | 873 | 32 | 13 | 6118 |
+| oteryn-client | IN PROGRESS | 1180 | 659 | 635 | 63046 |
+| oteryn-game-server | IN PROGRESS | 873 | 37 | 18 | 6486 |
 | oteryn-admin-agent | REVIEWED | 12 | 12 | 12 | 1865 |
 | oteryn-admin-contracts | REVIEWED | 7 | 7 | 7 | 834 |
 | oteryn-client-assets | REVIEWED | 19 | 19 | 19 | 2341 |
@@ -25,21 +25,21 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-combat-rules | REVIEWED | 29 | 29 | 29 | 5131 |
 | oteryn-gameplay-content | IN PROGRESS | 139 | 7 | 1 | 923 |
 | oteryn-gameplay-content-promotion | NOT STARTED | 36 | 0 | 0 | 0 |
-| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 99 | 20 | 16578 |
+| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 104 | 20 | 16958 |
 | oteryn-gameplay-domain | REVIEWED | 67 | 67 | 67 | 33806 |
-| oteryn-gameplay-durability | IN PROGRESS | 721 | 71 | 31 | 17330 |
+| oteryn-gameplay-durability | IN PROGRESS | 721 | 90 | 50 | 22993 |
 | oteryn-gameplay-economy | REVIEWED | 28 | 28 | 28 | 3978 |
 | oteryn-gameplay-encounter-rules | REVIEWED | 21 | 21 | 21 | 4945 |
 | oteryn-gameplay-encounters | IN PROGRESS | 93 | 4 | 2 | 744 |
-| oteryn-gameplay-entities | NOT STARTED | 86 | 0 | 0 | 0 |
-| oteryn-gameplay-foundation | IN PROGRESS | 55 | 1 | 0 | 48 |
+| oteryn-gameplay-entities | IN PROGRESS | 86 | 11 | 11 | 5446 |
+| oteryn-gameplay-foundation | IN PROGRESS | 55 | 2 | 1 | 76 |
 | oteryn-gameplay-housing | REVIEWED | 24 | 24 | 24 | 2330 |
 | oteryn-gameplay-items | IN PROGRESS | 59 | 5 | 2 | 1358 |
 | oteryn-gameplay-monster-ai | IN PROGRESS | 64 | 3 | 2 | 427 |
 | oteryn-gameplay-native-admission-source | IN PROGRESS | 81 | 5 | 0 | 1133 |
 | oteryn-gameplay-node-files | REVIEWED | 4 | 4 | 4 | 736 |
 | oteryn-gameplay-npc | REVIEWED | 17 | 17 | 17 | 4359 |
-| oteryn-gameplay-progression | IN PROGRESS | 43 | 5 | 5 | 1181 |
+| oteryn-gameplay-progression | IN PROGRESS | 43 | 7 | 7 | 1246 |
 | oteryn-gameplay-quests | IN PROGRESS | 103 | 4 | 1 | 1578 |
 | oteryn-gameplay-social | IN PROGRESS | 56 | 2 | 0 | 156 |
 | oteryn-gameplay-social-rules | REVIEWED | 22 | 22 | 22 | 3479 |
@@ -55,7 +55,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-ntp-clock | REVIEWED | 2 | 2 | 2 | 200 |
 | oteryn-platform-client | REVIEWED | 21 | 21 | 21 | 4448 |
 | oteryn-platform-contracts | REVIEWED | 2 | 2 | 2 | 114 |
-| oteryn-protocol-oteryn | IN PROGRESS | 596 | 587 | 586 | 78212 |
+| oteryn-protocol-oteryn | REVIEWED | 596 | 596 | 596 | 81639 |
 | oteryn-renderer | REVIEWED | 18 | 18 | 18 | 3941 |
 | oteryn-session | REVIEWED | 115 | 115 | 115 | 18698 |
 | oteryn-session-tcp | REVIEWED | 4 | 4 | 4 | 507 |
@@ -77,7 +77,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | agent-configuration-and-retained-evidence | NOT STARTED | 113 | 0 | 0 | 0 |
 | content | NOT STARTED | 8032 | 0 | 0 | 0 |
 | deploy | NOT STARTED | 16 | 0 | 0 | 0 |
-| docs | IN PROGRESS | 7398 | 15 | 1 | 1055 |
+| docs | IN PROGRESS | 7398 | 20 | 4 | 1590 |
 | imports | NOT STARTED | 565 | 0 | 0 | 0 |
 | repository-root | NOT STARTED | 16 | 0 | 0 | 0 |
 | rulesets | IN PROGRESS | 77 | 2 | 2 | 66 |
