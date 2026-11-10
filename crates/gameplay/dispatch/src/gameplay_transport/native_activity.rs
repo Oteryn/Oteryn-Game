@@ -758,7 +758,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 {
                     Ok(Some(prefix)) => {
                         if let Some(reason) = source_view
-                            .apply_source_pad_prefix(&mut from, &mut spells, &prefix)
+                            .apply_source_pad_prefix(
+                                &mut from,
+                                &mut spells,
+                                &to,
+                                &mut destination_spells,
+                                &prefix,
+                            )
                             .await?
                         {
                             return refuse(reason);

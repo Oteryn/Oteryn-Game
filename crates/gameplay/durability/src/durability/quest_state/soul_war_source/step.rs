@@ -338,7 +338,10 @@ impl SoulWarSourceStep {
         &self,
         context: &crate::durability::quest_world_callback::QuestWorldToolContext,
     ) -> bool {
-        self.kind == SourceStepKind::SpiteFire && self.context() == **context
+        matches!(
+            self.kind,
+            SourceStepKind::SpiteFire | SourceStepKind::Remorse
+        ) && self.context() == **context
     }
     pub(in crate::durability) fn audit_source(
         &self,
@@ -352,7 +355,11 @@ impl SoulWarSourceStep {
             RuntimeScopeRefV1::Instance { instance_id, .. } => (2, instance_id),
         };
         serde_json::json!({
-            "schema": "OTERYN_SPITE_SOURCE_STEP/v1",
+            "schema": if self.kind == SourceStepKind::Remorse {
+                "OTERYN_REMORSE_SOURCE_STEP/v1"
+            } else {
+                "OTERYN_SPITE_SOURCE_STEP/v1"
+            },
             "source_body": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916",
             "character": sqlx::types::Uuid::from_bytes(*fence.character_id.as_bytes()).to_string(),
             "session": sqlx::types::Uuid::from_bytes(*self.session.as_bytes()).to_string(),

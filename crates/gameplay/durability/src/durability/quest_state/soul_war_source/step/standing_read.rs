@@ -25,6 +25,7 @@ pub struct PreparedSpiteStep {
     target: SpellGroundTarget,
     binding: [u8; 32],
     stamp: crate::foundation::RuntimeWorkStamp,
+    remorse_items: Vec<[u8; 16]>,
 }
 impl PreparedSpiteStep {
     pub fn from_committed_movement(
@@ -36,14 +37,77 @@ impl PreparedSpiteStep {
         movement: MovementPositionSnapshot,
         reset_epoch: u64,
     ) -> Option<Self> {
+        Self::capture(
+            runtime,
+            native,
+            room,
+            actor,
+            session,
+            movement,
+            reset_epoch,
+            None,
+        )
+    }
+    /// Item-id callbacks use the actual destination rows already locked by the
+    /// movement owner. Ordinary tiles do not schedule another detached read.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the committed translation and the existing SQL destination read have independent authority"
+    )]
+    pub fn from_committed_movement_with_items(
+        runtime: &mut ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        room: &crate::content::QualifiedNativeEntryRoom,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        movement: MovementPositionSnapshot,
+        reset_epoch: u64,
+        read: &StandingTileRead,
+    ) -> Option<Self> {
+        Self::capture(
+            runtime,
+            native,
+            room,
+            actor,
+            session,
+            movement,
+            reset_epoch,
+            Some(read),
+        )
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the original current movement optionally carries its existing destination Item read"
+    )]
+    fn capture(
+        runtime: &mut ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        room: &crate::content::QualifiedNativeEntryRoom,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        movement: MovementPositionSnapshot,
+        reset_epoch: u64,
+        read: Option<&StandingTileRead>,
+    ) -> Option<Self> {
         let at = movement.position();
-        if ![
-            (33743, 31628, 14),
-            (33736, 31632, 14),
-            (33750, 31632, 14),
-            (33742, 31637, 14),
-        ]
-        .contains(&(at.x, at.y, at.floor))
+        let remorse_items: Vec<_> = read
+            .into_iter()
+            .flat_map(|read| read.items())
+            .filter(|item| {
+                item.definition.family == "Item"
+                    && item.definition.production_key == SourceStepKind::Remorse.item_key()
+                    && item.definition.revision_ref == "definition-r1"
+            })
+            .map(|item| item.item_instance_id)
+            .collect();
+        if (remorse_items.is_empty()
+            && ![
+                (33743, 31628, 14),
+                (33736, 31632, 14),
+                (33750, 31632, 14),
+                (33742, 31637, 14),
+            ]
+            .contains(&(at.x, at.y, at.floor)))
             || runtime.read_actor_position(actor).ok()? != movement
             || movement.last_translation_revision() == 0
             || movement.revision() != movement.last_translation_revision()
@@ -59,9 +123,24 @@ impl PreparedSpiteStep {
             return None;
         }
         let target = SpellGroundTarget::for_native_tile_read(room, runtime, at).ok()?;
+        if let Some(read) = read
+            && (read.target() != &target
+                || read.content_digest() != native.source_digest()
+                || read.fence().game_session_id != session
+                || read.fence().runtime_scope != runtime.binding().runtime_scope()
+                || read.fence().scope_ownership_generation != runtime.binding().scope_generation())
+        {
+            return None;
+        }
         let lease = runtime.bound_attacker_lease(actor, session).ok()?;
         let character = *lease.character_id().as_bytes();
         let lease = lease.generation();
+        if let Some(read) = read
+            && (read.fence().character_id.as_bytes() != &character
+                || read.fence().character_lease_generation != lease)
+        {
+            return None;
+        }
         let stamp = runtime.issue_owner_work().ok()?;
         let owner = runtime.binding();
         let pin = runtime.content_pin();
@@ -98,6 +177,9 @@ impl PreparedSpiteStep {
         for value in pins {
             hash.update(value);
         }
+        for item in &remorse_items {
+            hash.update(item);
+        }
         Some(Self {
             actor,
             session,
@@ -115,6 +197,7 @@ impl PreparedSpiteStep {
             target,
             binding: hash.finalize().into(),
             stamp,
+            remorse_items,
         })
     }
     pub fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
@@ -168,12 +251,17 @@ impl PreparedSpiteStep {
             && fence.runtime_scope == self.scope
             && fence.scope_ownership_generation == self.generation
     }
-    pub fn qualify_current_first(
+    pub fn callback_count(&self) -> usize {
+        self.remorse_items.len().saturating_add(1)
+    }
+    pub fn qualify_current_next(
         &self,
         runtime: &ChannelRuntimeV1,
         native: &crate::content::native_gameplay::NativeGameplayState,
         room: &crate::content::QualifiedNativeEntryRoom,
         read: &StandingTileRead,
+        completed_items: &[[u8; 16]],
+        fire_finished: bool,
     ) -> Option<Option<SoulWarSourceStep>> {
         if !self.current_for(runtime) || !self.matches_fence(read.fence()) {
             return None;
@@ -189,7 +277,16 @@ impl PreparedSpiteStep {
             read,
         )?
         .into_iter()
-        .find(|input| input.kind() == SourceStepKind::SpiteFire);
+        .find(|input| {
+            !completed_items.contains(&input.item_instance_id())
+                && match input.kind() {
+                    SourceStepKind::SpiteFire => !fire_finished,
+                    SourceStepKind::Remorse => {
+                        self.remorse_items.contains(&input.item_instance_id())
+                    }
+                    SourceStepKind::Energy => false,
+                }
+        });
         Some(selected)
     }
 }

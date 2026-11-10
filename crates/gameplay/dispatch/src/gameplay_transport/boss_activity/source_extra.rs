@@ -121,6 +121,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut super::super::actor_spell::ChannelSpellStates,
+        destination: &ChannelRuntimeV1,
+        destination_states: &mut super::super::actor_spell::ChannelSpellStates,
         prefix: &QualifiedBossPadPrefix,
     ) -> Result<Option<ActivityRefusal>, ()> {
         let active = self.active_generation.ok_or(())?;
@@ -143,11 +145,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(());
             }
         }
+        if let Some(first) = prefix.pads().first()
+            && first.kind() == SourceBossLeverExtra::Hatred
+        {
+            let connection = self
+                .activity_runtimes
+                .connection(first.command().game_session_id())
+                .ok_or(())?;
+            destination_states
+                .soul_war_callbacks
+                .apply_hatred_source_prefix(
+                    runtime,
+                    states,
+                    destination,
+                    native,
+                    prefix,
+                    connection.continuity.connection_generation,
+                )?;
+            return Ok(prefix.refusal());
+        }
         for pad in prefix.pads() {
             match pad.kind() {
-                SourceBossLeverExtra::Hatred => {
-                    self.apply_hatred_pad_extra(runtime, states, pad)?
-                }
+                SourceBossLeverExtra::Hatred => return Err(()),
                 SourceBossLeverExtra::Outburst => {
                     states
                         .native_callbacks
@@ -157,28 +176,5 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         Ok(prefix.refusal())
-    }
-
-    pub(in crate::gameplay_transport) fn apply_hatred_pad_extra(
-        &self,
-        runtime: &ChannelRuntimeV1,
-        states: &mut super::super::actor_spell::ChannelSpellStates,
-        pad: &QualifiedBossPadExtra,
-    ) -> Result<(), ()> {
-        if pad.kind() != SourceBossLeverExtra::Hatred {
-            return Err(());
-        }
-        let actor = self.current_source_extra_actor(runtime, pad).ok_or(())?;
-        if states.is_dead(actor)
-            || states.has_pending_spell_commit(actor, pad.source().game_session_id)
-            || states
-                .get(runtime, actor, pad.source().game_session_id)
-                .is_none()
-        {
-            return Err(());
-        }
-
-        // Neutral until the actual SQL-qualified native pad/reset regression.
-        Err(())
     }
 }

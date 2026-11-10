@@ -1,5 +1,6 @@
 //! Crystal201189f soul_war_mechanics.lua579-643: actual Burning onThink owner.
 use super::*;
+use crate::foundation::GameSessionId;
 use oteryn_gameplay_encounters::bosses::goshnars_hatred::{BurningForm, Effect, HatredRoom};
 use oteryn_gameplay_entities::carrier::soul_war_hatred::HatredEmpowerment;
 
@@ -13,6 +14,19 @@ pub(super) struct HatredCallbacks {
     entered: bool,
     removed: bool,
     removing: Option<[Option<ExactActorRef>; 4]>,
+    entry_extras: Vec<EntryExtraMemo>,
+}
+#[derive(Debug, Clone)]
+struct EntryExtraMemo {
+    initiator: ExactActorRef,
+    session: GameSessionId,
+    connection: u64,
+    command: u64,
+    wire: [u8; 32],
+    pads: [Option<(
+        ExactActorRef,
+        crate::durability::item_transfer::CurrentCharacterItemFence,
+    )>; 5],
 }
 impl HatredCallbacks {
     fn current_actors(
@@ -41,6 +55,7 @@ impl HatredCallbacks {
             entered: false,
             removed: false,
             removing: None,
+            entry_extras: Vec::new(),
         })
     }
     pub(super) fn initialize(
@@ -177,6 +192,165 @@ impl HatredCallbacks {
         }
         self.clock = next;
         Ok(true)
+    }
+}
+
+impl SoulWarCallbacks {
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) fn hatred_entry_for_test(&self) -> Option<(u64, bool)> {
+        self.hatred
+            .as_ref()
+            .map(|owner| (owner.clock.remaining(), owner.entered))
+    }
+
+    /// Crystal's qualifying pad predicate resets this Player before testing the
+    /// next pad. Both physical runtimes stay borrowed by the original handoff;
+    /// no destination Player or successful whole-roster entry is manufactured.
+    pub(in crate::gameplay_transport) fn apply_hatred_source_prefix(
+        &mut self,
+        source: &ChannelRuntimeV1,
+        source_states: &mut ChannelSpellStates,
+        destination: &ChannelRuntimeV1,
+        native: &NativeGameplayState,
+        prefix: &crate::durability::activity_handoff::boss_room::QualifiedBossPadPrefix,
+        connection: u64,
+    ) -> Result<(), ()> {
+        use crate::durability::activity_handoff::boss_room::SourceBossLeverExtra;
+        let first = prefix.pads().first().ok_or(())?;
+        if connection == 0
+            || first.kind() != SourceBossLeverExtra::Hatred
+            || !qualifies_source(source, native)
+            || !qualifies_source(destination, native)
+        {
+            return Err(());
+        }
+        source.owner_fence().map_err(|_| ())?;
+        destination.owner_fence().map_err(|_| ())?;
+        let owner = self.hatred.as_mut().ok_or(())?;
+        if owner.entered
+            || owner.removed
+            || owner.boss.runtime_scope() != destination.binding().runtime_scope()
+            || owner.boss.scope_generation() != destination.binding().scope_generation()
+            || owner.content != native.source_digest()
+            || source_actor(destination, native, owner.boss).as_deref() != Some(HATRED)
+            || !destination.contains_live_creature(owner.boss)
+        {
+            return Err(());
+        }
+        let command = first.command();
+        let session = command.game_session_id();
+        let (initiator, _) = source
+            .positioned_player_for_session(session)
+            .map_err(|_| ())?
+            .ok_or(())?;
+        if source
+            .player_control_facts(initiator, session)
+            .map_err(|_| ())?
+            .control_loss
+            .is_some()
+        {
+            return Err(());
+        }
+        owner.entry_extras.retain(|memo| {
+            source
+                .player_control_facts(memo.initiator, memo.session)
+                .is_ok()
+                && (memo.initiator != initiator || memo.connection == connection)
+        });
+        let prior = owner
+            .entry_extras
+            .iter()
+            .position(|memo| memo.initiator == initiator && memo.connection == connection);
+        let mut memo = EntryExtraMemo {
+            initiator,
+            session,
+            connection,
+            command: command.command_id().get(),
+            wire: first.wire_binding(),
+            pads: [None; 5],
+        };
+        if let Some(index) = prior {
+            let old = &owner.entry_extras[index];
+            if old.command > memo.command || (old.command == memo.command && old.wire != memo.wire)
+            {
+                return Err(());
+            }
+            if old.command == memo.command {
+                memo = old.clone();
+            }
+        } else {
+            owner.entry_extras.try_reserve(1).map_err(|_| ())?;
+        }
+        let mut resets = Vec::new();
+        for pad in prefix.pads() {
+            let fence = pad.source();
+            if pad.kind() != SourceBossLeverExtra::Hatred
+                || pad.command() != command
+                || pad.wire_binding() != memo.wire
+                || fence.runtime_scope != source.binding().runtime_scope()
+                || fence.scope_ownership_generation != source.binding().scope_generation()
+            {
+                return Err(());
+            }
+            let (actor, at) = source
+                .positioned_player_for_session(fence.game_session_id)
+                .map_err(|_| ())?
+                .ok_or(())?;
+            let lease = source
+                .bound_attacker_lease(actor, fence.game_session_id)
+                .map_err(|_| ())?;
+            if lease.character_id().as_bytes() != fence.character_id.as_bytes()
+                || lease.generation() != fence.character_lease_generation
+                || source_states.is_dead(actor)
+                || source_states.has_pending_spell_commit(actor, fence.game_session_id)
+                || (at.position().x, at.position().y, at.position().floor)
+                    != (
+                        pad.position().cell.x,
+                        pad.position().cell.y,
+                        pad.position().cell.floor,
+                    )
+            {
+                return Err(());
+            }
+            let retained = memo
+                .pads
+                .get_mut(usize::from(pad.pad_ordinal()))
+                .ok_or(())?;
+            if let Some(old) = retained {
+                if *old != (actor, fence) {
+                    return Err(());
+                }
+                continue;
+            }
+            let current = source_states
+                .get(source, actor, fence.game_session_id)
+                .ok_or(())?;
+            let next = current.stage_soul_war_torment_counter(0).ok_or(())?;
+            resets.push((
+                actor,
+                fence.game_session_id,
+                (next.revision() != current.revision()).then_some(next),
+            ));
+            *retained = Some((actor, fence));
+        }
+        // All current facts and every exact successor are checked before the
+        // first reset. Publication below has no await and no second writer.
+        if !resets.is_empty() {
+            for (actor, session, next) in resets {
+                if let Some(next) = next
+                    && !source_states.commit(source, actor, session, next)
+                {
+                    return Err(());
+                }
+            }
+            owner.clock.lever_pulled();
+            if let Some(index) = prior {
+                owner.entry_extras[index] = memo;
+            } else {
+                owner.entry_extras.push(memo);
+            }
+        }
+        Ok(())
     }
 }
 

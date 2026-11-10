@@ -1021,134 +1021,23 @@ fn run_rotten_native_lethal_case_checks(
                     );
                 }
                 if check_source_step {
-                    // Explicit mechanics precondition: the actual native Symbol
-                    // died through the canonical HP/reward owners above. This
-                    // does not claim the Hatred summon callback created it.
-                    let scope = owner.runtime.lock().await.binding().runtime_scope();
-                    let ground = owner.root.read_item_loop_ground_for_scope(scope).await?;
-                    let actual = ground
-                        .iter()
-                        .find(|item| {
-                            item.item.definition.production_key == "oteryn:item.tibia.i33792"
-                        })
-                        .ok_or("actual Symbol plain corpse33792 must exist before source STEP")?;
-                    assert!(actual.source_plain_corpse);
-                    let raw = &actual.item.ground.spatial_position;
-                    if raw.len() != 10 {
-                        return Err("actual source corpse coordinate envelope".into());
+                    // Both Items below come from real native Symbol deaths. The
+                    // current source Player starts with an explicit Torment
+                    // predecessor through the existing live state owner.
+                    {
+                        let runtime = owner.runtime.lock().await;
+                        let mut states = owner.states.spell_states.lock().await;
+                        let next = states
+                            .get(&runtime, actor, admitted.game_session_id)
+                            .ok_or("current source Player")?
+                            .stage_soul_war_torment_counter(24)
+                            .ok_or("Torment predecessor24")?;
+                        assert!(states.commit(&runtime, actor, admitted.game_session_id, next));
                     }
-                    let target_position = MovementLocalPosition {
-                        x: i32::from_be_bytes(raw[0..4].try_into()?),
-                        y: i32::from_be_bytes(raw[4..8].try_into()?),
-                        floor: i16::from_be_bytes(raw[8..10].try_into()?),
-                    };
-                    let before = owner
-                        .runtime
-                        .lock()
-                        .await
-                        .read_actor_position(actor)
-                        .map_err(debug)?;
-                    use oteryn_protocol_oteryn::world_spatial::StepDirection;
-                    let direction = match (
-                        target_position.x - before.position().x,
-                        target_position.y - before.position().y,
-                    ) {
-                        (0, -1) => StepDirection::North,
-                        (1, 0) => StepDirection::East,
-                        (0, 1) => StepDirection::South,
-                        (-1, 0) => StepDirection::West,
-                        _ => {
-                            return Err("real corpse must be on actual adjacent source tile".into());
-                        }
-                    };
-                    owner.clock_origin = owner
-                        .clock_origin
-                        .checked_sub(std::time::Duration::from_millis(500))
-                        .ok_or("actual Remorse step pace")?;
-                    let (step, _) = owner
-                        .ordinary_paced_step(actor, admitted.game_session_id, direction, None, None)
-                        .await;
-                    assert_eq!(
-                        step.disposition,
-                        oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
-                    );
-                    let (movement, target) = {
-                        let runtime = owner.runtime.lock().await;
-                        let movement = runtime.read_actor_position(actor).map_err(debug)?;
-                        assert_eq!(movement.position(), target_position);
-                        assert!(
-                            movement.last_translation_revision()
-                                > before.last_translation_revision()
-                        );
-                        let target=crate::durability::spell_items_abi::SpellGroundTarget::for_native_tile_read(&scene.room,&runtime,movement.position()).map_err(debug)?;
-                        (movement, target)
-                    };
-                    let permit = owner
-                        .spell_lane_permit()
-                        .await
-                        .ok_or("actual source Step lane")?;
-                    let current = owner
-                        .current_quest_fence(admitted.game_session_id)
-                        .await
-                        .map_err(|_| "current Step Character fence")?
-                        .ok_or("live Step session")?;
-                    let read = owner
-                        .root
-                        .read_standing_player_tile(
-                            &permit,
-                            owner.character,
-                            owner.holder,
-                            current.item_fence(),
-                            native.source_digest(),
-                            target,
-                        )
-                        .await
-                        .map_err(debug)?;
-                    let inputs = {
-                        let runtime = owner.runtime.lock().await;
-                        crate::durability::quest_state::soul_war_source::step::SoulWarSourceStep::from_standing_read(
-                            &runtime,native,&scene.room,actor,admitted.game_session_id,movement,owner.reset_epoch,&read)
-                            .ok_or("real movement and SQL-fenced Ground source Step must qualify")?
-                    };
-                    let selected = inputs
-                        .into_iter()
-                        .find(|input| input.item_instance_id() == actual.item.item_instance_id)
-                        .ok_or("same actual33792 Item must issue the source Step proof")?;
-                    let target = selected.target();
-                    let context = crate::durability::quest_world_callback::QuestWorldContext {
-                        map_revision: target.map_revision.clone(),
-                        content_revision: target.content_revision.clone(),
-                        placement_context: target.placement_context.clone(),
-                        reset_epoch: owner.reset_epoch,
-                        actor_placement: actor.placement_identity(),
-                        movement_revision: movement.revision(),
-                    };
-                    eprintln!("SRX3_ACTUAL_REMORSE_STEP_PAIRED_WRITER_REACHED");
-                    let mut slot = owner.revision_sequencer.acquire(current.character_id).await;
-                    let outcome=slot.commit_soul_war_source_action(owner.root,owner.character,owner.holder,current,
-                        crate::durability::quest_state::soul_war_source::SoulWarSourceAction::Step(selected),
-                        owner.quest_catalogue.as_ref().ok_or("source catalogue")?.clone(),Some((&permit,context))).await?;
-                    assert!(
-                        matches!(
-                            outcome,
-                            crate::durability::quest_state::QuestTransitionOutcome::Committed(_)
-                        ),
-                        "actual source STEP must commit Remorse1 and remove exact Ground in oneT2: {outcome:?}"
-                    );
-                    drop(slot);
-                    drop(permit);
-                    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
-                        .bind(current.character_id.as_bytes().as_slice()).bind(oteryn_gameplay_quests::quest::soul_war::source_items::REMORSE)
-                        .fetch_one(&h.pool).await?,1);
-                    assert!(
-                        !owner
-                            .root
-                            .read_item_loop_ground_for_scope(scope)
-                            .await?
-                            .iter()
-                            .any(|item| item.item.item_instance_id == actual.item.item_instance_id),
-                        "same actual Remorse Item leaves Ground"
-                    );
+                    exercise_remorse_step(&h, &mut owner, &admitted, &scene, 1, 24).await?;
+                    create_second_symbol_corpse(&owner, &admitted, &scene).await?;
+                    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION'").fetch_one(&h.pool).await?,2,"both Remorse Items have actual native death/MINT predecessors");
+                    exercise_remorse_step(&h, &mut owner, &admitted, &scene, 0, 0).await?;
                 }
                 if let Some(expected_lifetime) = check_timer {
                     let duration = sqlx::query_scalar::<_, Option<i64>>("SELECT game_corpse_retirement_deadline(item_instance_id)-materialized_at FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION'").fetch_one(&h.pool).await?;
@@ -1170,6 +1059,313 @@ fn run_rotten_native_lethal_case_checks(
         result.is_ok()
     );
     result
+}
+
+/// This test drives the ordinary Player movement producer. The old current
+/// Ground read is retained solely to replay the exact already committed writer
+/// after the physical Item has gone; it never grants a fresh mutation.
+async fn exercise_remorse_step(
+    h: &Harness,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &crate::gameplay_transport::connection::AdmittedSession,
+    scene: &SourceScene,
+    expected_remorse: i64,
+    expected_torment: u8,
+) -> TestResult {
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native source")?;
+    let actor = admitted.runtime_actor.ok_or("actual Player")?;
+    let scope = owner.runtime.lock().await.binding().runtime_scope();
+    let ground = owner.root.read_item_loop_ground_for_scope(scope).await?;
+    let actual = ground
+        .iter()
+        .find(|item| item.item.definition.production_key == "oteryn:item.tibia.i33792")
+        .ok_or("actual Symbol plain corpse33792 must exist before source STEP")?;
+    assert!(actual.source_plain_corpse);
+    let raw = &actual.item.ground.spatial_position;
+    if raw.len() != 10 {
+        return Err("actual source corpse coordinate envelope".into());
+    }
+    let target_position = MovementLocalPosition {
+        x: i32::from_be_bytes(raw[0..4].try_into()?),
+        y: i32::from_be_bytes(raw[4..8].try_into()?),
+        floor: i16::from_be_bytes(raw[8..10].try_into()?),
+    };
+    let (before, target) = {
+        let runtime = owner.runtime.lock().await;
+        (
+            runtime.read_actor_position(actor).map_err(debug)?,
+            crate::durability::spell_items_abi::SpellGroundTarget::for_native_tile_read(
+                &scene.room,
+                &runtime,
+                target_position,
+            )
+            .map_err(debug)?,
+        )
+    };
+    use oteryn_protocol_oteryn::world_spatial::StepDirection;
+    let direction = match (
+        target_position.x - before.position().x,
+        target_position.y - before.position().y,
+    ) {
+        (0, -1) => StepDirection::North,
+        (1, 0) => StepDirection::East,
+        (0, 1) => StepDirection::South,
+        (-1, 0) => StepDirection::West,
+        _ => return Err("real corpse must be on actual adjacent source tile".into()),
+    };
+    let permit = owner
+        .spell_lane_permit()
+        .await
+        .ok_or("actual source Step lane")?;
+    let original = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "original Step Character fence")?
+        .ok_or("live Step session")?;
+    let read = owner
+        .root
+        .read_standing_player_tile(
+            &permit,
+            owner.character,
+            owner.holder,
+            original.item_fence(),
+            native.source_digest(),
+            target,
+        )
+        .await
+        .map_err(debug)?;
+    drop(permit);
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_millis(500))
+        .ok_or("actual Remorse step pace")?;
+    let (step, _) = owner
+        .ordinary_paced_step(actor, admitted.game_session_id, direction, None, None)
+        .await;
+    assert_eq!(
+        step.disposition,
+        oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
+    );
+    let (movement, selected, state_after) = {
+        let runtime = owner.runtime.lock().await;
+        let movement = runtime.read_actor_position(actor).map_err(debug)?;
+        assert_eq!(movement.position(), target_position);
+        assert!(movement.last_translation_revision() > before.last_translation_revision());
+        let selected=crate::durability::quest_state::soul_war_source::step::SoulWarSourceStep::from_standing_read(
+            &runtime,native,&scene.room,actor,admitted.game_session_id,movement,owner.reset_epoch,&read)
+            .ok_or("retained original SQL Ground witness")?.into_iter()
+            .find(|input|input.item_instance_id()==actual.item.item_instance_id).ok_or("same original33792 proof")?;
+        let states = owner.states.spell_states.lock().await;
+        let state = states
+            .get(&runtime, actor, admitted.game_session_id)
+            .ok_or("current Player after actual STEP")?
+            .clone();
+        assert_eq!(state.soul_war_torment_count(), expected_torment);
+        assert_eq!(
+            state.soul_war_torment_icon_count(),
+            (expected_torment != 0).then_some(u16::from(expected_torment))
+        );
+        (movement, selected, state)
+    };
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+        .bind(original.character_id.as_bytes().as_slice()).bind(oteryn_gameplay_quests::quest::soul_war::source_items::REMORSE).fetch_one(&h.pool).await?,expected_remorse);
+    assert!(
+        !owner
+            .root
+            .read_item_loop_ground_for_scope(scope)
+            .await?
+            .iter()
+            .any(|item| item.item.item_instance_id == actual.item.item_instance_id),
+        "ordinary STEP already consumed the exact actual Remorse Item"
+    );
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_quest_callback_consumptions WHERE item_instance_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-transition/soul-war/source-items/remorse'").bind(actual.item.item_instance_id.as_slice()).fetch_one(&h.pool).await?,1);
+    let permit = owner
+        .spell_lane_permit()
+        .await
+        .ok_or("source replay lane")?;
+    let context = selected.context();
+    let mut slot = owner
+        .revision_sequencer
+        .acquire(original.character_id)
+        .await;
+    let replay = slot
+        .commit_soul_war_source_action(
+            owner.root,
+            owner.character,
+            owner.holder,
+            original,
+            crate::durability::quest_state::soul_war_source::SoulWarSourceAction::Step(selected),
+            owner
+                .quest_catalogue
+                .as_ref()
+                .ok_or("source catalogue")?
+                .clone(),
+            Some((&permit, context)),
+        )
+        .await?;
+    assert!(
+        matches!(
+            replay,
+            crate::durability::quest_state::QuestTransitionOutcome::AlreadyCommitted(_)
+        ),
+        "same immutable source receipt reconciles before looking for the removed Item: {replay:?}"
+    );
+    drop(slot);
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        crate::gameplay_transport::spite_step::stage(
+            owner,
+            &mut runtime,
+            &mut states,
+            actor,
+            admitted.game_session_id,
+            movement,
+        )
+        .map_err(|_| "completed raw movement replay")?;
+    }
+    assert!(owner.resolve_spite_steps(&permit).await);
+    let runtime = owner.runtime.lock().await;
+    assert_eq!(
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .get(&runtime, actor, admitted.game_session_id),
+        Some(&state_after),
+        "writer/raw movement replay does not repeat the counter/icon effect"
+    );
+    eprintln!("SRX3_ACTUAL_REMORSE_STEP_PAIRED_WRITER_REACHED remorse={expected_remorse}");
+    Ok(())
+}
+
+async fn create_second_symbol_corpse(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &crate::gameplay_transport::connection::AdmittedSession,
+    scene: &SourceScene,
+) -> TestResult {
+    use crate::foundation::runtime_actor_spell_types::{
+        OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
+    };
+    let actor = admitted.runtime_actor.ok_or("actual Player")?;
+    let fence = admitted.item_fence.ok_or("actual Item fence")?;
+    let now = owner.owner_now();
+    let command = crate::foundation::CommandRef::new(
+        admitted.game_session_id,
+        crate::foundation::CommandId::new(65011).map_err(debug)?,
+    );
+    publish_native_fixture_player_source(owner, fence, actor, command, now.get()).await?;
+    let child = {
+        let mut runtime = owner.runtime.lock().await;
+        let origin = runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position();
+        let position = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+            .into_iter()
+            .map(|(x, y)| MovementLocalPosition {
+                x: origin.x + x,
+                y: origin.y + y,
+                floor: origin.floor,
+            })
+            .find(|at| {
+                runtime.native_summon_cell_free(*at)
+                    && scene.room.movement_cells().index().lookup(
+                        scene.room.movement_cells().scope(),
+                        crate::content::LogicalCell {
+                            x: at.x,
+                            y: at.y,
+                            z: i32::from(at.floor),
+                        },
+                    ) == Ok(crate::content::CollisionClass::Walkable)
+            })
+            .ok_or("second actual adjacent native tile")?;
+        // Reuse the existing native encounter owner; do not install a second
+        // qualification-spawn source or alter its resource ceiling.
+        let child = runtime
+            .spawn_arena_opponent(
+                "oteryn:creature.symbol_of_hatred",
+                position,
+                |current, at| {
+                    Some(
+                        current.native_summon_cell_free(at)
+                            && scene.room.movement_cells().index().lookup(
+                                scene.room.movement_cells().scope(),
+                                crate::content::LogicalCell {
+                                    x: at.x,
+                                    y: at.y,
+                                    z: i32::from(at.floor),
+                                },
+                            ) == Ok(crate::content::CollisionClass::Walkable),
+                    )
+                },
+            )
+            .map_err(debug)?;
+        let maximum = runtime
+            .companion_snapshot(child)
+            .map_err(debug)?
+            .maximum_health;
+        let batch = OwnerCombatBatch {
+            caster: actor,
+            attacker: crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                .map_err(debug)?,
+            current_lease_generation: fence.character_lease_generation,
+            command,
+            occurrence: SpellOccurrenceBinding {
+                id: "srx3-native-remorse-second".into(),
+                revisions: ["r1", "r1", "r1", "r1", "r1"].map(str::to_owned),
+            },
+            binding: b"srx3-native-remorse-second".to_vec(),
+            anchor: None,
+            now_us: Some(now),
+            now_ms: now.get() / 1000,
+            effects: vec![OwnerCombatEffect {
+                target: child,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::Damage {
+                    target_atom: runtime.creature_spell_target_atom(child).map_err(debug)?,
+                    magnitude: maximum,
+                },
+            }],
+            deferred: None,
+        };
+        let staged = runtime.stage_spell_batch(&batch).map_err(debug)?;
+        let receipt = runtime.commit_spell_batch(staged).map_err(debug)?;
+        assert!(
+            receipt
+                .effects
+                .iter()
+                .any(|effect| effect.health.is_some_and(|health| health.health_after == 0))
+        );
+        let attack = owner.states.attack.lock().await;
+        crate::gameplay_transport::kill_reward::record_batch_kills(
+            &mut runtime,
+            crate::gameplay_transport::kill_reward::KillSink {
+                prey: None,
+                activity: &[],
+                queue: attack.kills(),
+                rewards: owner
+                    .active_generation
+                    .and_then(|g| g.native_gameplay())
+                    .ok_or("native rewards")?
+                    .reward_table(),
+                charms: None,
+            },
+            &receipt,
+            now.get() / 1000,
+        );
+        child
+    };
+    super::srx3_native_source_cast::drain_source_death(owner, child, now).await?;
+    assert_eq!(
+        owner.drain_kill_rewards(admitted.game_session_id).await,
+        crate::gameplay_transport::kill_reward::DrainOutcome::Drained
+    );
+    Ok(())
 }
 
 #[test]

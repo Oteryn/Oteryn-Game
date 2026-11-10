@@ -1,6 +1,7 @@
 //! Crystal soul_war_mechanics.lua:434-480: the original committed Player STEP
-//! selects one current searing fire, then consumes it with its 56-second Quest
-//! clock. SQL uncertainty retains that same movement and physical Item.
+//! selects one current searing fire or the original33792 Item-id callbacks.
+//! Both use the existing atomic Quest/Ground owner; SQL uncertainty retains
+//! that same movement and physical Items.
 use super::{ComposedFreshAdmission, actor_spell::ChannelSpellStates};
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
@@ -9,7 +10,7 @@ use crate::durability::quest_state::{
     QuestTransitionOutcome,
     soul_war_source::{
         SoulWarSourceAction,
-        step::{PreparedSpiteStep, SoulWarSourceStep},
+        step::{PreparedSpiteStep, SoulWarSourceStep, SourceStepKind},
     },
 };
 use crate::durability::spell_owner_commit::SpellLanePermit;
@@ -33,6 +34,8 @@ struct PendingStep {
     movement: PreparedSpiteStep,
     reservation: SourceActorReservation,
     selected: Option<(SoulWarSourceStep, CurrentCharacterGameplayFence)>,
+    completed_items: Vec<[u8; 16]>,
+    fire_finished: bool,
 }
 
 impl SpiteStepState {
@@ -52,6 +55,30 @@ pub(super) fn stage(
     session: GameSessionId,
     movement: MovementPositionSnapshot,
 ) -> Result<(), ()> {
+    stage_with_items(owner, runtime, states, actor, session, movement, None)
+}
+
+pub(super) fn stage_from_current_read(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    movement: MovementPositionSnapshot,
+    read: &crate::durability::spell_item_transaction::StandingTileRead,
+) -> Result<(), ()> {
+    stage_with_items(owner, runtime, states, actor, session, movement, Some(read))
+}
+
+fn stage_with_items(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    movement: MovementPositionSnapshot,
+    read: Option<&crate::durability::spell_item_transaction::StandingTileRead>,
+) -> Result<(), ()> {
     let Some(native) = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
@@ -61,15 +88,29 @@ pub(super) fn stage(
     let Some(room) = owner.effective_rooms().gate_field_step_ingress() else {
         return Ok(());
     };
-    let Some(proof) = PreparedSpiteStep::from_committed_movement(
-        runtime,
-        native,
-        room,
-        actor,
-        session,
-        movement,
-        owner.reset_epoch,
-    ) else {
+    let proof = if let Some(read) = read {
+        PreparedSpiteStep::from_committed_movement_with_items(
+            runtime,
+            native,
+            room,
+            actor,
+            session,
+            movement,
+            owner.reset_epoch,
+            read,
+        )
+    } else {
+        PreparedSpiteStep::from_committed_movement(
+            runtime,
+            native,
+            room,
+            actor,
+            session,
+            movement,
+            owner.reset_epoch,
+        )
+    };
+    let Some(proof) = proof else {
         return Ok(());
     };
     let state = &mut states.spite_steps;
@@ -82,10 +123,11 @@ pub(super) fn stage(
         .any(|(old_actor, old_session, revision)| {
             *old_actor == actor && *old_session == session && *revision >= movement.revision()
         })
-        || state
-            .pending
-            .iter()
-            .any(|entry| entry.movement.event_identity() == proof.event_identity())
+        || state.pending.iter().any(|entry| {
+            entry.movement.actor() == actor
+                && entry.movement.session() == session
+                && entry.movement.movement() == movement
+        })
     {
         return Ok(());
     }
@@ -100,6 +142,8 @@ pub(super) fn stage(
         movement: proof,
         reservation,
         selected: None,
+        completed_items: Vec::new(),
+        fire_finished: false,
     });
     states.owner_wake.notify_one();
     Ok(())
@@ -150,7 +194,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .spite_steps
             .pending
-            .len();
+            .iter()
+            .map(|pending| pending.movement.callback_count().saturating_add(1))
+            .sum::<usize>();
         for _ in 0..count {
             if self.resolve_one_spite_step(permit).await.is_err() {
                 return false;
@@ -216,7 +262,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let room = self.effective_rooms().gate_field_step_ingress().ok_or(())?;
             let selected = pending
                 .movement
-                .qualify_current_first(&runtime, native, room, &read)
+                .qualify_current_next(
+                    &runtime,
+                    native,
+                    room,
+                    &read,
+                    &pending.completed_items,
+                    pending.fire_finished,
+                )
                 .ok_or(())?;
             let Some(selected) = selected else {
                 finish(&mut runtime, &mut states, &pending)?;
@@ -235,6 +288,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let catalogue = self.quest_catalogue.as_ref().ok_or(())?;
         let action = SoulWarSourceAction::Step(input.clone());
         let request = action.request(fence).map_err(|_| ())?;
+        if input.kind() == SourceStepKind::Remorse {
+            // A known second Remorse must have a representable counter/icon
+            // successor before its Item can commit. The physical reservation
+            // keeps this same Player current across the detached SQL write.
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            runtime
+                .validate_source_actor_reservation(&pending.reservation, &pending.movement)
+                .map_err(|_| ())?;
+            states
+                .get(
+                    &runtime,
+                    pending.movement.actor(),
+                    pending.movement.session(),
+                )
+                .ok_or(())?
+                .stage_soul_war_torment_counter(0)
+                .ok_or(())?;
+        }
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         // Retain the original fence after selection. The sole writer reconciles
         // its immutable receipt BEFORE any fresh authority or Ground lookup.
@@ -264,12 +336,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     || receipt.quest_key != rule::QUEST
                     || receipt.completes
                     || receipt.experience.is_some()
-                    || change.track != rule::SPITE_FIRE
-                    || change.after < change.before.checked_add(56).ok_or(())?
                 {
                     return Err(());
                 }
-                Some(input.recovery_remaining_micros(change.after).ok_or(())?)
+                Some(match input.kind() {
+                    SourceStepKind::SpiteFire
+                        if change.track == rule::SPITE_FIRE
+                            && change.after >= change.before.checked_add(56).ok_or(())? =>
+                    {
+                        AppliedStep::Fire(input.recovery_remaining_micros(change.after).ok_or(())?)
+                    }
+                    SourceStepKind::Remorse
+                        if change.track == rule::REMORSE
+                            && matches!(change.before, 0 | 1)
+                            && change.after == 1 - change.before =>
+                    {
+                        AppliedStep::Remorse {
+                            reset: change.before == 1,
+                        }
+                    }
+                    _ => return Err(()),
+                })
             }
             Err(CharacterProgressionError::Unavailable(_)) => return Err(()),
             Ok(QuestTransitionOutcome::Refused(_) | QuestTransitionOutcome::ObligationClosed)
@@ -277,9 +364,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        finish(&mut runtime, &mut states, &pending)?;
-        if let Some(recovery_micros) = committed {
+        runtime
+            .validate_source_actor_reservation(&pending.reservation, &pending.movement)
+            .map_err(|_| ())?;
+        if let Some(AppliedStep::Remorse { reset: true }) = committed {
+            let current = states
+                .get(
+                    &runtime,
+                    pending.movement.actor(),
+                    pending.movement.session(),
+                )
+                .ok_or(())?;
+            let next = current.stage_soul_war_torment_counter(0).ok_or(())?;
+            if next.revision() != current.revision()
+                && !states.commit(
+                    &runtime,
+                    pending.movement.actor(),
+                    pending.movement.session(),
+                    next,
+                )
+            {
+                return Err(());
+            }
+        }
+        if committed.is_some() {
             self.states.loop_ground.invalidate();
+        }
+        if let Some(AppliedStep::Fire(recovery_micros)) = committed {
             self.states.server_messages.send_current(pending.movement.session(),ServerMessage::Advance("The soul fire was stomped out in time! Your soul will now have to recover before you can do this again.".into()));
             states.spite_steps.recovery.push((
                 pending.movement.actor(),
@@ -287,7 +398,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.owner_now().get().saturating_add(recovery_micros),
             ));
             states.owner_wake.notify_one();
-        } else if input.cooldown_remaining() > 0 {
+        } else if committed.is_none() && input.cooldown_remaining() > 0 {
             self.states.server_messages.send_current(
                 pending.movement.session(),
                 ServerMessage::Advance(format!(
@@ -296,6 +407,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )),
             );
         }
+        if let Some(AppliedStep::Remorse { reset: true }) = committed
+            && let Some(room) = self.effective_rooms().gate_field_step_ingress()
+            && let Some(map) = super::soul_war_scene::source_map(room)
+            && let Some(position) =
+                super::soul_war_scene::wire_position(pending.movement.movement().position())
+        {
+            let captured_name = self
+                .states
+                .chat
+                .speaker_name(pending.movement.session())
+                .and_then(|name| {
+                    oteryn_protocol_oteryn::entity_names::EntityDisplayName::new(&name).ok()
+                });
+            map.facts
+                .emit_movement_speech(crate::map::facts::MovementSpeech {
+                    speaker: pending.movement.actor(),
+                    position,
+                    talk_type: 36,
+                    text: "The remorse calms your dread!".into(),
+                    captured_name,
+                });
+            map.facts.emit_movement_effect(position, 50);
+        }
+        pending.completed_items.push(input.item_instance_id());
+        pending.fire_finished |= input.kind() == SourceStepKind::SpiteFire;
+        pending.selected = None;
+        let entry = states
+            .spite_steps
+            .pending
+            .iter_mut()
+            .find(|entry| entry.movement.event_identity() == pending.movement.event_identity())
+            .ok_or(())?;
+        *entry = pending;
         Ok(())
     }
 
@@ -320,6 +464,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             false
         });
     }
+}
+
+#[derive(Clone, Copy)]
+enum AppliedStep {
+    Fire(u64),
+    Remorse { reset: bool },
 }
 
 #[cfg(test)]

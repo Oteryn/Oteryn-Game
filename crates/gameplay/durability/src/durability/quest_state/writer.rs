@@ -1598,7 +1598,7 @@ impl DurabilityRoot {
                     if let Some(super::QuestSourceAction::SoulWar(input))=&source_action
                         && let super::soul_war_source::SoulWarSourceAction::Step(step)=input.as_ref() {
                         let Some((permit, context, _))=&context else {return Err(DurabilityError::InvalidStoredState);};
-                        if !super::super::quest_world_callback::consume_spite_source_step(
+                        if !super::super::quest_world_callback::consume_soul_war_source_step(
                             &mut tx,permit,fence,&request,step,context,(&recovery,&node),
                         ).await? {
                             tx.rollback().await?;
