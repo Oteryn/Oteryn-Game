@@ -1,0 +1,1146 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "at_utc": "2026-11-10T16:23:30.506414+00:00",
+  "scope": "all tracked files in crates/gameplay/quests",
+  "review_method": "Prior substantive manual read recorded in lead ledger; this operation only validates exact bytes and complete ranges.",
+  "full_files": 103,
+  "lines": 30058,
+  "source_clean": true,
+  "errors": [],
+  "files": [
+    {
+      "path": "crates/gameplay/quests/Cargo.toml",
+      "sha256": "2df6110ff62dcc9c116011a68fadef6ffa207dfc0229f51810c06945dec86aaf",
+      "lines": 20,
+      "ranges": [
+        [
+          1,
+          20
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/build.rs",
+      "sha256": "3ec5abcbc49542a711d4b15a9e2dec50468003d42c3c62c89f58b3210cf0abe5",
+      "lines": 10,
+      "ranges": [
+        [
+          1,
+          10
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/build_batch3_a.rs",
+      "sha256": "b21c2648c8d74e79cb533d2eaef191c8131e49c66e82aab840c6b74d72e415de",
+      "lines": 40,
+      "ranges": [
+        [
+          1,
+          40
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/build_npc_programs.rs",
+      "sha256": "4a4a320be3955e87a1ca69e8498a0cab23455c106c809d3158e059b9f2ac139e",
+      "lines": 112,
+      "ranges": [
+        [
+          1,
+          112
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/examples/quest_definition_hashes.rs",
+      "sha256": "9c039a9fec80a0146ad41ab5ae4d490ff1f8f70937c892dacf2cd716e451bbb8",
+      "lines": 26,
+      "ranges": [
+        [
+          1,
+          26
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/lib.rs",
+      "sha256": "94e13d3cb9abd6ce3c188139628df63a322cf05b150ee4c8f28228af1a7d2f80",
+      "lines": 4,
+      "ranges": [
+        [
+          1,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/admission_binding.rs",
+      "sha256": "4ddb3a8df3873e0c858146c38542cc27d234b8862fe05ae593449215c522e888",
+      "lines": 299,
+      "ranges": [
+        [
+          1,
+          299
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/admission_binding/shared_world.rs",
+      "sha256": "726865c52740859dbff4b3f85911c57847f41d07dc9f65f2202868ce88d33085",
+      "lines": 8,
+      "ranges": [
+        [
+          1,
+          8
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/batch3_a.rs",
+      "sha256": "e20590e90896597108d6f8eb4c60e0f9b86b5aa0c870710dd904a05c8ca436f4",
+      "lines": 35,
+      "ranges": [
+        [
+          1,
+          35
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/batch3_a/bigfoot_burden.rs",
+      "sha256": "12575481d4f2c70097efb5b2e6cee5249a1ca8cf8312297b88fe5223899e6daf",
+      "lines": 176,
+      "ranges": [
+        [
+          1,
+          176
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs",
+      "sha256": "a069532c21382b1455df1a87f95f1d5cb9db8c54579b7d4e0e5c8804d443b550",
+      "lines": 337,
+      "ranges": [
+        [
+          1,
+          337
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine/calendar.rs",
+      "sha256": "c8133ec93b6c39d444430ab2ce6596f1e04edcebc244433f076a8f4bf477bf3c",
+      "lines": 114,
+      "ranges": [
+        [
+          1,
+          114
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine/tests.rs",
+      "sha256": "fdbe1ab465c875d2358e818cd246bd1c530bcb68b301e6642863ef6b30af0a14",
+      "lines": 201,
+      "ranges": [
+        [
+          1,
+          201
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/batch3_a/in_service_of_yalahar.rs",
+      "sha256": "55b07feed90638f5927a5ba5e3cfe954aa5378379a6b50b8fdf0914956b97db9",
+      "lines": 43,
+      "ranges": [
+        [
+          1,
+          43
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/batch3_a/the_cursed_crystal.rs",
+      "sha256": "dc0d99b90d6150cb0f59c8bc1377914ab60214a8114a9f981b2aa2ea21a11ad9",
+      "lines": 78,
+      "ranges": [
+        [
+          1,
+          78
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/batch3_a/the_way_of_the_monk.rs",
+      "sha256": "f97ed0adef41e7783bd5c39c7a74d3083048046798c97f78a09917095df42de9",
+      "lines": 56,
+      "ranges": [
+        [
+          1,
+          56
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/carried_step.rs",
+      "sha256": "de06bda03c5a91422acafee74f5baf485fdd6d29855b6ce56bc6a9f0092c1864",
+      "lines": 264,
+      "ranges": [
+        [
+          1,
+          264
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/classic_dialogue.rs",
+      "sha256": "417fb096f33775c1a57a16613e905737d4e6e1b9fece543fa22c6710364b4788",
+      "lines": 225,
+      "ranges": [
+        [
+          1,
+          225
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/classic_talk.rs",
+      "sha256": "63e2f71a9a4a6bb2f14c13325f7e46a474a1d21069f5f6c3be9e3c72a327752c",
+      "lines": 697,
+      "ranges": [
+        [
+          1,
+          697
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/cults_of_tibia.rs",
+      "sha256": "c123b61b943fdd2a93779a084ea702375f21a3936766b7459acfc9c5a784b487",
+      "lines": 181,
+      "ranges": [
+        [
+          1,
+          181
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/dark_trails.rs",
+      "sha256": "58e97bb4a617023b0870f549f475bf3f78483da2fb73836ed877b8743a5b2323",
+      "lines": 315,
+      "ranges": [
+        [
+          1,
+          315
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/dark_trails/tests.rs",
+      "sha256": "daad4a5891843d8ca1df4b39e6dcf2d799abcfc4a0b80a5af7e0dee0f92e4a81",
+      "lines": 395,
+      "ranges": [
+        [
+          1,
+          395
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/deepling_boss_access.rs",
+      "sha256": "4f6e36f0d3fe1af5954bfc17e7064cd18aea140806dc74c0e7e72b4898bb8e73",
+      "lines": 157,
+      "ranges": [
+        [
+          1,
+          157
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/fire_feathered_native.rs",
+      "sha256": "f3f34e0235b5c4864b1d35f3a2c81c06ad0bb80adf97437bdee7b2f3db67e463",
+      "lines": 143,
+      "ranges": [
+        [
+          1,
+          143
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/grave_danger.rs",
+      "sha256": "53e90c91d21fb43864e368be1dcdd36a90746ec1b31f2c19e7ac2e8bda9f0cef",
+      "lines": 482,
+      "ranges": [
+        [
+          1,
+          482
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/grizzly_adams.rs",
+      "sha256": "61208ae4aae92b9728b33279a1b8aae2c0afeedaad2351de899cb4b77eae40bb",
+      "lines": 381,
+      "ranges": [
+        [
+          1,
+          381
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/grizzly_adams/catalogue.rs",
+      "sha256": "25ba359f05b84518fbe5dcee194b01a821d93871e0e225acfc0210d18fe20ef9",
+      "lines": 219,
+      "ranges": [
+        [
+          1,
+          219
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/grizzly_adams/rules.rs",
+      "sha256": "e65dc11c80f60444b1c8a86ecf44105b490ea5f5da345d8eea27c3de821d74e5",
+      "lines": 372,
+      "ranges": [
+        [
+          1,
+          372
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/grizzly_adams/tests.rs",
+      "sha256": "6e938b71e71fc5c53b28a4ef5b1caca69d068eeb2edba420a1f65c63d0782803",
+      "lines": 754,
+      "ranges": [
+        [
+          1,
+          754
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/hero_of_bounac.rs",
+      "sha256": "1061eed1095430c2d008b3b6d7ed4952a3e866829ac3550722b86b8be6e3122e",
+      "lines": 65,
+      "ranges": [
+        [
+          1,
+          65
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/hive_access.rs",
+      "sha256": "29431c5f7be544daeb0aa7d3b92c71856d56abced9e7c8d6b7d2613ef83b8171",
+      "lines": 778,
+      "ranges": [
+        [
+          1,
+          778
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/isle_of_evil.rs",
+      "sha256": "f8453603409f70ecec587e3aabd164e3ee24b9100ff2b8ffec5d4bf66b11f5f2",
+      "lines": 263,
+      "ranges": [
+        [
+          1,
+          263
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/isle_of_evil/dialogue.rs",
+      "sha256": "a260279b0a4c19e775980a2084de95c2e97d70b47e03c1d6d8b4c68357251b9b",
+      "lines": 280,
+      "ranges": [
+        [
+          1,
+          280
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/isle_of_evil/tests.rs",
+      "sha256": "59627b6f32e35346f0aee478f2906e651c1a881992f1d8605ee3483cf2b2f4fe",
+      "lines": 290,
+      "ranges": [
+        [
+          1,
+          290
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/liquid_black.rs",
+      "sha256": "c54a16cfaa1bfea203b5f3a78282918f62398e03ee979a23f0ac66cf96f9a70f",
+      "lines": 413,
+      "ranges": [
+        [
+          1,
+          413
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/loader.rs",
+      "sha256": "9df5ee90b016bbd7b3a595e98f9bdaa0acb7d6a8b765a5dd94598a2c43787977",
+      "lines": 620,
+      "ranges": [
+        [
+          1,
+          620
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log.rs",
+      "sha256": "703c7650c6c9afceb02db85007b95c103725e9d474fd40be3b3f0560b8bc2726",
+      "lines": 428,
+      "ranges": [
+        [
+          1,
+          428
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log/journal_source.rs",
+      "sha256": "9330d858fbbfa02c9bcb0fd843a8c30aa19beeead1ff7ab344361d40abaebda6",
+      "lines": 124,
+      "ranges": [
+        [
+          1,
+          124
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log/loader.rs",
+      "sha256": "e30ad875b70e50d23eaf0a1becdd258882cb291af3d5b39fa4607d3474d099c4",
+      "lines": 173,
+      "ranges": [
+        [
+          1,
+          173
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log/loader_tests.rs",
+      "sha256": "37bcb86d88996efcbb72b6d0b889163cf7a2011ced66d68077bad6830906a4a0",
+      "lines": 101,
+      "ranges": [
+        [
+          1,
+          101
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log/source_texts.rs",
+      "sha256": "c6d8438d0bd5c208e676fa9e7059e99a34d107fc6216a4c20326811ebfb0b2db",
+      "lines": 71,
+      "ranges": [
+        [
+          1,
+          71
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log/tests.rs",
+      "sha256": "65d2117ec51a234e2314ec3de0c9d49286bd987824c0db306fb45dbf4fbd048b",
+      "lines": 545,
+      "ranges": [
+        [
+          1,
+          545
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/mod.rs",
+      "sha256": "e1856c87ddb3c8a17acc72c7c5f0fcb171fc4ae12b8588a46b1f278c8932ed1a",
+      "lines": 1093,
+      "ranges": [
+        [
+          1,
+          1093
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/monk_shrines.rs",
+      "sha256": "20c8143ec20c049f654c3461c7650761cb59f31d4b1fa7476465cf2ac774ea88",
+      "lines": 292,
+      "ranges": [
+        [
+          1,
+          292
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/native_kills.rs",
+      "sha256": "f11415558d219010c0249575242c27592c0b3e617d615ac2d611d7ed6247bd05",
+      "lines": 132,
+      "ranges": [
+        [
+          1,
+          132
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/native_rules.rs",
+      "sha256": "1ab5121d32edcc7fd7aaba8dcc2320d423723a6153561f45f7007eb505a9de31",
+      "lines": 235,
+      "ranges": [
+        [
+          1,
+          235
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules.rs",
+      "sha256": "8c79ddb01d6853c0e3c78c8d209220a347a5bd52ea9c18003fc283f2b115b739",
+      "lines": 704,
+      "ranges": [
+        [
+          1,
+          704
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules/admission.rs",
+      "sha256": "bf3650a9e11b52a04128e238292620b32256026861697020e96d7e338c44259f",
+      "lines": 38,
+      "ranges": [
+        [
+          1,
+          38
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules/bounds.rs",
+      "sha256": "7895eac0b2651f122f53006205288fe6d34cec842e014e03c0bd26f154a2fddf",
+      "lines": 18,
+      "ranges": [
+        [
+          1,
+          18
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs",
+      "sha256": "cfd0643e1be187c24c3ec725f3a1ab454cb158396beb18a63820169322ac6281",
+      "lines": 450,
+      "ranges": [
+        [
+          1,
+          450
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules/hidden_threats.rs",
+      "sha256": "9c7d0f8c48565ead3f9b73f3e910cd3774b908f45c6288cceb8a021069ae52eb",
+      "lines": 160,
+      "ranges": [
+        [
+          1,
+          160
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules/item_exchange.rs",
+      "sha256": "3f10bc5429e7b3d66170a9c4aadbe24de13d77ef7dd53bcfcb4176f25f885c06",
+      "lines": 102,
+      "ranges": [
+        [
+          1,
+          102
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules/keyword.rs",
+      "sha256": "1dff57020ab8ddc681ee48ff25ef7f7d1a144b33926135fa5c6eb114a9b6003e",
+      "lines": 65,
+      "ranges": [
+        [
+          1,
+          65
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules/marlin_trophy.rs",
+      "sha256": "246977b42a01becd9e93802a0b70ebc74561d6078a9c8f048c25cb2009aff361",
+      "lines": 94,
+      "ranges": [
+        [
+          1,
+          94
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules/test-fixtures/father_acceptance.json",
+      "sha256": "bb0c25cc85d68806593a7432eaebd817ff60fe96df67bd2b01ad3a9cdd14f129",
+      "lines": 198,
+      "ranges": [
+        [
+          1,
+          198
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules/test-fixtures/hero_greeting.json",
+      "sha256": "97fca4ef513a2caf883ad138d1b454ce5377ade3112d33e6cb0d62492aca695b",
+      "lines": 38,
+      "ranges": [
+        [
+          1,
+          38
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules/tests.rs",
+      "sha256": "167ffa521cf1d46dc34d8d373c73c3a71373d3445dd59c03b7935ac9e6400580",
+      "lines": 879,
+      "ranges": [
+        [
+          1,
+          879
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/npc_rules/validate.rs",
+      "sha256": "c55b249419be11e0cb69c1c4e4342ec1feb758619557ec8e1808e3278cc0b9cf",
+      "lines": 246,
+      "ranges": [
+        [
+          1,
+          246
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/planegazer_finale.rs",
+      "sha256": "9e45c89ad809e870d33f06cd13fe450b4bbbf6dd144d742f29381c1cc7685ecd",
+      "lines": 71,
+      "ranges": [
+        [
+          1,
+          71
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/predicate.rs",
+      "sha256": "76447d7befa11596d3b9f822d4e40d483b5ad062a1edc5efe0590f92bd21162b",
+      "lines": 412,
+      "ranges": [
+        [
+          1,
+          412
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/quests_2_focus.rs",
+      "sha256": "4ce492177e089f82e411fe57682b8bb43adf3f4eeec116c2df80b248535d4a5f",
+      "lines": 58,
+      "ranges": [
+        [
+          1,
+          58
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/reward_callbacks.rs",
+      "sha256": "0b614fb2910405ba5d9b13a6782e6fce134277754f2ec45d96d4fa16e2558ae1",
+      "lines": 1217,
+      "ranges": [
+        [
+          1,
+          1217
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/reward_callbacks/state_ops.rs",
+      "sha256": "752b60c2a9384aa8820e9d793a4e0f407744d1e963efc7640034f6995670b92d",
+      "lines": 179,
+      "ranges": [
+        [
+          1,
+          179
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/rotten_blood.rs",
+      "sha256": "906ecb5e70a3ad2d3cf1f2b1aced35aa501a0573edd8ff44f9f8ef672ce896b7",
+      "lines": 527,
+      "ranges": [
+        [
+          1,
+          527
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/rotten_blood/altar_transition.rs",
+      "sha256": "e213fd20cfe23df9dd3fa99f2527120b0fe5a7764c7b27276b72585827b95c37",
+      "lines": 18,
+      "ranges": [
+        [
+          1,
+          18
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/rotten_blood_tests.rs",
+      "sha256": "aa6b5a3e048905c7fa789f56a04c721a49adb61959dd39e6264ccddddb57074c",
+      "lines": 318,
+      "ranges": [
+        [
+          1,
+          318
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/schrodinger_island.rs",
+      "sha256": "8518ec5b6c3225bb642384b7bdd38c90870552aa8e437e523c3ff062998d425f",
+      "lines": 59,
+      "ranges": [
+        [
+          1,
+          59
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/shared_switches.rs",
+      "sha256": "a385882e0145f52521e4ce6f5867b7beee867e72ccbdf0ddc0c8f62d88efd3ed",
+      "lines": 170,
+      "ranges": [
+        [
+          1,
+          170
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/shared_switches/native.rs",
+      "sha256": "a6c3af45d0484867151272d73bfad2b78c84da9f1a5307b1fe777f74578cfa06",
+      "lines": 117,
+      "ranges": [
+        [
+          1,
+          117
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/shared_world_progress.rs",
+      "sha256": "f16256d4aab52239fd14c83d14dedd839fbfb418ae7217dec30d3e797a659ac5",
+      "lines": 593,
+      "ranges": [
+        [
+          1,
+          593
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/soul_war.rs",
+      "sha256": "63ab10f9ecbb59eece50dac855ab054f502425a8391ceb2cb849f65c0da92132",
+      "lines": 280,
+      "ranges": [
+        [
+          1,
+          280
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/soul_war_dialogue.rs",
+      "sha256": "334c2bbe9863ab18007b9488db29698a5c935042eb3d36f34fed364e9115bed9",
+      "lines": 311,
+      "ranges": [
+        [
+          1,
+          311
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/soul_war_tests.rs",
+      "sha256": "fa19fae705402a0f85ee5c0a49d3e04a7a91d01347ff85222fb05c2a3833f6ce",
+      "lines": 311,
+      "ranges": [
+        [
+          1,
+          311
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board.rs",
+      "sha256": "550543f9533c81f695bb54977499b755732a38677c0aa6b3c869182b5474a647",
+      "lines": 297,
+      "ranges": [
+        [
+          1,
+          297
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_catalogue.rs",
+      "sha256": "6e7d9f3243d5e0fbb9612f9dea254afdcfcc196cf73a206234e4e7e25d5ceed3",
+      "lines": 2003,
+      "ranges": [
+        [
+          1,
+          2003
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_elite.rs",
+      "sha256": "d5f05159aea521b4ae1babc00ce083b2cb132e3185bba2c9fb97b736c1247298",
+      "lines": 97,
+      "ranges": [
+        [
+          1,
+          97
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_full.rs",
+      "sha256": "6e78e4fffa737b24dc9b349ee14e9e6bbb82d532f1d297df92d43184ece1049b",
+      "lines": 992,
+      "ranges": [
+        [
+          1,
+          992
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_full_tests.rs",
+      "sha256": "5629f1b93ca3bc8570c26460006a04c00863cafe33e9592cc5591dad33ded36e",
+      "lines": 1600,
+      "ranges": [
+        [
+          1,
+          1600
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_tests.rs",
+      "sha256": "02acfe6be41157a9de408f1c37636320f1f6e280e783196bfee81895823d2a7c",
+      "lines": 250,
+      "ranges": [
+        [
+          1,
+          250
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/threatened_dreams.rs",
+      "sha256": "d587e493f45370662dfb7ce619bf5a5865fd648b7208bd97098c297e8e70fb38",
+      "lines": 1003,
+      "ranges": [
+        [
+          1,
+          1003
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/timers.rs",
+      "sha256": "e9f38f6eb6161fa8ffd3e3564d23b320c7b4cc7d6fe47d94f9721e6f8346e3cf",
+      "lines": 116,
+      "ranges": [
+        [
+          1,
+          116
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/unnatural_selection.rs",
+      "sha256": "b9d0d1e015ecf96a1d0e513c1bd8e238779a9230888ee6028b936ed3099a7ea8",
+      "lines": 162,
+      "ranges": [
+        [
+          1,
+          162
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+      "sha256": "9ed0b20ef1d869e997e11120da189ca8d894a4cacf8f8bcb0c492ec20eb3c7f9",
+      "lines": 1451,
+      "ranges": [
+        [
+          1,
+          1451
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/world_callbacks/batch4_tests.rs",
+      "sha256": "06a078e0c0dc9fbcbe8e74cc84ffb53e71f6df1cd428282253e63238b3c53a95",
+      "lines": 273,
+      "ranges": [
+        [
+          1,
+          273
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/world_callbacks/counterparts.rs",
+      "sha256": "36a438dbfe3c34bb3ea21369250b26da05f7c39f4bdfebf2319b17e3cdb4f1e8",
+      "lines": 142,
+      "ranges": [
+        [
+          1,
+          142
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/world_callbacks/effects.rs",
+      "sha256": "a0e8426567bb452cad0f609290568c3ddac105f217bf05529111fda28c9d4812",
+      "lines": 343,
+      "ranges": [
+        [
+          1,
+          343
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/world_callbacks/native.rs",
+      "sha256": "fa6fe30d3b7b49bc0f94304c0e83321f16360cfc0a15687d4bc171f2a005cb80",
+      "lines": 132,
+      "ranges": [
+        [
+          1,
+          132
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/world_callbacks/timed_tests.rs",
+      "sha256": "e4afdf2d06f4cb829812144350f315bdf6e02a715db7070db94246366103a78c",
+      "lines": 72,
+      "ranges": [
+        [
+          1,
+          72
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/wrath_sleeping_dragon.rs",
+      "sha256": "de55a49ff16252de3e6c8e590c794e80f5f6f77118079cb60019c85c0cbe3241",
+      "lines": 261,
+      "ranges": [
+        [
+          1,
+          261
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/tutorial/corruptor_loot.rs",
+      "sha256": "224085ad87d764fda8b2a797e4f3822c95c4e6f59e33422a013c191bcf7d30d4",
+      "lines": 11,
+      "ranges": [
+        [
+          1,
+          11
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/tutorial/corruptor_loot_tests.rs",
+      "sha256": "e6b5d47c14589e090f769d00d3cd61cce5565bb0749cf3db36e8ffa7688816fc",
+      "lines": 11,
+      "ranges": [
+        [
+          1,
+          11
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/tutorial/mod.rs",
+      "sha256": "a8801a35c71ebc0ea106e86d92692a4d23e3f5c67ce8fce0d95a52474fc6a53f",
+      "lines": 10,
+      "ranges": [
+        [
+          1,
+          10
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/tutorial/steps.rs",
+      "sha256": "f8ba1a2c152279784e3effaa7cb41777ac49eaf26694d31d34eab3978e32c307",
+      "lines": 124,
+      "ranges": [
+        [
+          1,
+          124
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/src/tutorial/steps_tests.rs",
+      "sha256": "e908302f11020ac8fe0938a63dbee2e2a0987f70d7ff42cb35ddb2cb99c6690d",
+      "lines": 142,
+      "ranges": [
+        [
+          1,
+          142
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_alawars_vault.rs",
+      "sha256": "3cbd9414f1fd3d1cfd785b39447a0b177c2294007f2c719f5bfc50820f629ac9",
+      "lines": 65,
+      "ranges": [
+        [
+          1,
+          65
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_ancient_tombs.rs",
+      "sha256": "e7d6d43ee300db706e3d39cc1f0e7346fd7962c8251da57cfc70899532570ddf",
+      "lines": 225,
+      "ranges": [
+        [
+          1,
+          225
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_between_the_lines.rs",
+      "sha256": "7fa11af5eee7b432c59442614faa64b3e0088c707f0df07659dbc35c2a3d04b5",
+      "lines": 67,
+      "ranges": [
+        [
+          1,
+          67
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_blood_brothers_castle_access.rs",
+      "sha256": "454d46d3715089834c9421898c02e9868593599cca3e9ff183200cd573f1a459",
+      "lines": 64,
+      "ranges": [
+        [
+          1,
+          64
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_children_battle_access.rs",
+      "sha256": "0078f3455295f2bbe53360fbaf011cc0d7623036f80365c10e00ca684ef0a57b",
+      "lines": 69,
+      "ranges": [
+        [
+          1,
+          69
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_deeplings.rs",
+      "sha256": "993d5b8f72eb76d9e3aab441cb886d3a2ac5ea16925367ce3fdeaaebfebb0544",
+      "lines": 75,
+      "ranges": [
+        [
+          1,
+          75
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_demon_oak.rs",
+      "sha256": "f50e19de0716abfcedf714295c06742b812a40a606a46ef3d164e47edf07c7fe",
+      "lines": 67,
+      "ranges": [
+        [
+          1,
+          67
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_room_raise.rs",
+      "sha256": "8dc54fcbf46ad2b3a7094a6526a84d0b8daeaf4fbc5b9af1656fe43e72a18c8a",
+      "lines": 65,
+      "ranges": [
+        [
+          1,
+          65
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/quests/tests/worldchg_hive_access.rs",
+      "sha256": "bd5b68cd248c0dc75f44aa10c170854a155bf1e585f2c3dcfcd20ab9c7b028a5",
+      "lines": 189,
+      "ranges": [
+        [
+          1,
+          189
+        ]
+      ]
+    }
+  ]
+}

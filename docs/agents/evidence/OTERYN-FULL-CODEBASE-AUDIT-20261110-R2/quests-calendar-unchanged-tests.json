@@ -1,0 +1,31 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "source": "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine/calendar.rs",
+  "source_sha256": "c8133ec93b6c39d444430ab2ce6596f1e04edcebc244433f076a8f4bf477bf3c",
+  "source_unchanged": true,
+  "observed_at_utc": "2026-11-10T16:14:55.370300+00:00",
+  "tests_passed": 3,
+  "scope": "Three existing unchanged pure UTC calendar tests, compiled directly with rustc. No wrapper, source edits, Cargo, database, native client or deployment execution.",
+  "runs": [
+    {
+      "command": [
+        "/home/agent/.cargo/bin/rustc",
+        "--edition=2024",
+        "--test",
+        "/workspace/scratch/9868b8ed6bb7/Oteryn-Game-audit-r2/crates/gameplay/quests/src/quest/batch3_a/hot_cuisine/calendar.rs",
+        "-o",
+        "/workspace/scratch/9868b8ed6bb7/audit-r2/lead/quests-calendar-tests/calendar-tests"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "/workspace/scratch/9868b8ed6bb7/audit-r2/lead/quests-calendar-tests/calendar-tests",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "output": "\nrunning 3 tests\ntest tests::cook_operation_has_no_extra_say_month_guard ... ok\ntest tests::hot_cuisine_preserves_august_or_bonus_rules ... ok\ntest tests::new_august_period_does_not_spend_the_bonus ... ok\n\ntest result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n"
+    }
+  ]
+}

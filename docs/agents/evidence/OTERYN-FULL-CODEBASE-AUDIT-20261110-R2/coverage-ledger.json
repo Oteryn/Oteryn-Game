@@ -5,15 +5,15 @@
     "workspace_packages": 67,
     "supplementary_domains": 11,
     "tracked_files": 27900,
-    "unique_substantively_analyzed_files": 6246,
-    "fully_analyzed_files": 6105,
-    "selected_range_files": 141,
-    "analyzed_lines_union": 1117863,
+    "unique_substantively_analyzed_files": 6377,
+    "fully_analyzed_files": 6239,
+    "selected_range_files": 138,
+    "analyzed_lines_union": 1182650,
     "binary_files_analyzed": 4,
     "analyzed_binary_bytes_union": 475,
     "workspace_statuses": {
-      "REVIEWED": 60,
-      "IN PROGRESS": 7
+      "REVIEWED": 61,
+      "IN PROGRESS": 6
     },
     "supplementary_statuses": {
       "IN PROGRESS": 5,
@@ -1073,9 +1073,9 @@
       ],
       "kind": "Cargo package",
       "status": "IN PROGRESS",
-      "analyzed_files": 570,
-      "fully_analyzed_files": 569,
-      "analyzed_lines": 143770,
+      "analyzed_files": 586,
+      "fully_analyzed_files": 585,
+      "analyzed_lines": 162679,
       "analyzed_binary_bytes": 0,
       "remaining_files": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs",
@@ -1097,23 +1097,7 @@
         "apps/game-server/examples/runtime_actor_carrier_prototype.rs",
         "apps/game-server/examples/support/cake_creature_admission.rs",
         "apps/game-server/examples/support/item_fx_audio_raw_import.rs",
-        "apps/game-server/src/callback_native_child_looks.json",
-        "apps/game-server/src/callback_native_child_profiles.json",
-        "apps/game-server/src/creature_appearance_execution_data.json",
-        "apps/game-server/src/creature_appearance_test_data.json",
         "apps/game-server/src/creature_auto_attack_test_data.json",
-        "apps/game-server/src/creature_defense_presentation_test_data.json",
-        "apps/game-server/src/lifted_tests/durability_guild_tests/decline_tests.rs",
-        "apps/game-server/src/lifted_tests/durability_guild_tests/edit_ranks_tests.rs",
-        "apps/game-server/src/lifted_tests/durability_guild_tests/membership_tests.rs",
-        "apps/game-server/src/lifted_tests/durability_guild_tests/rank_tests.rs",
-        "apps/game-server/src/lifted_tests/durability_guild_tests/resign_tests.rs",
-        "apps/game-server/src/lifted_tests/durability_guild_tests/text_tests.rs",
-        "apps/game-server/src/lifted_tests/durability_vip_tests.rs",
-        "apps/game-server/src/lifted_tests/party_shared_xp_postgres_tests.rs",
-        "apps/game-server/src/pinned-death-registry.json",
-        "apps/game-server/src/smelly_encounter_native_fixture.json",
-        "apps/game-server/src/smelly_encounter_source.json",
         "apps/game-server/src/source_callback_cast_fixture.json",
         "apps/game-server/src/source_callback_native_fixture.json",
         "apps/game-server/src/source_callback_spawn_fixture.json",
@@ -2585,34 +2569,18 @@
       ],
       "kind": "Cargo package",
       "status": "IN PROGRESS",
-      "analyzed_files": 467,
-      "fully_analyzed_files": 376,
-      "analyzed_lines": 70791,
+      "analyzed_files": 510,
+      "fully_analyzed_files": 421,
+      "analyzed_lines": 85449,
       "analyzed_binary_bytes": 0,
       "remaining_files": [
         "crates/gameplay/dispatch/examples/prey_time_sim.rs",
-        "crates/gameplay/dispatch/mechanics/README.md",
         "crates/gameplay/dispatch/src/canonical_monster_successor_tests.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/action_bar_cooldowns.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_content.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_cycles.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_departed.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_lifecycle.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_logout.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_recovery.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_recovery_admission.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime/lineage.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime/lineage_tests.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime/switch_tests.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/activity_terminal_release.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/actor_conditions.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/actor_invisibility.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/actor_movement.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/actor_spell/activity_transfer.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/actor_spell/house_admission.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/actor_spell/house_transfer.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/actor_spell_commit.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/actor_spell_commit_tests.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/actor_spell_owned_source_tick_tests.rs",
@@ -2643,8 +2611,6 @@
         "crates/gameplay/dispatch/src/gameplay_transport/atelier/resources.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/atelier/workshop.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/attack.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/attack/activity_transfer.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/attack/activity_transfer_tests.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/attack/attack_chase_search.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/attack/cyclopedia.rs",
@@ -2729,28 +2695,10 @@
         "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/training.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/world_map.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/composed_test_owner.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/condition_persistence.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/condition_potions.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/condition_potions_tests.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/condition_snapshots.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/condition_status.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/achievement_observation.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/achievements_highscores.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/capability_tests.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/hotkey_coalescing.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/idle_kick.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/integrity.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/notices.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/overlay.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/spell_catalog.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/spell_resume.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/spell_vitals.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/steps_pacing.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/use_capabilities.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/use_commit.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/visibility_tests.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/visibility_tests/appearance_change_tests.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/connection/visibility_tests/interest_set.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/consume_transform_use.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/container_sort.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/container_view.rs",
@@ -2920,9 +2868,6 @@
         "crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/wire_dispatch.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/item_use_crystal_parity_tests.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/item_use_gourmet.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/item_use_gourmet/pending.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/item_use_gourmet/recovery.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/item_view.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/item_view_tests.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs",
@@ -2933,9 +2878,7 @@
         "crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_fixture/summer_settlement.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/last_position.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/logout.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/logout_postgres_tests.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/logout_tests.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/loop_map_pickup.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/loop_map_pickup_tests.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/loop_move.rs",
@@ -2967,8 +2910,6 @@
         "crates/gameplay/dispatch/src/gameplay_transport/mount_voice_lines.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/mount_voices.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/movement_equipment.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/native_activity.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/native_activity_return.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast/delayed_strikes.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast/prepare.rs",
@@ -3107,8 +3048,6 @@
         "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/offline_death.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/recovery.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/rewards.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/state_continuity.rs",
-        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/state_effects.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_difficulty.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_encounter.rs",
         "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_encounter/activity_handoff.rs",
@@ -4082,9 +4021,9 @@
       ],
       "kind": "Cargo package",
       "status": "IN PROGRESS",
-      "analyzed_files": 495,
-      "fully_analyzed_files": 482,
-      "analyzed_lines": 152770,
+      "analyzed_files": 529,
+      "fully_analyzed_files": 516,
+      "analyzed_lines": 169636,
       "analyzed_binary_bytes": 0,
       "remaining_files": [
         "crates/gameplay/durability/src/durability/activity_handoff.rs",
@@ -4129,7 +4068,6 @@
         "crates/gameplay/durability/src/durability/consume_transform_house/timed_decorations.rs",
         "crates/gameplay/durability/src/durability/consume_transform_planting.rs",
         "crates/gameplay/durability/src/durability/content_activation.rs",
-        "crates/gameplay/durability/src/durability/creature_source_items.rs",
         "crates/gameplay/durability/src/durability/cyclopedia_character.rs",
         "crates/gameplay/durability/src/durability/cyclopedia_character/achievements.rs",
         "crates/gameplay/durability/src/durability/cyclopedia_character/combat.rs",
@@ -4142,12 +4080,6 @@
         "crates/gameplay/durability/src/durability/endgame_terminal/owner.rs",
         "crates/gameplay/durability/src/durability/endgame_terminal/storage.rs",
         "crates/gameplay/durability/src/durability/endgame_terminal/tests.rs",
-        "crates/gameplay/durability/src/durability/field_capability_port.rs",
-        "crates/gameplay/durability/src/durability/field_capability_port_postgres_tests.rs",
-        "crates/gameplay/durability/src/durability/field_removal.rs",
-        "crates/gameplay/durability/src/durability/gap_sv2_decay_tests.rs",
-        "crates/gameplay/durability/src/durability/ground_cell_limit.rs",
-        "crates/gameplay/durability/src/durability/ground_cell_limit_tests.rs",
         "crates/gameplay/durability/src/durability/house_base_decorations.rs",
         "crates/gameplay/durability/src/durability/house_disposition/audit.rs",
         "crates/gameplay/durability/src/durability/house_furniture_destroy.rs",
@@ -4169,7 +4101,6 @@
         "crates/gameplay/durability/src/durability/house_sale.rs",
         "crates/gameplay/durability/src/durability/house_sale/audit.rs",
         "crates/gameplay/durability/src/durability/house_scope_handoff.rs",
-        "crates/gameplay/durability/src/durability/house_spell_acl.rs",
         "crates/gameplay/durability/src/durability/house_wrap.rs",
         "crates/gameplay/durability/src/durability/house_wrap/catalogue.rs",
         "crates/gameplay/durability/src/durability/house_wrap/purchased_kit.rs",
@@ -4198,21 +4129,7 @@
         "crates/gameplay/durability/src/durability/item_decay_retire_audit/world_reset.rs",
         "crates/gameplay/durability/src/durability/item_decay_retire_audit/world_reset_fixture.rs",
         "crates/gameplay/durability/src/durability/item_decay_retire_audit/world_reset_tests.rs",
-        "crates/gameplay/durability/src/durability/item_timed_repair.rs",
-        "crates/gameplay/durability/src/durability/item_timed_runtime.rs",
-        "crates/gameplay/durability/src/durability/item_timed_runtime/execute.rs",
-        "crates/gameplay/durability/src/durability/item_timed_runtime/repair.rs",
-        "crates/gameplay/durability/src/durability/item_timed_state.rs",
-        "crates/gameplay/durability/src/durability/item_timed_state_audit.rs",
-        "crates/gameplay/durability/src/durability/item_weight_lookup.rs",
-        "crates/gameplay/durability/src/durability/map_item_mint.rs",
-        "crates/gameplay/durability/src/durability/map_item_mint/planting.rs",
-        "crates/gameplay/durability/src/durability/map_item_mint_audit.rs",
         "crates/gameplay/durability/src/durability/mechanics_status.rs",
-        "crates/gameplay/durability/src/durability/native_map_items.rs",
-        "crates/gameplay/durability/src/durability/native_map_items_abi.rs",
-        "crates/gameplay/durability/src/durability/native_world_items.rs",
-        "crates/gameplay/durability/src/durability/native_world_read.rs",
         "crates/gameplay/durability/src/durability/player_report.rs",
         "crates/gameplay/durability/src/durability/premium_activation_latch.rs",
         "crates/gameplay/durability/src/durability/premium_fence.rs",
@@ -4249,18 +4166,6 @@
         "crates/gameplay/durability/src/durability/soulpit/entry.rs",
         "crates/gameplay/durability/src/durability/soulpit/progress.rs",
         "crates/gameplay/durability/src/durability/soulpit/seal_entry.rs",
-        "crates/gameplay/durability/src/durability/spell_character_lookup.rs",
-        "crates/gameplay/durability/src/durability/spell_familiar_group.rs",
-        "crates/gameplay/durability/src/durability/spell_field_policy.rs",
-        "crates/gameplay/durability/src/durability/spell_house_abi.rs",
-        "crates/gameplay/durability/src/durability/spell_item_temporal.rs",
-        "crates/gameplay/durability/src/durability/spell_item_temporal/event_items.rs",
-        "crates/gameplay/durability/src/durability/spell_item_transaction.rs",
-        "crates/gameplay/durability/src/durability/spell_item_transaction/direct_companion.rs",
-        "crates/gameplay/durability/src/durability/spell_item_transaction/tests/cast_cost.rs",
-        "crates/gameplay/durability/src/durability/spell_item_transaction/tests/map_protection_tags.rs",
-        "crates/gameplay/durability/src/durability/spell_items_abi.rs",
-        "crates/gameplay/durability/src/durability/spell_parameter_result.rs",
         "crates/gameplay/durability/src/durability/staff.rs",
         "crates/gameplay/durability/src/durability/staff/executor.rs",
         "crates/gameplay/durability/src/durability/staff/expiry.rs",
@@ -5105,52 +5010,12 @@
       ],
       "local_dependencies": [],
       "kind": "Cargo package",
-      "status": "IN PROGRESS",
-      "analyzed_files": 65,
-      "fully_analyzed_files": 64,
-      "analyzed_lines": 15704,
+      "status": "REVIEWED",
+      "analyzed_files": 103,
+      "fully_analyzed_files": 103,
+      "analyzed_lines": 30058,
       "analyzed_binary_bytes": 0,
-      "remaining_files": [
-        "crates/gameplay/quests/src/quest/dark_trails.rs",
-        "crates/gameplay/quests/src/quest/dark_trails/tests.rs",
-        "crates/gameplay/quests/src/quest/grave_danger.rs",
-        "crates/gameplay/quests/src/quest/grizzly_adams.rs",
-        "crates/gameplay/quests/src/quest/grizzly_adams/catalogue.rs",
-        "crates/gameplay/quests/src/quest/grizzly_adams/rules.rs",
-        "crates/gameplay/quests/src/quest/grizzly_adams/tests.rs",
-        "crates/gameplay/quests/src/quest/isle_of_evil.rs",
-        "crates/gameplay/quests/src/quest/isle_of_evil/dialogue.rs",
-        "crates/gameplay/quests/src/quest/isle_of_evil/tests.rs",
-        "crates/gameplay/quests/src/quest/liquid_black.rs",
-        "crates/gameplay/quests/src/quest/log.rs",
-        "crates/gameplay/quests/src/quest/log/journal_source.rs",
-        "crates/gameplay/quests/src/quest/log/loader.rs",
-        "crates/gameplay/quests/src/quest/log/loader_tests.rs",
-        "crates/gameplay/quests/src/quest/log/source_texts.rs",
-        "crates/gameplay/quests/src/quest/log/tests.rs",
-        "crates/gameplay/quests/src/quest/rotten_blood.rs",
-        "crates/gameplay/quests/src/quest/rotten_blood/altar_transition.rs",
-        "crates/gameplay/quests/src/quest/rotten_blood_tests.rs",
-        "crates/gameplay/quests/src/quest/soul_war.rs",
-        "crates/gameplay/quests/src/quest/soul_war_dialogue.rs",
-        "crates/gameplay/quests/src/quest/soul_war_tests.rs",
-        "crates/gameplay/quests/src/quest/task_board.rs",
-        "crates/gameplay/quests/src/quest/task_board_catalogue.rs",
-        "crates/gameplay/quests/src/quest/task_board_elite.rs",
-        "crates/gameplay/quests/src/quest/task_board_full.rs",
-        "crates/gameplay/quests/src/quest/task_board_full_tests.rs",
-        "crates/gameplay/quests/src/quest/task_board_tests.rs",
-        "crates/gameplay/quests/src/quest/threatened_dreams.rs",
-        "crates/gameplay/quests/src/quest/wrath_sleeping_dragon.rs",
-        "crates/gameplay/quests/tests/quests5_alawars_vault.rs",
-        "crates/gameplay/quests/tests/quests5_ancient_tombs.rs",
-        "crates/gameplay/quests/tests/quests5_between_the_lines.rs",
-        "crates/gameplay/quests/tests/quests5_blood_brothers_castle_access.rs",
-        "crates/gameplay/quests/tests/quests5_children_battle_access.rs",
-        "crates/gameplay/quests/tests/quests5_deeplings.rs",
-        "crates/gameplay/quests/tests/quests5_demon_oak.rs",
-        "crates/gameplay/quests/tests/quests5_room_raise.rs"
-      ]
+      "remaining_files": []
     },
     {
       "name": "oteryn-gameplay-social",
@@ -77368,6 +77233,161 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "apps/game-server/src/callback_native_child_looks.json",
+      "blob_sha": "a1115e4f00b4b4388005857706c8b51cee8dbe2d",
+      "sha256": "4ff8679ffd06e236fed6b2ffc6189ddab1306d94cf79acac32637f059aa3ace7",
+      "range_unit": "lines",
+      "file_lines": 322,
+      "file_bytes": 8636,
+      "range_extent": 322,
+      "analyzed_ranges": [
+        [
+          1,
+          322
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              322
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 322,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/callback_native_child_profiles.json",
+      "blob_sha": "310b428c54ed3000679cf572e09ed46097090542",
+      "sha256": "8ea96e88570cdca26abf58288c81cc9e541989dfdb41b8cadb03795af6dfdc17",
+      "range_unit": "lines",
+      "file_lines": 3707,
+      "file_bytes": 115636,
+      "range_extent": 3707,
+      "analyzed_ranges": [
+        [
+          1,
+          3707
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              3707
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 3707,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/creature_appearance_execution_data.json",
+      "blob_sha": "7587712afc63a9bcf7c84198ddfcd55e30bb3767",
+      "sha256": "3271ac2f2a12c72bc180e80669174aaf6cd82a2f9a36670b2283991af6fe7e91",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 707705,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/creature_appearance_test_data.json",
+      "blob_sha": "3115fc3a573c49b31710a6d0d80be2b1d96f0092",
+      "sha256": "1364d81d84b5566d93ab32fd15b9d1d7bb34f2d79779201ccdbd26b57035be49",
+      "range_unit": "lines",
+      "file_lines": 2565,
+      "file_bytes": 68792,
+      "range_extent": 2565,
+      "analyzed_ranges": [
+        [
+          1,
+          2565
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              2565
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 2565,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/creature_defense_presentation_test_data.json",
+      "blob_sha": "d3326e6215e97d435812e1982ccf1592a386989b",
+      "sha256": "b3629c7b2c0c66f7a5fcfac4e6c0cf795480a179cc385b703c5fdc9f835f0c73",
+      "range_unit": "lines",
+      "file_lines": 112,
+      "file_bytes": 2900,
+      "range_extent": 112,
+      "analyzed_ranges": [
+        [
+          1,
+          112
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              112
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 112,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "apps/game-server/src/highscores/ranking_tests.rs",
       "blob_sha": "797eacff20692c3449d1b21eb8f4c67c1e0d825c",
       "sha256": "20a25285203db736818b8bb97856c805d84f20d38c5de196ddfdc7309b632b7c",
@@ -78856,6 +78876,37 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "apps/game-server/src/lifted_tests/durability_guild_tests/decline_tests.rs",
+      "blob_sha": "c6f0dd121ab6cb5b778991e15763a2ccdec058d5",
+      "sha256": "6ef3a9a7ff64ae949423e86e3d70092d0c6d3b963bb9dc307cd98bc4a3c0e2f1",
+      "range_unit": "lines",
+      "file_lines": 471,
+      "file_bytes": 21108,
+      "range_extent": 471,
+      "analyzed_ranges": [
+        [
+          1,
+          471
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              471
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 471,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "apps/game-server/src/lifted_tests/durability_guild_tests/disband_cleanup_tests.rs",
       "blob_sha": "fde951d11d87fa6e8346f04810a4e82cd62bed51",
       "sha256": "fde246f0aac020433b57699d50b47532ea01f814f5fdb681568e504a9d5e5648",
@@ -78914,6 +78965,37 @@
         }
       ],
       "analyzed_lines": 273,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/lifted_tests/durability_guild_tests/edit_ranks_tests.rs",
+      "blob_sha": "8414d388fe026b44c9ba8898cdf2823a9ffb21b0",
+      "sha256": "9aa4c9a5a8c8b958fff4b3f8fbf10ab94d47b8fc2b952423a940276f6b65d2e7",
+      "range_unit": "lines",
+      "file_lines": 769,
+      "file_bytes": 34174,
+      "range_extent": 769,
+      "analyzed_ranges": [
+        [
+          1,
+          769
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              769
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 769,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -79011,6 +79093,99 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "apps/game-server/src/lifted_tests/durability_guild_tests/membership_tests.rs",
+      "blob_sha": "93ed8bb4095a4b0fa25e59256c3c50fae939172f",
+      "sha256": "231fd049d7be9472794b3472e998fce6aba082b56cb5d6dce19db7dc11156d05",
+      "range_unit": "lines",
+      "file_lines": 615,
+      "file_bytes": 26553,
+      "range_extent": 615,
+      "analyzed_ranges": [
+        [
+          1,
+          615
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              615
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 615,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/lifted_tests/durability_guild_tests/rank_tests.rs",
+      "blob_sha": "30d4931fc5e48ea87729d816df9dc9072c0178bb",
+      "sha256": "c625d91630db3633f8ad933fcd6ad422f34e3f9f820fbc0c0905baafd4b9e43e",
+      "range_unit": "lines",
+      "file_lines": 963,
+      "file_bytes": 42261,
+      "range_extent": 963,
+      "analyzed_ranges": [
+        [
+          1,
+          963
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              963
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 963,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/lifted_tests/durability_guild_tests/resign_tests.rs",
+      "blob_sha": "e8e8fe695c86ffb03ec731784a5730d9259acba5",
+      "sha256": "8a71d692704b6efee7e89d495f0cc9e943a8b6f21d67d0b8e3fda795d96f8872",
+      "range_unit": "lines",
+      "file_lines": 943,
+      "file_bytes": 40870,
+      "range_extent": 943,
+      "analyzed_ranges": [
+        [
+          1,
+          943
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              943
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 943,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "apps/game-server/src/lifted_tests/durability_guild_tests/support.rs",
       "blob_sha": "1a5ccc5c53ddbd0761330d584a2cc1d8271fb940",
       "sha256": "7c9b4f3057ca343245ed7b23cd4e630176a0d76917e40ce6d888d74b4a366f88",
@@ -79073,6 +79248,37 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "apps/game-server/src/lifted_tests/durability_guild_tests/text_tests.rs",
+      "blob_sha": "09f13df19af2ce433a33e184d26d89d733634776",
+      "sha256": "c4988543b00db1fd1e69b23ce83531509adda992388b4ab0482f3e4fdec26118",
+      "range_unit": "lines",
+      "file_lines": 634,
+      "file_bytes": 27447,
+      "range_extent": 634,
+      "analyzed_ranges": [
+        [
+          1,
+          634
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              634
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 634,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "apps/game-server/src/lifted_tests/durability_guild_tests/world_job_tests.rs",
       "blob_sha": "5caec7ee20c83cf644ba0075895d112af6d09ef7",
       "sha256": "3d7ae33fe6eec478355aa5149826a5620ae527bed343ec6e8d34c62649d3a2fc",
@@ -79131,6 +79337,37 @@
         }
       ],
       "analyzed_lines": 420,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/lifted_tests/durability_vip_tests.rs",
+      "blob_sha": "0d3ba5063d5e2d6fdbcdb3a1a6b4b05d5e3959d7",
+      "sha256": "d1c35a1e18c4e2b80c2d7464bfafdf30fb4849944b4a9abd33640aaf192981d6",
+      "range_unit": "lines",
+      "file_lines": 3442,
+      "file_bytes": 139941,
+      "range_extent": 3442,
+      "analyzed_ranges": [
+        [
+          1,
+          3442
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              3442
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 3442,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -79441,6 +79678,37 @@
         }
       ],
       "analyzed_lines": 832,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/lifted_tests/party_shared_xp_postgres_tests.rs",
+      "blob_sha": "1504dc05227e1d676b0dfcb77d02dd9b00b53029",
+      "sha256": "4749ef8f4738c051881466548fdea7fd5914da2252a24da059ebdf99edf23765",
+      "range_unit": "lines",
+      "file_lines": 1600,
+      "file_bytes": 64620,
+      "range_extent": 1600,
+      "analyzed_ranges": [
+        [
+          1,
+          1600
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              1600
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1600,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -80640,6 +80908,37 @@
         }
       ],
       "analyzed_lines": 22,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/pinned-death-registry.json",
+      "blob_sha": "4ae5981e7916d26ae874aff1332ed29fbc4ebc59",
+      "sha256": "91f6a9569f798c12039e2f6af974f23ecba6747a60208a016d3e72d58325cbbb",
+      "range_unit": "lines",
+      "file_lines": 1856,
+      "file_bytes": 53881,
+      "range_extent": 1856,
+      "analyzed_ranges": [
+        [
+          1,
+          1856
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              1856
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1856,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -82376,6 +82675,68 @@
         }
       ],
       "analyzed_lines": 287,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/smelly_encounter_native_fixture.json",
+      "blob_sha": "a8c05abcc195617e7ebeb70e9ca25d4dfcd1f758",
+      "sha256": "cea1f29ce21b64c8b76b4596eb3f582b9c83c958b6ab675b84081d1f7e2ba085",
+      "range_unit": "lines",
+      "file_lines": 656,
+      "file_bytes": 19870,
+      "range_extent": 656,
+      "analyzed_ranges": [
+        [
+          1,
+          656
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              656
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 656,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "apps/game-server/src/smelly_encounter_source.json",
+      "blob_sha": "ef49111b8be90a9175a39f84eedc9eb054c0f1a5",
+      "sha256": "3c6b0f22e2e7ddbc2737bf89a6a687af9190e9b614073d76ced5b414dc1d72fa",
+      "range_unit": "lines",
+      "file_lines": 253,
+      "file_bytes": 6950,
+      "range_extent": 253,
+      "analyzed_ranges": [
+        [
+          1,
+          253
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              253
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 253,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -140531,6 +140892,37 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/dispatch/mechanics/README.md",
+      "blob_sha": "d0e305c8db495dbaead97311b489429b5fe41d0b",
+      "sha256": "19b7162dda5cafa7fd347490c85990ac95c0372a0793b09f3eced22517fee9e5",
+      "range_unit": "lines",
+      "file_lines": 51,
+      "file_bytes": 3250,
+      "range_extent": 51,
+      "analyzed_ranges": [
+        [
+          1,
+          51
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              51
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 51,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_content.rs",
       "blob_sha": "4ae0fc059097dd8d23bf7aea692227ac53a7155d",
       "sha256": "4f76a0bd8046c4cb48986244b8dd531211918dc75202c8ab9a1eacb8fbc2ecec",
@@ -140540,8 +140932,8 @@
       "range_extent": 228,
       "analyzed_ranges": [
         [
-          145,
-          195
+          1,
+          228
         ]
       ],
       "reviews": [
@@ -140549,17 +140941,358 @@
           "auditor": "client-support",
           "ranges": [
             [
-              145,
-              195
+              1,
+              228
             ]
           ],
           "range_unit": "lines",
           "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
         }
       ],
-      "analyzed_lines": 51,
+      "analyzed_lines": 228,
       "analyzed_bytes": 0,
-      "scope": "SELECTED_RANGES"
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_cycles.rs",
+      "blob_sha": "d2ce89eae5bb0aad9c6713732304f31393e12971",
+      "sha256": "e29383a2987d37e72505500571ce5b582fadbde2dd0f975069f6eeb9c7988987",
+      "range_unit": "lines",
+      "file_lines": 175,
+      "file_bytes": 7560,
+      "range_extent": 175,
+      "analyzed_ranges": [
+        [
+          1,
+          175
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              175
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 175,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_departed.rs",
+      "blob_sha": "69fd6cb3380c4a5568aba08894dea204cab1b29f",
+      "sha256": "dc3709f9de96a184a8016b037f14bd84d5b6d7285eec98f2a3d4187749548a25",
+      "range_unit": "lines",
+      "file_lines": 208,
+      "file_bytes": 9166,
+      "range_extent": 208,
+      "analyzed_ranges": [
+        [
+          1,
+          208
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              208
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 208,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_lifecycle.rs",
+      "blob_sha": "2fd95dcdceb31748cb0617ab6dfb26671068eef9",
+      "sha256": "c19607413be0bedd21416fa095d087e0d6e1da5a23a7439dc9bdf36bb1399e9b",
+      "range_unit": "lines",
+      "file_lines": 204,
+      "file_bytes": 9176,
+      "range_extent": 204,
+      "analyzed_ranges": [
+        [
+          1,
+          204
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              204
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 204,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_logout.rs",
+      "blob_sha": "a6ae88ed72f457f707360509da47c2f96db20aa4",
+      "sha256": "b1b5b72ba1b5472bf543aa47259eb1ca11e60d25c380965c850d6d44f2d9b46d",
+      "range_unit": "lines",
+      "file_lines": 98,
+      "file_bytes": 3929,
+      "range_extent": 98,
+      "analyzed_ranges": [
+        [
+          1,
+          98
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              98
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 98,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_recovery.rs",
+      "blob_sha": "c946d6ca9f5b5882a09a9160a199ab3cb3de0ab7",
+      "sha256": "114326eb67c41e24f449786162f5deb20ce24a0cbf3233fce9c094b69ed15a0a",
+      "range_unit": "lines",
+      "file_lines": 182,
+      "file_bytes": 7940,
+      "range_extent": 182,
+      "analyzed_ranges": [
+        [
+          1,
+          182
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              182
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 182,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_recovery_admission.rs",
+      "blob_sha": "f6e55fb81e03778989d9d539eb866c4f5d2bdbf8",
+      "sha256": "be31f31bb27ee65d7d4ec89962455ec7658a9d82a5fcc72fe1c9d22c00b970b4",
+      "range_unit": "lines",
+      "file_lines": 570,
+      "file_bytes": 23862,
+      "range_extent": 570,
+      "analyzed_ranges": [
+        [
+          1,
+          570
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              570
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 570,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime.rs",
+      "blob_sha": "9fed268d74ab3c9bab597c05b373386309dd96be",
+      "sha256": "14a16b4b35ade27785dcc717811afce814499cc1930496e44123cfd44d9a30b6",
+      "range_unit": "lines",
+      "file_lines": 1095,
+      "file_bytes": 43581,
+      "range_extent": 1095,
+      "analyzed_ranges": [
+        [
+          1,
+          1095
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              1095
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1095,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime/lineage.rs",
+      "blob_sha": "abccf5a8ab4c2c2ba11e4ec3619402eec228999c",
+      "sha256": "f39c6a5710cc917c75aa95d5c73b46cfb8493b52f10d767033e2fd6ef18dd1aa",
+      "range_unit": "lines",
+      "file_lines": 65,
+      "file_bytes": 2344,
+      "range_extent": 65,
+      "analyzed_ranges": [
+        [
+          1,
+          65
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              65
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 65,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime/lineage_tests.rs",
+      "blob_sha": "b6c40032ea3b06c1635646cc0c3f961d1ca8ddce",
+      "sha256": "a87eb11eab10503b6547f73e3749f78dde880f6d2f0496b7e1de1e8377fb1b95",
+      "range_unit": "lines",
+      "file_lines": 484,
+      "file_bytes": 17786,
+      "range_extent": 484,
+      "analyzed_ranges": [
+        [
+          1,
+          484
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              484
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 484,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime/switch_tests.rs",
+      "blob_sha": "9f2dac41bd4b9ee55d50abe79059288d6fab42a8",
+      "sha256": "bb46dab06d9f635369b7e54a0b36b7cc921eef6b11371d89e225cfb5210e05e4",
+      "range_unit": "lines",
+      "file_lines": 212,
+      "file_bytes": 7373,
+      "range_extent": 212,
+      "analyzed_ranges": [
+        [
+          1,
+          212
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              212
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 212,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_terminal_release.rs",
+      "blob_sha": "02937094e7ad19842fe5a3fa8249acee7ab4e9c6",
+      "sha256": "f0f076d1c9e2b60440ba75c3d28d1b6c2a15eb434969539f2cb96d6cc841391a",
+      "range_unit": "lines",
+      "file_lines": 148,
+      "file_bytes": 6934,
+      "range_extent": 148,
+      "analyzed_ranges": [
+        [
+          1,
+          148
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              148
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 148,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
     },
     {
       "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_conditions.rs",
@@ -140753,6 +141486,99 @@
       "analyzed_lines": 1208,
       "analyzed_bytes": 0,
       "scope": "SELECTED_RANGES"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_spell/activity_transfer.rs",
+      "blob_sha": "fbea223f8721876a1c1fb607f1153b00b7241591",
+      "sha256": "220f02d186003f69b724bbf8aed24ad291dd3e9bbede7a1ce9ff67e8cff83824",
+      "range_unit": "lines",
+      "file_lines": 268,
+      "file_bytes": 10546,
+      "range_extent": 268,
+      "analyzed_ranges": [
+        [
+          1,
+          268
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              268
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 268,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_spell/house_admission.rs",
+      "blob_sha": "d69066ac61b713e5da20fb3a5bd008b44161f91a",
+      "sha256": "cb4ea50179c33ecce37d5f2b825f0d1ef1af60d58e24e108d1831e813d2291b6",
+      "range_unit": "lines",
+      "file_lines": 96,
+      "file_bytes": 3656,
+      "range_extent": 96,
+      "analyzed_ranges": [
+        [
+          1,
+          96
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              96
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 96,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_spell/house_transfer.rs",
+      "blob_sha": "52e56bd8f0e3daf1443468b78cc7019d5b1b1c84",
+      "sha256": "4ad694b8e3d39227b9c50bbf1d1bf74a9e8f405e2c76d659006138069f6b2236",
+      "range_unit": "lines",
+      "file_lines": 280,
+      "file_bytes": 10888,
+      "range_extent": 280,
+      "analyzed_ranges": [
+        [
+          1,
+          280
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              280
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 280,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
     },
     {
       "path": "crates/gameplay/dispatch/src/gameplay_transport/appearance_change.rs",
@@ -140980,6 +141806,68 @@
         }
       ],
       "analyzed_lines": 51,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/activity_transfer.rs",
+      "blob_sha": "9bbd0647422104c1c16e02ef29a1403cf3eb7827",
+      "sha256": "4dbdf8db9ec007ba11d773ab100ba3350233630518ff84e0dfb93936cf14b31b",
+      "range_unit": "lines",
+      "file_lines": 190,
+      "file_bytes": 7709,
+      "range_extent": 190,
+      "analyzed_ranges": [
+        [
+          1,
+          190
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              190
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 190,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/activity_transfer_tests.rs",
+      "blob_sha": "d700bd7ecbcba82115d8b154f54a708cc3329507",
+      "sha256": "0a4b4a456843cedb7cdf27559b20aa4bdc0cd9bd4acad7823ac17813578b2b3c",
+      "range_unit": "lines",
+      "file_lines": 352,
+      "file_bytes": 11565,
+      "range_extent": 352,
+      "analyzed_ranges": [
+        [
+          1,
+          352
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              352
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 352,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -142491,7 +143379,7 @@
           "ranges": [
             [
               1,
-              235
+              238
             ]
           ],
           "range_unit": "lines",
@@ -142586,7 +143474,7 @@
       "analyzed_ranges": [
         [
           1,
-          110
+          297
         ]
       ],
       "reviews": [
@@ -142600,11 +143488,22 @@
           ],
           "range_unit": "lines",
           "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        },
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              297
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
         }
       ],
-      "analyzed_lines": 110,
+      "analyzed_lines": 297,
       "analyzed_bytes": 0,
-      "scope": "SELECTED_RANGES"
+      "scope": "FULL_FILE"
     },
     {
       "path": "crates/gameplay/dispatch/src/gameplay_transport/condition_snapshots.rs",
@@ -147727,6 +148626,68 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/achievement_observation.rs",
+      "blob_sha": "c1404d5128cbb7cb26cde7c1f7bacf37017f48e8",
+      "sha256": "076110958b60ca092553fe0159a81d7ded876de3b465f96a68af4cb157b0aa56",
+      "range_unit": "lines",
+      "file_lines": 527,
+      "file_bytes": 18883,
+      "range_extent": 527,
+      "analyzed_ranges": [
+        [
+          1,
+          527
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              527
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 527,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/achievements_highscores.rs",
+      "blob_sha": "160c8a7264b49b10bd3517e7e7861d8baa233ec9",
+      "sha256": "3c9a03574875be561d4812bd72a0a5a75298f78bc063ba92182a97dea5264813",
+      "range_unit": "lines",
+      "file_lines": 308,
+      "file_bytes": 11077,
+      "range_extent": 308,
+      "analyzed_ranges": [
+        [
+          1,
+          308
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              308
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 308,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/admission.rs",
       "blob_sha": "6648c38aa7f4180029cf216424d874d8014d9b37",
       "sha256": "af726ae1e5cf9b68a69fedfd2283f8c058588c2162f7bada8ac1627127284169",
@@ -147789,6 +148750,130 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/capability_tests.rs",
+      "blob_sha": "e0a98dc11aef790362319c45862b13a1daec9249",
+      "sha256": "0e070fccf1ef5de0e284c3655fba638aded6cc2a65933fb60bd9b7e189fa3e0e",
+      "range_unit": "lines",
+      "file_lines": 238,
+      "file_bytes": 10017,
+      "range_extent": 238,
+      "analyzed_ranges": [
+        [
+          1,
+          238
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              238
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 238,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/hotkey_coalescing.rs",
+      "blob_sha": "e9cd62c709b1cdab3461e91f7264590becc732d0",
+      "sha256": "29599ead44706cd5a6bddf50daf72684be6e73770a58c11807ffe2a5609ee9d0",
+      "range_unit": "lines",
+      "file_lines": 350,
+      "file_bytes": 11822,
+      "range_extent": 350,
+      "analyzed_ranges": [
+        [
+          1,
+          350
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              350
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 350,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/idle_kick.rs",
+      "blob_sha": "cd204fb913a1703586c680f6668d29bd4960cd25",
+      "sha256": "9809dee1e096247a1687c5dfe9b56fecd3153075f46bff45f64b7228fbbd1ff0",
+      "range_unit": "lines",
+      "file_lines": 554,
+      "file_bytes": 19541,
+      "range_extent": 554,
+      "analyzed_ranges": [
+        [
+          1,
+          554
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              554
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 554,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/integrity.rs",
+      "blob_sha": "fd4f3ccd0481c95ee384ed745381cb1705211de8",
+      "sha256": "b778b96a6b5b7e732e70df8d8a4a00731199086654fa8de313bc0723491af33c",
+      "range_unit": "lines",
+      "file_lines": 292,
+      "file_bytes": 10925,
+      "range_extent": 292,
+      "analyzed_ranges": [
+        [
+          1,
+          292
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              292
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 292,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/liveness.rs",
       "blob_sha": "b7fe53ae40ed6a8293207c11d8c2ae4da09b3645",
       "sha256": "2ea00cf03f66267d43a8a847bfbd6b166aa83ed091ff036a9635cf5243d93fc8",
@@ -147816,6 +148901,68 @@
         }
       ],
       "analyzed_lines": 283,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/notices.rs",
+      "blob_sha": "2e0d7a4c30243bdadf387d697752a2a93c4aee61",
+      "sha256": "695b35724edeb625647748a829d96dc4f9a0f81011eced44a64fb3a647cf931b",
+      "range_unit": "lines",
+      "file_lines": 304,
+      "file_bytes": 11439,
+      "range_extent": 304,
+      "analyzed_ranges": [
+        [
+          1,
+          304
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              304
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 304,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/overlay.rs",
+      "blob_sha": "73d03b661cfdbe5e220a834e2182617b700bfd20",
+      "sha256": "2635d25cfe190fcd581cd47d0eba7bd3f845b3384ce535a0c7e3f68ae3619f0b",
+      "range_unit": "lines",
+      "file_lines": 189,
+      "file_bytes": 7928,
+      "range_extent": 189,
+      "analyzed_ranges": [
+        [
+          1,
+          189
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              189
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 189,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -147851,6 +148998,130 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/spell_catalog.rs",
+      "blob_sha": "20fc41edcc52b42cfbe3d9298d3994b427b570a2",
+      "sha256": "10d7c24de4a3b267b7db6d01dd8cad56192584f7f7ea5a40f290dabfdd3dc228",
+      "range_unit": "lines",
+      "file_lines": 105,
+      "file_bytes": 4725,
+      "range_extent": 105,
+      "analyzed_ranges": [
+        [
+          1,
+          105
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              105
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 105,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/spell_resume.rs",
+      "blob_sha": "af6e6202b13f27e1d002b9c42c9a29de6ec1cba6",
+      "sha256": "b73637d97238aa3342381b682d41b18bb36f0f8604541e9f71ee9477f09564a1",
+      "range_unit": "lines",
+      "file_lines": 196,
+      "file_bytes": 7515,
+      "range_extent": 196,
+      "analyzed_ranges": [
+        [
+          1,
+          196
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              196
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 196,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/spell_vitals.rs",
+      "blob_sha": "d58e91534b31fb63b3bd1061cd5bf3858441c04b",
+      "sha256": "2d64dd2ac335193b29db06713b0705de938f4313d3acf292ededf4ed6bcf5f05",
+      "range_unit": "lines",
+      "file_lines": 269,
+      "file_bytes": 9326,
+      "range_extent": 269,
+      "analyzed_ranges": [
+        [
+          1,
+          269
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              269
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 269,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/steps_pacing.rs",
+      "blob_sha": "c1ddb2f912f4ce86a398731e6e4dd42c9c87a8fd",
+      "sha256": "aeec5b7084b3c501d44018fc71a241e38c302f3325572f9c371c1bd5f2097ac9",
+      "range_unit": "lines",
+      "file_lines": 854,
+      "file_bytes": 34062,
+      "range_extent": 854,
+      "analyzed_ranges": [
+        [
+          1,
+          854
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              854
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 854,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/support.rs",
       "blob_sha": "832fbcd480a0b51b1d42bc0139b0b2b6a6e7d33a",
       "sha256": "56bd83e68ed80a902229de49e30e3f7ac2ff337ec99f8bded9ba2d4fd036de6c",
@@ -147882,6 +149153,68 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/use_capabilities.rs",
+      "blob_sha": "5b0b53f833c5ac84402439634ca1392766d1f742",
+      "sha256": "5c1d1f79622e5d6d64c3d901e341f3199458ff5978491ad4673014befa80bdaa",
+      "range_unit": "lines",
+      "file_lines": 100,
+      "file_bytes": 3030,
+      "range_extent": 100,
+      "analyzed_ranges": [
+        [
+          1,
+          100
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              100
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 100,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/use_commit.rs",
+      "blob_sha": "a71f773e835a848be77fd51bb5fd09bcd04d2ac5",
+      "sha256": "b55dbb7452a572aeb5e9c901dd256963bd4fd4720c39287c27bb1cf15005f829",
+      "range_unit": "lines",
+      "file_lines": 254,
+      "file_bytes": 9602,
+      "range_extent": 254,
+      "analyzed_ranges": [
+        [
+          1,
+          254
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              254
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 254,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/write_text_depot_view.rs",
       "blob_sha": "cc3142246c8d357aa382c6e742512241c83cbf80",
       "sha256": "3ea0300d46eaa5e97f03994cb206699a1b676bb660244c6cb934fe899549a9a5",
@@ -147909,6 +149242,99 @@
         }
       ],
       "analyzed_lines": 284,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/visibility_tests.rs",
+      "blob_sha": "9a76590f6aa1ce113ac6997562599b38217aeb71",
+      "sha256": "1fc01521a592a50f818f4a3f2fb57cfebe508c38237f3373e2abd002ce5f28ad",
+      "range_unit": "lines",
+      "file_lines": 263,
+      "file_bytes": 8120,
+      "range_extent": 263,
+      "analyzed_ranges": [
+        [
+          1,
+          263
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              263
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 263,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/visibility_tests/appearance_change_tests.rs",
+      "blob_sha": "d768c142946290b7d324c3068dc0aa0925cb8479",
+      "sha256": "e0a426d9f31b998902248194e234008ea26adc35bedae588127e8f66743f4494",
+      "range_unit": "lines",
+      "file_lines": 313,
+      "file_bytes": 12100,
+      "range_extent": 313,
+      "analyzed_ranges": [
+        [
+          1,
+          313
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              313
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 313,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/visibility_tests/interest_set.rs",
+      "blob_sha": "5e4333fdce7e0bc80ab869e552e578aa7ce8005f",
+      "sha256": "18b3259ed9b41dc93bc5c36199e11e6a30bb86083b2c57d14c552cd3b13182e2",
+      "range_unit": "lines",
+      "file_lines": 325,
+      "file_bytes": 11801,
+      "range_extent": 325,
+      "analyzed_ranges": [
+        [
+          1,
+          325
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              325
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 325,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -148849,6 +150275,99 @@
       "scope": "SELECTED_RANGES"
     },
     {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/item_use_gourmet.rs",
+      "blob_sha": "41c042806a2c3be67601712e178e6c775276fe68",
+      "sha256": "7d5d2e21334ac9a4781f17beb468d7b27ec9c992a068336ce03cda66eca5f2dc",
+      "range_unit": "lines",
+      "file_lines": 498,
+      "file_bytes": 17354,
+      "range_extent": 498,
+      "analyzed_ranges": [
+        [
+          1,
+          498
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              498
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 498,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/item_use_gourmet/pending.rs",
+      "blob_sha": "b950003f067ea3704122f94b93c88303ee3f44f2",
+      "sha256": "c1213dcdc832c19a7c7272a67b73570d65c2ac889c3c39c504911d02488d0e0e",
+      "range_unit": "lines",
+      "file_lines": 157,
+      "file_bytes": 5443,
+      "range_extent": 157,
+      "analyzed_ranges": [
+        [
+          1,
+          157
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              157
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 157,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/item_use_gourmet/recovery.rs",
+      "blob_sha": "9d1b41efd2a76d317a411593b925da20d0b03468",
+      "sha256": "35ff3f03b5cbb167d4e6f9cfe66375d325d9babdae27c5da44f455e6ac51873a",
+      "range_unit": "lines",
+      "file_lines": 151,
+      "file_bytes": 5107,
+      "range_extent": 151,
+      "analyzed_ranges": [
+        [
+          1,
+          151
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              151
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 151,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/dispatch/src/gameplay_transport/item_view.rs",
       "blob_sha": "df23e5184430c823dbfde9670aa3c47f465d0792",
       "sha256": "aecf011575b646ee1bacc50d4cfd354c0a1b865d03e4aecc9a763f88643979f4",
@@ -149131,6 +150650,68 @@
         }
       ],
       "analyzed_lines": 451,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/logout.rs",
+      "blob_sha": "f2a3a53ae4a17c6da5c8f47914e050c4a53d62d1",
+      "sha256": "2380568eef7dc3c9401781a9853199c32b896e6bcb6a885e6113b8858d429302",
+      "range_unit": "lines",
+      "file_lines": 410,
+      "file_bytes": 18159,
+      "range_extent": 410,
+      "analyzed_ranges": [
+        [
+          1,
+          410
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              410
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 410,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/logout_tests.rs",
+      "blob_sha": "e77b66f3650ff959c2a4335368e796ec837492de",
+      "sha256": "aabeb9d77bfc6f1f5326e4f24e43f90d7ccb18133ac442603e5a9d6c2877acc9",
+      "range_unit": "lines",
+      "file_lines": 165,
+      "file_bytes": 6537,
+      "range_extent": 165,
+      "analyzed_ranges": [
+        [
+          1,
+          165
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              165
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 165,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -149594,6 +151175,68 @@
       "analyzed_lines": 81,
       "analyzed_bytes": 0,
       "scope": "SELECTED_RANGES"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/native_activity.rs",
+      "blob_sha": "94f3aa3975d849ff81fd6fd7107987e6435ea491",
+      "sha256": "5a4d3793e1ed3fb80f1416f88040a69f80b77f65ae2283dd244ee6a97052e1e0",
+      "range_unit": "lines",
+      "file_lines": 1124,
+      "file_bytes": 47149,
+      "range_extent": 1124,
+      "analyzed_ranges": [
+        [
+          1,
+          1124
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              1124
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1124,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/native_activity_return.rs",
+      "blob_sha": "ee36917298f7b40c79016f3dad7e0a91b515a969",
+      "sha256": "162892b16bd9a26c471e7127232ea54ce0ffa521be053e43c4c12a01ee78bed2",
+      "range_unit": "lines",
+      "file_lines": 974,
+      "file_bytes": 40960,
+      "range_extent": 974,
+      "analyzed_ranges": [
+        [
+          1,
+          974
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              974
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 974,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
     },
     {
       "path": "crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs",
@@ -150610,6 +152253,68 @@
         }
       ],
       "analyzed_lines": 22,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/state_continuity.rs",
+      "blob_sha": "1a195845b6c9258b8f0fc0fba99c2c26784e046a",
+      "sha256": "0486e4dd45b2ddb3674363fb553d7f9aa7700ee405ccb3b56fc6bf1a127f6c17",
+      "range_unit": "lines",
+      "file_lines": 171,
+      "file_bytes": 6191,
+      "range_extent": 171,
+      "analyzed_ranges": [
+        [
+          1,
+          171
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              171
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 171,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/state_effects.rs",
+      "blob_sha": "e168a75613c72c3d6bc1561884b9e740b4091f97",
+      "sha256": "cfc53fd7cab9120dafc8a7a275ac1db0f698f318b79fac21962bef4ad6e9a55d",
+      "range_unit": "lines",
+      "file_lines": 525,
+      "file_bytes": 19154,
+      "range_extent": 525,
+      "analyzed_ranges": [
+        [
+          1,
+          525
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "client-support",
+          "ranges": [
+            [
+              1,
+              525
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 525,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -160444,6 +162149,37 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/durability/src/durability/creature_source_items.rs",
+      "blob_sha": "7d0f157147741122cd37fbc4673917c4708edef7",
+      "sha256": "a0a2f95dbaa886c483cdfbaf3d728cce8cc6b28bba2b8727447a1f3134111220",
+      "range_unit": "lines",
+      "file_lines": 1658,
+      "file_bytes": 74824,
+      "range_extent": 1658,
+      "analyzed_ranges": [
+        [
+          1,
+          1658
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              1658
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1658,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/durability/src/durability/daily_reward.rs",
       "blob_sha": "a51b1ccd5f88ff6dba6b31b9e20040c6bd1d5903",
       "sha256": "245520de6fe02d4d073d684082dc7f503dcac3acb1fd15caf4798e03e2924e58",
@@ -161268,6 +163004,99 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/durability/src/durability/field_capability_port.rs",
+      "blob_sha": "f2c6d4df085a0dd60e34b1f5af188d216ab0aa9b",
+      "sha256": "2c31c57e427145936a530c3493a7ac1472a1517fc9bbf7a128c584e6f6394036",
+      "range_unit": "lines",
+      "file_lines": 71,
+      "file_bytes": 3572,
+      "range_extent": 71,
+      "analyzed_ranges": [
+        [
+          1,
+          71
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              71
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 71,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/field_capability_port_postgres_tests.rs",
+      "blob_sha": "d107975d00010b6f08b2d33a06bb7a09a83894a9",
+      "sha256": "b70b079df99b2234a72a03603afa7087a01c7204f643998757eabbb88e2df392",
+      "range_unit": "lines",
+      "file_lines": 149,
+      "file_bytes": 6406,
+      "range_extent": 149,
+      "analyzed_ranges": [
+        [
+          1,
+          149
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              149
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 149,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/field_removal.rs",
+      "blob_sha": "423f653b440b1dcca3575a51a51785092274fd2d",
+      "sha256": "58716ed589577504555bec2da40a0bdc62ed05de032869eff20fb4ad9df2581c",
+      "range_unit": "lines",
+      "file_lines": 125,
+      "file_bytes": 9873,
+      "range_extent": 125,
+      "analyzed_ranges": [
+        [
+          1,
+          125
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              125
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 125,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/durability/src/durability/forge.rs",
       "blob_sha": "6c1c5ee1f1ffe21253e97575e575efb374895022",
       "sha256": "032e28e34d959bc654518f23445e07d9537597644818b46502b61bd81ddbab95",
@@ -161631,6 +163460,99 @@
         }
       ],
       "analyzed_lines": 1113,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/gap_sv2_decay_tests.rs",
+      "blob_sha": "779df4077ab8db922119d5f034b328b872a8fb0d",
+      "sha256": "c40c0b542463192dac3d68076a843768312ef10d399854db6f8772c934ce704d",
+      "range_unit": "lines",
+      "file_lines": 417,
+      "file_bytes": 19362,
+      "range_extent": 417,
+      "analyzed_ranges": [
+        [
+          1,
+          417
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              417
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 417,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/ground_cell_limit.rs",
+      "blob_sha": "21e2b0db7eeb71be5fb7f5fdb4761777e40ba3ae",
+      "sha256": "bf6457ca928abcd18da896bdfeac47603deb7d9956fcd6674cc1d9854c03b80e",
+      "range_unit": "lines",
+      "file_lines": 319,
+      "file_bytes": 13814,
+      "range_extent": 319,
+      "analyzed_ranges": [
+        [
+          1,
+          319
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              319
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 319,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/ground_cell_limit_tests.rs",
+      "blob_sha": "7b3c7dc8373e33240933651a6e8e7e3e1847bf90",
+      "sha256": "c0de273ceef83b03c8488834cda85dc4e511a74eb1806871fb460fe0e711d08a",
+      "range_unit": "lines",
+      "file_lines": 1882,
+      "file_bytes": 76724,
+      "range_extent": 1882,
+      "analyzed_ranges": [
+        [
+          1,
+          1882
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              1882
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1882,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -163982,6 +165904,37 @@
       "scope": "SELECTED_RANGES"
     },
     {
+      "path": "crates/gameplay/durability/src/durability/house_spell_acl.rs",
+      "blob_sha": "0057df2220e20895c1018051fdd8782a73f1b0d9",
+      "sha256": "f8a0ac4a6f471c97416888ad10dc256980259f9b4b79c8d7a734469b7dd43737",
+      "range_unit": "lines",
+      "file_lines": 296,
+      "file_bytes": 15774,
+      "range_extent": 296,
+      "analyzed_ranges": [
+        [
+          1,
+          296
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              296
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 296,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/durability/src/durability/house_transfer.rs",
       "blob_sha": "f788786f26a2f13facee198156b1df5dafa70f86",
       "sha256": "1b50513cfd4fe7c371a947481283347669a8bc6ca50051844bcf73e2df953a83",
@@ -165607,6 +167560,192 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/durability/src/durability/item_timed_repair.rs",
+      "blob_sha": "9f174894fd6457d6e863c6b6c3bd89132c11b060",
+      "sha256": "3d2da908c3ccbd7524ef127c75f55051ae6f6feb33dd884dacd79201aab275c2",
+      "range_unit": "lines",
+      "file_lines": 116,
+      "file_bytes": 4306,
+      "range_extent": 116,
+      "analyzed_ranges": [
+        [
+          1,
+          116
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              116
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 116,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_timed_runtime.rs",
+      "blob_sha": "226ab61521c0823fbce3b1707ddd917b3bcfc7d0",
+      "sha256": "abd44175331ba0dd91ad99d6f77aac729e09b337530d78b30b6d687dee721b1b",
+      "range_unit": "lines",
+      "file_lines": 227,
+      "file_bytes": 10960,
+      "range_extent": 227,
+      "analyzed_ranges": [
+        [
+          1,
+          227
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              227
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 227,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_timed_runtime/execute.rs",
+      "blob_sha": "a3738cc6d938826cbfc533050d50242da94a32dc",
+      "sha256": "64d777cb883c2d20453373498e00ba1ce7e668220d2b72c2ad0f0bbf0d5211b8",
+      "range_unit": "lines",
+      "file_lines": 128,
+      "file_bytes": 5974,
+      "range_extent": 128,
+      "analyzed_ranges": [
+        [
+          1,
+          128
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              128
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 128,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_timed_runtime/repair.rs",
+      "blob_sha": "e1641e2fc2b2279b6eb38fc82c751b9750dac68e",
+      "sha256": "5510cf0edd519c2e4eafa76ca082d78346f6b617b7c07abcd4a5f774198faa29",
+      "range_unit": "lines",
+      "file_lines": 159,
+      "file_bytes": 8987,
+      "range_extent": 159,
+      "analyzed_ranges": [
+        [
+          1,
+          159
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              159
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 159,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_timed_state.rs",
+      "blob_sha": "3f1a25d6faf4a7db5639cecb794b2db3c4985139",
+      "sha256": "fbde070c8c69ce5d66dd92b445aa898828e5b802991c9f8509ef7d023791e8c2",
+      "range_unit": "lines",
+      "file_lines": 1078,
+      "file_bytes": 44712,
+      "range_extent": 1078,
+      "analyzed_ranges": [
+        [
+          1,
+          1078
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              1078
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1078,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_timed_state_audit.rs",
+      "blob_sha": "ecfbeb453ad8b3dcd3b25e885709bf02575aaf6a",
+      "sha256": "ef32a436ba55463dbe178d7a29fee42a215d5600d7e126655dcc2b078e63a880",
+      "range_unit": "lines",
+      "file_lines": 769,
+      "file_bytes": 30978,
+      "range_extent": 769,
+      "analyzed_ranges": [
+        [
+          1,
+          769
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              769
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 769,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/durability/src/durability/item_transfer.rs",
       "blob_sha": "61cbe78b29140ee1e6caaca03f6ce6e2f9653678",
       "sha256": "72d8d22ce55ef16dbd5b3b8d7d9c54f9b20afbe19ccf569b5d96adc82299256d",
@@ -166250,6 +168389,37 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/durability/src/durability/item_weight_lookup.rs",
+      "blob_sha": "8e33347210defc4588cd3778581c0c2a09f01576",
+      "sha256": "3eb0c6b162be70cb6f5e8469d1e87b6af2805254b30ebaa5440047f52ca28ef0",
+      "range_unit": "lines",
+      "file_lines": 21,
+      "file_bytes": 974,
+      "range_extent": 21,
+      "analyzed_ranges": [
+        [
+          1,
+          21
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              21
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 21,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/durability/src/durability/loop_training.rs",
       "blob_sha": "d4dff15057120555404a032d5ae2514dce21d045",
       "sha256": "9b452c6cf9d4a5c25efec9c1b137cee000382e1aa0dca6f8e159afaac90ec28b",
@@ -166439,6 +168609,99 @@
         }
       ],
       "analyzed_lines": 424,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/map_item_mint.rs",
+      "blob_sha": "86d167156f23ec92bc1a1025cfa08836ed307eba",
+      "sha256": "0b8c9f384133422108ebbcf4aae449d1c6f3186b3db51c2cafb643f2ab64dc4e",
+      "range_unit": "lines",
+      "file_lines": 1444,
+      "file_bytes": 61373,
+      "range_extent": 1444,
+      "analyzed_ranges": [
+        [
+          1,
+          1444
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              1444
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1444,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/map_item_mint/planting.rs",
+      "blob_sha": "e7fd71ac1eea6f8c7af477c8e8fff1089a24ae16",
+      "sha256": "3956bc3330b7616ba74a01a298002d933fcfe521b1bce7de0aff683b256b0eb6",
+      "range_unit": "lines",
+      "file_lines": 48,
+      "file_bytes": 3579,
+      "range_extent": 48,
+      "analyzed_ranges": [
+        [
+          1,
+          48
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              48
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 48,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/map_item_mint_audit.rs",
+      "blob_sha": "af6c98df71b25667e538537a0cf550394ed31088",
+      "sha256": "0fe893275d58e185f3bbf70d4c57c271bcfe6bea567d450ca04fd6030dc6ac88",
+      "range_unit": "lines",
+      "file_lines": 706,
+      "file_bytes": 29080,
+      "range_extent": 706,
+      "analyzed_ranges": [
+        [
+          1,
+          706
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              706
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 706,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -166777,6 +169040,130 @@
         }
       ],
       "analyzed_lines": 631,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/native_map_items.rs",
+      "blob_sha": "cc12c2c7c2a595fc68e096cf59244aa50d8bb00f",
+      "sha256": "1e6f6c21d73986f5f0b5a2aee77a3eba87b9bd6ced1bd54f60b7089dcf4cb038",
+      "range_unit": "lines",
+      "file_lines": 293,
+      "file_bytes": 19089,
+      "range_extent": 293,
+      "analyzed_ranges": [
+        [
+          1,
+          293
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              293
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 293,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/native_map_items_abi.rs",
+      "blob_sha": "8b47b849d9affdb3120bd3d9bf03e58135cfcfa2",
+      "sha256": "9baf482e69839fd4f09f8040700f563eff6e9abc408ee4bb5bab77816f2dad75",
+      "range_unit": "lines",
+      "file_lines": 22,
+      "file_bytes": 1019,
+      "range_extent": 22,
+      "analyzed_ranges": [
+        [
+          1,
+          22
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              22
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 22,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/native_world_items.rs",
+      "blob_sha": "f1690bcd758e7292b9d1f510d989c380895dd2b5",
+      "sha256": "448d5248ff04e452bb5d3a04dcaf1ec337455f402927881bf543bf24126e8423",
+      "range_unit": "lines",
+      "file_lines": 521,
+      "file_bytes": 23389,
+      "range_extent": 521,
+      "analyzed_ranges": [
+        [
+          1,
+          521
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              521
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 521,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/native_world_read.rs",
+      "blob_sha": "fac3c9b8f8be36b748c540964f25873d2dcc5a80",
+      "sha256": "bfc66a50ee0ae797ae08ade0e12035b7bcf8f06d5eafde132ff69d6b6a4d983b",
+      "range_unit": "lines",
+      "file_lines": 515,
+      "file_bytes": 21725,
+      "range_extent": 515,
+      "analyzed_ranges": [
+        [
+          1,
+          515
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              515
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 515,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -170497,6 +172884,347 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/durability/src/durability/spell_character_lookup.rs",
+      "blob_sha": "6cf4e6825b8a54a5a2780d11aca41ae51a27b4bf",
+      "sha256": "94d68e55b9658579b40ea2a8529c5267e36b0d46a2a26c9044d88114bb177b0f",
+      "range_unit": "lines",
+      "file_lines": 261,
+      "file_bytes": 11011,
+      "range_extent": 261,
+      "analyzed_ranges": [
+        [
+          1,
+          261
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              261
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 261,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_familiar_group.rs",
+      "blob_sha": "c66dc6a3b7a132bbe13b6cc2cce378d77b45af8b",
+      "sha256": "5239853ba7a43f05cd9149945ee360dbfb04fd2a2d0203872aab8a0c8e027c98",
+      "range_unit": "lines",
+      "file_lines": 286,
+      "file_bytes": 14027,
+      "range_extent": 286,
+      "analyzed_ranges": [
+        [
+          1,
+          286
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              286
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 286,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_field_policy.rs",
+      "blob_sha": "60cc178d0aef30248316b384bc4f41e9fd972004",
+      "sha256": "50872e5a6115b4aef3caf447657b19eaed7175e009a9183721cba4a67c980359",
+      "range_unit": "lines",
+      "file_lines": 124,
+      "file_bytes": 4932,
+      "range_extent": 124,
+      "analyzed_ranges": [
+        [
+          1,
+          124
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              124
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 124,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_house_abi.rs",
+      "blob_sha": "4e23fe6b201e9360f3a7e68f9cf95a099ee64c4e",
+      "sha256": "66d039d6f49203b563dfd670ac4e14776929f3bbe37f47e60baa91fb976ed37d",
+      "range_unit": "lines",
+      "file_lines": 16,
+      "file_bytes": 706,
+      "range_extent": 16,
+      "analyzed_ranges": [
+        [
+          1,
+          16
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              16
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 16,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_item_temporal.rs",
+      "blob_sha": "d751db5abb424a28e90bde50c9ff2c1bd6e47f9d",
+      "sha256": "5c16365fb9efe3953e2fd11340dcd5da8472e130ebfcfba9ec33e9d6af5f0f66",
+      "range_unit": "lines",
+      "file_lines": 483,
+      "file_bytes": 31141,
+      "range_extent": 483,
+      "analyzed_ranges": [
+        [
+          1,
+          483
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              483
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 483,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_item_temporal/event_items.rs",
+      "blob_sha": "3163c9ed768e4441d9fa386f7c71164ca4c1372b",
+      "sha256": "32d95c676e0eea30bf3561bf1817af033c170d4daaae9d9caa3cb529cfeb8cff",
+      "range_unit": "lines",
+      "file_lines": 99,
+      "file_bytes": 5487,
+      "range_extent": 99,
+      "analyzed_ranges": [
+        [
+          1,
+          99
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              99
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 99,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_item_transaction.rs",
+      "blob_sha": "1b8b701567db539ed0e7fb6999f31807011d403d",
+      "sha256": "661853109ebd6884668000d87e6c4ba4ad0c04ae153208b2644dece8b3fdd2cd",
+      "range_unit": "lines",
+      "file_lines": 3653,
+      "file_bytes": 189785,
+      "range_extent": 3653,
+      "analyzed_ranges": [
+        [
+          1,
+          3653
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              3653
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 3653,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_item_transaction/direct_companion.rs",
+      "blob_sha": "7df24a4fb577f8762fe8275cd60fd35f7641c79c",
+      "sha256": "03796cc1198806390ccd40a265d8957060196308bc3d2f654a6ec9bf50060184",
+      "range_unit": "lines",
+      "file_lines": 280,
+      "file_bytes": 13508,
+      "range_extent": 280,
+      "analyzed_ranges": [
+        [
+          1,
+          280
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              280
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 280,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_item_transaction/tests/cast_cost.rs",
+      "blob_sha": "279e760f390d147c53fc817f1b14c61c8df578e5",
+      "sha256": "5fc66699021cb868f3d2fe93cc2e1c762a1441ec3089f420de63f70c628a4167",
+      "range_unit": "lines",
+      "file_lines": 51,
+      "file_bytes": 1569,
+      "range_extent": 51,
+      "analyzed_ranges": [
+        [
+          1,
+          51
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              51
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 51,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_item_transaction/tests/map_protection_tags.rs",
+      "blob_sha": "d2d3490007f45da413bb9b96b92d9b483520c002",
+      "sha256": "c94f58323eb47a7565a6038209348cab3c720b2ee10bdf511b4cd478e82afc1b",
+      "range_unit": "lines",
+      "file_lines": 22,
+      "file_bytes": 715,
+      "range_extent": 22,
+      "analyzed_ranges": [
+        [
+          1,
+          22
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              22
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 22,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_items_abi.rs",
+      "blob_sha": "68936f532ab9a23342eab3f382fbae46a92cdeec",
+      "sha256": "092c0ae9fcdb93c89e6d0b21a3aa85b6958ca9f843e5e2c5ed73cdf6490c3e74",
+      "range_unit": "lines",
+      "file_lines": 472,
+      "file_bytes": 16569,
+      "range_extent": 472,
+      "analyzed_ranges": [
+        [
+          1,
+          472
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              472
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 472,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/durability/src/durability/spell_owner_commit.rs",
       "blob_sha": "14a7d36ebc13e87a7abc6f5e931f95dc9a1a3cff",
       "sha256": "b8d4743c0d9601ad3f259b0fda2a99614b0b25afb906c27d3fe6b6b64ec2716a",
@@ -170524,6 +173252,37 @@
         }
       ],
       "analyzed_lines": 911,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_parameter_result.rs",
+      "blob_sha": "d4945d57b7d51589d630ad9d9b3294fbf56177e9",
+      "sha256": "c40cea42cab1b867f1b6f347e3fdf9445cc9678c0b8486e20e5e64fd1b49c433",
+      "range_unit": "lines",
+      "file_lines": 155,
+      "file_bytes": 8683,
+      "range_extent": 155,
+      "analyzed_ranges": [
+        [
+          1,
+          155
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "ranges": [
+            [
+              1,
+              155
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 155,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -190945,6 +193704,68 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/quests/src/quest/dark_trails.rs",
+      "blob_sha": "aaefe7719c6789424ecfc35b3f0add5778cb99c1",
+      "sha256": "58e97bb4a617023b0870f549f475bf3f78483da2fb73836ed877b8743a5b2323",
+      "range_unit": "lines",
+      "file_lines": 315,
+      "file_bytes": 10647,
+      "range_extent": 315,
+      "analyzed_ranges": [
+        [
+          1,
+          315
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              315
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 315,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/dark_trails/tests.rs",
+      "blob_sha": "29512a36ead9dc81acf0d11d4a741c6a2cdf514c",
+      "sha256": "daad4a5891843d8ca1df4b39e6dcf2d799abcfc4a0b80a5af7e0dee0f92e4a81",
+      "range_unit": "lines",
+      "file_lines": 395,
+      "file_bytes": 11657,
+      "range_extent": 395,
+      "analyzed_ranges": [
+        [
+          1,
+          395
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              395
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 395,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/quests/src/quest/deepling_boss_access.rs",
       "blob_sha": "c771e376a9210b1c51642d44aa7e7771c9aeb9d4",
       "sha256": "4f6e36f0d3fe1af5954bfc17e7064cd18aea140806dc74c0e7e72b4898bb8e73",
@@ -191003,6 +193824,161 @@
         }
       ],
       "analyzed_lines": 143,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/grave_danger.rs",
+      "blob_sha": "37a66610c62bb076fd67b5956ccea213244d91e6",
+      "sha256": "53e90c91d21fb43864e368be1dcdd36a90746ec1b31f2c19e7ac2e8bda9f0cef",
+      "range_unit": "lines",
+      "file_lines": 482,
+      "file_bytes": 16445,
+      "range_extent": 482,
+      "analyzed_ranges": [
+        [
+          1,
+          482
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              482
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 482,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/grizzly_adams.rs",
+      "blob_sha": "5cb161e0b7c6b3f31681e307000293a334ffe2e2",
+      "sha256": "61208ae4aae92b9728b33279a1b8aae2c0afeedaad2351de899cb4b77eae40bb",
+      "range_unit": "lines",
+      "file_lines": 381,
+      "file_bytes": 11288,
+      "range_extent": 381,
+      "analyzed_ranges": [
+        [
+          1,
+          381
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              381
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 381,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/grizzly_adams/catalogue.rs",
+      "blob_sha": "1e5d30434acaa6d1135830b3305caf351b39775a",
+      "sha256": "25ba359f05b84518fbe5dcee194b01a821d93871e0e225acfc0210d18fe20ef9",
+      "range_unit": "lines",
+      "file_lines": 219,
+      "file_bytes": 7470,
+      "range_extent": 219,
+      "analyzed_ranges": [
+        [
+          1,
+          219
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              219
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 219,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/grizzly_adams/rules.rs",
+      "blob_sha": "5ade15aca67d2e1adc7e5b5b1fa108dc1f2acbe5",
+      "sha256": "e65dc11c80f60444b1c8a86ecf44105b490ea5f5da345d8eea27c3de821d74e5",
+      "range_unit": "lines",
+      "file_lines": 372,
+      "file_bytes": 13619,
+      "range_extent": 372,
+      "analyzed_ranges": [
+        [
+          1,
+          372
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              372
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 372,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/grizzly_adams/tests.rs",
+      "blob_sha": "6826890b4e062b1df827d824e5e4c076576ce3f7",
+      "sha256": "6e938b71e71fc5c53b28a4ef5b1caca69d068eeb2edba420a1f65c63d0782803",
+      "range_unit": "lines",
+      "file_lines": 754,
+      "file_bytes": 24513,
+      "range_extent": 754,
+      "analyzed_ranges": [
+        [
+          1,
+          754
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              754
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 754,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -191069,6 +194045,130 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/quests/src/quest/isle_of_evil.rs",
+      "blob_sha": "f88fc4c6ccf38226a4aa63982124ec9ee4f74e13",
+      "sha256": "f8453603409f70ecec587e3aabd164e3ee24b9100ff2b8ffec5d4bf66b11f5f2",
+      "range_unit": "lines",
+      "file_lines": 263,
+      "file_bytes": 8702,
+      "range_extent": 263,
+      "analyzed_ranges": [
+        [
+          1,
+          263
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              263
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 263,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/isle_of_evil/dialogue.rs",
+      "blob_sha": "9b40cb19beaa9a865059f8ab7905b4f62aafb8d6",
+      "sha256": "a260279b0a4c19e775980a2084de95c2e97d70b47e03c1d6d8b4c68357251b9b",
+      "range_unit": "lines",
+      "file_lines": 280,
+      "file_bytes": 10944,
+      "range_extent": 280,
+      "analyzed_ranges": [
+        [
+          1,
+          280
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              280
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 280,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/isle_of_evil/tests.rs",
+      "blob_sha": "b6736567a77eedae7b67826ec7d1f2cdfb1feee9",
+      "sha256": "59627b6f32e35346f0aee478f2906e651c1a881992f1d8605ee3483cf2b2f4fe",
+      "range_unit": "lines",
+      "file_lines": 290,
+      "file_bytes": 9119,
+      "range_extent": 290,
+      "analyzed_ranges": [
+        [
+          1,
+          290
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              290
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 290,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/liquid_black.rs",
+      "blob_sha": "f7293522819ccc0011444b6f87b00418713b79c3",
+      "sha256": "c54a16cfaa1bfea203b5f3a78282918f62398e03ee979a23f0ac66cf96f9a70f",
+      "range_unit": "lines",
+      "file_lines": 413,
+      "file_bytes": 14371,
+      "range_extent": 413,
+      "analyzed_ranges": [
+        [
+          1,
+          413
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              413
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 413,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/quests/src/quest/loader.rs",
       "blob_sha": "2b1b360e745b3463094f32947d8cd725ace519b0",
       "sha256": "9df5ee90b016bbd7b3a595e98f9bdaa0acb7d6a8b765a5dd94598a2c43787977",
@@ -191096,6 +194196,192 @@
         }
       ],
       "analyzed_lines": 620,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log.rs",
+      "blob_sha": "8593af7168b707a493da6d2cce4f448c9a5aec80",
+      "sha256": "703c7650c6c9afceb02db85007b95c103725e9d474fd40be3b3f0560b8bc2726",
+      "range_unit": "lines",
+      "file_lines": 428,
+      "file_bytes": 16312,
+      "range_extent": 428,
+      "analyzed_ranges": [
+        [
+          1,
+          428
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              428
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 428,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log/journal_source.rs",
+      "blob_sha": "d905b67183c297fbf68ee90d09b44eebbf7b0f96",
+      "sha256": "9330d858fbbfa02c9bcb0fd843a8c30aa19beeead1ff7ab344361d40abaebda6",
+      "range_unit": "lines",
+      "file_lines": 124,
+      "file_bytes": 3998,
+      "range_extent": 124,
+      "analyzed_ranges": [
+        [
+          1,
+          124
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              124
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 124,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log/loader.rs",
+      "blob_sha": "9937d4789de2c9819491592d9fcdf25ab2572f82",
+      "sha256": "e30ad875b70e50d23eaf0a1becdd258882cb291af3d5b39fa4607d3474d099c4",
+      "range_unit": "lines",
+      "file_lines": 173,
+      "file_bytes": 5698,
+      "range_extent": 173,
+      "analyzed_ranges": [
+        [
+          1,
+          173
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              173
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 173,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log/loader_tests.rs",
+      "blob_sha": "1d8db97bd709b6fe075b2b53417e452d581f3ada",
+      "sha256": "37bcb86d88996efcbb72b6d0b889163cf7a2011ced66d68077bad6830906a4a0",
+      "range_unit": "lines",
+      "file_lines": 101,
+      "file_bytes": 3740,
+      "range_extent": 101,
+      "analyzed_ranges": [
+        [
+          1,
+          101
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              101
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 101,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log/source_texts.rs",
+      "blob_sha": "cf540ca73feb8b1dfeb8881e2af908b2ac154895",
+      "sha256": "c6d8438d0bd5c208e676fa9e7059e99a34d107fc6216a4c20326811ebfb0b2db",
+      "range_unit": "lines",
+      "file_lines": 71,
+      "file_bytes": 2220,
+      "range_extent": 71,
+      "analyzed_ranges": [
+        [
+          1,
+          71
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              71
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 71,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/log/tests.rs",
+      "blob_sha": "dc5e8e62f87941ceabf5b0bc6ea6fb07812ffc69",
+      "sha256": "65d2117ec51a234e2314ec3de0c9d49286bd987824c0db306fb45dbf4fbd048b",
+      "range_unit": "lines",
+      "file_lines": 545,
+      "file_bytes": 17750,
+      "range_extent": 545,
+      "analyzed_ranges": [
+        [
+          1,
+          545
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              545
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 545,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -191791,6 +195077,99 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/quests/src/quest/rotten_blood.rs",
+      "blob_sha": "1619d469010a9e6546b538e451077fd58fc4e6a1",
+      "sha256": "906ecb5e70a3ad2d3cf1f2b1aced35aa501a0573edd8ff44f9f8ef672ce896b7",
+      "range_unit": "lines",
+      "file_lines": 527,
+      "file_bytes": 17947,
+      "range_extent": 527,
+      "analyzed_ranges": [
+        [
+          1,
+          527
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              527
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 527,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/rotten_blood/altar_transition.rs",
+      "blob_sha": "9327a42b84470efe2912dcb91b35eb528c61f446",
+      "sha256": "e213fd20cfe23df9dd3fa99f2527120b0fe5a7764c7b27276b72585827b95c37",
+      "range_unit": "lines",
+      "file_lines": 18,
+      "file_bytes": 613,
+      "range_extent": 18,
+      "analyzed_ranges": [
+        [
+          1,
+          18
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              18
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 18,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/rotten_blood_tests.rs",
+      "blob_sha": "843b93ecd011c494c50c40dc47f9a83d8673d366",
+      "sha256": "aa6b5a3e048905c7fa789f56a04c721a49adb61959dd39e6264ccddddb57074c",
+      "range_unit": "lines",
+      "file_lines": 318,
+      "file_bytes": 10717,
+      "range_extent": 318,
+      "analyzed_ranges": [
+        [
+          1,
+          318
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              318
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 318,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/quests/src/quest/schrodinger_island.rs",
       "blob_sha": "4e0bcbd1f93ccacbe64c07072ce9caa593f38a29",
       "sha256": "8518ec5b6c3225bb642384b7bdd38c90870552aa8e437e523c3ff062998d425f",
@@ -191915,6 +195294,192 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/quests/src/quest/soul_war.rs",
+      "blob_sha": "1d5cf57f93aed29b72b522a09905e7ae725a3b52",
+      "sha256": "63ab10f9ecbb59eece50dac855ab054f502425a8391ceb2cb849f65c0da92132",
+      "range_unit": "lines",
+      "file_lines": 280,
+      "file_bytes": 10102,
+      "range_extent": 280,
+      "analyzed_ranges": [
+        [
+          1,
+          280
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              280
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 280,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/soul_war_dialogue.rs",
+      "blob_sha": "0565d79e0e9f7762256f8d13c45c8ca62b031387",
+      "sha256": "334c2bbe9863ab18007b9488db29698a5c935042eb3d36f34fed364e9115bed9",
+      "range_unit": "lines",
+      "file_lines": 311,
+      "file_bytes": 10481,
+      "range_extent": 311,
+      "analyzed_ranges": [
+        [
+          1,
+          311
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              311
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 311,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/soul_war_tests.rs",
+      "blob_sha": "a4afcec11f639e364f24587db1d9a81862599a5a",
+      "sha256": "fa19fae705402a0f85ee5c0a49d3e04a7a91d01347ff85222fb05c2a3833f6ce",
+      "range_unit": "lines",
+      "file_lines": 311,
+      "file_bytes": 8995,
+      "range_extent": 311,
+      "analyzed_ranges": [
+        [
+          1,
+          311
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              311
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 311,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board.rs",
+      "blob_sha": "9f9cb2e3a86cf9353f987d931b6bbc23d0b626b6",
+      "sha256": "550543f9533c81f695bb54977499b755732a38677c0aa6b3c869182b5474a647",
+      "range_unit": "lines",
+      "file_lines": 297,
+      "file_bytes": 9785,
+      "range_extent": 297,
+      "analyzed_ranges": [
+        [
+          1,
+          297
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              297
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 297,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_catalogue.rs",
+      "blob_sha": "cbf4ec68c50a7696a98d79a344bfb8d4a661d8d4",
+      "sha256": "6e7d9f3243d5e0fbb9612f9dea254afdcfcc196cf73a206234e4e7e25d5ceed3",
+      "range_unit": "lines",
+      "file_lines": 2003,
+      "file_bytes": 41250,
+      "range_extent": 2003,
+      "analyzed_ranges": [
+        [
+          1,
+          2003
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              2003
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 2003,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_elite.rs",
+      "blob_sha": "a3c414b25e5a4d6c4557f67222fee6300abdf388",
+      "sha256": "d5f05159aea521b4ae1babc00ce083b2cb132e3185bba2c9fb97b736c1247298",
+      "range_unit": "lines",
+      "file_lines": 97,
+      "file_bytes": 3506,
+      "range_extent": 97,
+      "analyzed_ranges": [
+        [
+          1,
+          97
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              97
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 97,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/quests/src/quest/task_board_full.rs",
       "blob_sha": "5f7a880de99f2322a494e3602f15ff2e49501786",
       "sha256": "6e78e4fffa737b24dc9b349ee14e9e6bbb82d532f1d297df92d43184ece1049b",
@@ -191925,18 +195490,21 @@
       "analyzed_ranges": [
         [
           1,
-          30
-        ],
-        [
-          505,
-          600
-        ],
-        [
-          755,
-          845
+          992
         ]
       ],
       "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              992
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        },
         {
           "auditor": "client-support",
           "ranges": [
@@ -191957,9 +195525,102 @@
           "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
         }
       ],
-      "analyzed_lines": 217,
+      "analyzed_lines": 992,
       "analyzed_bytes": 0,
-      "scope": "SELECTED_RANGES"
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_full_tests.rs",
+      "blob_sha": "9dd700d7d1cfb78523094249dfa570bf1cd7d3f2",
+      "sha256": "5629f1b93ca3bc8570c26460006a04c00863cafe33e9592cc5591dad33ded36e",
+      "range_unit": "lines",
+      "file_lines": 1600,
+      "file_bytes": 46616,
+      "range_extent": 1600,
+      "analyzed_ranges": [
+        [
+          1,
+          1600
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              1600
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1600,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_tests.rs",
+      "blob_sha": "bfe3d9ca6ab7ff106b7f2cdac308b91a5c0eefd4",
+      "sha256": "02acfe6be41157a9de408f1c37636320f1f6e280e783196bfee81895823d2a7c",
+      "range_unit": "lines",
+      "file_lines": 250,
+      "file_bytes": 8301,
+      "range_extent": 250,
+      "analyzed_ranges": [
+        [
+          1,
+          250
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              250
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 250,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/threatened_dreams.rs",
+      "blob_sha": "ef2a39f924c4c2a89e349c4cc01b2baf555386b3",
+      "sha256": "d587e493f45370662dfb7ce619bf5a5865fd648b7208bd97098c297e8e70fb38",
+      "range_unit": "lines",
+      "file_lines": 1003,
+      "file_bytes": 39752,
+      "range_extent": 1003,
+      "analyzed_ranges": [
+        [
+          1,
+          1003
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              1003
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1003,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
     },
     {
       "path": "crates/gameplay/quests/src/quest/timers.rs",
@@ -192222,6 +195883,37 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "crates/gameplay/quests/src/quest/wrath_sleeping_dragon.rs",
+      "blob_sha": "2859f8cc871732893b8e62397f7277a41223ba12",
+      "sha256": "de55a49ff16252de3e6c8e590c794e80f5f6f77118079cb60019c85c0cbe3241",
+      "range_unit": "lines",
+      "file_lines": 261,
+      "file_bytes": 9350,
+      "range_extent": 261,
+      "analyzed_ranges": [
+        [
+          1,
+          261
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              261
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 261,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "crates/gameplay/quests/src/tutorial/corruptor_loot.rs",
       "blob_sha": "a653b913e4a60766525a0a04ea30a33d0991dde3",
       "sha256": "224085ad87d764fda8b2a797e4f3822c95c4e6f59e33422a013c191bcf7d30d4",
@@ -192373,6 +196065,254 @@
         }
       ],
       "analyzed_lines": 142,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_alawars_vault.rs",
+      "blob_sha": "c986e120440c7f35c45eec91bbbbbcdd642c3f6e",
+      "sha256": "3cbd9414f1fd3d1cfd785b39447a0b177c2294007f2c719f5bfc50820f629ac9",
+      "range_unit": "lines",
+      "file_lines": 65,
+      "file_bytes": 2622,
+      "range_extent": 65,
+      "analyzed_ranges": [
+        [
+          1,
+          65
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              65
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 65,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_ancient_tombs.rs",
+      "blob_sha": "838e320c7cc8dba387b2d87774eff11a346ea59d",
+      "sha256": "e7d6d43ee300db706e3d39cc1f0e7346fd7962c8251da57cfc70899532570ddf",
+      "range_unit": "lines",
+      "file_lines": 225,
+      "file_bytes": 9062,
+      "range_extent": 225,
+      "analyzed_ranges": [
+        [
+          1,
+          225
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              225
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 225,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_between_the_lines.rs",
+      "blob_sha": "11c01fac3e0719a2b022de5a483f40ece69c7dd1",
+      "sha256": "7fa11af5eee7b432c59442614faa64b3e0088c707f0df07659dbc35c2a3d04b5",
+      "range_unit": "lines",
+      "file_lines": 67,
+      "file_bytes": 2028,
+      "range_extent": 67,
+      "analyzed_ranges": [
+        [
+          1,
+          67
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              67
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 67,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_blood_brothers_castle_access.rs",
+      "blob_sha": "612d4e7cd99a156c694026a0f40198f518ad1960",
+      "sha256": "454d46d3715089834c9421898c02e9868593599cca3e9ff183200cd573f1a459",
+      "range_unit": "lines",
+      "file_lines": 64,
+      "file_bytes": 2540,
+      "range_extent": 64,
+      "analyzed_ranges": [
+        [
+          1,
+          64
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              64
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 64,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_children_battle_access.rs",
+      "blob_sha": "0561070fa4f0a31e45f2a9232fa9a73065401dbd",
+      "sha256": "0078f3455295f2bbe53360fbaf011cc0d7623036f80365c10e00ca684ef0a57b",
+      "range_unit": "lines",
+      "file_lines": 69,
+      "file_bytes": 2834,
+      "range_extent": 69,
+      "analyzed_ranges": [
+        [
+          1,
+          69
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              69
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 69,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_deeplings.rs",
+      "blob_sha": "1d6c9272b05b1427c08df50c3ec588b1659de6db",
+      "sha256": "993d5b8f72eb76d9e3aab441cb886d3a2ac5ea16925367ce3fdeaaebfebb0544",
+      "range_unit": "lines",
+      "file_lines": 75,
+      "file_bytes": 3054,
+      "range_extent": 75,
+      "analyzed_ranges": [
+        [
+          1,
+          75
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              75
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 75,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_demon_oak.rs",
+      "blob_sha": "f343b2942a7be702c3d489a182d55e351d3fbab5",
+      "sha256": "f50e19de0716abfcedf714295c06742b812a40a606a46ef3d164e47edf07c7fe",
+      "range_unit": "lines",
+      "file_lines": 67,
+      "file_bytes": 2892,
+      "range_extent": 67,
+      "analyzed_ranges": [
+        [
+          1,
+          67
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              67
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 67,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/quests/tests/quests5_room_raise.rs",
+      "blob_sha": "37b9a90c80437ba934f8ffa370ae2be00dbf9dca",
+      "sha256": "8dc54fcbf46ad2b3a7094a6526a84d0b8daeaf4fbc5b9af1656fe43e72a18c8a",
+      "range_unit": "lines",
+      "file_lines": 65,
+      "file_bytes": 2484,
+      "range_extent": 65,
+      "analyzed_ranges": [
+        [
+          1,
+          65
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "lead",
+          "ranges": [
+            [
+              1,
+              65
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 65,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },

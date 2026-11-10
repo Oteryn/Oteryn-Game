@@ -1,7 +1,7 @@
 {
   "input_base": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
   "observed_main": "b028bef4ddcc6d48bdd6cf61479c94e42435ed88",
-  "observed_at_utc": "2026-11-10T16:08:23Z",
+  "observed_at_utc": "2026-11-10T16:24:58Z",
   "changed_paths": [
     "apps/client/build.rs",
     "apps/client/installer/ci-installer.ps1",
@@ -49,9 +49,11 @@
     "crates/client-ui/src/components/localization/locales/pt.json",
     "crates/client-ui/src/components/localization/locales/sv.json"
   ],
-  "delta_review_status": "IN PROGRESS: newly observed 18-file HUD/manifest successor assigned to client-support; earlier four-file diagnostics delta fully reviewed separately",
+  "delta_review_status": "REVIEWED separately: all 18 changed successor files, 12 manual source/XML and 6 whole-locale semantic comparisons; prior four diagnostic files unchanged",
   "delta_owner": "client-support",
   "scope": "Primary audit counts remain bound to input_base. No automatic review credit or native Windows/runtime execution claim for the successor.",
-  "latest_connector_confirmation_utc": "2026-11-10T16:08:23Z",
-  "confirmation_note": "Fresh main advanced since checkpoint14; successor source review is in progress."
+  "latest_connector_confirmation_utc": "2026-11-10T16:24:58Z",
+  "confirmation_note": "Fresh connector still resolves main to the separately reviewed b028 successor. Root independently checked exact file/range hashes, complete delta partition and unchanged locale values.",
+  "successor_report": "latest-main-hud-delta.md",
+  "successor_validation": "latest-main-hud-validation.json"
 }

@@ -1,0 +1,405 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "comparison_sha": "af33fd3baeac15d9991bd24c91bcacc8733492e2",
+  "review_sha": "b028bef4ddcc6d48bdd6cf61479c94e42435ed88",
+  "status": "REVIEWED",
+  "independent_verification": false,
+  "coverage": {
+    "changed_files": 18,
+    "source_or_manifest_full_read": 12,
+    "whole_locale_semantic_validated": 6,
+    "total_tracked_lines": 4071,
+    "exact_gaps": []
+  },
+  "files": [
+    {
+      "path": "apps/client/build.rs",
+      "ranges": [
+        [
+          1,
+          60
+        ]
+      ],
+      "sha256": "153105b9dfe724482c70868d1aaed7fb4442f4fe1d51afa0f38332d77e1ab149",
+      "git_blob": "627357b38ea265c62a90f66be2160212e070774b",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full60-line source. MSVC Windows only emits /MANIFEST:EMBED and absolute /MANIFESTINPUT, tracked input rerun; existing update trust/release identity/feature bindings generation preserved. All package binaries share prior linker-argument scope. No Windows link invocation run."
+    },
+    {
+      "path": "apps/client/resources/windows.manifest",
+      "ranges": [
+        [
+          1,
+          15
+        ]
+      ],
+      "sha256": "83d5c36ddee68e446726895ddcb4f73cc8aa8fdc6f1e66cad1b79b260ccb594a",
+      "git_blob": "0f5791a16c530146cbabe649b84d129676de06f2",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full15-line XML plus parsed namespace/schema checks: preserved Common Controls6 identity; supported OS GUIDs for Windows8,8.1,10/11 exactly match Microsoft documentation. No privilege or DPI declaration added; actual embedded PE resource not inspected."
+    },
+    {
+      "path": "apps/client/src/features/0195-weapon-proficiency/hud_native.rs",
+      "ranges": [
+        [
+          1,
+          240
+        ]
+      ],
+      "sha256": "b6f1d8a752937a0558f72b5806cb5c33052f37dd3d0e18c30de2aa3235bbec2c",
+      "git_blob": "bd1bec21054aa80c7f4641abfb3cc6f77a537fdd",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full240-line source. Immediate return/error capture at each failing child creation; local HUD owns root and boxed action state, Drop destroys subtree after error value captured. Subclass failure named distinctly. Existing command queues and displayed-generation guard unchanged; actual Windows callbacks not executed."
+    },
+    {
+      "path": "apps/client/src/features/local-reference-preferences/arcs_native.rs",
+      "ranges": [
+        [
+          1,
+          166
+        ]
+      ],
+      "sha256": "13585c0b76885261ca95c7bb44ce01d8c32a304fc90f7412c5b5124d727d43fa",
+      "git_blob": "f2abc24f98432ef1f7e45db37c6f807796e655cd",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full166-line source. Layered disabled child uses current parent; native failure captures ArcWindow or ArcLayer before DestroyWindow. Boxed paint state remains alive through teardown. Rendering/control paths unchanged; manifest supplies required compatibility declaration, actual Windows creation untested."
+    },
+    {
+      "path": "apps/client/src/features/local-reference-preferences/shortcut_strip.rs",
+      "ranges": [
+        [
+          1,
+          157
+        ]
+      ],
+      "sha256": "b69e9645851f7e68d4f2791a0e30c3610fe5ef895691dab072d67b539cb01863",
+      "git_blob": "e54ab47b79ee107eecab08b554ec38165cca95e5",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full157-line source. Result constructor captures root/button failure immediately, partially built root owned by strip destructor. Bounded16 action queue and changed-layout discard intact; no changed shortcut authority."
+    },
+    {
+      "path": "apps/client/src/features/local-spell-action-bar/native.rs",
+      "ranges": [
+        [
+          1,
+          197
+        ]
+      ],
+      "sha256": "97c2c0164da1fb2e0c2d868c4c2d309272a80c526063e78b3459faddac1e57a3",
+      "git_blob": "90fe524395192da520abe2289102eb7c7d127bf8",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full197-line source. Actual Hud constructor collects panes as Result then constructs proficiency/arcs/spells/shortcuts with error propagation; WindowHandle uses deliberate code0 fallback. Error part/last-error helper local to parent module and visible to child constructors. Existing gameplay HUD updates untouched."
+    },
+    {
+      "path": "apps/client/src/features/local-spell-action-bar/native/panes.rs",
+      "ranges": [
+        [
+          1,
+          181
+        ]
+      ],
+      "sha256": "9bd4c95de23d14935cb43f86b42c78d042dfe1d65ae12ddaa3e942219094c5ff",
+      "git_blob": "24280a96d8aa8641f6b715d59bbc16804a359f01",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full181-line source. Separate edit/progress failure checks and immediate last-error capture before destroy, preventing later child creation/cleanup from replacing the sampled code. Pane ownership and subclass cleanup preserve boxed state lifetime. Progress rendering math/clamps and drag behavior unchanged."
+    },
+    {
+      "path": "apps/client/src/features/local-spell-action-bar/slots_native.rs",
+      "ranges": [
+        [
+          1,
+          308
+        ]
+      ],
+      "sha256": "cbc0a6d286fa0e85a504ca845e03b210a98958979de1fb9be76a381bd2e8e053",
+      "git_blob": "c9b20518c9bb648b5a7563078e5bbb35206405a7",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full308-line source.150 slot and21 tool HWNDs owned by row; failure Result captures SpellButton and partial row drops created handles. Tooltip behavior, pointer/drag selection and action-bar routing unchanged. No native input run."
+    },
+    {
+      "path": "apps/client/src/hud_error.rs",
+      "ranges": [
+        [
+          1,
+          82
+        ]
+      ],
+      "sha256": "228b7b32a1febb2a78090ef6826af777c66a004e615f591838610380ec27f467",
+      "git_blob": "c7029a71ee0dc6e7e5b4df212864cabfdf9d535d",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full82-line new portable typed16-part error and Display mapping reviewed. Existing single test error_names_the_failing_part_and_win32_code compiled directly from exact Git bytes with rustc2024 and PASS. Test covers ArcWindow string/code87 only, not native API error retrieval."
+    },
+    {
+      "path": "apps/client/src/lib.rs",
+      "ranges": [
+        [
+          1,
+          157
+        ]
+      ],
+      "sha256": "a3cbfe276216ae0a2e85073087eca8e458bd9c0f8f7ac34e1fbb0c4b0104a076",
+      "git_blob": "38157386460ab96789213519805e877476adf7eb",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full157-line source. Exports portable hud_error module; runtime/input/bootstrap/native entry behavior otherwise unchanged. Does not move or widen session authority."
+    },
+    {
+      "path": "apps/client/src/windows_shell.rs",
+      "ranges": [
+        [
+          1,
+          205
+        ]
+      ],
+      "sha256": "b19a3436c2761468ff3aa21b70a331bc581aa5b834203bb574a0933354101964",
+      "git_blob": "09413ce09f3c0a0156b9310d0c77097fd681b1c9",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full205-line source. Distinct HudInitialization error, localized prefix plus detailed part/code, first-error retention and run propagation intact after removing Copy derive. Legacy orphan windows_shell_methods_1 has no tracked module reference; independent Watch HUD uses separate native_hud module."
+    },
+    {
+      "path": "apps/client/src/windows_shell/application_handler.rs",
+      "ranges": [
+        [
+          1,
+          263
+        ]
+      ],
+      "sha256": "ebb60827fa617bfc0474dd86c929cd04dd6d7b5417d4196b7987a5c660464f77",
+      "git_blob": "fb42096c131d94da4e9db4302fdf69228fbefaa0",
+      "git_bytes_match": true,
+      "mode": "full_source_read",
+      "review_notes": "Full263-line source. Actual non-smoke resumed path consumes Result and retains exact HUD error before event-loop exit; settings attach occurs only after success. Smoke still exits before HUD and is therefore not a native HUD validation. Renderer/touch/frame/play lifecycle remaining body unchanged."
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/de.json",
+      "ranges": [
+        [
+          1,
+          340
+        ]
+      ],
+      "sha256": "92597b3ea8721e1af652777cfa35afa6552923cd0340e63fbf0095871ba78a53",
+      "git_blob": "6dddfe1b8992e50e2cbe17855ffcc47079c2a501",
+      "git_bytes_match": true,
+      "mode": "whole_document_semantic_validation_plus_added_translation_review",
+      "review_notes": "Full340-line JSON parsed with duplicate-key rejection.3280 string entries; exact previous semantic mapping retained, exactly one new HUD error key, no removed/changed old translation or format placeholder. New localized string reviewed; this is semantic validation, not a claim of manual rereading every unchanged translation."
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/en.json",
+      "ranges": [
+        [
+          1,
+          340
+        ]
+      ],
+      "sha256": "dc7a56fb49948516a9b5f64a96a062b31e43f1a900d261a333c65cc0ca970292",
+      "git_blob": "b2be69d0065a0782ba3858827c668622ac825467",
+      "git_bytes_match": true,
+      "mode": "whole_document_semantic_validation_plus_added_translation_review",
+      "review_notes": "Full340-line JSON parsed with duplicate-key rejection.3280 string entries; exact previous semantic mapping retained, exactly one new HUD error key, no removed/changed old translation or format placeholder. New localized string reviewed; this is semantic validation, not a claim of manual rereading every unchanged translation."
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/es.json",
+      "ranges": [
+        [
+          1,
+          340
+        ]
+      ],
+      "sha256": "1cf352ba6e5967b29872c8e97eb73b1e3b65b17064304c849e8bb92a079c1225",
+      "git_blob": "4816eb25b88c26b8cb81476b40ac8f324254d7b6",
+      "git_bytes_match": true,
+      "mode": "whole_document_semantic_validation_plus_added_translation_review",
+      "review_notes": "Full340-line JSON parsed with duplicate-key rejection.3280 string entries; exact previous semantic mapping retained, exactly one new HUD error key, no removed/changed old translation or format placeholder. New localized string reviewed; this is semantic validation, not a claim of manual rereading every unchanged translation."
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/pl.json",
+      "ranges": [
+        [
+          1,
+          340
+        ]
+      ],
+      "sha256": "e0f3a73d09d2973cfdd501cd4b1a54ca5a342b8c2ea5078956975d92291a40da",
+      "git_blob": "0de0e35d6833bd795de17729156f91114ab2a5e6",
+      "git_bytes_match": true,
+      "mode": "whole_document_semantic_validation_plus_added_translation_review",
+      "review_notes": "Full340-line JSON parsed with duplicate-key rejection.3280 string entries; exact previous semantic mapping retained, exactly one new HUD error key, no removed/changed old translation or format placeholder. New localized string reviewed; this is semantic validation, not a claim of manual rereading every unchanged translation."
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/pt.json",
+      "ranges": [
+        [
+          1,
+          340
+        ]
+      ],
+      "sha256": "e3ba2c69a754e4078fb6a88dbc4dfe80109d52a5842d93a3790c956f2d217ef1",
+      "git_blob": "de36206a454408f4dee2208e93bdb5bf6622c486",
+      "git_bytes_match": true,
+      "mode": "whole_document_semantic_validation_plus_added_translation_review",
+      "review_notes": "Full340-line JSON parsed with duplicate-key rejection.3280 string entries; exact previous semantic mapping retained, exactly one new HUD error key, no removed/changed old translation or format placeholder. New localized string reviewed; this is semantic validation, not a claim of manual rereading every unchanged translation."
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/sv.json",
+      "ranges": [
+        [
+          1,
+          340
+        ]
+      ],
+      "sha256": "85633cc36154088bb838c7154b598032a5ec6547a518328d34a25118500824eb",
+      "git_blob": "460eda6b15d06e0b3d24cefe88e6c208d059596e",
+      "git_bytes_match": true,
+      "mode": "whole_document_semantic_validation_plus_added_translation_review",
+      "review_notes": "Full340-line JSON parsed with duplicate-key rejection.3280 string entries; exact previous semantic mapping retained, exactly one new HUD error key, no removed/changed old translation or format placeholder. New localized string reviewed; this is semantic validation, not a claim of manual rereading every unchanged translation."
+    }
+  ],
+  "locale_validation": [
+    {
+      "path": "crates/client-ui/src/components/localization/locales/de.json",
+      "entries": 3280,
+      "added_key": "client HUD initialization failed",
+      "translation": "Initialisierung des Client-HUD fehlgeschlagen",
+      "other_entries_unchanged": true
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/en.json",
+      "entries": 3280,
+      "added_key": "client HUD initialization failed",
+      "translation": "client HUD initialization failed",
+      "other_entries_unchanged": true
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/es.json",
+      "entries": 3280,
+      "added_key": "client HUD initialization failed",
+      "translation": "Error al inicializar el HUD del cliente",
+      "other_entries_unchanged": true
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/pl.json",
+      "entries": 3280,
+      "added_key": "client HUD initialization failed",
+      "translation": "Inicjalizacja interfejsu HUD klienta nie powiod\u0142a si\u0119",
+      "other_entries_unchanged": true
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/pt.json",
+      "entries": 3280,
+      "added_key": "client HUD initialization failed",
+      "translation": "Falha na inicializa\u00e7\u00e3o do HUD do cliente",
+      "other_entries_unchanged": true
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/sv.json",
+      "entries": 3280,
+      "added_key": "client HUD initialization failed",
+      "translation": "Initieringen av klientens HUD misslyckades",
+      "other_entries_unchanged": true
+    }
+  ],
+  "manifest_validation": {
+    "status": "PASS",
+    "supported_os_ids": [
+      "{4a2f28e3-53b9-4441-ba9c-d69d4a4a6e38}",
+      "{1f676c76-80e1-4239-95bb-83d0f6d0da78}",
+      "{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"
+    ],
+    "common_controls_preserved": true
+  },
+  "tests": {
+    "ran": [
+      {
+        "name": "hud_error::tests::error_names_the_failing_part_and_win32_code",
+        "command": "/home/agent/.cargo/bin/rustc --edition=2024 --test latest-main-hud-input/apps/client/src/hud_error.rs -o latest-main-hud-error-tests; ./latest-main-hud-error-tests --nocapture",
+        "status": "PASS",
+        "passed": 1,
+        "failed": 0,
+        "scope": "Portable exact copied Git source; does not execute Win32 retrieval or native HUD"
+      }
+    ],
+    "not_run": [
+      "Cargo build/test/clippy or formatting suite",
+      "Windows MSVC linker and embedded resource inspection",
+      "Windows HUD/native input/destructor integration",
+      "Installer /RELAUNCH or smoke execution",
+      "Any PR-reported validation or paid/Codex review"
+    ]
+  },
+  "findings": {
+    "new_confirmed": [],
+    "reconciliation": "No existing confirmed audit finding is closed by this manifest/error-reporting delta. CL001/002 runtime/source guards and CL003 spell text paths unchanged; changed HUD bodies preserve their nonconstructor action paths. Current deployment and actual installer outcome unknown."
+  },
+  "documentation": [
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/winmsg/using-windows",
+      "claim": "Layered child windows require application Windows8-aware manifest; Windows10/11 supportedOS GUID example."
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/sbscs/application-manifests",
+      "claim": "Exact supportedOS GUID mapping."
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/cpp/build/reference/manifestinput-specify-manifest-input?view=msvc-170",
+      "claim": "MANIFESTINPUT merges input manifest and requires MANIFEST:EMBED."
+    }
+  ],
+  "limitations": [
+    "Static review does not certify successful Windows startup or all API-specific GetLastError validity.",
+    "Existing portable test checks formatting only; no fault injection for constructors.",
+    "Base4f audit ledger remains unchanged; these rows apply only to b028 successor."
+  ],
+  "cross_references": [
+    {
+      "path": "apps/client/src/main.rs",
+      "ranges": [
+        [
+          1,
+          101
+        ]
+      ],
+      "sha256": "01d69807309615df8d417453456c4f769c566aeef4dc34271728834f9328d02d",
+      "notes": "Full current successor source reread; actual Windows shell failure calls startup recorder. Unchanged from af33."
+    },
+    {
+      "path": "apps/client/src/cast_watch/native.rs",
+      "ranges": [
+        [
+          1,
+          35
+        ]
+      ],
+      "sha256": "2b84f17bedc7ef33fa31d374ba9f3f5a1657300e46a8fd9d8b27208157b04903",
+      "notes": "Independent Watch HUD resolves native_hud.rs, not the changed shell HUD."
+    },
+    {
+      "path": "apps/client/src/windows_shell/tests.rs",
+      "ranges": [
+        [
+          1,
+          19
+        ]
+      ],
+      "sha256": "dd0d429cca87b60189d62da137ff3ff4b21a4852995ae8f2d9bbe8316b34239b",
+      "notes": "Existing first-error retention/redraw tests read at successor; not run."
+    }
+  ],
+  "prior_af33_delta_unchanged_files": [
+    "apps/client/installer/ci-installer.ps1",
+    "apps/client/src/bin/oteryn-launcher.rs",
+    "apps/client/src/crash_report.rs",
+    "apps/client/src/main.rs"
+  ],
+  "notes_correction": "Actual startup recorder location main.rs64-74; these cross-reference files are not added to18 changed-file count."
+}

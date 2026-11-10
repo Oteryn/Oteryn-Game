@@ -1,0 +1,160 @@
+{
+  "review_sha": "b028bef4ddcc6d48bdd6cf61479c94e42435ed88",
+  "comparison_sha": "af33fd3baeac15d9991bd24c91bcacc8733492e2",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "review_attribution": "Complete source and locale-delta semantic review by client-support; lead independently validates exact Git/worktree bytes, full ranges, changed-path partition and all locale-entry comparisons. Validation alone is not new substantive credit.",
+  "observed_at_utc": "2026-11-10T16:16:22.010074+00:00",
+  "status": "PASS",
+  "files": [
+    {
+      "path": "apps/client/build.rs",
+      "sha256": "153105b9dfe724482c70868d1aaed7fb4442f4fe1d51afa0f38332d77e1ab149",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "apps/client/resources/windows.manifest",
+      "sha256": "83d5c36ddee68e446726895ddcb4f73cc8aa8fdc6f1e66cad1b79b260ccb594a",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "apps/client/src/features/0195-weapon-proficiency/hud_native.rs",
+      "sha256": "b6f1d8a752937a0558f72b5806cb5c33052f37dd3d0e18c30de2aa3235bbec2c",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "apps/client/src/features/local-reference-preferences/arcs_native.rs",
+      "sha256": "13585c0b76885261ca95c7bb44ce01d8c32a304fc90f7412c5b5124d727d43fa",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "apps/client/src/features/local-reference-preferences/shortcut_strip.rs",
+      "sha256": "b69e9645851f7e68d4f2791a0e30c3610fe5ef895691dab072d67b539cb01863",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "apps/client/src/features/local-spell-action-bar/native.rs",
+      "sha256": "97c2c0164da1fb2e0c2d868c4c2d309272a80c526063e78b3459faddac1e57a3",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "apps/client/src/features/local-spell-action-bar/native/panes.rs",
+      "sha256": "9bd4c95de23d14935cb43f86b42c78d042dfe1d65ae12ddaa3e942219094c5ff",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "apps/client/src/features/local-spell-action-bar/slots_native.rs",
+      "sha256": "cbc0a6d286fa0e85a504ca845e03b210a98958979de1fb9be76a381bd2e8e053",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "apps/client/src/hud_error.rs",
+      "sha256": "228b7b32a1febb2a78090ef6826af777c66a004e615f591838610380ec27f467",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "apps/client/src/lib.rs",
+      "sha256": "a3cbfe276216ae0a2e85073087eca8e458bd9c0f8f7ac34e1fbb0c4b0104a076",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "apps/client/src/windows_shell.rs",
+      "sha256": "b19a3436c2761468ff3aa21b70a331bc581aa5b834203bb574a0933354101964",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "apps/client/src/windows_shell/application_handler.rs",
+      "sha256": "ebb60827fa617bfc0474dd86c929cd04dd6d7b5417d4196b7987a5c660464f77",
+      "complete_range": true,
+      "method": "full_source_read"
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/de.json",
+      "sha256": "92597b3ea8721e1af652777cfa35afa6552923cd0340e63fbf0095871ba78a53",
+      "complete_range": true,
+      "method": "whole_document_semantic_validation_plus_added_translation_review"
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/en.json",
+      "sha256": "dc7a56fb49948516a9b5f64a96a062b31e43f1a900d261a333c65cc0ca970292",
+      "complete_range": true,
+      "method": "whole_document_semantic_validation_plus_added_translation_review"
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/es.json",
+      "sha256": "1cf352ba6e5967b29872c8e97eb73b1e3b65b17064304c849e8bb92a079c1225",
+      "complete_range": true,
+      "method": "whole_document_semantic_validation_plus_added_translation_review"
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/pl.json",
+      "sha256": "e0f3a73d09d2973cfdd501cd4b1a54ca5a342b8c2ea5078956975d92291a40da",
+      "complete_range": true,
+      "method": "whole_document_semantic_validation_plus_added_translation_review"
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/pt.json",
+      "sha256": "e3ba2c69a754e4078fb6a88dbc4dfe80109d52a5842d93a3790c956f2d217ef1",
+      "complete_range": true,
+      "method": "whole_document_semantic_validation_plus_added_translation_review"
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/sv.json",
+      "sha256": "85633cc36154088bb838c7154b598032a5ec6547a518328d34a25118500824eb",
+      "complete_range": true,
+      "method": "whole_document_semantic_validation_plus_added_translation_review"
+    }
+  ],
+  "locales": [
+    {
+      "path": "crates/client-ui/src/components/localization/locales/de.json",
+      "entries": 3280,
+      "one_added_key": "client HUD initialization failed",
+      "every_prior_entry_equal": true
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/en.json",
+      "entries": 3280,
+      "one_added_key": "client HUD initialization failed",
+      "every_prior_entry_equal": true
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/es.json",
+      "entries": 3280,
+      "one_added_key": "client HUD initialization failed",
+      "every_prior_entry_equal": true
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/pl.json",
+      "entries": 3280,
+      "one_added_key": "client HUD initialization failed",
+      "every_prior_entry_equal": true
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/pt.json",
+      "entries": 3280,
+      "one_added_key": "client HUD initialization failed",
+      "every_prior_entry_equal": true
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/sv.json",
+      "entries": 3280,
+      "one_added_key": "client HUD initialization failed",
+      "every_prior_entry_equal": true
+    }
+  ],
+  "cross_references_checked": 3,
+  "four_prior_diagnostic_files_unchanged": true,
+  "source_checkout_clean": true,
+  "native_execution": "Not performed"
+}
