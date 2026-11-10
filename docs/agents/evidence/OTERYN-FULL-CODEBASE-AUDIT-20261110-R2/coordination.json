@@ -1,6 +1,6 @@
 {
   "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
-  "observed_at_utc": "2026-11-10T20:17:34.238469+00:00",
+  "observed_at_utc": "2026-11-10T20:35:17.415763+00:00",
   "lifecycle": "AUTHORING",
   "branch": "audit/full-codebase-20261110-4f0b6c62",
   "sole_writer": "lead /root",
@@ -8,7 +8,7 @@
   "lanes": [
     {
       "lane": "lead",
-      "ledger_rows": 1301,
+      "ledger_rows": 1305,
       "reported_completed_modules": [
         "oteryn-admin-contracts",
         "oteryn-admin-agent",
@@ -32,12 +32,13 @@
         "oteryn-gameplay-quests",
         "oteryn-gameplay-social",
         "oteryn-gameplay-world",
-        "oteryn-synthetic-client-harness"
+        "oteryn-synthetic-client-harness",
+        "oteryn-gameplay-dispatch"
       ]
     },
     {
       "lane": "protocol-session",
-      "ledger_rows": 3065,
+      "ledger_rows": 3130,
       "reported_completed_modules": [
         "oteryn-identity",
         "oteryn-platform-contracts",
@@ -70,7 +71,7 @@
     },
     {
       "lane": "client-support",
-      "ledger_rows": 4051,
+      "ledger_rows": 4095,
       "reported_completed_modules": [
         "oteryn-client-domain",
         "oteryn-synthetic-assets",
@@ -90,15 +91,18 @@
         "oteryn-gameplay-foundation",
         "oteryn-gameplay-content-promotion",
         "oteryn-gameplay-native-admission-source",
-        "oteryn-gameplay-content"
+        "oteryn-gameplay-content",
+        "repository-root",
+        "deploy",
+        "tests"
       ]
     }
   ],
-  "checkpoint": 25,
-  "allocation_comment": 6778095138,
-  "predecessor": "7e4f94f6b8ebbe412e559f299e7955e91044c496",
-  "predecessor_tree": "845feb66f1c9360d24e9539cc3c7d48104ce0f7f",
-  "expected_sha": "7e4f94f6b8ebbe412e559f299e7955e91044c496",
+  "checkpoint": 26,
+  "allocation_comment": 6778620392,
+  "predecessor": "c4b637dfd6415c2ae90938f256a3132b15cb625a",
+  "predecessor_tree": "4a41e76e2cf782f72bd965a67d62891f334f6d7f",
+  "expected_sha": "c4b637dfd6415c2ae90938f256a3132b15cb625a",
   "latest_main": "c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f",
-  "latest_main_observed_at_utc": "2026-11-10T20:20:45Z"
+  "latest_main_freshness": "Reconfirmed by connector in checkpoint26 publication; exact tool observation retained privately."
 }

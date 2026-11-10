@@ -1,26 +1,24 @@
-# Dispatch — partial source review
+# Dispatch — complete source review
 
-Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. Frozen integrated coverage: **1,606/1,668 complete files**, **1,608 files with substantive ranges**, and **494,368 deduplicated lines**.
+Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **REVIEWED**, all **1,668/1,668 tracked files and 517,542 deduplicated text lines**. Exact remaining-file set is empty. This is source-audit completion; runtime readiness is not asserted.
 
-| Stable source capture | Complete files | Full-file lines | Total reviewed lines |
+| Semantic review capture | Full files | Full-file lines | Total reviewed lines |
 |---|---:|---:|---:|
-| Client-support checkpoint 79 | 871 | 255,332 | 258,825 |
-| Social/world checkpoint 26 | 226 | 67,091 | 67,091 |
-| Items/economy checkpoint 21 | 207 | 73,025 | 73,025 |
-| Root NPC/quests/encounters checkpoint 158 | 158 | 43,986 | 44,058 |
-| Separate social quest-test checkpoint 14 | 76 | 26,034 | 26,034 |
-| Separate items quest-test checkpoint 10 | 60 | 26,514 | 26,514 |
+| Client-support 79 | 871 | 255,332 | 258,825 |
+| Social/world 26 | 226 | 67,091 | 67,091 |
+| Items/economy 21 | 207 | 73,025 | 73,025 |
+| Root NPC/quests/encounters 158 | 158 | 43,986 | 44,058 |
+| Separate social quest-test 18 | 99 | 34,122 | 34,122 |
+| Separate items quest-test 15 | 99 | 41,793 | 41,793 |
 
-Client retains20 historical partial files; other owners can cover those files fully in the deduplicated aggregate. Captures overlap only where explicitly supporting or historical review is attributed. Exact hashes, ranges, remaining paths and inclusion checks are in `capture-validation-25.json`; later live progress is excluded.
+These captures preserve original review attribution and supporting overlap; historical reviews and exact source identities complete the deduplicated aggregate. Client retains20 partial historical rows, whose files are covered fully by the aggregate. Counts are not a sum that double-counts overlapping reviewers. Exact frozen hashes, source/assignment membership, full ranges and inclusion checks are in `capture-validation-26.json`; the preceding qualification remains retained in `capture-validation-25.json`.
 
-The client-retained original304-file reservation is complete. Root read all105 new semantic notes and all added report sections57–79, then checked4,156 source identities plus immutable group captures. New review attribution is100 files by the prior continuation worker and5 by its resumed worker. Test-source review includes live combat/PvP, party/loot, conditions, current spell facts, native monster composition, retained timers and cross-mechanic scenarios. Synthetic input grants, forced occurrences, reconstructed owners and unavailable external capture dependencies remain explicit.
+The complete implementation review traces real ingress and dispatch, session/character authority, current native state, movement and damage, equipment/custody/economy, spell and condition effects, NPC/dialogue, personal and shared quest progress, boss activity admission, retained receipts, reward settlement, publication and cleanup. Root's separate158-file report covers the actual quest/NPC/encounter owners. Existing qualified findings remain in the central register; unrelated test assertions do not change their status.
 
-The social/world original226-file reservation was already complete. The items/economy original207-file reservation is now complete:76 additional files/27,459 lines beyond checkpoint11. An independent reviewer read every new note, eight changed/new supporting notes and the complete final report, and verified11 manifests/66 artifacts with2,428 source identity checks. Root read and checked the full qualification packet. One historical supporting range contracted; the original note and source capture are retained, no monotonicity claim is made, and independent full-file evidence covers the affected source. No old evidence was silently discarded.
+The two final99-file test reservations are now closed. Root read all198 primary semantic notes across checkpoints, all39 supporting notes and both final cumulative reports, including the new23 social and39 items notes. All33 historical manifests, exact assignments, disjoint membership, original reviewer attribution and complete source bytes/ranges were checked. The prior wording correction and supporting-range contraction are explicitly retained; no historical evidence was silently discarded.
 
-Root directly completed158 files, including the complete Prey/Charm/Cyclopedia, board authorization, Soulpit entry/combat/reward/return and Primal owners plus their assigned tests. The separate root report describes actual caller, current authority, retained receipt, physical state and failure boundaries. It does not convert administrative fixtures into maintained gameplay producers.
+The final sources cover physical room/gate triggers, native crop boundaries, tools/crafting/timers, task/currency/value participants, shared admission, retained progression, boss/reward consumers, world-change producers and NPC barter. Source tests distinguish actual framed command/owner calls from fixture minting, administrative state, selected clocks/randomness, synthetic maps, supplied deaths and same-process owner reconstruction. These distinctions prevent fixtures from being misreported as maintained production producers or observed runtime results.
 
-Two separate99-file test reservations contribute76 and60 complete files at this cutoff. Root read all136 primary notes,36 supporting notes and both complete cumulative reports, then checked source identity, exact assignment membership, disjointness, all captured histories and reviewer attribution. One wording correction is explicitly documented without changing its source range or review credit. The scenarios cover boss activities and rewards, private views, NPC/quest services, carried and ground custody, native room crops, character progression and replay/recovery. Assertions were read, not run.
+No Cargo, PostgreSQL integration, native server/client, Actions or long timer scenario was executed for this closure. Root qualification is not a second complete source reread of delegated files. Newly reviewed test sources add no confirmed finding; totals remain22 (P1=4/P2=18).
 
-**62 Dispatch files still lack full review in this frozen checkpoint.** Exact paths are listed in the coverage ledger. Confirmed findings remain22 total (P1=4/P2=18); newly reviewed test sources establish no additional confirmed finding. Qualification adds no duplicate FULL credit and does not claim a second complete source reread. No Cargo, SQL, native client/server or Actions run was performed in this continuation.
-
-All11 supplementary domains and all27,900 tracked input files remain mandatory after Cargo completion.
+All67 Cargo packages now have complete source review. The full repository audit continues through all11 supplementary domains and all27,900 tracked input files.
