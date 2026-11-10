@@ -21,6 +21,12 @@ mod quest_clock;
 mod ready_admission;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+const DB_TRANSACTION_FAILED: oteryn_error_codes::ErrorCode = oteryn_error_codes::ErrorCode::new(
+    3012,
+    "DURABILITY_TRANSACTION_FAILED",
+    oteryn_error_codes::Category::InternalUnavailable,
+    oteryn_error_codes::Progression::Retryable,
+);
 const DB_PASS_DEADLINE_MILLIS: u64 = 2_000;
 pub const DB_PASS_DEADLINE: Duration = Duration::from_millis(DB_PASS_DEADLINE_MILLIS);
 pub const ROOT_RECOVERY_WINDOW: Duration = Duration::from_secs(5);
@@ -1520,36 +1526,56 @@ pub async fn begin_semantic_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
     deadline: Instant,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
-    let remaining = deadline.saturating_duration_since(Instant::now());
-    if remaining.is_zero() {
-        return Err(DurabilityError::RootPassDeadlineExceeded);
-    }
+    let mut span = oteryn_error_codes::Span::start(
+        oteryn_error_codes::Level::Debug,
+        "durability",
+        "db_tx",
+        None,
+    )
+    .slow_after(Duration::from_millis(250));
+    span.field("operation", "begin");
+    span.field("attempts", 1_u64);
+    let started = Instant::now();
+    let result = async {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(DurabilityError::RootPassDeadlineExceeded);
+        }
 
-    let mut transaction = tokio::time::timeout(remaining, holder.begin())
+        let mut transaction = tokio::time::timeout(remaining, holder.begin())
+            .await
+            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
+
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(DurabilityError::RootPassDeadlineExceeded);
+        }
+        let millis = u64::try_from(remaining.as_millis().max(1))
+            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
+        let timeout_value = format!("{millis}ms");
+        tokio::time::timeout(
+            remaining,
+            sqlx::query(
+                "SELECT set_config('transaction_timeout', $1, true), \
+                 set_config('statement_timeout', $1, true), \
+                 set_config('lock_timeout', $1, true)",
+            )
+            .bind(timeout_value)
+            .execute(&mut *transaction),
+        )
         .await
         .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
-
-    let remaining = deadline.saturating_duration_since(Instant::now());
-    if remaining.is_zero() {
-        return Err(DurabilityError::RootPassDeadlineExceeded);
+        Ok(transaction)
     }
-    let millis = u64::try_from(remaining.as_millis().max(1))
-        .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
-    let timeout_value = format!("{millis}ms");
-    tokio::time::timeout(
-        remaining,
-        sqlx::query(
-            "SELECT set_config('transaction_timeout', $1, true), \
-             set_config('statement_timeout', $1, true), \
-             set_config('lock_timeout', $1, true)",
-        )
-        .bind(timeout_value)
-        .execute(&mut *transaction),
-    )
-    .await
-    .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
-
-    Ok(transaction)
+    .await;
+    oteryn_error_codes::metrics::Registry::global()
+        .histogram("durability_write_ms", &[])
+        .observe(u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX));
+    span.set_outcome(if result.is_ok() { "ok" } else { "failed" });
+    if result.is_err() {
+        span.set_code(DB_TRANSACTION_FAILED);
+    }
+    result
 }
 
 /// The opener of every transaction that can insert a type-2 audit event (GOLD-FEE-ACT-PACKET-1
@@ -1575,12 +1601,23 @@ pub async fn commit_semantic_transaction(
     transaction: Transaction<'_, Postgres>,
     deadline: Instant,
 ) -> Result<(), DurabilityError> {
+    commit_semantic_transaction_by(deadline, || transaction.commit()).await
+}
+
+async fn commit_semantic_transaction_by<F, Fut>(
+    deadline: Instant,
+    commit: F,
+) -> Result<(), DurabilityError>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<(), sqlx::Error>>,
+{
     let remaining = deadline.saturating_duration_since(Instant::now());
     if remaining.is_zero() {
-        return Err(DurabilityError::CommitOutcomeUnknown);
+        return Err(DurabilityError::RootPassDeadlineExceeded);
     }
 
-    match tokio::time::timeout(remaining, transaction.commit()).await {
+    match tokio::time::timeout(remaining, commit()).await {
         Ok(Ok(())) => Ok(()),
         Ok(Err(error)) => Err(DurabilityError::from_commit_error(error)),
         Err(_) => Err(DurabilityError::CommitOutcomeUnknown),
@@ -1588,12 +1625,27 @@ pub async fn commit_semantic_transaction(
 }
 
 pub async fn connect(database_url: &str, max_connections: u32) -> Result<PgPool, DurabilityError> {
-    PgPoolOptions::new()
+    let pool = PgPoolOptions::new()
         .max_connections(max_connections)
         .acquire_timeout(CONNECT_TIMEOUT)
         .connect(database_url)
         .await
-        .map_err(DurabilityError::from)
+        .map_err(DurabilityError::from)?;
+    oteryn_error_codes::emit(
+        DIAGNOSTIC_PROCESS,
+        &oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Info,
+            "durability",
+            "db_pool",
+        )
+        .field("size", oteryn_error_codes::FieldValue::U64(u64::from(pool.size())))
+        .field("idle", oteryn_error_codes::FieldValue::U64(pool.num_idle() as u64))
+        .field(
+            "max",
+            oteryn_error_codes::FieldValue::U64(u64::from(max_connections)),
+        ),
+    );
+    Ok(pool)
 }
 
 #[cfg(test)]

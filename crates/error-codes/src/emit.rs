@@ -3,6 +3,9 @@
 use crate::{Line, filter, unix_ms};
 use std::cell::RefCell;
 use std::io::Write as _;
+use std::sync::OnceLock;
+
+static OBSERVER: OnceLock<fn(&Line<'_>)> = OnceLock::new();
 
 thread_local! {
     static CAPTURE: RefCell<Option<Vec<String>>> = const { RefCell::new(None) };
@@ -10,6 +13,9 @@ thread_local! {
 
 /// Apply the global `OTERYN_LOG` filter, then render and write one line to stderr.
 pub fn emit(process: &str, line: &Line<'_>) {
+    if let Some(observer) = OBSERVER.get() {
+        observer(line);
+    }
     if !filter().allows(line.level, line.module, line.code.is_some()) {
         return;
     }
@@ -28,6 +34,13 @@ pub fn emit(process: &str, line: &Line<'_>) {
         let mut stderr = stderr.lock();
         let _ = writeln!(stderr, "{rendered}");
     }
+}
+
+/// Register a process-wide observer invoked for every emitted line before filtering.
+///
+/// The first observer wins, so a process composition root can install its sink once.
+pub fn install_observer(observer: fn(&Line<'_>)) {
+    let _ = OBSERVER.set(observer);
 }
 
 /// Capture lines emitted on this thread while `operation` runs.
