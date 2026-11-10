@@ -1877,6 +1877,15 @@ async fn run_nested_death_pickup(
     let ground_after: String = sqlx::query_scalar("SELECT to_jsonb(g)::text FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(selected.as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(ground_after, ground_before);
+    // The occupied death tile admits only its existing placement pins. Reuse
+    // those actual facts when removing the ballast through the real Ground owner.
+    let (ballast_position, ballast_map, ballast_content, ballast_context): (
+        Vec<u8>,
+        String,
+        String,
+        Vec<u8>,
+    ) = sqlx::query_as("SELECT spatial_position,map_revision,content_revision,native_room_placement_context FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
     let moved = h
         .root
         .commit_item_loop_move(
@@ -1891,10 +1900,10 @@ async fn run_nested_death_pickup(
                 count: None,
                 pickup_cell: None,
                 destination: LoopDestination::Ground(LoopGround {
-                    spatial_position: nested_death_cell(),
-                    map_revision: "death-map-1".into(),
-                    content_revision: "content-1".into(),
-                    placement_context: id(175).to_vec(),
+                    spatial_position: ballast_position,
+                    map_revision: ballast_map,
+                    content_revision: ballast_content,
+                    placement_context: ballast_context,
                 }),
             },
         )

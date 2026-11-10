@@ -178,11 +178,11 @@ BEGIN
   FROM game_player_death_container_edges e WHERE e.transaction_id=operation_id AND e.source_kind=1 ORDER BY e.item_instance_id;
  GET DIAGNOSTICS changed=ROW_COUNT;
  IF changed<>direct_count THEN RAISE EXCEPTION 'death container conversion lost a source edge' USING ERRCODE='23514'; END IF;
- DELETE FROM game_item_container_entries old USING game_player_death_container_edges e
-  WHERE e.transaction_id=operation_id AND e.source_kind=1 AND old.item_instance_id=e.item_instance_id
-   AND old.world_id=e.world_id AND old.parent_item_instance_id=e.parent_item_instance_id
-   AND old.placement_ordinal=e.placement_ordinal AND old.placed_transaction_id=e.placed_transaction_id
-   AND old.character_id=e.source_character_id;
+ DELETE FROM game_item_container_entries prior_entry USING game_player_death_container_edges e
+  WHERE e.transaction_id=operation_id AND e.source_kind=1 AND prior_entry.item_instance_id=e.item_instance_id
+   AND prior_entry.world_id=e.world_id AND prior_entry.parent_item_instance_id=e.parent_item_instance_id
+   AND prior_entry.placement_ordinal=e.placement_ordinal AND prior_entry.placed_transaction_id=e.placed_transaction_id
+   AND prior_entry.character_id=e.source_character_id;
  GET DIAGNOSTICS changed=ROW_COUNT;
  IF changed<>direct_count THEN RAISE EXCEPTION 'death container conversion changed a source edge' USING ERRCODE='23514'; END IF;
  RETURN NULL;

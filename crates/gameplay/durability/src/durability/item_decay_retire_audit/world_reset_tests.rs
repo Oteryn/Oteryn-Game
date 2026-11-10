@@ -58,6 +58,42 @@ fn world_reset_round_trips_both_locations_without_a_decay_deadline() {
 }
 
 #[test]
+fn legacy_ground_entry_retains_the_thirty_entry_corpse_capacity() {
+    assert_eq!(mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 30);
+    for ordinal in [17, 30] {
+        let mut message = reset_message(true);
+        message
+            .ground_container_entry
+            .as_mut()
+            .unwrap()
+            .placement_ordinal = ordinal;
+        for tuple in [mint::Type2EventTuple::V1, mint::Type2EventTuple::V2] {
+            let wire = encode_decay_retire_event(
+                DecayRetireEventIdentity {
+                    event_id: super::super::tests::world_reset_uuid_fixture(30),
+                    transaction_id: super::super::tests::world_reset_uuid_fixture(40),
+                    occurred_at_unix_ms: 1,
+                    server_build_id: "oteryn-game-server/test",
+                },
+                message.clone(),
+                tuple,
+            )
+            .unwrap();
+            assert_eq!(decode_decay_retire_envelope(&wire).unwrap().1, message);
+        }
+    }
+    for ordinal in [0, 31] {
+        let mut message = reset_message(true);
+        message
+            .ground_container_entry
+            .as_mut()
+            .unwrap()
+            .placement_ordinal = ordinal;
+        assert_eq!(check_decay_retire(&message), Err(AuditError::InvalidInput));
+    }
+}
+
+#[test]
 fn death_tree_entry_round_trips_actual_parent_root_and_large_ordinal() {
     let mut message = reset_message(true);
     let root = super::super::tests::world_reset_uuid_fixture(90).to_vec();

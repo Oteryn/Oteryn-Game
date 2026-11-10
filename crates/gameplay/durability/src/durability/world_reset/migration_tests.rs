@@ -78,3 +78,36 @@ fn death_tree_retirement_adds_private_source_proofs_without_replacing_authority_
     }
     Ok(())
 }
+
+#[test]
+fn death_tree_retirement_preserves_the_existing_corpse_capacity()
+-> Result<(), Box<dyn std::error::Error>> {
+    let corpse_max = crate::foundation::loot_data::CORPSE_CONTAINER_ENTRIES_MAX;
+    let corpse_capacity = oteryn_gameplay_durability::GAME_MIGRATOR
+        .iter()
+        .find(|migration| migration.version == 242)
+        .ok_or("corpse capacity migration")?;
+    assert_eq!(
+        corpse_capacity
+            .sql
+            .matches(&format!(
+                "CHECK (placement_ordinal BETWEEN 1 AND {corpse_max})"
+            ))
+            .count(),
+        2,
+        "the reservation and receipt ceilings must match the admitted corpse capacity"
+    );
+    let retirement = oteryn_gameplay_durability::GAME_MIGRATOR
+        .iter()
+        .find(|migration| migration.version == 2731)
+        .ok_or("death tree retirement migration")?;
+    assert!(retirement.sql.contains(&format!(
+        "AND (cause_kind<>''CORPSE_DECAY'' OR placement_ordinal<={corpse_max})"
+    )));
+    assert!(
+        retirement
+            .sql
+            .contains(&format!("placement_ordinal BETWEEN 1 AND {}", u64::MAX))
+    );
+    Ok(())
+}

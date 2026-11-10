@@ -38,7 +38,8 @@ CREATE TRIGGER game_player_death_retirement_edges_no_truncate BEFORE TRUNCATE ON
  FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
 
 -- BAGS placement ordinals are monotonic u64 identities, not container counts.
--- The legacy corpse-decay ordinal ceiling remains exactly sixteen.
+-- Preserve the 30-entry corpse-decay ceiling established by migration 0242.
+-- The separate 16-item generated loot-plan bound does not bound corpse custody.
 DO $migration$
 DECLARE t TEXT; c RECORD; n INT;
 BEGIN
@@ -54,7 +55,7 @@ BEGIN
   IF n<>1 THEN RAISE EXCEPTION 'unexpected retirement ordinal constraint on %',t; END IF;
   EXECUTE format('ALTER TABLE %I ADD CONSTRAINT game_retire_placement_ordinal CHECK (
    placement_ordinal BETWEEN 1 AND 18446744073709551615
-   AND (cause_kind<>''CORPSE_DECAY'' OR placement_ordinal<=16))',t);
+   AND (cause_kind<>''CORPSE_DECAY'' OR placement_ordinal<=30))',t);
  END LOOP;
 END $migration$;
 
