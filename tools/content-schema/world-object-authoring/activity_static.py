@@ -380,7 +380,9 @@ def preserved_restore_item_pointer(root=ROOT):
         raise ValueError("Anomaly restore lost its existing public Item binding")
     definitions = [
         row["definition"]
-        for shard in json.loads((root / "content/items/index.json").read_bytes())["shards"]
+        for shard in json.loads((root / "content/items/index.json").read_bytes())[
+            "shards"
+        ]
         for row in json.loads((root / shard).read_bytes())["records"]
         if row["definition"]["identity"]["key"] == identity["key"]
     ]
