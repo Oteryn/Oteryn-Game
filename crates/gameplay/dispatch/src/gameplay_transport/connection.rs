@@ -418,6 +418,7 @@ const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::
 
 /// DEFLAKE-2: the closed-schema operator line of a silent fresh-admission or resume refusal.
 /// It names the refusal kind alone, never a session, account, character or transport.
+#[cfg(test)]
 pub(super) fn admission_refused_event(refusal: AdmissionRefusal) -> Option<&'static str> {
     match refusal {
         AdmissionRefusal::Unavailable => Some("event=admission_refused kind=unavailable"),
@@ -429,10 +430,23 @@ pub(super) fn admission_refused_event(refusal: AdmissionRefusal) -> Option<&'sta
     }
 }
 
-fn report_admission_refusal(refusal: AdmissionRefusal) {
-    if let Some(line) = admission_refused_event(refusal) {
-        super::operator_event(line);
-    }
+pub(super) fn report_admission_refusal(refusal: AdmissionRefusal) {
+    let kind = match refusal {
+        AdmissionRefusal::PremiumRequired | AdmissionRefusal::Rejected => "rejected",
+        AdmissionRefusal::Unavailable => "unavailable",
+        AdmissionRefusal::Classified(_) => "classified",
+        AdmissionRefusal::Queued(_) => "queued",
+        AdmissionRefusal::RecoveryCapabilityRequired => "recovery_capability",
+    };
+    oteryn_error_codes::emit(
+        "oteryn-game-server",
+        &oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Warn,
+            "admission",
+            "admission_refused",
+        )
+        .field("kind", oteryn_error_codes::FieldValue::Token(kind)),
+    );
 }
 
 /// The terminal outcome of one `ACCOUNT_ACHIEVEMENTS_QUERY` (display contract §3.3, §4).

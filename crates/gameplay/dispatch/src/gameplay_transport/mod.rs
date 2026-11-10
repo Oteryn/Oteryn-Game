@@ -1282,7 +1282,15 @@ fn earned_notice(
 /// One structured stderr event line for the operator, as the node's own events are written
 /// (OPS-NODE-BOOT-01 D6).
 fn operator_event(line: &str) {
-    eprintln!("oteryn-game-server {line}");
+    oteryn_error_codes::emit(
+        "oteryn-game-server",
+        &oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Warn,
+            "gameplay_transport",
+            "transport_diagnostic",
+        )
+        .detail(line),
+    );
 }
 
 /// Same-session grace from the authoritative `ControlLossEpoch` boundary: registry row

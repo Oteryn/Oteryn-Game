@@ -173,6 +173,34 @@ fn connection_end_kind(end: &connection::ConnectionEnd) -> &'static str {
     }
 }
 
+fn report_transport_close(end: &connection::ConnectionEnd, served: bool, elapsed: Duration) {
+    let mut line = oteryn_error_codes::Line::new(
+        oteryn_error_codes::Level::Info,
+        "gameplay_transport",
+        "transport_close",
+    )
+    .field(
+        "outcome",
+        oteryn_error_codes::FieldValue::Token(connection_end_kind(end)),
+    )
+    .field(
+        "served",
+        oteryn_error_codes::FieldValue::Token(if served { "true" } else { "false" }),
+    )
+    .field(
+        "ms",
+        oteryn_error_codes::FieldValue::U64(u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)),
+    );
+    if let connection::ConnectionEnd::AdmittedThenClosed(session, _)
+    | connection::ConnectionEnd::AdmittedThenDisconnected(session)
+    | connection::ConnectionEnd::AdmittedThenControlLost(session)
+    | connection::ConnectionEnd::AdmittedThenLoggedOut(session) = end
+    {
+        line = line.session_gen(session.continuity.connection_generation);
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn serve_accepted<A, I, O>(
     stream: TcpStream,
@@ -289,17 +317,7 @@ where
             ),
         },
     };
-    operator_event(&format!(
-        "event=connection_served end={} served={served} ms={} detail={}",
-        connection_end_kind(&end),
-        admit_started.elapsed().as_millis(),
-        match &end {
-            ConnectionEnd::AdmissionRefused(r) => format!("{r:?}"),
-            ConnectionEnd::AdmittedThenClosed(_, e) | ConnectionEnd::ProtocolViolation(e) =>
-                format!("{e:?}"),
-            _ => String::from("-"),
-        },
-    ));
+    report_transport_close(&end, served, admit_started.elapsed());
     if let ConnectionEnd::AdmittedThenClosed(session, _)
     | ConnectionEnd::AdmittedThenDisconnected(session)
     | ConnectionEnd::AdmittedThenControlLost(session)
@@ -448,4 +466,28 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
         }
     };
     let _ = first(lifecycle, shutdown.cancelled()).await;
+}
+
+#[cfg(test)]
+mod logging_tests {
+    use super::*;
+
+    #[test]
+    fn admission_refusal_and_transport_close_emit_registered_events() {
+        let lines = oteryn_error_codes::capture(|| {
+            connection::report_admission_refusal(connection::AdmissionRefusal::Unavailable);
+            report_transport_close(
+                &connection::ConnectionEnd::TransportFailed,
+                false,
+                Duration::from_millis(7),
+            );
+        });
+        assert_eq!(lines.len(), 2);
+        assert!(lines[0].contains("level=warn module=admission event=admission_refused"));
+        assert!(lines[0].contains("kind=unavailable"));
+        assert!(lines[1].contains(
+            "level=info module=gameplay_transport event=transport_close \
+                 outcome=transport_failed served=false ms=7"
+        ));
+    }
 }
