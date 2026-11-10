@@ -3482,7 +3482,9 @@ async fn pvp_journey(
     pair[0] = None;
     pair[1] = Some(connect_character(clients, 0xf3, 1).await?);
     let second = pvp_level(pair[1].as_mut().ok_or("second admission")?, clients, 1).await?;
-    evidence(&format!("S08 pvp-levels setup=fixture levels={first},{second}"));
+    evidence(&format!(
+        "S08 pvp-levels setup=fixture levels={first},{second}"
+    ));
     row.pass("pvp-levels");
     release_when_unlocked(
         pair[1].as_mut().ok_or("second admission")?,

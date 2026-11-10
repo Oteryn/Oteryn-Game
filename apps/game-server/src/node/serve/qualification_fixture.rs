@@ -93,8 +93,16 @@ async fn prepare_build(
         }
         // P21 setup: weapon, Strike materials and coins, never imbued state.
         "imbuement" => {
-            return mint_items(root, authority, proof, &current, native, &STOCK, STOCK_COMMANDS)
-                .await;
+            return mint_items(
+                root,
+                authority,
+                proof,
+                &current,
+                native,
+                &STOCK,
+                STOCK_COMMANDS,
+            )
+            .await;
         }
         _ => {}
     }
@@ -117,7 +125,16 @@ async fn prepare_build(
         policy,
     )
     .await?;
-    mint_items(root, authority, proof, &current, native, &TOOLS, TOOL_COMMANDS).await
+    mint_items(
+        root,
+        authority,
+        proof,
+        &current,
+        native,
+        &TOOLS,
+        TOOL_COMMANDS,
+    )
+    .await
 }
 
 /// Axe, rope, shovel. Every build profile needs the same map/melee
