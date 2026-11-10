@@ -3,7 +3,7 @@
 //! publish the existing torment counter/icon successor only after its known ACK.
 use super::*;
 use crate::durability::creature_source_items::{SourceGroundStep, SourceGroundStepKind};
-use crate::spell::PlayerSpellState;
+use crate::spell::cast::PlayerSpellState;
 use oteryn_gameplay_encounters::bosses::soul_war_torment::PlayerCounter;
 
 #[derive(Debug, Clone)]

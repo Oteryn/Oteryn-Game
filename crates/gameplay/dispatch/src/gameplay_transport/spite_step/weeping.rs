@@ -6,7 +6,7 @@ use crate::durability::creature_source_items::{SourceGroundStep, SourceGroundSte
 use crate::foundation::{
     ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
 };
-use crate::spell::PlayerSpellState;
+use crate::spell::cast::PlayerSpellState;
 use oteryn_gameplay_encounters::bosses::goshnars_spite;
 use oteryn_gameplay_entities::{CompanionSnapshot, carrier::soul_war_spite::SpiteChange};
 use oteryn_simulation_determinism::{

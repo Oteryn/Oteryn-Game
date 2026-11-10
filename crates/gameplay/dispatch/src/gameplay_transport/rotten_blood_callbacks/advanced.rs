@@ -355,7 +355,7 @@ pub(super) async fn drive_due_through(
                 {
                     return Err(());
                 }
-                drive_thinks(runtime, states, room, native, map, &[], now).await?;
+                drive_thinks(runtime, states, room, native, &[], now).await?;
             }
             DueKind::PortalItem | DueKind::Footprint => return Err(()),
         }
@@ -379,7 +379,7 @@ pub(super) async fn drive(
 ) -> Result<Option<u64>, ()> {
     effects::drain(runtime, states, room, native, map, now).await?;
     massive::drive(runtime, states, attack, notices, room, native, map, now).await?;
-    drive_thinks(runtime, states, room, native, map, occurrences, now).await?;
+    drive_thinks(runtime, states, room, native, occurrences, now).await?;
     effects::drain(runtime, states, room, native, map, now).await?;
     portals::plan(runtime, states, room, native, now)?;
     Ok(states.rotten_blood_callbacks.advanced.next_due_time())
@@ -391,7 +391,6 @@ async fn drive_thinks(
     states: &mut ChannelSpellStates,
     room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
-    map: &mut CurrentMonsterMap<'_, '_>,
     occurrences: &[ThinkOccurrence],
     now: u64,
 ) -> Result<(), ()> {
