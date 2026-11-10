@@ -41,8 +41,8 @@ pub(super) async fn provision(
     if !status.success() {
         return Err("node-boot fenced build provisioning failed".into());
     }
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    let (result, _, _, _) = client_world::logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("fixture setup logout refused".into());
     }
     drop(client);

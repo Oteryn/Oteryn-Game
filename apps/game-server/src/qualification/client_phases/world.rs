@@ -260,6 +260,31 @@ async fn walk(
     Ok(())
 }
 
+pub(super) async fn logout_retrying_busy(
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult<(
+    Option<oteryn_protocol_oteryn::logout::LogoutResult>,
+    String,
+    usize,
+    bool,
+)> {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    let mut attempts = 0;
+    loop {
+        attempts += 1;
+        let outcome = client.session_mut().logout().await?;
+        if outcome.result != Some(LogoutResult::Busy) {
+            return Ok((outcome.result, format!("{outcome:?}"), attempts, false));
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Ok((outcome.result, format!("{outcome:?}"), attempts, true));
+        }
+        client.service_liveness(Duration::from_millis(250)).await?;
+    }
+}
+
 pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResult {
     let started = std::time::Instant::now();
     let bytes = std::fs::read(path)?;
@@ -285,9 +310,8 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         )
         .into());
     }
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
+    let (result, _, _, _) = logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("first town entry logout refused".into());
     }
     drop(client);
@@ -480,9 +504,8 @@ async fn profile_journey(
     })
     .ok_or("profile journey has no return route")?;
     walk(&mut client, world, &back).await?;
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
+    let (result, _, _, _) = logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("profile journey logout refused".into());
     }
     map?;
