@@ -20,7 +20,7 @@ pub(super) struct Pane {
     text: RefCell<String>,
 }
 impl Pane {
-    pub(super) fn new(root: HWND, id: HudPanel, actions: Actions) -> Option<Self> {
+    pub(super) fn new(root: HWND, id: HudPanel, actions: Actions) -> Result<Self, HudInitError> {
         unsafe {
             let frame = CreateWindowExW(
                 0,
@@ -37,7 +37,7 @@ impl Pane {
                 null(),
             );
             if frame.is_null() {
-                return None;
+                return Err(last_error(HudPart::PaneFrame));
             }
             let edit = CreateWindowExW(
                 0,
@@ -53,8 +53,14 @@ impl Pane {
                 null_mut(),
                 null(),
             );
-            let bars = [0, 1].map(|_| {
-                CreateWindowExW(
+            if edit.is_null() {
+                let error = last_error(HudPart::PaneText);
+                DestroyWindow(frame);
+                return Err(error);
+            }
+            let mut bars = [null_mut(); 2];
+            for bar in &mut bars {
+                *bar = CreateWindowExW(
                     0,
                     wide("msctls_progress32").as_ptr(),
                     wide("").as_ptr(),
@@ -67,11 +73,12 @@ impl Pane {
                     null_mut(),
                     null_mut(),
                     null(),
-                )
-            });
-            if edit.is_null() || bars.iter().any(|bar| bar.is_null()) {
-                DestroyWindow(frame);
-                return None;
+                );
+                if bar.is_null() {
+                    let error = last_error(HudPart::PaneProgress);
+                    DestroyWindow(frame);
+                    return Err(error);
+                }
             }
             for bar in bars {
                 SendMessageW(bar, PBM_SETRANGE32, 0, 10000);
@@ -92,10 +99,11 @@ impl Pane {
                 (&*state as *const State) as usize,
             ) == 0
             {
+                let error = last_error(HudPart::PaneSubclass);
                 DestroyWindow(frame);
-                return None;
+                return Err(error);
             }
-            Some(Self {
+            Ok(Self {
                 frame,
                 state,
                 text: Default::default(),
