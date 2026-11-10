@@ -176,7 +176,7 @@ async fn live_clock() -> TestResult {
             let bytes = frames.next(&mut client).await?;
             let envelope = decode_wire_envelope(&bytes)?;
             match envelope.message_type() {
-                MessageType::SnapshotEnd => {
+                MessageType::SnapshotCommit => {
                     authority.clock_ms.set(150_000);
                     write_frame(&mut client, &step_frame(command)?).await?;
                 }
