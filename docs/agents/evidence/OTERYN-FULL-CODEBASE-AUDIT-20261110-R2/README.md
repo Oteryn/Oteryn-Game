@@ -1,12 +1,12 @@
-# OTERYN FULL AUDIT — continuation checkpoint 10
+# OTERYN FULL AUDIT — continuation checkpoint 11
 
 Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues across all remaining packages and supplementary domains.
 
 ## Verified evidence at this checkpoint
 
 - 67 workspace packages; 11 supplementary domains; 27900 tracked input files.
-- **55 packages REVIEWED / 12 IN PROGRESS / 0 NOT STARTED / 0 VERIFIED**.
-- **4,806 distinct substantively analyzed files**: 4,609 full and 197 selected-range files; 728,487 deduplicated text line positions.
+- **56 packages REVIEWED / 11 IN PROGRESS / 0 NOT STARTED / 0 VERIFIED**.
+- **5,090 distinct substantively analyzed files**: 4,910 full and 180 selected-range files; 800,249 deduplicated text line positions.
 - Four binary fixtures were semantically decoded in full, totaling 475 bytes. Their exact ranges use bytes and are excluded from line counts.
 - 192 historical files retain their exact ranges only because their Git blobs are identical. Four changed historical files receive no automatic carryover credit; fresh review is attributed separately.
 - REVIEWED requires every tracked package file and a substantive report. File discovery, text search, hash checks and test-source inspection are not runtime execution.
@@ -43,7 +43,8 @@ Fresh main is `af33fd3baeac15d9991bd24c91bcacc8733492e2`. Its complete diff from
 - `coverage.md`, `coverage-ledger.json`: package/domain status, exact ranges, hashes, provenance and explicit remaining files.
 - `module-reports.json`: completed package reports; client-support reports are inline.
 - Lead: `admin-review.md`, `admission-recovery-review.md`, `determinism-ops-review.md`, `world-bundle-review.md`, `dev-client-bots-review.md`, `architecture-review.md`, `world-compiler-review.md`, `domain-review.md`, `combat-review.md`, `entities-review.md`, `progression-review.md`, `monster-ai-review.md`.
-- Gameplay foundation and content promotion: `foundation.md`, `content-promotion.md`.
+- Gameplay foundation, content promotion and native admission source: `foundation.md`, `content-promotion.md`, `native-admission-source.md`.
+- Remaining spell source: `spell-progress.md`.
 - Native client application: `apps-client.md`; 1,180 full files, with unresolved candidates separated from confirmed findings.
 - Protocol/session: `protocol-session.md`, `platform-client.md`, `session.md`, `protocol.md`; partial `durability-progress.md` and `game-server-progress.md`.
 - Gameplay: `characters.md`, `node-files.md`, `weather.md`, `source-critical-baseline.md`, `housing.md`, `economy.md`, `combat-rules.md`, `encounter-rules.md`, `social-rules.md`, `spell-rules.md`, `world-change.md`, `npc.md`.
@@ -53,7 +54,7 @@ Fresh main is `af33fd3baeac15d9991bd24c91bcacc8733492e2`. Its complete diff from
 
 Protocol retains full REVIEWED status: 596 files, 81,639 text lines and two binary fixtures totaling 302 bytes. The protocol lane continues durability; the released client worker now reviews game-server and migrations. New worker output enters coverage only after exact hash/range validation and integration.
 
-The client application is now **REVIEWED: 1,180/1,180 full files and 143,488 lines**. Its delegated 422-file batch is complete and parent-validated. All 1,334 client-ui files retain full review. Gameplay foundation is now **REVIEWED: 55/55 files and 38,117 lines**; content-promotion is **REVIEWED: 36/36 files and 13,600 lines**. The promotion packet checks passed 106 read-only assertions, including all 34 embedded byte pins. The client lane continues native-admission-source and content.
+The client application is now **REVIEWED: 1,180/1,180 full files and 143,488 lines**. Its delegated 422-file batch is complete and parent-validated. All 1,334 client-ui files retain full review. Gameplay foundation is now **REVIEWED: 55/55 files and 38,117 lines**; content-promotion is **REVIEWED: 36/36 files and 13,600 lines**. The promotion packet checks passed 106 read-only assertions, including all 34 embedded byte pins. Native-admission-source is now **REVIEWED: 81/81 files and 21,163 lines**; 267 complete local Store fixture/schema checks passed. The client lane continues content and later dispatch.
 
 The progression package is now **REVIEWED: 43/43 files and 11,169 lines**. Its report covers achievement/classifier boundaries, training and loyalty, ranking, daily rewards, regeneration, proficiency, Wheel/Atelier and Charm effects. Exact Git/worktree/full-range validation passed. Its test sources were read, not executed.
 
@@ -61,8 +62,8 @@ Entities retains **86/86 full files and 37,547 lines**. Eight existing tests in 
 
 Monster AI is now **REVIEWED: 64/64 files and 17,496 lines**. Seven existing pure AI tests passed through an unchanged path-only rustc harness; the native runtime and host benchmark were not run. A catalog/caller compatibility question remains private and unconfirmed.
 
-Frozen durability cumulative coverage is **225/721 complete files**, 250 files with substantive ranges and **82,890 lines**. Frozen game-server cumulative coverage is **196/873 complete files**, 209 files with substantive ranges and **52,057 lines**. These totals include attributed earlier cross-references. The server worker's 184-file capture was independently validated before parent integration; later live progress is not credited to this frozen checkpoint.
+Frozen durability cumulative coverage is **275/721 complete files**, 297 files with substantive ranges and **95,715 lines**. Frozen game-server cumulative coverage is **312/873 complete files**, 325 files with substantive ranges and **68,061 lines**. Spell cumulative coverage is **53/83 complete files**, 55 files with substantive ranges and **24,056 lines**. These totals include attributed earlier cross-references. The server worker's superseding 304-file capture was independently validated before parent integration. Later live progress is not credited to this frozen checkpoint.
 
-All 67 packages now have substantive review coverage, but twelve remain incomplete. The eleven supplementary domains remain **4 IN PROGRESS / 7 NOT STARTED**. The lead and delegated lanes continue every remaining package and supplementary domain. Existing restricted findings, duplicate corroboration and new candidates remain separately tracked. No source fixes or deployed-system reproduction are claimed.
+All 67 packages now have substantive review coverage; eleven remain incomplete. The eleven supplementary domains remain **4 IN PROGRESS / 7 NOT STARTED**. The lead and delegated lanes continue every remaining package and supplementary domain. Confirmed totals are unchanged: **P0=0 / P1=4 / P2=14 / P3=0**. Existing restricted findings, duplicate corroboration and new candidates remain separately tracked. No source fixes or deployed-system reproduction are claimed.
 
 The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and lifecycle. Repairs remain separate work; this branch changes audit evidence only.

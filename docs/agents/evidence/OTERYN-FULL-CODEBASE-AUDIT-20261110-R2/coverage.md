@@ -7,7 +7,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | Module | Status | Tracked files | Analyzed files | Full files | Analyzed lines |
 |---|---|---:|---:|---:|---:|
 | oteryn-client | REVIEWED | 1180 | 1180 | 1180 | 143488 |
-| oteryn-game-server | IN PROGRESS | 873 | 209 | 196 | 52057 |
+| oteryn-game-server | IN PROGRESS | 873 | 325 | 312 | 68061 |
 | oteryn-admin-agent | REVIEWED | 12 | 12 | 12 | 1865 |
 | oteryn-admin-contracts | REVIEWED | 7 | 7 | 7 | 834 |
 | oteryn-client-assets | REVIEWED | 19 | 19 | 19 | 2341 |
@@ -25,9 +25,9 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-combat-rules | REVIEWED | 29 | 29 | 29 | 5131 |
 | oteryn-gameplay-content | IN PROGRESS | 139 | 8 | 2 | 1048 |
 | oteryn-gameplay-content-promotion | REVIEWED | 36 | 36 | 36 | 13600 |
-| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 127 | 27 | 23154 |
+| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 132 | 32 | 24454 |
 | oteryn-gameplay-domain | REVIEWED | 67 | 67 | 67 | 33806 |
-| oteryn-gameplay-durability | IN PROGRESS | 721 | 250 | 225 | 82890 |
+| oteryn-gameplay-durability | IN PROGRESS | 721 | 297 | 275 | 95715 |
 | oteryn-gameplay-economy | REVIEWED | 28 | 28 | 28 | 3978 |
 | oteryn-gameplay-encounter-rules | REVIEWED | 21 | 21 | 21 | 4945 |
 | oteryn-gameplay-encounters | IN PROGRESS | 93 | 4 | 2 | 744 |
@@ -36,7 +36,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-housing | REVIEWED | 24 | 24 | 24 | 2330 |
 | oteryn-gameplay-items | IN PROGRESS | 59 | 5 | 2 | 1358 |
 | oteryn-gameplay-monster-ai | REVIEWED | 64 | 64 | 64 | 17496 |
-| oteryn-gameplay-native-admission-source | IN PROGRESS | 81 | 5 | 0 | 1133 |
+| oteryn-gameplay-native-admission-source | REVIEWED | 81 | 81 | 81 | 21163 |
 | oteryn-gameplay-node-files | REVIEWED | 4 | 4 | 4 | 736 |
 | oteryn-gameplay-npc | REVIEWED | 17 | 17 | 17 | 4359 |
 | oteryn-gameplay-progression | REVIEWED | 43 | 43 | 43 | 11169 |
@@ -44,7 +44,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-social | IN PROGRESS | 56 | 2 | 0 | 156 |
 | oteryn-gameplay-social-rules | REVIEWED | 22 | 22 | 22 | 3479 |
 | oteryn-gameplay-source-critical-baseline | REVIEWED | 2 | 2 | 2 | 145 |
-| oteryn-gameplay-spell | IN PROGRESS | 83 | 15 | 4 | 2453 |
+| oteryn-gameplay-spell | IN PROGRESS | 83 | 55 | 53 | 24056 |
 | oteryn-gameplay-spell-rules | REVIEWED | 24 | 24 | 24 | 6664 |
 | oteryn-gameplay-weather | REVIEWED | 3 | 3 | 3 | 692 |
 | oteryn-gameplay-world | IN PROGRESS | 73 | 14 | 6 | 1916 |

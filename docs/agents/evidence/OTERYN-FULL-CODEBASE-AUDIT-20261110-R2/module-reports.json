@@ -693,6 +693,33 @@
       "report": "content-promotion.md"
     },
     {
+      "module": "oteryn-gameplay-native-admission-source",
+      "path": "crates/gameplay/native-admission-source",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 81,
+      "reviewed_lines": 21163,
+      "entrypoints_and_invariants": "Full native evidence/authenticated bounded transport, account/public projections, current epoch and recovery publication guards, character/closure command consumers, Store/Coin/Bazaar adapters, scope/restore reporting and event/season wire/publishers. All source/test/manifest plus semantic fixture coverage; see native-admission-source.md.",
+      "dependency_edges": [
+        "admission-evidence/error-codes; Tokio/rustls/serde/SHA and Linux filesystem capabilities",
+        "actual apps/game-server serve/ops and gameplay Store/Coin caller integration",
+        "durable current ownership/recovery/receipt/publication authority; external Platform service not executed"
+      ],
+      "negative_hypotheses": [
+        "Transport parsing or HTTP refusal does not independently authorize a gameplay effect or prove its absence.",
+        "Actual current Store callers fix quantity1 and enforce one-effect delivery.",
+        "Scope/restore reporting leaves committed Game authority standing.",
+        "T94 early validation refusal retains at most a finite10s lease; current send requires>=6s."
+      ],
+      "findings": [
+        "CL-017 DUPLICATE_CORROBORATION of prior SEC-003 P2; no new confirmed finding or count."
+      ],
+      "remaining_files": [],
+      "verification": "Complete81files/21163lines; all source tests read. 267 read-only JSON/schema/inter-fixture checks PASS. Exact base/hash/ranges PASS. No Cargo/native/TLS/SQL/filesystem test execution; not independently VERIFIED.",
+      "auditor": "client-support",
+      "report": "native-admission-source.md"
+    },
+    {
       "module": "oteryn-foundation",
       "status": "REVIEWED",
       "auditor": "prior independently reviewed checkpoint",
