@@ -366,9 +366,9 @@ impl CurrentMonsterMap<'_, '_> {
         &mut self,
         queue: Arc<SourceCreatureStepQueue>,
         reset_epoch: u64,
-    ) -> Result<(), ()> {
+    ) -> Result<(), CarrierError> {
         if !self.view.tiles.is_empty() || self.view.source_steps.binding.is_some() {
-            return Err(());
+            return Err(CarrierError::PlanConflict);
         }
         self.view.source_steps.binding = Some((queue, reset_epoch));
         Ok(())
@@ -380,9 +380,9 @@ impl CurrentMonsterMap<'_, '_> {
     pub fn link_source_ground_steps_to_pass<P: std::any::Any + Send + Sync>(
         &mut self,
         parent: &Arc<P>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), CarrierError> {
         if self.view.source_steps.binding.is_none() {
-            return Err(());
+            return Err(CarrierError::PlanConflict);
         }
         let identity: SourceCreatureStepParent = parent.clone();
         if self
@@ -392,7 +392,7 @@ impl CurrentMonsterMap<'_, '_> {
             .as_ref()
             .is_some_and(|old| !Arc::ptr_eq(old, &identity))
         {
-            return Err(());
+            return Err(CarrierError::PlanConflict);
         }
         self.view.source_steps.parent = Some(identity);
         Ok(())
