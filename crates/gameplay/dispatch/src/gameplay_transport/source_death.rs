@@ -9,6 +9,7 @@ use super::*;
 use crate::movement::monster_map::CurrentMonsterMap;
 
 mod heart;
+mod rotten;
 mod soul_war;
 mod uncredited;
 pub(super) use soul_war::SoulWarAction;
@@ -88,12 +89,16 @@ pub(super) struct PreparedSourceDeathAction {
     heart: Option<heart::HeartAction>,
     soul_war: Option<SoulWarAction>,
     megalomania: Option<MegalomaniaDeath>,
+    rotten: Option<rotten::RottenDeathAction>,
 }
 impl PreparedSourceDeathAction {
+    #[allow(clippy::too_many_arguments)]
     fn capture(
         owner: &ComposedFreshAdmission<'_, '_, '_>,
         runtime: &mut ChannelRuntimeV1,
+        states: &actor_spell::ChannelSpellStates,
         attack: &attack::ChannelAttackStates,
+        native: &crate::content::native_gameplay::NativeGameplayState,
         begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
         now_us: u64,
     ) -> Result<Self, ()> {
@@ -108,6 +113,7 @@ impl PreparedSourceDeathAction {
         };
         let soul_war = SoulWarAction::capture(runtime, attack, begin, index, now_us)?;
         let megalomania = MegalomaniaDeath::capture(runtime, begin, &begin.events()[index])?;
+        let rotten = rotten::RottenDeathAction::capture(runtime, states, native, begin, index)?;
         Ok(Self {
             begin: begin.clone(),
             index,
@@ -115,6 +121,7 @@ impl PreparedSourceDeathAction {
             heart,
             soul_war,
             megalomania,
+            rotten,
         })
     }
     pub(super) fn begin(
@@ -341,6 +348,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             soul_war.execute(self, permit).await.is_ok()
         } else if let Some(megalomania) = &action.megalomania {
             megalomania.execute(self, permit, &action).await.is_ok()
+        } else if let Some(rotten) = &action.rotten {
+            rotten.execute(self, &action).await.is_ok()
         } else {
             matches!(
                 callbacks
@@ -371,6 +380,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 !soul_war.current_for(&runtime)
             } else if let Some(megalomania) = &action.megalomania {
                 !megalomania.completed(&states, &runtime, &action)
+            } else if let Some(rotten) = &action.rotten {
+                rotten.publish(&runtime, &mut states).is_err()
             } else {
                 !matches!(
                     callbacks.publish_source_death_action(&mut runtime, &action),
@@ -461,11 +472,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(());
                 }
             } else {
-                let action =
-                    PreparedSourceDeathAction::capture(self, runtime, attack, &begin, now)?;
-                if action.heart.is_some() && !begin.has_reward_damage_credit() {
+                let action = PreparedSourceDeathAction::capture(
+                    self, runtime, states, attack, native, &begin, now,
+                )?;
+                if (action.heart.is_some() || action.rotten.is_some())
+                    && !begin.has_reward_damage_credit()
+                {
                     // Keep the projected death and its per-player occurrences through
-                    // asynchronous Heart effects, before any durable side effect runs.
+                    // asynchronous copied effects, before any durable side effect runs.
                     PendingSourceCorpse::request(native, &begin)?;
                     runtime
                         .pin_uncredited_source_corpse_projection(&begin)
@@ -494,6 +508,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let prepared = if action.heart.is_some()
                     || action.soul_war.is_some()
                     || action.megalomania.is_some()
+                    || action.rotten.is_some()
                 {
                     true
                 } else {
@@ -550,15 +565,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(());
             }
             let request = PendingSourceCorpse::request(native, &begin)?;
+            let rotten_loot = states
+                .rotten_blood_callbacks
+                .pending_bakragore_death_loot(&begin)?;
+            if (begin.definition_key() == "oteryn:creature.bakragore") != rotten_loot.is_some()
+                || rotten_loot
+                    .as_ref()
+                    .is_some_and(|source| !source.matches_source(&begin))
+            {
+                return Err(());
+            }
             runtime
                 .pin_uncredited_source_corpse_projection(&begin)
                 .map_err(|_| ())?;
             let completed = runtime
                 .finish_source_creature_death_task(&begin)
                 .map_err(|_| ())?;
-            states.source_death_corpse = Some(std::sync::Arc::new(tokio::sync::Mutex::new(
-                PendingSourceCorpse::new(completed, request),
-            )));
+            let mut pending = PendingSourceCorpse::new(completed, request);
+            if let Some(source) = rotten_loot {
+                pending = pending.with_rotten_loot(source);
+            }
+            states.source_death_corpse =
+                Some(std::sync::Arc::new(tokio::sync::Mutex::new(pending)));
+            states
+                .rotten_blood_callbacks
+                .clear_bakragore_death_loot(&begin)?;
             return Ok(true);
         }
         let completed = runtime

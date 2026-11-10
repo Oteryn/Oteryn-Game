@@ -70,6 +70,26 @@ enum Extra {
     PortalStep,
     Footprints,
     DueBeforeDeath,
+    CopiedDeath { credited: bool, prepared_bak: bool },
+}
+pub(super) fn copied_death(
+    kind: PinnedActivitySourceRoom,
+    origin: MovementLocalPosition,
+    boss: &'static str,
+    credited: bool,
+    prepared_bak: bool,
+) -> TestResult {
+    scenario_with_step(
+        kind,
+        origin,
+        boss,
+        kind == PinnedActivitySourceRoom::Bakragore,
+        false,
+        Extra::CopiedDeath {
+            credited,
+            prepared_bak,
+        },
+    )
 }
 pub(super) fn footprints(
     kind: PinnedActivitySourceRoom,
@@ -208,6 +228,22 @@ fn scenario_with_step(
                     .await?;
             let evidence = super::house_transfer::RecoverySource::start(&h).await?;
             super::house_transfer::prepare_owned_session(&h).await?;
+            let prepared_bak = matches!(
+                extra,
+                Extra::CopiedDeath {
+                    prepared_bak: true,
+                    ..
+                }
+            );
+            if prepared_bak {
+                assert!(final_boss);
+                super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+                // The established defensive historical fixture supplies one
+                // original public flavor before any fresh authority. The real
+                // FIRST Think below alone captures the live88888 value.
+                super::srx3_rotten_preparation::seed_historical_defensive_global_phase(&h, &deps)
+                    .await?;
+            }
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -217,7 +253,9 @@ fn scenario_with_step(
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, kind)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            if !prepared_bak {
+                super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            }
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
@@ -406,8 +444,43 @@ fn scenario_with_step(
             view.drain_monster_melee().await;
             if final_boss {
                 view.drain_bak_first_think_claims().await;
-                super::srx3_rotten_bak_claim::assert_mask(&h, instance, 1).await?;
+                if prepared_bak {
+                    let RuntimeScopeRefV1::Instance { instance_id, .. } = instance else {
+                        return Err("prepared source Bakragore must enter an Instance".into());
+                    };
+                    let masks: Vec<i16> = sqlx::query_scalar(
+                        "SELECT p.essence_mask FROM game_rotten_bak_phase_preparations p \
+                         JOIN game_activity_handoff_groups g USING(handoff_id) \
+                         WHERE g.instance_id=encode($1,'hex')::uuid",
+                    )
+                    .bind(instance_id.as_slice())
+                    .fetch_all(&h.pool)
+                    .await?;
+                    assert_eq!(
+                        masks,
+                        vec![1],
+                        "only actual FIRST Think captures the historical flavor"
+                    );
+                } else {
+                    super::srx3_rotten_bak_claim::assert_mask(&h, instance, 1).await?;
+                }
                 view.drain_monster_melee().await;
+            }
+            if let Extra::CopiedDeath { credited, .. } = extra {
+                drop(view);
+                super::srx3_rotten_death::exercise(
+                    &h,
+                    &owner,
+                    &admitted,
+                    boss,
+                    credited,
+                    u8::from(prepared_bak),
+                )
+                .await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
             }
             let runtime = view.runtime.lock().await;
             let creatures = runtime.visible_entities().creatures;

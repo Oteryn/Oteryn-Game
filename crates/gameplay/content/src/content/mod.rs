@@ -70,6 +70,7 @@ pub use native_creature_death_events::{QualifiedNativeDeathEvent, QualifiedNativ
 pub mod native_monster_callbacks;
 pub mod native_omrafir;
 pub mod native_rotten_blood_callbacks;
+mod native_rotten_death_events;
 pub mod native_soul_war;
 pub mod native_soul_war_callbacks;
 mod native_soul_war_death_events;

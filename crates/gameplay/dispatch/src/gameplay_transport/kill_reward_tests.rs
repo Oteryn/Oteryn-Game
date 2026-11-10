@@ -145,6 +145,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         // W06 callbacks are absent for this ordinary-kill fixture.
         echo: None,
         callback_loot: Vec::new(),
+        source_callback_loot: None,
         task_board_recipients: Arc::default(),
         talisman: Arc::default(),
         boss_reward: None,

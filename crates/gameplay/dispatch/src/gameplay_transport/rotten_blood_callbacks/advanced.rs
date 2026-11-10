@@ -251,16 +251,38 @@ impl AdvancedCallbacks {
             )
             .min()
     }
-    // PARTIAL: feeds the source-fenced death getter, not an invented count.
-    #[allow(
-        dead_code,
-        reason = "PARTIAL Rotten Blood: captured Bakragore death-loot count consumer is pending"
-    )]
-    pub(super) fn actual_bakragore_essence_count(&self, target: ExactActorRef) -> Option<u8> {
-        self.bosses
+    pub(super) fn actual_bakragore_essence_count(&self, target: ExactActorRef) -> Result<u8, ()> {
+        if self
+            .first_think
+            .as_ref()
+            .is_some_and(|pending| pending.occurrence.actor == target)
+        {
+            return Err(());
+        }
+        let Some(boss) = self
+            .bosses
             .iter()
             .find(|boss| boss.actor == target && boss.key == bak::BAKRAGORE_KEY)
-            .and_then(|boss| boss.essence_count)
+        else {
+            // No source FIRST Think ran: storage88888 is still unset. Entry or
+            // a later global flame read must not invent a count for this death.
+            return Ok(0);
+        };
+        boss.essence_count.filter(|count| *count <= 4).ok_or(())
+    }
+
+    pub(super) fn reset_mechanics_death_flags(&mut self, key: &str) -> Result<(), ()> {
+        if !matches!(
+            key,
+            vem::VEMIATH_KEY | chag::CHAGORZ_KEY | bak::BAKRAGORE_KEY
+        ) {
+            return Err(());
+        }
+        // The source resets both named pause flags. Its GlobalRottenBloodStates
+        // cleanup is distinct from each monster file's local bossStates timer:
+        // preserve the local90s cycle, physical portals and retained callback tails.
+        massive::set_paused(self, center(key), false);
+        Ok(())
     }
     #[cfg(test)]
     pub(super) fn agony_commit(&self, actor: ExactActorRef) -> Option<AgonyCommit> {

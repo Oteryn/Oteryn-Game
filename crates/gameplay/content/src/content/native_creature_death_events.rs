@@ -130,6 +130,9 @@ pub(crate) fn death_event_policies(
     candidates.extend(super::native_soul_war_death_events::death_event_policies(
         document, digest,
     ));
+    candidates.extend(super::native_rotten_death_events::death_event_policies(
+        document, digest,
+    ));
     candidates.sort_by(|a, b| {
         (&a.creature().key, &a.creature().revision)
             .cmp(&(&b.creature().key, &b.creature().revision))
@@ -156,6 +159,7 @@ pub(crate) fn death_event_policies(
 pub fn requires_native_death_events(key: &str) -> bool {
     super::native_w01_death_events::requires_native_death_events(key)
         || super::native_soul_war_death_events::requires_native_death_events(key)
+        || super::native_rotten_death_events::requires_native_death_events(key)
 }
 impl NativeGameplayState {
     pub fn native_death_events(

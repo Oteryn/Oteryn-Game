@@ -99,6 +99,33 @@ impl SourceCreatureDeathSeal {
             "oteryn:creature.poor_soul" if self.events().is_empty() => {
                 Some("oteryn:item.tibia.i33891")
             }
+            "oteryn:creature.murcion" if self.events().is_empty() => {
+                Some("oteryn:item.tibia.i44015")
+            }
+            "oteryn:creature.ichgahal" if self.events().is_empty() => {
+                Some("oteryn:item.tibia.i44018")
+            }
+            "oteryn:creature.vemiath"
+                if self.events().len() == 1
+                    && self.events()[0].registration_index() == 1
+                    && self.events()[0].name() == "VemiathMechanicsDeath" =>
+            {
+                Some("oteryn:item.tibia.i44021")
+            }
+            "oteryn:creature.chagorz"
+                if self.events().len() == 1
+                    && self.events()[0].registration_index() == 1
+                    && self.events()[0].name() == "ChagorzMechanicsDeath" =>
+            {
+                Some("oteryn:item.tibia.i44024")
+            }
+            "oteryn:creature.bakragore"
+                if self.events().len() == 1
+                    && self.events()[0].registration_index() == 1
+                    && self.events()[0].name() == "BakragoreMechanicsDeath" =>
+            {
+                Some("oteryn:item.tibia.i44012")
+            }
             _ => None,
         }
     }

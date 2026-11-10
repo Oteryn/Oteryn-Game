@@ -1,8 +1,8 @@
 //! Retain the canonical completion through the existing fenced empty-corpse writer.
 use super::*;
 use crate::durability::item_mint::{
-    CORPSE_MATERIALIZATION_PURPOSE_KEY, CommittedItemMint, GroundPlacement, ItemMintCandidate,
-    ItemMintCause, ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
+    BakragoreDeathLoot, CORPSE_MATERIALIZATION_PURPOSE_KEY, CommittedItemMint, GroundPlacement,
+    ItemMintCandidate, ItemMintCause, ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
 };
 use oteryn_gameplay_entities::carrier::native_source_death::{
     SourceCreatureDeathCompletion, SourceCreatureDeathSeal,
@@ -14,6 +14,8 @@ pub(in crate::gameplay_transport) struct PendingSourceCorpse {
     request: ItemMintRequest,
     candidate: Option<ItemMintCandidate>,
     committed: Option<CommittedItemMint>,
+    rotten_loot: Option<BakragoreDeathLoot>,
+    children: Vec<ItemMintCandidate>,
 }
 
 impl PendingSourceCorpse {
@@ -82,7 +84,17 @@ impl PendingSourceCorpse {
             request,
             candidate: None,
             committed: None,
+            rotten_loot: None,
+            children: Vec::new(),
         }
+    }
+
+    // This private step attaches retained data after the canonical completion. The physical
+    // SourceCorpseMintProof::freeze independently validates it against that completion and the
+    // exact native item requests before SQL, so attachment must not discard the completion.
+    pub(super) fn with_rotten_loot(mut self, source: BakragoreDeathLoot) -> Self {
+        self.rotten_loot = Some(source);
+        self
     }
 }
 
@@ -131,25 +143,79 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             pending.candidate = Some(candidate);
         }
         if pending.committed.is_none() {
+            if pending.children.is_empty()
+                && let Some(source) = &pending.rotten_loot
+            {
+                let Some(corpse) = pending.candidate.as_ref() else {
+                    return true;
+                };
+                let Ok(request) =
+                    source.uncredited_child_request(native, &pending.completed, corpse)
+                else {
+                    return true;
+                };
+                if let Some(request) = request {
+                    let Ok(child) = self
+                        .root
+                        .freeze_kill_loot_entry(self.character, self.holder, request)
+                        .await
+                    else {
+                        return true;
+                    };
+                    pending.children.push(child);
+                }
+            }
             let PendingSourceCorpse {
                 completed,
                 candidate,
+                rotten_loot,
+                children,
                 ..
             } = &mut *pending;
             let Some(candidate) = candidate.as_mut() else {
                 return true;
             };
-            let outcome = self
-                .root
-                .commit_uncredited_source_corpse_mint(
-                    permit,
-                    self.character,
-                    self.holder,
-                    native,
-                    completed,
-                    candidate,
-                )
-                .await;
+            let outcome = if let Some(source) = rotten_loot {
+                let outcomes = self
+                    .root
+                    .commit_uncredited_bakragore_corpse_loot(
+                        permit,
+                        self.character,
+                        self.holder,
+                        native,
+                        completed,
+                        source,
+                        candidate,
+                        children,
+                    )
+                    .await;
+                let Ok(outcomes) = outcomes else { return true };
+                if outcomes.len() != children.len() + 1
+                    || outcomes.iter().any(|outcome| {
+                        !matches!(
+                            outcome,
+                            ItemMintOutcome::Committed(_) | ItemMintOutcome::AlreadyCommitted(_)
+                        )
+                    })
+                {
+                    return true;
+                }
+                outcomes
+                    .into_iter()
+                    .next()
+                    .ok_or(crate::durability::item_mint::ItemMintError::InvalidInput)
+            } else {
+                self.root
+                    .commit_uncredited_source_corpse_mint(
+                        permit,
+                        self.character,
+                        self.holder,
+                        native,
+                        completed,
+                        candidate,
+                    )
+                    .await
+            };
             let Ok(
                 ItemMintOutcome::Committed(committed)
                 | ItemMintOutcome::AlreadyCommitted(committed),

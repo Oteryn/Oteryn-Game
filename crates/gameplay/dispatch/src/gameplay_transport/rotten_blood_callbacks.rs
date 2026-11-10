@@ -247,6 +247,7 @@ pub(super) struct RottenBloodCallbacks {
     pending_due: Option<u64>,
     current_taints: Vec<crate::durability::quest_state::rotten_blood::CurrentRottenBloodTaintFacts>,
     prepared_bak: Option<crate::durability::quest_state::rotten_flame::PreparedBakEssences>,
+    source_loot: Option<crate::durability::item_mint::BakragoreDeathLoot>,
     read_stamp: Option<crate::foundation::RuntimeWorkStamp>,
     read_context: Option<ReadContext>,
 }
@@ -345,33 +346,107 @@ impl RottenBloodCallbacks {
             .agony_commit(actor)
             .map(|commit| (commit.before, commit.after, commit.amount))
     }
-    // PARTIAL: the copied Bakragore death/loot handler will consume this
-    // current-owner count; a test-only gate would hide the missing live caller.
-    #[allow(
-        dead_code,
-        reason = "PARTIAL Rotten Blood: copied Bakragore death-loot consumer is pending"
-    )]
-    pub(super) fn actual_bakragore_essence_count_at_death(
+    fn accepts_source_death(
         &self,
         runtime: &ChannelRuntimeV1,
-        target: ExactActorRef,
-    ) -> Option<u8> {
-        if self.read_context != Some(context(runtime))
-            || runtime.owner_fence().is_err()
-            || !runtime
-                .companion_snapshot_including_dead(target)
-                .is_ok_and(|s| {
-                    s.health == 0
-                        && s.state.master.is_none()
-                        && s.state.policy.definition_key == "oteryn:creature.bakragore"
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> bool {
+        let Ok(owner) = runtime.owner_fence() else {
+            return false;
+        };
+        begin.current_for(runtime)
+            && self
+                .read_context
+                .is_none_or(|previous| previous == context(runtime))
+            && self
+                .read_stamp
+                .is_none_or(|stamp| owner.accepts_stamp(stamp))
+            && runtime.source_creature_is_registered(begin.actor()) == Ok(true)
+            && runtime
+                .companion_snapshot_including_dead(begin.actor())
+                .is_ok_and(|snapshot| {
+                    snapshot.health == 0
+                        && snapshot.state.master.is_none()
+                        && snapshot.state.policy.definition_key == begin.definition_key()
+                        && snapshot.state.policy.definition_revision == begin.definition_revision()
                 })
-            || runtime.native_summon_master(target).is_some()
+            && runtime.native_summon_master(begin.actor()).is_none()
+    }
+
+    pub(super) fn capture_bakragore_death_essences(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<u8, ()> {
+        if begin.definition_key() != "oteryn:creature.bakragore"
+            || !self.accepts_source_death(runtime, begin)
         {
-            return None;
+            return Err(());
+        }
+        self.advanced.actual_bakragore_essence_count(begin.actor())
+    }
+
+    pub(super) fn retain_bakragore_death_loot(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        native: &NativeGameplayState,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+        loot: &crate::durability::item_mint::BakragoreDeathLoot,
+    ) -> Result<(), ()> {
+        if begin.has_reward_damage_credit()
+            || !self.accepts_source_death(runtime, begin)
+            || !loot.matches_source(begin)
+            || !loot.current_for(runtime, native)
+            || self
+                .source_loot
+                .as_ref()
+                .is_some_and(|retained| retained != loot)
+        {
+            return Err(());
+        }
+        self.source_loot = Some(loot.clone());
+        Ok(())
+    }
+
+    pub(super) fn pending_bakragore_death_loot(
+        &self,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<Option<crate::durability::item_mint::BakragoreDeathLoot>, ()> {
+        if self
+            .source_loot
+            .as_ref()
+            .is_some_and(|retained| !retained.matches_source(begin))
+        {
+            return Err(());
+        }
+        Ok(self.source_loot.clone())
+    }
+
+    pub(super) fn clear_bakragore_death_loot(
+        &mut self,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<(), ()> {
+        if self
+            .source_loot
+            .as_ref()
+            .is_some_and(|retained| !retained.matches_source(begin))
+        {
+            return Err(());
+        }
+        self.source_loot = None;
+        Ok(())
+    }
+
+    pub(super) fn publish_mechanics_death(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<(), ()> {
+        if !self.accepts_source_death(runtime, begin) {
+            return Err(());
         }
         self.advanced
-            .actual_bakragore_essence_count(target)
-            .filter(|n| *n <= 4)
+            .reset_mechanics_death_flags(begin.definition_key())
     }
     pub(super) fn next_due_time(&self) -> Option<u64> {
         self.pending_due

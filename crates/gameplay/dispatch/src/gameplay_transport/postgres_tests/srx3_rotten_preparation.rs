@@ -330,7 +330,7 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
 /// historical global1/unlit state models a source activation whose public visual
 /// has not been published. Its unrelated historical Character has no live actor.
 /// All current USE/flag/burn/feedback work below still uses the real owners.
-async fn seed_historical_defensive_global_phase(
+pub(super) async fn seed_historical_defensive_global_phase(
     h: &Harness,
     deps: &super::Dependencies,
 ) -> TestResult {
