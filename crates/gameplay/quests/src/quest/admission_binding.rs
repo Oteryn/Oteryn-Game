@@ -85,6 +85,9 @@ fn registry() -> Result<&'static Registry, String> {
             for rule in super::source_deaths::rules().map_err(str::to_owned)? {
                 add(rule.transition()?, false, false)?;
             }
+            // Kesar's real final report shares the mission track protected by
+            // Fugue's native kill. Only its complete gated operation may finish it.
+            add(super::hero_of_bounac::transition(), false, true)?;
             add(super::arena_completion::transition()?, false, true)?;
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
@@ -182,6 +185,37 @@ pub fn validate_for_catalogue(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn kesar_final_report_keeps_exact_gate_and_rejects_stripped_aliases() -> Result<(), String> {
+        let source = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let original = source
+            .catalogue()
+            .transition(super::super::hero_of_bounac::COMPLETE)
+            .ok_or("canonical Kesar final report")?;
+        assert_eq!(original, &super::super::hero_of_bounac::transition());
+        validate_for_catalogue(source.catalogue(), original, false)?;
+
+        let mut changed = original.clone();
+        changed.effects[0].from = super::super::QuestComparison::Any;
+        assert!(validate(&changed, false).is_err());
+        let mut changed = original.clone();
+        changed.effects[0].effect = QuestEffectKind::Set(6);
+        assert!(validate(&changed, false).is_err());
+        let mut changed = original.clone();
+        changed.completes = false;
+        assert!(validate(&changed, false).is_err());
+        let mut changed = original.clone();
+        changed.key.push_str("-alias");
+        assert!(validate(&changed, false).is_err());
+        changed.effects.remove(0);
+        assert!(
+            validate(&changed, false).is_err(),
+            "stripping the mission gate cannot open Augustin's door"
+        );
+        Ok(())
+    }
 
     #[test]
     fn specialized_altar_owner_preserves_the_registered_increment() -> Result<(), String> {

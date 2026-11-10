@@ -128,9 +128,14 @@ pub(super) fn prepare(
                 if selected.next().is_some() {
                     return None;
                 }
-                if !meets_level(callback.minimum_level) {
-                    return refusal(&callback.failure_reply);
+                if !meets_level(callback.minimum_level)
+                    && let Some(choice) = refusal(&callback.failure_reply)
+                {
+                    return Some(choice);
                 }
+                // Without a source refusal line, keep the exact selected
+                // transition: its locked owner must reject the level gate.
+                // Falling through would return the ordinary dialogue's Ok.
                 failure_reply = callback.failure_reply.clone();
                 return Some(Choice {
                     transition: Some(callback.key.clone()),

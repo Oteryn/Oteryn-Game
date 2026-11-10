@@ -468,7 +468,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         ),
     };
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "m35_claim_sets", false, false).await?;
+        let h = Harness::create_with_admission_seed(admin, "m35_claim_sets", true, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -541,11 +541,28 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             &|_| true,
         )?;
         for claim in &bound.served {
+            let mint_transition =
+                oteryn_gameplay_quests::quest::completion_sets::mint_transition_for_claim(
+                    claim.key.as_str(),
+                )?;
+            if mint_transition.is_some() {
+                assert!(
+                    claim
+                        .placements
+                        .iter()
+                        .all(|p| p.placement.quest_transition.is_none()),
+                    "mint-only claims must retain their receipt-bound completion owner"
+                );
+            }
             assert!(
-                claim
-                    .placements
-                    .iter()
-                    .all(|p| p.placement.quest_transition.is_some() != access_key),
+                claim.placements.iter().all(|p| {
+                    p.placement
+                        .quest_transition
+                        .as_deref()
+                        .or(mint_transition)
+                        .is_some()
+                        != access_key
+                }),
                 "source chest must bind a claim-set transition"
             );
         }
@@ -590,6 +607,21 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             y: i32::from(chest.1),
             floor: -i16::from(chest.2),
         };
+        deps.combat_room = Some(
+            activated
+                .qualified_room()
+                .bundle_view(
+                    cells.clone(),
+                    activated.frame_binding().digest(),
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor,
+                    },
+                )
+                .ok_or("qualified claim-set Bundle room")?,
+        );
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -633,6 +665,36 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 .await?
                 .0;
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or("fence")?;
+        if matches!(case, Case::Draconia | Case::BlackKnight) {
+            let minimum = catalogue
+                .as_ref()
+                .and_then(|catalogue| catalogue.authored_bindings())
+                .and_then(|bindings| {
+                    bindings
+                        .quests
+                        .iter()
+                        .find(|binding| binding.quest == quest)
+                })
+                .and_then(|binding| binding.admission.as_ref())
+                .ok_or("canonical claim-set level admission")?
+                .minimum_level;
+            assert_eq!(
+                minimum,
+                if matches!(case, Case::Draconia) {
+                    25
+                } else {
+                    50
+                }
+            );
+            let progression = h
+                .root
+                .read_character_progression(&authority, fence.character_id)
+                .await
+                .map_err(debug)?
+                .ok_or("claim-set fixture progression")?;
+            assert_eq!(progression.level, 50);
+            assert!(progression.level >= minimum);
+        }
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
@@ -778,13 +840,34 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             .await?;
             let claims = if wine { 1 } else { index as i64 + 1 };
             let quest_claims = if access_key { 0 } else { claims };
-            assert_eq!(counts, (claims, quest_claims, quest_claims, 0));
+            let quest_receipts = if access_key { 1 } else { quest_claims };
+            assert_eq!(counts, (claims, quest_receipts, quest_claims, 0));
             let snapshot = h
                 .root
                 .read_character_quest_state(&authority, fence.character_id)
                 .await
                 .map_err(debug)?;
             if access_key {
+                let collection_key = "oteryn:quest-collection/m01c-fanfare-key";
+                let collection = catalogue
+                    .as_ref()
+                    .and_then(|catalogue| catalogue.transition(collection_key))
+                    .ok_or("canonical Fanfare key collection")?;
+                assert_eq!(collection.quest, quest);
+                assert!(!collection.completes);
+                let receipts: Vec<(String, bool)> = sqlx::query_as(
+                    "SELECT transition_key,completes FROM game_character_quest_receipts",
+                )
+                .fetch_all(&h.pool)
+                .await?;
+                assert_eq!(receipts, vec![(collection_key.into(), false)]);
+                assert_eq!(
+                    snapshot
+                        .tracks()
+                        .get("oteryn:quest-progress/m01c-fanfare-route"),
+                    Some(&1),
+                    "the access key records only its canonical noncompletion stage"
+                );
                 let keys: Vec<(i32, i64, bool)> = sqlx::query_as(
                     "SELECT k.key_number,i.quantity,k.minted_transaction_id=r.transaction_id \
                      FROM game_item_keys k JOIN game_item_instances i USING(item_instance_id) \

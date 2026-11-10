@@ -359,16 +359,16 @@ pub(super) async fn queued_deaths(
     admitted: &AdmittedSession,
     creature: &str,
     commands: &[u64],
-) -> TestResult {
+) -> TestResult<Vec<crate::foundation::ExactActorRef>> {
     use crate::gameplay_transport::kill_reward::DrainOutcome;
-    capture_deaths(owner, admitted, creature, commands).await?;
+    let targets = capture_deaths(owner, admitted, creature, commands).await?;
     for _ in 0..2 {
         assert_eq!(
             owner.drain_kill_rewards(admitted.game_session_id).await,
             DrainOutcome::Drained
         );
     }
-    Ok(())
+    Ok(targets)
 }
 
 pub(super) async fn capture_deaths(
@@ -376,7 +376,7 @@ pub(super) async fn capture_deaths(
     admitted: &AdmittedSession,
     creature: &str,
     commands: &[u64],
-) -> TestResult {
+) -> TestResult<Vec<crate::foundation::ExactActorRef>> {
     use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
     use crate::gameplay_transport::kill_reward::KillSink;
     let actor = admitted.runtime_actor.ok_or("actor")?;
@@ -390,6 +390,7 @@ pub(super) async fn capture_deaths(
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
     let now = observed.get() / 1000;
+    let mut targets = Vec::with_capacity(commands.len());
     {
         let mut runtime = owner.runtime.lock().await;
         let at = runtime
@@ -448,7 +449,8 @@ pub(super) async fn capture_deaths(
                     Some(observed),
                 );
             }
+            targets.push(target);
         }
     }
-    Ok(())
+    Ok(targets)
 }

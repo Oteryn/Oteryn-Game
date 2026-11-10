@@ -106,7 +106,8 @@ fn scenario() -> Result<(), String> {
         (SoulpitStack::Strong, 2, BossAbility::Enrage, 100, 35),
         (SoulpitStack::Powerful, 3, BossAbility::Enrage, 100, 55),
         (SoulpitStack::Boss, 4, BossAbility::Enrage, 100, 105),
-        (SoulpitStack::Boss, 4, BossAbility::Overpower, 1, 157),
+        // Source Overpower adds 25% before the stack-40 attack multiplier: 25 * 525 / 100.
+        (SoulpitStack::Boss, 4, BossAbility::Overpower, 1, 131),
     ] {
         let pin = ChannelContentPin::from_activation(
             world,

@@ -476,6 +476,7 @@ fn scenario_case(
     run(async |admin| {
         let h = if qengine_reward
             || outfit_world
+            || name == "catalogue-npc"
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
@@ -766,30 +767,26 @@ fn scenario_case(
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
-        let frame_binding = if native_crop {
+        let frame_binding = if native_crop || elemental_pin {
             world.frame_binding_digest(deps.admitted.world_id)
         } else {
             activated.frame_binding().digest()
         };
-        let bundle_room = if native_crop {
-            Some(
-                activated
-                    .qualified_room()
-                    .bundle_view(
-                        cells.clone(),
-                        frame_binding,
-                        world.map_revision_digest(),
-                        crate::content::NativeEntryStart {
-                            x: i32::from(start.x),
-                            y: i32::from(start.y),
-                            floor: -i16::from(trigger.floor),
-                        },
-                    )
-                    .ok_or("qualified native Bundle room")?,
-            )
-        } else {
-            None
-        };
+        let bundle_room = Some(
+            activated
+                .qualified_room()
+                .bundle_view(
+                    cells.clone(),
+                    frame_binding,
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: i32::from(start.x),
+                        y: i32::from(start.y),
+                        floor: -i16::from(trigger.floor),
+                    },
+                )
+                .ok_or("qualified native Bundle room")?,
+        );
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -910,7 +907,8 @@ fn scenario_case(
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
         if let Some(room) = bundle_room.as_ref() {
-            owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(room), Some(room));
+            owner.rooms =
+                crate::gameplay_transport::SeamRooms::new(native_crop.then_some(room), Some(room));
         }
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -1000,9 +998,14 @@ fn scenario_case(
         admitted.item_fence = Some(fence.item_fence());
         sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+        let activation_frame_binding = if elemental_pin {
+            activated.frame_binding().digest()
+        } else {
+            frame_binding
+        };
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
-            .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_binding.as_slice()).execute(&h.pool).await?;
+            .bind(generation.identity().client_artifact_digest().as_slice()).bind(activation_frame_binding.as_slice()).execute(&h.pool).await?;
         let fresh = super::super::fresh_fixture::fresh::Source::new(0)?.request()?;
         h.root
             .initialize_admission_equipment(

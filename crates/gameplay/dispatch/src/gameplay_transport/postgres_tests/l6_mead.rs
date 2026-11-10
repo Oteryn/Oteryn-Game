@@ -10,7 +10,6 @@ use oteryn_gameplay_quests::quest::{
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 const NAME: &str = "l6/waterskin-of-mead";
-const SEED: &str = "oteryn:quest-transition/fixture-mead-mission-accepted";
 #[test]
 fn l6_mead_native_barrel_requires_mission_and_mints_complete_filled_bag() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -70,8 +69,8 @@ pub(super) fn world(
         },
     )
 }
-/// Arrange only the external accepted-mission state through the real typed writer.
-/// The test catalogue retains the production callback and all of its exact gates.
+/// Retain the production callback and all of its exact gates. The external
+/// accepted-mission prerequisite is arranged separately as historical fixture data.
 pub(super) fn catalogue(
     original: &quest::QuestStateCatalogue,
     callback: &Callback,
@@ -81,23 +80,6 @@ pub(super) fn catalogue(
         .iter()
         .map(|s| original.track(&s.track).cloned().ok_or("Mead track"))
         .collect::<Result<Vec<_>, _>>()?;
-    let seed = quest::QuestTransition {
-        world_change: None,
-        key: SEED.into(),
-        quest: callback.quest.clone(),
-        effects: callback
-            .storage
-            .iter()
-            .filter(|s| s.preserve)
-            .map(|s| quest::QuestEffect {
-                track: s.track.clone(),
-                from: quest::QuestComparison::Any,
-                effect: quest::QuestEffectKind::Set(s.maximum),
-            })
-            .collect(),
-        completes: false,
-        experience: None,
-    };
     quest::QuestStateCatalogue::new(
         original.content_revision(),
         tracks,
@@ -106,7 +88,6 @@ pub(super) fn catalogue(
                 .transition(&callback.key)
                 .ok_or("Mead transition")?
                 .clone(),
-            seed,
             quest::world_callbacks::completion_transition(callback).ok_or("child completion")?,
         ],
     )
@@ -171,29 +152,14 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(before, 0);
-    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-    let outcome = slot
-        .commit_quest_transition(
-            owner.root,
-            owner.character,
-            owner.holder,
-            fence,
-            QuestTransitionRequest {
-                transition_key: SEED.into(),
-                cause: QuestCause::Command(CommandRef::new(
-                    admitted.game_session_id,
-                    CommandId::new(900).map_err(debug)?,
-                )),
-            },
-            owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone(),
-        )
-        .await
-        .map_err(debug)?;
-    assert!(
-        matches!(outcome, QuestTransitionOutcome::Committed(_)),
-        "mission arrangement: {outcome:?}"
-    );
-    drop(slot);
+    let prerequisites = callback
+        .storage
+        .iter()
+        .filter(|s| s.preserve)
+        .map(|s| (s.track.clone(), s.maximum))
+        .collect::<Vec<_>>();
+    super::qengine_outfit_stories::seed_quest_prerequisites(h, owner, admitted, &prerequisites, 92)
+        .await?;
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(1))
@@ -372,7 +338,6 @@ pub(super) async fn exercise(
                 .transition(&callback.key)
                 .ok_or("primary")?
                 .clone(),
-            catalogue.transition(SEED).ok_or("seed")?.clone(),
             alias,
         ],
     )
@@ -468,7 +433,6 @@ pub(super) async fn exercise(
                 .transition(&callback.key)
                 .ok_or("primary")?
                 .clone(),
-            catalogue.transition(SEED).ok_or("seed")?.clone(),
         ],
     )
     .map_err(debug)?;

@@ -901,29 +901,14 @@ pub(super) async fn move_loop_item_with_house_capacity(
         }
     };
     let touches_ground = pickup_cell.is_some() || matches!(destination, LoopDestination::Ground(_));
-    let mut loop_request = LoopMoveRequest {
+    // The current arrival owner observes native map coordinates. Preserve the
+    // projected source's exact custody bytes, including an unmoved native corpse.
+    let loop_request = LoopMoveRequest {
         item,
         count: request.count,
         pickup_cell,
         destination,
     };
-    let elemental_definition = ground
-        .as_ref()
-        .zip(index)
-        .and_then(|(ground, index)| elemental_arrival::normalize(&mut loop_request, ground, index));
-    let elemental =
-        if let (Some(definition), Some(index), LoopTarget::Ground(to), Some(map), Some(ground)) = (
-            elemental_definition.as_ref(),
-            index,
-            request.target,
-            admission.bundle_map(),
-            ground.as_ref(),
-        ) {
-            let mut runtime = admission.runtime.lock().await;
-            elemental_arrival::observe(&mut runtime, map, index, native, ground, to, definition)
-        } else {
-            None
-        };
     let command_ref = CommandRef::new(command.game_session_id, command_id);
     let seed_target = if seed_target.is_some() {
         match admission
@@ -1008,34 +993,6 @@ pub(super) async fn move_loop_item_with_house_capacity(
     };
     let committed = match seed_result {
         Ok(Some(result)) => Ok(result),
-        Ok(None) if elemental.is_some() => {
-            let Some(observed) = elemental else {
-                return refused(LoopMoveRefusal::Rejected);
-            };
-            let Ok(epoch) = admission.reset_epoch.try_into() else {
-                return refused(LoopMoveRefusal::Rejected);
-            };
-            admission
-                .root
-                .commit_item_loop_altar_arrival(
-                    &permit,
-                    admission.character,
-                    admission.holder,
-                    fence,
-                    command_ref,
-                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-                    loop_request,
-                    &observed.qualified,
-                    crate::durability::item_loop_move::AltarArrivalTarget::new(
-                        observed.plan.rule.key,
-                        observed.plan.entries,
-                        epoch,
-                    )
-                    .with_field_reads(observed.fields),
-                )
-                .await
-                .map(|outcome| outcome.map(|receipt| receipt.moved))
-        }
         Ok(None) if assembly_target.is_some() => {
             let Some(target) = assembly_target else {
                 return refused(LoopMoveRefusal::Rejected);
@@ -1078,9 +1035,6 @@ pub(super) async fn move_loop_item_with_house_capacity(
             .is_some_and(|map| dreamer_ring::publish(map, prepared))
     {
         return LoopMoveResult::Unknown;
-    }
-    if elemental_definition.is_some() && !matches!(committed, Ok(Err(_))) {
-        admission.realize_elemental_altar_bosses(&permit).await;
     }
     // Consequence metadata is returned only after the physical transaction commits.
     // Replay and ordinary drops carry none, so neither can repeat source presentation.

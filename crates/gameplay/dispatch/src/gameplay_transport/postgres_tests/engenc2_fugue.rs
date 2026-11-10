@@ -3,13 +3,12 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
-use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+use crate::durability::quest_state::{QuestCause, QuestTransitionRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition, NodeId};
 use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
-    loader::load_embedded_quest_state, source_deaths,
+    QuestComparison, loader::load_embedded_quest_state, source_deaths,
 };
 use std::sync::Arc;
 
@@ -25,7 +24,10 @@ fn scenario(name: &'static str, _creature: &'static str) -> TestResult {
     let started = std::time::Instant::now();
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         run(async |admin| {
-            let counter = oteryn_gameplay_quests::quest::native_kills::counter("oteryn:quest-transition/native-kills/fugue").ok_or("Fugue counter")?;
+            let counter = oteryn_gameplay_quests::quest::native_kills::counter(
+                "oteryn:quest-transition/native-kills/fugue",
+            )
+            .ok_or("Fugue counter")?;
             let mut rule: source_deaths::Rule = serde_json::from_value(serde_json::json!({
                 "creature": counter.creature, "transition": counter.transition, "room": null,
                 "define_transition": false, "effects": [
@@ -34,7 +36,8 @@ fn scenario(name: &'static str, _creature: &'static str) -> TestResult {
                 ]
             }))?;
             rule.quest = counter.quest.into();
-            let h = Harness::create_with_admission_seed(admin, "engenc2_fugue", false, false).await?;
+            let h =
+                Harness::create_with_admission_seed(admin, "engenc2_fugue", false, false).await?;
             let result = exercise(&h, &rule).await;
             let cleanup = h.cleanup().await;
             result?;
@@ -115,8 +118,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         .map_err(debug)?
         .catalogue()
         .clone();
-    // The fight starts at its source mission precondition. Seed that explicit
-    // fixture stage through the same fenced writer; never update tracks by SQL.
+    // The fight starts at its source mission precondition. Its protected tracks
+    // are historical fixture state, not authority for a generic quest command.
     let native_transition = catalogue
         .transition(&rule.transition)
         .cloned()
@@ -131,37 +134,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             seeds.push((effect.track.clone(), value));
         }
     }
-    seeds.push(("oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/fugue_spawned".into(), 1));
-    let seed_key = format!(
-        "oteryn:quest-transition/srvenc-fixture/seed-{}",
-        rule.creature.rsplit('.').next().ok_or("creature")?
-    );
-    let catalogue = if seeds.is_empty() {
-        Arc::new(catalogue)
-    } else {
-        let mut transitions = vec![native_transition];
-        transitions.push(QuestTransition {
-            key: seed_key.clone(),
-            quest: rule.quest.clone(),
-            effects: seeds
-                .iter()
-                .map(|(track, value)| QuestEffect {
-                    track: track.clone(),
-                    from: QuestComparison::Any,
-                    effect: QuestEffectKind::Set(*value),
-                })
-                .collect(),
-            completes: false,
-            experience: None,
-            world_change: None,
-        });
-        let tracks = rule
-            .effects
-            .iter()
-            .map(|e| catalogue.track(&e.track).cloned().ok_or("source track"))
-            .collect::<Result<Vec<_>, _>>()?;
-        Arc::new(QuestStateCatalogue::new("content-1", tracks, transitions).map_err(debug)?)
-    };
+    seeds.push((
+        "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/fugue_spawned"
+            .into(),
+        1,
+    ));
+    let catalogue = Arc::new(catalogue);
     owner.quest_catalogue = Some(Arc::clone(&catalogue));
     let mut admitted = deps.admitted;
     admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
@@ -207,45 +185,33 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     deps.initialize(&owner).await;
     let session = admitted.game_session_id;
     if !seeds.is_empty() {
+        super::qengine_outfit_stories::seed_quest_prerequisites(h, &owner, &admitted, &seeds, 91)
+            .await?;
+    }
+    // A client-style command cannot substitute for the captured native death.
+    {
         let fence = owner
             .current_quest_fence(session)
             .await
-            .map_err(|_| "fence")?
-            .ok_or("fence")?;
+            .map_err(|_| "negative fence")?
+            .ok_or("negative fence")?;
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        let outcome = slot
+        let generic = slot
             .commit_quest_transition(
                 owner.root,
                 owner.character,
                 owner.holder,
                 fence,
                 QuestTransitionRequest {
-                    transition_key: seed_key,
+                    transition_key: rule.transition.clone(),
                     cause: QuestCause::Command(CommandRef::new(
                         session,
-                        CommandId::new(1).map_err(debug)?,
+                        CommandId::new(2).map_err(debug)?,
                     )),
                 },
                 Arc::clone(&catalogue),
             )
-            .await
-            .map_err(debug)?;
-        assert!(
-            matches!(outcome, QuestTransitionOutcome::Committed(_)),
-            "seed: {outcome:?}"
-        );
-    }
-    // A client-style command cannot substitute for the captured native death.
-    {
-        let fence = owner.current_quest_fence(session).await.map_err(|_| "negative fence")?.ok_or("negative fence")?;
-        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        let generic = slot.commit_quest_transition(
-            owner.root, owner.character, owner.holder, fence,
-            QuestTransitionRequest {
-                transition_key: rule.transition.clone(),
-                cause: QuestCause::Command(CommandRef::new(session, CommandId::new(2).map_err(debug)?)),
-            }, Arc::clone(&catalogue),
-        ).await;
+            .await;
         assert!(matches!(generic, Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)), "generic Fugue close: {generic:?}");
     }
     owner.admit_quest_session(&admitted).await;
@@ -287,32 +253,99 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 .bound_attacker_lease(actor, session)
                 .map_err(debug)?;
             // The actual admitted native body heals through the shared physical owner.
-            runtime.borrow_exact_actor_commit_at(now).commit_damage_for_bound_attacker(
-                target, actor, CommandRef::new(session, CommandId::new(9).map_err(debug)?), 0,
-                crate::foundation::OwnerDamageCommand { target: rule.creature.as_bytes(), occurrence: session.as_bytes(), binding: b"fugue-before-heal", damage: 2000 },
-            ).map_err(debug)?;
-            let source = native.creature_profiles().records.iter().find(|row| row.profile.target.key == rule.creature).ok_or("Fugue native body")?;
-            let crate::content::ProjectV2AuthoringProfileData::Behavior(behavior) = &source.behavior.as_ref().ok_or("Fugue behavior")?.data else { return Err("Fugue behavior kind".into()); };
-            let placement = target.placement_identity().iter().map(|b| format!("{b:02x}")).collect::<String>();
-            let revisions = crate::ability::RevisionSet::new("ruleset-1", "content-1", "world-1", "definition-r1", "sim-1").map_err(debug)?;
+            runtime
+                .borrow_exact_actor_commit_at(now)
+                .commit_damage_for_bound_attacker(
+                    target,
+                    actor,
+                    CommandRef::new(session, CommandId::new(9).map_err(debug)?),
+                    0,
+                    crate::foundation::OwnerDamageCommand {
+                        target: rule.creature.as_bytes(),
+                        occurrence: session.as_bytes(),
+                        binding: b"fugue-before-heal",
+                        damage: 2000,
+                    },
+                )
+                .map_err(debug)?;
+            let source = native
+                .creature_profiles()
+                .records
+                .iter()
+                .find(|row| row.profile.target.key == rule.creature)
+                .ok_or("Fugue native body")?;
+            let crate::content::ProjectV2AuthoringProfileData::Behavior(behavior) =
+                &source.behavior.as_ref().ok_or("Fugue behavior")?.data
+            else {
+                return Err("Fugue behavior kind".into());
+            };
+            let placement = target
+                .placement_identity()
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect::<String>();
+            let revisions = crate::ability::RevisionSet::new(
+                "ruleset-1",
+                "content-1",
+                "world-1",
+                "definition-r1",
+                "sim-1",
+            )
+            .map_err(debug)?;
             let proposal = crate::creature_auto_attack::ProfileAbilityProposal {
-                issuer: target, target, ability: behavior.defenses[0].ability.clone(),
+                issuer: target,
+                target,
+                ability: behavior.defenses[0].ability.clone(),
                 list: crate::ai_think::profile_schedule::ScheduleList::Defence,
-                entry_index: 0, magnitude: None, range_tiles: 0,
-                occurrence: crate::ability::AbilityOccurrence::new(&format!("ai-profile:{placement}:5:defence:0"), revisions).map_err(debug)?,
-                intent: crate::ability::AiAbilityAdapter::normalize("fugue", &["fugue"]).map_err(debug)?,
+                entry_index: 0,
+                magnitude: None,
+                range_tiles: 0,
+                occurrence: crate::ability::AbilityOccurrence::new(
+                    &format!("ai-profile:{placement}:5:defence:0"),
+                    revisions,
+                )
+                .map_err(debug)?,
+                intent: crate::ability::AiAbilityAdapter::normalize("fugue", &["fugue"])
+                    .map_err(debug)?,
             };
             let mut heal_ledger = crate::foundation::CreatureSelfHealLedger::default();
-            let healed = crate::gameplay_transport::monster_profile_cycle::source_heals::apply(&mut runtime, &mut heal_ledger, native, &proposal).map_err(debug)?;
+            let healed = crate::gameplay_transport::monster_profile_cycle::source_heals::apply(
+                &mut runtime,
+                &mut heal_ledger,
+                native,
+                &proposal,
+            )
+            .map_err(debug)?;
             assert!(healed.applied);
             assert!((15200..=15650).contains(&healed.health_after));
-            let replay = crate::gameplay_transport::monster_profile_cycle::source_heals::apply(&mut runtime, &mut heal_ledger, native, &proposal).map_err(debug)?;
+            let replay = crate::gameplay_transport::monster_profile_cycle::source_heals::apply(
+                &mut runtime,
+                &mut heal_ledger,
+                native,
+                &proposal,
+            )
+            .map_err(debug)?;
             assert!(!replay.applied);
             let mut stale_heal = proposal.clone();
-            stale_heal.occurrence = crate::ability::AbilityOccurrence::new(&format!("ai-profile:{placement}:4:defence:0"), proposal.occurrence.revisions().clone()).map_err(debug)?;
-            assert!(matches!(crate::gameplay_transport::monster_profile_cycle::source_heals::apply(&mut runtime, &mut heal_ledger, native, &stale_heal), Err(crate::foundation::CarrierError::StaleAttackerSequence)));
+            stale_heal.occurrence = crate::ability::AbilityOccurrence::new(
+                &format!("ai-profile:{placement}:4:defence:0"),
+                proposal.occurrence.revisions().clone(),
+            )
+            .map_err(debug)?;
+            assert!(matches!(
+                crate::gameplay_transport::monster_profile_cycle::source_heals::apply(
+                    &mut runtime,
+                    &mut heal_ledger,
+                    native,
+                    &stale_heal
+                ),
+                Err(crate::foundation::CarrierError::StaleAttackerSequence)
+            ));
 
-            assert_eq!(runtime.companion_snapshot(target).map_err(debug)?.health, healed.health_after);
+            assert_eq!(
+                runtime.companion_snapshot(target).map_err(debug)?.health,
+                healed.health_after
+            );
             let health = runtime.companion_snapshot(target).map_err(debug)?.health;
             runtime
                 .borrow_exact_actor_commit_at(now)

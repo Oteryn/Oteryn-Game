@@ -562,13 +562,19 @@ fn loop_monster_input(summons: bool) -> NativeGameplayInput {
     if summons {
         let mut creatures: CreatureProfilesDocument =
             serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
-        // Reuse one real admitted ranged Spell body rather than inventing executable effects.
+        // Pin the actual ranged Item spell; source catalogue order also contains
+        // untargeted range-zero removal callbacks such as Aftershock's AnomalyBreak.
         let source = creatures
             .records
             .iter()
-            .find(|r| !r.source_item_abilities.is_empty())
+            .find(|r| r.profile.target.key == "oteryn:creature.angry_demon")
             .expect("source Item spell closure");
-        let ability = source.source_item_abilities[0].clone();
+        let ability = source
+            .source_item_abilities
+            .iter()
+            .find(|ability| ability.target.key == "oteryn:ability.creature.angry_demon.attack-4")
+            .expect("source ranged Item spell")
+            .clone();
         // Keep the reused inline Item body and its exact reference in the fixture closure.
         let ability_reference = source
             .attack_definitions

@@ -38,24 +38,12 @@ fn run_case(with_paint: bool) -> f::TestResult {
     })?.join().map_err(|_| "seal PG thread failed")?.map_err(Into::into)
 }
 
-fn callback(seal: u16, with_paint: bool) -> f::TestResult<Callback> {
-    if with_paint {
-        return oteryn_gameplay_quests::quest::world_callbacks::load()
-            .map_err(f::debug)?
-            .into_iter()
-            .find(|callback| callback.native_rule == Some(NativeRule::IceSealPaint { seal }))
-            .ok_or_else(|| "missing registered production seal callback".into());
-    }
-    Ok(serde_json::from_value(serde_json::json!({
-        "key":format!("oteryn:quest-callback/engnpc2-fixture/seal-{seal}"),
-        "quest":seals::QUEST,"trigger":"use","selector":{"position":{"x":1,"y":1,"floor":-1}},
-        "lever":null,"reversible":false,"passages":[],"teleport":null,
-        "storage":seals::TRACKS.into_iter().zip([(8,8),(0,(1_i64<<48)-1),(-1,2)]).map(|(track,(minimum,maximum))| serde_json::json!({"track":track,"minimum":minimum,"maximum":maximum,"set":0,"increment":false,"preserve":true})).collect::<Vec<_>>(),
-        "native_rule":{"kind":"ice_seal_paint","seal":seal},
-        "item_on_target":with_paint.then(|| serde_json::json!({"item":"oteryn:item.tibia.i7253","count":1,"replacement":null,"target_replacement":null,"reusable":true})),
-        "offerings":[],"return_on_failure":false,"failure_message":null,
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_paint.lua:15-21"]
-    }))?)
+fn callback(seal: u16) -> f::TestResult<Callback> {
+    oteryn_gameplay_quests::quest::world_callbacks::load()
+        .map_err(f::debug)?
+        .into_iter()
+        .find(|callback| callback.native_rule == Some(NativeRule::IceSealPaint { seal }))
+        .ok_or_else(|| "missing registered production seal callback".into())
 }
 
 fn request(callback: &Callback, ordinal: u64) -> f::TestResult<QuestTransitionRequest> {
@@ -69,11 +57,7 @@ fn request(callback: &Callback, ordinal: u64) -> f::TestResult<QuestTransitionRe
 }
 
 async fn exercise(h: &f::Harness, with_paint: bool) -> f::TestResult {
-    let callbacks = [
-        callback(183, with_paint)?,
-        callback(2, with_paint)?,
-        callback(63, with_paint)?,
-    ];
+    let callbacks = [callback(183)?, callback(2)?, callback(63)?];
     let tracks = seals::TRACKS
         .into_iter()
         .zip([(8, -1, 9), (0, 0, (1_i64 << 48) - 1), (1, -1, 2)])
@@ -151,8 +135,10 @@ async fn exercise(h: &f::Harness, with_paint: bool) -> f::TestResult {
         );
         assert_eq!(h.root_revision().await?, "1");
         assert_eq!(h.count("game_character_quest_tracks").await?, 0);
-        seed_paint(h).await?;
     }
+    // Both progress and custody scenarios use the actual registered operation.
+    // Its required NPC-granted paint is fixture stock, never an omitted gate.
+    seed_paint(h).await?;
     for (index, callback) in callbacks.iter().enumerate() {
         let ordinal = 9801 + u64::try_from(index)?;
         let outcome = h

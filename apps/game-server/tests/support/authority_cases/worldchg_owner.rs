@@ -237,15 +237,31 @@ async fn run(h: &fixture::Harness) -> fixture::TestResult {
         ContributionWrite::Applied(1)
     );
     tx.commit().await?;
-    // A new pool/connection reloads the persisted bytes, rather than process state.
+    // A fresh transaction reloads the complete current projection through its owner.
     let mut tx = transaction(&h.pool).await?;
+    assert_eq!(changes::load(&mut tx, world, 1).await?, Some(next));
     let day: serde_json::Value = sqlx::query_scalar("SELECT decision FROM game_world_change_days WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
         .bind(world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-    // The immutable daily fields persist; current counter stages are a separate,
+    // The immutable daily fields persist; current counter fields are a separate,
     // fenced projection and are intentionally omitted from the decision JSON.
+    for field in [
+        "counter_stages",
+        "counter_generations",
+        "counter_quest_occurrences",
+        "counter_progress",
+        "shared_used_sources_mask",
+    ] {
+        assert!(
+            day.get(field).is_none(),
+            "current projection {field} was persisted in the immutable daily decision"
+        );
+    }
     let mut immutable_next = next;
     immutable_next.counter_stages = [0; 8];
     immutable_next.counter_generations = [0; 8];
+    immutable_next.counter_quest_occurrences = [0; 8];
+    immutable_next.counter_progress = [[0; 3]; 8];
+    immutable_next.shared_used_sources_mask = 0;
     assert_eq!(
         serde_json::from_value::<oteryn_gameplay_world_change::daily::DailyWorldChanges>(day)?,
         immutable_next

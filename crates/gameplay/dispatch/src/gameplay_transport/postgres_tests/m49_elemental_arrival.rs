@@ -1,4 +1,6 @@
-//! All four source routes drive the production command-9 owner on native map crops.
+//! Current command-9 arrivals and historical receipt recovery on native map crops.
+#[path = "m49_elemental_arrival/historical.rs"]
+mod historical;
 use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::content::native_gameplay::NativeGameplayState;
@@ -136,6 +138,11 @@ fn m49_arrival_retires_real_corpse_loot_with_the_root() -> TestResult {
     run("m49-fire-loot")
 }
 
+#[test]
+fn m49_current_arrival_recovers_after_lost_projection_response() -> TestResult {
+    run("m49-fire-response")
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -219,7 +226,12 @@ pub(super) async fn exercise(
         }
     }
     let (frame, content) = {
-        let runtime = owner.runtime.lock().await;
+        let mut runtime = owner.runtime.lock().await;
+        // Match channel boot: both current and historical projectors require
+        // the actual native companion policy for the committed creature.
+        native
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
         (
             runtime.content_pin().frame_binding_digest().to_vec(),
             runtime.content_pin().server_artifact_digest(),
@@ -336,7 +348,7 @@ pub(super) async fn exercise(
                 ),
                 item: definition,
                 quantity: 1,
-                ground: source,
+                ground: source.clone(),
                 content_revision: "content-1".into(),
                 ruleset_revision: "ruleset-1".into(),
                 sim_revision: "sim-1".into(),
@@ -479,6 +491,13 @@ pub(super) async fn exercise(
         selection,
     )
     .map_err(debug)?;
+    // Historical receipts remain replayable through the real dispatcher before
+    // it resolves the now-retired corpse handle. New arrivals never use this ABI.
+    let historical = if name.ends_with("recover") || name.ends_with("ack") {
+        Some(historical::seed(owner, h, command, r, corpse.item_instance_id, &charged).await?)
+    } else {
+        None
+    };
     let result = crate::gameplay_transport::item_move::item_move(
         owner, actor, command, &payload, selection, false, &mut view,
     )
@@ -500,9 +519,48 @@ pub(super) async fn exercise(
         replay,
         crate::gameplay_transport::item_move::ItemMoveStep::Result(ItemMoveOutcome::Moved, _)
     ));
-    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_elemental_altar_receipts")
+    let historical_count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_elemental_altar_receipts")
+            .fetch_one(&h.pool)
+            .await?;
+    let current_count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_elemental_arrival_receipts")
+            .fetch_one(&h.pool)
+            .await?;
+    let count = if let Some(receipt) = historical {
+        let persisted: (Vec<u8>, Vec<u8>, i64) = sqlx::query_as(
+            "SELECT uuid_send(transaction_id),uuid_send(event_id), \
+             (SELECT count(*) FROM game_item_loop_move_receipts) \
+             FROM game_item_loop_move_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric",
+        )
+        .bind(command.game_session_id.as_bytes().as_slice())
+        .bind(command.command_id.to_string())
         .fetch_one(&h.pool)
         .await?;
+        assert_eq!(
+            persisted,
+            (
+                receipt.transaction_id.to_vec(),
+                receipt.event_id.to_vec(),
+                1
+            )
+        );
+        assert_eq!(
+            current_count, 0,
+            "historical wire replay must not consume or summon again"
+        );
+        if name.ends_with("recover") {
+            historical::preserve_pending(owner, h, actor, command, r, &source).await?;
+        }
+        owner.drain_elemental_altar_bosses().await;
+        historical_count
+    } else {
+        assert_eq!(
+            historical_count, 0,
+            "new arrivals have exactly one current writer"
+        );
+        current_count
+    };
     if name.ends_with("missing") {
         assert_eq!(count, 0);
         let state:(i16,i64,i64)=sqlx::query_as("SELECT lifecycle,quantity,(SELECT count(*) FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -522,6 +580,27 @@ pub(super) async fn exercise(
         );
     } else {
         assert_eq!(count, 1);
+        if historical.is_none() {
+            let atomic: (i16, i64, bool, bool, i64) = sqlx::query_as(
+                "SELECT i.lifecycle,i.quantity,r.created_xact_id=m.created_xact_id, \
+                 b.created_xact_id=r.created_xact_id, \
+                 (SELECT count(*) FROM game_elemental_boss_leases l WHERE l.transaction_id=r.transaction_id) \
+                 FROM game_elemental_arrival_receipts r \
+                 JOIN game_item_loop_move_receipts m ON m.transaction_id=r.move_transaction_id \
+                 JOIN game_elemental_summon_intents b ON b.transaction_id=r.transaction_id \
+                 JOIN game_item_instances i ON i.item_instance_id=r.corpse_item_instance_id",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(atomic, (2, 0, true, true, 1));
+            if name.ends_with("response") {
+                recover_without_projection(owner).await?;
+            }
+            assert!(
+                owner
+                    .boss_spawn_pass(&mut Default::default())
+                    .await
+                    .map_err(|_| "current elemental owner pass")?
+            );
+        }
         if let Some(blocker) = blocker {
             let realizations: i64 =
                 sqlx::query_scalar("SELECT count(*) FROM game_elemental_boss_realizations")
@@ -619,8 +698,15 @@ pub(super) async fn exercise(
             assert!(owner.runtime.lock().await.actor_spell_reserved(boss));
         }
         if name.ends_with("loot") {
-            let retired:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_instances i JOIN game_elemental_altar_receipts r ON r.transaction_id=i.last_transaction_id WHERE i.lifecycle=2 AND i.quantity=0").fetch_one(&h.pool).await?;
-            assert_eq!(retired, 2);
+            let retired: (i64, bool) = sqlx::query_as(
+                "SELECT count(*),bool_and(i.lifecycle=2 AND i.quantity=0 AND proof.created_xact_id=r.created_xact_id) \
+                 FROM game_elemental_arrival_receipts r \
+                 JOIN LATERAL (SELECT r.corpse_item_instance_id AS item_instance_id,r.transaction_id,r.created_xact_id \
+                   UNION ALL SELECT l.item_instance_id,l.transaction_id,l.created_xact_id \
+                   FROM game_elemental_loot_retire_receipts l WHERE l.arrival_transaction_id=r.transaction_id) proof ON true \
+                 JOIN game_item_instances i ON i.item_instance_id=proof.item_instance_id AND i.last_transaction_id=proof.transaction_id",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(retired, (2, true));
         }
         let runtime = owner.runtime.lock().await;
         let census = runtime
@@ -651,13 +737,32 @@ pub(super) async fn exercise(
             }
         );
         drop(runtime);
-        owner.drain_elemental_altar_bosses().await;
-        assert!(!owner.runtime.lock().await.actor_spell_reserved(bosses[0]));
-        let count: i64 =
-            sqlx::query_scalar("SELECT count(*) FROM game_elemental_boss_realizations")
-                .fetch_one(&h.pool)
-                .await?;
-        assert_eq!(count, 1);
+        if historical.is_some() {
+            owner.drain_elemental_altar_bosses().await;
+            assert!(!owner.runtime.lock().await.actor_spell_reserved(bosses[0]));
+            let count: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_elemental_boss_realizations")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(count, 1);
+        } else {
+            assert!(
+                owner
+                    .boss_spawn_pass(&mut Default::default())
+                    .await
+                    .map_err(|_| "replayed current elemental owner pass")?
+            );
+            let runtime = owner.runtime.lock().await;
+            let spawns = runtime.boss_spawns();
+            assert_eq!(spawns.len(), 1);
+            assert_eq!(spawns[0].actor, Some(bosses[0]));
+            drop(runtime);
+            let clocks: (i64, i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_elemental_summon_intents), \
+                 (SELECT count(*) FROM game_boss_spawn_clocks WHERE spawn_key LIKE 'qn1.elemental:%')",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(clocks, (1, 1));
+        }
     }
     if name.contains("-fields") {
         let fields:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i2126' AND lifecycle=1 AND quantity=1").fetch_one(&h.pool).await?;
@@ -666,6 +771,65 @@ pub(super) async fn exercise(
     for (key, rev) in charged {
         assert_eq!(map.facts.object_revision(key), rev);
     }
+    Ok(())
+}
+
+async fn recover_without_projection(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    use crate::durability::item_decay_retire::CorpseDecayFence;
+    use crate::durability::item_loop_move::{ElementalSummonProjection, ElementalSummonScope};
+    let (binding, pin) = {
+        let runtime = owner.runtime.lock().await;
+        assert!(runtime.boss_spawns().is_empty());
+        (runtime.binding(), runtime.content_pin().clone())
+    };
+    let map = owner.bundle_map().ok_or("current recovery map")?;
+    let projection = ElementalSummonProjection {
+        scope: ElementalSummonScope {
+            map: map.overlay.base().digest(),
+            reset_epoch: owner.reset_epoch,
+        },
+        content: pin.server_artifact_digest(),
+        frame: pin.frame_binding_digest(),
+    };
+    let permit = owner
+        .spell_lane_permit()
+        .await
+        .ok_or("current recovery lane")?;
+    let fence = CorpseDecayFence {
+        runtime_scope: binding.runtime_scope(),
+        scope_ownership_generation: binding.scope_generation(),
+    };
+    let clocks = owner
+        .root
+        .recover_elemental_summons(&permit, owner.character, owner.holder, fence, projection)
+        .await
+        .map_err(debug)?;
+    assert_eq!(clocks.len(), 1);
+    assert_eq!(clocks[0].owner_generation, binding.scope_generation());
+    // The database committed its claim, but no actor receives this response.
+    // Retrying the current owner read must recover that exact committed clock.
+    assert!(owner.runtime.lock().await.boss_spawns().is_empty());
+    let recovered = owner
+        .root
+        .recover_elemental_summons(&permit, owner.character, owner.holder, fence, projection)
+        .await
+        .map_err(debug)?;
+    assert_eq!(recovered, clocks);
+    let stale = CorpseDecayFence {
+        scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(
+            binding.scope_generation().get() + 1,
+        )
+        .map_err(debug)?,
+        ..fence
+    };
+    assert!(
+        owner
+            .root
+            .recover_elemental_summons(&permit, owner.character, owner.holder, stale, projection)
+            .await
+            .is_err()
+    );
+    assert!(owner.runtime.lock().await.boss_spawns().is_empty());
     Ok(())
 }
 

@@ -740,7 +740,7 @@ impl CharmFacts for Facts {
     }
 }
 
-fn xp_request(tag: u8) -> TestResult<ExperienceAwardRequest<2>> {
+pub(super) fn xp_request(tag: u8) -> TestResult<ExperienceAwardRequest<2>> {
     let context = ProgressionRevisionContext {
         profile: "profile-1".into(),
         ruleset: "ruleset-1".into(),

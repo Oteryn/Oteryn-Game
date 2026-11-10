@@ -60,9 +60,10 @@ const OPEN_RAT: MovementLocalPosition = MovementLocalPosition {
     floor: -7,
 };
 const PASS: Duration = Duration::from_secs(3);
-// The admitted level is eight: the existing hunting XP owner applies
-// floor(5 * (1200 + (1200 - 25 * (8 - 2))) / 1200) = 9.
-const RAT_XP_AT_LEVEL_8: i64 = 9;
+// The single eligible native spawn is Fiendish after spawn-owner maintenance.
+// Its base five XP doubles before the admitted level-eight hunting bonus:
+// floor(5 * 2 * (1200 + (1200 - 25 * (8 - 2))) / 1200) = 18.
+const FIENDISH_RAT_XP_AT_LEVEL_8: i64 = 18;
 
 #[test]
 fn task_board_real_dispatch_weekly_bounty_custody_reset_and_replay() -> TestResult {
@@ -624,10 +625,28 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
         );
         println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: weekly_start_and_exact_replay");
         let before_real_kill = experience(&harness).await?;
+        assert_eq!(
+            owner
+                .reward_table()
+                .row("oteryn:creature.rat")
+                .map_err(debug)?
+                .xp_amount
+                .get(),
+            5,
+            "the active native reward row retains the rat's base XP"
+        );
         // A real rat kill: auto-attack swings, then the durable kill settle credits the task.
         {
-            let runtime = owner.runtime.lock().await;
+            let mut runtime = owner.runtime.lock().await;
             let now = owner.owner_now();
+            // Real connection vitals drive this same spawn-owner maintenance. Complete
+            // the due pass explicitly so fast exchanges have the same classification.
+            crate::gameplay_transport::drive_owner_spawns(&mut runtime, now.get());
+            assert_eq!(
+                runtime.companion_snapshot(rat_actor).map_err(debug)?.forge,
+                Some(crate::domain::forge_creature::ForgeCreature::Fiendish),
+                "the only eligible native spawn fills the Forge population"
+            );
             assert_eq!(
                 owner.states.attack.lock().await.set_target(
                     &runtime,
@@ -669,7 +688,7 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
         }
         assert_eq!(
             experience(&harness).await?,
-            before_real_kill + RAT_XP_AT_LEVEL_8
+            before_real_kill + FIENDISH_RAT_XP_AT_LEVEL_8
         );
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
@@ -677,6 +696,15 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
                 .await?,
             1,
             "the real kill's XP receipt is committed"
+        );
+        assert_eq!(
+            sqlx::query_as::<_, (i64, i64, i64)>(
+                "SELECT r.base_xp,m.raw_share,m.xp_awarded FROM game_party_kill_xp_receipts r JOIN game_party_kill_xp_members m USING(death_key)"
+            )
+            .fetch_all(&harness.pool)
+            .await?,
+            vec![(10, 10, FIENDISH_RAT_XP_AT_LEVEL_8)],
+            "one Fiendish rat receipt carries doubled raw XP and one level-eight award"
         );
 
         let credited = full_board(&owner, &mut admitted, 4, 0, "").await?;

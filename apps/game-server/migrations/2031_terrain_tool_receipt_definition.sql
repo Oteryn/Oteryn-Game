@@ -27,6 +27,11 @@ BEGIN
         OR NEW.tool_definition_revision_ref IS NOT NULL THEN
         RAISE EXCEPTION 'terrain tool definition snapshot is database-owned';
     END IF;
+    -- Bare map harvest and seed-drop callbacks have no tool Item (0883).
+    -- Their definition snapshot stays absent; supplied definitions above still fail.
+    IF NEW.tool_item_instance_id IS NULL THEN
+        RETURN NEW;
+    END IF;
     SELECT i.definition_family, i.definition_production_key, i.definition_revision_ref
         INTO NEW.tool_definition_family, NEW.tool_definition_production_key,
              NEW.tool_definition_revision_ref

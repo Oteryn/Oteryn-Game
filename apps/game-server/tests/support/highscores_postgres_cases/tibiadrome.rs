@@ -613,7 +613,7 @@ fn tibiadrome_main_snapshots_survive_branch_upgrade_postgres() -> TestResult {
             .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
             .map_err(debug)?;
-        for category in [14, 17] {
+        for category in [14, 16, 17] {
             assert!(
                 published
                     .snapshots
@@ -629,7 +629,7 @@ fn tibiadrome_main_snapshots_survive_branch_upgrade_postgres() -> TestResult {
                 "game_public_highscores",
             ] {
                 let rows: String = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
-                    "SELECT COALESCE(jsonb_agg(body ORDER BY body::text),'[]'::jsonb)::text FROM (SELECT to_jsonb(t) AS body FROM {table} t WHERE world_id=encode($1,'hex')::uuid AND category IN(14,17)) captured"
+                    "SELECT COALESCE(jsonb_agg(body ORDER BY body::text),'[]'::jsonb)::text FROM (SELECT to_jsonb(t) AS body FROM {table} t WHERE world_id=encode($1,'hex')::uuid AND category IN(14,16,17)) captured"
                 ))).bind(world().as_bytes().as_slice()).fetch_one(&h.pool).await?;
                 assert_ne!(
                     rows, "[]",
@@ -642,8 +642,10 @@ fn tibiadrome_main_snapshots_survive_branch_upgrade_postgres() -> TestResult {
         let before = retained(h).await?;
         let lifetime = page(h, 14, None, 1, 0).await?;
         let rotation = page(h, 17, None, 1, 0).await?;
+        let phosphorus = page(h, 16, None, 1, 0).await?;
         assert!(!lifetime.rows.is_empty());
         assert!(!rotation.rows.is_empty());
+        assert_eq!(phosphorus.snapshot.category, 16);
         let installed: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM _sqlx_migrations WHERE version=2170 AND success)",
         )
@@ -676,7 +678,7 @@ fn tibiadrome_main_snapshots_survive_branch_upgrade_postgres() -> TestResult {
             !include_str!("../../../migrations/1420_tibiadrome_highscore_grant.sql")
                 .contains("GRANT SELECT ON game_character_tibiadrome")
         );
-        eprintln!("SRX3_MAIN_DROME_UPGRADE_REACHED actual14_17=true exact_source_fragment=true");
+        eprintln!("SRX3_MAIN_DROME_UPGRADE_REACHED actual14_16_17=true exact_source_fragment=true");
         let mut upgrade = h.pool.begin().await?;
         // Reproduce the old branch's actual grant without retaining it in the
         // corrected migration. The source fragment must retire it on its own.
@@ -713,6 +715,11 @@ fn tibiadrome_main_snapshots_survive_branch_upgrade_postgres() -> TestResult {
         assert_eq!(
             page(h, 17, None, 1, rotation.snapshot.snapshot_id).await?,
             rotation
+        );
+        assert_eq!(
+            page(h, 16, None, 1, phosphorus.snapshot.snapshot_id).await?,
+            phosphorus,
+            "the older branch upgrade must preserve main's published Phosphorus snapshot"
         );
         Ok(())
     })

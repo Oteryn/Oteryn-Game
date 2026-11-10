@@ -472,6 +472,98 @@ pub(super) async fn earn_level(
     Ok(())
 }
 
+/// Historical prerequisite arrangement for the three source fixtures below.
+/// The tested quest action still uses its canonical owner and bound operation.
+pub(super) async fn seed_quest_prerequisites(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    values: &[(String, i64)],
+    occurrence: u8,
+) -> TestResult {
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    };
+    let catalogue = owner
+        .quest_catalogue
+        .as_ref()
+        .ok_or("prerequisite catalogue")?;
+    let mut tracks = BTreeMap::new();
+    for (key, value) in values {
+        let track = catalogue.track(key).ok_or("canonical prerequisite track")?;
+        assert!((track.min..=track.max).contains(value));
+        assert!(
+            tracks
+                .insert(key.clone(), (track.quest.clone(), *value))
+                .is_none()
+        );
+    }
+    assert!(!tracks.is_empty());
+    let binding = owner
+        .progression_binding(admitted.game_session_id)
+        .ok_or("progression")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "prerequisite fence")?
+        .ok_or("prerequisite fence")?;
+    let outcome = owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_experience(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            ExperienceAwardRequest {
+                occurrence: ExperienceRewardOccurrence::from_bytes(super::fixture::id(occurrence))
+                    .map_err(debug)?,
+                amount: oteryn_simulation_determinism::ExactI64::new(1),
+                context: binding.context.clone(),
+                policy_revision: binding.policy_revision.clone(),
+                reward_revision: binding.reward_revision.clone(),
+                policy: binding.policy.clone(),
+            },
+            None,
+        )
+        .await
+        .map_err(debug)?;
+    let ExperienceCommitOutcome::Committed(receipt) = outcome else {
+        return Err("prerequisite history did not commit".into());
+    };
+    assert_eq!(
+        receipt.original_character_revision,
+        fence.expected_character_revision
+    );
+    assert_eq!(
+        receipt.committed_character_revision.get(),
+        fence.expected_character_revision.get() + 1
+    );
+    assert_eq!(receipt.level_after, receipt.level_before);
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (key, (quest, value)) in &tracks {
+        let changed = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND character_revision=$5::text::numeric ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision WHERE game_character_quest_tracks.quest_key=EXCLUDED.quest_key")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(key).bind(quest).bind(value)
+            .bind(receipt.committed_character_revision.get().to_string())
+            .execute(&mut *tx).await?;
+        assert_eq!(changed.rows_affected(), 1);
+    }
+    tx.commit().await?;
+    let stored = owner
+        .root
+        .read_character_quest_state(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?;
+    for (key, (_, value)) in tracks {
+        assert_eq!(stored.tracks().get(&key), Some(&value));
+    }
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -1203,8 +1295,13 @@ pub(super) async fn exercise(
     } else {
         vec![]
     };
+    let historical_prerequisites = if family == "norseman" {
+        initial.clone()
+    } else {
+        vec![]
+    };
     let mut setup = BTreeMap::<String, Vec<QuestEffect>>::new();
-    for (key, value) in initial {
+    for (key, value) in initial.into_iter().filter(|_| family != "norseman") {
         let track = tracks.get(&key).ok_or("setup track")?;
         setup
             .entry(track.quest.clone())
@@ -1228,7 +1325,9 @@ pub(super) async fn exercise(
             experience: None,
         });
     }
-    if let Some(required) = &readonly {
+    if let Some(required) = &readonly
+        && family != "norseman"
+    {
         let track = tracks.get(&required.track).ok_or("read track")?;
         assert!(required.minimum > track.min);
         for (key, value) in [
@@ -1236,7 +1335,7 @@ pub(super) async fn exercise(
             ("restore", required.minimum),
         ] {
             transitions.push(QuestTransition {
-            world_change: None,
+                world_change: None,
                 key: format!("oteryn:quest-transition/qengine2-story/{key}"),
                 quest: track.quest.clone(),
                 effects: vec![QuestEffect {
@@ -1272,14 +1371,26 @@ pub(super) async fn exercise(
         .map_err(debug)?,
     ));
     if family == "royal-costume" {
-        assert!(setup_keys.is_empty(), "the complete Royal Costume story starts without seeded quest progress");
-        let version: String = sqlx::query_scalar("SELECT version()").fetch_one(&h.pool).await?;
+        assert!(
+            setup_keys.is_empty(),
+            "the complete Royal Costume story starts without seeded quest progress"
+        );
+        let version: String = sqlx::query_scalar("SELECT version()")
+            .fetch_one(&h.pool)
+            .await?;
         eprintln!("QENGINE2_N3_ROYAL_COSTUME_POSTGRES {version}");
         let started: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE quest_key='oteryn:quest.royal_costume_outfits_quest'").fetch_one(&h.pool).await?;
-        assert_eq!(started, 0, "no pre-completed or pre-started Royal Costume quest");
+        assert_eq!(
+            started, 0,
+            "no pre-completed or pre-started Royal Costume quest"
+        );
     }
     for (index, key) in setup_keys.iter().enumerate() {
         commit_fixture(owner, admitted, key, 9000 + u64::try_from(index)?).await?;
+    }
+    if family == "norseman" {
+        assert!(setup_keys.is_empty());
+        seed_quest_prerequisites(h, owner, admitted, &historical_prerequisites, 106).await?;
     }
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -1687,13 +1798,25 @@ pub(super) async fn exercise(
             owner
                 .refresh_quest_session(admitted.game_session_id, false)
                 .await;
-            commit_fixture(
-                owner,
-                admitted,
-                "oteryn:quest-transition/qengine2-story/lower",
-                9100,
-            )
-            .await?;
+            if family == "norseman" {
+                let required = readonly.as_ref().ok_or("readonly prerequisite")?;
+                seed_quest_prerequisites(
+                    h,
+                    owner,
+                    admitted,
+                    &[(required.track.clone(), required.minimum - 1)],
+                    107,
+                )
+                .await?;
+            } else {
+                commit_fixture(
+                    owner,
+                    admitted,
+                    "oteryn:quest-transition/qengine2-story/lower",
+                    9100,
+                )
+                .await?;
+            }
             let before = counts(h).await?;
             let fence = owner
                 .current_quest_fence(admitted.game_session_id)
@@ -1727,8 +1850,8 @@ pub(super) async fn exercise(
                         fee_payment: None,
                         actor_conditions: None,
                         carried_use: None,
-                    creature_use: None,
-                    peer_use: None,
+                        creature_use: None,
+                        peer_use: None,
                     },
                     &owner.premium_coordinator,
                 )
@@ -1747,13 +1870,25 @@ pub(super) async fn exercise(
                 before,
                 "no consumption or value on failed parent prerequisite"
             );
-            commit_fixture(
-                owner,
-                admitted,
-                "oteryn:quest-transition/qengine2-story/restore",
-                9101,
-            )
-            .await?;
+            if family == "norseman" {
+                let required = readonly.as_ref().ok_or("readonly prerequisite")?;
+                seed_quest_prerequisites(
+                    h,
+                    owner,
+                    admitted,
+                    &[(required.track.clone(), required.minimum)],
+                    108,
+                )
+                .await?;
+            } else {
+                commit_fixture(
+                    owner,
+                    admitted,
+                    "oteryn:quest-transition/qengine2-story/restore",
+                    9101,
+                )
+                .await?;
+            }
             owner
                 .refresh_quest_session(admitted.game_session_id, false)
                 .await;
@@ -1869,9 +2004,16 @@ pub(super) async fn exercise(
         if family == "royal-costume" {
             let terminal = step_index == 2;
             let completed: bool = sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key='oteryn:quest.royal_costume_outfits_quest'").fetch_one(&h.pool).await?;
-            assert_eq!(completed, terminal, "only the final crown hand-in completes Royal Costume");
+            assert_eq!(
+                completed, terminal,
+                "only the final crown hand-in completes Royal Costume"
+            );
             let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.royal_costume_outfits_quest' AND completes").fetch_one(&h.pool).await?;
-            assert_eq!(receipts, i64::from(terminal), "one durable completion receipt, after all three exchanges");
+            assert_eq!(
+                receipts,
+                i64::from(terminal),
+                "one durable completion receipt, after all three exchanges"
+            );
         }
 
         if let (Some(gift), Some(before)) = (&callback.give, gift_before) {

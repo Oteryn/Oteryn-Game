@@ -109,16 +109,9 @@ async fn no_write(h: &f::Harness) -> f::TestResult {
 
 async fn exercise(h: &f::Harness) -> f::TestResult {
     let callback = callback()?;
-    // Keep the production registered-owner catalogue closed. This isolated
-    // unregistered fixture uses a plain effect so the PG case also exercises
-    // the runtime context gate independently of binding metadata. The source
-    // schema unit test verifies the real bound operation and its digest.
-    let mut transition = primary_transition(&callback).map_err(f::debug)?;
-    for effect in &mut transition.effects {
-        if let QuestEffectKind::SetWithBinding { value, .. } = effect.effect {
-            effect.effect = QuestEffectKind::Set(value);
-        }
-    }
+    // The resolved fixture source owns its exact bound operation. The physical
+    // Ground checks below execute only after that operation has qualified.
+    let transition = primary_transition(&callback).map_err(f::debug)?;
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             "content-1",
@@ -220,6 +213,41 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     );
     no_write(h).await?;
     seed(h, true, false).await?;
+    // Keep every physical prerequisite valid while stripping only the binding.
+    let mut stripped = catalogue.transition(KEY).ok_or("bound operation")?.clone();
+    let mut changed = false;
+    for effect in &mut stripped.effects {
+        if let QuestEffectKind::SetWithBinding { value, .. } = effect.effect {
+            effect.effect = QuestEffectKind::Set(value);
+            changed = true;
+        }
+    }
+    assert!(changed, "fixture must exercise a genuinely bound operation");
+    let stripped = Arc::new(
+        QuestStateCatalogue::new(
+            "content-1",
+            vec![catalogue.track(TRACK).ok_or("bound track")?.clone()],
+            vec![stripped],
+        )
+        .map_err(f::debug)?,
+    );
+    let refused = h
+        .root
+        .commit_fixture_ground_callback(
+            &authority,
+            &h.node,
+            fence,
+            request(9707)?,
+            stripped,
+            Some((&permit, context.clone())),
+            callback.clone(),
+        )
+        .await;
+    assert!(matches!(
+        refused,
+        Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)
+    ));
+    no_write(h).await?;
     let mut stale = fence;
     stale.character_lease_generation += 1;
     assert!(

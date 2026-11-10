@@ -216,8 +216,42 @@ mod tests {
         let mut ai = crate::ai_think::CreatureAiTable::default();
         ai.admit_native_creature(&runtime, native, issuer, &record.profile.target, 0)
             .map_err(|e| format!("actual native Bog admission: {e:?}"))?;
-        let decision_root =
-            oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(native.source_digest());
+        let Some(crate::content::ProjectV2AuthoringProfileData::Behavior(behavior)) =
+            record.behavior.as_ref().map(|profile| &profile.data)
+        else {
+            return Err("actual native Bog behavior".into());
+        };
+        let (entry_index, entry) = behavior
+            .attacks
+            .iter()
+            .enumerate()
+            .find(|(_, entry)| entry.ability.key == BOG)
+            .ok_or("actual native Bog attack slot")?;
+        assert_eq!(entry.interval_ms, 20_000);
+        assert_eq!(entry.chance_ppm, 250_000);
+        let think_ms = crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS;
+        let first_due_sequence = entry.interval_ms / think_ms;
+        assert_eq!(entry.interval_ms % think_ms, 0);
+        let occurrence = crate::ai_think::profile_schedule::decision_occurrence(
+            crate::ai_think::ThinkOccurrence {
+                actor: issuer,
+                sequence: first_due_sequence,
+            },
+        );
+        // Select the test's decision input through the real draw API. Changing unrelated
+        // content must not turn six genuine 25% source chances into a no-hit fixture.
+        let decision_root = (0_u8..=u8::MAX)
+            .map(|seed| oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([seed; 32]))
+            .find(|root| {
+                oteryn_simulation_determinism::deterministic_decision_u64(
+                    root,
+                    occurrence,
+                    ScheduleList::Attack.purpose(),
+                    entry_index as u64,
+                )
+                .is_ok_and(|draw| draw % 1_000_000 < u64::from(entry.chance_ppm))
+            })
+            .ok_or("deterministic first-due Bog fixture draw")?;
         let revisions = crate::ability::RevisionSet::new(
             "rules-r1",
             "content-r1",
@@ -250,6 +284,12 @@ mod tests {
             })
             .ok_or("actual native AI did not select source Bog in 120 seconds")?;
         assert_eq!(proposal.issuer, issuer);
+        assert_eq!(proposal.entry_index, entry_index);
+        assert_eq!(
+            now,
+            (first_due_sequence - 1) * think_ms * 1_000,
+            "the actual scheduler must select Bog on its first due source slot"
+        );
         assert_eq!(
             proposal.target, target,
             "the native Attack scheduler retains its actual selected player"

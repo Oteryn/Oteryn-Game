@@ -11,7 +11,7 @@ pub(crate) fn source_recipe(
             "murcion",
             "rotten_murcion.lua",
             "48f572ec9c418340bb07490334a216e81f4361627495e5c221d2a2d45b71d727",
-            "extra_monster_closure",
+            "",
         ),
         PinnedActivitySourceRoom::Ichgahal => (
             "ichgahal",
@@ -29,17 +29,53 @@ pub(crate) fn source_recipe(
             "chagorz",
             "rotten_chagorz.lua",
             "d3f632880a7e871e0303994905ef3e814b22d6f797e51b732d4ce7f7c49050c2",
-            "extra_monster_closure",
+            "",
         ),
         PinnedActivitySourceRoom::Bakragore => (
             "bakragore",
             "rotten_bakragore.lua",
             "821b49caf5e1c55f8a0e9a83b5f1158e5f34d3b3876681c5d9adfb6eedd96189",
-            "nonliteral.timeToFightAgain",
+            "",
         ),
         _ => return None,
     })
 }
+
+fn validate_source_layout(
+    candidate: &BossLeverCandidate,
+    source: PinnedActivitySourceRoom,
+    creature: &str,
+    expected_blockers: &[String],
+) -> Result<(), ActivityTemplateRefusal> {
+    let literal_level = if matches!(
+        source,
+        PinnedActivitySourceRoom::Murcion | PinnedActivitySourceRoom::Chagorz
+    ) {
+        0
+    } else {
+        250
+    };
+    if candidate.creature_key.as_deref() != Some(creature)
+        || candidate.blockers.as_slice() != expected_blockers
+        || !candidate.complete_literal_layout
+        || candidate.minimum_players != Some(1)
+        || candidate.minimum_level != Some(literal_level)
+        || candidate.time_limit_seconds != Some(1200)
+        || candidate.after_kill_seconds != Some(60)
+        || candidate.lever_positions.len() != 5
+        || candidate.entry_positions.len() != 5
+        || candidate.cooldown_seconds
+            != Some(if source == PinnedActivitySourceRoom::Bakragore {
+                244800
+            } else {
+                72000
+            })
+    {
+        return Err(ActivityTemplateRefusal::InvalidSourceCapture);
+    }
+    Ok(())
+}
+
 impl ActiveGeneration {
     pub fn qualify_rotten_blood_activity_template(
         &self,
@@ -99,32 +135,7 @@ impl ActiveGeneration {
         } else {
             vec![blocker.into()]
         };
-        let literal_level = if matches!(
-            source,
-            PinnedActivitySourceRoom::Murcion | PinnedActivitySourceRoom::Chagorz
-        ) {
-            0
-        } else {
-            250
-        };
-        if candidate.creature_key.as_deref() != Some(creature.as_str())
-            || candidate.blockers != expected_blockers
-            || !candidate.complete_literal_layout
-            || candidate.minimum_players != Some(1)
-            || candidate.minimum_level != Some(literal_level)
-            || candidate.time_limit_seconds != Some(1200)
-            || candidate.after_kill_seconds != Some(60)
-            || candidate.lever_positions.len() != 5
-            || candidate.entry_positions.len() != 5
-            || candidate.cooldown_seconds
-                != if source == PinnedActivitySourceRoom::Bakragore {
-                    None
-                } else {
-                    Some(72000)
-                }
-        {
-            return Err(R::InvalidSourceCapture);
-        }
+        validate_source_layout(&candidate, source, &creature, &expected_blockers)?;
         // The extra-monsters tables in Murcion/Chagorz contain only comments.
         // Bakragore's primary literal ParseDuration68h selects the existing final
         // boss cooldown. Its separately pinned alternate lever reaches the same room.
@@ -219,5 +230,63 @@ impl ActiveGeneration {
             client_digest: self.identity().client_artifact_digest(),
             activation_frame_binding_digest: room.frame_binding().digest(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rotten_layout_qualifies_current_literal_captures_and_refuses_unknowns() -> Result<(), String>
+    {
+        let candidates = captured_boss_levers().map_err(|error| format!("{error:?}"))?;
+        for source in [
+            PinnedActivitySourceRoom::Murcion,
+            PinnedActivitySourceRoom::Ichgahal,
+            PinnedActivitySourceRoom::Vemiath,
+            PinnedActivitySourceRoom::Chagorz,
+            PinnedActivitySourceRoom::Bakragore,
+        ] {
+            let (slug, file, sha, blocker) = source_recipe(source).ok_or("source recipe")?;
+            let path = format!("data-global/scripts/quests/rotten_blood_quest/{file}");
+            let candidate = candidates
+                .iter()
+                .find(|candidate| candidate.path == path && candidate.sha256 == sha)
+                .ok_or("pinned Rotten source capture")?;
+            let creature = format!("oteryn:creature.{slug}");
+            let blockers = if blocker.is_empty() {
+                vec![]
+            } else {
+                vec![blocker.into()]
+            };
+            assert_eq!(
+                validate_source_layout(candidate, source, &creature, &blockers),
+                Ok(()),
+                "{source:?} must retain its literal source layout"
+            );
+            let cooldown = candidate.cooldown_seconds.ok_or("literal cooldown")?;
+            for unknown_cooldown in [None, Some(cooldown + 1)] {
+                let mut unknown = candidate.clone();
+                unknown.cooldown_seconds = unknown_cooldown;
+                assert_eq!(
+                    validate_source_layout(&unknown, source, &creature, &blockers),
+                    Err(ActivityTemplateRefusal::InvalidSourceCapture)
+                );
+            }
+            let mut unknown = candidate.clone();
+            unknown.blockers.push("config.onUseExtra".into());
+            assert_eq!(
+                validate_source_layout(&unknown, source, &creature, &blockers),
+                Err(ActivityTemplateRefusal::InvalidSourceCapture)
+            );
+            let mut incomplete = candidate.clone();
+            incomplete.entry_positions.pop();
+            assert_eq!(
+                validate_source_layout(&incomplete, source, &creature, &blockers),
+                Err(ActivityTemplateRefusal::InvalidSourceCapture)
+            );
+        }
+        Ok(())
     }
 }

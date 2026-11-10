@@ -42,7 +42,7 @@ pub(in crate::durability) async fn claim_elemental_clock(
            AND game_world_reset_map_epoch_current(l.world_id,$4::text::numeric) \
            AND b.map_revision='sha256:'||encode($5,'hex') \
            AND b.content_revision='sha256:'||encode(a.server_artifact_digest,'hex') \
-           AND b.placement_context=a.frame_binding_digest"
+           AND game_elemental_placement_frame_matches(l.world_id,b.map_revision,b.placement_context,a.frame_binding_digest)"
     ).bind(source.transaction.as_slice()).bind(source.world.as_bytes().as_slice())
         .bind(source.channel.as_bytes().as_slice()).bind(reset).bind(source.map.as_slice())
         .fetch_optional(&mut **tx).await?;

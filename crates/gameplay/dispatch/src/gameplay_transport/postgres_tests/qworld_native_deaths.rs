@@ -138,8 +138,10 @@ pub(super) async fn exercise(
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
     // Before the personal hunt starts, even an active world cannot award credit.
-    super::qengine_kill_stories::death(owner, admitted, counter.creature, 20000).await?;
+    let target =
+        super::qengine_kill_stories::death_actor(owner, admitted, counter.creature, 20000).await?;
     assert_eq!(count(h, counter.track).await?, 0);
+    retire_settled(owner, &[target]).await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -167,9 +169,11 @@ pub(super) async fn exercise(
         assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
     }
     // The shared helper records and drains the same death twice, through real capture.
-    super::qengine_kill_stories::death(owner, admitted, counter.creature, 20002).await?;
+    let target =
+        super::qengine_kill_stories::death_actor(owner, admitted, counter.creature, 20002).await?;
     assert_eq!(count(h, counter.track).await?, i64::from(active));
-    super::qengine_kill_stories::queued_deaths(
+    retire_settled(owner, &[target]).await?;
+    let queued = super::qengine_kill_stories::queued_deaths(
         owner,
         admitted,
         counter.creature,
@@ -181,7 +185,8 @@ pub(super) async fn exercise(
         i64::from(active) * 4,
         "every distinct native death captured in the same activation counts exactly once"
     );
-    super::qengine_kill_stories::capture_deaths(
+    retire_settled(owner, &queued).await?;
+    let captured = super::qengine_kill_stories::capture_deaths(
         owner,
         admitted,
         counter.creature,
@@ -225,22 +230,56 @@ pub(super) async fn exercise(
         i64::from(active) * 4,
         "same-value reactivation invalidates every previously captured death"
     );
-    // Every source death is captured and drained twice by the helper. Reach the
-    // authored threshold, then prove fresh deaths cannot exceed it; a closed
-    // world must still award no personal credit throughout the same sequence.
-    for death in 2..=counter.maximum + 1 {
-        super::qengine_kill_stories::death(
+    retire_settled(owner, &captured).await?;
+    // Four eligible deaths have already settled. Continue with fresh command
+    // identities through the authored threshold and one excess death. The helper
+    // replays every death, and a closed world must still award no personal credit.
+    for death in 5..=counter.maximum + 1 {
+        let target = super::qengine_kill_stories::death_actor(
             owner,
             admitted,
             counter.creature,
-            20002 + u64::try_from(death)?,
+            20100 + u64::try_from(death)?,
         )
         .await?;
         assert_eq!(
             count(h, counter.track).await?,
-            if active { death.min(counter.maximum) } else { 0 },
+            if active {
+                death.min(counter.maximum)
+            } else {
+                0
+            },
             "world-gated personal count after death {death}"
         );
+        retire_settled(owner, &[target]).await?;
+    }
+    Ok(())
+}
+
+// The fixture admits encounter actors directly, so it must also perform the
+// native spawn owner's exact dead-slot retirement after settlement finishes.
+// Retained death projections survive slot reuse and still fence replay.
+async fn retire_settled(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    targets: &[crate::foundation::ExactActorRef],
+) -> TestResult {
+    let queue = owner.states.attack.lock().await.kills().clone();
+    assert!(queue.activity_retirement_drained());
+    let mut runtime = owner.runtime.lock().await;
+    runtime.owner_fence().map_err(debug)?;
+    for &target in targets {
+        assert_eq!(
+            runtime
+                .companion_snapshot_including_dead(target)
+                .map_err(debug)?
+                .health,
+            0
+        );
+        assert!(runtime.retains_corpse_projection(target));
+        assert!(!runtime.corpse_projection_pinned(target));
+        assert!(!runtime.actor_spell_reserved(target));
+        runtime.remove_encounter_actor(target).map_err(debug)?;
+        assert!(runtime.retains_corpse_projection(target));
     }
     Ok(())
 }
