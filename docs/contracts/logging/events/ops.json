@@ -9,6 +9,33 @@
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "ops_command",
+      "level": "info",
+      "span": true,
+      "fields": [
+        "command",
+        "outcome",
+        "ms"
+      ],
+      "codes": [
+        "E6001",
+        "E6002",
+        "E6003",
+        "E6004",
+        "E6005",
+        "E6006"
+      ],
+      "note": "One operator command with a closed outcome and registered failure code."
+    },
+    {
+      "event": "top_failed",
+      "level": "error",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "The local terminal operations client could not start or continue."
     }
   ]
 }

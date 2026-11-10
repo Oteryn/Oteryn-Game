@@ -21,7 +21,12 @@ fn allowed(name: &str) -> Option<&'static [&'static str]> {
         ],
         "session" => &["protocol-oteryn"],
         "session-tcp" => &["session"],
-        "platform-client" => &["diagnostics", "foundation", "platform-contracts"],
+        "platform-client" => &[
+            "diagnostics",
+            "error-codes",
+            "foundation",
+            "platform-contracts",
+        ],
         "renderer" => &["client-domain", "foundation"],
         "input-platform" => &["input-actions"],
         // Assets owns the immutable B3 decoder and reuses the shared sector grammar.

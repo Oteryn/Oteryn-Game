@@ -318,11 +318,23 @@ async fn run_command_stall_case() -> Result<(), BoxError> {
             Ok(())
         })
         .await?;
+    let stalled = session.step(StepDirection::East).await;
+    let diagnostic = stalled
+        .as_ref()
+        .err()
+        .map(ToString::to_string)
+        .ok_or("stalled command unexpectedly succeeded")?;
+    assert!(diagnostic.contains("in command after "));
+    assert!(diagnostic.contains("last frame server_sequence=40"));
     assert!(matches!(
-        session.step(StepDirection::East).await,
-        Err(DevClientError::Session(SessionError::Timeout(
-            "CommandResult"
-        )))
+        stalled,
+        Err(DevClientError::Context {
+            phase: "command",
+            last_frame,
+            source,
+            ..
+        }) if last_frame == "server_sequence=40"
+            && matches!(*source, DevClientError::Session(SessionError::Timeout("CommandResult")))
     ));
     assert!(matches!(
         session.step(StepDirection::East).await,

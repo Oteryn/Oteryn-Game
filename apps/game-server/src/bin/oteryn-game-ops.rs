@@ -1695,16 +1695,51 @@ fn main() -> ExitCode {
         println!("{PROCESS} {}", oteryn_error_codes::build_id(version));
         return ExitCode::SUCCESS;
     }
+    let mut startup = oteryn_error_codes::Span::start(
+        oteryn_error_codes::Level::Info,
+        "node",
+        "startup_stage",
+        None,
+    );
+    startup.field("stage", "ops_runtime");
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
     {
-        Ok(runtime) => runtime,
-        Err(_) => return ExitCode::from(5),
+        Ok(runtime) => {
+            startup.set_outcome("ok");
+            runtime
+        }
+        Err(_) => {
+            startup.set_outcome("failed");
+            startup.set_code(FailureKind::Unavailable.code());
+            return ExitCode::from(5);
+        }
     };
+    drop(startup);
+    let command = raw
+        .iter()
+        .find_map(|word| match word.as_str() {
+            "authorization" | "registration" | "s2" | "character" | "assignment" | "content"
+            | "projection" | "public-projection" => Some(word.as_str()),
+            _ => None,
+        })
+        .unwrap_or("unknown");
+    let mut span = oteryn_error_codes::Span::start(
+        oteryn_error_codes::Level::Info,
+        "ops",
+        "ops_command",
+        None,
+    );
+    span.field("command", command);
     match runtime.block_on(run(raw)) {
-        Ok(()) => ExitCode::SUCCESS,
+        Ok(()) => {
+            span.set_outcome("ok");
+            ExitCode::SUCCESS
+        }
         Err(failure) => {
+            span.set_outcome("failed");
+            span.set_code(failure.kind().code());
             let detail = failure.to_string();
             let line =
                 oteryn_error_codes::Line::new(oteryn_error_codes::Level::Error, "ops", "failed")

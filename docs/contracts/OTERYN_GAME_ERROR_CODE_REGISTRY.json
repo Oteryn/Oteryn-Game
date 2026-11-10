@@ -221,6 +221,16 @@
       "status": "ACTIVE"
     },
     {
+      "code": 2015,
+      "name": "SCHEDULER_JOB_FAILED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "RETRYABLE",
+      "owner": "apps/game-server::node::scheduler",
+      "contract": "LOG-11",
+      "hint": "A bounded scheduler or World pass failed and will be retried.",
+      "status": "ACTIVE"
+    },
+    {
       "code": 3001,
       "name": "REGISTRATION_REJECTED",
       "category": "CONFLICT",
@@ -331,6 +341,16 @@
       "status": "ACTIVE"
     },
     {
+      "code": 3012,
+      "name": "DURABILITY_TRANSACTION_FAILED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "RETRYABLE",
+      "owner": "crates/gameplay/durability::db",
+      "contract": "LOG-12",
+      "hint": "A bounded semantic transaction could not begin or install its transaction timeouts; retry through the owning operation.",
+      "status": "ACTIVE"
+    },
+    {
       "code": 4001,
       "name": "PANIC",
       "category": "INTERNAL_UNAVAILABLE",
@@ -338,6 +358,716 @@
       "owner": "crates/error-codes::hook",
       "contract": "ERR-NODE-1",
       "hint": "A thread panicked; the line has thread, location and a static payload; the process follows the panic profile.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4010,
+      "name": "COMBAT_INFLIGHT_LOOT_LIMIT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4011,
+      "name": "COMBAT_REWARD_PRINCIPAL_LIMIT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4012,
+      "name": "COMBAT_CORPSE_ENTRY_LIMIT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4013,
+      "name": "COMBAT_DEATH_REWARD_LIMIT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4014,
+      "name": "COMBAT_DEATH_REWARD_PRINCIPAL_MISMATCH",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4015,
+      "name": "COMBAT_DEATH_LOOT_PLAN",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4016,
+      "name": "COMBAT_DEATH_LOOT_CAPACITY",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4017,
+      "name": "COMBAT_DEATH_CORPSE_MINT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4018,
+      "name": "COMBAT_DEATH_LOOT_MINT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4019,
+      "name": "COMBAT_DEATH_XP_BINDING_MISSING",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4020,
+      "name": "COMBAT_DEATH_XP_AWARD_MISSING",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4021,
+      "name": "COMBAT_DEATH_XP_OCCURRENCE_INVALID",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4022,
+      "name": "COMBAT_DEATH_XP_PROGRESSION",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4023,
+      "name": "COMBAT_DEATH_BESTIARY_BINDING_MISSING",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4024,
+      "name": "COMBAT_DEATH_BESTIARY_CREDIT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4025,
+      "name": "COMBAT_DEATH_BESTIARY_OCCURRENCE_INVALID",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4026,
+      "name": "COMBAT_DEATH_BESTIARY_PROGRESS",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4027,
+      "name": "COMBAT_PVP_READMISSION_READ",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4028,
+      "name": "COMBAT_PVP_READMISSION_DEADLINE",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4029,
+      "name": "COMBAT_GROUND_PICKUP_CONTENT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4030,
+      "name": "COMBAT_GROUND_PICKUP_SOURCE_MISMATCH",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4031,
+      "name": "COMBAT_GROUND_PICKUP_TRANSFER",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4032,
+      "name": "COMBAT_CONDITION_NOT_CONDITION",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4033,
+      "name": "COMBAT_CONDITION_UNSUPPORTED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4034,
+      "name": "COMBAT_CONDITION_PARAMETERS_UNSUPPORTED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4035,
+      "name": "COMBAT_CONDITION_DAMAGE_SCHEDULE_UNSUPPORTED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4036,
+      "name": "COMBAT_CONDITION_FORMULA_MISMATCH",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4037,
+      "name": "COMBAT_CONDITION_FORMULA_UNSUPPORTED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4038,
+      "name": "COMBAT_CONDITION_SPEED_INEXACT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4039,
+      "name": "COMBAT_CONDITION_NUMERIC_OVERFLOW",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4040,
+      "name": "COMBAT_CONDITION_DEFINITION_INVALID",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4041,
+      "name": "COMBAT_AREA_HEAL_SOURCE_INVALID",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4042,
+      "name": "COMBAT_AREA_HEAL_SOURCE_UNSUPPORTED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4043,
+      "name": "COMBAT_AREA_HEAL_POLICY_MISSING",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4044,
+      "name": "COMBAT_AREA_HEAL_OWNER_STALE",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4045,
+      "name": "COMBAT_AREA_HEAL_OCCURRENCE_INVALID",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4046,
+      "name": "COMBAT_AREA_HEAL_REPLAY_CONFLICT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4047,
+      "name": "COMBAT_AREA_HEAL_NUMERIC",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4048,
+      "name": "COMBAT_AREA_HEAL_CAPACITY",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4049,
+      "name": "COMBAT_AREA_HEAL_CARRIER",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4050,
+      "name": "COMBAT_ATTACK_SOURCE_INVALID",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4051,
+      "name": "COMBAT_ATTACK_SHAPE_UNSUPPORTED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4052,
+      "name": "COMBAT_ATTACK_ISSUER_STALE",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4053,
+      "name": "COMBAT_ATTACK_TARGET_STALE",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4054,
+      "name": "COMBAT_ATTACK_CONTENT_CHANGED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4055,
+      "name": "COMBAT_ATTACK_TARGET_CHANGED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4056,
+      "name": "COMBAT_ATTACK_NOT_DUE",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4057,
+      "name": "COMBAT_ATTACK_OUT_OF_RANGE",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4058,
+      "name": "COMBAT_ATTACK_PROTECTED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4059,
+      "name": "COMBAT_ATTACK_OCCURRENCE_CONFLICT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4060,
+      "name": "COMBAT_ATTACK_OCCURRENCE_SUPERSEDED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4061,
+      "name": "COMBAT_ATTACK_LEDGER_FULL",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4062,
+      "name": "COMBAT_ATTACK_PLAN_INVALID",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4063,
+      "name": "COMBAT_ATTACK_VITALS_MISSING",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4064,
+      "name": "COMBAT_ATTACK_NUMERIC_OVERFLOW",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4065,
+      "name": "COMBAT_ATTACK_FACTS_MISSING",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4066,
+      "name": "COMBAT_ATTACK_OWNER_STALE",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4067,
+      "name": "COMBAT_ATTACK_AI_SELECTION_STALE",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4068,
+      "name": "COMBAT_EXACT_ACTOR_NOT_CURRENT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4069,
+      "name": "COMBAT_EXACT_ACTOR_OCCURRENCE_SUBSTITUTION",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4070,
+      "name": "COMBAT_EXACT_ACTOR_REVISION_SUBSTITUTION",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4071,
+      "name": "COMBAT_EXACT_ACTOR_TARGET_SUBSTITUTION",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4072,
+      "name": "COMBAT_EXACT_ACTOR_SOURCE_SUBSTITUTION",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4073,
+      "name": "COMBAT_OWNER_COMMIT_PLAN_INVALID",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4074,
+      "name": "COMBAT_OWNER_COMMIT_PLAN",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4075,
+      "name": "COMBAT_OWNER_COMMIT_OWNER",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4076,
+      "name": "COMBAT_APPEARANCE_CONTENT_CHANGED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4077,
+      "name": "COMBAT_APPEARANCE_SHAPE_UNSUPPORTED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4078,
+      "name": "COMBAT_APPEARANCE_MEMBER_MISSING",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4079,
+      "name": "COMBAT_APPEARANCE_DEFINITION_INVALID",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat boundary errors",
+      "contract": "LOG-15",
+      "hint": "Combat boundary refused the operation; inspect the correlated invariant or outcome detail.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4080,
+      "name": "COMBAT_RECORD_VARIANT_INVARIANT",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "oteryn-gameplay-combat invariant diagnostics",
+      "contract": "LOG-15",
+      "hint": "A combat record changed variant after exact resolution; inspect the correlated detail.",
       "status": "ACTIVE"
     },
     {

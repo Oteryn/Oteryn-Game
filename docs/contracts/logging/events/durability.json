@@ -3,6 +3,22 @@
   "owner": "crates",
   "events": [
     {
+      "event": "db_pool",
+      "level": "info",
+      "span": false,
+      "fields": ["size", "idle", "max"],
+      "codes": [],
+      "note": "Bounded PostgreSQL pool capacity snapshot after connection."
+    },
+    {
+      "event": "db_tx",
+      "level": "debug",
+      "span": true,
+      "fields": ["operation", "outcome", "ms", "attempts", "slow"],
+      "codes": ["E3012"],
+      "note": "Semantic transaction lifecycle; successful slow operations are promoted to warn."
+    },
+    {
       "event": "highscore_snapshot",
       "level": "info",
       "span": false,
