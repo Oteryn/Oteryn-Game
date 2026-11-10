@@ -45,7 +45,7 @@ mod movement_equipment;
 pub(in crate::gameplay_transport) use familiar_cast::{FamiliarActorEnd, FamiliarLogoutSave};
 #[cfg(test)]
 pub(in crate::gameplay_transport) use familiar_cast::{
-    FamiliarFenceRead, familiar_end_proven, familiar_end_read,
+    FamiliarFenceRead, PreparedFamiliarLogout, familiar_end_proven, familiar_end_read,
 };
 #[path = "familiar_defense.rs"]
 mod familiar_defense;
@@ -448,6 +448,18 @@ impl ChannelSpellStates {
 
     /// Unknown durable outcomes retain their original prepared owner state.
     pub fn has_pending_spell_commit(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.has_pending_spell_commit_before_actor_end(actor, session)
+            || self.has_retained_familiar_logout(actor, session)
+    }
+
+    /// The pending commits an actor end must settle first. A retained familiar actor-end save
+    /// is not one: only that next actor end supersedes it, so waiting for it beforehand blocks
+    /// every later logout and the loss of a closed connection for good.
+    pub(in crate::gameplay_transport) fn has_pending_spell_commit_before_actor_end(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
         self.pending_item_effects
             .iter()
             .any(|memo| memo.actor == actor && memo.request.command.game_session_id() == session)
@@ -463,7 +475,7 @@ impl ChannelSpellStates {
             || self.has_pending_native(actor, session)
             || self.has_pending_world_items(actor, session)
             || self.has_pending_parameters(actor, session)
-            || self.has_pending_familiar(actor, session)
+            || self.has_pending_familiar_cast(actor, session)
             || self.actors.iter().any(|(a, s, state)| {
                 *a == actor
                     && *s == session

@@ -85,6 +85,41 @@ pub struct PreparedFamiliarLogout {
     request: FamiliarStateRequest,
     before: PlayerSpellState,
 }
+#[cfg(test)]
+impl PreparedFamiliarLogout {
+    /// The retained save of an earlier actor end whose outcome stayed unknown.
+    pub(in crate::gameplay_transport) fn retained(
+        actor: ExactActorRef,
+        session: GameSessionId,
+        end: FamiliarActorEnd,
+        fence: CurrentCharacterGameplayFence,
+        before: PlayerSpellState,
+    ) -> Result<Self, String> {
+        use crate::durability::character_familiar::{
+            DurableFamiliarState, FamiliarStateOccurrence,
+        };
+        let after = DurableFamiliarState {
+            last_logout_unix: 1,
+            ..DurableFamiliarState::default()
+        };
+        Ok(Self {
+            actor,
+            session,
+            end,
+            fence,
+            request: FamiliarStateRequest {
+                occurrence: FamiliarStateOccurrence::from_bytes(end.occurrence(actor, session))
+                    .map_err(|error| format!("{error:?}"))?,
+                before: DurableFamiliarState::default(),
+                after,
+                content_revision: "content:1".into(),
+                policy_revision: "policy:1".into(),
+                policy_digest: [0; 32],
+            },
+            before,
+        })
+    }
+}
 /// The genuine actor end a familiar save belongs to: the expired grace of the exact control-loss
 /// epoch, or LOGOUT-WIRE-1's own logout of an ACTIVE session on its exact current transport.
 /// A logout is keyed by its release's transition id too: an attempt answered `BUSY` after its
@@ -217,6 +252,15 @@ pub(in crate::gameplay_transport) fn prune_familiar_returns(
 }
 impl ChannelSpellStates {
     pub fn has_pending_familiar(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.has_pending_familiar_cast(actor, session)
+            || self.has_retained_familiar_logout(actor, session)
+    }
+    /// A paid or lifecycle familiar commit whose outcome is unknown.
+    pub(super) fn has_pending_familiar_cast(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
         self.pending_familiars
             .iter()
             .any(|v| v.is_for(actor, session))
@@ -224,10 +268,17 @@ impl ChannelSpellStates {
                 .pending_familiar_lifecycle
                 .iter()
                 .any(|v| v.actor == actor && v.session == session)
-            || self
-                .pending_familiar_logouts
-                .iter()
-                .any(|v| v.actor == actor && v.session == session)
+    }
+    /// An actor-end save whose outcome is unknown. Only the next actor end resolves it: a later
+    /// logout attempt's release or the grace expiry supersedes it (`save_familiar_logout`).
+    pub(super) fn has_retained_familiar_logout(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        self.pending_familiar_logouts
+            .iter()
+            .any(|v| v.actor == actor && v.session == session)
     }
 }
 

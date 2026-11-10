@@ -829,6 +829,127 @@ fn logout_of_a_superseded_controller_is_busy_and_lifts_its_fence() -> TestResult
     })
 }
 
+/// An earlier logout attempt whose familiar actor-end save stayed unknown retains it. Only the
+/// next actor end (a later logout, or a grace expiry after the loss) supersedes it, so neither
+/// that logout nor the closed connection's loss may wait for it beforehand.
+#[test]
+fn a_retained_familiar_logout_save_neither_blocks_a_later_logout_nor_the_loss() -> TestResult {
+    run(async |admin| {
+        use crate::domain::{CharacterId, CharacterRevision};
+        use crate::durability::character_progression::CurrentCharacterGameplayFence;
+        use crate::foundation::{ConnectionGeneration, ScopeOwnershipGeneration};
+        use crate::gameplay_transport::actor_spell::{FamiliarActorEnd, PreparedFamiliarLogout};
+
+        async fn retain_unknown_logout(
+            owner: &ComposedFreshAdmission<'_, '_, '_>,
+            dependencies: &Dependencies,
+        ) -> TestResult {
+            let session = dependencies.admitted.game_session_id;
+            let controller = dependencies.admitted.controller.ok_or("controller")?;
+            let runtime = owner.runtime.lock().await;
+            let binding = runtime.binding();
+            let mut states = owner.states.spell_states.lock().await;
+            let before = states
+                .get(&runtime, dependencies.actor, session)
+                .ok_or("spell state")?
+                .clone();
+            let fence = CurrentCharacterGameplayFence {
+                character_id: CharacterId::from_bytes(id(60)).map_err(debug)?,
+                game_session_id: session,
+                connection_generation: ConnectionGeneration::new(1).map_err(debug)?,
+                character_lease_generation: 1,
+                runtime_scope: binding.runtime_scope(),
+                scope_ownership_generation: ScopeOwnershipGeneration::new(1).map_err(debug)?,
+                expected_character_revision: CharacterRevision::new(1).map_err(debug)?,
+            };
+            states
+                .pending_familiar_logouts
+                .push(PreparedFamiliarLogout::retained(
+                    dependencies.actor,
+                    session,
+                    FamiliarActorEnd::Logout(controller.transport, u64::MAX),
+                    fence,
+                    before,
+                )?);
+            assert!(states.has_pending_spell_commit(dependencies.actor, session));
+            Ok(())
+        }
+
+        reset();
+        let harness = Harness::create_with_admission_seed(
+            admin.clone(),
+            "logout_familiar_retained",
+            true,
+            false,
+        )
+        .await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let owner = dependencies.owner(&harness, &authority);
+        enter(&owner, &dependencies).await?;
+        retain_unknown_logout(&owner, &dependencies).await?;
+
+        // The closed connection's loss records; the retained save waits for the grace expiry.
+        let controller = dependencies.admitted.controller.ok_or("controller")?;
+        assert_eq!(
+            owner
+                .commit_control_loss(
+                    dependencies.admitted.game_session_id,
+                    dependencies.actor,
+                    controller,
+                )
+                .await,
+            ControlLossResult::Recorded
+        );
+        assert_eq!(
+            session_state(&harness, &dependencies).await?,
+            GameSessionState::Reconnectable
+        );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await?;
+
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "logout_familiar_retry", true, false)
+                .await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let owner = dependencies.owner(&harness, &authority);
+        enter(&owner, &dependencies).await?;
+        retain_unknown_logout(&owner, &dependencies).await?;
+
+        // The client's retried logout is the next actor end and completes.
+        assert_eq!(
+            owner.logout_session(dependencies.admitted).await,
+            LogoutReply::Result(LogoutResult::Accepted)
+        );
+        assert_eq!(
+            session_state(&harness, &dependencies).await?,
+            GameSessionState::Terminal
+        );
+        assert!(!actor_present(&owner, &dependencies).await);
+        eprintln!("NBROOT executed retained familiar logout loss and retried logout");
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
 #[test]
 fn an_uncommitted_unknown_logout_becomes_an_ordinary_loss() -> TestResult {
     run(async |admin| {

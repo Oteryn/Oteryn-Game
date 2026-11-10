@@ -74,7 +74,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             !runtime.actor_spell_reserved(actor)
         };
-        let pending = states.has_pending_spell_commit(actor, session);
+        let pending = states.has_pending_spell_commit_before_actor_end(actor, session);
         let settled = !pending && unreserved;
         drop(states);
         drop(runtime);
