@@ -64,6 +64,10 @@ fn main() -> std::process::ExitCode {
     match windows_shell::run(native_client()) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
+            oteryn_client::crash_report::record_startup_failure(
+                "client",
+                &format!("windows shell failed: {error}"),
+            );
             leprintln!("Error: {error:?}", error = error);
             std::process::ExitCode::FAILURE
         }

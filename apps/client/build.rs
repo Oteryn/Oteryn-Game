@@ -17,12 +17,12 @@ fn emit_common_controls_manifest() {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
     if target_os == "windows" && target_env == "msvc" {
+        let manifest =
+            std::path::Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default())
+                .join("resources/windows.manifest");
         println!("cargo:rustc-link-arg=/MANIFEST:EMBED");
-        println!(
-            "cargo:rustc-link-arg=/MANIFESTDEPENDENCY:type='win32' \
-             name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
-             processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'"
-        );
+        println!("cargo:rustc-link-arg=/MANIFESTINPUT:{}", manifest.display());
+        println!("cargo:rerun-if-changed={}", manifest.display());
     }
 }
 
