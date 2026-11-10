@@ -78,9 +78,9 @@ fn clock_epoch_matching_is_unique_monotonic_and_non_mutating() -> TestResult {
     let mut row = ClockRow::default();
     row.observe(reading(0), Duration::ZERO)?;
     let before = (row.previous, row.elapsed_minutes, row.passed.clone());
-    let error = ambiguous
-        .observe(&mut row, reading(2), Duration::ZERO)
-        .expect_err("two independently valid candidates must not be guessed");
+    let Err(error) = ambiguous.observe(&mut row, reading(2), Duration::ZERO) else {
+        return Err("two independently valid candidates must not be guessed".into());
+    };
     assert!(error.to_string().contains("multiple offset epochs"));
     assert_eq!((row.previous, row.elapsed_minutes, row.passed), before);
     assert_eq!(ambiguous.observed, 0);
@@ -470,13 +470,15 @@ async fn old_frames_deadline() -> TestResult {
     queued.notified().await;
     epochs.record(qualification_step() * 2)?;
     let wait_started = tokio::time::Instant::now();
-    let error = tokio::time::timeout(
+    let result = tokio::time::timeout(
         Duration::from_secs(10),
         service_clock_advance(&mut client, &mut row, &mut epochs, started, true),
     )
     .await
-    .map_err(|_| "old clock frames renewed the original 8s deadline")?
-    .expect_err("old frames cannot satisfy a still-owed current-epoch delta");
+    .map_err(|_| "old clock frames renewed the original 8s deadline")?;
+    let Err(error) = result else {
+        return Err("old frames cannot satisfy a still-owed current-epoch delta".into());
+    };
     assert_eq!(
         error.to_string(),
         "world-clock advance did not produce a server delta"
