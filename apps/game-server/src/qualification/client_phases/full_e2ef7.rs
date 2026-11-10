@@ -97,60 +97,21 @@ impl RankingProgress {
     }
 }
 
-struct Row {
-    required: &'static [&'static str],
-    passed: BTreeSet<&'static str>,
-    invalid_action: bool,
-    started: std::time::Instant,
-}
+// S11 keeps its single-argument PASS calls; the verdict is the shared row.
+struct Row(verdict::Row);
 
 impl Row {
     fn new(required: &'static [&'static str]) -> Self {
-        Self {
-            required,
-            passed: BTreeSet::new(),
-            invalid_action: false,
-            started: std::time::Instant::now(),
-        }
+        Self(verdict::Row::new("E2EF7", "S11", required).gap_lines())
     }
 
     fn pass(&mut self, action: &'static str) {
-        if !self.required.contains(&action) || !self.passed.insert(action) {
-            self.invalid_action = true;
-            return;
-        }
-        evidence(&format!(
-            "E2EF7_CHECK S11 {action} PASS server-frames-validated"
-        ));
+        self.0.pass(action, "server-frames-validated");
     }
 
+    #[cfg(test)]
     fn complete(&self) -> bool {
-        !self.required.is_empty()
-            && !self.invalid_action
-            && self
-                .required
-                .iter()
-                .all(|action| self.passed.contains(action))
-    }
-
-    fn finish(self, result: TestResult) {
-        for action in self.required {
-            if !self.passed.contains(action) {
-                evidence(&format!("E2EF7_GAP S11 {action} unproven"));
-            }
-        }
-        if let Err(error) = &result {
-            evidence(&format!("E2EF7_GAP S11 {error}"));
-        }
-        evidence(&format!(
-            "e2e_all scenario=S11.full status={} seconds={:.3}",
-            if result.is_ok() && self.complete() {
-                "PASS"
-            } else {
-                "FAIL"
-            },
-            self.started.elapsed().as_secs_f64(),
-        ));
+        self.0.complete()
     }
 }
 
@@ -159,20 +120,22 @@ pub(super) async fn run(clients: &SeamClients<'_>) {
     let mut progress = RankingProgress::new();
     // Admission and final logout are part of the row, so failure cannot silently
     // omit its report. Other packet mounts can still run after this returns.
-    let result = tokio::time::timeout(
-        Duration::from_secs(180),
-        journey(&mut row, clients, &mut progress),
-    )
-    .await;
+    let watch = row.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(180),
+            "ranking journey deadline; remaining actions unproven",
+            journey(&mut row, clients, &mut progress),
+        )
+        .await;
     progress.report(match &result {
-        Ok(Ok(())) => "finished",
-        Ok(Err(_)) => "failed",
-        Err(_) => "deadline",
+        Ok(()) => "finished",
+        Err(error) if matches!(verdict::classify(error.as_ref()).kind(), "deadline" | "no-progress") => {
+            "deadline"
+        }
+        Err(_) => "failed",
     });
-    row.finish(match result {
-        Ok(result) => result,
-        Err(_) => Err("ranking journey deadline; remaining actions unproven".into()),
-    });
+    row.0.finish(&result);
 }
 
 async fn exchange(
@@ -616,19 +579,35 @@ mod tests {
 
 // Keep the S11 journey above unchanged. The packet entry point isolates each
 // additional row's admission, deadline and verdict from the preceding row.
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    run(clients).await;
+pub(super) async fn run_packet(clients: &SeamClients<'_>, groups: &verdict::Groups) {
+    if groups.runs("f7run") {
+        run(clients).await;
+    }
+    if groups.runs("f7clock") {
+        clock_packet(clients).await;
+    }
+    if groups.runs("f7add") {
+        additional_rows(clients).await;
+    }
+    if groups.runs("f7cont") {
+        continuation_rows(clients).await;
+    }
+    if groups.runs("f7forge") {
+        forge_row(clients).await;
+    }
+}
+
+async fn clock_packet(clients: &SeamClients<'_>) {
     let mut row = ClockRow::default();
     let mut client = None;
-    let result = tokio::time::timeout(
-        qualification_deadline(3_750),
-        clock_journey(&mut row, &mut client, clients),
-    )
-    .await;
-    let mut result = match result {
-        Ok(result) => result,
-        Err(_) => Err("world-clock deadline: full cycle not observed within wall-time budget".into()),
-    };
+    let watch = row.verdict.watch();
+    let mut result = watch
+        .bound(
+            qualification_deadline(3_750),
+            "world-clock deadline: full cycle not observed within wall-time budget",
+            clock_journey(&mut row, &mut client, clients),
+        )
+        .await;
     // The session lives outside the timed future: even cancellation attempts an
     // ordinary logout, and cleanup failure prevents a full-row PASS.
     if let Some(client) = client.as_mut() {
@@ -643,10 +622,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         }
     }
     drop(client);
-    row.finish(result);
-    additional_rows(clients).await;
-    continuation_rows(clients).await;
-    forge_row(clients).await;
+    row.verdict.finish(&result);
 }
 
 const CLOCK_ACTIONS: &[&str] = &[
@@ -662,30 +638,34 @@ const CLOCK_ACTIONS: &[&str] = &[
     "final-logout",
 ];
 
-#[derive(Default)]
 struct ClockRow {
-    passed: BTreeSet<&'static str>,
+    verdict: verdict::Row,
     previous: Option<(oteryn_protocol_oteryn::world_clock::WorldClock, Duration)>,
     elapsed_minutes: u32,
     first_observation: Option<Duration>,
-    started: Option<std::time::Instant>,
+}
+
+impl Default for ClockRow {
+    fn default() -> Self {
+        Self {
+            verdict: verdict::Row::new("E2EF7", "W20a", CLOCK_ACTIONS).gap_lines(),
+            previous: None,
+            elapsed_minutes: 0,
+            first_observation: None,
+        }
+    }
 }
 
 impl ClockRow {
     // A cycle can observe the same class of frame repeatedly; only the first
     // proven occurrence emits its bounded check. No action is caller-defined.
     fn pass(&mut self, action: &'static str) {
-        if CLOCK_ACTIONS.contains(&action) && self.passed.insert(action) {
-            evidence(&format!(
-                "E2EF7_CHECK W20a {action} PASS server-frames-validated"
-            ));
-        }
+        self.verdict.pass_once(action, "server-frames-validated");
     }
 
+    #[cfg(test)]
     fn complete(&self) -> bool {
-        CLOCK_ACTIONS
-            .iter()
-            .all(|action| self.passed.contains(action))
+        self.verdict.complete()
     }
 
     fn observe(
@@ -760,27 +740,6 @@ impl ClockRow {
         self.first_observation.get_or_insert(elapsed);
         self.previous = Some((clock, elapsed));
         Ok(())
-    }
-
-    fn finish(self, result: TestResult) {
-        for action in CLOCK_ACTIONS {
-            if !self.passed.contains(action) {
-                evidence(&format!("E2EF7_GAP W20a {action} unproven"));
-            }
-        }
-        if let Err(error) = &result {
-            evidence(&format!("E2EF7_GAP W20a {error}"));
-        }
-        evidence(&format!(
-            "e2e_all scenario=W20a.full status={} seconds={:.3}",
-            if result.is_ok() && self.complete() {
-                "PASS"
-            } else {
-                "FAIL"
-            },
-            self.started
-                .map_or(0.0, |start| start.elapsed().as_secs_f64()),
-        ));
     }
 }
 
@@ -878,7 +837,6 @@ async fn clock_journey(
     clients: &SeamClients<'_>,
 ) -> TestResult {
     let started = std::time::Instant::now();
-    row.started = Some(started);
     let offset = qualification_offset();
     let mut previous_session = None;
     // The real-clock mode takes one hour; the disposable build advances facts.
@@ -922,7 +880,7 @@ async fn clock_journey(
             if CLOCK_ACTIONS
                 .iter()
                 .filter(|action| **action != "final-logout")
-                .all(|action| row.passed.contains(action))
+                .all(|action| row.verdict.passed.contains(action))
             {
                 return Ok(());
             }
@@ -961,7 +919,7 @@ mod clock_tests {
                 row.observe(source.reading(now).ok_or("clock reading")?, elapsed)?;
             }
             for action in ["day", "night", "sunrise", "sunset", "midnight-wrap", "full-cycle"] {
-                assert!(row.passed.contains(action), "missing {action}");
+                assert!(row.verdict.passed.contains(action), "missing {action}");
             }
             assert!(!row.complete(), "transport and relog are still required");
         }
@@ -1044,13 +1002,13 @@ mod clock_tests {
             "midnight-wrap",
             "full-cycle",
         ] {
-            assert!(row.passed.contains(action));
+            assert!(row.verdict.passed.contains(action));
         }
         for action in ["snapshot", "clock-delta", "fresh-admission", "final-logout"] {
             row.pass(action);
         }
         assert!(row.complete());
-        row.passed.remove("full-cycle");
+        row.verdict.passed.remove("full-cycle");
         assert!(!row.complete());
         Ok(())
     }
@@ -1065,7 +1023,7 @@ mod clock_tests {
         // Each individual sample is within the transport tolerance, but the
         // cumulative clock is already 12.5 seconds behind real observation time.
         assert!(row.observe(reading(5), Duration::from_secs(25)).is_err());
-        assert!(!row.passed.contains("full-cycle"));
+        assert!(!row.verdict.passed.contains("full-cycle"));
         Ok(())
     }
 
@@ -1107,45 +1065,19 @@ use native::world_spatial_entities as spatial;
 use oteryn_protocol_oteryn::{self as native, actor_spell as casts, party as parties};
 
 struct JourneyRow {
-    id: &'static str,
-    actions: Row,
+    actions: verdict::Row,
 }
 impl JourneyRow {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
         Self {
-            id,
-            actions: Row::new(required),
+            actions: verdict::Row::new("E2EF7", id, required).gap_lines(),
         }
     }
     fn pass(&mut self, action: &'static str) {
-        if !self.actions.required.contains(&action) || !self.actions.passed.insert(action) {
-            self.actions.invalid_action = true;
-        } else {
-            evidence(&format!(
-                "E2EF7_CHECK {} {action} PASS server-frames-validated",
-                self.id
-            ));
-        }
+        self.actions.pass(action, "server-frames-validated");
     }
     fn finish(self, result: &TestResult) {
-        for action in self.actions.required {
-            if !self.actions.passed.contains(action) {
-                evidence(&format!("E2EF7_GAP {} {action} unproven", self.id));
-            }
-        }
-        if let Err(error) = result {
-            evidence(&format!("E2EF7_GAP {} {error}", self.id));
-        }
-        evidence(&format!(
-            "e2e_all scenario={}.full status={} seconds={:.3}",
-            self.id,
-            if result.is_ok() && self.actions.complete() {
-                "PASS"
-            } else {
-                "FAIL"
-            },
-            self.actions.started.elapsed().as_secs_f64()
-        ));
+        self.actions.finish(result);
     }
 }
 const LIGHT_ACTIONS: &[&str] = &[
@@ -1194,14 +1126,14 @@ const PARTY_COST_ACTIONS: &[&str] = &[
 async fn additional_rows(clients: &SeamClients<'_>) {
     let mut row = JourneyRow::new("W20b", LIGHT_ACTIONS);
     let mut light = None;
-    let result = tokio::time::timeout(
-        qualification_deadline(3_300),
-        light_journey(&mut row, &mut light, clients),
-    )
-    .await;
-    let mut result = result.unwrap_or_else(|_| {
-        Err("personal-light journey exceeded wall-time deadline".into())
-    });
+    let watch = row.actions.watch();
+    let mut result = watch
+        .bound(
+            qualification_deadline(3_300),
+            "personal-light journey exceeded wall-time deadline",
+            light_journey(&mut row, &mut light, clients),
+        )
+        .await;
     if let Some(client) = light.as_mut() {
         match tokio::time::timeout(Duration::from_secs(25), client.logout()).await {
             Ok(Ok(())) => row.pass("final-logout"),
@@ -1216,16 +1148,24 @@ async fn additional_rows(clients: &SeamClients<'_>) {
     row.finish(&result);
 
     let mut gate = JourneyRow::new("S13a", PARTY_GATE_ACTIONS);
-    let mut cost = JourneyRow::new("S13b", PARTY_COST_ACTIONS);
+    let mut cost = JourneyRow {
+        actions: verdict::Row::new("E2EF7", "S13b", PARTY_COST_ACTIONS)
+            .gap_lines()
+            .sharing(&gate.actions),
+    };
     let mut pair = [None, None];
     let world = qualification_world(clients);
+    let watch = gate.actions.watch();
     let mut result = match &world {
-        Ok(world) => tokio::time::timeout(
-            Duration::from_secs(240),
-            party_spell_journey(&mut gate, &mut cost, &mut pair, clients, world),
-        )
-        .await
-        .unwrap_or_else(|_| Err("party-spell journey deadline; remaining actions unproven".into())),
+        Ok(world) => {
+            watch
+                .bound(
+                    Duration::from_secs(240),
+                    "party-spell journey deadline; remaining actions unproven",
+                    party_spell_journey(&mut gate, &mut cost, &mut pair, clients, world),
+                )
+                .await
+        }
         Err(error) => Err(format!("party compiled-world load: {error}").into()),
     };
     let mut cleaned = 0;
@@ -2913,6 +2853,7 @@ const IMBUE_ACTIONS: &[&str] = &[
 async fn continuation_rows(clients: &SeamClients<'_>) {
     for (id, actions) in [("S08", PVP_ACTIONS), ("P21", IMBUE_ACTIONS)] {
         let mut row = JourneyRow::new(id, actions);
+        let watch = row.actions.watch();
         let mut connections = [None, None];
         let mut pvp_connections = [None, None];
         let result = async {
@@ -2930,11 +2871,13 @@ async fn continuation_rows(clients: &SeamClients<'_>) {
                 imbuement_journey(&mut row, &mut connections[0], clients, &world).await
             }
         };
-        let mut result = tokio::time::timeout(Duration::from_secs(1_800), result)
-            .await
-            .unwrap_or_else(|_| {
-                Err(format!("{id}: journey deadline; required observations incomplete").into())
-            });
+        let mut result = watch
+            .bound(
+                Duration::from_secs(1_800),
+                format!("{id}: journey deadline; required observations incomplete"),
+                result,
+            )
+            .await;
         let admitted = connections.iter().flatten().count();
         let mut released = 0;
         for connection in connections.iter_mut().rev().flatten() {
@@ -5307,6 +5250,7 @@ const FORGE_ACTIONS: &[&str] = &[
 
 async fn forge_row(clients: &SeamClients<'_>) {
     let mut row = JourneyRow::new("P19", FORGE_ACTIONS);
+    let watch = row.actions.watch();
     let mut connection = None;
     let result = async {
         let world = qualification_world(clients)?;
@@ -5319,14 +5263,13 @@ async fn forge_row(clients: &SeamClients<'_>) {
         )
         .await
     };
-    let mut result = tokio::time::timeout(Duration::from_secs(1_800), result)
-        .await
-        .unwrap_or_else(|_| {
-            Err(
-                "P19: ordinary hunt/dust journey exceeded 1800s; remaining observations unproven"
-                    .into(),
-            )
-        });
+    let mut result = watch
+        .bound(
+            Duration::from_secs(1_800),
+            "P19: ordinary hunt/dust journey exceeded 1800s; remaining observations unproven",
+            result,
+        )
+        .await;
     if let Some(client) = connection.as_mut() {
         let cleanup = async {
             client.attack_target(None).await?;

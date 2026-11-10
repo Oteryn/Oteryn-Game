@@ -16,6 +16,8 @@ include!("native_content.rs");
 #[path = "full_e2ef1.rs"]
 mod provisioning;
 include!("quest_journal.rs");
+#[path = "verdict.rs"]
+pub(crate) mod verdict;
 
 pub(crate) const TOWN: TilePos = TilePos {
     x: 32369,
@@ -213,6 +215,7 @@ async fn walk(
         if outcome.disposition != StepDisposition::Moved || outcome.world_spatial_delta.is_none() {
             return Err(format!("town route step {direction:?}: {outcome:?}").into());
         }
+        verdict::Harness::global().progress("walk");
         let after = client.world_spatial().actor_position;
         if Some(tile(after)?) != destination(world, tile(before)?, direction) {
             return Err(format!(
@@ -242,13 +245,24 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     ));
     // Keep the high-level fixture on the other Character: the original
     // progression/death journey must retain its ordinary starter build.
-    full_e2ef7::run_packet(clients).await;
-    include!("full_e2ef6_mount.rs");
-    full_e2ef5::run(clients, &world).await;
+    let groups = verdict::Groups::from_env()?;
+    full_e2ef7::run_packet(clients, &groups).await;
+    if groups.runs("f6") {
+        include!("full_e2ef6_mount.rs");
+    }
+    if groups.runs("f5") {
+        full_e2ef5::run(clients, &world).await;
+    }
     for index in 0..clients.accounts.len() {
         wait_character_released(clients, index).await?;
     }
-    include!("full_e2ef4_mount.rs");
+    if groups.runs("f4") {
+        include!("full_e2ef4_mount.rs");
+    }
+    if !groups.runs("core") {
+        evidence("e2e_groups core=skipped");
+        return Ok(());
+    }
     let profile_result = profile_journey(clients, &world, &bytes, &metadata.spawns).await;
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
@@ -485,19 +499,19 @@ pub(super) async fn connect_character(
         attempt,
     };
     let token = sign_grant(&grant, now_seconds()?);
-    Ok(
-        oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
-            address: clients.address,
-            server_name: "localhost",
-            root_certificate: clients.certificate,
-            schema_revision: 1,
-            character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
-            admission_material: token.as_bytes(),
-            client_build_id: "oteryn-dev-client/world-qualification",
-            deadline: Duration::from_secs(20),
-        })
-        .await?,
-    )
+    let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+        address: clients.address,
+        server_name: "localhost",
+        root_certificate: clients.certificate,
+        schema_revision: 1,
+        character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
+        admission_material: token.as_bytes(),
+        client_build_id: "oteryn-dev-client/world-qualification",
+        deadline: Duration::from_secs(20),
+    })
+    .await?;
+    verdict::Harness::global().progress("admission");
+    Ok(client)
 }
 
 async fn travel_to_spawn(

@@ -19,7 +19,12 @@ impl Checks {
     pub(super) fn record(&mut self, row: &'static str, case: &str, result: TestResult) {
         let (status, reason, index) = match result {
             Ok(()) => ("PASS", "observed_in_protocol".to_owned(), 0),
-            Err(error) => ("FAIL", error.to_string().replace(['\n', '\r'], " "), 1),
+            Err(error) => {
+                let cause = super::client_world::verdict::classify(error.as_ref())
+                    .suffix(&format!("{row}/{case}"));
+                let reason = error.to_string().replace(['\n', '\r'], " ");
+                ("FAIL", format!("{reason}{cause}"), 1)
+            }
         };
         self.rows.entry(row).or_default()[index] += 1;
         println!("COMBAT_CHECK {row} {case} {status} {reason}");

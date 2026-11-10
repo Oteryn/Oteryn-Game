@@ -2,76 +2,12 @@
 //! No fixture provisioning, SQL mutations, clock overrides or invented wire handles.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityRef};
-use std::collections::BTreeSet;
 
-struct Row {
-    id: &'static str,
-    required: &'static [&'static str],
-    passed: BTreeSet<&'static str>,
-    started: std::time::Instant,
-    failures: Vec<String>,
-    missing_server: Option<&'static str>,
-}
+use verdict::Row;
 
-impl Row {
-    fn new(id: &'static str, required: &'static [&'static str]) -> Self {
-        Self {
-            id,
-            required,
-            passed: BTreeSet::new(),
-            started: std::time::Instant::now(),
-            failures: Vec::new(),
-            missing_server: None,
-        }
-    }
-
-    fn pass(&mut self, action: &'static str, observation: &str) {
-        if !self.required.contains(&action) || !self.passed.insert(action) {
-            self.failures
-                .push(format!("duplicate-or-unknown-action:{action}"));
-            return;
-        }
-        evidence(&format!(
-            "E2EF4_CHECK {} {action} PASS {observation}",
-            self.id
-        ));
-    }
-
-    fn finish(mut self, result: TestResult) {
-        if let Err(error) = result {
-            self.failures.push(error.to_string());
-        }
-        for action in self.required {
-            if !self.passed.contains(action) {
-                evidence(&format!(
-                    "E2EF4_CHECK {} {action} FAIL assertion-not-completed",
-                    self.id
-                ));
-            }
-        }
-        let complete = self.passed.len() == self.required.len() && self.failures.is_empty();
-        // Detail is separate from the report's single-token evidence field. A failure is
-        // never turned into MISSING-SERVER merely because this journey is unfinished.
-        for failure in &self.failures {
-            evidence(&format!("E2EF4_GAP {} {failure}", self.id));
-        }
-        evidence(&format!(
-            "e2e_all scenario={}.full status={} seconds={:.3} evidence={}",
-            self.id,
-            if complete {
-                "PASS"
-            } else if self.missing_server.is_some() {
-                "MISSING-SERVER"
-            } else {
-                "FAIL"
-            },
-            self.started.elapsed().as_secs_f64(),
-            self.missing_server.unwrap_or(
-                "source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1"
-            ),
-        ));
-    }
-}
+// Detail stays on the GAP lines, separate from the report's single-token evidence field.
+// A failure is never turned into MISSING-SERVER merely because this journey is unfinished.
+const EVIDENCE: &str = "source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1";
 
 const E01: &[&str] = &[
     "greet",
@@ -157,15 +93,14 @@ pub(super) async fn run(
     // Socket waits are bounded; a timed-out session is not evidence of server absence.
     macro_rules! row {
         ($id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
-            let mut row = Row::new($id, $actions);
-            let result = tokio::time::timeout(
+            let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE);
+            let watch = row.watch();
+            let result = watch.bound(
                 Duration::from_secs(90),
+                "native-journey-deadline;remaining-assertions-unproven",
                 $journey(&mut row, client $(, $arg)*),
             ).await;
-            row.finish(match result {
-                Ok(result) => result,
-                Err(_) => Err("native-journey-deadline;remaining-assertions-unproven".into()),
-            });
+            row.finish(&result);
         }};
     }
     row!("E01", E01, shop, clients, world, npcs);

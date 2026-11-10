@@ -31,67 +31,32 @@ const VOCATION: &[&str] = &[
     "relog-vocation-xp-level",
 ];
 
-struct Row {
-    id: &'static str,
-    required: &'static [&'static str],
-    passed: BTreeSet<&'static str>,
-    invalid_action: bool,
-    started: std::time::Instant,
-}
+struct Row(verdict::Row);
 
 impl Row {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
-        Self {
-            id,
-            required,
-            passed: BTreeSet::new(),
-            invalid_action: false,
-            started: std::time::Instant::now(),
-        }
+        Self(verdict::Row::new("E2EF6", id, required))
+    }
+
+    // Every row admits Character 1 first; the blessing rows also fight with Character 0.
+    fn needs(self, needs: &[verdict::Need]) -> Self {
+        Self(self.0.needs(needs))
     }
 
     fn pass(&mut self, action: &'static str, observed: impl std::fmt::Debug) {
-        if !self.required.contains(&action) || !self.passed.insert(action) {
-            self.invalid_action = true;
-            return;
-        }
-        evidence(&format!(
-            "E2EF6_CHECK {} {action} PASS observed={observed:?}",
-            self.id
-        ));
+        self.0.pass(action, format_args!("observed={observed:?}"));
     }
 
+    #[allow(
+        dead_code,
+        reason = "Only the function-local row test reads completeness; the shared verdict decides PASS."
+    )]
     fn complete(&self) -> bool {
-        !self.required.is_empty()
-            && !self.invalid_action
-            && self
-                .required
-                .iter()
-                .all(|action| self.passed.contains(action))
+        self.0.complete()
     }
 
     fn finish(self, result: TestResult) {
-        for action in self.required {
-            if !self.passed.contains(action) {
-                evidence(&format!(
-                    "E2EF6_CHECK {} {action} FAIL assertion-not-completed",
-                    self.id
-                ));
-            }
-        }
-        if let Err(error) = &result {
-            evidence(&format!("E2EF6_GAP {} {error}", self.id));
-        }
-        evidence(&format!(
-            "e2e_all scenario={}.full status={} seconds={:.3}",
-            self.id,
-            if result.is_ok() && self.complete() {
-                "PASS"
-            } else {
-                "FAIL"
-            },
-            self.started.elapsed().as_secs_f64(),
-        ));
+        self.0.finish(&result);
     }
 }
 
@@ -101,86 +66,100 @@ pub(super) async fn run(
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
 ) {
+    use verdict::Need::{Fixture, Row as After};
     // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
-    let mut starter = Row::new("C19a", STARTER);
-    let result = tokio::time::timeout(
-        Duration::from_secs(100),
-        starter_backpack(&mut starter, clients),
-    )
-    .await
-    .unwrap_or_else(|_| Err("starter journey deadline; remaining actions unproven".into()));
+    let mut starter = Row::new("C19a", STARTER).needs(&[Fixture(1)]);
+    let watch = starter.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(100),
+            "starter journey deadline; remaining actions unproven",
+            starter_backpack(&mut starter, clients),
+        )
+        .await;
     starter.finish(result);
 
-    let mut temple = Row::new("C20d", TEMPLE);
-    let result = tokio::time::timeout(
-        Duration::from_secs(330),
-        temple_respawn(&mut temple, clients, world, spawns),
-    )
-    .await
-    .unwrap_or_else(|_| Err("temple journey deadline; remaining actions unproven".into()));
+    let mut temple = Row::new("C20d", TEMPLE).needs(&[Fixture(1)]);
+    let watch = temple.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(330),
+            "temple journey deadline; remaining actions unproven",
+            temple_respawn(&mut temple, clients, world, spawns),
+        )
+        .await;
     temple.finish(result);
 
-    let mut vocation = Row::new("S16a", VOCATION);
-    let result = tokio::time::timeout(
-        Duration::from_secs(420),
-        first_vocation(&mut vocation, clients, world, spawns, npcs),
-    )
-    .await
-    .unwrap_or_else(|_| Err("Oressa journey deadline; remaining actions unproven".into()));
+    let mut vocation = Row::new("S16a", VOCATION).needs(&[Fixture(1)]);
+    let watch = vocation.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(420),
+            "Oressa journey deadline; remaining actions unproven",
+            first_vocation(&mut vocation, clients, world, spawns, npcs),
+        )
+        .await;
     vocation.finish(result);
 
-    let mut loss = Row::new("C20a", EXPERIENCE_LOSS);
-    let result = tokio::time::timeout(
-        Duration::from_secs(1100),
-        experience_loss(&mut loss, clients, world, spawns, npcs),
-    )
-    .await
-    .unwrap_or_else(|_| Err("experience-loss journey deadline; remaining actions unproven".into()));
+    // Promotion starts from the knight the first-vocation row produces.
+    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[Fixture(1), After("S16a")]);
+    let watch = loss.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1100),
+            "experience-loss journey deadline; remaining actions unproven",
+            experience_loss(&mut loss, clients, world, spawns, npcs),
+        )
+        .await;
     match result {
         Ok(Some(source)) => finish_missing_receipt(loss, source),
         other => loss.finish(other.map(|_| ())),
     }
 
-    let mut custody = Row::new("C20b", ITEM_LOSS);
-    let result = tokio::time::timeout(
-        Duration::from_secs(850),
-        item_loss(&mut custody, clients, world, spawns, npcs),
-    )
-    .await
-    .unwrap_or_else(|_| Err("item-loss journey deadline; remaining actions unproven".into()));
+    let mut custody = Row::new("C20b", ITEM_LOSS).needs(&[Fixture(1)]);
+    let watch = custody.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(850),
+            "item-loss journey deadline; remaining actions unproven",
+            item_loss(&mut custody, clients, world, spawns, npcs),
+        )
+        .await;
     custody.finish(result);
 
     // Purchase qualification precedes consumption: Character 0 must retain its
     // never-aggressed low-level Adventurer eligibility for both protected deaths.
-    let mut services = Row::new("P16", BLESSING_SERVICES);
-    let result = tokio::time::timeout(
-        Duration::from_secs(1800),
-        blessing_services(&mut services, clients, world, spawns, npcs),
-    )
-    .await
-    .unwrap_or_else(|_| {
-        Err("blessing services journey deadline; remaining actions unproven".into())
-    });
+    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[Fixture(1), Fixture(0)]);
+    let watch = services.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1800),
+            "blessing services journey deadline; remaining actions unproven",
+            blessing_services(&mut services, clients, world, spawns, npcs),
+        )
+        .await;
     finish_blessing_row(services, result);
 
-    let mut consumption = Row::new("C20c", BLESSING_DEATH);
-    let result = tokio::time::timeout(
-        Duration::from_secs(1500),
-        blessing_death(&mut consumption, clients, world, spawns, npcs),
-    )
-    .await
-    .unwrap_or_else(|_| {
-        Err("blessing consumption journey deadline; remaining actions unproven".into())
-    });
+    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[Fixture(0), Fixture(1)]);
+    let watch = consumption.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1500),
+            "blessing consumption journey deadline; remaining actions unproven",
+            blessing_death(&mut consumption, clients, world, spawns, npcs),
+        )
+        .await;
     finish_blessing_row(consumption, result);
 
-    let mut resting = Row::new("P10", RESTING_BONUSES);
-    let result = tokio::time::timeout(
-        Duration::from_secs(1800),
-        resting_bonuses(&mut resting, clients, world, spawns),
-    )
-    .await
-    .unwrap_or_else(|_| Err("P10 resting journey deadline; remaining actions unproven".into()));
+    let mut resting = Row::new("P10", RESTING_BONUSES).needs(&[Fixture(1)]);
+    let watch = resting.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1800),
+            "P10 resting journey deadline; remaining actions unproven",
+            resting_bonuses(&mut resting, clients, world, spawns),
+        )
+        .await;
     finish_resting_row(resting, result);
 }
 
@@ -499,23 +478,11 @@ async fn resting_deficits(
 
 fn finish_resting_row(row: Row, result: TestResult<Option<&'static str>>) {
     if let Ok(Some(source)) = result {
-        for action in row.required {
-            if !row.passed.contains(action) {
-                evidence(&format!(
-                    "E2EF6_CHECK {} {action} FAIL assertion-not-completed",
-                    row.id
-                ));
-            }
-        }
         evidence(&format!(
             "E2EF6_GAP {} server ticks qualify all PZ tiles, without an admitted narrower resting-area classification; no native player route can prove the area distinction source:{source}",
-            row.id
+            row.0.id
         ));
-        evidence(&format!(
-            "e2e_all scenario={}.full status=MISSING-SERVER seconds={:.3} evidence=source:{source}",
-            row.id,
-            row.started.elapsed().as_secs_f64()
-        ));
+        row.0.finish_missing_server(source);
     } else {
         row.finish(result.map(|_| ()));
     }
@@ -1880,23 +1847,11 @@ async fn experience_loss(
 }
 
 fn finish_missing_receipt(row: Row, source: &str) {
-    for action in row.required {
-        if !row.passed.contains(action) {
-            evidence(&format!(
-                "E2EF6_CHECK {} {action} FAIL assertion-not-completed",
-                row.id
-            ));
-        }
-    }
     evidence(&format!(
         "E2EF6_GAP {} native RecentDeaths exposes only timestamp/cause; no player route to loss receipt XP/blessing/promotion fields source:{source}",
-        row.id
+        row.0.id
     ));
-    evidence(&format!(
-        "e2e_all scenario={}.full status=MISSING-SERVER seconds={:.3} evidence=source:{source}",
-        row.id,
-        row.started.elapsed().as_secs_f64()
-    ));
+    row.0.finish_missing_server(source);
 }
 
 async fn ground_entries(
@@ -2218,21 +2173,9 @@ fn finish_blessing_row(row: Row, result: TestResult) {
     if let Err(error) = &result
         && error.downcast_ref::<MissingBlessingRoute>().is_some()
     {
-        for action in row.required {
-            if !row.passed.contains(action) {
-                evidence(&format!(
-                    "E2EF6_CHECK {} {action} FAIL assertion-not-completed",
-                    row.id
-                ));
-            }
-        }
         let source = "crates/gameplay/content/src/content/npc_catalogue/premium_services.rs:95";
-        evidence(&format!("E2EF6_GAP {} {error} source:{source}", row.id));
-        evidence(&format!(
-            "e2e_all scenario={}.full status=MISSING-SERVER seconds={:.3} evidence=source:{source}",
-            row.id,
-            row.started.elapsed().as_secs_f64()
-        ));
+        evidence(&format!("E2EF6_GAP {} {error} source:{source}", row.0.id));
+        row.0.finish_missing_server(source);
     } else {
         row.finish(result);
     }
