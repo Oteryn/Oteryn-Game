@@ -605,7 +605,7 @@ async fn original_tile(
             target,
         )
         .await
-        .map_err(|error| debug(error).into())
+        .map_err(debug)
 }
 
 async fn actual_creature_step(

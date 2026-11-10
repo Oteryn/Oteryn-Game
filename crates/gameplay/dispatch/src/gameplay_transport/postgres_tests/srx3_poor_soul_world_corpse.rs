@@ -114,8 +114,7 @@ fn srx3_poor_soul_actual_world_uncredited_corpse_accepts_current_bundle_frame_po
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             owner.active_generation = Some(active);
-            owner.rooms =
-                crate::gameplay_transport::SeamRooms::new(Some(&scene.room), Some(&scene.room));
+            owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&scene.room));
             issue_world_pins(&h, &entry_pin, &scene.pin, &world).await?;
             let mut admitted = deps.admitted;
             super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 8)

@@ -90,7 +90,10 @@ fn cl25j_feature_commands_cross_the_session_loop()
                         }
                         450 => {
                             assert_eq!(command.kind, 736);
-                            assert!(command.payload.is_empty());
+                            assert_eq!(
+                                command.payload,
+                                oteryn_client_runtime::server_modal::QUERY_WITH_TERMINAL_REPLY
+                            );
                             oteryn_client_runtime::server_modal::Reply::None
                                 .encode()
                                 .map_err(|_| SessionError::SessionUnusable)?
