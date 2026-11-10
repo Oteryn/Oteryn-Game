@@ -9,6 +9,9 @@ pub(super) struct PreviewAssets {
     index: AppearanceIndex,
     sheets: SpriteSheets,
 }
+// The appearance gallery preview mounts the same pixel routines for its own
+// `PreviewAssets`; this mount implements them for the party portrait assets.
+#[allow(clippy::duplicate_mod)]
 #[path = "../0025-appearance/view/preview_pixels.rs"]
 mod pixels;
 impl PreviewAssets {

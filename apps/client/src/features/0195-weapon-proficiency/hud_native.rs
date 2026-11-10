@@ -118,7 +118,7 @@ impl ProficiencyHud {
                 220,
                 26,
                 root,
-                1usize as *mut _,
+                std::ptr::without_provenance_mut(1),
                 null_mut(),
                 null(),
             );
@@ -132,7 +132,7 @@ impl ProficiencyHud {
                 52,
                 52,
                 root,
-                2usize as *mut _,
+                std::ptr::without_provenance_mut(2),
                 null_mut(),
                 null(),
             );

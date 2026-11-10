@@ -93,7 +93,7 @@ impl Mirror {
             SetPropW(
                 self.transcript,
                 wide(crate::play::FIXED_PIXEL_FONT_PROPERTY).as_ptr(),
-                1usize as *mut _,
+                std::ptr::without_provenance_mut(1),
             );
             if text != self.held {
                 SetWindowTextW(self.transcript, wide(&text).as_ptr());
