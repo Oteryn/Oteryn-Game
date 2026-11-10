@@ -120,7 +120,7 @@ unsafe fn window_pixels(hwnd: HWND) -> io::Result<Pixels> {
             {
                 return Err(io::Error::last_os_error());
             }
-            for pixel in bytes.chunks_exact_mut(4) {
+            for pixel in bytes.as_chunks_mut::<4>().0 {
                 pixel.swap(0, 2);
                 pixel[3] = 255;
             }

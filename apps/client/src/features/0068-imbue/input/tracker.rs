@@ -104,10 +104,9 @@ pub(in crate::play) fn poll(
             }
         })
         .is_err()
+        && let Some(shared) = failed.upgrade()
     {
-        if let Some(shared) = failed.upgrade() {
-            lock(&shared).imbue.equipment.feedback =
-                Some("Automatic refresh unavailable; use Refresh equipment");
-        }
+        lock(&shared).imbue.equipment.feedback =
+            Some("Automatic refresh unavailable; use Refresh equipment");
     }
 }

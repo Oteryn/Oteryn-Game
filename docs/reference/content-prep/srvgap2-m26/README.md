@@ -1,0 +1,14 @@
+# M26 source custody
+
+Classification: **OTS_HYPOTHESIS_ONLY**, source facts from the repository's pinned Crystal revision `201189f871d23597b82caf88fd611454a2ddefb8`. This is not a claim of retail parity or runtime qualification.
+
+- [Soul War configuration and actual lever registrations](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/lib/quests/soul_war.lua): six independently registered literal configurations; Greed's later 20-hour field wins, and purple Megalomania uses 72 hours. Entry setup callbacks and extra monsters remain required engine work.
+- [Canonical Bakragore lever](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest/rotten_bakragore.lua): `ParseDuration("68h") / ParseDuration("1s")`, or 244800 seconds. The existing native source policy identifies this route.
+- [Duplicate Bakragore lever](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest/rotten_bakragore1.lua): 20 hours. Capture retains this distinct source fact; it does not replace or admit the canonical route.
+- [Pinned map](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world.otbm), [appearance bank](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/appearances.dat), and [item loader XML](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml): the extractor verifies exact Git blobs before interpreting selected tiles or item semantics. Raw map, bank and Lua bodies are not redistributed in this change.
+
+`sources.json` retains the fetched URLs, hashes and sizes. Captured layouts and map cells grant no activation, Instance, cooldown, Item ownership, fight callback or reward authority. Unknown source hooks and unmaterialized mutable Items stay closed until their real owners implement them.
+
+Spite death-hook implementation checked at [soul_war_mechanics.lua:93-120](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/soul_war/soul_war_mechanics.lua#L93): only actual damage contributors receive the first boss completion, first-taint timestamp and next taint. The existing native party settlement uses its captured damage map and the same fenced transaction for those Quest writes. Hook capture verifies both the monster and event-definition Git blobs.
+
+Spite needs six additional source-backed Item profiles (33864–33867, 33876, 34111), thirty total Item dependencies. This slice captures layouts and provenance; it does not admit those Items or claim a runnable encounter. Existing canonical native Creature balance remains authoritative; the capture does not substitute Crystal's raw health value for the admitted profile.

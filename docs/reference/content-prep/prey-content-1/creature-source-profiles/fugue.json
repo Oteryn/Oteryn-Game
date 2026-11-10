@@ -1,0 +1,119 @@
+{
+  "name": "Fugue",
+  "classification": "DERIVED",
+  "target_cut": "2026-11-08",
+  "native_admission_authorized": true,
+  "sources": [
+    {
+      "id": "otservbr-derived-fugue",
+      "url": "https://github.com/Meth28/global/blob/d959b2a99136978fc714622d42f6906b6d90e892/data/monster/quests/the_order_of_the_lion/fugue.lua",
+      "revision": "d959b2a99136978fc714622d42f6906b6d90e892",
+      "response_sha256": "834ff4317ac9072021905921751056e5dc466dc216589292c8274e250a19595c",
+      "scope": "OTServBR-derived repository; not a claim about current Canary main",
+      "checked_at": "2026-11-08"
+    },
+    {
+      "id": "onDeathForParty",
+      "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/functions.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "response_sha256": "6a6f06d48a5b541c52ea3db6bcc68c934c1771e63a3db612e0e93df229ff110a",
+      "checked_at": "2026-11-08",
+      "scope": "SOURCE_PARTY_DEATH_QUALIFICATION"
+    },
+    {
+      "id": "Participants",
+      "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/party.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "response_sha256": "f2db68fb466c2b4fcee7b4c9a0fc4e30ce551d30bf2f761365d8225eaee35202",
+      "checked_at": "2026-11-08",
+      "scope": "SOURCE_PARTY_DEATH_QUALIFICATION"
+    },
+    {
+      "id": "wiki-converted-secondary",
+      "url": "https://github.com/soul4soul/converted-tibiawiki-monster-data/blob/a2cccf99fccc547e13720704f99cd0125f22f82f/tfs%20revscriptsys/Fugue.lua",
+      "revision": "a2cccf99fccc547e13720704f99cd0125f22f82f",
+      "response_sha256": "7e1e488c26ef23676e74e48dd61ab38d8594155e52c3b948a3c875ff526c9c48",
+      "checked_at": "2026-11-08",
+      "scope": "SECONDARY_INCOMPLETE_WIKI_CONVERSION"
+    }
+  ],
+  "observations": {
+    "health": 17000,
+    "experience": 10000,
+    "speed": 210,
+    "defense": 50,
+    "armor": 82,
+    "outfit": {
+      "lookType": 1317,
+      "lookHead": 38,
+      "lookBody": 57,
+      "lookLegs": 57,
+      "lookFeet": 95,
+      "lookAddons": 3
+    },
+    "corpse": 32426,
+    "physical_resistance_percent": 50,
+    "attacks": [
+      {
+        "kind": "melee",
+        "interval_ms": 2000,
+        "chance_percent": 100,
+        "minimum": 150,
+        "maximum": 700
+      },
+      {
+        "kind": "physical",
+        "interval_ms": 2000,
+        "chance_percent": 20,
+        "minimum": 200,
+        "maximum": 720,
+        "range": 7,
+        "projectile": "royalspear",
+        "target": false
+      },
+      {
+        "kind": "holy",
+        "interval_ms": 1000,
+        "chance_percent": 14,
+        "minimum": 500,
+        "maximum": 1000,
+        "length": 8,
+        "spread": 3,
+        "effect": "blockhit",
+        "target": false
+      }
+    ],
+    "healing": {
+      "interval_ms": 2000,
+      "chance_percent": 20,
+      "minimum": 200,
+      "maximum": 650,
+      "effect": "magic_blue"
+    },
+    "death_script_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_fugue_kill.lua",
+    "death_semantics": "onDeathForParty with mostDamageKiller; KesarMission 2 -> 3; FugueSpawned -> 0",
+    "party_semantics": "Most-damage player; shared-experience-active party members plus leader, otherwise only that player. No independent damage-map or last-hit qualification."
+  },
+  "source_identity": {
+    "namespace": "Meth28/global/monster",
+    "path": "data/monster/quests/the_order_of_the_lion/fugue.lua",
+    "revision": "d959b2a99136978fc714622d42f6906b6d90e892"
+  },
+  "continuity": "SOURCE_VARIANT_NATIVE_ADMISSION",
+  "native_identity_assigned": true,
+  "native_identity": "oteryn:creature.fugue",
+  "qualification_limits": [
+    "The executable body follows the complete pinned OTServBR-derived Lua variant; equivalence to current official Global combat is not asserted.",
+    "The secondary Wiki conversion reports different HP/XP but has zero outfit/corpse/speed and no attacks. It is retained as discrepant partial evidence, not silently merged into this executable source body."
+  ],
+  "secondary_observations": {
+    "source": "wiki-converted-secondary",
+    "health": 32000,
+    "experience": 23000,
+    "outfit_type": 0,
+    "corpse": 0,
+    "speed": 0,
+    "attacks": []
+  },
+  "mechanic": "QMECH-M28"
+}
