@@ -3,6 +3,7 @@
 //! selects it using the notice's actual committed enqueue owner clock.
 use super::actor_spell;
 use super::attack;
+use super::soul_war_callbacks::megalomania::phases::CopiedDeath as MegalomaniaDeath;
 use super::soul_war_malice;
 use super::*;
 use crate::movement::monster_map::CurrentMonsterMap;
@@ -22,6 +23,7 @@ pub(super) struct PreparedSourceDeathAction {
     now_us: u64,
     heart: Option<heart::HeartAction>,
     soul_war: Option<SoulWarAction>,
+    megalomania: Option<MegalomaniaDeath>,
 }
 impl PreparedSourceDeathAction {
     fn capture(
@@ -41,12 +43,14 @@ impl PreparedSourceDeathAction {
             None
         };
         let soul_war = SoulWarAction::capture(runtime, attack, begin, index, now_us)?;
+        let megalomania = MegalomaniaDeath::capture(runtime, begin, &begin.events()[index])?;
         Ok(Self {
             begin: begin.clone(),
             index,
             now_us,
             heart,
             soul_war,
+            megalomania,
         })
     }
     pub(super) fn begin(
@@ -74,6 +78,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         now: u64,
     ) -> Result<bool, ()> {
+        if self.drain_detached_megalomania_timer(permit, now).await? {
+            return Ok(true);
+        }
         let has_source_head = {
             let runtime = self.runtime.lock().await;
             runtime.has_pending_source_creature_deaths()
@@ -213,6 +220,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             heart.execute(self, &action).await.is_ok()
         } else if let Some(soul_war) = &action.soul_war {
             soul_war.execute(self, permit).await.is_ok()
+        } else if let Some(megalomania) = &action.megalomania {
+            megalomania.execute(self, permit, &action).await.is_ok()
         } else {
             matches!(
                 callbacks
@@ -241,6 +250,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 heart.publish_vortex(self).is_err()
             } else if let Some(soul_war) = &action.soul_war {
                 !soul_war.current_for(&runtime)
+            } else if let Some(megalomania) = &action.megalomania {
+                !megalomania.completed(&states, &runtime, &action)
             } else {
                 !matches!(
                     callbacks.publish_source_death_action(&mut runtime, &action),
@@ -364,7 +375,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     event.name(),
                     begin.definition_key()
                 );
-                let prepared = if action.heart.is_some() || action.soul_war.is_some() {
+                let prepared = if action.heart.is_some()
+                    || action.soul_war.is_some()
+                    || action.megalomania.is_some()
+                {
                     true
                 } else {
                     callbacks.prepare_source_death_action(runtime, room, native, action)?

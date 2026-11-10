@@ -4,6 +4,8 @@ use super::*;
 use oteryn_gameplay_encounters::bosses::goshnars_megalomania::WhiteClock;
 use oteryn_gameplay_entities::carrier::soul_war::SoulWarSpawnSource;
 use std::sync::Arc;
+pub(in crate::gameplay_transport) mod phases;
+pub(in crate::gameplay_transport) mod sanity;
 const PURPLE: &str = "oteryn:creature.goshnar_s_megalomania_purple";
 const FORMS: [&str; 3] = [
     PURPLE,
@@ -17,6 +19,8 @@ pub(super) struct MegalomaniaCallbacks {
     white: WhiteClock,
     last: Option<ThinkOccurrence>,
     revert_ms: Option<u64>,
+    phases: phases::Phases,
+    last_form: oteryn_gameplay_encounters::bosses::goshnars_megalomania::Form,
 }
 impl MegalomaniaCallbacks {
     pub(super) fn initialize(
@@ -56,10 +60,15 @@ impl MegalomaniaCallbacks {
             white: WhiteClock::default(),
             last: None,
             revert_ms: None,
+            phases: phases::Phases::at_birth(),
+            last_form: oteryn_gameplay_encounters::bosses::goshnars_megalomania::Form::Purple,
         })
     }
     pub(super) fn next_due_ms(&self) -> Option<u64> {
         self.revert_ms
+            .into_iter()
+            .chain(self.phases.next_due_ms())
+            .min()
     }
 }
 pub(super) async fn drive(
@@ -71,14 +80,41 @@ pub(super) async fn drive(
     occurrences: &[ThinkOccurrence],
     now: u64,
 ) -> Result<(), ()> {
-    let Some(mut owner) = states.soul_war_callbacks.megalomania.take() else {
+    if states.soul_war_callbacks.sanity.pending.is_some() {
+        return Ok(());
+    }
+    let owner = states.soul_war_callbacks.megalomania.as_ref().ok_or(())?;
+    if !qualifies_source(runtime, native)
+        || !runtime.soul_war_white_tile_source_current(&owner.source)
+        || !map.validate_transaction(runtime).await
+    {
         return Err(());
+    }
+    let needs_clock = occurrences.iter().any(|occurrence| {
+        occurrence.actor == owner.boss
+            && owner
+                .last
+                .is_none_or(|last| occurrence.sequence > last.sequence)
+    }) && runtime
+        .companion_snapshot(owner.boss)
+        .is_ok_and(|boss| boss.health > 0);
+    let utc = if needs_clock {
+        Some(map.source_observed_seconds(runtime).await.ok_or(())?)
+    } else {
+        None
     };
-    let result = async {
-        if !qualifies_source(runtime, native)
-            || !runtime.soul_war_white_tile_source_current(&owner.source)
-            || !map.validate_transaction(runtime).await
+    // Retained callbacks stay in ChannelSpellStates through every awaited read.
+    // The publication below is one synchronous turn and always restores them.
+    let mut owner = states.soul_war_callbacks.megalomania.take().ok_or(())?;
+    let result = (|| {
+        phases::cleanup(runtime, states, &mut owner)?;
+        if owner
+            .phases
+            .next_due_ms()
+            .is_some_and(|due| due <= now / 1000)
         {
+            // The original timer needs its detached all-role name/Map read;
+            // keep this actual Think batch reserved until that callback runs.
             return Err(());
         }
         if owner.revert_ms.is_some_and(|due| due <= now / 1000) {
@@ -101,6 +137,7 @@ pub(super) async fn drive(
             {
                 continue;
             }
+            let utc = utc.ok_or(())?;
             let mut next = owner.white.clone();
             let pulse = next.think(1000).ok_or(())?;
             if pulse.warning {
@@ -143,12 +180,20 @@ pub(super) async fn drive(
                 )?;
                 owner.revert_ms = Some(due);
             }
+            let mut defense_clock = states.soul_war_callbacks.sanity.clock.clone();
+            if defense_clock.increase_when_due(utc).is_some() {
+                let boss = runtime.companion_snapshot(owner.boss).map_err(|_| ())?;
+                let expected = runtime.soul_war_megalomania_drain(&boss).map_err(|_| ())?;
+                runtime
+                    .increase_soul_war_megalomania(&boss, expected)
+                    .map_err(|_| ())?;
+            }
+            states.soul_war_callbacks.sanity.clock = defense_clock;
             owner.white = next;
             owner.last = Some(occurrence);
         }
         Ok(())
-    }
-    .await;
+    })();
     states.soul_war_callbacks.megalomania = Some(owner);
     result
 }

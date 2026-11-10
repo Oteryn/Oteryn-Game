@@ -19,11 +19,12 @@ pub(super) mod cruelty;
 mod entry;
 mod entry_state;
 mod hatred;
-mod megalomania;
+pub(super) mod megalomania;
 pub(super) mod player_source;
 mod taint_five;
 mod taint_one;
 mod taints;
+pub(super) mod torment;
 pub(super) mod white;
 pub(super) use attacks::drive as drive_attacks;
 pub(super) use player_source::publish_command_source;
@@ -50,6 +51,7 @@ pub(super) struct SoulWarCallbacks {
     hatred: Option<hatred::HatredCallbacks>,
     cruelty: Option<cruelty::CrueltyCallbacks>,
     pub(super) maw: cruelty::maw::MawState,
+    pub(super) sanity: megalomania::sanity::SanityState,
     megalomania: Option<megalomania::MegalomaniaCallbacks>,
     pub(super) white: white::WhiteTileState,
     entry_state: entry_state::EntryState,
@@ -57,6 +59,7 @@ pub(super) struct SoulWarCallbacks {
     taint_one: taint_one::TaintOne,
     fifth: taint_five::FifthCadence,
     taints: taints::CurrentTaints,
+    torment: torment::TormentCallbacks,
     qualified_content: Option<[u8; 32]>,
     boss: Option<ExactActorRef>,
     spawn_source: Option<oteryn_gameplay_entities::carrier::soul_war::SoulWarSpawnSource>,
@@ -106,12 +109,19 @@ impl SoulWarCallbacks {
     }
     /// Real source scheduler work, including lethal notices not consumed yet.
     pub(super) fn next_native_due(&self) -> Option<u64> {
-        self.next_native_due_with_malice(true)
+        self.next_native_due_with_sources(true, true)
     }
     pub(super) fn next_native_due_without_malice(&self) -> Option<u64> {
-        self.next_native_due_with_malice(false)
+        self.next_native_due_with_sources(false, true)
     }
-    fn next_native_due_with_malice(&self, include_malice: bool) -> Option<u64> {
+    pub(super) fn next_native_due_without_megalomania(&self) -> Option<u64> {
+        self.next_native_due_with_sources(true, false)
+    }
+    fn next_native_due_with_sources(
+        &self,
+        include_malice: bool,
+        include_megalomania: bool,
+    ) -> Option<u64> {
         self.greed
             .next_due_ms()
             .into_iter()
@@ -133,6 +143,7 @@ impl SoulWarCallbacks {
             .chain(
                 self.megalomania
                     .as_ref()
+                    .filter(|_| include_megalomania)
                     .and_then(|owner| owner.next_due_ms()),
             )
             .filter_map(|ms| ms.checked_mul(1_000))
@@ -404,8 +415,20 @@ pub(super) async fn drive(
     map: &mut CurrentMonsterMap<'_, '_>,
     occurrences: &[ThinkOccurrence],
     now: u64,
+    messages: &super::raid_notices::ServerMessageHub,
 ) -> Result<(), ()> {
     taint_one::drive(runtime, states, room, native, map, now).await?;
+    torment::drive(
+        runtime,
+        states,
+        room,
+        native,
+        map,
+        occurrences,
+        messages,
+        now,
+    )
+    .await?;
     if room.pinned_activity_source_room()
         == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::GoshnarsMalice)
     {

@@ -7,6 +7,7 @@ use crate::foundation::{
     SourceActorReservation, SourceActorReservationProof, source_reservation_seal,
 };
 use crate::gameplay_transport::soul_war_callbacks::cruelty::maw::PreparedMawUse;
+use crate::gameplay_transport::soul_war_callbacks::megalomania::sanity::PreparedSanityUse;
 use crate::map::view::{self, MapEntryKey};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent, UseTarget};
@@ -250,6 +251,7 @@ pub(super) struct PendingSourceUse {
     wire: [u8; 32],
     input: crate::durability::quest_state::soul_war_source::SoulWarSourceUse,
     maw: Option<PreparedMawUse>,
+    sanity: Option<PreparedSanityUse>,
     reservation: Option<SourceActorReservation>,
 }
 impl PendingSourceUse {
@@ -278,7 +280,11 @@ impl SourceActorReservationProof for PendingSourceUse {
         self.wire
     }
     fn affected_actors(&self) -> &[ExactActorRef] {
-        self.maw.as_ref().map_or(&[], PreparedMawUse::affected)
+        self.maw
+            .as_ref()
+            .map(PreparedMawUse::affected)
+            .or_else(|| self.sanity.as_ref().map(PreparedSanityUse::affected))
+            .unwrap_or(&[])
     }
     fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
         self.current_for(runtime)
@@ -354,6 +360,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command,
                 wire,
                 maw: None,
+                sanity: None,
                 reservation: None,
                 input: SoulWarSourceUse {
                     target: qualified,
@@ -422,7 +429,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter_map(|(_, _, gate)| {
                     gate.source_pending
                         .as_deref()
-                        .filter(|pending| pending.maw.is_some())
+                        .filter(|pending| pending.maw.is_some() || pending.sanity.is_some())
                         .cloned()
                 })
                 .collect::<Vec<_>>();
@@ -534,7 +541,66 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(|_| ())?;
             }
         }
-        let fence = if pending.maw.is_some() {
+        if pending.input.target.source_use()
+            == crate::durability::item_use::soul_war_source::SourceUse::CleansedSanity
+            && pending.input.target.target_accepted()
+        {
+            if pending.sanity.is_none() {
+                let plan = {
+                    let runtime = self.runtime.lock().await;
+                    if !pending.current_for(&runtime) {
+                        return Err(());
+                    }
+                    self.prepare_source_names(&runtime, &["Goshnar's Megalomania"])?
+                };
+                let read = self.read_source_names(permit, &plan).await?;
+                let mut runtime = self.runtime.lock().await;
+                let mut states = self.states.spell_states.lock().await;
+                if !pending.current_for(&runtime) {
+                    return Err(());
+                }
+                let names = self.seal_source_names(&runtime, read)?;
+                let named = crate::gameplay_transport::source_names::creature_named(
+                    &names,
+                    "Goshnar's Megalomania",
+                )?;
+                let native = self
+                    .active_generation
+                    .and_then(|active| active.native_gameplay())
+                    .ok_or(())?;
+                let prepared = states.soul_war_callbacks.sanity.prepare(
+                    &runtime,
+                    native,
+                    pending.input.item.event_id,
+                    named,
+                )?;
+                pending.sanity = Some(prepared);
+                let mut reservation = runtime
+                    .prepare_source_actor_reservation(&pending)
+                    .map_err(|_| ())?;
+                runtime
+                    .reserve_source_actors(&mut reservation, &pending)
+                    .map_err(|_| ())?;
+                pending.reservation = Some(reservation);
+                // No await after slot reservation until the complete original
+                // effect and clock fence are retained beside the Item gate.
+                states
+                    .soul_war_callbacks
+                    .sanity
+                    .retain(pending.sanity.as_ref().ok_or(())?);
+                rotten_essence::gate(&mut states, &runtime, actor, command.game_session_id)
+                    .source_pending = Some(Box::new(pending.clone()));
+            } else {
+                let runtime = self.runtime.lock().await;
+                runtime
+                    .validate_source_actor_reservation(
+                        pending.reservation.as_ref().ok_or(())?,
+                        &pending,
+                    )
+                    .map_err(|_| ())?;
+            }
+        }
+        let fence = if pending.maw.is_some() || pending.sanity.is_some() {
             // Reconcile this exact original occurrence even after durable control
             // loss. The sole writer reads its immutable receipt before gameplay
             // admission; if nothing committed, its original fence must still
@@ -664,6 +730,70 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         command.game_session_id,
                         oteryn_protocol_oteryn::zones_nologout::ServerMessage::Advance(
                             "Use the item again within 15 seconds, or the monster's defense will increase by 2 every 15 seconds.".into(),
+                        ),
+                    );
+                }
+                if known_transition && prepared.missing_type() {
+                    disposition = UseDisposition::NotPossible;
+                }
+            }
+            if let Some(prepared) = &pending.sanity {
+                let second = if let Some(receipt) = committed {
+                    use oteryn_gameplay_quests::quest::soul_war::source_items as rule;
+                    let request = pending.input.request(&fence).map_err(|_| ())?;
+                    let [change] = receipt.changes.as_slice() else {
+                        return Err(());
+                    };
+                    if receipt.character_id != fence.character_id
+                        || receipt.cause != request.cause
+                        || receipt.transition_key != request.transition_key
+                        || receipt.quest_key != rule::QUEST
+                        || receipt.completes
+                        || receipt.experience.is_some()
+                        || change.track != rule::SANITY
+                        || change.after < change.before.checked_add(30).ok_or(())?
+                    {
+                        return Err(());
+                    }
+                    Some(u64::try_from(change.after).map_err(|_| ())?)
+                } else {
+                    None
+                };
+                let next = states
+                    .soul_war_callbacks
+                    .sanity
+                    .completed_clock(prepared, second)?;
+                let target = if second.is_some() {
+                    prepared.target()
+                } else {
+                    None
+                };
+                runtime
+                    .complete_soul_war_megalomania_sanity(
+                        pending.reservation.clone().ok_or(())?,
+                        &pending,
+                        target,
+                    )
+                    .map_err(|_| ())?;
+                states.soul_war_callbacks.sanity.publish(next);
+                if known_transition {
+                    // Crystal utils_definitions.hpp: DRAWBLOOD=1. The real
+                    // target resolver retained this original map position.
+                    if let Some(at) = pending.input.target.item_target_position()
+                        && let (Ok(x), Ok(y), Ok(floor)) = (
+                            u16::try_from(at.x),
+                            u16::try_from(at.y),
+                            i8::try_from(at.floor),
+                        )
+                        && let Some(map) = self.bundle_map()
+                    {
+                        map.facts
+                            .emit_movement_effect(crate::map::overlay::TilePos { x, y, floor }, 1);
+                    }
+                    self.states.server_messages.send_current(
+                        command.game_session_id,
+                        oteryn_protocol_oteryn::zones_nologout::ServerMessage::Advance(
+                            "Use the item again within 15 seconds, or the monster's defense will increase every 15 seconds.".into(),
                         ),
                     );
                 }

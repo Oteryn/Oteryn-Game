@@ -14,7 +14,16 @@ pub struct DefenseIncrease {
 impl Cruelty {
     pub fn think(&mut self, now_seconds: u64, interval_ms: u64) -> Option<DefenseIncrease> {
         self.thought_ms = self.thought_ms.checked_add(interval_ms)?;
-        if self.thought_ms < 15_000 || now_seconds < self.last_maw_seconds.checked_add(15)? {
+        if self.thought_ms < 15_000 {
+            return None;
+        }
+        self.increase_when_due(now_seconds)
+    }
+
+    /// The shared Lua helper has only its wall-second gate. Megalomania calls
+    /// it on every native Think; only Cruelty has the initial interval counter.
+    pub fn increase_when_due(&mut self, now_seconds: u64) -> Option<DefenseIncrease> {
+        if now_seconds < self.last_maw_seconds.checked_add(15)? {
             return None;
         }
         // Lua seeds an absent drain KV at the defense change (2), then adds 1.
@@ -77,6 +86,30 @@ mod tests {
                 defense: 2,
                 drain: 3
             })
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn srx3_megalomania_shared_defense_helper_has_no_initial_think_delay()
+    -> Result<(), &'static str> {
+        let mut owner = Cruelty::default();
+        assert_eq!(
+            owner.increase_when_due(1_800_000_001).map(|v| v.defense),
+            Some(2)
+        );
+        assert_eq!(owner.increase_when_due(1_800_000_015), None);
+        assert_eq!(
+            owner.increase_when_due(1_800_000_016).map(|v| v.drain),
+            Some(4)
+        );
+        owner
+            .record_mortal_essence_time(1_800_000_020)
+            .ok_or("source Sanity timestamp")?;
+        assert_eq!(owner.increase_when_due(1_800_000_049), None);
+        assert_eq!(
+            owner.increase_when_due(1_800_000_050).map(|v| v.drain),
+            Some(5)
         );
         Ok(())
     }

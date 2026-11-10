@@ -3,12 +3,7 @@ use super::*;
 use oteryn_gameplay_encounters::bosses::soul_war_torment::Pulse;
 
 impl ChannelSpellStates {
-    // PARTIAL W11: native HP/counter tests cover this owner; the shared
-    // Symbol/Megalomania Think cohort driver still needs its production caller.
-    #[allow(
-        dead_code,
-        reason = "PARTIAL W11: shared Torment Think/cohort driver is not wired yet"
-    )]
+    #[cfg(test)]
     #[allow(clippy::too_many_arguments)]
     pub(in crate::gameplay_transport) fn apply_soul_war_torment_pulse(
         &mut self,
@@ -19,34 +14,32 @@ impl ChannelSpellStates {
         session: GameSessionId,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
     ) -> Option<Pulse> {
+        let prepared = super::super::soul_war_callbacks::torment::PreparedPulse::capture(
+            runtime,
+            native,
+            source,
+            now.get(),
+        )?;
+        self.apply_retained_soul_war_torment_pulse(runtime, native, &prepared, target, session)
+    }
+
+    pub(in crate::gameplay_transport) fn apply_retained_soul_war_torment_pulse(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        prepared: &super::super::soul_war_callbacks::torment::PreparedPulse,
+        target: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<Pulse> {
         use oteryn_gameplay_encounters::bosses::soul_war_torment::{IconChange, PlayerCounter};
-        if !super::super::soul_war_callbacks::qualifies_source(runtime, native)
-            || !matches!(
-                runtime.binding().runtime_scope(),
-                crate::foundation::RuntimeScopeRefV1::Instance { .. }
-            )
-            || runtime.companion_snapshot(source).ok()?.health <= 0
-        {
+        if !prepared.current_target(runtime, native, target, session) {
             return None;
         }
-        let key = super::super::soul_war_callbacks::source_actor(runtime, native, source)?;
-        let (maximum, center) = match key.as_str() {
-            "oteryn:creature.symbol_of_hatred" => (30, (33744, 31599, 14)),
-            "oteryn:creature.goshnar_s_megalomania_purple"
-            | "oteryn:creature.goshnar_s_megalomania_green"
-            | "oteryn:creature.goshnar_s_megalomania_blue" => (36, (33710, 31634, 14)),
-            _ => return None,
-        };
-        let position = runtime.read_actor_position(target).ok()?.position();
-        if position.floor != center.2
-            || position.x.abs_diff(center.0) > 15
-            || position.y.abs_diff(center.1) > 15
-        {
-            return None;
-        }
+        let source = prepared.source();
+        let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(prepared.now());
         let state = self.get(runtime, target, session)?;
         let mut counter = PlayerCounter::from_current(state.soul_war_torment_count())?;
-        let pulse = counter.pulse(maximum, runtime.soul_war_megalomania_name_present().ok()?);
+        let pulse = counter.pulse(prepared.maximum(), prepared.megalomania_present());
         let visible = match pulse.icon {
             IconChange::Keep => state.soul_war_torment_icon_count().is_some(),
             IconChange::Set(_) => true,
@@ -102,14 +95,18 @@ mod tests {
     }
     #[test]
     fn srx3_soul_war_torment_native_player_hp_and_counter_publish_together() -> TestResult {
-        exercise_native_pulse(false)
+        exercise_native_pulse(false, false)
     }
     #[test]
     fn srx3_torment_visible_dead_player_updates_counter_without_reviving_or_second_death()
     -> TestResult {
-        exercise_native_pulse(true)
+        exercise_native_pulse(true, false)
     }
-    fn exercise_native_pulse(dead: bool) -> TestResult {
+    #[test]
+    fn srx3_torment_retained_pulse_outlives_source_without_admitting_later_players() -> TestResult {
+        exercise_native_pulse(false, true)
+    }
+    fn exercise_native_pulse(dead: bool, retained: bool) -> TestResult {
         let world = WorldId::decode(&id(90)).map_err(|e| format!("{e:?}"))?;
         let (controller, pin) = activated_with_loot_tables(world, None);
         let native = controller
@@ -202,8 +199,63 @@ mod tests {
             assert!(states.is_dead(player));
             assert_eq!(states.deaths.len(), 1);
         }
-        let pulse = states
-            .apply_soul_war_torment_pulse(
+        let prepared = if retained {
+            let prepared =
+                super::super::super::soul_war_callbacks::torment::PreparedPulse::capture(
+                    &runtime, native, source, 10_000_000,
+                )
+                .ok_or("capture the actual source and original Player cohort")?;
+            runtime.remove_encounter_actor(source)?;
+            assert!(!runtime.soul_war_megalomania_name_present()?);
+            let late_session = GameSessionId::decode(&id(95)).map_err(|e| format!("{e:?}"))?;
+            let late_reservation = runtime.reserve_fresh_session(late_session)?;
+            let late_player = runtime.commit_fresh_session(late_reservation)?;
+            runtime.initialize_pinned_test_position(late_player, position)?;
+            states
+                .initialize(
+                    &runtime,
+                    late_player,
+                    late_session,
+                    CharacterCastFacts {
+                        vocation: Vocation::Druid,
+                        level: 500,
+                        magic_level: 0,
+                        max_health: 10_000,
+                        max_mana: 1_000,
+                        max_soul: 100,
+                    },
+                    (0, 0),
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(10_000_000),
+                )
+                .ok_or("later current Player state")?;
+            let before_late = states
+                .get(&runtime, late_player, late_session)
+                .ok_or("later Player")?
+                .clone();
+            assert!(
+                states
+                    .apply_retained_soul_war_torment_pulse(
+                        &runtime,
+                        native,
+                        &prepared,
+                        late_player,
+                        late_session,
+                    )
+                    .is_none()
+            );
+            assert_eq!(
+                states.get(&runtime, late_player, late_session),
+                Some(&before_late)
+            );
+            Some(prepared)
+        } else {
+            None
+        };
+        let pulse = if let Some(prepared) = &prepared {
+            states
+                .apply_retained_soul_war_torment_pulse(&runtime, native, prepared, player, session)
+        } else {
+            states.apply_soul_war_torment_pulse(
                 &runtime,
                 native,
                 source,
@@ -211,7 +263,8 @@ mod tests {
                 session,
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(10_000_000),
             )
-            .ok_or("qualified real Mego pulse must publish")?;
+        }
+        .ok_or("qualified real Mego pulse must publish")?;
         assert_eq!(pulse.damage, 1_400, "damage uses PRE-increment counter24");
         let after = states
             .get(&runtime, player, session)
@@ -240,20 +293,24 @@ mod tests {
         assert_eq!(after.vitals().health, 8_600);
         assert_eq!(after.vitals().mana, 1_000);
         let before_replay = after.clone();
-        assert!(
+        let replay = if let Some(prepared) = &prepared {
             states
-                .apply_soul_war_torment_pulse(
-                    &runtime,
-                    native,
-                    source,
-                    player,
-                    session,
-                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(10_000_000)
-                )
-                .is_none()
-        );
+                .apply_retained_soul_war_torment_pulse(&runtime, native, prepared, player, session)
+        } else {
+            states.apply_soul_war_torment_pulse(
+                &runtime,
+                native,
+                source,
+                player,
+                session,
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(10_000_000),
+            )
+        };
+        assert!(replay.is_none());
         assert_eq!(states.get(&runtime, player, session), Some(&before_replay));
-        runtime.remove_encounter_actor(source)?;
+        if !retained {
+            runtime.remove_encounter_actor(source)?;
+        }
         // This owner-level fixture now moves the actual same player to the
         // donor Hatred spectator box; a Symbol at the Mego center would never
         // execute the source GetSpectators reset for this player.

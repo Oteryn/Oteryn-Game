@@ -73,58 +73,56 @@ pub(super) async fn drive(
     if states.soul_war_callbacks.maw.pending.is_some() {
         return Ok(());
     }
-    let Some(mut owner) = states.soul_war_callbacks.cruelty.take() else {
+    // The existing owners stay in their slots while the current UTC read is
+    // pending. Cancelling a Map read must not discard the boss or its clock.
+    let SoulWarCallbacks { cruelty, maw, .. } = &mut states.soul_war_callbacks;
+    let Some(owner) = cruelty.as_mut() else {
         return Err(());
     };
-    let result = async {
-        if owner.content != runtime.content_pin().server_artifact_digest()
-            || !qualifies_source(runtime, native)
-        {
-            return Err(());
-        }
-        runtime.owner_fence().map_err(|_| ())?;
-        let boss = runtime
-            .companion_snapshot(owner.boss)
-            .ok()
-            .filter(|boss| boss.health > 0 && boss.state.policy.definition_key == BOSS);
-        let Some(boss) = boss else {
-            if !owner.disappeared {
-                // The source global name lookup removes one Eye, not every actor
-                // of that type. This literal lever child is the oldest admitted
-                // Eye in this private source room.
-                if runtime.contains_live_creature(owner.eye)
-                    && source_actor(runtime, native, owner.eye).as_deref() == Some(EYE)
-                {
-                    runtime.remove_encounter_actor(owner.eye).map_err(|_| ())?;
-                }
-                owner.disappeared = true;
-            }
-            return Ok(());
-        };
-        for &occurrence in occurrences {
-            if occurrence.actor != owner.boss {
-                continue;
-            }
-            if owner
-                .last
-                .is_some_and(|last| occurrence.sequence <= last.sequence)
-            {
-                continue;
-            }
-            let utc = map.source_observed_seconds(runtime).await.ok_or(())?;
-            let mut next = states.soul_war_callbacks.maw.clock.clone();
-            if next.think(utc, 1000).is_some() {
-                let expected = runtime.soul_war_cruelty_drain(&boss).map_err(|_| ())?;
-                runtime
-                    .increase_soul_war_cruelty(&boss, expected)
-                    .map_err(|_| ())?;
-            }
-            states.soul_war_callbacks.maw.clock = next;
-            owner.last = Some(occurrence);
-        }
-        Ok(())
+    if owner.content != runtime.content_pin().server_artifact_digest()
+        || !qualifies_source(runtime, native)
+    {
+        return Err(());
     }
-    .await;
-    states.soul_war_callbacks.cruelty = Some(owner);
-    result
+    runtime.owner_fence().map_err(|_| ())?;
+    let boss = runtime
+        .companion_snapshot(owner.boss)
+        .ok()
+        .filter(|boss| boss.health > 0 && boss.state.policy.definition_key == BOSS);
+    let Some(boss) = boss else {
+        if !owner.disappeared {
+            // The source global name lookup removes one Eye, not every actor
+            // of that type. This literal lever child is the oldest admitted
+            // Eye in this private source room.
+            if runtime.contains_live_creature(owner.eye)
+                && source_actor(runtime, native, owner.eye).as_deref() == Some(EYE)
+            {
+                runtime.remove_encounter_actor(owner.eye).map_err(|_| ())?;
+            }
+            owner.disappeared = true;
+        }
+        return Ok(());
+    };
+    for &occurrence in occurrences {
+        if occurrence.actor != owner.boss {
+            continue;
+        }
+        if owner
+            .last
+            .is_some_and(|last| occurrence.sequence <= last.sequence)
+        {
+            continue;
+        }
+        let utc = map.source_observed_seconds(runtime).await.ok_or(())?;
+        let mut next = maw.clock.clone();
+        if next.think(utc, 1000).is_some() {
+            let expected = runtime.soul_war_cruelty_drain(&boss).map_err(|_| ())?;
+            runtime
+                .increase_soul_war_cruelty(&boss, expected)
+                .map_err(|_| ())?;
+        }
+        maw.clock = next;
+        owner.last = Some(occurrence);
+    }
+    Ok(())
 }
