@@ -10,7 +10,7 @@ pub const ITEM_MANTRA_BOND_MODIFIER_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json"
 );
 pub const ITEM_MANTRA_BOND_MODIFIER_PACKET_SHA256: &str =
-    "4f52bd597a48974a463580ec677dbe0a3882bd737c2da43ef30ccdf124c1aada";
+    "ae98cc1797fa981461c2378a0c1aa73f6fa9c4a7b3641f5c69bd3606c76cf751";
 
 fn validate_targets<'a>(
     bytes: &[u8],

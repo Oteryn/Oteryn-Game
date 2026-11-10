@@ -542,12 +542,39 @@ fn srx3_native_cross_floor_target_list_keeps_thinks_without_attack_target() -> R
 }
 
 #[test]
-fn bloodjaw_source_retarget_keeps_a_player_nine_tiles_north() -> Result<(), String> {
+fn bloodjaw_source_retarget_uses_native_viewport_on_the_same_floor() -> Result<(), String> {
     run(|native, mut runtime| {
         const KEY: &str = "oteryn:creature.elder_bloodjaw";
         let bloodjaw = actor(&mut runtime, KEY, at(100, 100))?;
         let mut players = Vec::new();
-        for (seed, position) in [(4, at(101, 100)), (5, at(100, 91))] {
+        for (seed, position, accepted) in [
+            (4, at(101, 100), true),
+            (5, at(100, 91), true),
+            (6, at(89, 100), true),
+            (7, at(111, 100), true),
+            (8, at(100, 89), true),
+            (9, at(100, 111), true),
+            (10, at(88, 100), false),
+            (11, at(112, 100), false),
+            (12, at(100, 88), false),
+            (13, at(100, 112), false),
+            (
+                14,
+                MovementLocalPosition {
+                    floor: 6,
+                    ..at(100, 100)
+                },
+                false,
+            ),
+            (
+                15,
+                MovementLocalPosition {
+                    floor: 8,
+                    ..at(100, 100)
+                },
+                false,
+            ),
+        ] {
             let session = crate::foundation::GameSessionId::decode(&uuid(seed))
                 .map_err(|e| format!("{e:?}"))?;
             let reserved = runtime
@@ -559,29 +586,35 @@ fn bloodjaw_source_retarget_keeps_a_player_nine_tiles_north() -> Result<(), Stri
             runtime
                 .initialize_pinned_test_position(player, position)
                 .map_err(|e| format!("{e:?}"))?;
-            players.push(player);
+            players.push((player, position, accepted));
         }
         let mut table = CreatureAiTable::default();
         table
             .admit_native_creature(&runtime, native, bloodjaw, &reference(native, KEY)?, 0)
             .map_err(|e| format!("{e:?}"))?;
         let stamp = runtime.issue_owner_work().map_err(|e| format!("{e:?}"))?;
-        assert!(
-            table
-                .set_current_bloodjaw_target(&runtime, stamp, bloodjaw, players[0], 0)
-                .map_err(|e| format!("{e:?}"))?
-        );
-        // Crystal 201189f8 Creature::setAttackedCreature uses its eleven-tile view.
+        let adjacent = players.first().ok_or("missing adjacent player")?.0;
+        // Nine tiles north is outside the client view but inside the native monster view.
         assert!(!super::super::targeting::sees(at(100, 91), at(100, 100)));
-        assert!(
-            table
-                .set_current_bloodjaw_target(&runtime, stamp, bloodjaw, players[1], 1)
-                .map_err(|e| format!("{e:?}"))?
-        );
-        assert_eq!(
-            table.state(bloodjaw).and_then(|state| state.target()),
-            Some(players[1])
-        );
+        for (player, position, accepted) in players {
+            assert!(
+                table
+                    .set_current_bloodjaw_target(&runtime, stamp, bloodjaw, adjacent, 0)
+                    .map_err(|e| format!("{e:?}"))?
+            );
+            assert_eq!(
+                table
+                    .set_current_bloodjaw_target(&runtime, stamp, bloodjaw, player, 1)
+                    .map_err(|e| format!("{e:?}"))?,
+                accepted,
+                "source target eligibility at {position:?}"
+            );
+            assert_eq!(
+                table.state(bloodjaw).and_then(|state| state.target()),
+                accepted.then_some(player),
+                "an out-of-range or cross-floor target must clear the previous target"
+            );
+        }
         Ok(())
     })
 }
