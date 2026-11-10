@@ -7,6 +7,470 @@ use crate::durability::creature_source_items::SpiteGlobalFireCallback;
 use crate::foundation::MovementLocalPosition;
 
 #[test]
+fn srx3_weeping_actual_death_step_outfit_and_later_item_replay_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e::scenario_thread::run("srx3-weeping-source-step", || {
+        run(async |admin| {
+            use crate::domain::condition::ConflictKey;
+            use crate::durability::creature_source_items::SourceGroundStep;
+            use crate::durability::spell_items_abi::SpellGroundTarget;
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+            use oteryn_simulation_determinism::{
+                DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+            };
+            reset();
+            let h = Harness::create_with_admission_seed(admin, "srx3_weeping_step", false, false)
+                .await?;
+            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
+            super::house_transfer::prepare_owned_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let origin = MovementLocalPosition {
+                x: 33743,
+                y: 31629,
+                floor: 14,
+            };
+            let (scene, activation_pin) =
+                SourceScene::new_with_activation(PinnedActivitySourceRoom::GoshnarsSpite, origin)?;
+            assert_ne!(
+                scene.pin.frame_binding_digest(),
+                activation_pin.frame_binding_digest()
+            );
+            let deps = scene.dependencies()?;
+            let mut owner = deps.owner(&h, &authority);
+            owner.evidence = &evidence.evidence;
+            install_scene(&mut owner, &scene, PinnedActivitySourceRoom::GoshnarsSpite)?;
+            // Actual public runtime uses BundleWorld, while content activation
+            // owns ENTRY; exercise the production compatibility proof too.
+            super::boss_activity::issue_content_and_reset(&h, &activation_pin).await?;
+            let mut admitted = deps.admitted;
+            prepare_player(&h, &owner, &mut admitted, 500).await?;
+            let actor = admitted.runtime_actor.ok_or("actual source Player")?;
+            let native = scene
+                .controller
+                .active()
+                .and_then(|g| g.native_gameplay())
+                .ok_or("actual native source")?;
+            let (target_position, direction, reverse, boss) = {
+                let mut runtime = owner.runtime.lock().await;
+                native
+                    .install_companion_policies(&mut runtime)
+                    .map_err(debug)?;
+                let (at, direction, reverse) = [
+                    (1, 0, StepDirection::East, StepDirection::West),
+                    (-1, 0, StepDirection::West, StepDirection::East),
+                    (0, 1, StepDirection::South, StepDirection::North),
+                ]
+                .into_iter()
+                .map(|(x, y, d, r)| {
+                    (
+                        MovementLocalPosition {
+                            x: origin.x + x,
+                            y: origin.y + y,
+                            floor: origin.floor,
+                        },
+                        d,
+                        r,
+                    )
+                })
+                .find(|(at, _, _)| native_free_tile(&scene, &runtime, *at))
+                .ok_or("actual adjacent non-fire source tile")?;
+                let boss_at = [(-2, 0), (2, 0), (0, 2)]
+                    .into_iter()
+                    .map(|(x, y)| MovementLocalPosition {
+                        x: origin.x + x,
+                        y: origin.y + y,
+                        floor: origin.floor,
+                    })
+                    .find(|at| native_free_tile(&scene, &runtime, *at))
+                    .ok_or("actual Spite source tile")?;
+                let boss = runtime
+                    .spawn_arena_opponent(
+                        "oteryn:creature.goshnar_s_spite",
+                        boss_at,
+                        |current, position| Some(native_free_tile(&scene, current, position)),
+                    )
+                    .map_err(debug)?;
+                runtime.set_test_creature_health(boss, 100).map_err(debug)?;
+                (at, direction, reverse, boss)
+            };
+            // Two real native deaths yield two original plain33876 Items on the
+            // same destination. The first callback applies an outfit; the next
+            // original callback must then early-return without another burn.
+            for command in [65020, 65021] {
+                weeping_corpse_from_actual_death(
+                    &owner,
+                    &admitted,
+                    &scene,
+                    target_position,
+                    command,
+                )
+                .await?;
+            }
+            assert_eq!(sqlx::query_scalar::<_,i64>(
+                "SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION'"
+            ).fetch_one(&h.pool).await?,2);
+            let permit = owner.spell_lane_permit().await.ok_or("actual Item lane")?;
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|_| "current source fence")?
+                .ok_or("live source Player")?
+                .item_fence();
+            let target = {
+                let runtime = owner.runtime.lock().await;
+                SpellGroundTarget::for_native_tile_read(&scene.room, &runtime, target_position)
+                    .map_err(debug)?
+            };
+            let read = owner
+                .root
+                .read_standing_player_tile(
+                    &permit,
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    native.source_digest(),
+                    target,
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                read.items()
+                    .iter()
+                    .filter(|item| item.definition.production_key == "oteryn:item.tibia.i33876")
+                    .count(),
+                2
+            );
+            drop(permit);
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_millis(500))
+                .ok_or("source movement pace")?;
+            let (moved, _) = owner
+                .ordinary_paced_step(actor, admitted.game_session_id, direction, None, None)
+                .await;
+            assert_eq!(moved.disposition, StepDisposition::Moved);
+            let consumed:String = sqlx::query_scalar(
+                "SELECT l.item_instance_id::text FROM game_spell_item_lines l JOIN game_spell_item_receipts r USING(transaction_id) WHERE r.cause_kind=6"
+            ).fetch_one(&h.pool).await?;
+            let consumed = sqlx::types::Uuid::parse_str(&consumed)?.into_bytes();
+            let (input, outfit, hp_after) = {
+                let runtime = owner.runtime.lock().await;
+                let movement = runtime.read_actor_position(actor).map_err(debug)?;
+                assert_eq!(movement.position(), target_position);
+                let input = SourceGroundStep::from_current_player_step(
+                    &runtime,
+                    &scene.room,
+                    native,
+                    actor,
+                    admitted.game_session_id,
+                    movement,
+                    owner.reset_epoch,
+                    &read,
+                    consumed,
+                )
+                .ok_or("same original committed movement and SQL Item")?;
+                let mut occurrence = [0; 16];
+                occurrence.copy_from_slice(&input.binding()[..16]);
+                let draw = deterministic_decision_u64(
+                    &GameplayDecisionRoot::from_bytes(native.source_digest()),
+                    DecisionOccurrenceId::from_bytes(occurrence),
+                    "spite_weeping_heal",
+                    0,
+                )
+                .map_err(debug)?;
+                let draw = crate::spell::uniform_draw(draw, 1, 100);
+                let snapshot = runtime.companion_snapshot(boss).map_err(debug)?;
+                assert_eq!(
+                    snapshot.health,
+                    if draw <= 10 {
+                        (100 + snapshot.maximum_health / 10).min(snapshot.maximum_health)
+                    } else {
+                        100
+                    },
+                    "one exact source10% heal draw"
+                );
+                let states = owner.states.spell_states.lock().await;
+                let player = states
+                    .get(&runtime, actor, admitted.game_session_id)
+                    .ok_or("current source Player")?;
+                let outfit = player
+                    .conditions
+                    .active_at(ConflictKey::Outfit, owner.owner_now().get())
+                    .ok_or("real Weeping outfit")?
+                    .clone();
+                assert_eq!(
+                    outfit.definition().values(),
+                    crate::foundation::ConditionValues::Outfit {
+                        look_type: 286,
+                        duration_ms: 14_000,
+                    }
+                );
+                assert!(
+                    player
+                        .conditions
+                        .active_at(ConflictKey::Outfit, outfit.started_at() + 14_000_000)
+                        .is_none(),
+                    "the canonical condition expires at the exact source14s"
+                );
+                (input, outfit, snapshot.health)
+            };
+            let scope = owner.runtime.lock().await.binding().runtime_scope();
+            let ground = owner.root.read_item_loop_ground_for_scope(scope).await?;
+            let remaining: Vec<_> = ground
+                .iter()
+                .filter(|item| item.item.definition.production_key == "oteryn:item.tibia.i33876")
+                .collect();
+            assert_eq!(
+                remaining.len(),
+                1,
+                "the other original callback sees CONDITION_OUTFIT"
+            );
+            assert!(remaining[0].source_plain_corpse);
+            assert_ne!(remaining[0].item.item_instance_id, consumed);
+            // A second actual STEP during that same canonical outfit is also a
+            // refusal. It neither removes the remaining corpse nor refreshes
+            // the condition or applies a second source heal.
+            for step in [reverse, direction] {
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_millis(500))
+                    .ok_or("source refusal pace")?;
+                let (moved, _) = owner
+                    .ordinary_paced_step(actor, admitted.game_session_id, step, None, None)
+                    .await;
+                assert_eq!(moved.disposition, StepDisposition::Moved);
+            }
+            {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                assert_eq!(
+                    states
+                        .get(&runtime, actor, admitted.game_session_id)
+                        .ok_or("current refused Player")?
+                        .conditions
+                        .active_at(ConflictKey::Outfit, owner.owner_now().get()),
+                    Some(&outfit)
+                );
+                assert_eq!(
+                    runtime.companion_snapshot(boss).map_err(debug)?.health,
+                    hp_after
+                );
+            }
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>(
+                    "SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=6"
+                )
+                .fetch_one(&h.pool)
+                .await?,
+                1,
+                "outfit refusal creates no Item receipt"
+            );
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_character_quest_receipts WHERE cause_kind='source_step'")
+                .fetch_one(&h.pool).await?,0,"Weeping has no Quest transition");
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_millis(500))
+                .ok_or("source replay pace")?;
+            let (moved, _) = owner
+                .ordinary_paced_step(actor, admitted.game_session_id, reverse, None, None)
+                .await;
+            assert_eq!(moved.disposition, StepDisposition::Moved);
+            weeping_corpse_from_actual_death(&owner, &admitted, &scene, target_position, 65022)
+                .await?;
+            let before_ground = owner.root.read_item_loop_ground_for_scope(scope).await?;
+            let mut before_ids: Vec<_> = before_ground
+                .iter()
+                .filter(|item| item.item.definition.production_key == "oteryn:item.tibia.i33876")
+                .map(|item| item.item.item_instance_id)
+                .collect();
+            before_ids.sort();
+            assert_eq!(
+                before_ids.len(),
+                2,
+                "original unconsumed and later newly minted UUID"
+            );
+            let before_state = {
+                let runtime = owner.runtime.lock().await;
+                owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .get(&runtime, actor, admitted.game_session_id)
+                    .ok_or("current replay Player")?
+                    .clone()
+            };
+            let permit = owner.spell_lane_permit().await.ok_or("real replay lane")?;
+            let replay = owner
+                .root
+                .commit_source_ground_step(&permit, owner.character, owner.holder, &input)
+                .await
+                .map_err(debug)?;
+            assert!(replay.receipt.already_committed && replay.removed);
+            drop(permit);
+            let mut after_ids: Vec<_> = owner
+                .root
+                .read_item_loop_ground_for_scope(scope)
+                .await?
+                .iter()
+                .filter(|item| item.item.definition.production_key == "oteryn:item.tibia.i33876")
+                .map(|item| item.item.item_instance_id)
+                .collect();
+            after_ids.sort();
+            assert_eq!(
+                after_ids, before_ids,
+                "receipt replay never selects a later matching UUID"
+            );
+            {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                assert_eq!(
+                    states.get(&runtime, actor, admitted.game_session_id),
+                    Some(&before_state)
+                );
+                assert_eq!(
+                    runtime.companion_snapshot(boss).map_err(debug)?.health,
+                    hp_after
+                );
+                runtime
+                    .assert_actor_spell_unreserved(actor)
+                    .map_err(debug)?;
+                runtime.assert_actor_spell_unreserved(boss).map_err(debug)?;
+            }
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>(
+                    "SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=6"
+                )
+                .fetch_one(&h.pool)
+                .await?,
+                1
+            );
+            eprintln!("SRX3_ACTUAL_WEEPING_DEATH_STEP_OUTFIT_REPLAY_REACHED");
+            Ok(())
+        })
+    })
+}
+
+fn native_free_tile(
+    scene: &SourceScene,
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    at: MovementLocalPosition,
+) -> bool {
+    runtime.native_summon_cell_free(at)
+        && scene.room.movement_cells().index().lookup(
+            scene.room.movement_cells().scope(),
+            crate::content::LogicalCell {
+                x: at.x,
+                y: at.y,
+                z: i32::from(at.floor),
+            },
+        ) == Ok(crate::content::CollisionClass::Walkable)
+}
+
+async fn weeping_corpse_from_actual_death(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &crate::gameplay_transport::connection::AdmittedSession,
+    scene: &SourceScene,
+    position: MovementLocalPosition,
+    ordinal: u64,
+) -> TestResult {
+    use crate::foundation::runtime_actor_spell_types::{
+        OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
+    };
+    let actor = admitted.runtime_actor.ok_or("actual native Player")?;
+    let fence = admitted.item_fence.ok_or("current Item fence")?;
+    let now = owner.owner_now();
+    let command = crate::foundation::CommandRef::new(
+        admitted.game_session_id,
+        crate::foundation::CommandId::new(ordinal).map_err(debug)?,
+    );
+    super::srx3_rotten_callbacks::publish_native_fixture_player_source(
+        owner,
+        fence,
+        actor,
+        command,
+        now.get(),
+    )
+    .await?;
+    let child = {
+        let mut runtime = owner.runtime.lock().await;
+        let child = runtime
+            .spawn_arena_opponent("oteryn:creature.weeping_soul", position, |current, at| {
+                Some(native_free_tile(scene, current, at))
+            })
+            .map_err(debug)?;
+        let maximum = runtime
+            .companion_snapshot(child)
+            .map_err(debug)?
+            .maximum_health;
+        let batch = OwnerCombatBatch {
+            caster: actor,
+            attacker: crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                .map_err(debug)?,
+            current_lease_generation: fence.character_lease_generation,
+            command,
+            occurrence: SpellOccurrenceBinding {
+                id: format!("srx3-native-weeping:{ordinal}"),
+                revisions: ["r1", "r1", "r1", "r1", "r1"].map(str::to_owned),
+            },
+            binding: format!("srx3-native-weeping:{ordinal}").into_bytes(),
+            anchor: None,
+            now_us: Some(now),
+            now_ms: now.get() / 1000,
+            effects: vec![OwnerCombatEffect {
+                target: child,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::Damage {
+                    target_atom: runtime.creature_spell_target_atom(child).map_err(debug)?,
+                    magnitude: maximum,
+                },
+            }],
+            deferred: None,
+        };
+        let staged = runtime.stage_spell_batch(&batch).map_err(debug)?;
+        let receipt = runtime.commit_spell_batch(staged).map_err(debug)?;
+        assert!(
+            receipt
+                .effects
+                .iter()
+                .any(|effect| effect.health.is_some_and(|hp| hp.health_after == 0))
+        );
+        let attack = owner.states.attack.lock().await;
+        crate::gameplay_transport::kill_reward::record_batch_kills(
+            &mut runtime,
+            crate::gameplay_transport::kill_reward::KillSink {
+                prey: None,
+                activity: &[],
+                queue: attack.kills(),
+                rewards: owner
+                    .active_generation
+                    .and_then(|g| g.native_gameplay())
+                    .ok_or("native rewards")?
+                    .reward_table(),
+                charms: None,
+            },
+            &receipt,
+            now.get() / 1000,
+        );
+        child
+    };
+    super::srx3_native_source_cast::drain_source_death(owner, child, now).await?;
+    assert_eq!(
+        owner.drain_kill_rewards(admitted.game_session_id).await,
+        crate::gameplay_transport::kill_reward::DrainOutcome::Drained
+    );
+    Ok(())
+}
+
+#[test]
 fn srx3_spite_private_registration_uses_actual_ready_scope_before_entry_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

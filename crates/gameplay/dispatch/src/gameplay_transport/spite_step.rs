@@ -1,7 +1,9 @@
 //! Crystal soul_war_mechanics.lua:434-480: the original committed Player STEP
 //! selects one current searing fire or the original33792 Item-id callbacks.
-//! Both use the existing atomic Quest/Ground owner; SQL uncertainty retains
-//! that same movement and physical Items.
+//! These use the existing atomic Quest/Ground owner. Weeping's Item-only
+//! callback uses the physical Item ledger and the same movement reservation.
+//! SQL uncertainty retains that original translation and its exact Items.
+mod weeping;
 use super::{ComposedFreshAdmission, actor_spell::ChannelSpellStates};
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
@@ -36,6 +38,8 @@ struct PendingStep {
     selected: Option<(SoulWarSourceStep, CurrentCharacterGameplayFence)>,
     completed_items: Vec<[u8; 16]>,
     fire_finished: bool,
+    quest_finished: bool,
+    weeping: Option<weeping::PendingWeeping>,
 }
 
 impl SpiteStepState {
@@ -144,6 +148,8 @@ fn stage_with_items(
         selected: None,
         completed_items: Vec::new(),
         fire_finished: false,
+        quest_finished: false,
+        weeping: None,
     });
     states.owner_wake.notify_one();
     Ok(())
@@ -224,6 +230,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(mut pending) = pending else {
             return Ok(());
         };
+        if pending.quest_finished {
+            return self.resolve_one_weeping_step(permit, pending).await;
+        }
         if pending.selected.is_none() {
             let fence = self
                 .current_quest_fence(pending.movement.session())
@@ -272,7 +281,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .ok_or(())?;
             let Some(selected) = selected else {
-                finish(&mut runtime, &mut states, &pending)?;
+                if pending.movement.source_ground_steps().is_empty() {
+                    finish(&mut runtime, &mut states, &pending)?;
+                } else {
+                    pending.quest_finished = true;
+                    let entry = states
+                        .spite_steps
+                        .pending
+                        .iter_mut()
+                        .find(|entry| {
+                            entry.movement.event_identity() == pending.movement.event_identity()
+                        })
+                        .ok_or(())?;
+                    *entry = pending;
+                }
                 return Ok(());
             };
             pending.selected = Some((selected, fence));

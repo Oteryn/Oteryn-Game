@@ -1499,7 +1499,9 @@ pub async fn prepare_moved_arrival_corpse_in_transaction(
 ) -> Result<DurableCorpseReservation> {
     check_transaction(tx, authority).await?;
     if authority.due_read_only || moved.replayed || !matches!(moved.operation, 1 | 4) {
-        return Err(SpellItemError::Rejected("arrival requires a fresh Ground drop"));
+        return Err(SpellItemError::Rejected(
+            "arrival requires a fresh Ground drop",
+        ));
     }
     let valid: bool = sqlx::query_scalar(
         "SELECT EXISTS (
@@ -1542,7 +1544,9 @@ pub async fn prepare_moved_arrival_corpse_in_transaction(
     .bind(arrived.0.as_slice()).bind(&target.spatial_position).bind(arrived.1.to_string())
     .fetch_one(&mut **tx).await?;
     if !valid {
-        return Err(SpellItemError::Rejected("arrival move is not current in this transaction"));
+        return Err(SpellItemError::Rejected(
+            "arrival move is not current in this transaction",
+        ));
     }
     prepare_arrival_corpse_in_transaction(tx, authority, target, qualified, arrived).await
 }
@@ -1612,9 +1616,9 @@ pub fn decode_tile_rows(
         let blocks_movement = flags[0].ok_or(SpellItemError::Rejected(
             "item has no qualified current movement flags",
         ))?;
-        let blocks_projectile = flags[1].ok_or(
-            SpellItemError::Rejected("item has no qualified current projectile flags"),
-        )?;
+        let blocks_projectile = flags[1].ok_or(SpellItemError::Rejected(
+            "item has no qualified current projectile flags",
+        ))?;
         items.push(DurableTileItem {
             item_instance_id: uuid(&row.try_get::<String, _>("item_instance_id")?)?,
             definition: decoded_definition(&row)?,
@@ -1628,8 +1632,9 @@ pub fn decode_tile_rows(
             creature_field_origin: decode_creature_field_origin(&row, &origin)?,
             native_map_origin: flags[3]
                 .ok_or(SpellItemError::Rejected("unknown native map provenance"))?,
-            environment_field_origin: flags[4]
-                .ok_or(SpellItemError::Rejected("unknown environment field provenance"))?,
+            environment_field_origin: flags[4].ok_or(SpellItemError::Rejected(
+                "unknown environment field provenance",
+            ))?,
             field_origin: match origin[11].clone() {
                 None => None,
                 Some(lease) => Some(DurableFieldOrigin {
@@ -2760,6 +2765,7 @@ pub async fn verify_spell_item_chain(
                     2 => "OTERYN_ENCOUNTER_GROUND_CAUSE/v2",
                     3 => "OTERYN_CREATURE_EVENT_GROUND_CAUSE/v1",
                     4 => "OTERYN_REGISTERED_GLOBAL_GROUND_CAUSE/v1",
+                    6 => "OTERYN_SOURCE_GROUND_STEP/v1",
                     _ => return Err(DurabilityError::InvalidStoredState),
                 };
                 if bytes.is_some()
@@ -3519,6 +3525,7 @@ pub enum PhysicalItemOwner<'a> {
     Player(&'a SpellItemAuthority),
     Creature(&'a SpellItemScopeAuthority),
     RegisteredGlobal(&'a SpellItemScopeAuthority),
+    SourceStep(&'a SpellItemScopeAuthority),
 }
 // Serialized scope tag and its mutually exclusive Channel/Instance columns.
 type PhysicalItemScopeColumns = (i16, Option<[u8; 16]>, Option<[u8; 16]>);
@@ -3527,7 +3534,7 @@ impl PhysicalItemOwner<'_> {
     fn world(&self) -> &[u8; 16] {
         match self {
             Self::Player(a) => &a.world,
-            Self::Creature(a) | Self::RegisteredGlobal(a) => &a.world,
+            Self::Creature(a) | Self::RegisteredGlobal(a) | Self::SourceStep(a) => &a.world,
         }
     }
     fn scope_parts(&self) -> Result<PhysicalItemScopeColumns> {
@@ -3542,7 +3549,7 @@ impl PhysicalItemOwner<'_> {
                 }
                 a.runtime_scope
             }
-            Self::Creature(a) | Self::RegisteredGlobal(a) => a.runtime_scope,
+            Self::Creature(a) | Self::RegisteredGlobal(a) | Self::SourceStep(a) => a.runtime_scope,
         };
         Ok(match scope {
             crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
@@ -3556,7 +3563,9 @@ impl PhysicalItemOwner<'_> {
     fn generation(&self) -> u64 {
         match self {
             Self::Player(a) => a.ownership_generation,
-            Self::Creature(a) | Self::RegisteredGlobal(a) => a.ownership_generation,
+            Self::Creature(a) | Self::RegisteredGlobal(a) | Self::SourceStep(a) => {
+                a.ownership_generation
+            }
         }
     }
     fn player(&self) -> Result<&SpellItemAuthority> {
@@ -3573,12 +3582,13 @@ pub enum PhysicalItemCause<'a> {
     Player(&'a SpellItemTransactionRequest),
     Creature([u8; 16]),
     RegisteredGlobal([u8; 16]),
+    SourceStep([u8; 16]),
 }
 impl PhysicalItemCause<'_> {
     fn transaction_id(&self) -> &[u8; 16] {
         match self {
             Self::Player(r) => &r.transaction_id,
-            Self::Creature(id) | Self::RegisteredGlobal(id) => id,
+            Self::Creature(id) | Self::RegisteredGlobal(id) | Self::SourceStep(id) => id,
         }
     }
     fn player(&self) -> Result<&SpellItemTransactionRequest> {
@@ -3615,6 +3625,22 @@ pub async fn apply_physical_item_line(
     match (&owner, &cause) {
         (PhysicalItemOwner::Player(authority), PhysicalItemCause::Player(_)) => {
             check_transaction(tx, authority).await?
+        }
+        (PhysicalItemOwner::SourceStep(authority), PhysicalItemCause::SourceStep(_)) => {
+            check_scope_transaction(tx, authority).await?;
+            if kind != 2
+                || !matches!(operation, SpellItemOperation::RemoveGround(_))
+                || quantity_before != 1
+                || quantity_after != 0
+                || destination.is_some()
+                || expires.is_some()
+                || blocks_movement
+                || blocks_projectile
+            {
+                return Err(SpellItemError::Rejected(
+                    "source STEP exact Ground-only removal",
+                ));
+            }
         }
         (PhysicalItemOwner::Creature(authority), PhysicalItemCause::Creature(_))
         | (
@@ -3658,7 +3684,8 @@ pub async fn apply_physical_item_line(
                 &player_scope
             }
             PhysicalItemOwner::Creature(authority)
-            | PhysicalItemOwner::RegisteredGlobal(authority) => authority,
+            | PhysicalItemOwner::RegisteredGlobal(authority)
+            | PhysicalItemOwner::SourceStep(authority) => authority,
         };
         super::ground_cell_limit::check_ground_cell_root_insert_in_transaction(
             tx, scope, placement, &item,
@@ -3909,9 +3936,7 @@ fn decode_creature_field_origin(
         item_key: row.try_get("definition_production_key")?,
         item_revision: row.try_get("definition_revision_ref")?,
     };
-    if origin.condition_source_key().is_none()
-        || text[11].is_some()
-    {
+    if origin.condition_source_key().is_none() || text[11].is_some() {
         return Err(SpellItemError::Rejected(
             "Creature field typed cause metadata",
         ));

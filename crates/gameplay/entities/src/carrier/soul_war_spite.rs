@@ -19,10 +19,10 @@ impl ChannelRuntimeV1 {
         let source_target = match change {
             SpiteChange::FireExpired => self.source_creature_is_registered(expected.actor)?,
             SpiteChange::WeepingHeal => {
-                matches!(
-                    self.binding().runtime_scope(),
-                    RuntimeScopeRefV1::Instance { .. }
-                ) && expected.health > 0
+                // Crystal CreatureFunctions::luaCreatureAddHealth delegates to
+                // Game::combatChangeHealth, which refuses registered HP0. The
+                // global Item-id MoveEvent also runs in a public Channel.
+                self.source_creature_is_registered(expected.actor)? && expected.health > 0
             }
         };
         if !source_target
@@ -79,10 +79,16 @@ mod tests {
         id
     }
 
-    fn runtime() -> TestResult<(ChannelRuntimeV1, ExactActorRef)> {
+    fn runtime(private: bool) -> TestResult<(ChannelRuntimeV1, ExactActorRef)> {
         let world = WorldId::decode(&id(1)).map_err(|error| format!("{error:?}"))?;
-        let scope =
-            RuntimeScopeRefV1::instance(world, id(2)).map_err(|error| format!("{error:?}"))?;
+        let scope = if private {
+            RuntimeScopeRefV1::instance(world, id(2)).map_err(|error| format!("{error:?}"))?
+        } else {
+            RuntimeScopeRefV1::Channel {
+                world_id: world,
+                channel_id: ChannelId::decode(&id(2)).map_err(|error| format!("{error:?}"))?,
+            }
+        };
         let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
             scope,
             NodeId::decode(&id(3)).map_err(|error| format!("{error:?}"))?,
@@ -115,7 +121,7 @@ mod tests {
 
     #[test]
     fn srx3_spite_current_actor_defense_addition_and_maximum_health_heal() -> TestResult {
-        let (mut runtime, boss) = runtime()?;
+        let (mut runtime, boss) = runtime(true)?;
         let before = runtime.companion_snapshot(boss)?;
         runtime
             .change_soul_war_spite(&before, 160, SpiteChange::FireExpired)
@@ -151,6 +157,30 @@ mod tests {
         assert_eq!(healed.maximum_health, before.maximum_health);
         assert_eq!(healed.state.policy.defense, Some(160));
         assert_eq!(runtime.effective_creature_defense(&healed)?, 170);
+        Ok(())
+    }
+
+    #[test]
+    fn srx3_weeping_heals_the_current_channel_spite_but_never_revives_registered_hp0() -> TestResult
+    {
+        let (mut runtime, boss) = runtime(false)?;
+        runtime.set_test_creature_health(boss, 100)?;
+        let expected = runtime.companion_snapshot(boss)?;
+        let defense = runtime.effective_creature_defense(&expected)?;
+        runtime.change_soul_war_spite(&expected, defense, SpiteChange::WeepingHeal)?;
+        assert_eq!(
+            runtime.companion_snapshot(boss)?.health,
+            100 + expected.maximum_health / 10
+        );
+        runtime.set_test_creature_health(boss, 0)?;
+        let dead = runtime.companion_snapshot_including_dead(boss)?;
+        assert!(runtime.source_creature_is_registered(boss)?);
+        assert!(
+            runtime
+                .change_soul_war_spite(&dead, defense, SpiteChange::WeepingHeal)
+                .is_err()
+        );
+        assert_eq!(runtime.companion_snapshot_including_dead(boss)?, dead);
         Ok(())
     }
 }

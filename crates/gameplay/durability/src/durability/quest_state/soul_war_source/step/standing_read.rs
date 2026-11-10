@@ -1,6 +1,7 @@
 //! Adapt the existing SQL-fenced standing-tile read; detached Item names or
 //! client handles cannot construct this bridge's actual Ground selection.
 use super::*;
+use crate::durability::creature_source_items::SourceGroundStep;
 use crate::durability::spell_item_transaction::StandingTileRead;
 use crate::durability::spell_items_abi::DurableTileItem;
 use oteryn_gameplay_entities::{SourceActorReservationProof, source_reservation_seal};
@@ -26,6 +27,7 @@ pub struct PreparedSpiteStep {
     binding: [u8; 32],
     stamp: crate::foundation::RuntimeWorkStamp,
     remorse_items: Vec<[u8; 16]>,
+    ground_steps: Vec<SourceGroundStep>,
 }
 impl PreparedSpiteStep {
     pub fn from_committed_movement(
@@ -100,7 +102,18 @@ impl PreparedSpiteStep {
             })
             .map(|item| item.item_instance_id)
             .collect();
+        let weeping_items: Vec<_> = read
+            .into_iter()
+            .flat_map(|read| read.items())
+            .filter(|item| {
+                item.definition.family == "Item"
+                    && item.definition.production_key == "oteryn:item.tibia.i33876"
+                    && item.definition.revision_ref == "definition-r1"
+            })
+            .map(|item| item.item_instance_id)
+            .collect();
         if (remorse_items.is_empty()
+            && weeping_items.is_empty()
             && ![
                 (33743, 31628, 14),
                 (33736, 31632, 14),
@@ -141,6 +154,22 @@ impl PreparedSpiteStep {
         {
             return None;
         }
+        let ground_steps = weeping_items
+            .into_iter()
+            .map(|item| {
+                SourceGroundStep::from_current_player_step(
+                    runtime,
+                    room,
+                    native,
+                    actor,
+                    session,
+                    movement,
+                    reset_epoch,
+                    read?,
+                    item,
+                )
+            })
+            .collect::<Option<Vec<_>>>()?;
         let stamp = runtime.issue_owner_work().ok()?;
         let owner = runtime.binding();
         let pin = runtime.content_pin();
@@ -180,6 +209,9 @@ impl PreparedSpiteStep {
         for item in &remorse_items {
             hash.update(item);
         }
+        for step in &ground_steps {
+            hash.update(step.binding());
+        }
         Some(Self {
             actor,
             session,
@@ -198,6 +230,7 @@ impl PreparedSpiteStep {
             binding: hash.finalize().into(),
             stamp,
             remorse_items,
+            ground_steps,
         })
     }
     pub fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
@@ -252,7 +285,15 @@ impl PreparedSpiteStep {
             && fence.scope_ownership_generation == self.generation
     }
     pub fn callback_count(&self) -> usize {
-        self.remorse_items.len().saturating_add(1)
+        self.remorse_items
+            .len()
+            .saturating_add(self.ground_steps.len())
+            .saturating_add(1)
+    }
+    /// Only the exact UUIDs read at the committed destination can be consumed.
+    /// A later tile read cannot introduce another Item-id callback.
+    pub fn source_ground_steps(&self) -> &[SourceGroundStep] {
+        &self.ground_steps
     }
     pub fn qualify_current_next(
         &self,

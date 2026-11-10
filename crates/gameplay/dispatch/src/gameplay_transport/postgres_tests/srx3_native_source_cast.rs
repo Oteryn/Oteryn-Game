@@ -19,7 +19,7 @@ pub(super) async fn drain_source_death(
         .runtime
         .lock()
         .await
-        .companion_snapshot(actor)
+        .companion_snapshot_including_dead(actor)
         .map_err(debug)?
         .state
         .policy;
