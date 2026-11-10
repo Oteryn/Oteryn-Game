@@ -42,10 +42,14 @@ impl DurabilityRoot {
         let digest = policy.content_artifact_sha256.clone()?;
         let read = async move {
             let permit = ARTIFACT_READ.acquire().await.ok()?;
-            tokio::task::spawn_blocking(move || {
-                let _permit = permit;
-                items::preload_artifact(&policy)
-            })
+            oteryn_task_supervisor::spawn_blocking_lifecycle_supervised(
+                "bazaar_artifact_preload",
+                None,
+                move || {
+                    let _permit = permit;
+                    items::preload_artifact(&policy)
+                },
+            )
             .await
             .ok()?
         };

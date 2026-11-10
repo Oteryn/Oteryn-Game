@@ -187,9 +187,13 @@ impl Collector<'_, '_, '_> {
         )?;
         line.push(b'\n');
         let config = self.config.clone();
-        tokio::task::spawn_blocking(move || append_synced(&config, source.name(), &line))
-            .await
-            .map_err(io::Error::other)?
+        oteryn_task_supervisor::spawn_blocking_lifecycle_supervised(
+            "audit_journal_append",
+            None,
+            move || append_synced(&config, source.name(), &line),
+        )
+        .await
+        .map_err(io::Error::other)?
     }
 }
 
