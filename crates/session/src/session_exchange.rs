@@ -342,6 +342,19 @@ impl<S: SessionStream> Session<S> {
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;
+            if envelope.message_type() == MessageType::ProtocolError {
+                let error = decode_protocol_error(envelope.payload())?;
+                let trace_selected = self.selected_capabilities.contains(
+                    &oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1,
+                );
+                if error.connection_trace.is_some() != trace_selected {
+                    return Err(FoundationProtocolError::MalformedEnvelope.into());
+                }
+                return Err(SessionError::ServerProtocolError {
+                    code: error.error_code,
+                    connection_trace: error.connection_trace,
+                });
+            }
             if envelope.message_type() == MessageType::SnapshotBegin {
                 let source = self.join_snapshot.game_session_id;
                 self.replace_snapshot(envelope.payload()).await?;

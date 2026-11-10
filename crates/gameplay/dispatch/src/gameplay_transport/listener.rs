@@ -219,6 +219,7 @@ where
     O: ConnectionObserver,
 {
     use connection::ConnectionEnd;
+    let trace = crate::operator_files::uuid_v7().ok();
     // Entry work (unit wait, TLS, entry frame) is bounded by the deadline and
     // cancelled by shutdown; nothing authoritative has started yet.
     // NBDIAG-6: which entry step a failed or slow entry was waiting for.
@@ -276,7 +277,16 @@ where
         return None;
     }
     let admit_started = tokio::time::Instant::now();
-    let admitted = admit_frame(&mut stream, &frame, authority, identifiers).await;
+    let admitted = match trace {
+        Some(trace) => {
+            connection::with_connection_trace(
+                trace,
+                admit_frame(&mut stream, &frame, authority, identifiers),
+            )
+            .await
+        }
+        None => admit_frame(&mut stream, &frame, authority, identifiers).await,
+    };
     drop(unit);
     match &admitted {
         Err(end) => operator_event(&format!(
@@ -295,7 +305,21 @@ where
         Err(end @ ConnectionEnd::AdmittedThenDisconnected(_)) => (end, true),
         Err(end) => (end, false),
         Ok(admitted) => match first(
-            serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
+            async {
+                match trace {
+                    Some(trace)
+                        if admitted.continuity.selected_capabilities.contains(
+                            oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1,
+                        ) => connection::with_selected_connection_trace(
+                            trace,
+                            serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
+                        )
+                        .await,
+                    Some(_) | None => {
+                        serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS).await
+                    }
+                }
+            },
             async {
                 match drain {
                     Some(drain) => {

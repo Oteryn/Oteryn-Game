@@ -51,6 +51,7 @@ pub mod coin_market;
 pub mod coin_transfer;
 pub mod command_replay;
 pub mod condition_status;
+pub mod connection_trace;
 pub mod container_sort;
 pub mod container_tree;
 mod contract_registries;
@@ -843,6 +844,20 @@ fn validate_capability_closure(selected: &[u32]) -> Result<(), FoundationProtoco
 pub fn encode_server_accepted(
     value: &ServerAcceptedValue<'_>,
 ) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_server_accepted_inner(value, None)
+}
+
+pub fn encode_server_accepted_with_trace(
+    value: &ServerAcceptedValue<'_>,
+    connection_trace: &[u8; 16],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_server_accepted_inner(value, Some(connection_trace))
+}
+
+fn encode_server_accepted_inner(
+    value: &ServerAcceptedValue<'_>,
+    connection_trace: Option<&[u8; 16]>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
     validate_acceptance_value(
         value.connection_generation,
         value.next_command_id,
@@ -862,6 +877,12 @@ pub fn encode_server_accepted(
     for &capability in value.selected_capabilities {
         push_scalar(&mut payload, 10, u64::from(capability));
     }
+    encode_connection_trace(
+        &mut payload,
+        11,
+        value.selected_capabilities,
+        connection_trace,
+    )?;
     let mut output = vec![8, 2];
     push_bytes(&mut output, 4, &payload);
     Ok(output)
@@ -870,6 +891,21 @@ pub fn encode_server_accepted(
 #[allow(dead_code)]
 pub fn encode_server_resume_accepted(
     value: &ServerResumeAcceptedValue<'_>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_server_resume_accepted_inner(value, None)
+}
+
+#[allow(dead_code)]
+pub fn encode_server_resume_accepted_with_trace(
+    value: &ServerResumeAcceptedValue<'_>,
+    connection_trace: &[u8; 16],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_server_resume_accepted_inner(value, Some(connection_trace))
+}
+
+fn encode_server_resume_accepted_inner(
+    value: &ServerResumeAcceptedValue<'_>,
+    connection_trace: Option<&[u8; 16]>,
 ) -> Result<Vec<u8>, FoundationProtocolError> {
     validate_acceptance_value(
         value.connection_generation,
@@ -886,6 +922,12 @@ pub fn encode_server_resume_accepted(
     for &capability in value.selected_capabilities {
         push_scalar(&mut payload, 6, u64::from(capability));
     }
+    encode_connection_trace(
+        &mut payload,
+        7,
+        value.selected_capabilities,
+        connection_trace,
+    )?;
     let mut output = vec![8, 4];
     push_bytes(&mut output, 4, &payload);
     Ok(output)
@@ -1151,6 +1193,15 @@ pub fn encode_protocol_error(
     encode_command_protocol_error(error, generation, 0, 0)
 }
 
+/// Encodes a capability-gated `ProtocolError` carrying its diagnostic connection trace.
+pub fn encode_protocol_error_with_trace(
+    error: FoundationProtocolError,
+    generation: u64,
+    connection_trace: &[u8; 16],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_command_protocol_error_inner(error, generation, 0, 0, Some(connection_trace))
+}
+
 /// `ProtocolError` with its optional command correlation (zero means not applicable): the
 /// offending `related_command_id` and, for a gap, the `expected_command_id` (FND-02 §13.2).
 pub fn encode_command_protocol_error(
@@ -1159,11 +1210,33 @@ pub fn encode_command_protocol_error(
     related_command_id: u64,
     expected_command_id: u64,
 ) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_command_protocol_error_inner(
+        error,
+        generation,
+        related_command_id,
+        expected_command_id,
+        None,
+    )
+}
+
+fn encode_command_protocol_error_inner(
+    error: FoundationProtocolError,
+    generation: u64,
+    related_command_id: u64,
+    expected_command_id: u64,
+    connection_trace: Option<&[u8; 16]>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
     let mut payload = Vec::new();
     push_scalar(&mut payload, 1, u64::from(error.code()));
     push_scalar(&mut payload, 2, u64::from(error.disposition() as u32));
     push_scalar(&mut payload, 3, related_command_id);
     push_scalar(&mut payload, 4, expected_command_id);
+    if let Some(trace) = connection_trace {
+        if !connection_trace::valid(trace) {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        push_bytes(&mut payload, 6, trace);
+    }
     let mut output = vec![8, 14];
     push_scalar(&mut output, 2, generation);
     push_bytes(&mut output, 4, &payload);
@@ -1255,6 +1328,7 @@ pub struct ProtocolErrorView {
     pub related_command_id: u64,
     pub expected_command_id: u64,
     pub expected_server_sequence: u64,
+    pub connection_trace: Option<[u8; 16]>,
 }
 
 /// Decodes one `ProtocolError` message payload. A zero or absent `error_code`, or an absent or
@@ -1262,6 +1336,7 @@ pub struct ProtocolErrorView {
 pub fn decode_protocol_error(payload: &[u8]) -> Result<ProtocolErrorView, FoundationProtocolError> {
     let mut cursor = 0usize;
     let mut fields = [None; 5];
+    let mut connection_trace = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -1270,6 +1345,7 @@ pub fn decode_protocol_error(payload: &[u8]) -> Result<ProtocolErrorView, Founda
             1..=5 => {
                 read_singular_varint(payload, &mut cursor, wire, &mut fields[field as usize - 1])?
             }
+            6 => read_connection_trace(payload, &mut cursor, wire, &mut connection_trace)?,
             _ => skip_field(payload, &mut cursor, wire)?,
         }
     }
@@ -1296,6 +1372,7 @@ pub fn decode_protocol_error(payload: &[u8]) -> Result<ProtocolErrorView, Founda
         related_command_id: related.unwrap_or(0),
         expected_command_id: expected_command.unwrap_or(0),
         expected_server_sequence: expected_sequence.unwrap_or(0),
+        connection_trace,
     })
 }
 
@@ -1430,6 +1507,48 @@ pub struct ServerAcceptedFields {
     pub next_command_id: u64,
     pub schema_revision: u32,
     pub selected_capabilities: Vec<u32>,
+    pub connection_trace: Option<[u8; 16]>,
+}
+
+fn encode_connection_trace(
+    payload: &mut Vec<u8>,
+    field: u32,
+    selected_capabilities: &[u32],
+    trace: Option<&[u8; 16]>,
+) -> Result<(), FoundationProtocolError> {
+    if let Some(trace) = trace {
+        if !selected_capabilities.contains(&connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
+            || !connection_trace::valid(trace)
+        {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        push_bytes(payload, field, trace);
+    }
+    Ok(())
+}
+
+fn read_connection_trace(
+    payload: &[u8],
+    cursor: &mut usize,
+    wire: u8,
+    trace: &mut Option<[u8; 16]>,
+) -> Result<(), FoundationProtocolError> {
+    if wire != 2 || trace.is_some() {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let bytes = bounded_length_delimited(
+        payload,
+        cursor,
+        16,
+        FoundationProtocolError::MalformedEnvelope,
+    )?;
+    if !connection_trace::valid(bytes) {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let mut value = [0; 16];
+    value.copy_from_slice(bytes);
+    *trace = Some(value);
+    Ok(())
 }
 
 /// Decodes one `ServerAccepted` message payload — a `WireEnvelopeView::payload()` whose
@@ -1447,6 +1566,7 @@ pub fn decode_server_accepted(
     let (mut generation, mut sequence, mut next_command_id) = (None, None, None);
     let mut schema_revision = None;
     let mut capabilities = Vec::new();
+    let mut connection_trace = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -1501,8 +1621,14 @@ pub fn decode_server_accepted(
                     );
                 }
             }
+            11 => read_connection_trace(payload, &mut cursor, wire, &mut connection_trace)?,
             _ => skip_field(payload, &mut cursor, wire)?,
         }
+    }
+    if connection_trace.is_some()
+        && !capabilities.contains(&connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
+    {
+        return Err(FoundationProtocolError::MalformedEnvelope);
     }
     Ok(ServerAcceptedFields {
         game_session_id: session.ok_or(FoundationProtocolError::InvalidWireIdentifier)?,
@@ -1516,6 +1642,7 @@ pub fn decode_server_accepted(
         )
         .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
         selected_capabilities: capabilities,
+        connection_trace,
     })
 }
 
