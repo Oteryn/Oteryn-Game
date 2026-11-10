@@ -162,6 +162,31 @@ fn holder_wait_line(wait: &PendingWait, waited: Duration) -> oteryn_error_codes:
         )
 }
 
+fn pass_slow_line(
+    caller: Site,
+    held: Duration,
+    deadline_exceeded: bool,
+) -> oteryn_error_codes::Line<'static> {
+    oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "durability", "pass_slow")
+        .field("caller", oteryn_error_codes::FieldValue::Owned(caller.to_string()))
+        .field("held_ms", millis(held))
+        .field(
+            "deadline_exceeded",
+            oteryn_error_codes::FieldValue::Token(if deadline_exceeded { "true" } else { "false" }),
+        )
+}
+
+/// `owner`: the pass holding the holder and for how long; `None` when no pass owns it.
+fn holder_stuck_line(owner: Option<(Site, Duration)>) -> oteryn_error_codes::Line<'static> {
+    let line =
+        oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "durability", "holder_stuck")
+            .field("caller", oteryn_error_codes::FieldValue::Owned(site_text(owner.map(|(caller, _)| caller))));
+    match owner {
+        Some((_, held)) => line.field("held_ms", millis(held)),
+        None => line,
+    }
+}
+
 /// Records a refused checkout of `waiter` against the pass that holds the holder (LOGDBG-C).
 fn record_refused_checkout(slot: &StdMutex<HolderOwner>, waiter: Site) {
     let owner = slot.lock().ok().and_then(|owner| owner.map(|(site, ..)| site));
@@ -1572,31 +1597,6 @@ impl DurabilityRoot {
             deadline: bounded_pass_deadline(now, self.pass_deadline(), deadline),
             owner: PassOwner::checked_out(&self.holder_owner, caller, now),
         })
-    }
-}
-
-fn pass_slow_line(
-    caller: Site,
-    held: Duration,
-    deadline_exceeded: bool,
-) -> oteryn_error_codes::Line<'static> {
-    oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "durability", "pass_slow")
-        .field("caller", oteryn_error_codes::FieldValue::Owned(caller.to_string()))
-        .field("held_ms", millis(held))
-        .field(
-            "deadline_exceeded",
-            oteryn_error_codes::FieldValue::Token(if deadline_exceeded { "true" } else { "false" }),
-        )
-}
-
-/// `owner`: the pass holding the holder and for how long; `None` when no pass owns it.
-fn holder_stuck_line(owner: Option<(Site, Duration)>) -> oteryn_error_codes::Line<'static> {
-    let line =
-        oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "durability", "holder_stuck")
-            .field("caller", oteryn_error_codes::FieldValue::Owned(site_text(owner.map(|(caller, _)| caller))));
-    match owner {
-        Some((_, held)) => line.field("held_ms", millis(held)),
-        None => line,
     }
 }
 

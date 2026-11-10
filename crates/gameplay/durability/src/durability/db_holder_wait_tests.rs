@@ -139,9 +139,9 @@ fn a_root_task_inherits_the_trace_of_the_task_that_spawned_it() -> Result<(), Bo
     runtime.block_on(async {
         // Lazy: the fixture establishes no connection.
         let root = DurabilityRoot::connect_test_runtime("postgres://oteryn@127.0.0.1:1/oteryn")?;
-        let traced = with_holder_trace(TRACE, async { root.spawn_task(async { holder_trace() }) })
-            .await
-            .await?;
+        let traced =
+            with_holder_trace(TRACE, async { root.spawn_task(async { holder_trace() }).await })
+                .await?;
         assert_eq!(traced, Some(TRACE));
         assert_eq!(root.spawn_task(async { holder_trace() }).await?, None);
         Ok(())
