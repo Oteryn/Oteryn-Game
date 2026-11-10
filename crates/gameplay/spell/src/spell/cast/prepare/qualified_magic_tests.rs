@@ -34,7 +34,10 @@ fn id(last: u8) -> [u8; 16] {
 fn content() -> Result<NativeGameplayState, String> {
     let pinned = |bytes: &[u8]| PinnedGameplayBytes {
         bytes: bytes.to_vec(),
-        sha256: format!("{:x}", Sha256::digest(bytes)),
+        sha256: Sha256::digest(bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect(),
     };
     macro_rules! sample {
         ($path:literal) => {
@@ -80,13 +83,16 @@ fn content() -> Result<NativeGameplayState, String> {
 }
 
 fn spell(content: &NativeGameplayState, name: &str) -> Result<SpellDefinition, String> {
-    content
+    let entry = content
         .catalog()
         .entries
         .iter()
         .find(|entry| entry.header.name == name)
-        .and_then(|entry| entry.definition.clone())
-        .ok_or_else(|| format!("missing source spell {name}"))
+        .ok_or_else(|| format!("missing source spell {name}"))?;
+    entry
+        .definition
+        .clone()
+        .map_err(|error| format!("invalid source spell {name}: {error:?}"))
 }
 
 fn owner(
