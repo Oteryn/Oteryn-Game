@@ -131,7 +131,13 @@ impl PremiumRefresher {
             return;
         }
         let wake = Arc::new(Notify::new());
-        let task = tokio::spawn(run(self.inner.clone(), account_id, wake.clone()));
+        let task_wake = wake.clone();
+        let inner = self.inner.clone();
+        let task = oteryn_task_supervisor::spawn_supervised_with_heartbeat(
+            "premium_refresh",
+            None,
+            move |heartbeat| run(inner, account_id, task_wake, heartbeat),
+        );
         schedules.insert(account_id, Schedule { wake, task });
     }
 
@@ -151,13 +157,19 @@ impl PremiumRefresher {
     }
 }
 
-async fn run(inner: Arc<Inner>, account_id: [u8; 16], wake: Arc<Notify>) {
+async fn run(
+    inner: Arc<Inner>,
+    account_id: [u8; 16],
+    wake: Arc<Notify>,
+    heartbeat: oteryn_task_supervisor::Heartbeat,
+) {
     let Some(client) = &inner.client else { return };
     // A load failure only delays the restrictive durable facts: the first pull fences against
     // the same durable rows and returns them.
     let _ = inner.consumer.load(&inner.root, account_id).await;
     let mut attempt = 0;
     loop {
+        heartbeat.beat();
         let ticket = inner.consumer.ticket();
         let delay = match pull(&inner, client, account_id, ticket).await {
             Next::Refresh => {

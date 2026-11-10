@@ -241,13 +241,17 @@ impl<C: ReportClock + Clone + 'static> Reporter<C> {
             verified_at: clock.elapsed(),
             lost: false,
         };
-        let task = tokio::spawn(runtime_status::run(
-            clock.clone(),
-            receiver,
-            runtime_status::HEARTBEAT,
-            gate,
-            sink,
-        ));
+        let task = oteryn_task_supervisor::spawn_supervised(
+            "runtime_status_reporter",
+            None,
+            runtime_status::run(
+                clock.clone(),
+                receiver,
+                runtime_status::HEARTBEAT,
+                gate,
+                sink,
+            ),
+        );
         Self {
             clock,
             latest,

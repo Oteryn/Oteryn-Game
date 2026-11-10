@@ -1748,9 +1748,14 @@ async fn backoff_within(attempt: &mut u32, budget: Option<tokio::time::Instant>)
 
 /// Re-establish the durability holder after any reported demand, and at a
 /// fixed interval well inside the 30-minute holder lifetime (D3 step 2).
-async fn maintain(root: DurabilityRoot, stop: CancellationToken) {
+async fn maintain(
+    root: DurabilityRoot,
+    stop: CancellationToken,
+    heartbeat: oteryn_task_supervisor::Heartbeat,
+) {
     let mut since = tokio::time::Instant::now();
     while !stop.is_cancelled() {
+        heartbeat.beat();
         if first(tokio::time::sleep(MAINTENANCE_POLL), stop.cancelled())
             .await
             .is_none()
@@ -2574,13 +2579,24 @@ fn control_health(root: &DurabilityRoot) -> String {
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .clone();
+    let stalled_tasks = oteryn_task_supervisor::supervised_tasks()
+        .into_iter()
+        .filter(|task| task.since_beat_ms >= 30_000)
+        .map(|task| {
+            serde_json::json!({
+                "name": task.name,
+                "age_ms": task.age_ms,
+                "since_beat_ms": task.since_beat_ms,
+            })
+        })
+        .collect::<Vec<_>>();
     serde_json::json!({
         "readiness": root.is_ready(),
         "db_pool": if root.is_ready() { "ready" } else { "unavailable" },
         "platform": "unknown",
         "tick_ms": null,
         "connections": 0,
-        "stalled_tasks": [],
+        "stalled_tasks": stalled_tasks,
         "last_errors": last_errors,
     })
     .to_string()
@@ -2837,7 +2853,7 @@ pub async fn run_with_npc_data_project(
     let signalled = CancellationToken::new();
     let watcher = {
         let signalled = signalled.clone();
-        tokio::spawn(async move {
+        oteryn_task_supervisor::spawn_supervised("termination_watcher", None, async move {
             termination().await;
             signalled.cancel();
         })
@@ -2845,7 +2861,13 @@ pub async fn run_with_npc_data_project(
     // D3 step 2.
     let root = connect_root(&config.database, effective_uid()).await?;
     let stop_maintenance = CancellationToken::new();
-    let maintenance = tokio::spawn(maintain(root.clone(), stop_maintenance.clone()));
+    let maintenance_root = root.clone();
+    let maintenance_stop = stop_maintenance.clone();
+    let maintenance = oteryn_task_supervisor::spawn_supervised_with_heartbeat(
+        "durability_maintenance",
+        None,
+        move |heartbeat| maintain(maintenance_root, maintenance_stop, heartbeat),
+    );
     let result = boot_and_serve(&root, &material, bundle, npc_boot, &signalled).await;
     stop_maintenance.cancel();
     let _ = maintenance.await;

@@ -7,7 +7,7 @@ use std::future::Future;
 use std::panic::AssertUnwindSafe;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::task::JoinHandle;
@@ -15,6 +15,64 @@ use tokio::time::Instant;
 
 const MODULE: &str = "runtime";
 static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
+static GLOBAL: OnceLock<Supervisor> = OnceLock::new();
+static WATCHDOG_STARTED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+fn global() -> &'static Supervisor {
+    GLOBAL.get_or_init(|| Supervisor::new(4_096))
+}
+
+fn start_watchdog() {
+    if WATCHDOG_STARTED
+        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .is_ok()
+    {
+        let supervisor = global().clone();
+        tokio::spawn(async move {
+            supervisor
+                .run_watchdog(Duration::from_secs(5), Duration::from_secs(30))
+                .await;
+        });
+    }
+}
+
+/// Spawn a process-supervised task while preserving its output and Tokio join semantics.
+pub fn spawn_supervised<F>(
+    name: &'static str,
+    trace: Option<String>,
+    future: F,
+) -> JoinHandle<F::Output>
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    start_watchdog();
+    let guard = global().register(name, trace, TaskKind::Async);
+    tokio::spawn(async move { guard.run_preserving(future).await })
+}
+
+/// Spawn a process-supervised task with an explicit progress heartbeat.
+pub fn spawn_supervised_with_heartbeat<F, Fut>(
+    name: &'static str,
+    trace: Option<String>,
+    make_future: F,
+) -> JoinHandle<Fut::Output>
+where
+    F: FnOnce(Heartbeat) -> Fut + Send + 'static,
+    Fut: Future + Send + 'static,
+    Fut::Output: Send + 'static,
+{
+    start_watchdog();
+    let guard = global().register(name, trace, TaskKind::Async);
+    let heartbeat = guard.heartbeat();
+    tokio::spawn(async move { guard.run_preserving(make_future(heartbeat)).await })
+}
+
+/// Return the process-wide live-task snapshot for operations health output.
+#[must_use]
+pub fn supervised_tasks() -> Vec<TaskInfo> {
+    global().snapshot()
+}
 
 /// The execution mechanism used by a supervised task.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -171,7 +229,7 @@ impl Supervisor {
                 Ok(Ok(value)) => guard.finish("ok", Some(value)),
                 Ok(Err(_)) => guard.finish("err", None),
                 Err(error) if error.is_panic() => {
-                    guard.panic_line(error.into_panic());
+                    guard.panic_line(error.into_panic().as_ref());
                     guard.finish("err", None)
                 }
                 Err(_) => guard.finish("cancelled", None),
@@ -342,13 +400,36 @@ impl TaskGuard {
             Ok(Ok(value)) => self.finish("ok", Some(value)),
             Ok(Err(_)) => self.finish("err", None),
             Err(payload) => {
-                self.panic_line(payload);
+                self.panic_line(payload.as_ref());
                 self.finish("err", None)
             }
         }
     }
 
-    fn panic_line(&self, payload: Box<dyn Any + Send>) {
+    async fn run_preserving<F: Future>(self, future: F) -> F::Output {
+        match (CatchUnwind {
+            future: Box::pin(future),
+        })
+        .await
+        {
+            Ok(value) => {
+                self.finish_preserving("ok");
+                value
+            }
+            Err(payload) => {
+                self.panic_line(payload.as_ref());
+                self.finish_preserving("err");
+                std::panic::resume_unwind(payload)
+            }
+        }
+    }
+
+    fn finish_preserving(mut self, outcome: &str) {
+        self.finished = true;
+        self.write_end(outcome);
+    }
+
+    fn panic_line(&self, payload: &(dyn Any + Send)) {
         self.supervisor
             .inner
             .counters
