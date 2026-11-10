@@ -9,15 +9,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         generation: u64,
     ) {
-        if let Ok(mut lost) = self.states.lost.lock()
-            && lost
-                .get(&session)
-                .is_some_and(|entry| entry.continuity.connection_generation == generation)
-        {
-            lost.remove(&session);
-            drop(lost);
-            self.states.lost_changed.notify_waiters();
-        }
+        self.states.remove_lost_if(session, |entry| {
+            entry.continuity.connection_generation == generation
+        });
     }
 
     /// CHARM-DESC-FENCE-LEASE step (a): fence the slot's damage writes for `session` under the

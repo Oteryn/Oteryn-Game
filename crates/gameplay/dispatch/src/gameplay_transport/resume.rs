@@ -146,9 +146,9 @@ fn resume_read_refusal(_error: crate::durability::DurabilityError) -> AdmissionR
 
 async fn wait_for_loss_publication(
     published: impl std::future::Future<Output = ()>,
-    wait: std::time::Duration,
+    deadline: tokio::time::Instant,
 ) -> bool {
-    tokio::time::timeout(wait, published).await.is_ok()
+    tokio::time::timeout_at(deadline, published).await.is_ok()
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -170,6 +170,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             self.spell_lane_permit().await.ok_or(Unavailable)?;
         }
+        let mut loss_deadline = tokio::time::Instant::now()
+            + std::time::Duration::from_secs(
+                u64::try_from(SAME_SESSION_GRACE_SECONDS).map_err(|_| Unavailable)?,
+            );
         let mut lost = loop {
             // Register before looking: publication between the lookup and the wait must wake us.
             let mut published = std::pin::pin!(self.states.lost_changed.notified());
@@ -201,15 +205,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if session.session_state() != GameSessionState::Reconnectable {
                     return Err(Rejected);
                 }
+                if let Some(durable_deadline) = session
+                    .current_original_grace_deadline()
+                    .and_then(|deadline| {
+                        let now = super::unix_seconds()?;
+                        u64::try_from(deadline.saturating_sub(now).max(0)).ok()
+                    })
+                    .map(|remaining| {
+                        tokio::time::Instant::now() + std::time::Duration::from_secs(remaining)
+                    })
+                {
+                    loss_deadline = loss_deadline.min(durable_deadline);
+                }
             }
-            if !wait_for_loss_publication(
-                published,
-                std::time::Duration::from_secs(
-                    u64::try_from(SAME_SESSION_GRACE_SECONDS).map_err(|_| Unavailable)?,
-                ),
-            )
-            .await
-            {
+            if !wait_for_loss_publication(published, loss_deadline).await {
                 return Err(Unavailable);
             }
         };
@@ -919,7 +928,37 @@ mod tests {
         let mut published = std::pin::pin!(changed.notified());
         published.as_mut().enable();
         changed.notify_waiters();
-        assert!(wait_for_loss_publication(published, std::time::Duration::from_millis(50)).await);
+        assert!(
+            wait_for_loss_publication(
+                published,
+                tokio::time::Instant::now() + std::time::Duration::from_millis(50)
+            )
+            .await
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn unrelated_loss_publications_do_not_extend_deadline() {
+        let changed = Arc::new(tokio::sync::Notify::new());
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(60);
+        let waiter = tokio::spawn({
+            let changed = Arc::clone(&changed);
+            async move {
+                loop {
+                    let mut published = std::pin::pin!(changed.notified());
+                    published.as_mut().enable();
+                    if !wait_for_loss_publication(published, deadline).await {
+                        return tokio::time::Instant::now();
+                    }
+                }
+            }
+        });
+        for _ in 0..6 {
+            tokio::time::advance(std::time::Duration::from_secs(10)).await;
+            changed.notify_waiters();
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(waiter.await.expect("waiter"), deadline);
     }
 
     /// #162 5870253781 (r4122215795, reconnect fence P1): `resume_lost`'s FND-02

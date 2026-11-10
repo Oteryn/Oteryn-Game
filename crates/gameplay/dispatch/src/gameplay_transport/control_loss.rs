@@ -61,12 +61,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .clear_target(actor, admitted.game_session_id);
         }
-        if result == ControlLossResult::Recorded
-            && let Ok(mut lost) = self.states.lost.lock()
-        {
-            lost.insert(admitted.game_session_id, admitted);
-            drop(lost);
-            self.states.lost_changed.notify_waiters();
+        if result == ControlLossResult::Recorded {
+            let _ = self.states.insert_lost(admitted);
         }
         result
     }
@@ -121,12 +117,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return ControlLossResult::Unknown;
         }
         drop(runtime);
-        let Ok(mut lost) = self.states.lost.lock() else {
+        if self.states.insert_lost(admitted).is_err() {
             return ControlLossResult::Unknown;
-        };
-        lost.insert(admitted.game_session_id, admitted);
-        drop(lost);
-        self.states.lost_changed.notify_waiters();
+        }
         ControlLossResult::Recorded
     }
 
