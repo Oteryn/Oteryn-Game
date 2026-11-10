@@ -18,7 +18,7 @@ use crate::durability::runtime_scope_assignment::{BootstrapSecret, ControlActor,
     NodeIncarnationProof, NodeRegistrationFact, OperationKey};
 use crate::foundation::{ChannelContentPin, CharacterId, CharacterLease, CommandId,
     CommandRef, MovementLocalPosition};
-use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use oteryn_protocol_oteryn::hireling::management::{Refusal, Reply, Request};
 
@@ -278,8 +278,19 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         crate::gameplay_transport::capabilities::OfferedCapability { id: 207, requires: &[49] },
         crate::gameplay_transport::capabilities::OfferedCapability { id: 250, requires: &[165] },
     ];
+    // Bed USE and its modal must belong to the same boot offer that the real
+    // House handoff authenticates. Keep the other service fixtures unchanged.
+    static BED_OFFERS: std::sync::OnceLock<Vec<OfferedCapability>> = std::sync::OnceLock::new();
+    let boot_offers = if matches!(case, Case::BedRest) {
+        BED_OFFERS.get_or_init(|| {
+            owner.offered_capabilities().iter().copied().filter(|offer| {
+                OFFERS.iter().any(|existing| existing.id == offer.id)
+                    || [11, 18, 92, 450].contains(&offer.id)
+            }).collect()
+        }).as_slice()
+    } else { OFFERS };
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-        &[],crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id,deps.admitted.channel_id),1,"policy-1",OFFERS,
+        &[],crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id,deps.admitted.channel_id),1,"policy-1",boot_offers,
     ).map_err(debug)?;
 
     deps.initialize(&owner).await;
@@ -368,7 +379,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // As in the existing Store PostgreSQL fixture, capability154 is offered
     // only by this test producer. It is selected in the genuine source session
     // against the same boot offer already bound above, before the native handoff.
-    let offers = if matches!(case, Case::Store) { OFFERS } else { owner.offered_capabilities() };
+    let offers = if matches!(case, Case::Store | Case::BedRest) { boot_offers } else { owner.offered_capabilities() };
     let mut supported = vec![3, 4, 6, 15, 21, 37, 49, 51, 62, 86, 154, 165, 207, 250];
     if matches!(case, Case::BedRest) {
         supported.retain(|id| ![165, 250].contains(id));
@@ -378,6 +389,15 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         SelectedCapabilities::select(offers, &supported)
             .ok_or("hireling offer")?;
     let source_selection = admitted.continuity.selected_capabilities;
+    assert_eq!(owner.required_capabilities.authenticate_resume_support(
+        source_selection.as_slice(), source_selection,
+    ).map_err(debug)?.selected(), source_selection,
+        "the source selection must authenticate against its actual boot offer before House transfer");
+    if matches!(case, Case::BedRest) {
+        assert!([11, 18, 92, 450].iter().all(|id| source_selection.contains(*id)));
+        assert!(!source_selection.contains(165) && !source_selection.contains(250),
+            "the bed modal remains playable without Hireling capabilities");
+    }
 
     let mut transfer = vec![8, 1, 18, HOUSE.len() as u8];
     transfer.extend(HOUSE.as_bytes());
