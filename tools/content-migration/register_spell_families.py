@@ -327,8 +327,9 @@ def admit_current_staff_profile(root: Path, generated: dict[str, bytes]) -> None
 
 
 def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
+    from native_profile_composition import compact_native_profile_scope
     from qualification_inputs import appearance_input_scope
-    with appearance_input_scope():
+    with appearance_input_scope(), compact_native_profile_scope():
         return _outputs(root, include_prey=include_prey)
 
 

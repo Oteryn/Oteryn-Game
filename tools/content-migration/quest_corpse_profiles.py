@@ -10,6 +10,8 @@ import copy
 from dataclasses import dataclass, field
 import hashlib
 import json
+
+from native_profile_composition import encode_native_profile
 from pathlib import Path
 
 import grizzly_shop_profiles as grizzly
@@ -283,7 +285,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             continue
         document['records'].append(record)
     document['records'].sort(key=order)
-    generated[profile_path] = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    generated[profile_path] = encode_native_profile(document)
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(generated[profile_path]).hexdigest()
     generated[manifest_path] = canonical(manifest)

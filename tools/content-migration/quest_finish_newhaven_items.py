@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import copy
 
+from native_profile_composition import encode_native_profile
+
 CLIENT_SHA256 = '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'
 
 CORRUPTOR_ITEMS = {
@@ -219,7 +221,7 @@ def apply_native(root, generated, profile_path, manifest_path, provider_order, c
             row['authoring']['taxonomy'] = {'primary': 'Fist Fighting Weapons'}
         indexed[key] = row
     document['records'] = sorted(indexed.values(), key=provider_order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()

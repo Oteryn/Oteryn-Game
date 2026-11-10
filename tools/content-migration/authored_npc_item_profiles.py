@@ -2,6 +2,8 @@
 import hashlib
 import json
 
+from native_profile_composition import encode_native_profile
+
 import authored_quest_item_custody as custody
 import quest_batch3_item_profiles as references
 
@@ -48,7 +50,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if key in present:
             custody.reuse_existing(definitions[key], present[key], bindings)
     document['records'].sort(key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()
     generated[profile_path] = raw

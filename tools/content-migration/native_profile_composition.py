@@ -1,5 +1,29 @@
 """Combine source knowledge without replacing an already known mechanical fact."""
 import copy
+import json
+from contextlib import contextmanager
+from contextvars import ContextVar
+
+
+_compact_native_profiles = ContextVar('compact_native_profiles', default=False)
+
+
+@contextmanager
+def compact_native_profile_scope():
+    """Use compact intermediate banks while registration owns final byte encoding."""
+    token = _compact_native_profiles.set(True)
+    try:
+        yield
+    finally:
+        _compact_native_profiles.reset(token)
+
+
+def encode_native_profile(document):
+    """Keep standalone provider bytes; avoid pretty-printing transient full banks."""
+    options = {'separators': (',', ':')} if _compact_native_profiles.get() else {'indent': 2}
+    # Preserve key insertion order in both modes. The registration owner performs
+    # the final sorted canonical encoding before publishing any provider digest.
+    return (json.dumps(document, ensure_ascii=False, **options) + '\n').encode()
 
 
 def merge_fact(existing, source, path):

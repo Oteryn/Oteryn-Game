@@ -10,6 +10,8 @@ rewrites the Crystal facts; register_spell_families.py [--check] applies the ove
 import argparse
 import hashlib
 import json
+
+from native_profile_composition import encode_native_profile
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -113,7 +115,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             'excluded_families': {'state': 'KNOWN', 'value': []},
         }}
     document['records'].sort(key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()

@@ -2,6 +2,8 @@
 import hashlib
 import json
 
+from native_profile_composition import encode_native_profile
+
 PATH = 'tools/content-schema/native-gameplay/tool-item-profiles.json'
 IDS = {593, 594, 606, 608, 609, 615, 867, 868, 1791, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
 
@@ -26,7 +28,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         else:
             additions.append(record)
     document['records'] = sorted(document['records'] + additions, key=order)
-    data = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    data = encode_native_profile(document)
     generated[profile_path] = data
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(data).hexdigest()

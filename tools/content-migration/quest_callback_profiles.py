@@ -2,6 +2,8 @@
 import copy
 import hashlib
 import json
+
+from native_profile_composition import encode_native_profile
 import sys
 import xml.etree.ElementTree as ET
 
@@ -405,7 +407,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
         })
         complete_native_stack(root, document['records'][-1], definition, matches[0])
     document['records'].sort(key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()

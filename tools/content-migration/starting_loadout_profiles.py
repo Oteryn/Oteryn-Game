@@ -8,7 +8,7 @@ import hashlib
 import json
 import sys
 
-from native_profile_composition import merge_fact
+from native_profile_composition import encode_native_profile, merge_fact
 
 IDS = {3571, 3572, 7773, 7774, 7991, 7992, 8095, 50171}
 INPUT = 'tools/content-schema/native-gameplay/starting-loadout-appearance-facts.json'
@@ -85,7 +85,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
            + '\n  ]\n}\n').encode()
     # Publish only after every overlap has passed identity and known-fact checks.
     generated[FRAGMENT] = raw
-    profile_raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    profile_raw = encode_native_profile(document)
     if additions != bound:
         generated[profile_path] = profile_raw
     manifest = json.loads(generated[manifest_path])

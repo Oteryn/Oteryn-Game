@@ -8,6 +8,8 @@ import copy
 from functools import lru_cache
 import hashlib
 import json
+
+from native_profile_composition import encode_native_profile
 from pathlib import Path
 
 import grizzly_shop_profiles as grizzly
@@ -172,7 +174,7 @@ def admit(root, generated, profile_path, manifest_path, order, encode):
     if present & {row['production_definition']['production_key'] for row in profiles}:
         raise ValueError('AUTHORED_STATIC_DUPLICATE_PROFILE')
     document['records'] = sorted(document['records'] + profiles, key=order)
-    data = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    data = encode_native_profile(document)
     generated[profile_path] = data
     generated[ADMISSIONS] = (json.dumps(admissions, indent=2, ensure_ascii=False) + '\n').encode()
     manifest = json.loads(generated[manifest_path])

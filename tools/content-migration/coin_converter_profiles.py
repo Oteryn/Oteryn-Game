@@ -8,6 +8,8 @@ are nonstackable carried tools; no source asset or identity is introduced.
 import copy
 import hashlib
 import json
+
+from native_profile_composition import encode_native_profile
 import xml.etree.ElementTree as ET
 
 IDS = {23722, 25719, 28525, 28526}
@@ -62,7 +64,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if key in taxonomy and key in {f'oteryn:item.tibia.i{n}' for n in IDS}:
             record['authoring']['taxonomy'] = copy.deepcopy(taxonomy[key])
     document['records'].sort(key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()

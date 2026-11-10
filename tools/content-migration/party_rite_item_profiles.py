@@ -2,6 +2,8 @@
 import hashlib
 import json
 
+from native_profile_composition import encode_native_profile
+
 PATH = 'tools/content-schema/native-gameplay/party-rite-item-profiles.json'
 IDS = {1841, 2114, 2153, 3656}
 
@@ -26,7 +28,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if {row['production_definition']['production_key'] for row in document['records']} & set(keys):
         raise ValueError('PARTY_RITE_ITEM_PROFILE_DUPLICATE')
     document['records'] = sorted(document['records'] + records, key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()
