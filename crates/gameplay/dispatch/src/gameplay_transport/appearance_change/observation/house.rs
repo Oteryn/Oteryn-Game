@@ -6,14 +6,21 @@ pub(super) async fn read_state(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     fence: CurrentCharacterGameplayFence,
     grant_keys: Vec<String>,
-) -> Option<CurrentCharacterAppearance> {
-    match fence.runtime_scope {
+) -> Result<Option<CurrentCharacterAppearance>, crate::durability::DurabilityError> {
+    // Each owner attempts holder acquisition once. A caller may wait only after
+    // returning from its projection attempt and releasing the runtime guards.
+    let result = match fence.runtime_scope {
         RuntimeScopeRefV1::Channel { .. } => admission.root.read_current_character_appearance_state(
             admission.character, admission.holder, fence, grant_keys,
-        ).await.ok(),
+        ).await,
         RuntimeScopeRefV1::Instance { .. } => admission.root.read_current_house_character_appearance_state(
             admission.character, admission.holder, fence, *admission.channel_id.as_bytes(), grant_keys,
-        ).await.ok(),
+        ).await,
+    };
+    match result {
+        Ok(state) => Ok(Some(state)),
+        Err(AppearanceWriteError::Unavailable(error)) => Err(error),
+        Err(_) => Ok(None),
     }
 }
 
