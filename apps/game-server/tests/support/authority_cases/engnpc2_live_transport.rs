@@ -414,24 +414,28 @@ async fn call(
     observation: (bool, bool, Option<[u8; 16]>),
 ) -> TestResult<Option<UseDisposition>> {
     let (source_present, visible, target) = observation;
-    let result = if handle && intent.use_with_map_item.is_none() {
-        let source = source_present.then_some(composed_test_owner::ItemKey::Instance(id(92)));
-        owner
-            .use_event_item(actor, command, intent, source, visible)
+    let source =
+        (handle && source_present).then_some(composed_test_owner::ItemKey::Instance(id(92)));
+    if handle && intent.use_with_map_item.is_none() {
+        // Match the connection caller: an unrelated event-item owner may decline
+        // before the closed quest target owner rejects or commits this intent.
+        if let Some(outcome) = owner
+            .use_event_item(actor, command, intent.clone(), source, visible)
             .await
-    } else {
-        owner
-            .use_quest_tool(
-                actor,
-                command,
-                intent,
-                (handle && source_present)
-                    .then_some(composed_test_owner::ItemKey::Instance(id(92))),
-                target.map(composed_test_owner::ItemKey::Instance),
-            )
-            .await
-    };
-    result
+            .map_err(|_| "composed quest caller unavailable")?
+        {
+            return Ok(Some(outcome.disposition));
+        }
+    }
+    owner
+        .use_quest_tool(
+            actor,
+            command,
+            intent,
+            source,
+            target.map(composed_test_owner::ItemKey::Instance),
+        )
+        .await
         .map(|outcome| outcome.map(|outcome| outcome.disposition))
         .map_err(|_| "composed quest caller unavailable".into())
 }

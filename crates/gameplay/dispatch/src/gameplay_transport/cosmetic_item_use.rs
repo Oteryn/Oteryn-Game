@@ -710,13 +710,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if bound.is_empty() {
             return Ok(None);
         }
-        if (intent.use_with_map_item.is_some()
-            && !(recipe_target.is_some()
-                && matches!(
-                    intent.use_with_map_item.as_ref(),
-                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
-                )))
-            || intent.use_with_position.is_some()
+        // The selected callback below owns the target arm. Ground corpses are
+        // not carried recipe inputs; their current custody is read after selection.
+        if intent.use_with_position.is_some()
             || recipe_target.is_some_and(|id| {
                 !self
                     .states

@@ -145,7 +145,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
-            .any(|entry| {
+            .find(|entry| {
                 entry.item.definition.production_key == required.item
                     && quest_objects::matches_source(
                         &intent.target,
@@ -163,9 +163,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             }),
                     )
             });
-        if !selected {
+        let Some(selected) = selected else {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));
-        }
+        };
         let intent =
             oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
         Ok(self
@@ -174,7 +174,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command,
                 map,
                 target,
-                source.map(|source| (source, intent)),
+                required
+                    .selected_instance
+                    .then_some((selected.item.item_instance_id, intent)),
             )
             .await)
     }

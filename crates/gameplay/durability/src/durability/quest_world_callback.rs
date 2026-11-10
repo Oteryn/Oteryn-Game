@@ -303,6 +303,11 @@ pub(super) async fn consume(
     else {
         return Ok(false);
     };
+    // The Quest writer returned any exact immutable receipt before this fresh
+    // participant. Legacy repeated-seal counters cannot bypass distinct targets.
+    if oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&callback.key) {
+        return Ok(false);
+    }
     let crate::foundation::RuntimeScopeRefV1::Channel {
         world_id,
         channel_id,

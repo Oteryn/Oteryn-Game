@@ -50,6 +50,14 @@ mod tests {
             .find(|c| c.key == targuna_ram::KEY)
             .ok_or("Targuna callback")?;
         assert!(accepts(ram));
+        let retained: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&callback.key)
+            })
+            .collect();
+        assert_eq!(retained.len(), 9);
+        assert!(retained.iter().all(|callback| !accepts(callback)));
         let mut missing_tool = (*paint[0]).clone();
         missing_tool.item_on_target = None;
         assert!(!accepts(&missing_tool));

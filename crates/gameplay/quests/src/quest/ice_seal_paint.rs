@@ -1,4 +1,5 @@
-//! Crystal 9f5a72c actions_paint.lua: fresh map seals, three uses and a 30 s reset.
+//! Retained Crystal 9f5a72c bindings for immutable historical tool receipts.
+//! Fresh painting belongs to `ice_islands_seals` and its three-distinct-target rule.
 use super::world_callbacks::{Callback, Position};
 pub const PREFIX: &str = "oteryn:quest-callback/engitem-ice-seal-";
 pub const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline";
@@ -21,6 +22,17 @@ pub const SEALS: [Position; 3] = [
         floor: -7,
     },
 ];
+
+/// Keep old receipt identities without exposing their repeatable counter as a
+/// fresh alternative to the current distinct-target owner.
+pub fn historical_only(key: &str) -> bool {
+    key.strip_prefix(PREFIX).is_some_and(|suffix| {
+        matches!(
+            suffix,
+            "0-0" | "0-1" | "0-2" | "1-0" | "1-1" | "1-2" | "2-0" | "2-1" | "2-2"
+        )
+    })
+}
 
 pub fn callbacks() -> Result<Vec<Callback>, String> {
     let mut result = Vec::new();
@@ -56,6 +68,15 @@ mod tests {
     -> Result<(), String> {
         let all = callbacks()?;
         assert_eq!(all.len(), 9);
+        assert!(all.iter().all(|callback| historical_only(&callback.key)));
+        for key in [
+            "oteryn:quest-callback/engitem-ice-seal-0-3",
+            "oteryn:quest-callback/engitem-ice-seal-3-0",
+            "oteryn:quest-callback/ice-islands/paint-seal-120",
+            "oteryn:quest-callback/srv7-reliable-ram",
+        ] {
+            assert!(!historical_only(key));
+        }
         for group in all.as_chunks::<3>().0 {
             assert_eq!(group[0].storage[2].minimum, -1);
             for (phase, c) in group.iter().enumerate() {

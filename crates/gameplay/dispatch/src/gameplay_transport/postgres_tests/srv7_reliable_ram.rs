@@ -118,8 +118,46 @@ async fn exercise_mode(
     let selected_offset = if twins && tools[1] > tools[0] {1} else {0};
     let selected_id = tools[selected_offset].clone();
     let map = owner.bundle_map().ok_or("map")?;
-    let key = oteryn_world_bundle::bundle::placement_key(target.floor, target.x, target.y, 1)
-        .ok_or("ram key")?;
+    let binding = callback
+        .selector
+        .native
+        .as_ref()
+        .ok_or("native Ram selector")?;
+    assert_eq!(
+        (binding.position, binding.ordinal, binding.appearance),
+        (target, 2, 53439)
+    );
+    let position = crate::map::overlay::TilePos {
+        x: target.x,
+        y: target.y,
+        floor: target.floor,
+    };
+    let tile = map
+        .overlay
+        .base()
+        .tile(target.x, target.y, target.floor)
+        .ok_or("Ram source tile")?;
+    let appearances = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .enumerate()
+        .map(|(ordinal, (id, _))| {
+            map.facts
+                .base_entry(position, u8::try_from(ordinal).ok()?, *id)
+                .map(|entry| entry.appearance_id)
+        })
+        .collect::<Option<Vec<_>>>()
+        .ok_or("Ram source appearances")?;
+    assert_eq!(appearances, vec![4515, 5485, 53439]);
+    let key = oteryn_world_bundle::bundle::placement_key(
+        target.floor,
+        target.x,
+        target.y,
+        binding.ordinal,
+    )
+    .ok_or("ram key")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let payload = encode_item_use_intent(&UseIntent {
