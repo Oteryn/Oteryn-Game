@@ -1,7 +1,7 @@
 //! Crystal201189f goshnars_cruelty.lua136–152; soul_war.lua428/1477–1493.
 //! One accepted Instance owns the source type counter (BOSS_RAID0 isolation).
 use super::*;
-use oteryn_gameplay_encounters::bosses::soul_war_cruelty::Cruelty;
+pub(in crate::gameplay_transport) mod maw;
 const BOSS: &str = "oteryn:creature.goshnar_s_cruelty";
 const EYE: &str = "oteryn:creature.a_greedy_eye";
 #[derive(Debug)]
@@ -9,7 +9,6 @@ pub(super) struct CrueltyCallbacks {
     boss: ExactActorRef,
     eye: ExactActorRef,
     content: [u8; 32],
-    clock: Cruelty,
     last: Option<ThinkOccurrence>,
     disappeared: bool,
 }
@@ -57,7 +56,6 @@ impl CrueltyCallbacks {
             boss,
             eye,
             content: native.source_digest(),
-            clock: Cruelty::default(),
             last: None,
             disappeared: false,
         })
@@ -70,6 +68,11 @@ pub(super) async fn drive(
     map: &mut CurrentMonsterMap<'_, '_>,
     occurrences: &[ThinkOccurrence],
 ) -> Result<(), ()> {
+    // The original source USE owns its clock and target until its fused Item/
+    // Quest receipt is known. Unknown SQL must not advance a competing Think.
+    if states.soul_war_callbacks.maw.pending.is_some() {
+        return Ok(());
+    }
     let Some(mut owner) = states.soul_war_callbacks.cruelty.take() else {
         return Err(());
     };
@@ -109,14 +112,14 @@ pub(super) async fn drive(
                 continue;
             }
             let utc = map.source_observed_seconds(runtime).await.ok_or(())?;
-            let mut next = owner.clock.clone();
+            let mut next = states.soul_war_callbacks.maw.clock.clone();
             if next.think(utc, 1000).is_some() {
                 let expected = runtime.soul_war_cruelty_drain(&boss).map_err(|_| ())?;
                 runtime
                     .increase_soul_war_cruelty(&boss, expected)
                     .map_err(|_| ())?;
             }
-            owner.clock = next;
+            states.soul_war_callbacks.maw.clock = next;
             owner.last = Some(occurrence);
         }
         Ok(())

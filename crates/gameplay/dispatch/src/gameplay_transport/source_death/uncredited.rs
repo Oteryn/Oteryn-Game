@@ -112,14 +112,8 @@ impl PendingSourceCorpse {
         native: &crate::content::native_gameplay::NativeGameplayState,
         begin: &SourceCreatureDeathSeal,
     ) -> Result<ItemMintRequest, ()> {
-        if begin.definition_key() != "oteryn:creature.outburst"
-            || begin.has_reward_damage_credit()
-            || native.source_digest() != begin.content_digest()
-            || !begin
-                .events()
-                .iter()
-                .any(|event| event.name() == "HeartBossDeath")
-        {
+        let corpse_key = begin.uncredited_corpse_item_key().ok_or(())?;
+        if native.source_digest() != begin.content_digest() {
             return Err(());
         }
         let row = native
@@ -127,7 +121,7 @@ impl PendingSourceCorpse {
             .row(begin.definition_key())
             .map_err(|_| ())?;
         let corpse = row.corpse_item.as_ref().ok_or(())?;
-        if corpse.production_key != "oteryn:item.tibia.i23564" {
+        if corpse.production_key != corpse_key {
             return Err(());
         }
         let item = TypedDefinitionRef {
@@ -271,6 +265,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !pending.completed.current_for(&runtime) {
             return true;
         }
+        let Ok(mut states) = self.states.spell_states.try_lock() else {
+            return true;
+        };
+        if !states
+            .source_death_corpse
+            .as_ref()
+            .is_some_and(|current| std::sync::Arc::ptr_eq(current, &retained))
+        {
+            return true;
+        }
+        // The plain-body ACK must never escape as an openable corpse while
+        // waiting for Channel state. Bind, release and clear in this one turn.
         match &pending.mint {
             SourceCorpseMint::Committed(committed) => {
                 if runtime
@@ -291,20 +297,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             | SourceCorpseMint::Reconcile { .. }
             | SourceCorpseMint::Conflict => return true,
         }
-        let Ok(mut states) = self.states.spell_states.try_lock() else {
-            return true;
-        };
-        if !states
-            .source_death_corpse
-            .as_ref()
-            .is_some_and(|current| std::sync::Arc::ptr_eq(current, &retained))
-        {
-            return true;
-        }
-        if states
-            .native_callbacks
-            .acknowledge_outburst_null_death(&runtime, &pending.completed)
-            .is_err()
+        if pending.completed.begin().definition_key() == "oteryn:creature.outburst"
+            && states
+                .native_callbacks
+                .acknowledge_outburst_null_death(&runtime, &pending.completed)
+                .is_err()
         {
             return true;
         }

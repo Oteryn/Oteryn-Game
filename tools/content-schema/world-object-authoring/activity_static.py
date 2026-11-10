@@ -1,4 +1,4 @@
-"""Publish bounded pinned activity-map static geometry without inventory Item aliases."""
+"""Publish bounded pinned activity-map static geometry without new inventory Item aliases."""
 
 from __future__ import annotations
 
@@ -354,9 +354,49 @@ def compose_terrain_notes(notes):
     return notes.replace(soulpit_static.NOTE, "") + NOTE + soulpit_static.NOTE
 
 
+def preserved_restore_item_pointer(root=ROOT):
+    """The existing public 23049 Item route shares its canonical Terrain body."""
+    identity = {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23049",
+        "revision": "definition-r1",
+    }
+    bindings = [
+        row
+        for row in json.loads(
+            (root / "imports/crystalserver/bindings/items.json").read_bytes()
+        )["bindings"]
+        if row["identity_namespace"] == "ots/item_server_id"
+        and row["external_id"] == "23049"
+    ]
+    if len(bindings) != 1 or bindings[0] != {
+        "disposition": "EXACT",
+        "external_id": "23049",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": identity,
+    }:
+        raise ValueError("Anomaly restore lost its existing public Item binding")
+    definitions = [
+        row["definition"]
+        for shard in json.loads((root / "content/items/index.json").read_bytes())["shards"]
+        for row in json.loads((root / shard).read_bytes())["records"]
+        if row["definition"]["identity"]["key"] == identity["key"]
+    ]
+    if (
+        len(definitions) != 1
+        or definitions[0]["identity"] != identity
+        or definitions[0].get("materializable") is not False
+    ):
+        raise ValueError("Anomaly restore requires its existing nonmaterializable Item")
+    return identity
+
+
 @lru_cache(maxsize=4)
 def source_records(root=ROOT):
     """Pure source qualification, independent of joint catalogue publication."""
+    restore_pointer = preserved_restore_item_pointer(root)
     policies = {}
     captures = []
     for path in sorted((root / "content/encounters").glob("*/source-room.json")):
@@ -445,7 +485,14 @@ def source_records(root=ROOT):
             appearances[identifier],
             source,
         )
-        del record["provenance"]["item_pointer"]
+        if identifier == 23049:
+            # This row replaces an existing Terrain ordinal whose public World
+            # palette already names the bound Item. Keep that exact route; the
+            # separate Activity binding still names the same Terrain identity.
+            if record["provenance"]["item_pointer"] != restore_pointer:
+                raise ValueError("Anomaly restore public route changed")
+        else:
+            del record["provenance"]["item_pointer"]
         # Source C++ loads projectile blocking from appearance unsight; absent is false.
         known = lambda value: {"state": "KNOWN", "value": value}
         if family == "Terrain":

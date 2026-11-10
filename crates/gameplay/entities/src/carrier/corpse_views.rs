@@ -166,8 +166,8 @@ impl ChannelRuntimeV1 {
             .retain(|pinned| held.contains(pinned));
     }
 
-    /// Retain the canonical FIFO's one rowless Outburst corpse through its
-    /// copied Heart handler and physical MINT. Ordinary reward cleanup cannot
+    /// Retain the canonical FIFO's one qualified rowless source corpse through
+    /// its copied handlers and physical MINT. Ordinary reward cleanup cannot
     /// release this independent pin or consume its one-slot source capacity.
     pub fn pin_uncredited_source_corpse_projection(
         &mut self,
@@ -175,12 +175,7 @@ impl ChannelRuntimeV1 {
     ) -> Result<(), CarrierError> {
         self.owner_fence()?;
         if !begin.current_for(self)
-            || begin.definition_key() != "oteryn:creature.outburst"
-            || begin.has_reward_damage_credit()
-            || !begin
-                .events()
-                .iter()
-                .any(|event| event.name() == "HeartBossDeath")
+            || begin.uncredited_corpse_item_key().is_none()
             || !self.next_source_creature_death()?.is_some_and(|notice| {
                 notice.actor() == begin.actor() && notice.death_key() == begin.death_key()
             })
@@ -204,15 +199,27 @@ impl ChannelRuntimeV1 {
         completed: &native_source_death::SourceCreatureDeathCompletion,
     ) -> Result<(), CarrierError> {
         self.owner_fence()?;
+        let corpse = completed
+            .begin()
+            .uncredited_corpse_item_key()
+            .ok_or(CarrierError::PlanConflict)?;
         if !completed.current_for(self)
             || self.carrier.source_corpse_projection_pin.as_ref() != Some(completed.begin())
             || !self.carrier.corpse_item_bindings.iter().any(|binding| {
                 binding.actor == completed.actor()
                     && binding.minted_item.family == "Item"
-                    && binding.minted_item.production_key == "oteryn:item.tibia.i23564"
+                    && binding.minted_item.production_key == corpse
+                    && binding.minted_item.revision_ref == "definition-r1"
             })
         {
             return Err(CarrierError::PlanConflict);
+        }
+        if corpse == "oteryn:item.tibia.i33891" {
+            // Its exact binding above proves the physical ACK. Mortal Essence
+            // stays a plain Ground Item, never an openable corpse projection.
+            self.carrier
+                .corpse_item_bindings
+                .retain(|binding| binding.actor != completed.actor());
         }
         self.carrier.source_corpse_projection_pin = None;
         Ok(())

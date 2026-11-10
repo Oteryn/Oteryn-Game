@@ -20,14 +20,10 @@ impl DurabilityRoot {
         candidate: &mut ItemMintCandidate,
     ) -> Result<ItemMintOutcome> {
         let begin = completed.begin();
-        if begin.definition_key() != "oteryn:creature.outburst"
-            || begin.has_reward_damage_credit()
-            || native.source_digest() != begin.content_digest()
-            || !begin
-                .events()
-                .iter()
-                .any(|event| event.name() == "HeartBossDeath")
-        {
+        let corpse_key = begin
+            .uncredited_corpse_item_key()
+            .ok_or(ItemMintError::InvalidInput)?;
+        if native.source_digest() != begin.content_digest() {
             return Err(ItemMintError::InvalidInput);
         }
         let row = native
@@ -67,7 +63,7 @@ impl DurabilityRoot {
             || request.item.family != corpse.family
             || request.item.production_key != corpse.production_key
             || request.item.revision_ref != corpse.revision_ref
-            || corpse.production_key != "oteryn:item.tibia.i23564"
+            || corpse.production_key != corpse_key
             || request.ground.map_revision != digest_text(begin.map_digest())
             || request.ground.content_revision != digest_text(begin.content_digest())
             || request.content_revision != digest_text(begin.content_digest())

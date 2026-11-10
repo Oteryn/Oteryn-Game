@@ -81,6 +81,27 @@ impl SourceCreatureDeathSeal {
     pub fn has_reward_damage_credit(&self) -> bool {
         self.has_reward_damage_credit
     }
+    /// The closed physical corpse port accepts only these fully qualified source
+    /// tasks. A copied callback vector is not authority for another species.
+    pub fn uncredited_corpse_item_key(&self) -> Option<&'static str> {
+        if self.has_reward_damage_credit() {
+            return None;
+        }
+        match self.definition_key() {
+            "oteryn:creature.outburst"
+                if self
+                    .events()
+                    .iter()
+                    .any(|event| event.name() == "HeartBossDeath") =>
+            {
+                Some("oteryn:item.tibia.i23564")
+            }
+            "oteryn:creature.poor_soul" if self.events().is_empty() => {
+                Some("oteryn:item.tibia.i33891")
+            }
+            _ => None,
+        }
+    }
     pub fn position(&self) -> MovementLocalPosition {
         self.position
     }

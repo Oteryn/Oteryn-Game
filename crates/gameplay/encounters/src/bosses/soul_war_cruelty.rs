@@ -1,6 +1,6 @@
 //! Crystal 201189f soul_war.lua:1477–1493; goshnars_cruelty.lua:138–145.
 //! Mutable encounter DATA; HP, defense and Item writers remain canonical owners.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Cruelty {
     thought_ms: u64,
     last_maw_seconds: u64,
@@ -24,8 +24,14 @@ impl Cruelty {
         Some(DefenseIncrease { defense: 2, drain })
     }
     pub fn mortal_essence_used(&mut self, now_seconds: u64) -> Option<()> {
-        self.last_maw_seconds = now_seconds.checked_add(15)?;
+        self.record_mortal_essence_time(now_seconds)?;
         self.drain = self.drain.map(|value| value.saturating_sub(1));
+        Some(())
+    }
+
+    /// The source stores its shared timestamp even when no named boss has a type.
+    pub fn record_mortal_essence_time(&mut self, now_seconds: u64) -> Option<()> {
+        self.last_maw_seconds = now_seconds.checked_add(15)?;
         Some(())
     }
 }

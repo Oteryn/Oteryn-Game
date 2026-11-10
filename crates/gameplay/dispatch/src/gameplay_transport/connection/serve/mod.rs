@@ -307,8 +307,20 @@ where
             // A committed handoff has retired the source actor. Cross its
             // barrier before refreshing staff facts through the new owner.
             if tokio::time::Instant::now() >= next_staff_refresh {
-                if !authority.staff_refresh(session.admitted).await {
-                    return ServeEnd::Disconnected.finish(session.admitted);
+                match activity_transfer::refresh_staff(stream, authority, &mut session).await {
+                    Ok(Some((next, cursor))) => {
+                        require_session_binding = true;
+                        handoff_effect_start = cursor;
+                        activity_input = Some((
+                            std::mem::take(&mut session.frames),
+                            session.activity_ack.take(),
+                        ));
+                        admitted = next;
+                        integrity = std::mem::take(&mut session.integrity);
+                        break;
+                    }
+                    Ok(None) => {}
+                    Err(end) => return end.finish(session.admitted),
                 }
                 next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }
@@ -336,8 +348,20 @@ where
                 Err(end) => return end.finish(session.admitted),
             }
             if tokio::time::Instant::now() >= next_staff_refresh {
-                if !authority.staff_refresh(session.admitted).await {
-                    return ServeEnd::Disconnected.finish(session.admitted);
+                match activity_transfer::refresh_staff(stream, authority, &mut session).await {
+                    Ok(Some((next, cursor))) => {
+                        require_session_binding = true;
+                        handoff_effect_start = cursor;
+                        activity_input = Some((
+                            std::mem::take(&mut session.frames),
+                            session.activity_ack.take(),
+                        ));
+                        admitted = next;
+                        integrity = std::mem::take(&mut session.integrity);
+                        break;
+                    }
+                    Ok(None) => {}
+                    Err(end) => return end.finish(session.admitted),
                 }
                 next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }

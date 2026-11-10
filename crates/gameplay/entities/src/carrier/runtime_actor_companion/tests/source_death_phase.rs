@@ -305,6 +305,76 @@ fn unminted_source_release_requires_exact_current_completion_and_preserves_the_n
 }
 
 #[test]
+fn uncredited_poor_soul_empty_death_keeps_its_pin_until_its_own_plain_corpse_is_bound() {
+    const POOR_SOUL: &str = "oteryn:creature.poor_soul";
+    for (scope, corpse, accepted) in [
+        (26, "oteryn:item.tibia.i33891", true),
+        (27, "oteryn:item.tibia.i23564", false),
+    ] {
+        let (mut runtime, source) = registered_source_fixture_for(scope, POOR_SOUL);
+        canonical_lethal(&mut runtime, source, POOR_SOUL);
+        let notice = runtime.next_source_creature_death().unwrap().unwrap();
+        let begin = runtime.begin_source_creature_death(&notice).unwrap();
+        assert!(begin.events().is_empty());
+        assert!(!begin.has_reward_damage_credit());
+        assert_eq!(
+            begin.uncredited_corpse_item_key(),
+            Some("oteryn:item.tibia.i33891")
+        );
+        runtime
+            .pin_uncredited_source_corpse_projection(&begin)
+            .unwrap();
+        runtime.retain_corpse_projection_pins(&[]);
+        runtime.unpin_corpse_projection(source);
+        assert!(runtime.corpse_projection_pinned(source));
+        let completed = runtime.finish_source_creature_death_task(&begin).unwrap();
+        assert!(
+            runtime
+                .release_uncredited_source_corpse_projection(&completed)
+                .is_err()
+        );
+        runtime
+            .bind_corpse_item(source, id(scope), "Item", corpse, "definition-r1")
+            .unwrap();
+        assert_eq!(
+            runtime
+                .release_uncredited_source_corpse_projection(&completed)
+                .is_ok(),
+            accepted,
+            "a real completion may release only its own exact physical corpse type"
+        );
+        assert_eq!(runtime.corpse_projection_pinned(source), !accepted);
+        if accepted {
+            assert!(
+                runtime.visible_corpses().is_empty(),
+                "plain Mortal Essence is not a corpse container"
+            );
+        }
+        assert!(
+            runtime
+                .pin_uncredited_source_corpse_projection(&begin)
+                .is_err(),
+            "a completed empty vector cannot start a second materialization"
+        );
+    }
+    let (mut other, source) = registered_source_fixture_for(28, "oteryn:creature.a_greedy_eye");
+    canonical_lethal(&mut other, source, "oteryn:creature.a_greedy_eye");
+    let notice = other.next_source_creature_death().unwrap().unwrap();
+    let begin = other.begin_source_creature_death(&notice).unwrap();
+    assert!(begin.events().is_empty());
+    assert_eq!(
+        begin.uncredited_corpse_item_key(),
+        None,
+        "an empty vector alone never admits another species"
+    );
+    assert!(
+        other
+            .pin_uncredited_source_corpse_projection(&begin)
+            .is_err()
+    );
+}
+
+#[test]
 fn uncredited_source_pin_refuses_foreign_stale_and_other_native_handlers() {
     const OUTBURST: &str = "oteryn:creature.outburst";
     let (mut runtime, source) = registered_source_fixture_for(22, OUTBURST);

@@ -3,8 +3,11 @@ use super::fixture::{Harness, debug, run};
 use super::srx3_activity_source_fixture::{SourceScene, install_scene, prepare_player};
 use super::{TestResult, reset};
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
-use crate::durability::creature_source_items::SpiteGlobalFireCallback;
+use crate::durability::creature_source_items::{SpiteGlobalFireCallback, SpiteGlobalFireOutcome};
 use crate::foundation::MovementLocalPosition;
+
+#[path = "srx3_spite_global/capacity.rs"]
+mod capacity;
 
 #[test]
 fn srx3_spite_registered_global_fire_uses_real_scope_without_creature_postgres() -> TestResult {
@@ -194,7 +197,7 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                 None
             };
             drop(runtime);
-            let receipt = owner
+            let SpiteGlobalFireOutcome::Committed(receipt) = owner
                 .root
                 .commit_spite_global_fire(
                     &permit,
@@ -206,7 +209,10 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                 .await
                 .map_err(|error| {
                     format!("actual registered GlobalEvent physical boundary: {error:?}")
-                })?;
+                })?
+            else {
+                return Err("the original creation must commit one physical field".into());
+            };
             let replay_prepared = {
                 let runtime = owner.runtime.lock().await;
                 assert!(
@@ -215,7 +221,7 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                 );
                 callback.prepare_current_write(&runtime).map_err(debug)?
             };
-            let replay = owner
+            let SpiteGlobalFireOutcome::Committed(replay) = owner
                 .root
                 .commit_spite_global_fire(
                     &permit,
@@ -225,7 +231,10 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                     &replay_prepared,
                 )
                 .await
-                .map_err(debug)?;
+                .map_err(debug)?
+            else {
+                return Err("creation replay must retain its physical receipt".into());
+            };
             {
                 let runtime = owner.runtime.lock().await;
                 assert!(
@@ -265,7 +274,7 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                     let prepared = later.prepare_current_write(&runtime).map_err(debug)?;
                     (later, prepared)
                 };
-                let later_receipt = owner
+                let SpiteGlobalFireOutcome::Committed(later_receipt) = owner
                     .root
                     .commit_spite_global_fire(
                         &permit,
@@ -275,7 +284,10 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                         &later_prepared,
                     )
                     .await
-                    .map_err(debug)?;
+                    .map_err(debug)?
+                else {
+                    return Err("the later creation must commit its own field".into());
+                };
                 let original_item: String = sqlx::query_scalar(
                     "SELECT item_instance_id::text FROM game_spell_item_lines WHERE transaction_id=encode($1,'hex')::uuid AND operation_kind=1",
                 ).bind(receipt.receipt.transaction_id.as_slice()).fetch_one(&h.pool).await?;
@@ -304,7 +316,7 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                     (prepared, reservation)
                 };
                 eprintln!("SRX3_REGISTERED_GLOBAL_ORIGINAL_FIVE_SECOND_EXPIRY_REACHED");
-                let expired = owner
+                let SpiteGlobalFireOutcome::Committed(expired) = owner
                     .root
                     .commit_spite_global_fire(
                         &permit,
@@ -314,7 +326,10 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                         &prepared,
                     )
                     .await
-                    .map_err(debug)?;
+                    .map_err(debug)?
+                else {
+                    return Err("expiry must retain its physical receipt".into());
+                };
                 assert!(expired.removed);
                 {
                     let mut runtime = owner.runtime.lock().await;
@@ -354,7 +369,7 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                     removed_item, later_item,
                     "expiry removes the current matching Thing, not the originally minted UUID"
                 );
-                let replay = owner
+                let SpiteGlobalFireOutcome::Committed(replay) = owner
                     .root
                     .commit_spite_global_fire(
                         &permit,
@@ -364,7 +379,10 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                         &prepared,
                     )
                     .await
-                    .map_err(debug)?;
+                    .map_err(debug)?
+                else {
+                    return Err("expiry replay must retain its physical receipt".into());
+                };
                 assert!(replay.receipt.already_committed);
                 assert!(
                     replay.removed,

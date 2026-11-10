@@ -743,10 +743,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let _ = runtime.remove_arena_opponent(target);
                 return None;
             }
-            if let Some(old) = existing.as_ref() {
-                if let Some(opponent) = old.opponent {
-                    let _ = runtime.remove_arena_opponent(opponent);
-                }
+            if let Some(old) = existing.as_ref()
+                && let Some(opponent) = old.opponent
+            {
+                let _ = runtime.remove_arena_opponent(opponent);
             }
             self.states.arena_matches.live.lock().ok()?.insert(
                 session,
