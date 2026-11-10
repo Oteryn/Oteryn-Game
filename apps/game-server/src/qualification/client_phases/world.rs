@@ -16,6 +16,8 @@ include!("native_content.rs");
 #[path = "full_e2ef1.rs"]
 mod provisioning;
 include!("quest_journal.rs");
+#[path = "starter_inventory.rs"]
+mod starter_inventory;
 
 pub(crate) const TOWN: TilePos = TilePos {
     x: 32369,
@@ -290,7 +292,11 @@ pub(super) async fn logout_retrying_busy(
     }
 }
 
-pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResult {
+pub(super) async fn journeys(
+    clients: &SeamClients<'_>,
+    packet_clients: &SeamClients<'_>,
+    path: &Path,
+) -> TestResult {
     let started = std::time::Instant::now();
     let bytes = std::fs::read(path)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -305,10 +311,12 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         "world_loader state=booted duration_ms={} start={TOWN:?}",
         started.elapsed().as_millis()
     ));
-    // Character 1 is still untouched here. Later packets move it and may fail
-    // before their return route; a fresh admission must then retain that saved cell.
+    // The required core keeps its ordinary pair; packet journeys own a separate pair.
     let mut client = connect_world(clients, 0x70).await?;
     let entered_at = tile(client.world_spatial().actor_position)?;
+    evidence(&format!(
+        "world_fixture role=core phase=first_entry position={entered_at:?}"
+    ));
     if entered_at != TOWN {
         return Err(format!(
             "Platform-created character did not enter the configured town: expected={TOWN:?} actual={entered_at:?}"
@@ -320,15 +328,24 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     drop(client);
-    // Keep the high-level fixture on the other Character: the original
-    // progression/death journey must retain its ordinary starter build.
-    full_e2ef7::run_packet(clients).await;
-    include!("full_e2ef6_mount.rs");
-    full_e2ef5::run(clients, &world).await;
-    for index in 0..clients.accounts.len() {
-        wait_character_released(clients, index).await?;
+    {
+        let clients = packet_clients;
+        include!("full_e2ef6_mount.rs");
+        full_e2ef5::run(clients, &world).await;
+        for index in 0..clients.accounts.len() {
+            wait_character_released(clients, index).await?;
+        }
+        include!("full_e2ef4_mount.rs");
+        // F4 can drop its socket; require terminal release before the core starts.
+        for index in 0..clients.accounts.len() {
+            wait_character_released(clients, index).await?;
+        }
+        evidence(&format!(
+            "world_fixture role=packets phase=terminal_release accounts={}",
+            clients.accounts.len()
+        ));
     }
-    include!("full_e2ef4_mount.rs");
+    // The core/profile pair has not inherited packet movement, loot or death.
     let profile_result = profile_journey(clients, &world, &bytes, &metadata.spawns).await;
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
@@ -350,12 +367,14 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
-    // Resume from the saved packet position and travel normally to the town
-    // phases' starting tile; this is separate from the first-entry assertion.
-    let back = route(&world, tile(client.world_spatial().actor_position)?, |at| {
-        at == TOWN
-    })
-    .ok_or("world packets have no return route to town")?;
+    // Resume from the profile journey's saved cell and travel normally to town.
+    let from = tile(client.world_spatial().actor_position)?;
+    evidence(&format!(
+        "world_fixture role=core phase=return_to_town from={from:?} to={TOWN:?}"
+    ));
+    let back = route(&world, from, |at| at == TOWN).ok_or_else(|| {
+        format!("required core has no return route to town: from={from:?} to={TOWN:?}")
+    })?;
     walk(&mut client, &world, &back).await?;
     client = character_core(client, clients, &world).await?;
     client = include!("full_e2ef3_registration.rs");
@@ -786,7 +805,6 @@ fn qualification_nbtown_checks_first_entry_before_mutating_packets() -> TestResu
         .find("if entered_at != TOWN {")
         .ok_or("missing strict Platform-created town assertion")?;
     for packet in [
-        "full_e2ef7::run_packet(clients)",
         "include!(\"full_e2ef6_mount.rs\")",
         "full_e2ef5::run(clients",
         "include!(\"full_e2ef4_mount.rs\")",
@@ -798,6 +816,17 @@ fn qualification_nbtown_checks_first_entry_before_mutating_packets() -> TestResu
             "town entry checked after {packet}"
         );
     }
+    let mount = include_str!("full_e2ef6_mount.rs");
+    let starter = mount
+        .find("full_e2ef6::run_starter(clients)")
+        .ok_or("missing pristine starter row")?;
+    let packet = mount
+        .find("full_e2ef7::run_packet(clients)")
+        .ok_or("missing F7 packet")?;
+    let remaining = mount
+        .find("full_e2ef6::run(clients")
+        .ok_or("missing remaining F6 rows")?;
+    assert!(starter < packet && packet < remaining);
     Ok(())
 }
 
