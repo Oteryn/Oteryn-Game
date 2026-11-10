@@ -1210,6 +1210,18 @@ impl ChannelActorCarrier {
         actor_ref: ActorRef,
     ) -> Result<CommittedLethalReceipt, CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
+        if let Slot::CreatureOccupied { spell_combat, .. } = &self.slots[index]
+            && let Some(original) = spell_combat
+                .restored_splinter_death
+                .as_ref()
+                .and_then(|original| original.projection(ExactActorRef(actor_ref)))
+        {
+            // A later hit after the source's restoreHealth=true cannot replace
+            // the original queued death or its original position/owner clock.
+            return Ok(CommittedLethalReceipt {
+                projection: original.clone(),
+            });
+        }
         if let Some(existing) = self
             .corpse_projections
             .iter()
@@ -1273,6 +1285,7 @@ impl ChannelActorCarrier {
             position: Some(position),
             health,
             committed,
+            spell_combat,
             ..
         } = &self.slots[index]
         else {
@@ -1280,6 +1293,17 @@ impl ChannelActorCarrier {
         };
         if *generation != actor_ref.actor_local_generation.0 || committed.entries.is_empty() {
             return Err(CarrierError::StaleActorGeneration);
+        }
+        if let Some(original) = spell_combat
+            .restored_splinter_death
+            .as_ref()
+            .and_then(|original| original.projection(ExactActorRef(actor_ref)))
+        {
+            return if original == projection && *position == projection.position {
+                Ok(())
+            } else {
+                Err(CarrierError::CorpseReceiptMismatch)
+            };
         }
         // D144: the unique retained receipt whose commit drove health to zero.
         let Some(committed) = committed.lethal() else {

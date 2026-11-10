@@ -264,6 +264,15 @@ fn publish_timer(
     names: &[SourceNamedActor],
     now: u64,
 ) -> Result<(), ()> {
+    let prepared = match prepared {
+        timer::PreparedTimer::Phase(phase) => phase,
+        timer::PreparedTimer::Splinter(plan) => {
+            if !map.matches(runtime) || !qualifies_source(runtime, native) {
+                return Err(());
+            }
+            return super::splinter::publish(runtime, native, *plan, now);
+        }
+    };
     let mut owner = states.soul_war_callbacks.megalomania.take().ok_or(())?;
     let result = (|| {
         if owner.boss != prepared.boss

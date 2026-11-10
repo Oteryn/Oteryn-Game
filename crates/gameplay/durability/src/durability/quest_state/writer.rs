@@ -247,8 +247,8 @@ impl DurabilityRoot {
     ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner::<_, 0>(
             authority, node, fence, request, catalogue, None, None, None, None, gate, None, None,
-            None, None, None,
-        None, None, None,)
+            None, None, None, None, None, None,
+        )
         .await
     }
 
@@ -265,7 +265,10 @@ impl DurabilityRoot {
         context: super::super::quest_world_callback::QuestWorldContext,
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_character_world_callback_with_items(authority, node, fence, request, catalogue, permit, context, native, None).await
+        self.commit_character_world_callback_with_items(
+            authority, node, fence, request, catalogue, permit, context, native, None,
+        )
+        .await
     }
 
     /// Retain the World context, selected custody and explicit Premium authority in one fenced writer.
@@ -282,12 +285,26 @@ impl DurabilityRoot {
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
         admission: Option<QuestRewardAdmission<'_>>,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_character_world_callback_with_items_selected(authority, node, fence, request, catalogue, permit, context.into(), native, admission, &grizzly::NoGrizzlyPremium).await
+        self.commit_character_world_callback_with_items_selected(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            permit,
+            context.into(),
+            native,
+            admission,
+            &grizzly::NoGrizzlyPremium,
+        )
+        .await
     }
 
     /// Retain the World context, selected custody and explicit Premium authority in one fenced writer.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_character_world_callback_with_items_selected<G: grizzly::GrizzlyPremiumGate>(
+    pub async fn commit_character_world_callback_with_items_selected<
+        G: grizzly::GrizzlyPremiumGate,
+    >(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -300,12 +317,34 @@ impl DurabilityRoot {
         admission: Option<QuestRewardAdmission<'_>>,
         premium: &G,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_quest_inner::<G, 0>(authority, node, fence, request, catalogue, Some((permit, context, native)), None, None, None, premium, None, None, admission, None, None, None, None, None).await
+        self.commit_quest_inner::<G, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, native)),
+            None,
+            None,
+            None,
+            premium,
+            None,
+            None,
+            admission,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
     }
 
     /// Retain the World context, selected custody and explicit Premium authority in one fenced writer.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_character_world_callback_with_items_and_premium<G: grizzly::GrizzlyPremiumGate>(
+    pub async fn commit_character_world_callback_with_items_and_premium<
+        G: grizzly::GrizzlyPremiumGate,
+    >(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -318,12 +357,26 @@ impl DurabilityRoot {
         admission: Option<QuestRewardAdmission<'_>>,
         premium: &G,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_character_world_callback_with_items_selected(authority, node, fence, request, catalogue, permit, context.into(), native, admission, premium).await
+        self.commit_character_world_callback_with_items_selected(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            permit,
+            context.into(),
+            native,
+            admission,
+            premium,
+        )
+        .await
     }
 
     /// Retain the World context, selected custody and explicit Premium authority in one fenced writer.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_character_world_callback_with_requirements<G: grizzly::GrizzlyPremiumGate>(
+    pub async fn commit_character_world_callback_with_requirements<
+        G: grizzly::GrizzlyPremiumGate,
+    >(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -336,7 +389,19 @@ impl DurabilityRoot {
         admission: Option<QuestRewardAdmission<'_>>,
         premium: &G,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_character_world_callback_with_items_selected(authority, node, fence, request, catalogue, permit, context.into(), native, admission, premium).await
+        self.commit_character_world_callback_with_items_selected(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            permit,
+            context.into(),
+            native,
+            admission,
+            premium,
+        )
+        .await
     }
 
     /// Bloodshade's fixed access purchase uses the existing fee owner and then
@@ -520,8 +585,10 @@ impl DurabilityRoot {
         if required_mint.is_some() && !matches!(request.cause, QuestCause::ClaimObligation(_)) {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let hit_key = request.transition_key.starts_with(oteryn_gameplay_quests::quest::authored_bindings::hits::PREFIX);
-        if hit_key != matches!(request.cause,QuestCause::NativeHit(_)) {
+        let hit_key = request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::authored_bindings::hits::PREFIX);
+        if hit_key != matches!(request.cause, QuestCause::NativeHit(_)) {
             return Err(CharacterProgressionError::InvalidInput);
         }
         // A caller-supplied command is not evidence of a native key-door opening.
@@ -536,9 +603,10 @@ impl DurabilityRoot {
         if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let native_key = hit_key || request
-            .transition_key
-            .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX)
+        let native_key = hit_key
+            || request
+                .transition_key
+                .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX)
             || request
                 .transition_key
                 .starts_with(oteryn_gameplay_quests::quest::authored_bindings::door_use::PREFIX)
@@ -668,13 +736,25 @@ impl DurabilityRoot {
                 callback.key == request.transition_key
                     && (oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_input(callback)
                         || oteryn_gameplay_quests::quest::dreamer_carrot::shared_input(callback))
-                    && matches!((callback.trigger,request.cause),
-                        (oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use,QuestCause::Use(_))
-                        | (oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn,QuestCause::Step(_)))
+                    && matches!(
+                        (callback.trigger, request.cause),
+                        (
+                            oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use,
+                            QuestCause::Use(_)
+                        ) | (
+                            oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn,
+                            QuestCause::Step(_)
+                        )
+                    )
             })
-            && catalogue.transition(&request.transition_key).is_some_and(|transition|
-                oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_transition(transition)
-                    || oteryn_gameplay_quests::quest::dreamer_carrot::shared_transition(transition));
+            && catalogue
+                .transition(&request.transition_key)
+                .is_some_and(|transition| {
+                    oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_transition(transition)
+                        || oteryn_gameplay_quests::quest::dreamer_carrot::shared_transition(
+                            transition,
+                        )
+                });
         if (request.transition_key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
             || request.transition_key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY)
             != shared_entrance
@@ -829,14 +909,21 @@ impl DurabilityRoot {
         let world_reward = callback
             .as_ref()
             .and_then(|c| c.effects.item_reward.as_ref());
-        let world_disguise = callback.as_ref().and_then(|c| c.effects.requires_item_disguise.as_ref());
-        let step_world_reward = callback.as_ref().is_some_and(|c| c.has_fenced_step_reward());
-        if (reward_callback.is_some() || world_reward.is_some() || world_disguise.is_some()) != reward_admission.is_some()
+        let world_disguise = callback
+            .as_ref()
+            .and_then(|c| c.effects.requires_item_disguise.as_ref());
+        let step_world_reward = callback
+            .as_ref()
+            .is_some_and(|c| c.has_fenced_step_reward());
+        if (reward_callback.is_some() || world_reward.is_some() || world_disguise.is_some())
+            != reward_admission.is_some()
             || (world_disguise.is_some() && !matches!(request.cause, QuestCause::Step(_)))
             || (reward_callback.is_some()
                 && !matches!(request.cause, QuestCause::Command(_))
                 && !native_claim)
-            || (world_reward.is_some() && !((matches!(request.cause, QuestCause::Use(_)) && !step_world_reward) || (matches!(request.cause, QuestCause::Step(_)) && step_world_reward)))
+            || (world_reward.is_some()
+                && !((matches!(request.cause, QuestCause::Use(_)) && !step_world_reward)
+                    || (matches!(request.cause, QuestCause::Step(_)) && step_world_reward)))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -866,22 +953,39 @@ impl DurabilityRoot {
                     })
                 });
         // Value-bearing or context-dependent callbacks cannot use a weaker generic caller.
-        if context.is_none() && (native_world_rule || world_callbacks.iter().any(|callback| {
-            callback.key == request.transition_key && (
-                callback.requires_world_admission || callback.opening_only
-                || callback.has_ground_stack_requirements() || !callback.state_ops.is_empty()
-                || !callback.offerings.is_empty() || callback.item_on_target.is_some()
-                || callback.world_change.is_some() || callback.minimum_level.is_some()
-                || callback.requires_live_premium() || callback.admission.is_some()
-                || callback.character_requirements.is_some() || !callback.required_completed_quests.is_empty()
-                || callback.experience.is_some() || callback.monk_reward.is_some()
-                || callback.native_rule.is_some() || callback.effects.item_reward.is_some()
-                || callback.effects.requires_item_disguise.is_some() || callback.effects.restore_disguise
-            )
-        })) { return Err(CharacterProgressionError::InvalidInput); }
+        if context.is_none()
+            && (native_world_rule
+                || world_callbacks.iter().any(|callback| {
+                    callback.key == request.transition_key
+                        && (callback.requires_world_admission
+                            || callback.opening_only
+                            || callback.has_ground_stack_requirements()
+                            || !callback.state_ops.is_empty()
+                            || !callback.offerings.is_empty()
+                            || callback.item_on_target.is_some()
+                            || callback.world_change.is_some()
+                            || callback.minimum_level.is_some()
+                            || callback.requires_live_premium()
+                            || callback.admission.is_some()
+                            || callback.character_requirements.is_some()
+                            || !callback.required_completed_quests.is_empty()
+                            || callback.experience.is_some()
+                            || callback.monk_reward.is_some()
+                            || callback.native_rule.is_some()
+                            || callback.effects.item_reward.is_some()
+                            || callback.effects.requires_item_disguise.is_some()
+                            || callback.effects.restore_disguise)
+                }))
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         if fence.character_lease_generation == 0
             || !native.as_ref().map_or_else(
-                || matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }) || essence.is_some() || source_action.is_some(),
+                || {
+                    matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+                        || essence.is_some()
+                        || source_action.is_some()
+                },
                 |death| death.permits_scope(&fence),
             )
             || !valid_quest_key(&request.transition_key)
@@ -1003,7 +1107,7 @@ impl DurabilityRoot {
                         }
                         if let Some(super::QuestSourceAction::SoulWar(input))=&source_action
                             && !soul_step
-                            && !super::soul_war_source::consume(&mut tx,fence,input).await? {
+                            && !super::soul_war_source::consume(&mut tx,fence,&node,input).await? {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                         if let Some(super::QuestSourceAction::RottenArea(input))=&source_action

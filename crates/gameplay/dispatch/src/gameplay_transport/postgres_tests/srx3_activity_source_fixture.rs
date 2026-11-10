@@ -19,6 +19,13 @@ impl SourceScene {
         source: PinnedActivitySourceRoom,
         origin: MovementLocalPosition,
     ) -> TestResult<Self> {
+        Self::new_with_activation(source, origin).map(|(scene, _)| scene)
+    }
+
+    pub(super) fn new_with_activation(
+        source: PinnedActivitySourceRoom,
+        origin: MovementLocalPosition,
+    ) -> TestResult<(Self, ChannelContentPin)> {
         let world = super::fixture::fence(1)?.runtime_scope.world_id();
         let channel = super::fixture::fence(1)?
             .runtime_scope
@@ -61,11 +68,14 @@ impl SourceScene {
             room.map_revision_digest(),
             (origin.x, origin.y, origin.floor),
         );
-        Ok(Self {
-            controller,
-            room,
-            pin,
-        })
+        Ok((
+            Self {
+                controller,
+                room,
+                pin,
+            },
+            baseline.into_channel_pin(),
+        ))
     }
     pub(super) fn dependencies(&self) -> TestResult<Dependencies> {
         Dependencies::with_content(

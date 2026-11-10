@@ -119,6 +119,17 @@ impl SoulWarCallbacks {
     pub(super) fn next_native_due(&self) -> Option<u64> {
         self.next_native_due_except(None)
     }
+    /// Runtime-born source callbacks share the same original-due arbiter.
+    pub(super) fn next_splinter_due(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        native: &NativeGameplayState,
+    ) -> Result<Option<u64>, ()> {
+        if self.megalomania.is_none() {
+            return Ok(None);
+        }
+        megalomania::splinter::next_due_us(runtime, native)
+    }
     pub(super) fn next_native_due_without_malice(&self) -> Option<u64> {
         self.next_native_due_except(Some(OmittedTimer::Malice))
     }

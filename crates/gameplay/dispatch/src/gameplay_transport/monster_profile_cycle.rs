@@ -502,6 +502,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .chain(states.native_callbacks.next_due_time())
                     .chain(soul_war_attack_due)
                     .chain(states.soul_war_callbacks.next_native_due())
+                    .chain(states.soul_war_callbacks.next_splinter_due(runtime, native)
+                        .map_err(|_| crate::durability::DurabilityError::Unavailable)?)
                     .chain(states.monster_spells.next_windup_due_time().map(|due| due.get()))
                     .chain(states.monster_chains.as_ref().and_then(|owner| owner.next_due_time()).map(|due| due.get()))
                     .min();

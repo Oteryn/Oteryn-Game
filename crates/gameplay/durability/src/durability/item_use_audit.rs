@@ -342,7 +342,11 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
         Some(instance)
             if value.channel_id.is_empty()
                 && value.house_key.is_none()
-                && cause.kind == super::item_use::rotten_essence::ESSENCE_CAUSE =>
+                && matches!(
+                    cause.kind,
+                    super::item_use::rotten_essence::ESSENCE_CAUSE
+                        | super::item_use::soul_war_source::SOURCE_USE_CAUSE
+                ) =>
         {
             check_uuid_v7(instance)?
         }
@@ -1109,6 +1113,50 @@ mod tests {
         value.instance_id = Some(uuid(6));
         value.channel_id.clear();
         assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+    }
+
+    #[test]
+    fn srx3_source_use_kind5_preserves_exact_source_and_instance_audit() {
+        for key in [
+            "oteryn:item.tibia.i33793",
+            "oteryn:item.tibia.i33891",
+            "oteryn:item.tibia.i33950",
+        ] {
+            let mut value = srx3_essence_burn();
+            value.cause.as_mut().unwrap().kind = 5;
+            for state in [&mut value.source_before, &mut value.source_after] {
+                state
+                    .as_mut()
+                    .unwrap()
+                    .definition
+                    .as_mut()
+                    .unwrap()
+                    .production_key = key.into();
+            }
+            assert_eq!(check_item_use(&value), Ok(ItemUseShape::Burn));
+            value.channel_id.clear();
+            value.instance_id = Some(uuid(6));
+            assert_eq!(check_item_use(&value), Ok(ItemUseShape::Burn));
+            value.channel_id = uuid(7);
+            assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+            value.channel_id.clear();
+            value.house_key = Some("oteryn:content.house.fixture".into());
+            assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+            value.house_key = None;
+            value.flask = flask_new().flask;
+            assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+            value.flask = None;
+            for state in [&mut value.source_before, &mut value.source_after] {
+                state
+                    .as_mut()
+                    .unwrap()
+                    .definition
+                    .as_mut()
+                    .unwrap()
+                    .production_key = "oteryn:item.tibia.i43501".into();
+            }
+            assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+        }
     }
 
     fn srx3_raw_instance_essence_payload(channel: Vec<u8>, instances: &[Vec<u8>]) -> Vec<u8> {

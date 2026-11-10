@@ -88,12 +88,16 @@ pub trait SoulWarUseTargetRead {
 pub struct QualifiedSoulWarUseTarget {
     kind: SourceUse,
     accepted: bool,
+    selected: SelectedSoulWarUseTarget,
+    creature_definition: Option<TypedDefinitionRef>,
+    selected_position: crate::foundation::MovementLocalPosition,
     item_target_position: Option<crate::foundation::MovementLocalPosition>,
     wire: [u8; 32],
     actor: crate::foundation::ExactActorRef,
     session: crate::foundation::GameSessionId,
     scope: crate::foundation::RuntimeScopeRefV1,
     generation: crate::foundation::ScopeOwnershipGeneration,
+    assignment_revision: u64,
     activation: u64,
     server: [u8; 32],
     client: [u8; 32],
@@ -172,20 +176,36 @@ impl QualifiedSoulWarUseTarget {
             SelectedSoulWarUseTarget::Item { position, .. } => Some(*position),
             _ => None,
         };
-        let accepted = match (kind, selected) {
-            (SourceUse::Sorrow, SelectedSoulWarUseTarget::Creature(target)) => runtime
-                .companion_snapshot(target)
-                .ok()
-                .is_some_and(|snapshot| {
-                    snapshot.health > 0
-                        && matches!(
-                            snapshot.state.policy.definition_key.as_str(),
-                            "oteryn:creature.ashes_of_burning_hatred"
-                                | "oteryn:creature.spark_of_burning_hatred"
-                                | "oteryn:creature.flame_of_burning_hatred"
-                                | "oteryn:creature.blaze_of_burning_hatred"
-                        )
-                }),
+        let (selected_position, creature_definition, creature_registered) = match &selected {
+            SelectedSoulWarUseTarget::Creature(target) => {
+                let snapshot = runtime.companion_snapshot_including_dead(*target).ok()?;
+                (
+                    snapshot.position,
+                    Some(TypedDefinitionRef {
+                        family: "Creature".into(),
+                        production_key: snapshot.state.policy.definition_key.clone(),
+                        revision_ref: snapshot.state.policy.definition_revision.clone(),
+                    }),
+                    runtime.source_creature_is_registered(*target).ok()?,
+                )
+            }
+            SelectedSoulWarUseTarget::Item { position, .. }
+            | SelectedSoulWarUseTarget::OtherMapEntry(position) => (*position, None, false),
+        };
+        let accepted = match (kind, &selected) {
+            (SourceUse::Sorrow, SelectedSoulWarUseTarget::Creature(_)) => {
+                creature_registered
+                    && creature_definition.as_ref().is_some_and(|definition| {
+                        definition.revision_ref == "definition-r1"
+                            && matches!(
+                                definition.production_key.as_str(),
+                                "oteryn:creature.ashes_of_burning_hatred"
+                                    | "oteryn:creature.spark_of_burning_hatred"
+                                    | "oteryn:creature.flame_of_burning_hatred"
+                                    | "oteryn:creature.blaze_of_burning_hatred"
+                            )
+                    })
+            }
             (
                 SourceUse::MortalEssence | SourceUse::CleansedSanity,
                 SelectedSoulWarUseTarget::Item { definition, .. },
@@ -210,12 +230,16 @@ impl QualifiedSoulWarUseTarget {
         Some(Self {
             kind,
             accepted,
+            selected,
+            creature_definition,
+            selected_position,
             item_target_position,
             wire: hash.finalize().into(),
             actor,
             session,
             scope,
             generation,
+            assignment_revision: runtime.binding().source_revision(),
             activation: pin.activation_sequence(),
             server: pin.server_artifact_digest(),
             client: pin.client_artifact_digest(),
@@ -231,6 +255,22 @@ impl QualifiedSoulWarUseTarget {
     }
     pub const fn item_target_position(&self) -> Option<crate::foundation::MovementLocalPosition> {
         self.item_target_position
+    }
+    pub fn creature_target(
+        &self,
+    ) -> Option<(
+        crate::foundation::ExactActorRef,
+        &TypedDefinitionRef,
+        crate::foundation::MovementLocalPosition,
+    )> {
+        let SelectedSoulWarUseTarget::Creature(actor) = &self.selected else {
+            return None;
+        };
+        Some((
+            *actor,
+            self.creature_definition.as_ref()?,
+            self.selected_position,
+        ))
     }
     pub const fn wire_binding(&self) -> [u8; 32] {
         self.wire
@@ -262,6 +302,127 @@ impl QualifiedSoulWarUseTarget {
     pub const fn map_revision_digest(&self) -> [u8; 32] {
         self.map
     }
+    pub(super) fn matches_item_request(
+        &self,
+        fence: &CurrentCharacterItemFence,
+        request: &ItemUseRequest,
+    ) -> bool {
+        matches!(request.kind, ItemUseKind::SoulWarSourceUse { wire_binding } if wire_binding == self.wire)
+            && source_use(&request.source_definition) == Some(self.kind)
+            && self.session == fence.game_session_id
+            && self.scope == fence.runtime_scope
+            && self.generation == fence.scope_ownership_generation
+            && self.actor.runtime_scope() == self.scope
+            && self.actor.scope_generation() == self.generation
+    }
+}
+
+impl DurabilityRoot {
+    /// Sorrow has no Quest cursor. The sealed current selection enters the same
+    /// canonical Item writer; a bare cause5 request still has no public route.
+    pub async fn commit_soul_war_sorrow_use(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ItemUseRequest,
+        target: QualifiedSoulWarUseTarget,
+    ) -> Result<ItemUseOutcome> {
+        self.commit_use_inner(authority, node, fence, request, None, Some(target))
+            .await
+            .map_err(|error| match error {
+                DromeCubeError::ItemUse(error) => error,
+                DromeCubeError::Capacity => ItemUseError::InvalidInput,
+            })
+    }
+}
+
+/// Append provenance inside the already fenced Type-2 transaction. The physical
+/// writer and its existing audit remain the only burn owner. A failed cooldown
+/// later in the Quest writer rolls back this witness as well as the Item write.
+pub(in crate::durability) async fn record_source_use_proof(
+    connection: &mut sqlx::PgConnection,
+    fence: &CurrentCharacterItemFence,
+    node: &NodeIncarnationProof,
+    request: &ItemUseRequest,
+    target: &QualifiedSoulWarUseTarget,
+    quest_binding: Option<&[u8; 33]>,
+) -> Result<()> {
+    request.validate()?;
+    if !target.matches_item_request(fence, request)
+        || (target.kind == SourceUse::Sorrow) != quest_binding.is_none()
+        || (!target.accepted && target.kind != SourceUse::CleansedSanity)
+    {
+        return Err(ItemUseError::InvalidInput);
+    }
+    let source = lock_retained_source(connection, fence, request).await?;
+    let (channel, instance) = match target.scope {
+        RuntimeScopeRefV1::Channel { channel_id, .. } => (Some(*channel_id.as_bytes()), None),
+        RuntimeScopeRefV1::Instance { instance_id, .. } => (None, Some(instance_id)),
+    };
+    let (target_kind, definition, actor) = match &target.selected {
+        SelectedSoulWarUseTarget::Item { definition, .. } => (1_i16, Some(definition), None),
+        SelectedSoulWarUseTarget::Creature(actor) => {
+            (2, target.creature_definition.as_ref(), Some(*actor))
+        }
+        SelectedSoulWarUseTarget::OtherMapEntry(_) => (3, None, None),
+    };
+    let actor_identity = actor.map(|actor| actor.placement_identity());
+    let at = target.selected_position;
+    sqlx::query(
+        "INSERT INTO game_soul_war_source_use_proofs (\
+          transaction_id,event_id,character_id,game_session_id,command_id,\
+          source_item_instance_id,source_key,source_parent_item_instance_id,source_placement_ordinal,source_quantity_before,\
+          item_request_binding,quest_request_binding,content_revision,ruleset_revision,sim_revision,\
+          world_id,channel_id,activity_instance_id,scope_generation,connection_generation,character_lease_generation,\
+          node_id,node_registration,assignment_revision,activation_sequence,server_digest,client_digest,frame_digest,map_digest,\
+          target_kind,target_family,target_key,target_revision,target_actor,target_generation,target_position,occurred_at) \
+         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,\
+          encode($6,'hex')::uuid,$7,encode($8,'hex')::uuid,$9::text::numeric,$10,$11,$12,$13,$14,$15,\
+          encode($16,'hex')::uuid,encode($17,'hex')::uuid,encode($18,'hex')::uuid,$19::text::numeric,$20::text::numeric,$21::text::numeric,\
+          encode($22,'hex')::uuid,$23::text::numeric,$24::text::numeric,$25::text::numeric,$26,$27,$28,$29,\
+          $30,$31,$32,$33,$34,$35::text::numeric,$36,$37)",
+    )
+    .bind(request.transaction_id.as_slice())
+    .bind(request.event_id.as_slice())
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(fence.game_session_id.as_bytes().as_slice())
+    .bind(request.command_id.to_string())
+    .bind(request.source_item_instance_id.as_slice())
+    .bind(&request.source_definition.production_key)
+    .bind(source.parent.as_slice())
+    .bind(source.ordinal.to_string())
+    .bind(i64::from(source.quantity))
+    .bind(request.binding().as_slice())
+    .bind(quest_binding.map(|binding| binding.as_slice()))
+    .bind(&request.content_revision)
+    .bind(&request.ruleset_revision)
+    .bind(&request.sim_revision)
+    .bind(target.scope.world_id().as_bytes().as_slice())
+    .bind(channel.as_ref().map(|id| id.as_slice()))
+    .bind(instance.as_ref().map(|id| id.as_slice()))
+    .bind(target.generation.get().to_string())
+    .bind(fence.connection_generation.get().to_string())
+    .bind(fence.character_lease_generation.to_string())
+    .bind(node.fact().node_id().as_bytes().as_slice())
+    .bind(node.fact().registration_revision().to_string())
+    .bind(target.assignment_revision.to_string())
+    .bind(target.activation.to_string())
+    .bind(target.server.as_slice())
+    .bind(target.client.as_slice())
+    .bind(target.frame.as_slice())
+    .bind(target.map.as_slice())
+    .bind(target_kind)
+    .bind(definition.map(|definition| definition.family.as_str()))
+    .bind(definition.map(|definition| definition.production_key.as_str()))
+    .bind(definition.map(|definition| definition.revision_ref.as_str()))
+    .bind(actor_identity.as_ref().map(|id| id.as_slice()))
+    .bind(actor.map(|actor| actor.actor_local_generation().to_string()))
+    .bind(vec![at.x, at.y, i32::from(at.floor)])
+    .bind(request.occurred_at_unix_ms)
+    .execute(connection)
+    .await?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -423,6 +584,57 @@ mod target_tests {
             )
             .is_none()
         );
+        // Sorrow's literal target:getName() has no HP or master predicate.
+        // A registered HP0 actor remains selectable until copied death finishes;
+        // its old exact identity does not resolve after physical slot removal.
+        reader.digest = native.source_digest();
+        runtime.install_companion_policies(native.policies().clone())?;
+        let burning = runtime.spawn_arena_opponent(
+            "oteryn:creature.ashes_of_burning_hatred",
+            MovementLocalPosition {
+                x: 33856,
+                y: 31874,
+                floor: 7,
+            },
+            |_, _| Some(true),
+        )?;
+        let sorrow_intent = UseIntent {
+            target: UseTarget::ItemByDefinition(
+                index
+                    .definition_ref("Item", "oteryn:item.tibia.i33793", "definition-r1")
+                    .ok_or("actual Sorrow identity")?,
+            ),
+            use_with: Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                identity: burning.placement_identity(),
+                generation: burning.actor_local_generation(),
+            }),
+            use_with_map_item: None,
+            use_with_position: None,
+        };
+        reader.expected = sorrow_intent.clone();
+        reader.selected = SelectedSoulWarUseTarget::Creature(burning);
+        let qualify = |runtime: &ChannelRuntimeV1| {
+            QualifiedSoulWarUseTarget::from_current_owner(
+                runtime,
+                native,
+                actor,
+                session,
+                &definition(33793),
+                &sorrow_intent,
+                &reader,
+            )
+        };
+        assert!(qualify(&runtime).is_some_and(|target| target.target_accepted()));
+        let health = runtime.companion_snapshot(burning)?.health;
+        runtime.commit_monster_lab_damage(burning, b"sorrow-selected-hp0", health)?;
+        assert_eq!(
+            runtime.companion_snapshot_including_dead(burning)?.health,
+            0
+        );
+        assert!(runtime.source_creature_is_registered(burning)?);
+        assert!(qualify(&runtime).is_some_and(|target| target.target_accepted()));
+        runtime.remove_encounter_actor(burning)?;
+        assert!(qualify(&runtime).is_none());
         Ok(())
     }
 }
@@ -434,6 +646,15 @@ pub(in crate::durability) async fn assert_retained_source(
     fence: &CurrentCharacterItemFence,
     request: &ItemUseRequest,
 ) -> Result<()> {
+    lock_retained_source(connection, fence, request).await?;
+    Ok(())
+}
+
+async fn lock_retained_source(
+    connection: &mut sqlx::PgConnection,
+    fence: &CurrentCharacterItemFence,
+    request: &ItemUseRequest,
+) -> Result<LockedStack> {
     request.validate()?;
     if !matches!(
         request.kind,
@@ -456,6 +677,5 @@ pub(in crate::durability) async fn assert_retained_source(
         &request.source_definition,
         request.source_quantity_before,
     )
-    .await?;
-    Ok(())
+    .await
 }

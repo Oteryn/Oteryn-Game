@@ -229,7 +229,11 @@ impl ChannelRuntimeV1 {
         else {
             return Err(CarrierError::NotCreature);
         };
-        if *health != 0 || spell_combat.source_death_completed {
+        let restored = spell_combat
+            .restored_splinter_death
+            .as_ref()
+            .is_some_and(|original| original.current_for(self) && original.matches_notice(notice));
+        if (*health != 0 && !restored) || spell_combat.source_death_completed {
             return Err(CarrierError::CommittedLethalUnavailable);
         }
         if let Some(begin) = &spell_combat.source_death_begin {
@@ -302,7 +306,12 @@ impl ChannelRuntimeV1 {
         else {
             return Err(CarrierError::NotCreature);
         };
-        if *health != 0 || spell_combat.source_death_begin.as_deref() != Some(begin) {
+        let restored = spell_combat
+            .restored_splinter_death
+            .as_ref()
+            .is_some_and(|original| original.current_for(self) && original.matches_begin(begin));
+        if (*health != 0 && !restored) || spell_combat.source_death_begin.as_deref() != Some(begin)
+        {
             return Err(CarrierError::CorpseProjectionConflict);
         }
         if spell_combat.source_death_completed {
@@ -385,7 +394,12 @@ impl ChannelRuntimeV1 {
         else {
             return Err(CarrierError::NotCreature);
         };
-        if *health != 0 || spell_combat.source_death_begin.as_deref() != Some(begin) {
+        let restored = spell_combat
+            .restored_splinter_death
+            .as_ref()
+            .is_some_and(|original| original.current_for(self) && original.matches_begin(begin));
+        if (*health != 0 && !restored) || spell_combat.source_death_begin.as_deref() != Some(begin)
+        {
             return Err(CarrierError::CorpseProjectionConflict);
         }
         if spell_combat.source_death_completed {
@@ -402,9 +416,20 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::CorpseProjectionConflict);
         }
-        let Slot::CreatureOccupied { spell_combat, .. } = &mut self.carrier.slots[index] else {
+        let Slot::CreatureOccupied {
+            health,
+            spell_combat,
+            ..
+        } = &mut self.carrier.slots[index]
+        else {
             return Err(CarrierError::NotCreature);
         };
+        if restored {
+            // The original queued onDeath now removes this source object. SQL
+            // may retain its physical slot, but it is no longer an HP target.
+            // This finishes the same death; it issues no new damage or receipt.
+            *health = 0;
+        }
         spell_combat.source_death_completed = true;
         self.carrier.native_deaths.remove(0);
         Ok(begin.clone())

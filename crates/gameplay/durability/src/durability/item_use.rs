@@ -459,7 +459,7 @@ impl DurabilityRoot {
         if matches!(request.kind, ItemUseKind::DromeCube { .. }) {
             return Err(ItemUseError::InvalidInput);
         }
-        self.commit_use_inner(authority, node, fence, request, weights)
+        self.commit_use_inner(authority, node, fence, request, weights, None)
             .await
             .map_err(|error| match error {
                 DromeCubeError::ItemUse(error) => error,
@@ -474,8 +474,21 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: ItemUseRequest,
         weights: Option<&dyn super::item_loop_move::ItemLoopContent>,
+        source_target: Option<soul_war_source::QualifiedSoulWarUseTarget>,
     ) -> drome_cube::Result<ItemUseOutcome> {
         request.validate()?;
+        // Only Sorrow is Item-only. Maw and Sanity must use the existing fused
+        // Quest writer, and a raw cause5 request cannot grant source authority.
+        match (&request.kind, source_target.as_ref()) {
+            (ItemUseKind::SoulWarSourceUse { .. }, Some(target))
+                if target.source_use() == soul_war_source::SourceUse::Sorrow
+                    && target.target_accepted()
+                    && target.matches_item_request(&fence, &request) => {}
+            (ItemUseKind::SoulWarSourceUse { .. }, _) | (_, Some(_)) => {
+                return Err(ItemUseError::InvalidInput.into());
+            }
+            _ => {}
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemUseError::AuthorityRejected)?;
@@ -567,6 +580,17 @@ impl DurabilityRoot {
                     }
                     if request.kind == ItemUseKind::Concoction {
                         match concoction::admit(&mut tx, &fence, &request).await {
+                            Ok(()) => {}
+                            Err(ItemUseError::Unavailable(error)) => return Err(error),
+                            Err(error) => return Ok(Err(error.into())),
+                        }
+                    }
+                    if let Some(target) = &source_target {
+                        match soul_war_source::record_source_use_proof(
+                            &mut tx, &fence, &node, &request, target, None,
+                        )
+                        .await
+                        {
                             Ok(()) => {}
                             Err(ItemUseError::Unavailable(error)) => return Err(error),
                             Err(error) => return Ok(Err(error.into())),

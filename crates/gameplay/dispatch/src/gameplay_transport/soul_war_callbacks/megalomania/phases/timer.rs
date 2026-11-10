@@ -2,7 +2,12 @@ use super::*;
 use crate::gameplay_transport::ComposedFreshAdmission;
 
 #[derive(Clone)]
-pub(super) struct PreparedTimer {
+pub(super) enum PreparedTimer {
+    Phase(PreparedPhaseTimer),
+    Splinter(super::super::splinter::PreparedSplinter),
+}
+#[derive(Clone)]
+pub(super) struct PreparedPhaseTimer {
     pub(super) boss: ExactActorRef,
     pub(super) revision: u64,
     pub(super) due: u64,
@@ -28,10 +33,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(owner) = states.soul_war_callbacks.megalomania.as_ref() else {
                 return Ok(false);
             };
-            let Some(due) = owner.next_due_ms() else {
+            let phase = owner
+                .next_due_ms()
+                .map(|due| due.checked_mul(1000).map(|due_us| (due, due_us)).ok_or(()))
+                .transpose()?;
+            let splinter = super::super::splinter::next(&runtime, native)?;
+            let selected = match (phase, splinter) {
+                (Some((due, due_us)), splinter)
+                    if splinter.is_none_or(|plan| due_us <= plan.due_us) =>
+                {
+                    Some((
+                        due_us,
+                        PreparedTimer::Phase(PreparedPhaseTimer {
+                            boss: owner.boss,
+                            revision: owner.phases.revision,
+                            due,
+                        }),
+                    ))
+                }
+                (_, Some(plan)) => Some((plan.due_us, PreparedTimer::Splinter(plan))),
+                _ => None,
+            };
+            let Some((due_us, timer)) = selected else {
                 return Ok(false);
             };
-            let due_us = due.checked_mul(1000).ok_or(())?;
             let notice = runtime.next_source_creature_death().map_err(|_| ())?;
             let cutoff = notice
                 .as_ref()
@@ -40,8 +65,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .unwrap_or(now);
             if due_us > cutoff
                 || due_us > now
-                || owner.phases.aspect.is_some()
-                || states.soul_war_callbacks.sanity.pending.is_some()
+                || (matches!(&timer, PreparedTimer::Phase(_))
+                    && (owner.phases.aspect.is_some()
+                        || states.soul_war_callbacks.sanity.pending.is_some()))
                 || (notice.is_some()
                     && states
                         .native_callbacks
@@ -59,11 +85,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(false);
             }
-            let timer = PreparedTimer {
-                boss: owner.boss,
-                revision: owner.phases.revision,
-                due,
-            };
             let mut cells = vec![HOME];
             for captured in owner.phases.captures.values() {
                 if let Capture::Aspect(plan) = captured {
