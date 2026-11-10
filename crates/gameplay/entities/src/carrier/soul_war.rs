@@ -4,6 +4,9 @@
 //! the active Content policy table; the exact actor snapshot fences every write.
 use super::*;
 
+#[cfg(test)]
+mod maw_tests;
+
 pub const GREED: &str = "oteryn:creature.goshnar_s_greed";
 pub const MALICE: &str = "oteryn:creature.goshnar_s_malice";
 const HATRED: &str = "oteryn:creature.goshnar_s_hatred";
@@ -137,6 +140,98 @@ impl ChannelRuntimeV1 {
         spell_combat.soul_war_defense_delta = defense;
         spell_combat.soul_war_cruelty_drain = Some(drain);
         Ok(drain)
+    }
+
+    fn cruelty_maw_values(
+        &self,
+        expected: &runtime_actor_companion::CompanionSnapshot,
+        expected_defense: u32,
+        expected_drain: Option<u64>,
+    ) -> Result<(usize, u32, Option<u64>), CarrierError> {
+        self.require_soul_war_scope()?;
+        let index = self.cruelty_slot(expected)?;
+        if !self.source_creature_is_registered(expected.actor)?
+            || self.effective_creature_defense(expected)? != expected_defense
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let Slot::CreatureOccupied { spell_combat, .. } = self.encounter_slot(index) else {
+            return Err(CarrierError::NotCreature);
+        };
+        if spell_combat.soul_war_cruelty_drain != expected_drain {
+            return Err(CarrierError::PlanConflict);
+        }
+        let delta = spell_combat.soul_war_defense_delta;
+        let defense = if delta == 0 {
+            0
+        } else {
+            delta.checked_sub(2).ok_or(CarrierError::PlanConflict)?
+        };
+        Ok((
+            index,
+            defense,
+            expected_drain.map(|value| value.saturating_sub(1)),
+        ))
+    }
+
+    /// Preflight the source decrease while its exact physical slots remain reserved.
+    pub fn validate_soul_war_cruelty_maw(
+        &self,
+        expected: &runtime_actor_companion::CompanionSnapshot,
+        expected_defense: u32,
+        expected_drain: Option<u64>,
+    ) -> Result<(), CarrierError> {
+        self.cruelty_maw_values(expected, expected_defense, expected_drain)
+            .map(|_| ())
+    }
+
+    /// Crystal mechanics.lua:892-902: reduce only the source defense delta and
+    /// the existing drain KV. An absent drain remains absent; base policy is immutable.
+    pub fn decrease_soul_war_cruelty_from_maw(
+        &mut self,
+        expected: &runtime_actor_companion::CompanionSnapshot,
+        expected_defense: u32,
+        expected_drain: Option<u64>,
+    ) -> Result<(), CarrierError> {
+        let (index, defense, drain) =
+            self.cruelty_maw_values(expected, expected_defense, expected_drain)?;
+        self.assert_actor_spell_unreserved(expected.actor)?;
+        let (carrier, _) = self.encounter_parts_mut();
+        let Slot::CreatureOccupied { spell_combat, .. } = &mut carrier.slots[index] else {
+            return Err(CarrierError::NotCreature);
+        };
+        spell_combat.soul_war_defense_delta = defense;
+        spell_combat.soul_war_cruelty_drain = drain;
+        Ok(())
+    }
+
+    /// Complete the retained source USE only after a known fused receipt. Every
+    /// fallible physical check precedes release; publication has no await or
+    /// competing actor writer between the release and the canonical mutation.
+    #[allow(
+        clippy::expect_used,
+        reason = "all retained slots and source values are preflighted before atomic publication"
+    )]
+    pub fn complete_soul_war_cruelty_maw(
+        &mut self,
+        reservation: super::runtime_actor_source_reservation::SourceActorReservation,
+        proof: &impl super::runtime_actor_source_reservation::SourceActorReservationProof,
+        target: Option<(
+            &runtime_actor_companion::CompanionSnapshot,
+            u32,
+            Option<u64>,
+        )>,
+    ) -> Result<(), CarrierError> {
+        self.validate_source_actor_reservation(&reservation, proof)?;
+        if let Some((expected, defense, drain)) = target {
+            self.validate_soul_war_cruelty_maw(expected, defense, drain)?;
+        }
+        self.release_source_actors_after_observed_outcome(reservation, proof)?;
+        if let Some((expected, defense, drain)) = target {
+            self.decrease_soul_war_cruelty_from_maw(expected, defense, drain)
+                .expect("preflighted source Maw decrease after exact reservation release");
+        }
+        Ok(())
     }
 }
 

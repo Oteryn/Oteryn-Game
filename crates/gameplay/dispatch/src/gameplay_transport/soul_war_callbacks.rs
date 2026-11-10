@@ -15,7 +15,7 @@ use oteryn_simulation_determinism::{
 use sha2::{Digest, Sha256};
 
 mod attacks;
-mod cruelty;
+pub(super) mod cruelty;
 mod entry;
 mod entry_state;
 mod hatred;
@@ -49,6 +49,7 @@ pub(super) struct SoulWarCallbacks {
     pub(super) malice: Option<super::soul_war_malice::MaliceCallbacks>,
     hatred: Option<hatred::HatredCallbacks>,
     cruelty: Option<cruelty::CrueltyCallbacks>,
+    pub(super) maw: cruelty::maw::MawState,
     megalomania: Option<megalomania::MegalomaniaCallbacks>,
     pub(super) white: white::WhiteTileState,
     entry_state: entry_state::EntryState,

@@ -88,6 +88,7 @@ pub trait SoulWarUseTargetRead {
 pub struct QualifiedSoulWarUseTarget {
     kind: SourceUse,
     accepted: bool,
+    item_target_position: Option<crate::foundation::MovementLocalPosition>,
     wire: [u8; 32],
     actor: crate::foundation::ExactActorRef,
     session: crate::foundation::GameSessionId,
@@ -167,6 +168,10 @@ impl QualifiedSoulWarUseTarget {
             )
         };
         let selected = reader.resolve(intent)?;
+        let item_target_position = match &selected {
+            SelectedSoulWarUseTarget::Item { position, .. } => Some(*position),
+            _ => None,
+        };
         let accepted = match (kind, selected) {
             (SourceUse::Sorrow, SelectedSoulWarUseTarget::Creature(target)) => runtime
                 .companion_snapshot(target)
@@ -205,6 +210,7 @@ impl QualifiedSoulWarUseTarget {
         Some(Self {
             kind,
             accepted,
+            item_target_position,
             wire: hash.finalize().into(),
             actor,
             session,
@@ -222,6 +228,9 @@ impl QualifiedSoulWarUseTarget {
     }
     pub const fn target_accepted(&self) -> bool {
         self.accepted
+    }
+    pub const fn item_target_position(&self) -> Option<crate::foundation::MovementLocalPosition> {
+        self.item_target_position
     }
     pub const fn wire_binding(&self) -> [u8; 32] {
         self.wire
