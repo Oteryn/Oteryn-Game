@@ -62,7 +62,8 @@ fn srx3_native_missile_animates_and_culls_other_floors() -> Result<(), Box<dyn s
     view.project_presentation(now)?;
     let before = view.scene().sprites().instances()[baseline..].to_vec();
     assert!(!before.is_empty());
-    view.advance_presentation(now + std::time::Duration::from_millis(250))?;
+    // Two tiles at 50 ms per tile: sample mid-flight, before its 100 ms arrival.
+    view.advance_presentation(now + std::time::Duration::from_millis(50))?;
     let after = &view.scene().sprites().instances()[baseline..];
     assert_eq!(before.len(), after.len());
     assert!(
@@ -71,6 +72,8 @@ fn srx3_native_missile_animates_and_culls_other_floors() -> Result<(), Box<dyn s
             .zip(&before)
             .all(|(a, b)| a.position[0] > b.position[0])
     );
+    view.advance_presentation(now + std::time::Duration::from_millis(100))?;
+    assert_eq!(view.scene().sprites().instances().len(), baseline);
     Ok(())
 }
 

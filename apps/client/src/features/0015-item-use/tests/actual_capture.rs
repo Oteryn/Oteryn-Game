@@ -71,7 +71,7 @@ async fn enter(capture: &Capture) -> Result<(), ScopeError> {
     view.inputs
         .push_back(Input::Arrow(crate::input::StepDir::North));
     let (destination, floor) = replay::position(&capture.value["destination_position"])?;
-    render_until(&mut view, &link, destination, "Entered boss instance").await?;
+    render_until(&mut view, &link, destination, tr!("Entered activity instance. Use the exit to return.")).await?;
     assert_eq!(view.floor, floor);
     assert!(view.inputs.is_empty());
     assert!(!view.in_flight);
@@ -160,7 +160,7 @@ async fn returned(capture: &Capture) -> Result<(), ScopeError> {
     let runner = tokio::spawn(run_session(session, commands, outbox));
     trigger.send(()).await?;
     let (destination, floor) = replay::position(&capture.value["return_position"])?;
-    render_until(&mut view, &link, destination, "Returned to channel").await?;
+    render_until(&mut view, &link, destination, tr!("Returned to the channel.")).await?;
     assert_eq!(view.floor, floor);
     assert!(view.scene().sprites().len() > 1);
     drop(link);

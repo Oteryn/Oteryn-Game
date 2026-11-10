@@ -82,7 +82,26 @@ fn cl25j_feature_commands_cross_the_session_loop()
                     &mut self,
                     command: &FeatureCommand,
                 ) -> Result<GatedCommandResult, SessionError> {
-                    Ok(result(command.capability))
+                    let mut reply = result(command.capability);
+                    // Selected automatic queries precede the queued Daily Boost/Forge commands.
+                    match command.capability {
+                        450 => {
+                            assert_eq!(command.kind, 736);
+                            assert!(command.payload.is_empty());
+                            reply.payload = oteryn_client_runtime::server_modal::Reply::None
+                                .encode()
+                                .map_err(|_| SessionError::SessionUnusable)?;
+                        }
+                        451 => {
+                            assert_eq!(command.kind, 741);
+                            assert!(command.payload.is_empty());
+                            reply.payload = oteryn_client_runtime::personal_map_marks::PersonalMapMarks::default()
+                                .encode()
+                                .ok_or(SessionError::SessionUnusable)?;
+                        }
+                        _ => {}
+                    }
+                    Ok(reply)
                 }
                 async fn server_mechanic(
                     &mut self,
