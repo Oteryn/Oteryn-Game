@@ -112,13 +112,22 @@
       "verification": "Independent actual caller, accepted persisted-state shape, projection consumer and counterguard source proof; no native/Cargo/SQL execution or deployed-state assertion",
       "report": "Restricted independent evidence retained privately under SECURITY.md",
       "public_safe": false
+    },
+    {
+      "id": "GR-KILL-001",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent actual caller, current maintained producer, failure/recovery and counterguard source proof; bounded read-only data checks. No native/Cargo/SQL execution or deployed-incident assertion.",
+      "report": "Restricted independent evidence retained privately under SECURITY.md",
+      "public_safe": false,
+      "public_abstract": "A delayed-effect completion can omit required reward settlement after a post-application storage-cleanup failure; bounded conditional integration defect, without a deployed-incident or durable-corruption claim."
     }
   ],
   "prior_checkpoint": "1c39ebc3347319fe08eaf58299a8a9e9339b0367",
   "cumulative_confirmed_counts": {
     "P0": 0,
     "P1": 4,
-    "P2": 16,
+    "P2": 17,
     "P3": 0
   },
   "prior_likely": 2,

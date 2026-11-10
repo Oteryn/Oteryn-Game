@@ -25,7 +25,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-combat-rules | REVIEWED | 29 | 29 | 29 | 5131 |
 | oteryn-gameplay-content | REVIEWED | 139 | 139 | 139 | 71505 |
 | oteryn-gameplay-content-promotion | REVIEWED | 36 | 36 | 36 | 13600 |
-| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 844 | 793 | 211030 |
+| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 1009 | 982 | 280034 |
 | oteryn-gameplay-domain | REVIEWED | 67 | 67 | 67 | 33806 |
 | oteryn-gameplay-durability | REVIEWED | 721 | 721 | 721 | 216548 |
 | oteryn-gameplay-economy | REVIEWED | 28 | 28 | 28 | 3978 |
@@ -82,5 +82,5 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | repository-root | NOT STARTED | 16 | 0 | 0 | 0 |
 | rulesets | IN PROGRESS | 77 | 4 | 3 | 359 |
 | tests | NOT STARTED | 12 | 0 | 0 | 0 |
-| tools | IN PROGRESS | 2681 | 11 | 8 | 1477 |
+| tools | IN PROGRESS | 2681 | 14 | 9 | 2004 |
 | vendor | NOT STARTED | 793 | 0 | 0 | 0 |

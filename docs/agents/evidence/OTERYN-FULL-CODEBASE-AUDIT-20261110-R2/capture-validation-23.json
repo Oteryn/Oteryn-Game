@@ -1,0 +1,100 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T19:13:45.445623+00:00",
+  "captures": {
+    "durability": {
+      "path": "protocol-session/durability/captures/checkpoint-50-ledger.json",
+      "sha256": "4fdb43477aefdac4adbc679b8c1f91406769ead34deba052f7eb5f6f8599ddc4",
+      "full_files": 721,
+      "full_file_physical_lines": 216548,
+      "all_scope_text_lines_union": 216548,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "server": {
+      "path": "protocol-session/game-server-worker-captures/checkpoint-873-ledger.json",
+      "sha256": "0272f69956687e04b05e6a6461fa4dc5e8e3e40217335596abde763ea68e4e7b",
+      "full_files": 873,
+      "full_file_physical_lines": 489700,
+      "all_scope_text_lines_union": 489700,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 2703,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_client": {
+      "path": "client-support/dispatch-checkpoint47-ledger.json",
+      "sha256": "3f232b9bfb4ee89e4e0118cf5c824d44d7a4b67991bc86fc522f175de0f7e677",
+      "full_files": 681,
+      "full_file_physical_lines": 180006,
+      "all_scope_text_lines_union": 184538,
+      "partial_reviewed_lines": 4532,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_social_world": {
+      "path": "protocol-session/dispatch-social-world/captures/checkpoint-15-ledger.json",
+      "sha256": "9119c797192a7c14fb8237ce942da2dd7a98a25ad6f6e1ce122f6bd797e1d9a2",
+      "full_files": 157,
+      "full_file_physical_lines": 48941,
+      "all_scope_text_lines_union": 48941,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_items_economy": {
+      "path": "protocol-session/dispatch-items-economy/worker-captures/checkpoint-02-worker-ledger.json",
+      "sha256": "eec5edc203221030301b585527d1034157b06d21ff13a57cd584ee2b7ece3570",
+      "full_files": 31,
+      "full_file_physical_lines": 13724,
+      "all_scope_text_lines_union": 13724,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_root": {
+      "path": "lead/dispatch-quests-npc-encounters/checkpoint-74-ledger.json",
+      "sha256": "9f389812d508086856a33b25b641a51f0a08d9c5acc665cee78f70d1ca9b7874",
+      "full_files": 74,
+      "full_file_physical_lines": 22494,
+      "all_scope_text_lines_union": 23065,
+      "partial_reviewed_lines": 571,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    }
+  },
+  "server_method_maps": {
+    "game-server-appearance-capture-method-map.md": "90fb804da69c6658b0276f7c488d6862b2d09d3dc371795f3f51dbda51308aa8",
+    "game-server-spawn-fixture-method-map.md": "2219981460bf6bd58cf0e9ddf7306a90584b0bb9fe239b1ae4cdf8b087be9df3",
+    "game-server-seven-fixture-method-map.md": "348390d50ea1da0dd25ae206bd8c550cc9120851d94c0d0067e267359311480b",
+    "game-server-auto-attack-fixture-method-map.md": "d7593104034863d3328a3bef6c649fbcd83965e39db31e895e639f3cdb126ba5",
+    "game-server-callback-cast-fixture-method-map.md": "3fbba196681354508896b1f61c4cb865a8ec62b53118d75943b982b32e9c3538",
+    "game-server-tls-fixture-method-map.md": "51e1efbd633d88829848ddd3653328cbc985da328a24383dc47d1f9187d92836",
+    "game-server-transport-tls-method-map.md": "429224a77cf514e99c1b92d4872b99d6b9a5f52529c2bf3a7edf2f8a0cf9366f"
+  },
+  "new_semantic_note_review": {
+    "client": {
+      "new_notes_read_by_root": 43,
+      "private_note_set_sha256": "83fdfe92d273b718d7a65b337ad78b7ea803450b6ebe4a8c34932c4e1c4e4f43"
+    },
+    "social": {
+      "new_notes_read_by_root": 67,
+      "private_note_set_sha256": "dbb59d3698ecfe61655adbe9eb927a4bd2a4758b01a5647a56eec1cdbd708fd1"
+    },
+    "items": {
+      "new_notes_read_by_root": 31,
+      "private_note_set_sha256": "eec5edc203221030301b585527d1034157b06d21ff13a57cd584ee2b7ece3570"
+    }
+  },
+  "report_review": "Root read the complete social/world checkpoint15 report, items/economy checkpoint02 worker and parent reports, parent validation/manifest, and client public progress report. Root directly reviewed74 full files and separately attributed supporting ranges in its reservation.",
+  "aggregate_scope": "Stable captures identify separately root-inspected note sets. Integrated later work can exceed them. This qualification is not a second manual source review of every delegated file.",
+  "root_scope": "Exact immutable byte/range/inclusion checks plus substantive delegated note/report inspection. Earlier server/data method maps remain qualified and unchanged.",
+  "runtime_execution": false
+}

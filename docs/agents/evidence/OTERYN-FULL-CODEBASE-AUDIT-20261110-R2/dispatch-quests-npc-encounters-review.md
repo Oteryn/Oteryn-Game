@@ -1,6 +1,6 @@
 # Dispatch NPC, quests and encounters — partial review
 
-Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. The root reservation contains 356 files; its current validation records **27 complete files / 7,730 full-file lines**, plus selected supporting ranges. The exact per-file notes and source identities are retained in the private lane ledger. Range/hash validation confirms attribution and completeness of recorded ranges; it does not perform the review.
+Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. The root reservation contains 356 files; its current validation records **74 complete files / 22,494 full-file lines**, plus selected supporting ranges totaling **23,065 reviewed lines**. The exact per-file notes and source identities are retained in the private lane ledger. Range/hash validation confirms attribution and completeness of recorded ranges; it does not perform the review.
 
 ## Completed source groups
 
@@ -12,7 +12,15 @@ Drome Cube and Kooldown Aid were reviewed through the existing USE routing and a
 
 Endgame NPC dialogue, payment preparation and entry tests were read with the actual dispatch, resume and reward-fee callers. Visible NPC identity and conversation context select closed actions; the access purchase requires two confirmations. Current Character fence, lease, level and quest state govern durable transitions. Pending exact payment/mutation is retained before the await and the revision cursor is invalidated before uncertain work. Receipt reconciliation does not create a new mutation. Test room/catalogue assertions remain unexecuted definitions.
 
+The complete NPC command owner and its conversation/trade tests were reviewed with Bank, Premium, Monk, scoped service, session-transfer and Grizzly window adapters. Exact visible NPC generation, conversation, range, catalogue and current Character fence qualify fresh operations; historical receipts remain distinct from current authority. Frozen windows preserve their displayed source indices when quest rank changes. Fluid/charged offer information reaches the actual physical trade owner. The actual command97 routing ends an unknown operation before command sequencing. No test fixture was treated as evidence of a deployed NPC, reachable room or qualified Item profile.
+
+Paid and tutorial travel were reviewed through their current NPC caller, retained hold, arrival reconciliation and actual relocation transport. Frozen route, fare and command identity survive uncertain outcomes. Placement rechecks current owner, actor state, source capture and destination; retaining the placed state before consumption avoids repeating relocation when consumption retries. The complete first-vocation adapter saves settled training and explicit old vitals, preserves cumulative progress and existing stance, verifies the exact retained receipt, then reloads current facts before live installation. Its PostgreSQL definitions use synthetic formulas and were not run. Full trade composition separately checks current catalogue, schedule, custody, charge/fluid facts and exact replay identity.
+
 ## Remaining work and limits
+
+The complete native NPC walk/voice cadence, current tile transaction, source programme adapter and shared quest dialogue were read with their test bodies. Current actor/context, exact terrain and Item facts, customer state and movement predecessor govern NPC steps. The cadence bounds work, coalesces late thoughts and preserves deterministic occurrence identity. Shared quest publication keeps confirmed receipt success while suppressing a response for a closed or replaced conversation. Other legacy response helpers are being checked separately; an isolated local difference is not a confirmed issue.
+
+Closed quest adapters, seasonal Santa/Baker owners and Grizzly task/boss recovery were also reviewed. Source dialogue does not grant inventory or quest authority. Seasonal writes retain exact operation identity and use existing mint/consume owners. Grizzly freezes an entire source action batch, refreshes any committed earlier actions after a later refusal, and resolves retained work before the session stream reopens. Tests and administrative fixtures remain unexecuted source evidence.
 
 The remaining reservation covers further NPC conversations, quests, Soulpit, endgame encounters and their separate test bodies. Includes, neighbouring-module completion and catalogue names grant no automatic coverage. Cross-module questions about delayed reward retention, activity availability and source qualification are tracked separately; this partial group establishes no additional confirmed finding.
 

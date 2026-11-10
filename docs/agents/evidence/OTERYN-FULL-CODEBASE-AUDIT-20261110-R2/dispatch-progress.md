@@ -1,13 +1,22 @@
 # Dispatch — partial source review
 
-Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. Frozen integrated coverage: **793/1668 complete files**, 844 with substantive ranges and **211,030 deduplicated lines**.
+Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. Frozen integrated coverage: **982/1668 complete files**, **1,009 files with substantive ranges**, and **280,034 deduplicated lines**.
 
-The stable client-support checkpoint 38 has **638 full files / 157,363 full-file lines**, plus **26 partial files / 5,093 reviewed partial lines**, totaling **162,456 substantive lines**. Its SHA-256 is `5147e49b66884c14aa64937f91bdb21bbe48f5d5e64493e54789a785d8f1aa25`. Separate social/world checkpoint 08 has **90 full files / 23,267 lines**, SHA-256 `884a45e568a9f77acee2bbaddf92c2f33207e8c39a331f5618339bf9a626fdfa`. The root NPC/quests/encounters reservation has **27 full files / 7,730 lines**, plus selected ranges totaling **8,574 reviewed lines**. All these captures are in the frozen ledger. Later integrated delegated work and independent cross-module ranges explain the aggregate difference; totals are deduplicated.
+| Stable source capture | Complete files | Full-file lines | Total reviewed lines |
+|---|---:|---:|---:|
+| Client-support checkpoint 47 | 681 | 180,006 | 184,538 |
+| Social/world checkpoint 15 | 157 | 48,941 | 48,941 |
+| Items/economy checkpoint 02 | 31 | 13,724 | 13,724 |
+| Root NPC/quests/encounters | 74 | 22,494 | 23,065 |
 
-New client-support groups trace the actual spell timer callbacks, lethal and party reward settlement, party shared experience, progression binding, cooldown query and Animus producers, plus complete associated test sources. A delayed reward-retention candidate remains under separate root adjudication and is not a confirmed finding at this checkpoint. Already reviewed replay producers reject the repeated-applied-healing hypothesis. The maintained source/manifest distinction and actual current fence checks remain explicit.
+The client capture also has 23 partial files. Exact hashes and inclusion qualification are in `capture-validation-23.json`. Independently integrated cross-references and later live work explain differences from the named stable captures; the aggregate is deduplicated.
 
-Social/world work follows Guild/war/chat and their real relay/session callers, retained command identity, resume/staff/report/support, Party/VIP/typing, team finder, bulletin, advisory analyser, character/highscore/Exiva, visibility, names, ambient, map floors and movement/trap/drowning paths. Mutable native generations are included in the actual placement identity digest; the missing-generation local-comparison hypothesis is refuted by its current producers. Test definitions do not establish runtime execution.
+New client work covers complete auto-attack, ranged payment/reconciliation, equipment effects, current combat observations, Charm, ordinary spell lowering and selected proficiency owners with their test sources. Actual ordinary lethal settlement is distinguished from the separately confirmed conditional delayed-effect issue GR-KILL-001. Other equipment/proficiency questions remain unconfirmed and receive no additional finding ID here.
 
-Root completed boss catalogue/difficulty/reward adapters, personal contribution/settlement, Arena, Drome Cube/Kooldown Aid and endgame NPC/payment paths with their actual callers and test bodies. The separate `dispatch-quests-npc-encounters-review.md` records the bounded findings and limitations. The disjoint items/economy assignment now runs with the completed server worker.
+Social/world work closes map handle/planning, physical pickup recovery, forced movement, position persistence, raid placement/termination/notices and their tests. Session lifecycle, account closure, reset/events, zones, consent and World chat scenarios were examined in full. Controlled clocks, administrative data, synthetic geometry and same-process reconstruction are explicitly distinguished from deployment, native client and operating-system recovery.
 
-Root read all new notes in the named stable captures and independently qualified exact immutable bytes and range inclusion. It did not repeat every delegated source review. Earlier original registry tests remain retained; newly examined PostgreSQL/native test bodies were not executed. No additional confirmed finding is promoted in this checkpoint.
+Items/economy review covers ephemeral item/container views, complete browse projection/cache, sorting, item/equipment/hotkey routing, QuickLoot, corpse decay and recoverable death-item settlement. Historical receipt identity precedes fresh handle/custody selection. Shared caches carry presentation order, never authority. Root read all 31 notes and both complete delegated reports and checked the retained parent manifest.
+
+Root now covers 74 complete files in its separate reservation: boss/arena adapters, NPC command/service/trade, paid/tutorial travel and arrival, first vocation, NPC movement/voice, shared and specialized quest dialogue, seasonal owners and Grizzly recovery. The separate root report records exact limitations.
+
+Root inspected all 43 new client notes since checkpoint 38, all 67 new social/world notes since checkpoint 08, and all 31 item/economy notes. This evidence qualification does not claim a second full reading of every delegated source. New PostgreSQL/native test bodies were read, not run. All remaining paths are explicit in the coverage ledger.
