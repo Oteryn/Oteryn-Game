@@ -25,7 +25,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-combat-rules | REVIEWED | 29 | 29 | 29 | 5131 |
 | oteryn-gameplay-content | REVIEWED | 139 | 139 | 139 | 71505 |
 | oteryn-gameplay-content-promotion | REVIEWED | 36 | 36 | 36 | 13600 |
-| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 1254 | 1240 | 345982 |
+| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 1608 | 1606 | 494368 |
 | oteryn-gameplay-domain | REVIEWED | 67 | 67 | 67 | 33806 |
 | oteryn-gameplay-durability | REVIEWED | 721 | 721 | 721 | 216548 |
 | oteryn-gameplay-economy | REVIEWED | 28 | 28 | 28 | 3978 |
@@ -73,11 +73,11 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-synthetic-asset-compiler | REVIEWED | 2 | 2 | 2 | 46 |
 | oteryn-synthetic-client-harness | REVIEWED | 40 | 40 | 40 | 10454 |
 | oteryn-world-bundle-compiler | REVIEWED | 31 | 31 | 31 | 10189 |
-| .github | IN PROGRESS | 75 | 1 | 0 | 322 |
+| .github | IN PROGRESS | 75 | 11 | 10 | 1378 |
 | agent-configuration-and-retained-evidence | NOT STARTED | 113 | 0 | 0 | 0 |
 | content | IN PROGRESS | 8032 | 3 | 2 | 78 |
 | deploy | NOT STARTED | 16 | 0 | 0 | 0 |
-| docs | IN PROGRESS | 7398 | 31 | 14 | 2415 |
+| docs | IN PROGRESS | 7398 | 45 | 24 | 3701 |
 | imports | NOT STARTED | 565 | 0 | 0 | 0 |
 | repository-root | NOT STARTED | 16 | 0 | 0 | 0 |
 | rulesets | IN PROGRESS | 77 | 4 | 3 | 359 |

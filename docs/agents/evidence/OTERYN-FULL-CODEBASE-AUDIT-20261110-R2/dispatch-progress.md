@@ -1,24 +1,26 @@
 # Dispatch — partial source review
 
-Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. Frozen integrated coverage: **1,240/1,668 complete files**, **1,254 files with substantive ranges**, and **345,982 deduplicated lines**.
+Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. Frozen integrated coverage: **1,606/1,668 complete files**, **1,608 files with substantive ranges**, and **494,368 deduplicated lines**.
 
 | Stable source capture | Complete files | Full-file lines | Total reviewed lines |
 |---|---:|---:|---:|
-| Client-support checkpoint 56 | 766 | 198,083 | 201,576 |
+| Client-support checkpoint 79 | 871 | 255,332 | 258,825 |
 | Social/world checkpoint 26 | 226 | 67,091 | 67,091 |
-| Items/economy checkpoint 11 | 131 | 45,566 | 45,566 |
-| Root NPC/quests/encounters checkpoint 109 | 109 | 31,043 | 31,245 |
+| Items/economy checkpoint 21 | 207 | 73,025 | 73,025 |
+| Root NPC/quests/encounters checkpoint 158 | 158 | 43,986 | 44,058 |
+| Separate social quest-test checkpoint 14 | 76 | 26,034 | 26,034 |
+| Separate items quest-test checkpoint 10 | 60 | 26,514 | 26,514 |
 
-Client has20 additional partial files. The aggregate includes deduplicated supporting and historical coverage outside these named full-file captures. Exact cutoff, hashes, ranges, provenance and inclusion qualification are in `capture-validation-24.json`. Later live work is excluded from these frozen counts.
+Client retains20 historical partial files; other owners can cover those files fully in the deduplicated aggregate. Captures overlap only where explicitly supporting or historical review is attributed. Exact hashes, ranges, remaining paths and inclusion checks are in `capture-validation-25.json`; later live progress is excluded.
 
-Client additions cover proficiency/Wheel mechanics and projections, connection/deferred admission, monster ownership, appearance observation, Store/modal retention, mount speech, kill statistics, Monk/tutorial/save and their test sources. The secondary reviewer read all85 new or expanded notes and complete report sections48–56;82 files are new and3 former partial files are now full, with17,038 net new lines. Historical authorship is retained.
+The client-retained original304-file reservation is complete. Root read all105 new semantic notes and all added report sections57–79, then checked4,156 source identities plus immutable group captures. New review attribution is100 files by the prior continuation worker and5 by its resumed worker. Test-source review includes live combat/PvP, party/loot, conditions, current spell facts, native monster composition, retained timers and cross-mechanic scenarios. Synthetic input grants, forced occurrences, reconstructed owners and unavailable external capture dependencies remain explicit.
 
-Social/world has completed all226 files in its exact reservation. Root read the69 new notes since checkpoint15 and the complete checkpoint26 report. Current social/world owners, their storage/transport boundaries and test fixtures are distinguished from deployed policy. This reservation's closure does not close Dispatch. Its reviewer has moved to a new disjoint99-file quest-test assignment outside this freeze.
+The social/world original226-file reservation was already complete. The items/economy original207-file reservation is now complete:76 additional files/27,459 lines beyond checkpoint11. An independent reviewer read every new note, eight changed/new supporting notes and the complete final report, and verified11 manifests/66 artifacts with2,428 source identity checks. Root read and checked the full qualification packet. One historical supporting range contracted; the original note and source capture are retained, no monotonicity claim is made, and independent full-file evidence covers the affected source. No old evidence was silently discarded.
 
-Items/economy additions cover paid Forge, Atelier/Imbuement, trade, Market/coins, Store, depot/stash/Inbox, core consumption, fluids and transforms with associated tests. The secondary reviewer read100 added notes,25 new or changed cross-reference notes, and complete parent03/04 and worker11 reports. Current custody/fence/retained-identity counterguards and privileged fixture limits remain explicit. Seventy-six original assigned files remain at this cutoff.
+Root directly completed158 files, including the complete Prey/Charm/Cyclopedia, board authorization, Soulpit entry/combat/reward/return and Primal owners plus their assigned tests. The separate root report describes actual caller, current authority, retained receipt, physical state and failure boundaries. It does not convert administrative fixtures into maintained gameplay producers.
 
-Root directly reviewed109 complete files: the prior NPC/boss/seasonal/Grizzly owners plus complete task reward/projection, daily/room cleanup, quest journal/admission, actual callback execution, physical gates, monster/encounter/timed owners and Soul War reward. The separate root report records actual source-context validation, retained mutation and recovery boundaries. It does not convert synthetic rooms or administrative tests into maintained producers.
+Two separate99-file test reservations contribute76 and60 complete files at this cutoff. Root read all136 primary notes,36 supporting notes and both complete cumulative reports, then checked source identity, exact assignment membership, disjointness, all captured histories and reviewer attribution. One wording correction is explicitly documented without changing its source range or review credit. The scenarios cover boss activities and rewards, private views, NPC/quest services, carried and ground custody, native room crops, character progression and replay/recovery. Assertions were read, not run.
 
-The independently qualified client/items packet includes4,161 exact source identity checks. Root checked that packet and all frozen source SHA/ranges/inclusion. These checks and note/report review are not a second manual source reading of every delegated file. Test sources were read, not executed. Open questions remain unconfirmed unless separately qualified. GR-EQUIP-001 is independently confirmed P2 with detailed private evidence; other equipment/proficiency questions remain separate.
+**62 Dispatch files still lack full review in this frozen checkpoint.** Exact paths are listed in the coverage ledger. Confirmed findings remain22 total (P1=4/P2=18); newly reviewed test sources establish no additional confirmed finding. Qualification adds no duplicate FULL credit and does not claim a second complete source reread. No Cargo, SQL, native client/server or Actions run was performed in this continuation.
 
-There remain428 files without full review in the integrated Dispatch cutoff. The exact remaining paths are in the coverage ledger. All eleven supplementary domains remain mandatory after Cargo source completion.
+All11 supplementary domains and all27,900 tracked input files remain mandatory after Cargo completion.

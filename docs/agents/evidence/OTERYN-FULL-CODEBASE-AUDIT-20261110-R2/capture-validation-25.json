@@ -1,0 +1,295 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T20:21:57.949249+00:00",
+  "captures": {
+    "durability": {
+      "path": "protocol-session/durability/captures/checkpoint-50-ledger.json",
+      "sha256": "4fdb43477aefdac4adbc679b8c1f91406769ead34deba052f7eb5f6f8599ddc4",
+      "full_files": 721,
+      "full_file_physical_lines": 216548,
+      "all_scope_text_lines_union": 216548,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "server": {
+      "path": "protocol-session/game-server-worker-captures/checkpoint-873-ledger.json",
+      "sha256": "0272f69956687e04b05e6a6461fa4dc5e8e3e40217335596abde763ea68e4e7b",
+      "full_files": 873,
+      "full_file_physical_lines": 489700,
+      "all_scope_text_lines_union": 489700,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 2703,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_client": {
+      "path": "client-support/dispatch-checkpoint79-ledger.json",
+      "sha256": "0a65152ddb0b67a9a1bb3cd4d9ca78c45622b426ce389ad324fab0e43979437c",
+      "full_files": 871,
+      "full_file_physical_lines": 255332,
+      "all_scope_text_lines_union": 258825,
+      "partial_reviewed_lines": 3493,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_social_world": {
+      "path": "protocol-session/dispatch-social-world/captures/checkpoint-26-ledger.json",
+      "sha256": "0fd3f2f9679cb7e58f83252b4009f6c3b5f74c93bf02ad296897775bbd019ffa",
+      "full_files": 226,
+      "full_file_physical_lines": 67091,
+      "all_scope_text_lines_union": 67091,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_items_economy": {
+      "path": "protocol-session/game-server-worker/dispatch-items-economy/captures/checkpoint-21-ledger.json",
+      "sha256": "2ef1eb9dc1c9cc36238592b5a0f528c4ef116a17b91126493d394c2d82007aaf",
+      "full_files": 207,
+      "full_file_physical_lines": 73025,
+      "all_scope_text_lines_union": 73025,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_root": {
+      "path": "lead/dispatch-quests-npc-encounters/checkpoint-158-ledger.json",
+      "sha256": "fd11085a9d81cb53d3834e02ce8a67a668619c419ad56cecea611786a02b4128",
+      "full_files": 158,
+      "full_file_physical_lines": 43986,
+      "all_scope_text_lines_union": 44058,
+      "partial_reviewed_lines": 72,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_quest_social": {
+      "path": "control/checkpoint25-inputs/quest-social-ledger.json",
+      "sha256": "2f5a31ef50800a267a2d5628064400cdbe661402333370966414827a40a7bd96",
+      "full_files": 76,
+      "full_file_physical_lines": 26034,
+      "all_scope_text_lines_union": 26034,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_quest_items": {
+      "path": "control/checkpoint25-inputs/quest-items-ledger.json",
+      "sha256": "14891daf449956ae6fad798cd46a70b8e0c24a86dc51405d20311eaa29b1f864",
+      "full_files": 60,
+      "full_file_physical_lines": 26514,
+      "all_scope_text_lines_union": 26514,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    }
+  },
+  "server_method_maps": {
+    "game-server-appearance-capture-method-map.md": "90fb804da69c6658b0276f7c488d6862b2d09d3dc371795f3f51dbda51308aa8",
+    "game-server-spawn-fixture-method-map.md": "2219981460bf6bd58cf0e9ddf7306a90584b0bb9fe239b1ae4cdf8b087be9df3",
+    "game-server-seven-fixture-method-map.md": "348390d50ea1da0dd25ae206bd8c550cc9120851d94c0d0067e267359311480b",
+    "game-server-auto-attack-fixture-method-map.md": "d7593104034863d3328a3bef6c649fbcd83965e39db31e895e639f3cdb126ba5",
+    "game-server-callback-cast-fixture-method-map.md": "3fbba196681354508896b1f61c4cb865a8ec62b53118d75943b982b32e9c3538",
+    "game-server-tls-fixture-method-map.md": "51e1efbd633d88829848ddd3653328cbc985da328a24383dc47d1f9187d92836",
+    "game-server-transport-tls-method-map.md": "429224a77cf514e99c1b92d4872b99d6b9a5f52529c2bf3a7edf2f8a0cf9366f"
+  },
+  "client": {
+    "new_notes_read_by_root": 105,
+    "added_report_sections": [
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79
+    ],
+    "source_identity_checks": 4156,
+    "qualification_sha256": "c5839f6ca417c3914ee121b7b317406e844c717cbd7f4113e3392a39a172c8cf",
+    "original_reservation_files": 304,
+    "original_reservation_remaining": 0,
+    "authorship": {
+      "/root/r2_dispatch_client_continue": 100,
+      "/root/r2_dispatch_client_resume": 5
+    }
+  },
+  "items": {
+    "secondary_reviewer": "/root/r2_dispatch_client_resume",
+    "new_notes_read": 76,
+    "new_or_changed_crossref_notes_read": 8,
+    "source_identity_checks": 2428,
+    "manifest_sha256": "59258693b90f3945a8503e838eeb1647f52f340b78dcf74b8f49e64653599064",
+    "root_read_complete_secondary_qualification_and_checked_manifests": true,
+    "original_reservation_files": 207,
+    "original_reservation_remaining": 0,
+    "historical_crossref_range_contraction_preserved": true,
+    "no_crossref_monotonicity_claim": true
+  },
+  "quest_workers": {
+    "social": {
+      "checkpoint": 14,
+      "full_files": 76,
+      "full_file_lines": 26034,
+      "remaining_files": 23,
+      "ledger_sha256": "2f5a31ef50800a267a2d5628064400cdbe661402333370966414827a40a7bd96",
+      "report_sha256": "2b50399f3fbf5c143c5952ab9b4eaa6ebf92f978176d3a0cb72554b4fb480b9d",
+      "manifest_sha256": "09f9c8296700875b9c49fd45fc13648e6ca0ab600b7a2131eb2e4367ee2daf88",
+      "assignment_sha256": "20a4c80b37b11be4a331ed1bb15a73d181a28c4c1bc43f9f534a94a7b461dc78",
+      "authorship": {
+        "/root/r2_dispatch_social_continue": 45,
+        "/root/r2_dispatch_social_resume": 31
+      },
+      "all_primary_semantic_notes_read_by_root": true,
+      "complete_report_read_by_root": true,
+      "cross_reference_notes_read_by_root": 36,
+      "historical_manifests": {
+        "1": {
+          "sha256": "2f0165f4bc00dac420c84d867355f8c96d8e4ee3aab0a43038f493a7b4dac95f",
+          "artifacts": 6
+        },
+        "2": {
+          "sha256": "e34ed70c4c5d5a13769a284f010248b0a518d8078eee8b1a012d98ec9b35e9f7",
+          "artifacts": 6
+        },
+        "3": {
+          "sha256": "0b3ce9078cf9eaf76cb94667f78ae6d13eff747b8782e2e32c4e0585dfa0e7a6",
+          "artifacts": 6
+        },
+        "4": {
+          "sha256": "0f7e4b5511640e39850910b0d78cc5dc9bf59ce0d5a8ff00a1a56b5332e576a3",
+          "artifacts": 6
+        },
+        "5": {
+          "sha256": "b2435b85c15c90ef018522cf143f95f52ea0a613d31bcd04cf7d193d3b7c439a",
+          "artifacts": 6
+        },
+        "6": {
+          "sha256": "63444264f4ddbaf9466566b3b852ac5682fbcc3506e336a736957c5cef267b72",
+          "artifacts": 6
+        },
+        "7": {
+          "sha256": "e55e18862266b68a54dbe285a05ee3f88d9d4e68dab946e902dd3fd5da31a3f5",
+          "artifacts": 6
+        },
+        "8": {
+          "sha256": "fd3bbec60f1b1b8608b2bc66550ad09e5fe82303672e26f663790ddd1da61b81",
+          "artifacts": 6
+        },
+        "9": {
+          "sha256": "ee1cd15865228e1c69c0ab308bb8a79d5c4bb07562f2213cea6cb4a61ec4a9f1",
+          "artifacts": 6
+        },
+        "10": {
+          "sha256": "8970f45a0ce9b76a0dc942580616f36c2ffcfff2bd9986557412b87bcd936436",
+          "artifacts": 6
+        },
+        "11": {
+          "sha256": "378285b65aca0626a1c756a17374fdc34dc90366cf3f13f3c652021fb47bf156",
+          "artifacts": 6
+        },
+        "12": {
+          "sha256": "f5615905e007a28475bf4e4723754b8f118ade8cf3aff43370ae233eac1e1ec8",
+          "artifacts": 6
+        },
+        "13": {
+          "sha256": "b9a95d5ed0f16f79d12b825696ab447cc77862f6b1564a16f9fdc2dfb7464e1e",
+          "artifacts": 6
+        },
+        "14": {
+          "sha256": "09f9c8296700875b9c49fd45fc13648e6ca0ab600b7a2131eb2e4367ee2daf88",
+          "artifacts": 6
+        }
+      }
+    },
+    "items": {
+      "checkpoint": 10,
+      "full_files": 60,
+      "full_file_lines": 26514,
+      "remaining_files": 39,
+      "ledger_sha256": "14891daf449956ae6fad798cd46a70b8e0c24a86dc51405d20311eaa29b1f864",
+      "report_sha256": "8e5070fb129e91753e77557d4283bd07211374cbc5ff376d6fc73e471f3f5221",
+      "manifest_sha256": "93061046162d1c55b5b7ce6b492d4ca991feb86ad0dcdeb633177fb70c4c7738",
+      "assignment_sha256": "c3f678100f89a8b284e1f615fde0584ed1c8a57b284c261f020484ca675a3868",
+      "authorship": {
+        "/root/r2_dispatch_items_continue": 38,
+        "/root/r2_dispatch_items_resume2": 22
+      },
+      "all_primary_semantic_notes_read_by_root": true,
+      "complete_report_read_by_root": true,
+      "cross_reference_notes_read_by_root": 0,
+      "historical_manifests": {
+        "1": {
+          "sha256": "57851b1b4b7c5d31833effd1edaf101a60b08d9134f25d119268e6a19720a912",
+          "artifacts": 6
+        },
+        "2": {
+          "sha256": "f3b0287c774de7ddd91183bc42a779a76b6f1c39ff739c8afe3234c664e18f05",
+          "artifacts": 6
+        },
+        "3": {
+          "sha256": "764f16a973cfb489ea8b44739fee6549c8b8db78f0883a3d53a13642da8414bf",
+          "artifacts": 6
+        },
+        "4": {
+          "sha256": "5efddb8b713c38b91b8eef1bbd56b3579cab2503dd113e34f9969df1474fe472",
+          "artifacts": 6
+        },
+        "5": {
+          "sha256": "fd4e12276b3fddcdade5e8b461b1437e6d15cfe50ba3ddb81c8a63f68b524959",
+          "artifacts": 6
+        },
+        "6": {
+          "sha256": "af0b4c27c5ed6b115504f6c5c3c5f05362bce170242ecc5b61108cee2693196b",
+          "artifacts": 6
+        },
+        "7": {
+          "sha256": "90d69ecf9e9048eca4930f38b0d6930342d930a9cec4587090e0a458d175b8f1",
+          "artifacts": 6
+        },
+        "8": {
+          "sha256": "c9bbbb68f3a70158438f29fc76b08c4fa95a4393225b68e49021a8808a8070db",
+          "artifacts": 6
+        },
+        "9": {
+          "sha256": "9298331d80d5eb1d5232cd9119aa83ae3bcbe3aef40b7a86d4dcf288a99c942f",
+          "artifacts": 6
+        },
+        "10": {
+          "sha256": "93061046162d1c55b5b7ce6b492d4ca991feb86ad0dcdeb633177fb70c4c7738",
+          "artifacts": 6
+        }
+      }
+    }
+  },
+  "quest_notes_read_by_root": 136,
+  "quest_crossref_notes_read_by_root": 36,
+  "quest_root_qualification_sha256": "65ca01736f1d1ab68335860ef420aebcc427e39c642f872855ecb1e6b2248597",
+  "root_direct_full_files": 158,
+  "root_direct_full_file_lines": 43986,
+  "scope": "Original semantic review attribution retained. Root note/report and source-identity qualification is not a second manual reread of every delegated file. Later live work is excluded.",
+  "runtime_execution": false
+}
