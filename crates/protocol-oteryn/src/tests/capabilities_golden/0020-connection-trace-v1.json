@@ -1,0 +1,15 @@
+{
+  "id": 20,
+  "name": "CONNECTION_TRACE_V1",
+  "constant": "connection_trace::CAPABILITY_CONNECTION_TRACE_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

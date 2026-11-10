@@ -3,6 +3,9 @@ pub const CAPABILITY_SERVER_MODAL_V1: u32 = 450;
 pub const COMMAND_TYPE_SERVER_MODAL_QUERY: u32 = 736;
 pub const COMMAND_TYPE_SERVER_MODAL_ANSWER: u32 = 737;
 pub const COMMAND_TYPE_HIRELING_STORE_SELECTION: u32 = 6196;
+/// Opt in to the typed terminal acknowledgement on this physical connection.
+/// The empty legacy query retains the original reply vocabulary.
+pub const QUERY_WITH_TERMINAL_REPLY: &[u8] = &[1];
 pub const MAX_REPLY_BYTES: usize = crate::MAX_COMMAND_RESULT_PAYLOAD_BYTES;
 pub const MAX_CHOICES: usize = 32;
 pub const MAX_BUTTONS: usize = 8;
@@ -35,8 +38,16 @@ pub enum Reply {
     None,
     Dialog(Dialog),
     Answered(Answer),
+    AnsweredAndLoggedOut(Answer),
 }
 type WireResult<T> = std::result::Result<T, &'static str>;
+pub fn decode_query(payload: &[u8]) -> WireResult<bool> {
+    match payload {
+        [] => Ok(false),
+        [1] => Ok(true),
+        _ => Err("invalid modal query"),
+    }
+}
 fn valid_text(text: &str, maximum: usize) -> bool {
     !text.is_empty() && text.len() <= maximum && !text.contains('\0')
 }
@@ -135,6 +146,33 @@ mod tests {
                 rgba: vec![255, 0, 0, 255, 0, 0, 255, 255],
             }),
         }
+    }
+    #[test]
+    fn server_modal_terminal_reply_and_query_opt_in_are_exact() -> WireResult<()> {
+        assert_eq!(decode_query(&[]), Ok(false));
+        assert_eq!(decode_query(QUERY_WITH_TERMINAL_REPLY), Ok(true));
+        for malformed in [&[0][..], &[2][..], &[1, 0][..]] {
+            assert!(decode_query(malformed).is_err());
+        }
+        let answer = Answer {
+            dialog_id: 42,
+            button_id: 1,
+            choice_id: Some(6),
+        };
+        for (reply, tag) in [
+            (Reply::Answered(answer), 2),
+            (Reply::AnsweredAndLoggedOut(answer), 3),
+        ] {
+            let mut bytes = vec![tag];
+            bytes.extend(answer.encode()?);
+            assert_eq!(reply.encode()?, bytes);
+            assert_eq!(Reply::decode(&bytes)?, reply);
+            bytes.push(0);
+            assert!(Reply::decode(&bytes).is_err());
+        }
+        assert!(Reply::decode(&[3]).is_err());
+        assert!(Reply::decode(&[4]).is_err());
+        Ok(())
     }
     #[test]
     fn largest_server_modal_fits_the_existing_command_result_budget()

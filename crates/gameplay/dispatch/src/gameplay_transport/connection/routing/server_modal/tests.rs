@@ -28,30 +28,32 @@ impl FreshAdmissionAuthority for Authority {
         _command_id: u64,
         kind: u32,
         payload: &[u8],
-    ) -> Option<Vec<u8>> {
+    ) -> Option<crate::gameplay_transport::server_modal::ServerModalOutcome> {
         self.calls.set(self.calls.get() + 1);
         let root = self.notices.connection_root(
             admitted.game_session_id,
             admitted.continuity.connection_generation,
         )?;
-        self.modals.execute(
-            root,
-            kind,
-            payload,
-            Some(Dialog {
-                id: 1,
-                title: "Server choice".into(),
-                message: "Choose an entry".into(),
-                choices: vec![(7, "First".into())],
-                buttons: vec![(1, "Accept".into()), (2, "Cancel".into())],
-                cancel_button: Some(2),
-                image: Some(Image {
-                    width: 1,
-                    height: 1,
-                    rgba: vec![255, 0, 0, 255],
+        self.modals
+            .execute(
+                root,
+                kind,
+                payload,
+                Some(Dialog {
+                    id: 1,
+                    title: "Server choice".into(),
+                    message: "Choose an entry".into(),
+                    choices: vec![(7, "First".into())],
+                    buttons: vec![(1, "Accept".into()), (2, "Cancel".into())],
+                    cancel_button: Some(2),
+                    image: Some(Image {
+                        width: 1,
+                        height: 1,
+                        rgba: vec![255, 0, 0, 255],
+                    }),
                 }),
-            }),
-        )
+            )
+            .map(crate::gameplay_transport::server_modal::ServerModalOutcome::Reply)
     }
 }
 #[test]
@@ -118,6 +120,39 @@ fn server_modal_real_route_checks_capability_connection_ids_and_duplicate_answer
                         dialog.image.as_ref().map(|image| image.rgba.as_slice()),
                         Some([255, 0, 0, 255].as_slice())
                     );
+                    let calls = authority.calls.get();
+                    assert!(matches!(
+                        route(
+                            &authority,
+                            &admitted,
+                            oteryn_protocol_oteryn::ClientCommandView {
+                                payload: &[2],
+                                ..query
+                            }
+                        )
+                        .await,
+                        Dispatch::Reply(crate::foundation::CommandStatus::Rejected, _)
+                    ));
+                    assert_eq!(
+                        authority.calls.get(),
+                        calls,
+                        "invalid query never reaches its owner"
+                    );
+                    let Dispatch::Reply(crate::foundation::CommandStatus::Accepted, payload) =
+                        route(
+                            &authority,
+                            &admitted,
+                            oteryn_protocol_oteryn::ClientCommandView {
+                                payload:
+                                    oteryn_protocol_oteryn::server_modal::QUERY_WITH_TERMINAL_REPLY,
+                                ..query
+                            },
+                        )
+                        .await
+                    else {
+                        return Err("opt-in query reply".into());
+                    };
+                    assert_eq!(Reply::decode(&payload)?, Reply::Dialog(dialog.clone()));
                     let answer = Answer {
                         dialog_id: dialog.id,
                         button_id: 1,

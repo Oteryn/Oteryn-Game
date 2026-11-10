@@ -659,6 +659,7 @@ fn bounty_completion_preserves_existing_wide_token_owner() -> Result<(), TaskBoa
 fn difficulty_changes_wait_for_reroll_and_preserve_active_reward() -> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
     let mut ctx = context(&catalogue);
+    ctx.reroll_tokens = 1;
     let mut data = TaskBoardData::default();
     let mut balances = TaskBoardBalances::default();
     apply(&mut data, &mut balances, TaskBoardAction::OpenBounty, &ctx)?;
@@ -784,6 +785,7 @@ fn bounty_open_uses_vocation_and_reroll_preserves_difficulty_after_level_loss()
 -> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
     let mut ctx = context(&catalogue);
+    ctx.reroll_tokens = 1;
     let mut data = TaskBoardData::default();
     let mut balances = TaskBoardBalances::default();
     ctx.level = 8;
@@ -835,73 +837,78 @@ fn bounty_open_uses_vocation_and_reroll_preserves_difficulty_after_level_loss()
 }
 
 #[test]
-fn bounty_rerolls_use_twenty_hour_free_timer_before_spending_one_token()
+fn bounty_rerolls_always_spend_one_token_and_refuse_without_mutating_state()
 -> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
     let mut ctx = context(&catalogue);
     let mut data = TaskBoardData::default();
     let mut balances = TaskBoardBalances::default();
-    ctx.reroll_tokens = 2;
-    let effects = apply(
+    apply(&mut data, &mut balances, TaskBoardAction::OpenBounty, &ctx)?;
+    apply(
         &mut data,
         &mut balances,
-        TaskBoardAction::RerollBounty,
+        TaskBoardAction::SelectBounty { slot: 0 },
         &ctx,
     )?;
-    assert_eq!(effects.reroll_tokens_spent, 0);
-    assert_eq!(
-        data.bounty.next_free_reroll_unix,
-        ctx.now_unix_seconds + 72_000
-    );
-    assert_eq!(
-        apply(
+    for now in [0, 1_800_000_000, i64::MAX] {
+        ctx.now_unix_seconds = now;
+        let before = (data.clone(), balances.clone());
+        assert_eq!(
+            apply(
+                &mut data,
+                &mut balances,
+                TaskBoardAction::RerollBounty,
+                &ctx
+            ),
+            Err(TaskBoardRefusal::InsufficientResources)
+        );
+        assert_eq!((&data, &balances), (&before.0, &before.1));
+        ctx.reroll_tokens = 1;
+        let effects = apply(
             &mut data,
             &mut balances,
             TaskBoardAction::RerollBounty,
-            &ctx
-        )?
-        .reroll_tokens_spent,
-        1
-    );
-    ctx.reroll_tokens = 0;
+            &ctx,
+        )?;
+        assert_eq!(effects.reroll_tokens_spent, 1);
+        assert_eq!(effects.reroll_tokens_granted, 0);
+        assert_eq!(data.bounty.state, BountyStatus::Selection);
+        assert_eq!(data.bounty.offers.len(), 3);
+        ctx.reroll_tokens = 0;
+    }
     assert_eq!(
         apply(
             &mut data,
             &mut balances,
+            TaskBoardAction::RetiredDailyReroll,
+            &ctx
+        ),
+        Err(TaskBoardRefusal::RetiredAction)
+    );
+    Ok(())
+}
+
+#[test]
+fn historical_bounty_timer_never_grants_a_free_reroll() -> Result<(), Box<dyn std::error::Error>> {
+    let catalogue = creatures();
+    let ctx = context(&catalogue);
+    let mut legacy = serde_json::to_value(TaskBoardData::default())?;
+    legacy["bounty"]["next_free_reroll_unix"] = serde_json::json!(0);
+    let mut data: TaskBoardData = serde_json::from_value(legacy)?;
+    assert_eq!(data, TaskBoardData::default());
+    assert!(
+        serde_json::to_value(&data)?["bounty"]
+            .get("next_free_reroll_unix")
+            .is_none()
+    );
+    assert_eq!(
+        apply(
+            &mut data,
+            &mut TaskBoardBalances::default(),
             TaskBoardAction::RerollBounty,
             &ctx
         ),
-        Err(TaskBoardRefusal::Cooldown)
-    );
-    assert_eq!(
-        apply(
-            &mut data,
-            &mut balances,
-            TaskBoardAction::RetiredDailyReroll,
-            &ctx
-        ),
-        Err(TaskBoardRefusal::RetiredAction)
-    );
-    ctx.now_unix_seconds += 72_000;
-    ctx.reroll_tokens = 10;
-    assert_eq!(
-        apply(
-            &mut data,
-            &mut balances,
-            TaskBoardAction::RetiredDailyReroll,
-            &ctx
-        ),
-        Err(TaskBoardRefusal::RetiredAction)
-    );
-    ctx.reroll_tokens = 9;
-    assert_eq!(
-        apply(
-            &mut data,
-            &mut balances,
-            TaskBoardAction::RetiredDailyReroll,
-            &ctx
-        ),
-        Err(TaskBoardRefusal::RetiredAction)
+        Err(TaskBoardRefusal::InsufficientResources)
     );
     Ok(())
 }
@@ -1002,7 +1009,8 @@ fn unwanted_overrides_preferred_and_preferred_bypasses_only_stars() -> Result<()
     let mut catalogue = creatures();
     // Put a hard, preferred creature first so the deterministic draw selects it.
     catalogue[0].bestiary_stars = 5;
-    let ctx = context(&catalogue);
+    let mut ctx = context(&catalogue);
+    ctx.reroll_tokens = 1;
     let mut data = TaskBoardData::default();
     let mut balances = TaskBoardBalances::default();
     let race = catalogue[0].race.clone();
@@ -1566,7 +1574,8 @@ fn elite_offers_freeze_rewards_and_rarity_survives_serialization_and_resets_per_
     assert_eq!(policy.grade(0, 1), 2);
     assert_eq!(policy.grade(1, 1), 3);
     let catalogue = creatures();
-    let ctx = context(&catalogue);
+    let mut ctx = context(&catalogue);
+    ctx.reroll_tokens = 1;
     let mut data = TaskBoardData::default();
     let mut balances = TaskBoardBalances::default();
     let mut run = |data: &mut TaskBoardData, action| {

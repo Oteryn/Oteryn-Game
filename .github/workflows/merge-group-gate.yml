@@ -1227,9 +1227,34 @@ jobs:
           set -euo pipefail
           bash -n tools/qualification/node_boot/run.sh
           python3 tools/qualification/node_boot/test_diagnostics.py
-          evidence="$RUNNER_TEMP/node-boot-evidence.txt"
-          bash tools/qualification/node_boot/run.sh | tee "$evidence"
+          logs="$RUNNER_TEMP/node-boot-failure-logs"
+          mkdir -p "$logs"
+          evidence="$logs/qualification-client.log"
+          NODE_BOOT_FAILURE_LOG_DIR="$logs" bash tools/qualification/node_boot/run.sh | tee "$evidence"
           grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
+
+      - name: Redact failed node boot logs
+        if: failure()
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/node-boot-failure-logs"
+          artifact="$RUNNER_TEMP/node-boot-failure-artifact"
+          mkdir -p "$source" "$artifact"
+          for log in node.log qualification-client.log; do
+            if [[ ! -f "$source/$log" ]]; then
+              printf 'Log unavailable; failure occurred before %s was created.\n' "$log" > "$source/$log"
+            fi
+            python3 tools/redact_ci_log.py "$source/$log" "$artifact/$log"
+          done
+
+      - name: Upload failed node boot logs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: node-boot-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/node-boot-failure-artifact
+          if-no-files-found: error
+          retention-days: 7
 
   server_seam:
     name: Merge Queue / Server Seam over TCP+TLS

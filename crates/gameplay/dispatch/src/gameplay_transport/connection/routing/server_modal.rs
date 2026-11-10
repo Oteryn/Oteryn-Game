@@ -10,7 +10,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
 ) -> Dispatch {
     let valid = match command.command_type {
-        COMMAND_TYPE_SERVER_MODAL_QUERY => command.payload.is_empty(),
+        COMMAND_TYPE_SERVER_MODAL_QUERY => {
+            oteryn_protocol_oteryn::server_modal::decode_query(command.payload).is_ok()
+        }
         COMMAND_TYPE_SERVER_MODAL_ANSWER => Answer::decode(command.payload).is_ok(),
         COMMAND_TYPE_HIRELING_STORE_SELECTION => {
             oteryn_protocol_oteryn::store::decode_purchase_request_with_hireling(command.payload)
@@ -35,7 +37,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         )
         .await
     {
-        Some(reply) => Dispatch::Reply(crate::foundation::CommandStatus::Accepted, reply),
+        Some(crate::gameplay_transport::server_modal::ServerModalOutcome::Reply(reply)) => {
+            Dispatch::Reply(crate::foundation::CommandStatus::Accepted, reply)
+        }
+        Some(outcome) => Dispatch::ServerModal(outcome),
         None => Dispatch::Reply(crate::foundation::CommandStatus::Rejected, Vec::new()),
     }
 }

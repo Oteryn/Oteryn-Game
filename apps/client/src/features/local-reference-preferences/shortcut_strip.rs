@@ -3,6 +3,7 @@
     unsafe_code,
     reason = "Child HWNDs and their boxed callback state share one owner thread"
 )]
+use oteryn_client::hud_error::{HudInitError, HudPart};
 use oteryn_client::play::SHORTCUTS;
 use std::ptr::{null, null_mut};
 use windows_sys::Win32::{
@@ -34,7 +35,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
     }
 }
 impl ShortcutStrip {
-    pub(super) fn new(parent: HWND) -> Option<Self> {
+    pub(super) fn new(parent: HWND) -> Result<Self, HudInitError> {
         unsafe {
             let root = CreateWindowExW(
                 0,
@@ -51,7 +52,7 @@ impl ShortcutStrip {
                 null(),
             );
             if root.is_null() {
-                return None;
+                return Err(super::last_error(HudPart::ShortcutRoot));
             }
             let mut strip = Self {
                 root,
@@ -82,11 +83,11 @@ impl ShortcutStrip {
                     null(),
                 );
                 if button.is_null() {
-                    return None;
+                    return Err(super::last_error(HudPart::ShortcutButton));
                 }
                 strip.buttons.push(button);
             }
-            Some(strip)
+            Ok(strip)
         }
     }
     pub(super) fn update(&mut self, ids: Option<&[String]>) -> Vec<String> {

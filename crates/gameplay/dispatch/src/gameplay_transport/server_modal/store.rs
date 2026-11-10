@@ -77,14 +77,14 @@ pub(super) async fn start(
     {
         return None;
     }
-    owner.states.server_modals.offer_store(
+    owner.states.server_modals.offer_rule(
         root,
         dialog,
-        Selection {
+        super::rules::Selection::HirelingStore(Selection {
             request,
             customization,
             identities: hirelings.into_iter().map(|h| h.id).collect(),
-        },
+        }),
     )
 }
 
@@ -97,7 +97,11 @@ pub(super) async fn answer(
     payload: &[u8],
 ) -> Option<Option<Vec<u8>>> {
     let answer = Answer::decode(payload).ok()?;
-    let selection = owner.states.server_modals.store_selection(root, answer)?;
+    let super::rules::Selection::HirelingStore(selection) =
+        owner.states.server_modals.rule_selection(root, answer)?
+    else {
+        return None;
+    };
     Some(complete(owner, admitted, root, command_id, answer, selection).await)
 }
 
@@ -113,7 +117,7 @@ async fn complete(
         return None;
     }
     if answer.button_id == 2 {
-        return owner.states.server_modals.finish_store(root, answer);
+        return owner.states.server_modals.finish_rule(root, answer);
     }
     let hireling = *selection
         .identities
@@ -143,7 +147,7 @@ async fn complete(
     {
         return None;
     }
-    let reply = owner.states.server_modals.finish_store(root, answer)?;
+    let reply = owner.states.server_modals.finish_rule(root, answer)?;
     owner.states.server_modals.notify(
         root,
         Dialog {
