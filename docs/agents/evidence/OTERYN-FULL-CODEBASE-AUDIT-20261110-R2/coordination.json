@@ -1,6 +1,6 @@
 {
   "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
-  "observed_at_utc": "2026-11-10T12:42:16.069810+00:00",
+  "observed_at_utc": "2026-11-10T13:03:13.977114+00:00",
   "lifecycle": "AUTHORING",
   "branch": "audit/full-codebase-20261110-4f0b6c62",
   "sole_writer": "lead /root",
@@ -8,7 +8,7 @@
   "lanes": [
     {
       "lane": "lead",
-      "ledger_rows": 355,
+      "ledger_rows": 393,
       "reported_completed_modules": [
         "oteryn-admin-contracts",
         "oteryn-admin-agent",
@@ -22,12 +22,13 @@
         "oteryn-architecture-check",
         "oteryn-world-bundle-compiler",
         "oteryn-gameplay-domain",
-        "oteryn-gameplay-combat"
+        "oteryn-gameplay-combat",
+        "oteryn-gameplay-entities"
       ]
     },
     {
       "lane": "protocol-session",
-      "ledger_rows": 815,
+      "ledger_rows": 917,
       "reported_completed_modules": [
         "oteryn-identity",
         "oteryn-platform-contracts",
@@ -58,7 +59,7 @@
     },
     {
       "lane": "client-support",
-      "ledger_rows": 2467,
+      "ledger_rows": 2637,
       "reported_completed_modules": [
         "oteryn-client-domain",
         "oteryn-synthetic-assets",
@@ -77,15 +78,9 @@
       ]
     }
   ],
-  "checkpoint": 7,
-  "predecessor": "f7285c3a96c800e6689cd9bd5446a86ba18e1e2e",
-  "allocation_issue": 3088,
-  "allocation_comment_id": 6767615850,
-  "scope": "Audit evidence only; source unchanged; no PR, merge or deployment",
-  "current_delegation": {
-    "root": "Remaining gameplay packages, supplemental domains, independent adjudication and sole remote publication",
-    "r2_client_support": "Remaining client application, parent-validated child422 integration complete",
-    "r2_protocol_session": "Full durability; completed protocol retained",
-    "game_server_review": "Full game-server including all tracked SQL migrations; unintegrated work not credited"
-  }
+  "checkpoint": 8,
+  "allocation_comment": 6768041329,
+  "predecessor": "2284138241007ca11dae256f6e7f519531fb079c",
+  "expected_predecessor_tree": "ad788063a980a4e45673220bd8d32f41058dc028",
+  "publication_rule": "Sole-parent successor; expected-SHA non-force ref update; fresh exact remote-head qualification before completion; explicit AUTHORING continuation afterward."
 }

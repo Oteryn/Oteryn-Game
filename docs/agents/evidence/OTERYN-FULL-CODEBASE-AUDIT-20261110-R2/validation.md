@@ -25,3 +25,7 @@ Gameplay-combat validation: complete unchanged `charm_desc_fence_gate_tests.rs` 
 Latest-main delta: the client lane read all four changed files in full at af33fd3baeac15d9991bd24c91bcacc8733492e2; the lead independently validated every latest/base hash and full range. Its source review stays separate from the immutable base coverage. No PowerShell, Windows, installer or relaunch tests were executed.
 
 Checkpoint 7 adds parent-validated integration of the completed 422-file client worker allocation and further entity/durability source review. New creature periodic-processing candidates have independent source counterguard checks and selected catalogue-value inspection; neither is a native runtime reproduction or a confirmed finding. No source tests were added or changed.
+
+Checkpoint 8 completes all 86 entity files and adds the unchanged whole-source spawn-scheduler run: 8 existing tests PASS, compile exit 0 and test exit 0. The path-only harness substitutes no scheduler logic. `spawn-schedule-result.json` records its SHA-256. All other entity tests, including large synthetic ceiling cases, were read but not run.
+
+The server worker 69-file capture was frozen and parent-validated against Git/worktree hashes and full ranges before aggregate coverage integration. Durability performed a bounded independent Python check of 14 embedded V1 audit envelope fixtures plus the WriteOnce fixture; its semantic and checksum checks are not Rust codec or PostgreSQL execution. New candidate records remain outside confirmed totals.

@@ -1,0 +1,7 @@
+{
+  "source": "crates/gameplay/entities/src/carrier/spawn.rs",
+  "sha256": "2b3ed07cb26814efd84afa058baab9d907f8cd3d33ffe249eec91735bc39f8f6",
+  "compile_exit": 0,
+  "method": "Unchanged whole source module through path-only harness; existing tests only, no Cargo or source substitutions.",
+  "test_exit": 0
+}

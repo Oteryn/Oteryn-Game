@@ -132,6 +132,16 @@
       "auditor": "lead"
     },
     {
+      "module": "oteryn-gameplay-entities",
+      "path": "crates/gameplay/entities",
+      "report": "entities-review.md",
+      "verification": "All86 tracked files fully read; exact SHA/ranges verified. Eight existing tests in unchanged complete spawn.rs compiled directly and passed; full Cargo/native/SQL suites not run. Three unresolved private cross-module candidates remain outside confirmed totals.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
       "module": "oteryn-identity",
       "status": "REVIEWED",
       "report": "protocol-session.md",
