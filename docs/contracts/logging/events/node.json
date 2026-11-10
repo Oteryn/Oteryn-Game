@@ -251,6 +251,22 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "ops_diagnose",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "A privacy-safe local diagnostic snapshot was served."
+    },
+    {
+      "event": "ops_health",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "A privacy-safe local node health snapshot was served."
+    },
+    {
       "event": "public_projections",
       "level": "info",
       "span": false,
@@ -361,6 +377,20 @@
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "startup_stage",
+      "level": "info",
+      "span": true,
+      "fields": [
+        "stage",
+        "outcome",
+        "ms"
+      ],
+      "codes": [
+        "E6004"
+      ],
+      "note": "One bounded process startup stage; stage names are non-sensitive tokens."
     },
     {
       "event": "statistics_retention",

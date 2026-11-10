@@ -17,6 +17,7 @@ base64 = "=0.22.1"
 bytes = "=1.12.1"
 futures = "=0.3.32"
 oteryn-diagnostics = { version = "=0.1.0", path = "../diagnostics" }
+oteryn-error-codes = { version = "=0.1.0", path = "../error-codes" }
 oteryn-foundation = { version = "=0.1.0", path = "../foundation" }
 oteryn-platform-contracts = { version = "=0.1.0", path = "../platform-contracts" }
 reqwest.workspace = true
