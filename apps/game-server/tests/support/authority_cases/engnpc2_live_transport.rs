@@ -354,7 +354,6 @@ async fn exercise(h: &fixture::Harness, handle: bool, corpse: bool) -> TestResul
         },
         wrong,
         handle,
-        corpse,
         (true, true, None),
     )
     .await?
@@ -370,7 +369,6 @@ async fn exercise(h: &fixture::Harness, handle: bool, corpse: bool) -> TestResul
             },
             intent.clone(),
             handle,
-            corpse,
             (true, true, None),
         )
         .await?
@@ -390,7 +388,6 @@ async fn exercise(h: &fixture::Harness, handle: bool, corpse: bool) -> TestResul
         command,
         intent.clone(),
         handle,
-        corpse,
         (true, true, corpse_item),
     )
     .await?
@@ -415,17 +412,9 @@ async fn exercise(h: &fixture::Harness, handle: bool, corpse: bool) -> TestResul
     }
     // Spent source and target handles no longer resolve; the live actor is removed.
     // The historical command must still reach the existing receipt owner.
-    let replay = call(
-        &owner,
-        actor,
-        command,
-        intent,
-        handle,
-        corpse,
-        (false, false, None),
-    )
-    .await?
-    .ok_or("composed replay fell through")?;
+    let replay = call(&owner, actor, command, intent, handle, (false, false, None))
+        .await?
+        .ok_or("composed replay fell through")?;
     assert_eq!(replay, UseDisposition::Committed);
     let counts_after:(i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_callback_consumptions),(SELECT count(*) FROM game_reward_claim_mint_receipts),(SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
     assert_eq!(counts_after, counts);
@@ -438,29 +427,31 @@ async fn call(
     command: UseCommand,
     intent: UseIntent,
     handle: bool,
-    corpse: bool,
     observation: (bool, bool, Option<[u8; 16]>),
 ) -> TestResult<Option<UseDisposition>> {
     let (source_present, visible, target) = observation;
-    // The connection's quest probe also handles a corpse tool's invalid actor target.
-    let result = if handle && !corpse && intent.use_with_map_item.is_none() {
-        let source = source_present.then_some(composed_test_owner::ItemKey::Instance(id(92)));
-        owner
-            .use_event_item(actor, command, intent, source, visible)
+    let source =
+        (handle && source_present).then_some(composed_test_owner::ItemKey::Instance(id(92)));
+    if handle && intent.use_with_map_item.is_none() {
+        // Match the connection caller: an unrelated event-item owner may decline
+        // before the closed quest target owner rejects or commits this intent.
+        if let Some(outcome) = owner
+            .use_event_item(actor, command, intent.clone(), source, visible)
             .await
-    } else {
-        owner
-            .use_quest_tool(
-                actor,
-                command,
-                intent,
-                (handle && source_present)
-                    .then_some(composed_test_owner::ItemKey::Instance(id(92))),
-                target.map(composed_test_owner::ItemKey::Instance),
-            )
-            .await
-    };
-    result
+            .map_err(|_| "composed quest caller unavailable")?
+        {
+            return Ok(Some(outcome.disposition));
+        }
+    }
+    owner
+        .use_quest_tool(
+            actor,
+            command,
+            intent,
+            source,
+            target.map(composed_test_owner::ItemKey::Instance),
+        )
+        .await
         .map(|outcome| outcome.map(|outcome| outcome.disposition))
         .map_err(|_| "composed quest caller unavailable".into())
 }

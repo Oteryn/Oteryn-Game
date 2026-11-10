@@ -99,12 +99,24 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         input: SoulWarSourceAction,
         catalogue: Arc<QuestStateCatalogue>,
-        _context: Option<(
+        context: Option<(
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::quest_world_callback::QuestWorldContext,
         )>,
     ) -> Result<QuestTransitionOutcome> {
         let request = input.request(&fence)?;
+        let context = match (&input, context) {
+            (SoulWarSourceAction::Use(_), None) => None,
+            (SoulWarSourceAction::Step(step), Some((permit, context))) => {
+                let context: super::super::quest_world_callback::QuestWorldToolContext =
+                    context.into();
+                if !step.matches_context(&context) {
+                    return Err(CharacterProgressionError::InvalidInput);
+                }
+                Some((permit, context, None))
+            }
+            _ => return Err(CharacterProgressionError::InvalidInput),
+        };
 
         self.commit_quest_inner::<_, 0>(
             authority,
@@ -112,7 +124,7 @@ impl DurabilityRoot {
             fence,
             request,
             catalogue,
-            None,
+            context,
             None,
             None,
             None,

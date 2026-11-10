@@ -49,6 +49,11 @@ trait SoulWarStepItemRead {
     fn current(&self, runtime: &ChannelRuntimeV1) -> bool;
     fn items(&self, position: MovementLocalPosition) -> Vec<SourceStepGroundItem>;
 }
+#[derive(Debug)]
+struct SpiteClockObservation {
+    second: i64,
+    at: std::time::Instant,
+}
 #[derive(Debug, Clone)]
 pub struct SoulWarSourceStep {
     kind: SourceStepKind,
@@ -60,6 +65,7 @@ pub struct SoulWarSourceStep {
     target: SpellGroundTarget,
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
+    assignment_revision: u64,
     activation: u64,
     server: [u8; 32],
     client: [u8; 32],
@@ -67,6 +73,8 @@ pub struct SoulWarSourceStep {
     frame: [u8; 32],
     cause: SourceStepOccurrence,
     cause_binding: [u8; 32],
+    cooldown_remaining: std::sync::Arc<std::sync::atomic::AtomicU64>,
+    clock_observation: std::sync::Arc<std::sync::Mutex<Option<SpiteClockObservation>>>,
 }
 impl SoulWarSourceStep {
     #[allow(
@@ -176,6 +184,7 @@ impl SoulWarSourceStep {
             target,
             scope: runtime.binding().runtime_scope(),
             generation: runtime.binding().scope_generation(),
+            assignment_revision: runtime.binding().source_revision(),
             activation: pin.activation_sequence(),
             server: pin.server_artifact_digest(),
             client: pin.client_artifact_digest(),
@@ -183,6 +192,8 @@ impl SoulWarSourceStep {
             map: runtime.map_revision_digest(),
             cause,
             cause_binding,
+            cooldown_remaining: Default::default(),
+            clock_observation: Default::default(),
         })
     }
     pub(super) fn request(
@@ -280,6 +291,98 @@ impl SoulWarSourceStep {
     }
     pub fn map_revision_digest(&self) -> [u8; 32] {
         self.map
+    }
+    pub fn cooldown_remaining(&self) -> u64 {
+        self.cooldown_remaining
+            .load(std::sync::atomic::Ordering::Acquire)
+    }
+    pub(in crate::durability) fn observe_spite_clock(&self, previous: i64, now: i64) {
+        if self.kind == SourceStepKind::SpiteFire {
+            let remaining = previous.saturating_add(56).saturating_sub(now).max(0) as u64;
+            self.cooldown_remaining
+                .store(remaining, std::sync::atomic::Ordering::Release);
+            if let Ok(mut observed) = self.clock_observation.lock() {
+                *observed = Some(SpiteClockObservation {
+                    second: now,
+                    at: std::time::Instant::now(),
+                });
+            }
+        }
+    }
+    /// Presentation only: pair the retained writer's actual wall-second result
+    /// with its original monotonic observation. An Unknown COMMIT replay must
+    /// not start a new 56-second timer when its receipt is finally observed.
+    pub fn recovery_remaining_micros(&self, committed_second: i64) -> Option<u64> {
+        let observed = self.clock_observation.lock().ok()?;
+        let observed = observed.as_ref()?;
+        if observed.second != committed_second {
+            return None;
+        }
+        Some(
+            56_000_000_u64.saturating_sub(
+                u64::try_from(observed.at.elapsed().as_micros()).unwrap_or(u64::MAX),
+            ),
+        )
+    }
+    pub fn context(&self) -> crate::durability::quest_world_callback::QuestWorldContext {
+        crate::durability::quest_world_callback::QuestWorldContext {
+            map_revision: self.target.map_revision.clone(),
+            content_revision: self.target.content_revision.clone(),
+            placement_context: self.target.placement_context.clone(),
+            reset_epoch: self.epoch,
+            actor_placement: self.actor.placement_identity(),
+            movement_revision: self.movement.revision(),
+        }
+    }
+    pub(in crate::durability) fn matches_context(
+        &self,
+        context: &crate::durability::quest_world_callback::QuestWorldToolContext,
+    ) -> bool {
+        self.kind == SourceStepKind::SpiteFire && self.context() == **context
+    }
+    pub(in crate::durability) fn audit_source(
+        &self,
+        fence: &CurrentCharacterGameplayFence,
+        node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+        request: &QuestTransitionRequest,
+        quest_clock_seconds: i64,
+    ) -> serde_json::Value {
+        let hex = |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
+        let (scope_kind, scope) = match self.scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => (1, *channel_id.as_bytes()),
+            RuntimeScopeRefV1::Instance { instance_id, .. } => (2, instance_id),
+        };
+        serde_json::json!({
+            "schema": "OTERYN_SPITE_SOURCE_STEP/v1",
+            "source_body": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916",
+            "character": sqlx::types::Uuid::from_bytes(*fence.character_id.as_bytes()).to_string(),
+            "session": sqlx::types::Uuid::from_bytes(*self.session.as_bytes()).to_string(),
+            "connection": fence.connection_generation.get(),
+            "lease": fence.character_lease_generation,
+            "world": sqlx::types::Uuid::from_bytes(*self.scope.world_id().as_bytes()).to_string(),
+            "scope_kind": scope_kind,
+            "scope": sqlx::types::Uuid::from_bytes(scope).to_string(),
+            "scope_generation": self.generation.get(),
+            "assignment_revision": self.assignment_revision,
+            "node": sqlx::types::Uuid::from_bytes(*node.fact().node_id().as_bytes()).to_string(),
+            "node_registration": node.fact().registration_revision(),
+            "activation": self.activation,
+            "server": hex(&self.server), "client": hex(&self.client), "frame": hex(&self.frame),
+            "map": hex(&self.map), "reset_epoch": self.epoch,
+            "map_revision": self.target.map_revision,
+            "content_revision": self.target.content_revision,
+            "placement_context": hex(&self.target.placement_context),
+            "actor": hex(&self.actor.placement_identity()),
+            "actor_generation": self.actor.actor_local_generation(),
+            "movement_revision": self.movement.revision(),
+            "translation_revision": self.movement.last_translation_revision(),
+            "position": [self.movement.position().x, self.movement.position().y, i32::from(self.movement.position().floor)],
+            "spatial": hex(&self.target.spatial_position),
+            "item": sqlx::types::Uuid::from_bytes(self.item.item).to_string(),
+            "cause": sqlx::types::Uuid::from_bytes(*self.cause.as_bytes()).to_string(),
+            "request_binding": hex(&self.binding(fence.character_id, request)),
+            "quest_clock_seconds": quest_clock_seconds,
+        })
     }
 }
 
@@ -508,3 +611,4 @@ mod tests {
 
 #[path = "step/standing_read.rs"]
 mod standing_read;
+pub use standing_read::PreparedSpiteStep;

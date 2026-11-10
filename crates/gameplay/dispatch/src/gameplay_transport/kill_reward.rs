@@ -87,6 +87,15 @@ pub const KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX: usize = 64;
 
 type BossSlotBonuses = Vec<([u8; 16], u16)>;
 
+#[derive(Debug)]
+struct PreparedKillExperience {
+    creature: String,
+    character: [u8; 16],
+    base: i64,
+    event_rate: u32,
+    amount: oteryn_simulation_determinism::ExactI64,
+}
+
 /// One captured kill awaiting its settle.
 #[derive(Debug, Clone)]
 pub struct PendingKillSettlement {
@@ -104,6 +113,8 @@ pub struct PendingKillSettlement {
     source_death_pending: bool,
     /// Scheduled multipliers sampled at the source task BEGIN, before handlers.
     source_drop_rates: Option<oteryn_gameplay_foundation::scheduled_events::EventRates>,
+    /// The copied Quest callback and ordinary drain must replay the same XP input.
+    prepared_experience: Arc<OnceLock<PreparedKillExperience>>,
     source_completion: Option<
         oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathCompletion,
     >,
@@ -230,10 +241,62 @@ impl PendingKillSettlement {
             grizzly: None,
             source_death_pending: false,
             source_drop_rates: None,
+            prepared_experience: Arc::default(),
             source_completion: None,
             no_progression_logged: false,
         }
     }
+}
+
+/// Both source onDeath and the later physical drain use this same captured amount.
+/// An uncertain XP commit must not resample Animus masteries on retry.
+pub(super) async fn prepare_experience(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    entry: &mut PendingKillSettlement,
+    rates: oteryn_gameplay_foundation::scheduled_events::EventRates,
+) -> Result<Arc<CreatureRewardRow>, CharacterProgressionError> {
+    let row = entry
+        .row
+        .as_mut()
+        .ok_or(CharacterProgressionError::InvalidInput)?;
+    let base = row.xp_amount.get();
+    let character = *entry.facts.principal.character.as_bytes();
+    if entry.prepared_experience.get().is_none() {
+        let principal = crate::domain::CharacterId::from_bytes(character)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let masteries = owner
+            .root
+            .read_animus_masteries(owner.character, principal)
+            .await?;
+        let mastered = masteries.iter().any(|key| key == &entry.creature);
+        let animus =
+            animus_mastery_experience(u64::try_from(base).unwrap_or(0), masteries.len(), mastered);
+        // Crystal player.lua:428-429 applies the event rate before the party split.
+        let event =
+            oteryn_gameplay_foundation::scheduled_events::scale_gain(animus, rates.experience);
+        let _ = entry.prepared_experience.set(PreparedKillExperience {
+            creature: entry.creature.clone(),
+            character,
+            base,
+            event_rate: rates.experience,
+            amount: oteryn_simulation_determinism::ExactI64::new(
+                i64::try_from(event).unwrap_or(i64::MAX),
+            ),
+        });
+    }
+    let prepared = entry
+        .prepared_experience
+        .get()
+        .ok_or(CharacterProgressionError::InvalidInput)?;
+    if prepared.creature != entry.creature
+        || prepared.character != character
+        || prepared.base != base
+        || prepared.event_rate != rates.experience
+    {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    Arc::make_mut(row).xp_amount = prepared.amount;
+    Ok(Arc::clone(row))
 }
 
 /// Immutable classification and bounded recipient positions captured with the lethal event.
@@ -513,6 +576,53 @@ impl KillSettlementQueue {
                     .flat_map(|mark| mark.parked.iter().map(|(entry, _)| entry)),
             )
             .any(|entry| entry.target == begin.actor() && entry.facts.death == begin.death_key())
+    }
+
+    /// Borrow the existing death's retained reward input without taking its corpse work.
+    pub(super) fn source_death_experience(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<
+        Option<(
+            PendingKillSettlement,
+            oteryn_gameplay_foundation::scheduled_events::EventRates,
+        )>,
+        (),
+    > {
+        if !begin.current_for(runtime) {
+            return Err(());
+        }
+        let state = self.state();
+        if state
+            .in_flight
+            .iter()
+            .any(|(death, _, actor, _)| *death == begin.death_key() || *actor == begin.actor())
+        {
+            return Err(());
+        }
+        let mut entries = state
+            .queued
+            .iter()
+            .chain(
+                state
+                    .releasing
+                    .iter()
+                    .flat_map(|mark| mark.parked.iter().map(|(entry, _)| entry)),
+            )
+            .filter(|entry| {
+                entry.target == begin.actor() && entry.facts.death == begin.death_key()
+            });
+        let Some(entry) = entries.next() else {
+            return Ok(None);
+        };
+        if entries.next().is_some()
+            || !entry.source_death_pending
+            || entry.creature != begin.definition_key()
+        {
+            return Err(());
+        }
+        Ok(Some((entry.clone(), entry.source_drop_rates.ok_or(())?)))
     }
 
     /// Release the pre-take barrier only after canonical source registration
@@ -1794,6 +1904,7 @@ pub fn record_creature_kill(
                             grizzly: None,
                             source_death_pending: false,
                             source_drop_rates: None,
+                            prepared_experience: Arc::default(),
                             source_completion: None,
                             no_progression_logged: false,
                         },
@@ -2136,6 +2247,7 @@ pub fn record_creature_kill(
         target,
         source_death_pending: false,
         source_drop_rates: None,
+        prepared_experience: Arc::default(),
         source_completion: None,
         no_progression_logged: false,
     };
@@ -3331,7 +3443,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             let _ = entry.talisman.set(snapshot);
         }
         let mut entry = entry.clone();
-        let Some(mut row) = entry.row.take() else {
+        let Some(_) = entry.row.as_ref() else {
             if entry.prey_checkpoint.is_some() {
                 let mut slot = admission
                     .revision_sequencer
@@ -3357,25 +3469,13 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         };
-        let masteries = admission
-            .root
-            .read_animus_masteries(admission.character, self.fence.character_id)
-            .await
-            .unwrap_or_default();
-        let mastered = masteries.iter().any(|key| key == &entry.creature);
-        let base_xp = u64::try_from(row.xp_amount.get()).unwrap_or(0);
-        let animus_xp = animus_mastery_experience(base_xp, masteries.len(), mastered);
-        // W05d: the scheduled event experience rate (Crystal `player.lua:428-429`) applies to the
-        // kill's experience before the party split, so solo and party kills both carry it.
         let event_rates = self.event_rates;
-        let event_xp = oteryn_gameplay_foundation::scheduled_events::scale_gain(
-            animus_xp,
-            event_rates.experience,
-        );
-        Arc::make_mut(&mut row).xp_amount = oteryn_simulation_determinism::ExactI64::new(
-            i64::try_from(event_xp).unwrap_or(i64::MAX),
-        );
-        entry.row = Some(Arc::clone(&row));
+        let Ok(row) = prepare_experience(admission, &mut entry, event_rates).await else {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        };
         let party = if admission
             .progression_binding(self.fence.game_session_id)
             .is_some()

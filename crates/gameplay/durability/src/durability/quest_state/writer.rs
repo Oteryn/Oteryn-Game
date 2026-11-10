@@ -716,6 +716,17 @@ impl DurabilityRoot {
                     t.quest == oteryn_gameplay_quests::quest::rotten_blood::area_icons::QUEST
                 });
         let soul_input = matches!(&source_action, Some(super::QuestSourceAction::SoulWar(_)));
+        let soul_step = match &source_action {
+            Some(super::QuestSourceAction::SoulWar(input)) => match input.as_ref() {
+                super::soul_war_source::SoulWarSourceAction::Step(step) => {
+                    context.as_ref().is_some_and(|(_, context, native)| {
+                        native.is_none() && step.matches_context(context)
+                    })
+                }
+                _ => false,
+            },
+            _ => false,
+        };
         let area_input = matches!(
             &source_action,
             Some(super::QuestSourceAction::RottenArea(_))
@@ -729,11 +740,14 @@ impl DurabilityRoot {
                 &source_action,
                 Some(super::QuestSourceAction::SoulWar(input))
                     if matches!(input.as_ref(), super::soul_war_source::SoulWarSourceAction::Step(_))
-            )
-            || matches!(request.cause, QuestCause::SourceStep(_))
+            ) && !soul_step
+            || matches!(request.cause, QuestCause::SourceStep(_)) != soul_step
             || matches!(request.cause, QuestCause::SourceThink(_)) && !area_input
             || source_action.is_some()
-                && (context.is_some() || payment.is_some() || essence.is_some() || flame.is_some())
+                && ((context.is_some() && !soul_step)
+                    || payment.is_some()
+                    || essence.is_some()
+                    || flame.is_some())
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -801,7 +815,7 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let callback = if context.is_some() && !native_claim {
+        let callback = if context.is_some() && !native_claim && !soul_step {
             Some(
                 world_callbacks
                     .iter()
@@ -921,7 +935,9 @@ impl DurabilityRoot {
         if let Some(source) = &grizzly_party {
             grizzly::bind_party(&mut binding, source)?;
         }
-        if let Some((_, context, _)) = &context {
+        if let Some((_, context, _)) = &context
+            && !soul_step
+        {
             let bytes = serde_json::to_vec(&(context, &callback))
                 .map_err(|_| CharacterProgressionError::InvalidInput)?;
             let digest = Sha256::new()
@@ -986,6 +1002,7 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                         if let Some(super::QuestSourceAction::SoulWar(input))=&source_action
+                            && !soul_step
                             && !super::soul_war_source::consume(&mut tx,fence,input).await? {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
@@ -1467,6 +1484,10 @@ impl DurabilityRoot {
                         let configured = clock.load(std::sync::atomic::Ordering::Acquire);
                         if configured >= 0 { configured } else { now }
                     });
+                    if let Some(super::QuestSourceAction::SoulWar(input))=&source_action
+                        && let super::soul_war_source::SoulWarSourceAction::Step(step)=input.as_ref() {
+                        step.observe_spite_clock(stored.get(oteryn_gameplay_quests::quest::soul_war::source_items::SPITE_FIRE).copied().unwrap_or(0),now);
+                    }
                     // M47: historical receipts returned above. Draw only in this fenced
                     // transaction; the resulting complete snapshot is persisted in its
                     // existing Quest receipt, atomically with all four source tracks.
@@ -1570,6 +1591,16 @@ impl DurabilityRoot {
                                 && admission.weights.generation_digest() == admission.native.source_digest()
                         });
                         if !valid {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
+                    if let Some(super::QuestSourceAction::SoulWar(input))=&source_action
+                        && let super::soul_war_source::SoulWarSourceAction::Step(step)=input.as_ref() {
+                        let Some((permit, context, _))=&context else {return Err(DurabilityError::InvalidStoredState);};
+                        if !super::super::quest_world_callback::consume_spite_source_step(
+                            &mut tx,permit,fence,&request,step,now,context,(&recovery,&node),
+                        ).await? {
                             tx.rollback().await?;
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }

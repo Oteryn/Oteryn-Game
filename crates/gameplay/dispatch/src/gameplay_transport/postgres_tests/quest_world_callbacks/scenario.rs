@@ -199,6 +199,8 @@ fn scenario_case(
             y: if m44 { trigger.y + 1 } else { trigger.y - 1 },
             ..trigger
         }
+    } else if name == "engitem-native-seal-paint" {
+        super::super::engitem_seal_paint::START
     } else if m01b_explore {
         super::super::m01b_explore::start(name, trigger)
     } else if native_upper {

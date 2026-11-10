@@ -60,6 +60,93 @@ struct Input {
     replacement: Option<String>,
 }
 
+/// The sealed source movement uses the same Ground consumption participant and
+/// Quest receipt. It never creates a client command or a second Item writer.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the sampled quest clock and current scope authority are independent owner inputs"
+)]
+pub(crate) async fn consume_spite_source_step(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
+    fence: CurrentCharacterGameplayFence,
+    request: &super::quest_state::QuestTransitionRequest,
+    step: &super::quest_state::soul_war_source::step::SoulWarSourceStep,
+    quest_clock_seconds: i64,
+    context: &QuestWorldToolContext,
+    scope_guard: (
+        &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+        &super::runtime_scope_assignment::NodeIncarnationProof,
+    ),
+) -> Result<bool, DurabilityError> {
+    use super::spell_item_transaction::{
+        assert_spell_item_scope_with_recovery, read_creature_scope_tile_in_transaction,
+    };
+    if !step.matches_context(context)
+        || step.game_session_id() != fence.game_session_id
+        || step.runtime_scope() != fence.runtime_scope
+        || step.scope_generation() != fence.scope_ownership_generation
+        || !matches!(request.cause, super::quest_state::QuestCause::SourceStep(_))
+        || request.transition_key != "oteryn:quest-transition/soul-war/source-items/spite-fire"
+    {
+        return Ok(false);
+    }
+    let scope = assert_spell_item_scope_with_recovery(
+        tx,
+        permit,
+        scope_guard.0,
+        scope_guard.1,
+        fence.runtime_scope,
+        fence.scope_ownership_generation.get(),
+    )
+    .await
+    .map_err(|_| DurabilityError::Unavailable)?;
+    let epoch:String=sqlx::query_scalar("SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid),0)::text")
+        .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    if epoch != context.reset_epoch.to_string() {
+        return Ok(false);
+    }
+    let current = read_creature_scope_tile_in_transaction(tx, &scope, step.target())
+        .await
+        .map_err(|_| DurabilityError::Unavailable)?;
+    let selected = current
+        .items
+        .iter()
+        .find(|item| item.definition == *step.source_definition());
+    if selected.is_none_or(|item| item.item_instance_id != step.item_instance_id()) {
+        return Ok(false);
+    }
+    let row=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,to_jsonb(g) AS before_ground,i.quantity FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF i")
+        .bind(step.item_instance_id().as_slice()).fetch_optional(&mut **tx).await?;
+    let Some(row) = row else {
+        return Ok(false);
+    };
+    if row.try_get::<i64, _>("quantity")? != 1 {
+        return Ok(false);
+    }
+    let input = Input {
+        item: row.try_get("item")?,
+        before: row.try_get("before_item")?,
+        location: row.try_get("before_ground")?,
+        kind: "ground".into(),
+        quantity: 1,
+        count: 1,
+        replacement: None,
+    };
+    let proof =
+        serde_json::to_vec(&step.audit_source(&fence, scope_guard.1, request, quest_clock_seconds))
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let transaction: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
+        .fetch_one(&mut **tx)
+        .await?;
+    let (cause, ordinal) = request.cause.key();
+    sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind,replacement) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,$8,1,$9,sha256($9),NULL,'ground',NULL)")
+        .bind(&transaction).bind(&input.item).bind(fence.character_id.as_bytes().as_slice()).bind(cause.as_slice()).bind(ordinal.to_string())
+        .bind(&request.transition_key).bind(&input.before).bind(&input.location).bind(proof).execute(&mut **tx).await?;
+    apply_input_in_scope(tx, permit, fence, &input, &transaction).await?;
+    Ok(true)
+}
+
 /// Resolve all carried stacks before touching any of them. Closed nested containers
 /// are traversed by the existing custody owner; filled containers are never destroyed.
 pub(super) async fn consume_reward_inputs(
@@ -222,6 +309,11 @@ pub(super) async fn consume(
     else {
         return Ok(false);
     };
+    // The Quest writer returned any exact immutable receipt before this fresh
+    // participant. Legacy repeated-seal counters cannot bypass distinct targets.
+    if oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&callback.key) {
+        return Ok(false);
+    }
     let crate::foundation::RuntimeScopeRefV1::Channel {
         world_id,
         channel_id,
@@ -769,6 +861,17 @@ async fn apply_input(
         return Err(DurabilityError::InvalidStoredState);
     };
     permit.check_channel(world_id, channel_id)?;
+    apply_input_in_scope(tx, permit, fence, input, transaction).await
+}
+
+async fn apply_input_in_scope(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
+    fence: CurrentCharacterGameplayFence,
+    input: &Input,
+    transaction: &str,
+) -> Result<(), DurabilityError> {
+    permit.check_scope(fence.runtime_scope)?;
     let changed = sqlx::query(
         "UPDATE game_item_instances SET \
          quantity=CASE WHEN $4::text IS NULL THEN quantity-$2 ELSE quantity END, \

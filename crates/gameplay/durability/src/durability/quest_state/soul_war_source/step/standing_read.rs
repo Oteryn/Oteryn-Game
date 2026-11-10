@@ -3,6 +3,214 @@
 use super::*;
 use crate::durability::spell_item_transaction::StandingTileRead;
 use crate::durability::spell_items_abi::DurableTileItem;
+use oteryn_gameplay_entities::{SourceActorReservationProof, source_reservation_seal};
+
+/// The actual committed translation is retained before the first Ground read.
+/// Its actor reservation cannot be reconstructed from a later standing pose.
+#[derive(Debug, Clone)]
+pub struct PreparedSpiteStep {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    character: [u8; 16],
+    lease: u64,
+    movement: MovementPositionSnapshot,
+    reset_epoch: u64,
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+    node: [u8; 16],
+    node_revision: u64,
+    assignment_revision: u64,
+    activation: u64,
+    pins: [[u8; 32]; 4],
+    target: SpellGroundTarget,
+    binding: [u8; 32],
+    stamp: crate::foundation::RuntimeWorkStamp,
+}
+impl PreparedSpiteStep {
+    pub fn from_committed_movement(
+        runtime: &mut ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        room: &crate::content::QualifiedNativeEntryRoom,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        movement: MovementPositionSnapshot,
+        reset_epoch: u64,
+    ) -> Option<Self> {
+        let at = movement.position();
+        if ![
+            (33743, 31628, 14),
+            (33736, 31632, 14),
+            (33750, 31632, 14),
+            (33742, 31637, 14),
+        ]
+        .contains(&(at.x, at.y, at.floor))
+            || runtime.read_actor_position(actor).ok()? != movement
+            || movement.last_translation_revision() == 0
+            || movement.revision() != movement.last_translation_revision()
+            || runtime
+                .player_control_facts(actor, session)
+                .ok()?
+                .control_loss
+                .is_some()
+            || runtime.house_actor_state(actor, session).is_ok()
+            || native.source_digest() != runtime.content_pin().server_artifact_digest()
+            || !native.qualifies_soul_war_callbacks(runtime.content_pin().server_artifact_digest())
+        {
+            return None;
+        }
+        let target = SpellGroundTarget::for_native_tile_read(room, runtime, at).ok()?;
+        let lease = runtime.bound_attacker_lease(actor, session).ok()?;
+        let character = *lease.character_id().as_bytes();
+        let lease = lease.generation();
+        let stamp = runtime.issue_owner_work().ok()?;
+        let owner = runtime.binding();
+        let pin = runtime.content_pin();
+        let pins = [
+            pin.server_artifact_digest(),
+            pin.client_artifact_digest(),
+            pin.frame_binding_digest(),
+            runtime.map_revision_digest(),
+        ];
+        let mut hash = Sha256::new();
+        hash.update(b"oteryn:spite-committed-step-read:v1");
+        hash.update(actor.placement_identity());
+        hash.update(session.as_bytes());
+        hash.update(character);
+        hash.update(lease.to_be_bytes());
+        hash.update(movement.revision().to_be_bytes());
+        hash.update(reset_epoch.to_be_bytes());
+        hash.update(&target.spatial_position);
+        hash.update(owner.world_id().as_bytes());
+        match owner.runtime_scope() {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => {
+                hash.update([1]);
+                hash.update(channel_id.as_bytes());
+            }
+            RuntimeScopeRefV1::Instance { instance_id, .. } => {
+                hash.update([2]);
+                hash.update(instance_id);
+            }
+        }
+        hash.update(actor.actor_local_generation().to_be_bytes());
+        hash.update(movement.last_translation_revision().to_be_bytes());
+        hash.update(owner.scope_generation().get().to_be_bytes());
+        hash.update(pin.activation_sequence().to_be_bytes());
+        for value in pins {
+            hash.update(value);
+        }
+        Some(Self {
+            actor,
+            session,
+            character,
+            lease,
+            movement,
+            reset_epoch,
+            scope: owner.runtime_scope(),
+            generation: owner.scope_generation(),
+            node: *owner.node_id().as_bytes(),
+            node_revision: owner.node_registration_revision(),
+            assignment_revision: owner.source_revision(),
+            activation: pin.activation_sequence(),
+            pins,
+            target,
+            binding: hash.finalize().into(),
+            stamp,
+        })
+    }
+    pub fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
+        let owner = runtime.binding();
+        let pin = runtime.content_pin();
+        runtime
+            .owner_fence()
+            .is_ok_and(|fence| fence.accepts_stamp(self.stamp))
+            && owner.runtime_scope() == self.scope
+            && owner.scope_generation() == self.generation
+            && owner.node_id().as_bytes() == &self.node
+            && owner.node_registration_revision() == self.node_revision
+            && owner.source_revision() == self.assignment_revision
+            && pin.activation_sequence() == self.activation
+            && [
+                pin.server_artifact_digest(),
+                pin.client_artifact_digest(),
+                pin.frame_binding_digest(),
+                runtime.map_revision_digest(),
+            ] == self.pins
+            && runtime.read_actor_position(self.actor) == Ok(self.movement)
+            && runtime
+                .bound_attacker_lease(self.actor, self.session)
+                .is_ok_and(|lease| {
+                    lease.character_id().as_bytes() == &self.character
+                        && lease.generation() == self.lease
+                })
+    }
+    pub fn actor(&self) -> ExactActorRef {
+        self.actor
+    }
+    pub fn session(&self) -> GameSessionId {
+        self.session
+    }
+    pub fn movement(&self) -> MovementPositionSnapshot {
+        self.movement
+    }
+    pub fn target(&self) -> &SpellGroundTarget {
+        &self.target
+    }
+    pub fn content_digest(&self) -> [u8; 32] {
+        self.pins[0]
+    }
+    pub fn matches_fence(
+        &self,
+        fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> bool {
+        fence.character_id.as_bytes() == &self.character
+            && fence.game_session_id == self.session
+            && fence.character_lease_generation == self.lease
+            && fence.runtime_scope == self.scope
+            && fence.scope_ownership_generation == self.generation
+    }
+    pub fn qualify_current_first(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        room: &crate::content::QualifiedNativeEntryRoom,
+        read: &StandingTileRead,
+    ) -> Option<Option<SoulWarSourceStep>> {
+        if !self.current_for(runtime) || !self.matches_fence(read.fence()) {
+            return None;
+        }
+        let selected = SoulWarSourceStep::from_standing_read(
+            runtime,
+            native,
+            room,
+            self.actor,
+            self.session,
+            self.movement,
+            self.reset_epoch,
+            read,
+        )?
+        .into_iter()
+        .find(|input| input.kind() == SourceStepKind::SpiteFire);
+        Some(selected)
+    }
+}
+impl source_reservation_seal::Sealed for PreparedSpiteStep {}
+impl SourceActorReservationProof for PreparedSpiteStep {
+    fn owner(&self) -> (ExactActorRef, GameSessionId) {
+        (self.actor, self.session)
+    }
+    fn event_identity(&self) -> [u8; 16] {
+        *SourceStepOccurrence::from_binding_digest(self.binding).as_bytes()
+    }
+    fn source_binding_digest(&self) -> [u8; 32] {
+        self.binding
+    }
+    fn affected_actors(&self) -> &[ExactActorRef] {
+        &[]
+    }
+    fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.current_for(runtime)
+    }
+}
 
 struct CurrentStandingItems<'a> {
     read: &'a StandingTileRead,

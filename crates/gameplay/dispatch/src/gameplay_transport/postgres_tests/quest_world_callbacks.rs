@@ -20,7 +20,10 @@ fn callback(name: &str) -> TestResult<Callback> {
             .ok_or_else(|| "authored Asura callback".into());
     }
     if name == "engitem-native-seal-paint" {
-        return oteryn_gameplay_quests::quest::ice_seal_paint::callbacks().map_err(|e| -> Box<dyn std::error::Error> {e.into()})?.into_iter().next().ok_or_else(||"seal callback".into());
+        return oteryn_gameplay_quests::quest::ice_islands_seals::callbacks::definition(
+            super::engitem_seal_paint::SEALS[0],
+        )
+        .map_err(Into::into);
     }
     if name == "engitem-targuna-selected-tool" {
         return oteryn_gameplay_quests::quest::targuna_ram::callback().map_err(Into::into);
@@ -244,6 +247,20 @@ pub(super) fn world(
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
+    let distinct_seals = matches!(
+        callback.native_rule,
+        Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { seal: 122 })
+    );
+    if callback.key == oteryn_gameplay_quests::quest::targuna_ram::KEY {
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i4515".into();
+    } else if distinct_seals {
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i6685".into();
+        data.manifest.palette[0]
+            .terrain
+            .as_mut()
+            .ok_or("seal ground terrain")?
+            .ground_speed = Some(100);
+    }
     let mut cells = BTreeMap::new();
     for x in trigger.x - 2..=trigger.x + 8 {
         for y in trigger.y - 1..=trigger.y + 1 {
@@ -343,7 +360,11 @@ pub(super) fn world(
             }
         }
     }
-    let appearance = callback.selector.appearance.unwrap_or(100);
+    let appearance = callback
+        .selector
+        .appearance
+        .or_else(|| distinct_seals.then_some(7178))
+        .unwrap_or(100);
     data.manifest.palette.push(bundle::PaletteEntry {
         key: format!("oteryn:terrain.tibia.i{appearance}"),
         family: bundle::Family::Terrain,
@@ -376,6 +397,87 @@ pub(super) fn world(
         let middle=u32::try_from(data.manifest.palette.len())?;
         data.manifest.palette.push(bundle::PaletteEntry {key:"oteryn:terrain.tibia.i4734".into(),family:bundle::Family::Terrain,id:middle,terrain:Some(bundle::Terrain {kind:bundle::TerrainKind::Common,walkable:None,ground_speed:None,blocks_projectile:None})});
         cells.entry((trigger.floor,trigger.x,trigger.y)).or_default().push(sector::Item {palette:middle,depth:0,attrs:Default::default()});
+    }
+    if distinct_seals {
+        let start = super::engitem_seal_paint::START;
+        for border in [4726, 4733] {
+            let palette = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{border}"),
+                family: bundle::Family::Terrain,
+                id: palette,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Border,
+                    walkable: Some(true),
+                    ground_speed: None,
+                    blocks_projectile: None,
+                }),
+            });
+            cells
+                .entry((start.floor, start.x, start.y))
+                .or_default()
+                .push(sector::Item {
+                    palette,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
+        }
+        // The three adjacent B3 roots retain their individual border and ordinal.
+        for (seal, border) in [(120, 4734), (121, 4736), (122, 4737)] {
+            let target = oteryn_gameplay_quests::quest::ice_islands_seals::targets::target(seal)
+                .ok_or("native seal")?;
+            assert_eq!(target.ordinal, 2);
+            let (x, y, floor) = target.position;
+            let middle = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{border}"),
+                family: bundle::Family::Terrain,
+                id: middle,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Border,
+                    walkable: Some(true),
+                    ground_speed: None,
+                    blocks_projectile: None,
+                }),
+            });
+            let items = cells.entry((floor, x, y)).or_default();
+            items.push(sector::Item {
+                palette: middle,
+                depth: 0,
+                attrs: Default::default(),
+            });
+            if (floor, x, y) != (trigger.floor, trigger.x, trigger.y) {
+                items.push(sector::Item {
+                    palette: 1,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
+            }
+        }
+    }
+    if callback.key == oteryn_gameplay_quests::quest::targuna_ram::KEY {
+        // B3 (31926,31896,7): ground 4515, border 5485, Ram 53439.
+        // Keep the source selector's ordinal 2 without a legacy fallback.
+        let middle = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: "oteryn:terrain.tibia.i5485".into(),
+            family: bundle::Family::Terrain,
+            id: middle,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Border,
+                walkable: Some(true),
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+        cells
+            .entry((trigger.floor, trigger.x, trigger.y))
+            .or_default()
+            .push(sector::Item {
+                palette: middle,
+                depth: 0,
+                attrs: Default::default(),
+            });
     }
     cells
         .entry((trigger.floor, trigger.x, trigger.y))
@@ -750,10 +852,19 @@ pub(super) fn world(
         &crate::map::boot::BootPins {
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
-            start: crate::map::overlay::TilePos {
-                x: trigger.x - 1,
-                y: trigger.y,
-                floor: trigger.floor,
+            start: if distinct_seals {
+                let start = super::engitem_seal_paint::START;
+                crate::map::overlay::TilePos {
+                    x: start.x,
+                    y: start.y,
+                    floor: start.floor,
+                }
+            } else {
+                crate::map::overlay::TilePos {
+                    x: trigger.x - 1,
+                    y: trigger.y,
+                    floor: trigger.floor,
+                }
             },
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,

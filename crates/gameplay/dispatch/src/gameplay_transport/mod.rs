@@ -222,6 +222,7 @@ mod spell_parameter_cast;
 pub mod spell_premium_coordinator;
 mod spell_presentation_publisher;
 mod spite_global;
+mod spite_step;
 mod stash;
 mod tcp_tls;
 #[cfg(test)]

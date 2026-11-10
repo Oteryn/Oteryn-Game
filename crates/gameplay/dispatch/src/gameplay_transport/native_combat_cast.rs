@@ -329,6 +329,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 || !self.resolve_player_trades(&permit).await
                 || !self.resolve_primal_pod_steps(&permit).await
                 || !self.resolve_cloak_blood_steps(&permit).await
+                || !self.resolve_spite_steps(&permit).await
             {
                 return None;
             }
