@@ -88,93 +88,6 @@ fn flip_floor(cell: &mut [u8]) -> Option<()> {
     Some(())
 }
 
-#[cfg(test)]
-mod normalization_tests {
-    use super::*;
-    use crate::durability::item_loop_move::LoopGroundItem;
-    use crate::durability::item_mint::{GroundItemInstance, GroundPlacement};
-    use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
-
-    #[test]
-    fn elemental_move_preserves_projected_source_custody_in_both_frames()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let id = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
-        let world = WorldId::decode(&id(1))?;
-        let scope = RuntimeScopeRefV1::channel(world, ChannelId::decode(&id(2))?);
-        let index = ItemDefinitionIndex::decode(br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i3031","definition-r1"],["oteryn:item.tibia.i8139","definition-r1"]]}"#)?;
-        let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
-            ("oteryn:item.tibia.i8139", 1),
-            ("oteryn:item.tibia.i3031", 0),
-        );
-        let base = Arc::new(crate::map::load(&bytes, &pins)?);
-        let pin = ([7; 32], [8; 32], 1);
-        let map = map_revision(&base);
-        let native_map = sha256_revision(Sha256::digest(map.as_bytes()).into());
-        let definition = TypedDefinitionRef {
-            family: "Item".into(),
-            production_key: "oteryn:item.tibia.i8139".into(),
-            revision_ref: "definition-r1".into(),
-        };
-        // A new corpse retains runtime coordinates. A prior ordinary drop may
-        // instead have persisted map coordinates; both are exact custody facts.
-        for (source_map, source_floor) in [(&native_map, 7), (&map, -7)] {
-            let source_cell = ground_cell(1, 0, source_floor);
-            let ground = LoopGroundOverlay::build_with_native(
-                Arc::clone(&base),
-                scope,
-                &index,
-                pin,
-                vec![LoopGroundItem {
-                    native_corpse: true,
-                    source_native_ground: false,
-                    source_plain_corpse: false,
-                    field_collision: None,
-                    stack_ordinal: 1,
-                    item: GroundItemInstance {
-                        item_instance_id: id(3),
-                        world_id: world,
-                        runtime_scope: scope,
-                        definition: definition.clone(),
-                        quantity: 1,
-                        runtime_scope_ownership_generation: 1,
-                        ground: GroundPlacement {
-                            spatial_position: source_cell.clone(),
-                            corpse_ref: vec![1],
-                            map_revision: source_map.clone(),
-                            content_revision: sha256_revision(pin.0),
-                            native_room_placement_context: pin.1.to_vec(),
-                        },
-                        minted_transaction_id: id(4),
-                    },
-                }],
-                None,
-            );
-            let mut request = LoopMoveRequest {
-                item: id(3),
-                count: None,
-                pickup_cell: ground.pickup_cell(&id(3)),
-                destination: LoopDestination::Ground(LoopGround {
-                    spatial_position: ground_cell(0, 0, -7),
-                    map_revision: map.clone(),
-                    content_revision: sha256_revision(pin.0),
-                    placement_context: pin.1.to_vec(),
-                }),
-            };
-            assert_eq!(
-                normalize(&mut request, &ground, &index),
-                Some(definition.clone())
-            );
-            assert_eq!(request.pickup_cell, Some(source_cell));
-            let LoopDestination::Ground(destination) = request.destination else {
-                return Err("elemental destination changed custody".into());
-            };
-            assert_eq!(destination.spatial_position, ground_cell(0, 0, 7));
-            assert_eq!(destination.map_revision, native_map);
-        }
-        Ok(())
-    }
-}
-
 fn map_item(
     map: &BundleMap,
     index: &ItemDefinitionIndex,
@@ -725,5 +638,92 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => {} // Cancellation and unavailable truth keep the lane fenced.
         }
+    }
+}
+
+#[cfg(test)]
+mod normalization_tests {
+    use super::*;
+    use crate::durability::item_loop_move::LoopGroundItem;
+    use crate::durability::item_mint::{GroundItemInstance, GroundPlacement};
+    use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
+
+    #[test]
+    fn elemental_move_preserves_projected_source_custody_in_both_frames()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let id = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
+        let world = WorldId::decode(&id(1))?;
+        let scope = RuntimeScopeRefV1::channel(world, ChannelId::decode(&id(2))?);
+        let index = ItemDefinitionIndex::decode(br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i3031","definition-r1"],["oteryn:item.tibia.i8139","definition-r1"]]}"#)?;
+        let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
+            ("oteryn:item.tibia.i8139", 1),
+            ("oteryn:item.tibia.i3031", 0),
+        );
+        let base = Arc::new(crate::map::load(&bytes, &pins)?);
+        let pin = ([7; 32], [8; 32], 1);
+        let map = map_revision(&base);
+        let native_map = sha256_revision(Sha256::digest(map.as_bytes()).into());
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i8139".into(),
+            revision_ref: "definition-r1".into(),
+        };
+        // A new corpse retains runtime coordinates. A prior ordinary drop may
+        // instead have persisted map coordinates; both are exact custody facts.
+        for (source_map, source_floor) in [(&native_map, 7), (&map, -7)] {
+            let source_cell = ground_cell(1, 0, source_floor);
+            let ground = LoopGroundOverlay::build_with_native(
+                Arc::clone(&base),
+                scope,
+                &index,
+                pin,
+                vec![LoopGroundItem {
+                    native_corpse: true,
+                    source_native_ground: false,
+                    source_plain_corpse: false,
+                    field_collision: None,
+                    stack_ordinal: 1,
+                    item: GroundItemInstance {
+                        item_instance_id: id(3),
+                        world_id: world,
+                        runtime_scope: scope,
+                        definition: definition.clone(),
+                        quantity: 1,
+                        runtime_scope_ownership_generation: 1,
+                        ground: GroundPlacement {
+                            spatial_position: source_cell.clone(),
+                            corpse_ref: vec![1],
+                            map_revision: source_map.clone(),
+                            content_revision: sha256_revision(pin.0),
+                            native_room_placement_context: pin.1.to_vec(),
+                        },
+                        minted_transaction_id: id(4),
+                    },
+                }],
+                None,
+            );
+            let mut request = LoopMoveRequest {
+                item: id(3),
+                count: None,
+                pickup_cell: ground.pickup_cell(&id(3)),
+                destination: LoopDestination::Ground(LoopGround {
+                    spatial_position: ground_cell(0, 0, -7),
+                    map_revision: map.clone(),
+                    content_revision: sha256_revision(pin.0),
+                    placement_context: pin.1.to_vec(),
+                }),
+            };
+            assert_eq!(
+                normalize(&mut request, &ground, &index),
+                Some(definition.clone())
+            );
+            assert_eq!(request.pickup_cell, Some(source_cell));
+            let LoopDestination::Ground(destination) = request.destination else {
+                return Err("elemental destination changed custody".into());
+            };
+            assert_eq!(destination.spatial_position, ground_cell(0, 0, 7));
+            assert_eq!(destination.map_revision, native_map);
+        }
+        Ok(())
     }
 }
