@@ -83,16 +83,6 @@ impl TaintOne {
         Some(id)
     }
 }
-pub(super) async fn drive(
-    runtime: &mut ChannelRuntimeV1,
-    states: &mut ChannelSpellStates,
-    room: &QualifiedNativeEntryRoom,
-    native: &NativeGameplayState,
-    map: &mut CurrentMonsterMap<'_, '_>,
-    now: u64,
-) -> Result<(), ()> {
-    drive_due_through(runtime, states, room, native, map, now, now).await
-}
 #[allow(clippy::too_many_arguments)]
 pub(in crate::gameplay_transport) async fn drive_due_through(
     runtime: &mut ChannelRuntimeV1,

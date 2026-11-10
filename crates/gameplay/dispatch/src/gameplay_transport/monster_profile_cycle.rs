@@ -98,7 +98,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         candidates: &[crate::ai_think::targeting::TargetCandidate],
         now: u64,
         native_health_names: &super::source_names::NativeHealthNamesData,
-    ) -> Result<(Option<u64>, Vec<crate::foundation::ExactActorRef>), ()> {
+    ) -> Result<(Option<u64>, Vec<crate::foundation::ExactActorRef>, bool), ()> {
         use crate::durability::spell_item_transaction::{
             assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
         };
@@ -128,6 +128,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?;
         let resume_profile =
             self.source_profile_pass_can_resume(runtime, states, native, execution_now)?;
+        let has_due_source = super::source_death::next_source_work(runtime, states, native)?
+            .is_some_and(|(_, due)| due <= execution_now);
         if native_pending.is_none()
             && self.source_death_can_begin_without_timer_read(runtime, states, execution_now)?
         {
@@ -139,7 +141,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 native,
                 execution_now,
             )? {
-                Ok((Some(execution_now), Vec::new()))
+                Ok((Some(execution_now), Vec::new(), false))
             } else {
                 // The outer native loop drops its guards before executing the
                 // exact retained copied action, including all physical SQL.
@@ -183,8 +185,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Deferred source tasks precede fresh movement/thinks. Read the
                 // same current party basis only when their retained older casts
                 // can need it, then release this read transaction after one task.
-                let source_parties = if runtime.has_pending_source_creature_deaths()
-                    || native_pending.is_some() {
+                let source_parties = if has_due_source || runtime.has_pending_source_creature_deaths()
+                    || native_pending.is_some() || states.spite_steps.creatures.is_pending() {
                     let required = native.creature_profiles().records.iter().any(|record| {
                         matches!(&record.profile.data, crate::content::ProjectV2AuthoringProfileData::Creature(creature)
                             if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()
@@ -208,8 +210,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let objects = owner.door.lock().await;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
-                if !resume_profile && (runtime.has_pending_source_creature_deaths()
-                    || native_pending.is_some()) {
+                map.bind_source_ground_steps(Arc::clone(&states.spite_steps.creatures), owner.reset_epoch)
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                // An older real timer also precedes the first movement of a
+                // fresh turn. No invented Think reservation is needed to drain it.
+                if !resume_profile && (has_due_source || runtime.has_pending_source_creature_deaths()
+                    || native_pending.is_some() || states.spite_steps.creatures.is_pending()) {
                     let complete = owner.drive_one_source_creature_death(runtime, states, attack,
                         room, native, &mut map, &source_parties, execution_now, native_health_names).await
                         .map_err(|()|crate::durability::DurabilityError::Unavailable)?;
@@ -221,6 +227,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // Immediate continuation names actual remaining source/AI
                     // work; it does not replace a source timer deadline.
                     return Ok((Some(now), Vec::new(), Vec::new(), false));
+                }
+                if states.spite_steps.creatures.is_pending() {
+                    return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 // A raw STEP must not hide an older selected timer. Check it
                 // only after the due-only branch, immediately before Think.
@@ -248,18 +257,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if native_pending.is_none() && primal_pending.is_none() {
                 // Carried creature requests precede player chase and fresh thinks.
                 table
-                    .drive_current_movement(
+                    .drive_current_movement_through(
                         runtime,
                         room.movement_cells(),
                         doors,
                         *native,
                         &root,
                         now,
+                        execution_now,
                         &mut attack.path_budget,
                         player_waiting,
                         &mut map,
                     )
                     .await;
+                if states.spite_steps.creatures.is_pending() {
+                    return Err(crate::durability::DurabilityError::Unavailable);
+                }
                 attack.drain_chase_searches(
                     runtime,
                     room,
@@ -272,18 +285,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 if player_waiting && !player_waiting_now {
                     table
-                        .drive_current_movement(
+                        .drive_current_movement_through(
                             runtime,
                             room.movement_cells(),
                             doors,
                             *native,
                             &root,
                             now,
+                            execution_now,
                             &mut attack.path_budget,
                             false,
                             &mut map,
                         )
                         .await;
+                    if states.spite_steps.creatures.is_pending() {
+                        return Err(crate::durability::DurabilityError::Unavailable);
+                    }
                 }
                 }
                 let player_waiting_now = attack.players_waiting(now);
@@ -304,6 +321,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .map_err(|_|crate::durability::DurabilityError::Unavailable)?
                     }
                 };
+                map.link_source_ground_steps_to_pass(&pending)
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 let batch = pending.batch();
                 if !pending.source_known() {
                 if let Some(claim) = super::rotten_blood_callbacks::prepare_bak_first_think(
@@ -335,7 +354,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     drop(tx);
                     return Ok((Some(0),Vec::new(),Vec::new(), false));
                 }
-                super::soul_war_callbacks::refresh_taints(owner.root,runtime,states,room,native,&mut map,now,published_soul_war_world.as_ref())
+                super::soul_war_callbacks::refresh_taints(owner.root,runtime,states,room,native,&mut map,execution_now,published_soul_war_world.as_ref())
                     .await.map_err(|()|crate::durability::DurabilityError::Unavailable)?;
                 super::soul_war_callbacks::drive(
                     runtime, states, attack, room, native, &mut map, batch.occurrences(), now, execution_now, &owner.states.server_messages,
@@ -481,18 +500,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let next_step = match pending.movement() {
                     Some(due) => due,
                     None => { let due = table
-                    .drive_current_movement(
+                    .drive_current_movement_through(
                         runtime,
                         room.movement_cells(),
                         doors,
                         *native,
                         &root,
                         now,
+                        execution_now,
                         reader.budget,
                         player_waiting_now,
                         &mut reader.map,
                     )
                     .await;
+                    if states.spite_steps.creatures.is_pending() {
+                        return Err(crate::durability::DurabilityError::Unavailable);
+                    }
                     pending.finish_movement(due);
                     due }
                 };
@@ -527,6 +550,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
+                map.bind_source_ground_steps(Arc::clone(&states.spite_steps.creatures), owner.reset_epoch)
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                map.link_source_ground_steps_to_pass(&pending)
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                // Current combat facts are scoped to this physical execution,
+                // including a retry after the source callback was already ACKed.
+                let published_soul_war_world = owner.active_generation
+                    .and_then(|active| active.qualify_published_world_context(room, runtime.content_pin()));
+                super::soul_war_callbacks::refresh_taints(owner.root, runtime, states, room, native,
+                    &mut map, execution_now, published_soul_war_world.as_ref()).await
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 // Preserve the native scheduler's proposal order across ordinary
                 // attacks and source callbacks. Delayed work also runs on idle turns.
                 let callback_result: Result<(), ()> = async {
@@ -563,7 +597,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // A due-only turn can finish while an older cancelled pass already owns
         // its Item suffix. Do not acknowledge that suffix with empty results.
         if !ran_profile {
-            return Ok((next_due, native_actors));
+            return Ok((next_due, native_actors, false));
         }
         if states.rotten_blood_callbacks.critical_scope_pending() {
             return Err(());
@@ -573,7 +607,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .pending()
             .filter(|pending| pending.items_ready())
         else {
-            return Ok((next_due, native_actors));
+            return Ok((next_due, native_actors, false));
         };
         // End the read transaction and semantic pass before the existing durable Item
         // owner opens its own fenced write transaction for the same source occurrence.
@@ -587,6 +621,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.primal_callbacks.complete_normal(pending)?;
         }
         states.native_profile_pass.complete(&pending)?;
-        Ok((next_due, native_actors))
+        Ok((next_due, native_actors, true))
     }
 }

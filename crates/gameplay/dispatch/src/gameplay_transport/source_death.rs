@@ -8,6 +8,7 @@ use super::soul_war_malice;
 use super::*;
 use crate::movement::monster_map::CurrentMonsterMap;
 
+mod creature_step;
 mod heart;
 mod rotten;
 mod soul_war;
@@ -23,6 +24,7 @@ pub(super) enum SourceWorkFamily {
     Greed,
     Physical,
     RottenBlood,
+    CreatureStep,
     Detached,
     Profile,
 }
@@ -73,6 +75,14 @@ pub(super) fn next_source_work(
                 .rotten_blood_callbacks
                 .next_source_due_time(runtime)?,
         ),
+        (
+            SourceWorkFamily::CreatureStep,
+            states
+                .spite_steps
+                .creatures
+                .next_due_us(runtime)
+                .map_err(|_| ())?,
+        ),
         (SourceWorkFamily::Detached, detached),
         (
             SourceWorkFamily::Profile,
@@ -82,6 +92,30 @@ pub(super) fn next_source_work(
     .into_iter()
     .filter_map(|(family, due)| due.map(|due| (family, due)))
     .min_by_key(|(_, due)| *due))
+}
+
+/// Original boundaries come from the existing death, native-pass and physical
+/// movement owners. No scheduler retry wake supplies a new causal deadline.
+pub(super) fn source_work_cutoff(
+    runtime: &ChannelRuntimeV1,
+    states: &actor_spell::ChannelSpellStates,
+) -> Result<Option<u64>, ()> {
+    let death = runtime
+        .next_source_creature_death()
+        .map_err(|_| ())?
+        .map(|notice| notice.enqueued_at_us().ok_or(()))
+        .transpose()?;
+    Ok(death
+        .into_iter()
+        .chain(states.native_profile_pass.next_due(runtime)?)
+        .chain(
+            states
+                .spite_steps
+                .creatures
+                .next_due_us(runtime)
+                .map_err(|_| ())?,
+        )
+        .min())
 }
 
 /// One retained action payload for the canonical head's current copied event.
@@ -178,20 +212,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.drain_detached_megalomania_timer(permit, now).await? {
             return Ok(true);
         }
-        let has_retained_boundary = {
-            let runtime = self.runtime.lock().await;
-            let states = self.states.spell_states.try_lock().map_err(|_| ())?;
-            runtime.has_pending_source_creature_deaths() || states.native_profile_pass.has_pending()
-        };
-        if !has_retained_boundary {
-            return Ok(false);
-        }
         let room = self.effective_rooms().gate_monster_ai().ok_or(())?;
         let native = self
             .active_generation
             .and_then(|active| active.native_gameplay())
             .ok_or(())?;
-        let (notice, profile, timer, map_plan, names_plan, scope, generation) = {
+        let (notice, profile, step, timer, map_plan, names_plan, scope, generation) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.try_lock().map_err(|_| ())?;
             let notice = runtime.next_source_creature_death().map_err(|_| ())?;
@@ -200,13 +226,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            let cutoff = match notice.as_ref() {
-                Some(notice) => notice.enqueued_at_us().ok_or(())?,
-                None => match states.native_profile_pass.next_due(&runtime)? {
-                    Some(due) => due,
-                    None => return Ok(false),
-                },
+            let step = if notice.is_none() && profile.is_none() {
+                states.spite_steps.creatures.front().map_err(|_| ())?
+            } else {
+                None
             };
+            let cutoff = source_work_cutoff(&runtime, &states)?.unwrap_or(now);
             let Some(timer) = soul_war_malice::prepare_due_timer(&states, cutoff, now) else {
                 return Ok(false);
             };
@@ -229,6 +254,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .next_splinter_due(&runtime, native)?,
                 )
                 .chain(states.primal_callbacks.next_source_due_time()?)
+                .chain(
+                    states
+                        .spite_steps
+                        .creatures
+                        .next_due_us(&runtime)
+                        .map_err(|_| ())?,
+                )
                 .chain(
                     super::monster_profile_cycle::physical_spell::next_source_due_time(
                         &runtime, &states,
@@ -260,6 +292,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (
                 notice,
                 profile,
+                step,
                 timer,
                 map_plan,
                 names,
@@ -275,6 +308,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(names),
             notice,
             profile,
+            step,
             timer,
             room,
             native,
@@ -285,7 +319,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.root.try_issue_semantic_pass().map_err(|_| ())?
             .run_with_context(&mut context, |holder, deadline, context| {
                 Box::pin(async move {
-                    let (owner, permit, map_plan, names, notice, profile, timer, room, native, scope, generation, now) = context;
+                    let (owner, permit, map_plan, names, notice, profile, step, timer, room, native, scope, generation, now) = context;
                     let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(holder, deadline).await?;
                     let authority = crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
                         &mut tx, permit, owner.root, owner.character, owner.holder, *scope, *generation,
@@ -301,7 +335,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         if runtime.next_source_creature_death()
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?.as_ref() != notice.as_ref()
                             || profile.as_ref().is_some_and(|original| states.native_profile_pass.pending()
-                                .as_ref().is_none_or(|current| !std::sync::Arc::ptr_eq(original,current))) {
+                                .as_ref().is_none_or(|current| !std::sync::Arc::ptr_eq(original,current)))
+                            || step.as_ref().is_some_and(|original| !states.spite_steps.creatures
+                                .retains_head(&runtime, original).unwrap_or(false)) {
                             return Err(crate::durability::DurabilityError::Unavailable);
                         }
                         let view = read.into_current_view(&runtime, room, &objects, native)
@@ -622,18 +658,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<bool, ()> {
         let notice = runtime.next_source_creature_death().map_err(|_| ())?;
-        let cutoff = match notice.as_ref() {
-            Some(notice) => notice.enqueued_at_us().ok_or(())?,
-            None => match states.native_profile_pass.next_due(runtime)? {
-                Some(due) => due,
-                None => return Ok(true),
-            },
-        };
+        let cutoff = source_work_cutoff(runtime, states)?.unwrap_or(now);
         #[cfg(test)]
         eprintln!("[DBG-W11-DEATH] source-head cutoff={cutoff} now={now}");
         let selected = next_source_work(runtime, states, native)?
             .filter(|(_, due)| *due <= cutoff && *due <= now);
         let active = self.active_generation.ok_or(())?;
+        if matches!(
+            selected,
+            Some((
+                SourceWorkFamily::Native
+                    | SourceWorkFamily::TaintOne
+                    | SourceWorkFamily::SoulWarAttack
+                    | SourceWorkFamily::Greed
+                    | SourceWorkFamily::Physical,
+                _
+            ))
+        ) {
+            let published = active.qualify_published_world_context(room, runtime.content_pin());
+            super::soul_war_callbacks::refresh_taints(
+                self.root,
+                runtime,
+                states,
+                room,
+                native,
+                map,
+                now,
+                published.as_ref(),
+            )
+            .await?;
+        }
         match selected {
             Some((SourceWorkFamily::Native, due)) => {
                 let callbacks = states.native_callbacks.clone();
@@ -654,18 +708,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await?;
             }
             Some((SourceWorkFamily::TaintOne, due)) => {
-                let published = active.qualify_published_world_context(room, runtime.content_pin());
-                super::soul_war_callbacks::refresh_taints(
-                    self.root,
-                    runtime,
-                    states,
-                    room,
-                    native,
-                    map,
-                    now,
-                    published.as_ref(),
-                )
-                .await?;
                 super::soul_war_callbacks::drive_taint_one_due_through(
                     runtime, states, room, native, map, due, now,
                 )

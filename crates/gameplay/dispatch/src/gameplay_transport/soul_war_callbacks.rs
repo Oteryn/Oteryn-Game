@@ -451,7 +451,10 @@ pub(super) async fn drive(
     execution_now: u64,
     messages: &super::raid_notices::ServerMessageHub,
 ) -> Result<(), ()> {
-    taint_one::drive(runtime, states, room, native, map, now).await?;
+    if now > execution_now {
+        return Err(());
+    }
+    taint_one::drive_due_through(runtime, states, room, native, map, now, execution_now).await?;
     torment::drive(
         runtime,
         states,
@@ -461,13 +464,23 @@ pub(super) async fn drive(
         occurrences,
         messages,
         now,
+        execution_now,
     )
     .await?;
     if room.pinned_activity_source_room()
         == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::GoshnarsMalice)
     {
-        return super::soul_war_malice::drive(runtime, states, room, native, map, occurrences, now)
-            .await;
+        return super::soul_war_malice::drive(
+            runtime,
+            states,
+            room,
+            native,
+            map,
+            occurrences,
+            now,
+            execution_now,
+        )
+        .await;
     }
     if room.pinned_activity_source_room()
         == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::GoshnarsHatred)
@@ -482,7 +495,7 @@ pub(super) async fn drive(
         return cruelty::drive(runtime, states, native, map, occurrences).await;
     }
     if room.pinned_activity_source_room()==Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::GoshnarsMegalomania) {
-        return megalomania::drive(runtime,states,room,native,map,occurrences,now).await;
+        return megalomania::drive(runtime,states,room,native,map,occurrences,now,execution_now).await;
     }
     greed::drive(
         runtime,

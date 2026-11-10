@@ -134,6 +134,18 @@ impl MaliceRoom {
         cage_exists: bool,
         boss_exists: bool,
     ) -> Vec<MaliceEffect> {
+        self.advance_through(now_ms, now_ms, cage_exists, boss_exists)
+    }
+    /// Select only an original eligible deadline. New addEvent delays begin at
+    /// the actual callback execution, even when the selected work is overdue.
+    pub fn advance_through(
+        &mut self,
+        through_ms: u64,
+        now_ms: u64,
+        cage_exists: bool,
+        boss_exists: bool,
+    ) -> Vec<MaliceEffect> {
+        let eligible = through_ms.min(now_ms);
         // One actual callback per call: the owner applies its effects and
         // re-reads the CURRENT named Cage before executing the next callback.
         let mut effects = Vec::new();
@@ -141,7 +153,7 @@ impl MaliceRoom {
             .cage_timers
             .iter()
             .enumerate()
-            .filter(|(_, timer)| timer.due <= now_ms)
+            .filter(|(_, timer)| timer.due <= eligible)
             .min_by_key(|(index, timer)| (timer.due, *index))
             .map(|(index, timer)| (index, *timer));
         // For equal deadlines a Cage callback (23s/40s delay) was registered
@@ -150,7 +162,7 @@ impl MaliceRoom {
         if let Some((index, timer)) = next
             && self
                 .white_revert
-                .is_none_or(|white| timer.due <= white || white > now_ms)
+                .is_none_or(|white| timer.due <= white || white > eligible)
         {
             self.cage_timers.remove(index);
             match timer.kind {
@@ -178,7 +190,7 @@ impl MaliceRoom {
                 }
                 _ => {}
             }
-        } else if self.white_revert.is_some_and(|due| due <= now_ms) {
+        } else if self.white_revert.is_some_and(|due| due <= eligible) {
             self.white_revert = None;
             effects.push(MaliceEffect::RevertTilesAndDamage);
         }
@@ -312,6 +324,57 @@ mod tests {
             overdue.advance(40_500, true, true),
             vec![MaliceEffect::RemoveCage, MaliceEffect::BuffMalice]
         );
+    }
+    #[test]
+    fn srx3_malice_retained_timer_keeps_original_cutoff_and_current_successor_delays()
+    -> Result<(), MaliceRefusal> {
+        let mut room = MaliceRoom::entered(0);
+        assert!(room.cage_died([9; 32], 24_000)?);
+        let before = room.clone();
+        assert!(
+            room.advance_through(22_999, 100_000, false, true)
+                .is_empty()
+        );
+        assert_eq!(
+            room, before,
+            "actual execution time cannot admit a newer original deadline"
+        );
+        assert_eq!(
+            room.advance_through(23_000, 100_000, false, true),
+            vec![MaliceEffect::SpawnCage]
+        );
+        assert_eq!(room.next_due_ms(), Some(47_000));
+        let before = room.clone();
+        assert!(room.advance_through(23_000, 100_000, true, true).is_empty());
+        assert_eq!(
+            room, before,
+            "the later death callback remains pending beyond this cutoff"
+        );
+        assert!(room.advance_through(47_000, 100_000, true, true).is_empty());
+        assert_eq!(
+            room.next_due_ms(),
+            Some(140_000),
+            "Cage lifetime starts at actual spawn execution"
+        );
+        let before = room.clone();
+        assert!(
+            room.advance_through(200_000, 139_999, true, true)
+                .is_empty()
+        );
+        assert_eq!(
+            room, before,
+            "a future cutoff cannot make the real clock run early"
+        );
+        assert_eq!(
+            room.advance_through(140_000, 200_000, true, true),
+            vec![MaliceEffect::RemoveCage, MaliceEffect::BuffMalice]
+        );
+        assert_eq!(
+            room.next_due_ms(),
+            Some(223_000),
+            "next Cage birth starts at actual removal execution"
+        );
+        Ok(())
     }
     #[test]
     fn srx3_malice_connected_groups_preserve_the_source_twelve_tiles() -> Result<(), String> {

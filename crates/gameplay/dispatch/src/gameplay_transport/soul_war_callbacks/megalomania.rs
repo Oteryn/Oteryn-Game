@@ -72,6 +72,7 @@ impl MegalomaniaCallbacks {
             .min()
     }
 }
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn drive(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
@@ -79,12 +80,13 @@ pub(super) async fn drive(
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
     occurrences: &[ThinkOccurrence],
-    now: u64,
+    through: u64,
+    execution_now: u64,
 ) -> Result<(), ()> {
     if states.soul_war_callbacks.sanity.pending.is_some() {
         return Ok(());
     }
-    if splinter::next_due_us(runtime, native)?.is_some_and(|due| due <= now) {
+    if splinter::next_due_us(runtime, native)?.is_some_and(|due| due <= through) {
         // The detached timer owner publishes this original XML occurrence
         // before the regular Think pass; no first-Think birth clock is invented.
         return Err(());
@@ -117,14 +119,14 @@ pub(super) async fn drive(
         if owner
             .phases
             .next_due_ms()
-            .is_some_and(|due| due <= now / 1000)
+            .is_some_and(|due| due <= through / 1000)
         {
             // The original timer needs its detached all-role name/Map read;
             // keep this actual Think batch reserved until that callback runs.
             return Err(());
         }
-        if owner.revert_ms.is_some_and(|due| due <= now / 1000) {
-            white::apply(runtime, states, room, native, &owner.source, now)?;
+        if owner.revert_ms.is_some_and(|due| due <= through / 1000) {
+            white::apply(runtime, states, room, native, &owner.source, execution_now)?;
             owner.revert_ms = None;
         }
         for &occurrence in occurrences {
@@ -175,7 +177,7 @@ pub(super) async fn drive(
                     });
             }
             if pulse.create {
-                let due = (now / 1000).checked_add(8000).ok_or(())?;
+                let due = (execution_now / 1000).checked_add(8000).ok_or(())?;
                 white::create(
                     runtime,
                     states,

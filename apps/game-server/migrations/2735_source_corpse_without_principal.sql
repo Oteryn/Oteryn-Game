@@ -156,7 +156,15 @@ BEGIN
   'oteryn:content-activation:'||r.death_world_id::text||':'||source_channel::text,0));
  PERFORM 1 FROM game_content_activations c WHERE c.world_id=r.death_world_id AND c.channel_id=source_channel
   AND c.server_artifact_digest=decode(p->>'content','hex') AND c.client_artifact_digest=decode(p->>'client','hex')
-  AND (r.death_scope_kind=2 OR c.frame_binding_digest=decode(p->>'frame','hex'))
+  AND (r.death_scope_kind=2 OR c.frame_binding_digest=decode(p->>'frame','hex') OR EXISTS(
+   -- A World source death retains the actual published bundle frame, while
+   -- activation issuance may retain the distinct native-entry frame. Only
+   -- the independently current reset map can prove this second representation.
+   SELECT 1 FROM game_world_reset_active active JOIN game_world_reset_epochs epoch USING(world_id,reset_epoch)
+   WHERE active.world_id=r.death_world_id AND game_world_reset_map_epoch_current(active.world_id,active.reset_epoch)
+    AND epoch.server_digest=decode(p->>'content','hex') AND epoch.client_digest=decode(p->>'client','hex')
+    AND decode(p->>'map','hex')=sha256(convert_to(epoch.map_revision,'UTF8'))
+    AND game_elemental_placement_frame_matches(r.death_world_id,epoch.map_revision,decode(p->>'frame','hex'),c.frame_binding_digest)))
   AND (r.death_scope_kind=2 OR NOT EXISTS(SELECT 1 FROM game_content_activations later WHERE later.world_id=c.world_id AND later.channel_id=c.channel_id
    AND later.activation_sequence>c.activation_sequence))
   ORDER BY c.activation_sequence DESC LIMIT 1 FOR SHARE OF c;
