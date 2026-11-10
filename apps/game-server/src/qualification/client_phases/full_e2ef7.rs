@@ -1,5 +1,6 @@
 //! E2EF7: complete bounded ranking journey using ordinary admitted characters.
-//! No privileged provisioning: the retained snapshot must come from the served job.
+//! First prove the served job's snapshots, then prepare a cut through the existing fixture
+//! publisher so the ordinary newly admitted character can exercise own rank and retention.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::highscores::{self, wire};
@@ -344,6 +345,77 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+async fn prepare_ranking_cut(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    own_name: &str,
+    progress: &mut RankingProgress,
+) -> TestResult {
+    use crate::durability::highscore_snapshot::{CutLimits, SnapshotCatalogues};
+
+    let world = wire::WorldId::decode(&clients.world)?;
+    // Nothing in this fixture has published yet: all required categories must first
+    // be readable from the real served job, including its correctly echoed World.
+    // Keep this precondition and preparation inside the existing journey deadline.
+    let mut served_achievement_cut = None;
+    for category in (1..=10).chain(std::iter::once(12)) {
+        let mut probe = request(category, 0, 1, 0);
+        probe.details = true;
+        progress.stage("served_job_cut", Some(probe));
+        let page = observed_query(client, probe, progress).await?;
+        if page.world != Some(world) {
+            return Err("ranking served-job snapshot names another World".into());
+        }
+        if category == 10 {
+            served_achievement_cut = Some(page.snapshot_id);
+        }
+    }
+    let served_achievement_cut =
+        served_achievement_cut.ok_or("ranking served-job achievement snapshot absent")?;
+    evidence("E2EF7_SETUP S11 served-job-cut PASS categories=11 source=served-job");
+
+    // Boot may publish before the ordinary admission initializes progression. Do not
+    // alter the 30-minute scheduler or invent a planned reset: this existing test-only
+    // entry uses the same catalogue, role, RR cut, eligibility and registered limits.
+    progress.stage("fixture_cut_publication", None);
+    let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)
+        .map_err(|_| "ranking fixture root unavailable")?;
+    root.await_ready()
+        .await
+        .map_err(|_| "ranking fixture root not ready")?;
+    let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
+        .map_err(|_| "ranking fixture achievement catalogue unavailable")?;
+    let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements))
+        .map_err(|_| "ranking fixture snapshot catalogues unavailable")?;
+    // A failed or uncertain publication is final; never replay this write.
+    let published = root
+        .refresh_highscore_world_within(world, catalogues, CutLimits::REGISTERED)
+        .await
+        .map_err(|_| "ranking fixture cut publication failed")?;
+    let snapshot = published
+        .iter()
+        .find(|snapshot| snapshot.category == 10)
+        .ok_or("ranking fixture achievement cut absent")?;
+    if snapshot.snapshot_id <= served_achievement_cut {
+        return Err("ranking fixture publication did not advance its cut".into());
+    }
+    let mut probe = request(10, 0, 1, snapshot.snapshot_id);
+    probe.details = true;
+    progress.stage("fixture_cut_readback", Some(probe));
+    let page = observed_query(client, probe, progress).await?;
+    if page.world != Some(world)
+        || page.computed_at != snapshot.computed_at_ms
+        || page.own_row.as_ref().is_none_or(|own| own.name != own_name)
+    {
+        return Err("ranking fixture cut lacks the admitted character's own row".into());
+    }
+    evidence(&format!(
+        "E2EF7_SETUP S11 fixture-prepared-cut PASS category=10 snapshot_id={} source=fixture-publisher",
+        snapshot.snapshot_id
+    ));
+    Ok(())
+}
+
 async fn journey(
     row: &mut Row,
     clients: &SeamClients<'_>,
@@ -365,6 +437,7 @@ async fn journey(
         let own_name = own_name
             .as_str()
             .map_err(|e| format!("ranking own name: {e:?}"))?;
+        prepare_ranking_cut(&mut client, clients, own_name, progress).await?;
         let mut observed_own = false;
         // Charm points (11) have no activated source. Its unsupported response
         // is exercised as a refusal; it must never masquerade as an empty list.
