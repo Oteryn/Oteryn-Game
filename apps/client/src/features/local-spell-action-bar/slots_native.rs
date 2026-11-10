@@ -1,5 +1,6 @@
 //! Docked action rows. HWNDs and pointer tracking stay on the shell thread.
 #![allow(unsafe_code)] // Child HWNDs are created and destroyed on this thread.
+use oteryn_client::hud_error::{HudInitError, HudPart};
 use oteryn_client::play::{BarDock, BarGesture, BarLayout, SpellAim};
 use windows_sys::Win32::{
     Foundation::{HWND, POINT, RECT},
@@ -45,7 +46,7 @@ unsafe fn button(parent: HWND) -> HWND {
     }
 }
 impl SpellRow {
-    pub(super) fn new(parent: HWND) -> Option<Self> {
+    pub(super) fn new(parent: HWND) -> Result<Self, HudInitError> {
         let mut row = Self {
             tips: tips::Tips::new(parent, ROWS * ROW_SLOTS),
             buttons: Vec::new(),
@@ -59,18 +60,18 @@ impl SpellRow {
         for _ in 0..ROWS * ROW_SLOTS {
             let handle = unsafe { button(parent) };
             if handle.is_null() {
-                return None;
+                return Err(super::last_error(HudPart::SpellButton));
             }
             row.buttons.push(handle);
         }
         for _ in 0..ROWS * TOOLS {
             let handle = unsafe { button(parent) };
             if handle.is_null() {
-                return None;
+                return Err(super::last_error(HudPart::SpellButton));
             }
             row.tools.push(handle);
         }
-        Some(row)
+        Ok(row)
     }
     pub(super) fn update(
         &mut self,

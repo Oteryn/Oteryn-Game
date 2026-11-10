@@ -3,6 +3,7 @@
     unsafe_code,
     reason = "Child HWND, callback state and GDI objects remain on the shell thread"
 )]
+use oteryn_client::hud_error::{HudInitError, HudPart};
 use oteryn_client::play::ArcLayout;
 use std::ptr::{null, null_mut};
 use windows_sys::Win32::{
@@ -95,7 +96,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
     }
 }
 impl ArcHud {
-    pub(super) fn new(parent: HWND) -> Option<Self> {
+    pub(super) fn new(parent: HWND) -> Result<Self, HudInitError> {
         unsafe {
             let class: Vec<u16> = "STATIC\0".encode_utf16().collect();
             let hwnd = CreateWindowExW(
@@ -113,16 +114,17 @@ impl ArcHud {
                 null(),
             );
             if hwnd.is_null() {
-                return None;
+                return Err(super::last_error(HudPart::ArcWindow));
             }
             let mut data = Box::<PaintData>::default();
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, (&mut *data as *mut PaintData) as isize);
             SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
             if SetLayeredWindowAttributes(hwnd, 0, 255, LWA_COLORKEY | LWA_ALPHA) == 0 {
+                let error = super::last_error(HudPart::ArcLayer);
                 DestroyWindow(hwnd);
-                return None;
+                return Err(error);
             }
-            Some(Self { hwnd, data })
+            Ok(Self { hwnd, data })
         }
     }
     pub(super) fn update(&mut self, layout: Option<ArcLayout>) {

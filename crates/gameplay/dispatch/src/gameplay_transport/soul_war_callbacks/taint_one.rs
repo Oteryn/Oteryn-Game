@@ -123,15 +123,33 @@ pub(super) async fn drive_due_through(
         runtime.binding().runtime_scope(),
         runtime.binding().scope_generation(),
     );
-    let mut owner = std::mem::take(&mut states.soul_war_callbacks.taint_one);
+    // The caller holds the spell-state guard throughout this pass. Copy only
+    // its read facts so the timer owner itself remains in its retained slot
+    // across Map awaits, including cancellation of the surrounding future.
+    let players = states
+        .soul_war_callbacks
+        .taints
+        .current_players(runtime, now)
+        .to_vec();
+    let dead_players = states
+        .soul_war_callbacks
+        .taint_one
+        .actors
+        .iter()
+        .map(|(_, actor, _)| *actor)
+        .chain(players.iter().map(|player| player.actor))
+        .filter(|actor| states.is_dead(*actor))
+        .collect::<Vec<_>>();
+    let owner = &mut states.soul_war_callbacks.taint_one;
     if owner.binding.is_some_and(|b| b != binding) {
-        owner = TaintOne::at_birth(now);
+        *owner = TaintOne::at_birth(now);
     }
     owner.binding = Some(binding);
-    let result = drive_current(
-        &mut owner,
+    drive_current(
+        owner,
         runtime,
-        states,
+        &players,
+        &dead_players,
         room,
         native,
         map,
@@ -139,9 +157,7 @@ pub(super) async fn drive_due_through(
         geometry,
         eligible_through_us,
     )
-    .await;
-    states.soul_war_callbacks.taint_one = owner;
-    result
+    .await
 }
 #[allow(
     clippy::too_many_arguments,
@@ -150,7 +166,8 @@ pub(super) async fn drive_due_through(
 async fn drive_current(
     owner: &mut TaintOne,
     runtime: &mut ChannelRuntimeV1,
-    states: &ChannelSpellStates,
+    players: &[crate::durability::quest_state::soul_war::CurrentSoulWarTaintFacts],
+    dead_players: &[ExactActorRef],
     room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
@@ -158,10 +175,6 @@ async fn drive_current(
     geometry: taints::Geometry,
     eligible_through_us: u64,
 ) -> Result<(), ()> {
-    let players = states
-        .soul_war_callbacks
-        .taints
-        .current_players(runtime, now);
     let periodic_eligible = owner
         .next_check
         .is_some_and(|due| due <= now && due <= eligible_through_us);
@@ -170,7 +183,7 @@ async fn drive_current(
         if !periodic_eligible {
             continue;
         }
-        if states.is_dead(player.actor)
+        if dead_players.contains(&player.actor)
             || player.count == 0
             || runtime
                 .player_control_facts(player.actor, player.session)
@@ -234,7 +247,7 @@ async fn drive_current(
                 let (_, player, session) = actors.iter().find(|(id, _, _)| *id == player)?;
                 let session = (*session)?;
                 runtime.player_control_facts(*player, session).ok()?;
-                if states.is_dead(*player) {
+                if dead_players.contains(player) {
                     return None;
                 }
                 if !runtime.contains_live_creature(*monster) {

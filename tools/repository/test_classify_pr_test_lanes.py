@@ -508,6 +508,126 @@ def test_large_pr_fallback(module):
     print("Large PR fallback PASS: exact Git trees recover complete changed-file evidence")
 
 
+def test_scope_file_count_drift(module):
+    """A lagging count cannot abort or narrow an otherwise exact-head gate."""
+    import urllib.request
+
+    gate = (ROOT / ".github/workflows/merge-gate.yml").read_text(encoding="utf-8")
+    scope = gate.split("  scope:\n", 1)[1].split("  lanes:\n", 1)[0]
+    script = textwrap.dedent(scope.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
+    repository = "Oteryn/Oteryn-Game"
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        git(root, "init", "-q")
+        git(root, "config", "user.email", "ci@example.invalid")
+        git(root, "config", "user.name", "CI")
+        (root / "base.txt").write_text("base\n", encoding="utf-8")
+        git(root, "add", ".")
+        git(root, "commit", "-qm", "base")
+        base = git(root, "rev-parse", "HEAD")
+        records = [
+            {"filename": "docs/note.md", "status": "added"},
+            {"filename": "crates/foundation/src/lib.rs", "status": "added"},
+        ]
+        for record in records:
+            path = root / record["filename"]
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("new input\n", encoding="utf-8")
+        git(root, "add", ".")
+        git(root, "commit", "-qm", "candidate")
+        head = git(root, "rev-parse", "HEAD")
+        git(root, "checkout", "-q", base)
+        live = {"state": "open", "changed_files": 1,
+                "head": {"sha": head, "repo": {"full_name": repository}},
+                "base": {"ref": "main", "sha": base}}
+
+        def run_scope(first, second):
+            responses = iter((first, second))
+            requests = []
+
+            def respond(request, timeout):
+                requests.append(request.full_url)
+                if "/compare/" in request.full_url:
+                    assert request.full_url == (
+                        f"https://api.github.com/repos/{repository}/compare/{base}...{head}?per_page=1"
+                    )
+                    payload = {"files": records[:first["changed_files"]]}
+                else:
+                    assert request.full_url == f"https://api.github.com/repos/{repository}/pulls/42"
+                    payload = next(responses)
+                return io.StringIO(json.dumps(payload))
+
+            output = root / "scope-output"
+            output.write_text("", encoding="utf-8")
+            env = {"REPOSITORY": repository, "EVENT_PR_NUMBER": "42", "EVENT_PR_HEAD_SHA": head,
+                   "GH_TOKEN": "fixture", "GITHUB_OUTPUT": str(output)}
+            stdout, stderr = io.StringIO(), io.StringIO()
+            code = 0
+            with patch.dict(os.environ, env), patch.object(urllib.request, "urlopen", side_effect=respond), \
+                    contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                try:
+                    exec(compile(script, "merge-gate-scope", "exec"), {})
+                except SystemExit as error:
+                    code = error.code
+            wire = dict(line.split("=", 1) for line in output.read_text(encoding="utf-8").splitlines())
+            return code, wire, stdout.getvalue() + stderr.getvalue(), requests
+
+        code, stable, _, requests = run_scope(live, live)
+        assert code == 0 and stable["complete"] == "true", stable
+        assert json.loads(stable["file_records"]) == records[:1], stable
+        assert len(requests) == 3, requests
+
+        for before, after in ((1, 2), (2, 1), (2917, 2918)):
+            code, wire, diagnostic, requests = run_scope(
+                live | {"changed_files": before}, live | {"changed_files": after}
+            )
+            assert code == 0, diagnostic
+            assert wire["target_sha"] == head and wire["base_sha"] == base, wire
+            assert wire["complete"] == "false" and wire["file_records"] == "[]", wire
+            assert f"from {before} to {after}" in diagnostic, diagnostic
+            assert len(requests) == (3 if before <= 300 else 2), requests
+            old_cwd = os.getcwd()
+            os.chdir(root)
+            try:
+                with patch.dict(os.environ, {
+                    "ENUMERATION_COMPLETE": wire["complete"],
+                    "CHANGED_FILE_RECORDS": wire["file_records"],
+                    "CHANGED_FILE_COUNT": wire["file_count"],
+                    "EXPECTED_HEAD": wire["target_sha"],
+                }):
+                    recovered, count, complete = module.pr_file_records()
+            finally:
+                os.chdir(old_cwd)
+            assert complete is True and count == 2, (count, complete)
+            assert {item["filename"] for item in recovered} == {item["filename"] for item in records}
+            assert classify(module, recovered)["rust"] is True, recovered
+
+        changed_identity = (
+            {"state": "closed"},
+            {"head": {"sha": "a" * 40, "repo": {"full_name": repository}}},
+            {"head": {"sha": head, "repo": {"full_name": "other/repository"}}},
+            {"base": {"ref": "stack", "sha": base}},
+        )
+        for change in changed_identity:
+            for first, second in ((live | change, live), (live, live | {"changed_files": 2} | change)):
+                code, wire, diagnostic, _ = run_scope(first, second)
+                assert code == 1 and not wire, (change, diagnostic, wire)
+        for first, second in (
+            (live | {"base": {"ref": "main", "sha": "invalid"}}, live),
+            (live, live | {"changed_files": 2, "base": {"ref": "main", "sha": "b" * 40}}),
+        ):
+            code, wire, diagnostic, _ = run_scope(first, second)
+            assert code == 1 and not wire, (diagnostic, wire)
+        for invalid in (None, -1, "1", 1.0, True):
+            for first, second in (
+                (live | {"changed_files": invalid}, live),
+                (live, live | {"changed_files": invalid}),
+            ):
+                code, wire, diagnostic, _ = run_scope(first, second)
+                assert code == 1 and not wire and "count is invalid" in diagnostic, (diagnostic, wire)
+    print("Scope count drift PASS: exact Git recovery preserves Rust coverage and identity fences")
+
+
 def test_metadata_events():
     """PR edits must qualify normally without cancelling the product run."""
     core_path = ROOT / "tools/repository/validate_repository_policy_core.py"
@@ -839,6 +959,7 @@ def main() -> int:
     test_documentation_fast_path(module)
     test_candidate_modes(module)
     test_large_pr_fallback(module)
+    test_scope_file_count_drift(module)
     test_aggregate()
     test_server_qualification(module)
     test_world_bundle(module)
