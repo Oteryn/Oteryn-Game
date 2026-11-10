@@ -1,13 +1,16 @@
 //! Session-local stamina, saved by the existing actor checkpoint/logout/death path.
 use super::{
-    ComposedFreshAdmission, SecureIdentifiers,
+    AdmissionRetryBudget, ComposedFreshAdmission, SecureIdentifiers,
     actor_spell::{ChannelSpellStates, TrainingSave},
 };
+use crate::durability::DurabilityError;
+use crate::durability::character_authority::CharacterAuthorityError;
 use crate::durability::character_build::BuildOccurrence;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
 use crate::durability::fresh_admission::FreshAdmissionStore;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState};
 use oteryn_gameplay_characters::stamina::HuntingClock;
 
@@ -230,7 +233,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> TrainingSave {
-        if !self.flush_prey(session).await {
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        self.save_resting_stamina_with_budget(actor, session, &budget)
+            .await
+    }
+
+    pub(super) async fn save_resting_stamina_with_budget(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> TrainingSave {
+        if !self.flush_prey_with_budget(session, budget).await {
             return TrainingSave::Unknown;
         }
         {
@@ -240,7 +254,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let Ok(current) = store.current_session(session).await else {
+        let Ok(current) = budget
+            .retry_durability("stamina_session", async || {
+                store.current_session(session).await
+            })
+            .await
+        else {
             return TrainingSave::Unknown;
         };
         let Some(item) = super::item_fence_of(current) else {
@@ -250,9 +269,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return TrainingSave::FencedOut;
         }
         let mut slot = self.revision_sequencer.acquire(item.character_id).await;
-        let Ok(root) = self
-            .root
-            .read_current_character(self.character, item.character_id)
+        let Ok(Ok(root)) = budget
+            .retry_durability("stamina_character", async || {
+                match self
+                    .root
+                    .read_current_character(self.character, item.character_id)
+                    .await
+                {
+                    Err(CharacterAuthorityError::Unavailable(error)) => Err(error),
+                    result => Ok(result),
+                }
+            })
             .await
         else {
             return TrainingSave::Unknown;
@@ -319,17 +346,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ) => return TrainingSave::FencedOut,
             Err(_) => return TrainingSave::Unknown,
         }
-        let Ok(fresh) = store.current_session(session).await else {
-            return TrainingSave::Unknown;
-        };
-        if fresh.session_state() == GameSessionState::Terminal
-            || super::item_fence_of(fresh) != Some(item)
-        {
-            return TrainingSave::FencedOut;
-        }
-        state.durable = after;
-        state.pending_gain = None;
-        TrainingSave::Saved
+        drop(states);
+        drop(runtime);
+        #[cfg(test)]
+        pause_stamina_readback().await;
+        budget
+            .retry_durability("resting_stamina_readback", async || {
+                self.stamina_readback_once(actor, session, item, (occurrence, before, after), true)
+                    .await
+            })
+            .await
+            .unwrap_or(TrainingSave::Unknown)
     }
 
     pub(super) async fn save_hunting_stamina(
@@ -337,7 +364,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> TrainingSave {
-        if !self.flush_prey(session).await {
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        self.save_hunting_stamina_with_budget(actor, session, &budget)
+            .await
+    }
+
+    pub(super) async fn save_hunting_stamina_with_budget(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> TrainingSave {
+        if !self.flush_prey_with_budget(session, budget).await {
             return TrainingSave::Unknown;
         }
         {
@@ -347,7 +385,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let Ok(current) = store.current_session(session).await else {
+        let Ok(current) = budget
+            .retry_durability("stamina_session", async || {
+                store.current_session(session).await
+            })
+            .await
+        else {
             return TrainingSave::Unknown;
         };
         let Some(item) = super::item_fence_of(current) else {
@@ -357,9 +400,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return TrainingSave::FencedOut;
         }
         let mut slot = self.revision_sequencer.acquire(item.character_id).await;
-        let Ok(root) = self
-            .root
-            .read_current_character(self.character, item.character_id)
+        let Ok(Ok(root)) = budget
+            .retry_durability("stamina_character", async || {
+                match self
+                    .root
+                    .read_current_character(self.character, item.character_id)
+                    .await
+                {
+                    Err(CharacterAuthorityError::Unavailable(error)) => Err(error),
+                    result => Ok(result),
+                }
+            })
             .await
         else {
             return TrainingSave::Unknown;
@@ -426,17 +477,81 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ) => return TrainingSave::FencedOut,
             Err(_) => return TrainingSave::Unknown,
         }
-        let Ok(fresh) = store.current_session(session).await else {
-            return TrainingSave::Unknown;
+        drop(states);
+        drop(runtime);
+        #[cfg(test)]
+        pause_stamina_readback().await;
+        budget
+            .retry_durability("hunting_stamina_readback", async || {
+                self.stamina_readback_once(actor, session, item, (occurrence, before, after), false)
+                    .await
+            })
+            .await
+            .unwrap_or(TrainingSave::Unknown)
+    }
+
+    pub(super) async fn stamina_readback_once(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        item: CurrentCharacterItemFence,
+        pending: (BuildOccurrence, u16, u16),
+        gain: bool,
+    ) -> Result<TrainingSave, DurabilityError> {
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if runtime.owner_fence().is_err()
+            || runtime.player_control_facts(actor, session).is_err()
+            || item.runtime_scope != runtime.binding().runtime_scope()
+            || item.scope_ownership_generation != runtime.binding().scope_generation()
+        {
+            return Ok(TrainingSave::FencedOut);
+        }
+        let Some(state) = states
+            .hunting_stamina
+            .iter_mut()
+            .find(|state| state.actor == actor && state.session == session)
+        else {
+            return Ok(TrainingSave::FencedOut);
         };
+        if (if gain {
+            state.pending_gain
+        } else {
+            state.pending_debit
+        }) != Some(pending)
+        {
+            return Ok(TrainingSave::Unknown);
+        }
+        // This attempt never repeats a write. A busy read returns through both
+        // guards before the outer budget waits, then re-proves this exact pending tuple.
+        let fresh = FreshAdmissionStore::from_root(self.root.clone())
+            .current_session(session)
+            .await?;
         if fresh.session_state() == GameSessionState::Terminal
             || super::item_fence_of(fresh) != Some(item)
         {
-            return TrainingSave::FencedOut;
+            return Ok(TrainingSave::FencedOut);
         }
-        state.durable = after;
-        state.pending_debit = None;
-        TrainingSave::Saved
+        state.durable = pending.2;
+        if gain {
+            state.pending_gain = None;
+        } else {
+            state.pending_debit = None;
+        }
+        Ok(TrainingSave::Saved)
+    }
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static STAMINA_READBACK_PAUSE: std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
+#[cfg(test)]
+async fn pause_stamina_readback() {
+    if let Ok(pause) = STAMINA_READBACK_PAUSE.try_with(std::sync::Arc::clone) {
+        pause.0.notify_one();
+        pause.1.notified().await;
     }
 }
 

@@ -2,9 +2,10 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use super::ComposedFreshAdmission;
 use super::actor_spell::TrainingSave;
 use super::weapon_proficiency::WeaponProficiencyDispatch;
+use super::{AdmissionRetryBudget, ComposedFreshAdmission};
+use crate::durability::character_authority::CharacterAuthorityError;
 use crate::durability::character_proficiency::{
     CommittedProficiencyChange, DurableProficiencyState, ProficiencyCause,
     ProficiencyChangeRequest, ProficiencyCommitOutcome, ProficiencyDefinitions,
@@ -152,6 +153,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> TrainingSave {
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        self.save_weapon_proficiency_with_budget(actor, session, force, &budget)
+            .await
+    }
+
+    pub(super) async fn save_weapon_proficiency_with_budget(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        force: bool,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> TrainingSave {
         if force && self.proficiency_catalogue.is_some() {
             let queue = self.states.attack.lock().await.kills().clone();
             for principal in queue.proficiency_principals(session) {
@@ -187,15 +200,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let definitions =
             catalogue.for_content(&binding.context.content) as Arc<dyn ProficiencyDefinitions>;
-        let current = match self.current_quest_fence(session).await {
+        let current = match budget
+            .retry_durability("proficiency_fence", async || {
+                self.current_quest_fence_durable(session).await
+            })
+            .await
+        {
             Ok(Some(fence)) => fence,
             Ok(None) => return TrainingSave::FencedOut,
-            Err(()) => return TrainingSave::Unknown,
+            Err(_) => return TrainingSave::Unknown,
         };
         let mut slot = self.revision_sequencer.acquire(current.character_id).await;
-        let Ok(root) = self
-            .root
-            .read_current_character(self.character, current.character_id)
+        let Ok(Ok(root)) = budget
+            .retry_durability("proficiency_character", async || {
+                match self
+                    .root
+                    .read_current_character(self.character, current.character_id)
+                    .await
+                {
+                    Err(CharacterAuthorityError::Unavailable(error)) => Err(error),
+                    result => Ok(result),
+                }
+            })
             .await
         else {
             return TrainingSave::Unknown;
@@ -204,14 +230,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             expected_character_revision: root.revision,
             ..current
         };
-        let Ok((stored, _)) = self
-            .root
-            .read_character_proficiency_with_definitions(
-                self.character,
-                fence.character_id,
-                None,
-                Arc::clone(&definitions),
-            )
+        let Ok(Ok((stored, _))) = budget
+            .retry_durability("proficiency_snapshot", async || {
+                match self
+                    .root
+                    .read_character_proficiency_with_definitions(
+                        self.character,
+                        fence.character_id,
+                        None,
+                        Arc::clone(&definitions),
+                    )
+                    .await
+                {
+                    Err(CharacterProgressionError::Unavailable(error)) => Err(error),
+                    result => Ok(result),
+                }
+            })
             .await
         else {
             return TrainingSave::Unknown;
@@ -296,10 +330,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(_) => return TrainingSave::Unknown,
             },
         };
-        let fresh = match self.current_quest_fence(session).await {
+        let fresh = match budget
+            .retry_durability("proficiency_readback", async || {
+                self.current_quest_fence_durable(session).await
+            })
+            .await
+        {
             Ok(Some(fence)) => fence,
             Ok(None) => return TrainingSave::FencedOut,
-            Err(()) => return TrainingSave::Unknown,
+            Err(_) => return TrainingSave::Unknown,
         };
         if fresh.character_id != retained.fence.character_id
             || fresh.connection_generation != current.connection_generation
