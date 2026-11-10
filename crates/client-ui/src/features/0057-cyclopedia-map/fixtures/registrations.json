@@ -2,6 +2,21 @@
   {
     "mechanic": "0057-cyclopedia-map",
     "kind": "handlers",
+    "id": "0057-cyclopedia-map-command-6178",
+    "status": "supported",
+    "commands": [
+      6178
+    ],
+    "direction": "client_to_server",
+    "capability": 57,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "This panel has no persistent client settings."
+    }
+  },
+  {
+    "mechanic": "0057-cyclopedia-map",
+    "kind": "handlers",
     "id": "0057-cyclopedia-map-command-72",
     "status": "supported",
     "commands": [

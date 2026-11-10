@@ -213,6 +213,52 @@ fn scenario_category(category: u32) -> Result<(), String> {
 }
 
 #[test]
+fn phosphorus_record_category_uses_real_play_queue_and_displays_victory() -> Result<(), String> {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.highscores_initialize(true);
+    link.highscores_request(Action::Filter {
+        category: 16,
+        vocation: 0,
+    });
+    let Ok(crate::combat_input::PlayCommand::ServerMechanic(command)) = commands.try_recv() else {
+        return Err("missing highscore play command".into());
+    };
+    let Some(index) = highscores::category_selection(16) else {
+        return Err("missing Phosphorus combo category".into());
+    };
+    assert_eq!(highscores::CATEGORIES[index], "Phosphorus Record");
+    assert_eq!((command.capability, command.command_type), (9, 14));
+    let query = wire::decode_highscores_query(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(query.category, 16);
+    let result = wire::HighscoresResult {
+        world: None,
+        own_page: None,
+        category: 16,
+        snapshot_id: 1,
+        computed_at: 1,
+        page: 1,
+        has_more: false,
+        rows: vec![wire::HighscoreRow {
+            rank: 1,
+            name: "Victor".into(),
+            vocation: "knight".into(),
+            level: 90,
+            value: 28,
+        }],
+        own_row: None,
+    };
+    outbox.highscores_result(&ServerMechanicResponse {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: wire::encode_highscores_result(&result).map_err(|e| format!("{e:?}"))?,
+    });
+    let text = highscores::panel_text(&link.highscores_panel());
+    assert!(text.contains("Phosphorus Record") && text.contains("Victor") && text.contains("28"));
+    Ok(())
+}
+
+#[test]
 fn srx3_drome_lifetime_highscores_native_filter_crosses_session() -> Result<(), String> {
     std::thread::Builder::new()
         .stack_size(64 << 20)

@@ -1,4 +1,4 @@
-//! Minimal local crash evidence. Panic text, environment values and memory are never collected.
+//! Minimal crash evidence. Panic text, environment values and memory are never collected.
 use std::{
     io::{self, Write},
     path::{Path, PathBuf},
@@ -76,7 +76,7 @@ pub fn install_hook() {
         previous(info);
     }));
 }
-/// Review the retained report, discarding it only after a decision or a successful export.
+/// Review retained evidence, removing it only after declining or durably saving approved text.
 /// The native login caller supplies its synchronous consent dialog.
 pub fn review_pending_at(
     pending: &Path,
@@ -93,6 +93,10 @@ pub fn review_pending_at(
             "Crash report is too large",
         ));
     }
+    let preview = crate::support_delivery::preview(&preview);
+    if preview.len() > 4096 {
+        return Err(io::Error::other("Crash report is too large"));
+    }
     let approved = consent(&preview);
     if approved {
         save(&preview, destination, true)?;
@@ -100,27 +104,23 @@ pub fn review_pending_at(
     std::fs::remove_file(pending)?;
     Ok(approved)
 }
-/// Review and optional local export run on the UI thread, after a previous crash.
+/// Preview and delivery consent run on the UI thread after a previous crash.
 #[cfg(windows)]
 pub fn review_pending() {
     let Some(path) = pending_path() else { return };
     if !path.exists() {
         return;
     }
-    let stamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    let destination = path.with_file_name(format!("crash-report-{stamp}.txt"));
+    let destination = path.with_file_name("approved-crash.txt");
     match review_pending_at(&path, &destination, |preview| {
         consent_dialog(&lfmt!(
-            "{preview}\nSave a local report to share manually? Nothing is uploaded.",
+            "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.",
             preview = preview
         ))
     }) {
-        Ok(true) => {
-            crate::win_mutex::show_error(&lfmt!("Crash report saved to {}", destination.display()))
-        }
+        Ok(true) => crate::win_mutex::show_error(tr!(
+            "Crash report queued for delivery on your next play session."
+        )),
         Ok(false) => {}
         Err(_) => crate::win_mutex::show_error(
             "Cannot review or save the crash report. The pending report was retained.",

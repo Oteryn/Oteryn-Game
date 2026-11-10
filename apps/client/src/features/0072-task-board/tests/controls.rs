@@ -108,3 +108,104 @@ mod input_tests {
         assert!(panel_text(&panel).contains("unavailable in this session"));
     }
 }
+
+#[test]
+fn monday_results_open_automatically_and_difficulty_uses_play_queue() -> Result<(), &'static str> {
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.task_board_initialize(true);
+    outbox.task_board_weekly_results_initialize(true);
+    let _ = link.poll();
+    assert!(
+        matches!(incoming.try_recv(), Ok(crate::combat_input::PlayCommand::Feature(command))
+        if command.capability == 474 && command.kind == 6172
+        && task_board::full::decode_request(&command.payload) == Ok(task_board::full::Request::query()))
+    );
+    let mut reply = full_reply();
+    reply.weekly.started = false;
+    reply.weekly.kills.clear();
+    reply.weekly.deliveries.clear();
+    reply.weekly_results = Some(task_board::full::WeeklyResults {
+        period: reply.period - 7,
+        points: 75,
+        soulseals: 3,
+    });
+    let response = |reply: &task_board::full::Reply| -> Result<oteryn_session::GatedCommandResult, &'static str> {
+        Ok(oteryn_session::GatedCommandResult {
+            command_id: 1, status: CommandStatus::Accepted, server_sequence: 1,
+            payload: task_board::full::encode_reply(reply).map_err(|_| "result codec")?,
+        })
+    };
+    outbox.task_board_full_result(&response(&reply)?);
+    let _ = link.poll();
+    assert!(link.task_board_panel().weekly_results_open);
+    assert!(!link.task_board_panel().open);
+    assert!(incoming.try_recv().is_err());
+    link.task_board_full_request(oteryn_client_ui::task_board::FullIntent::StartWeekly(1));
+    assert!(
+        matches!(incoming.try_recv(), Ok(crate::combat_input::PlayCommand::Feature(command))
+        if task_board::full::decode_request(&command.payload).is_ok_and(|r| r.action == 5 && r.selection == 1))
+    );
+    reply.refusal = 3;
+    outbox.task_board_full_result(&response(&reply)?);
+    assert!(link.task_board_panel().weekly_results_open);
+    reply.refusal = 0;
+    reply.weekly.started = true;
+    reply.weekly.difficulty = 1;
+    reply.weekly_results = None;
+    outbox.task_board_full_result(&response(&reply)?);
+    assert!(!link.task_board_panel().weekly_results_open);
+    let _ = link.poll();
+    assert!(incoming.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn original_task_board_admission_does_not_send_the_new_query() {
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.task_board_initialize(true);
+    let _ = link.poll();
+    assert!(incoming.try_recv().is_err());
+}
+
+#[test]
+fn elite_checkbox_uses_the_real_play_queue() -> Result<(), &'static str> {
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.task_board_initialize(true);
+    outbox.task_board_weekly_results_initialize(true);
+    link.task_board_full_request(oteryn_client_ui::task_board::FullIntent::Elite(true));
+    assert!(
+        matches!(incoming.try_recv(), Ok(crate::combat_input::PlayCommand::Feature(command))
+        if command.capability == 474 && command.kind == 6174
+        && task_board::full::decode_request(&command.payload).is_ok_and(|r| r.action == 19 && r.selection == 1))
+    );
+    let mut reply = full_reply();
+    reply.bounty.elite = true;
+    reply.bounty.state = 1;
+    reply.bounty.offers = vec![task_board::full::BountyOffer {
+        elite: true,
+        dust: 8,
+        race: "oteryn:creature.rat".into(),
+        required: 25,
+        experience: 48000,
+        points: 24,
+        grade: 3,
+    }];
+    outbox.task_board_full_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: task_board::full::encode_reply(&reply).map_err(|_| "Elite reply")?,
+    });
+    let panel = link.task_board_panel();
+    assert_eq!(panel.weekly.as_ref(), Some(&reply));
+    let text = oteryn_client_ui::task_board::panel_text(&panel);
+    assert!(text.contains("Platinum"));
+    assert!(text.contains("Dust (Premium): 8"));
+    assert!(text.contains("+100% damage"));
+    link.task_board_full_request(oteryn_client_ui::task_board::FullIntent::Elite(false));
+    assert!(
+        matches!(incoming.try_recv(), Ok(crate::combat_input::PlayCommand::Feature(command))
+        if task_board::full::decode_request(&command.payload).is_ok_and(|r| r.action == 19 && r.selection == 0))
+    );
+    Ok(())
+}

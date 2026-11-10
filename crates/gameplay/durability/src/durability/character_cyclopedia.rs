@@ -17,6 +17,7 @@ use crate::foundation::CommandRef;
 use oteryn_protocol_oteryn::cyclopedia::{MapResult, encode_result};
 use sqlx::Row;
 
+mod speed;
 mod storage;
 mod world;
 pub use world::CyclopediaWorldBinding;
@@ -60,7 +61,7 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
         let mut gate = gate;
-        self.try_issue_semantic_pass()?.run_with_context(&mut gate, move |holder, deadline, gate| Box::pin(async move {
+        self.try_issue_semantic_pass()?.run_with_context(&mut gate, move |holder, deadline, _gate| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
@@ -91,13 +92,7 @@ impl DurabilityRoot {
             }
             let area=BasicArea::embedded().ok_or(DurabilityError::InvalidStoredState)?;
             let mut progress=storage::load(&mut tx,&fence,&request).await?;
-            let account: String=sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-                .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-            // Oteryn default, not Reference-qualified: donations require no Premium.
-            let premium = if matches!(request.action,MapAction::Start|MapAction::Shuffle) {
-                gate.premium(&mut tx,super::character_progression::uuid_text(&account)?).await?
-            } else { false };
-            let changed = match area.apply(&mut progress,request.action,&request.pool,request.at,premium,&request.occurrence) {
+            let changed = match area.apply(&mut progress,request.action,&request.pool,request.at,false,&request.occurrence) {
                 Ok(changed)=>changed,
                 Err(reason)=> {
                     let code=match reason { MapRefusal::Invalid=>1, MapRefusal::PremiumRequired=>2, MapRefusal::AlreadyDiscovered=>3, MapRefusal::NoExploration=>4, MapRefusal::InsufficientPool=>5 };
@@ -127,7 +122,7 @@ impl DurabilityRoot {
             let advanced=changed || donation>0;
             let revision=root.revision.checked_add(u64::from(advanced)).ok_or(DurabilityError::InvalidStoredState)?;
             let bytes=projection(0,revision,&progress,pool_after,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?;
-            if request.action != MapAction::Query {
+            if advanced || request.action != MapAction::Query {
                 storage::save(&mut tx,&fence,&request,&progress,advanced,donation,pool,pool_after,&bytes).await?;
             }
             tx.commit(deadline).await?;
@@ -145,14 +140,10 @@ fn projection(
     request: &MapRequest,
     area_percent: u8,
 ) -> Result<Vec<u8>, DurabilityError> {
-    let found = if progress.discovered {
-        7
-    } else {
-        progress
-            .exploration
-            .as_ref()
-            .map_or(0, |e| e.found.count_ones() as u8)
-    };
+    let found = progress.exploration.as_ref().map_or_else(
+        || if progress.discovered { 7 } else { 0 },
+        |e| e.found.count_ones() as u8,
+    );
     let visible = progress
         .exploration
         .as_ref()
@@ -175,7 +166,8 @@ fn projection(
     encode_result(&MapResult {
         code,
         revision,
-        discovered: progress.discovered,
+        // The v1 wire marks the current POI run complete; durable credit survives resets.
+        discovered: progress.discovered && progress.exploration.is_none(),
         found,
         area_percent,
         pool,

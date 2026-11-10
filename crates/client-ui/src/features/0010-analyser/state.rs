@@ -12,6 +12,7 @@ pub struct Panel {
     pub boss_drops_truncated: bool,
     pub tool: Tool,
     pub party: Vec<oteryn_client_runtime::analyser::party::Member>,
+    pub party_adjustments: super::party::Adjustments,
     pub party_pending: bool,
     pub party_feedback: Option<&'static str>,
     pub party_revision: u64,

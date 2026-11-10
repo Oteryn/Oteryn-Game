@@ -13,10 +13,12 @@ use super::{BOUNTY_POINTS, POINTS, TALISMAN_PATHS};
 mod catalogue;
 pub use catalogue::{DELIVERY_ITEMS, SHOP_OFFERS, TaskBoardShopKind, TaskBoardShopOffer};
 
+#[path = "task_board_elite.rs"]
+pub mod elite;
+
 pub const SOULSEALS: &str = "oteryn:taskboard/weekly/soulseals";
 pub const BOARD_REVISION: &str = "oteryn:taskboard/weekly/board-revision";
 pub const FREE_REROLL_SECONDS: i64 = 20 * 60 * 60;
-pub const MAX_DAILY_REROLL_TOKENS: u64 = 10;
 pub const TALISMAN_PURCHASE_GOLD: u64 = 5_000;
 /// Crystal iobountytasks.hpp:143; PR #2764 ANSWER 6543406906 rejects wrapping.
 pub const MAX_BOUNTY_POINTS: u32 = u32::MAX;
@@ -96,6 +98,12 @@ pub enum BountyStatus {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BountyBoard {
+    #[serde(default)]
+    pub selection_serial: u64,
+    #[serde(default)]
+    pub elite: bool,
+    #[serde(default)]
+    pub rarity: BTreeMap<String, u16>,
     pub state: BountyStatus,
     pub difficulty: u8,
     pub offers: Vec<BountyTask>,
@@ -109,6 +117,9 @@ impl Default for BountyBoard {
         let mut lists = std::array::from_fn(|_| BountyListSlot::default());
         lists[0].unlocked = true;
         Self {
+            selection_serial: 0,
+            elite: false,
+            rarity: BTreeMap::new(),
             state: BountyStatus::None,
             difficulty: 0,
             offers: Vec::new(),
@@ -128,12 +139,16 @@ pub struct BountyListSlot {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BountyTask {
+    #[serde(default)]
+    pub elite: bool,
+    #[serde(default)]
+    pub dust: u32,
     pub race: String,
     pub required: u32,
     pub current: u32,
     pub experience: u64,
     pub points: u32,
-    /// 0 ordinary, 1 silver, 2 gold.
+    /// 0 ordinary, 1 silver, 2 gold, 3 platinum.
     pub grade: u8,
     pub difficulty: u8,
     pub slot: u8,
@@ -206,6 +221,9 @@ pub enum TaskBoardAction {
         slot: u8,
     },
     OpenBounty,
+    SetElite {
+        enabled: bool,
+    },
     SelectBounty {
         slot: u8,
     },
@@ -214,7 +232,9 @@ pub enum TaskBoardAction {
         difficulty: u8,
     },
     RerollBounty,
-    ClaimDailyReroll,
+    /// Historical serialized action retained only to refuse old durable callers.
+    #[serde(rename = "ClaimDailyReroll")]
+    RetiredDailyReroll,
     SetPreferred {
         slot: u8,
         race: Option<String>,
@@ -402,6 +422,9 @@ pub fn apply_action(
     {
         return Err(TaskBoardRefusal::InvalidInput);
     }
+    if data.bounty.rarity.len() > elite::MAX_RARITY_CREATURES {
+        return Err(TaskBoardRefusal::LimitReached);
+    }
     let mut next = data.clone();
     let mut funds = balances.clone();
     settle_period(&mut next, &mut funds, context.period)?;
@@ -446,6 +469,9 @@ fn apply_inner(
 ) -> Result<TaskBoardEffects, TaskBoardRefusal> {
     let mut effects = TaskBoardEffects::default();
     match action {
+        TaskBoardAction::SetElite { enabled } => {
+            data.bounty.elite = *enabled;
+        }
         TaskBoardAction::Query => {}
         TaskBoardAction::RefuseLegacy { .. } => return Err(TaskBoardRefusal::RetiredAction),
         TaskBoardAction::StartWeekly { difficulty } => {
@@ -508,6 +534,12 @@ fn apply_inner(
             // Crystal iobountytasks.cpp:299: selection records the currently chosen
             // difficulty without recalculating the already generated offer's rewards.
             task.difficulty = data.bounty.difficulty;
+            elite::remember_offers(&mut data.bounty, Some(usize::from(*slot)))?;
+            data.bounty.selection_serial = data
+                .bounty
+                .selection_serial
+                .checked_add(1)
+                .ok_or(TaskBoardRefusal::ArithmeticOverflow)?;
             data.bounty.active = Some(task);
             data.bounty.offers.clear();
             data.bounty.state = BountyStatus::Active;
@@ -554,19 +586,7 @@ fn apply_inner(
             }
             generate_bounty(&mut data.bounty, context.creatures, draw)?;
         }
-        TaskBoardAction::ClaimDailyReroll => {
-            if context.reroll_tokens >= MAX_DAILY_REROLL_TOKENS {
-                return Err(TaskBoardRefusal::LimitReached);
-            }
-            if data.bounty.next_free_reroll_unix > context.now_unix_seconds {
-                return Err(TaskBoardRefusal::Cooldown);
-            }
-            data.bounty.next_free_reroll_unix = context
-                .now_unix_seconds
-                .checked_add(FREE_REROLL_SECONDS)
-                .ok_or(TaskBoardRefusal::ArithmeticOverflow)?;
-            effects.reroll_tokens_granted = 1;
-        }
+        TaskBoardAction::RetiredDailyReroll => return Err(TaskBoardRefusal::RetiredAction),
         TaskBoardAction::SetPreferred { slot, race }
         | TaskBoardAction::SetUnwanted { slot, race } => {
             let preferred = matches!(action, TaskBoardAction::SetPreferred { .. });
@@ -764,6 +784,8 @@ fn generate_bounty(
     if candidates.len() < 3 {
         return Err(TaskBoardRefusal::MissingCatalogue);
     }
+    let policy = elite::Policy::checked_in()?;
+    elite::remember_offers(board, None)?;
     board.offers.clear();
     for slot in 0..3 {
         let max =
@@ -780,20 +802,27 @@ fn generate_bounty(
             _ => return Err(TaskBoardRefusal::InvalidInput),
         };
         let experience_multiplier = random(draw, min, max)?;
-        let grade_roll = random(draw, 1, 100)?;
-        let (grade, grade_multiplier) = if grade_roll <= 2 {
-            (2, 4_u32)
-        } else if grade_roll <= 10 {
-            (1, 2)
+        let grade = policy.grade(
+            board.rarity.get(&creature.race).copied().unwrap_or(0),
+            random(draw, 1, 10_000)?,
+        );
+        let grade_multiplier = 1_u32 << grade;
+        let dust = if board.elite {
+            policy.dust_by_difficulty[usize::from(board.difficulty)]
+                .checked_mul(grade_multiplier)
+                .ok_or(TaskBoardRefusal::ArithmeticOverflow)?
         } else {
-            (0, 1)
+            0
         };
         let experience = creature
             .experience
             .checked_mul(u64::from(experience_multiplier))
             .and_then(|value| value.checked_mul(u64::from(grade_multiplier)))
+            .and_then(|value| value.checked_mul(if board.elite { 2 } else { 1 }))
             .ok_or(TaskBoardRefusal::ArithmeticOverflow)?;
         board.offers.push(BountyTask {
+            elite: board.elite,
+            dust,
             race: creature.race.clone(),
             required,
             current: 0,

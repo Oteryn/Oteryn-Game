@@ -21,6 +21,7 @@ const ITEM: usize = 108;
 const STOW: usize = 109;
 const SEARCH: usize = 111;
 const SORT: usize = 112;
+const MARKET: usize = 6190;
 #[derive(Default)]
 struct Actions(Vec<usize>);
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
@@ -86,6 +87,10 @@ fn run(
             close(&weak);
             return;
         }
+        let context = weak
+            .upgrade()
+            .map(|shared| lock(&shared).stash.clone())
+            .unwrap_or_default();
         let mut actions = Box::<Actions>::default();
         SetWindowLongPtrW(
             hwnd,
@@ -144,7 +149,7 @@ fn run(
         let search = control(
             hwnd,
             "EDIT",
-            "",
+            &context.query,
             113,
             [340, 320, 170, 28],
             ES_AUTOHSCROLL as u32 | WS_BORDER | WS_TABSTOP,
@@ -168,7 +173,7 @@ fn run(
         let category = control(
             hwnd,
             "EDIT",
-            "",
+            &context.category,
             114,
             [100, 400, 170, 28],
             ES_AUTOHSCROLL as u32 | WS_BORDER | WS_TABSTOP,
@@ -176,7 +181,7 @@ fn run(
         let trader = control(
             hwnd,
             "EDIT",
-            "",
+            &context.trader,
             115,
             [370, 400, 220, 28],
             ES_AUTOHSCROLL as u32 | WS_BORDER | WS_TABSTOP,
@@ -198,6 +203,10 @@ fn run(
             STOW,
             [610, 320, 300, 28],
             WS_TABSTOP,
+        );
+        control(
+            hwnd, "BUTTON", tr!("Market"), MARKET,
+            [610, 358, 300, 28], WS_TABSTOP,
         );
         let carried_label = control(
             hwnd,
@@ -251,9 +260,10 @@ fn run(
                 break;
             };
             let mut mailbox = lock(&shared);
-            if mailbox.depot_shutdown {
+            if mailbox.depot_shutdown || !mailbox.stash.open {
                 break;
             }
+            let mut market = false;
             for id in std::mem::take(&mut actions.0) {
                 let intent = match id {
                     SEARCH if !mailbox.stash.pending => {
@@ -274,12 +284,12 @@ fn run(
                         None
                     }
                     SORT if !mailbox.stash.pending => {
-                        use oteryn_client_ui::stash::Sort;
-                        mailbox.stash.sort = match mailbox.stash.sort {
-                            Sort::Name => Sort::Stock,
-                            Sort::Stock => Sort::Name,
-                        };
-                        Some(Intent::Filter)
+                        PlayLink::stash_enqueue_sort(&mut mailbox, &commands);
+                        None
+                    }
+                    MARKET => {
+                        market = true;
+                        None
                     }
                     PREVIOUS => Some(Intent::Previous),
                     NEXT => Some(Intent::Next),
@@ -350,6 +360,11 @@ fn run(
                 held = Some(mailbox.stash.clone());
             }
             drop(mailbox);
+            if market {
+                DestroyWindow(hwnd);
+                crate::play::feature_0063_market::input::open_from_depot(&shared, &commands);
+                return;
+            }
             std::thread::sleep(Duration::from_millis(30));
         }
         if IsWindow(hwnd) != 0 {

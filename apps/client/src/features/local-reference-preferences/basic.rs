@@ -10,6 +10,7 @@ pub struct BasicOptions {
     pub background_fps: u16,
     pub master_volume: u8,
     pub muted: bool,
+    pub cooldown_bar_enabled: bool,
 }
 impl From<&ReferencePreferences> for BasicOptions {
     fn from(p: &ReferencePreferences) -> Self {
@@ -21,6 +22,7 @@ impl From<&ReferencePreferences> for BasicOptions {
             background_fps: p.frames.background,
             master_volume: p.audio.master_volume,
             muted: p.audio.muted,
+            cooldown_bar_enabled: p.action_bar.cooldown_bar_enabled,
         }
     }
 }
@@ -36,6 +38,7 @@ impl SettingsState {
         prefs.background_fps = options.background_fps;
         prefs.audio.master_volume = options.master_volume;
         prefs.audio.muted = options.muted;
+        prefs.action_bar.cooldown_bar_enabled = options.cooldown_bar_enabled;
         prefs.validate()?;
         self.apply(prefs);
         Ok(())
@@ -61,6 +64,7 @@ mod tests {
         options.background_fps = 12;
         options.master_volume = 37;
         options.muted = true;
+        options.cooldown_bar_enabled = false;
         state.apply_basic(&options)?;
         assert_eq!(
             BasicOptions::from(&SettingsState::new(Some(path.clone())).preferences),

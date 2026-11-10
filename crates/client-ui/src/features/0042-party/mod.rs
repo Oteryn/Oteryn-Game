@@ -9,5 +9,5 @@ mod view;
 pub use input::{Action, PartyInput, open_key};
 pub use oteryn_client_runtime::party::{EntityRef, PartyCommand, PartyResponse, party};
 pub use protocol::{apply_result, push_feedback, request};
-pub use state::{Intent, PartyPanel};
+pub use state::{Intent, ListAction, ListSort, PartyPanel};
 pub use view::{panel_text, panel_text_at};

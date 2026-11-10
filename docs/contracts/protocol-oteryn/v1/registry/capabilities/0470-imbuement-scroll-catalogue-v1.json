@@ -1,0 +1,13 @@
+{
+  "id": 470,
+  "name": "IMBUEMENT_SCROLL_CATALOGUE_V1",
+  "owner_decision": "T174 owner decision 2026-11-09",
+  "owner": "Game imbuement shrine",
+  "requires": [
+    68
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only, with IMBUE_V1. Command 85 and material quotes admit families 21-25 (Scorch, Venom, Frost, Electrify, Reap), 26 (Vibrancy); original clients retain families 1-20 and their offer indices."
+}

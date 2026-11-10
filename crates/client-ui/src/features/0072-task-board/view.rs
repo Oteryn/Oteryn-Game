@@ -55,13 +55,23 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
     let bounty = &reply.bounty;
     let _ = lwriteln!(
         text,
-        "Bounty: state {}, difficulty {}, rerolls {}, daily reroll at {}",
+        "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}",
         bounty.state,
         bounty.difficulty,
         bounty.rerolls,
         bounty.daily_reroll_at
     );
-    for (slot, offer) in bounty.offers.iter().enumerate() {
+    if bounty.elite || bounty.active.as_ref().is_some_and(|task| task.elite) {
+        text.push_str(tr!(
+            "Elite tasks: monsters deal +100% damage and take -50% damage.\n"
+        ));
+    }
+    for (slot, offer) in bounty.offers.iter().enumerate().chain(
+        bounty
+            .active
+            .iter()
+            .map(|offer| (usize::from(bounty.selected.saturating_sub(1)), offer)),
+    ) {
         let _ = lwriteln!(
             text,
             "Bounty {}. {}: {} kills, {} XP, {} points, grade {}",
@@ -70,8 +80,22 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
             offer.required,
             offer.experience,
             offer.points,
-            offer.grade
+            match offer.grade {
+                0 => tr!("Ordinary"),
+                1 => tr!("Silver"),
+                2 => tr!("Gold"),
+                _ => tr!("Platinum"),
+            }
         );
+        if offer.elite {
+            let _ = writeln!(
+                text,
+                "{} — {}: {}",
+                tr!("Elite"),
+                tr!("Dust (Premium)"),
+                offer.dust
+            );
+        }
     }
     if let Some(active) = &bounty.active {
         let _ = lwriteln!(

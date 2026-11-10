@@ -145,6 +145,12 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
     oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+    party::CAPABILITY_PARTY_LIST_V1,
+    oteryn_protocol_oteryn::support_intake::CAPABILITY_SUPPORT_INTAKE_V1,
+    oteryn_protocol_oteryn::action_bar_cooldowns::CAPABILITY_ACTION_BAR_COOLDOWNS_V1,
+    imbuement::CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1,
+    oteryn_protocol_oteryn::task_board::full::CAPABILITY_WEEKLY_RESULTS_V1,
+    oteryn_protocol_oteryn::store::cosmetic_tokens::CAPABILITY,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -244,12 +250,18 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
     mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
     oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1,
+    imbuement::CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1,
     potion_durations::CAPABILITY_POTION_DURATIONS_V1,
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
     oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
     spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+    oteryn_protocol_oteryn::store::cosmetic_tokens::CAPABILITY,
+    oteryn_protocol_oteryn::action_bar_cooldowns::CAPABILITY_ACTION_BAR_COOLDOWNS_V1,
+    party::CAPABILITY_PARTY_LIST_V1,
+    oteryn_protocol_oteryn::support_intake::CAPABILITY_SUPPORT_INTAKE_V1,
+    oteryn_protocol_oteryn::task_board::full::CAPABILITY_WEEKLY_RESULTS_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
@@ -329,6 +341,12 @@ mod native_advertisement_tests {
     #[test]
     fn native_advertisement_is_bootstrap_encodable_and_dependency_closed()
     -> Result<(), FoundationProtocolError> {
+        assert!(
+            CLIENT_SUPPORTED_CAPABILITIES
+                .windows(2)
+                .all(|pair| pair[0] < pair[1]),
+            "native capabilities must be strictly ascending without duplicates"
+        );
         let id = |last: u8| {
             let mut bytes = [1; 16];
             bytes[6] = 0x70;
@@ -393,4 +411,14 @@ fn battle_metadata_uses_existing_attack_capability() -> Result<(), &'static str>
             )
     ));
     Ok(())
+}
+
+#[cfg(test)]
+mod action_bar_cooldown_tests {
+    use super::*;
+    #[test]
+    fn action_bar_item_cooldown_query_is_supported_and_gated() {
+        assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&463));
+        assert!(gated_routes().any(|(id, commands, _)| id == 463 && commands.contains(&6147)));
+    }
 }

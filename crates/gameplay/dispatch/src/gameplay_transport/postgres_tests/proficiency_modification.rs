@@ -72,7 +72,8 @@ fn scenario_with_state(project_state: bool) -> TestResult {
         let map = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
             .map_err(debug)?;
         let cells = map.movement_cells(room.movement_cells()).map_err(debug)?;
-        // The runtime pin must identify the same bundle as the protection-zone lookup.
+        // Pair bundle-backed cells with that bundle's frame and map identity.
+        // A production-room map pin is foreign to this teleport-map fixture.
         let frame_digest = map.frame_binding_digest(world);
         let pin = ChannelContentPin::from_activation(
             world,

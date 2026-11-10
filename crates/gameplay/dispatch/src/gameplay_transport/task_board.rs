@@ -35,7 +35,13 @@ pub enum TaskBoardReply {
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     base.iter()
         .copied()
-        .filter(|capability| available || capability.id != wire::CAPABILITY_TASK_BOARD_V1)
+        .filter(|capability| {
+            available
+                || !matches!(
+                    capability.id,
+                    wire::CAPABILITY_TASK_BOARD_V1 | wire::full::CAPABILITY_WEEKLY_RESULTS_V1
+                )
+        })
         .collect()
 }
 
@@ -51,7 +57,6 @@ fn decode_action(payload: &[u8]) -> Option<(TaskBoardAction, bool)> {
             9 => TaskBoardAction::ClaimBounty,
             10 => TaskBoardAction::ChangeBountyDifficulty { difficulty: slot },
             11 => TaskBoardAction::RerollBounty,
-            12 => TaskBoardAction::ClaimDailyReroll,
             13 => TaskBoardAction::SetPreferred {
                 slot,
                 race: (!request.race.is_empty()).then_some(request.race),
@@ -66,6 +71,7 @@ fn decode_action(payload: &[u8]) -> Option<(TaskBoardAction, bool)> {
             },
             17 => TaskBoardAction::BuyTalisman,
             18 => TaskBoardAction::UpgradeTalisman { path: slot },
+            19 => TaskBoardAction::SetElite { enabled: slot == 1 },
             _ => return None,
         };
         return Some((action, false));
@@ -94,9 +100,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Some(catalogue)
     }
 
-    pub(super) async fn task_board_wire(&self,admitted:AdmittedSession,id:u64,kind:u32,payload:&[u8])->TaskBoardReply {
-        if kind==wire::soulpit::COMMAND_TYPE {self.soulseal_wire(admitted,id,payload).await}
-        else {self.normal_task_board_wire(admitted,id,kind,payload).await}
+    pub(super) async fn task_board_wire(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        kind: u32,
+        payload: &[u8],
+    ) -> TaskBoardReply {
+        if kind == wire::soulpit::COMMAND_TYPE {
+            self.soulseal_wire(admitted, id, payload).await
+        } else {
+            self.normal_task_board_wire(admitted, id, kind, payload)
+                .await
+        }
     }
     pub(super) async fn normal_task_board_wire(
         &self,
@@ -108,7 +124,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some((action, legacy)) = decode_action(payload) else {
             return TaskBoardReply::Rejected;
         };
-        if kind != wire::COMMAND_TYPE_TASK_BOARD {
+        let results_query = kind == wire::full::COMMAND_WEEKLY_RESULTS;
+        let elite_command = kind == wire::full::COMMAND_ELITE_BOUNTY;
+        if (kind != wire::COMMAND_TYPE_TASK_BOARD && !results_query && !elite_command)
+            || (results_query
+                && (legacy
+                    || action != TaskBoardAction::Query
+                    || !admitted
+                        .continuity
+                        .selected_capabilities
+                        .contains(wire::full::CAPABILITY_WEEKLY_RESULTS_V1)))
+        {
+            return TaskBoardReply::Rejected;
+        }
+        if (elite_command
+            && (legacy
+                || !matches!(
+                    action,
+                    TaskBoardAction::Query | TaskBoardAction::SetElite { .. }
+                )
+                || !admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::full::CAPABILITY_WEEKLY_RESULTS_V1)))
+            || (!elite_command && matches!(action, TaskBoardAction::SetElite { .. }))
+        {
             return TaskBoardReply::Rejected;
         }
         let Some(item_fence) = admitted.item_fence else {
@@ -229,7 +269,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let encoded = if legacy {
             projection::legacy(&result).and_then(|reply| wire::encode_task_board_reply(&reply).ok())
         } else {
-            projection::full(&result).and_then(|reply| wire::full::encode_reply(&reply).ok())
+            projection::full(
+                &result,
+                admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::full::CAPABILITY_WEEKLY_RESULTS_V1),
+            )
+            .and_then(|reply| wire::full::encode_reply(&reply).ok())
         };
         encoded.map_or(TaskBoardReply::Unavailable, TaskBoardReply::Payload)
     }

@@ -52,7 +52,14 @@ def test_relation_rows_route_by_owner():
         routed.append(migration.target_id(row["source"])),
         real_use(row, definition),
     )
-    migration.main()
+    with patch.object(
+        migration,
+        "validate_item_enrichment",
+        wraps=migration.validate_item_enrichment,
+    ) as enrichment:
+        migration.main()
+    enrichment.assert_called_once()
+    enrichment_args = enrichment.call_args
     migration.validate_use_relation = real_use
     # Main-only rows exist and none of them reaches the PR Use validator.
     assert len(routed) == 55 and set(routed) <= targets and relations - targets, (
@@ -63,7 +70,9 @@ def test_relation_rows_route_by_owner():
     real_targets = migration.use_relation_targets
     migration.use_relation_targets = lambda: real_targets() - {dropped}
     try:
-        migration.main()
+        migration.validate_item_enrichment(
+            *enrichment_args.args, **enrichment_args.kwargs
+        )
     except migration.ValidationError as error:
         assert str(error) == "RELATION_COVERAGE", error
     else:

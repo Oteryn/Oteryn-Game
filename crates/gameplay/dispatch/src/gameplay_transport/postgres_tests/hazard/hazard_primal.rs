@@ -139,7 +139,7 @@ async fn settle(
         death_key: death.to_vec(), principal: fence.character_id, creature: "oteryn:creature.the_primal_menace".into(),
         base_xp: 10, death_at_ms: serial, death_at_us: serial*1000,
         shared: false, party_id: None, party_revision: None,
-        members: vec![PartyKillXpMember {
+        members: vec![PartyKillXpMember { task_board_eligible: true,
             fence,
             request: ExperienceAwardRequest {
                 occurrence: ExperienceRewardOccurrence::from_bytes(fixture::id(u8::try_from(serial)?)).map_err(debug)?,

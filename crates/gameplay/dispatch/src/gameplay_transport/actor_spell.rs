@@ -127,6 +127,7 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) pending_gourmet: Vec<super::item_use::gourmet::PendingUse>,
     pub(in crate::gameplay_transport) pending_hireling_lamps: Vec<super::hireling::PendingLampUse>,
     pub(super) prey: Vec<super::prey::LivePrey>,
+    pub(in crate::gameplay_transport) elite_bounties: Vec<(ExactActorRef, GameSessionId, String)>,
     pub(super) hunting_stamina: Vec<super::hunting_stamina::LiveStamina>,
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
     pub(in crate::gameplay_transport) actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
@@ -328,6 +329,7 @@ impl Default for ChannelSpellStates {
             pending_gourmet: Vec::new(),
             pending_hireling_lamps: Vec::new(),
             prey: Vec::new(),
+            elite_bounties: Vec::new(),
             hunting_stamina: Vec::new(),
             analyser: Default::default(),
             owner_wake: Default::default(),
@@ -682,6 +684,8 @@ impl ChannelSpellStates {
                 runtime,
             ));
         }
+        self.elite_bounties
+            .retain(|(actor, session, _)| runtime.player_control_facts(*actor, *session).is_ok());
         self.actors.retain(|(present, session, _)| {
             runtime.player_control_facts(*present, *session).is_ok()
                 || runtime
@@ -1935,6 +1939,21 @@ impl ChannelSpellStates {
             return None;
         }
 
+        let magnitude = runtime
+            .companion_snapshot(source)
+            .ok()
+            .map_or(magnitude, |snapshot| {
+                if self.elite_bounty(
+                    runtime,
+                    target,
+                    session,
+                    &snapshot.state.policy.definition_key,
+                ) {
+                    magnitude.saturating_mul(2)
+                } else {
+                    magnitude
+                }
+            });
         let percent = runtime.companion_snapshot(source).ok().map_or(0, |s| {
             self.prey_percent(
                 runtime,
@@ -2592,6 +2611,13 @@ impl ChannelSpellStates {
                     {
                         return None;
                     }
+                    let amount = self.elite_condition_damage(
+                        runtime,
+                        target,
+                        session,
+                        &tick.provenance,
+                        amount,
+                    );
                     let (successor, hit) =
                         crate::spell::actor_conditions::stage_typed_hit_in_world(
                             runtime,
@@ -2651,6 +2677,13 @@ impl ChannelSpellStates {
                         {
                             return None;
                         }
+                        let amount = self.elite_condition_damage(
+                            runtime,
+                            target,
+                            session,
+                            &tick.provenance,
+                            amount,
+                        );
                         let (successor, hit) = crate::spell::actor_conditions::stage_agony_hit(
                             &next,
                             amount,
@@ -2849,7 +2882,10 @@ impl ChannelSpellStates {
                 }) => damage_dealt_percent,
                 _ => 100,
             };
-            Ok(Some(percent))
+            let elite = r.companion_snapshot(target).is_ok_and(|victim| {
+                self.elite_bounty(r, source, *session, &victim.state.policy.definition_key)
+            });
+            Ok(Some(if elite { percent / 2 } else { percent }))
         };
         let receipt = runtime.apply_creature_periodic_turn_with_sources_and_health_observations(
             target,

@@ -85,3 +85,24 @@ fn docked_row_counts_down_server_cooldown_without_changing_authority() -> Result
     );
     Ok(())
 }
+
+#[test]
+fn cooldown_bar_overlay_does_not_restart_when_another_snapshot_arrives() {
+    use oteryn_client_runtime::spell::{ActorCooldown, ActorCooldownKind, ActorCooldowns};
+    let mut panel = super::super::ActionBarPanel::default();
+    let catalog = oteryn_client_runtime::spell_catalog::CatalogState::default();
+    for now in [100, 600] {
+        panel.replace_cooldowns(Some(ActorCooldowns {
+            server_now_ms: now,
+            rtt_ms: None,
+            entries: vec![ActorCooldown {
+                kind: ActorCooldownKind::Group,
+                id: 2,
+                expires_at_ms: 1100,
+            }],
+        }));
+    }
+    let icons = cooldown_icons(&panel, &catalog);
+    assert_eq!(icons.len(), 1);
+    assert!(icons[0].overlay_per_mille <= 500 && icons[0].overlay_per_mille > 0);
+}

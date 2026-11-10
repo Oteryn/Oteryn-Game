@@ -1,8 +1,10 @@
 """A complete source boss loot table cannot block its corpse and quest credit."""
-import json
 import copy
-from pathlib import Path
+import json
 import unittest
+from pathlib import Path
+from unittest.mock import patch
+
 import galthen_boss_loot as producer
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -72,6 +74,44 @@ class GalthenBossLootTests(unittest.TestCase):
         xml = b'<items><item id="44648"><attribute key="imbuementslot" value="1"><attribute key="paralysis removal" value="3"/></attribute></item></items>'
         self.assertEqual(imbuement.slots(xml, {44648}), {
             44648: {'slot_count': 1, 'families': {'PARALYSIS_REMOVAL': '3'}}})
+
+    def test_late_boot_completion_preserves_qualified_galthen_records(self):
+        import imbuement_item_profiles as imbuement
+        packet = json.loads((ROOT / producer.PATH).read_bytes())
+        generated = {'profiles': producer.base.encode({'records': packet['records']}),
+                     'manifest': b'{"item_profiles":{}}'}
+        imbuement.complete_boots(ROOT, generated, 'profiles', 'manifest',
+                                lambda row: row['production_definition']['production_key'],
+                                producer.base.encode)
+        actual = {row['production_definition']['production_key']: row
+                  for row in json.loads(generated['profiles'])['records']}
+        self.assertEqual(actual, {row['production_definition']['production_key']: row
+                                  for row in packet['records']})
+
+    def test_late_boot_completion_requires_exact_crystal_cross_check(self):
+        import imbuement_item_profiles as imbuement
+        packet = json.loads((ROOT / producer.PATH).read_bytes())
+        facts_path = ROOT / imbuement.CRYSTAL_FACTS
+        facts = json.loads(facts_path.read_bytes())
+        original_read = Path.read_bytes
+        for item in ('44648', '44649', '50291'):
+            with self.subTest(item=item):
+                forged = copy.deepcopy(facts)
+                forged['records'][item]['families']['INCREASE_SPEED'] = '2'
+                generated = {'profiles': producer.base.encode({'records': packet['records']}),
+                             'manifest': b'{"item_profiles":{}}'}
+                before = dict(generated)
+                with (
+                    patch.object(Path, 'read_bytes', lambda path, forged=forged:
+                                 producer.base.encode(forged) if path == facts_path
+                                 else original_read(path)),
+                    self.assertRaisesRegex(ValueError, 'IMBUEMENT_BOOT_CROSS_CHECK ' + item),
+                ):
+                    imbuement.complete_boots(
+                        ROOT, generated, 'profiles', 'manifest',
+                        lambda row: row['production_definition']['production_key'],
+                        producer.base.encode)
+                self.assertEqual(generated, before)
 
     def test_actual_galthen_boss_tables_have_no_inadmissible_yields(self):
         data = json.loads((ROOT / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())

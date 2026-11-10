@@ -1,0 +1,26 @@
+{
+  "schema": "OTERYN_BOUNTY_ELITE/v1",
+  "parity": "PARITY_PENDING",
+  "decision": "Owner decision T201 2026-11-09; news 9004 qualitative rules; provisional numeric profile",
+  "dust_by_difficulty": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "base_basis_points": [
+    500,
+    100,
+    0
+  ],
+  "increment_basis_points": [
+    100,
+    50,
+    10
+  ],
+  "cap_basis_points": [
+    2500,
+    1000,
+    200
+  ]
+}

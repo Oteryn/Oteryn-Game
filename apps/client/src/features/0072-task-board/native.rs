@@ -18,7 +18,7 @@ const SELECT_BOUNTY: usize = 106;
 const CLAIM: usize = 107;
 const DIFFICULTY: usize = 108;
 const REROLL: usize = 109;
-const DAILY: usize = 110;
+const ELITE: usize = 110;
 const PREFERRED: usize = 111;
 const UNWANTED: usize = 112;
 const UNLOCK: usize = 113;
@@ -165,7 +165,7 @@ fn run(
             (CLAIM, tr!("Claim bounty")),
             (DIFFICULTY, tr!("Set bounty difficulty")),
             (REROLL, tr!("Reroll bounty")),
-            (DAILY, tr!("Daily reroll")),
+            (ELITE, tr!("Elite")),
             (PREFERRED, tr!("Set preferred")),
             (UNWANTED, tr!("Set unwanted")),
             (UNLOCK, tr!("Unlock list slot")),
@@ -187,7 +187,12 @@ fn run(
                     185,
                     30,
                 ],
-                WS_TABSTOP,
+                WS_TABSTOP
+                    | if id == ELITE {
+                        BS_AUTOCHECKBOX as u32
+                    } else {
+                        0
+                    },
             );
         }
         control(hwnd, "STATIC", tr!("Shop offer"), 0, [10, 635, 120, 24], 0);
@@ -242,7 +247,9 @@ fn run(
                     CLAIM => Some(FullIntent::ClaimBounty),
                     DIFFICULTY => level.map(FullIntent::BountyDifficulty),
                     REROLL => Some(FullIntent::Reroll),
-                    DAILY => Some(FullIntent::DailyReroll),
+                    ELITE => Some(FullIntent::Elite(
+                        SendMessageW(GetDlgItem(hwnd, ELITE as i32), BM_GETCHECK, 0, 0) == 1,
+                    )),
                     PREFERRED => slot
                         .zip(selected_race)
                         .map(|(v, key)| FullIntent::Preferred(v, key.to_owned())),
@@ -270,8 +277,15 @@ fn run(
                     }
                     continue;
                 }
-                let command =
-                    intent.and_then(|intent| full_request(&mut mailbox.task_board, intent));
+                let command = intent.and_then(|intent| match intent {
+                    FullIntent::Elite(enabled) => {
+                        oteryn_client_ui::task_board_weekly_results::set_elite(
+                            &mut mailbox.task_board,
+                            enabled,
+                        )
+                    }
+                    intent => full_request(&mut mailbox.task_board, intent),
+                });
                 if let Some(command) = command
                     && commands
                         .send(crate::combat_input::PlayCommand::Feature(command))
@@ -302,6 +316,16 @@ fn run(
                     .and_then(|key| choices.iter().position(|value| value == key))
                     .unwrap_or(0);
                 SendMessageW(race, CB_SETCURSEL, index, 0);
+            }
+            if !mailbox.task_board.pending
+                && let Some(reply) = &mailbox.task_board.weekly
+            {
+                SendMessageW(
+                    GetDlgItem(hwnd, ELITE as i32),
+                    BM_SETCHECK,
+                    usize::from(reply.bounty.elite),
+                    0,
+                );
             }
             let rendered = panel_text(&mailbox.task_board).replace('\n', "\r\n");
             if held.as_ref() != Some(&rendered) {

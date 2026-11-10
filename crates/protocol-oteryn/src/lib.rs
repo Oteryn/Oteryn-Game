@@ -13,6 +13,7 @@
 // Keep sorted by module name; insert in order, never append.
 pub mod account_achievements;
 pub mod achievement_notices;
+pub mod action_bar_cooldowns;
 pub mod activity_scope;
 pub mod actor_condition_snapshot_candidate;
 pub mod actor_spell;
@@ -133,6 +134,7 @@ pub mod staff;
 pub mod staff_tools;
 pub mod stash;
 pub mod store;
+pub mod support_intake;
 pub mod target_move;
 pub mod task_board;
 pub mod team_finder;

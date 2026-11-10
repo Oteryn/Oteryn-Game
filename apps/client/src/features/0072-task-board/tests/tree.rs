@@ -13,6 +13,8 @@ fn task_tree_uses_server_quotes_and_submits_the_selected_path_and_reward() -> Re
     reply.bounty.selected = 1;
     reply.bounty.current = 10;
     let bounty = task_board::full::BountyOffer {
+        elite: false,
+        dust: 0,
         race: "oteryn:creature.rat".into(),
         required: 10,
         experience: 1250,

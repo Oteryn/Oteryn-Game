@@ -46,6 +46,16 @@ impl ChannelSpellStates {
             distance,
             u64::try_from(snapshot.maximum_health).unwrap_or(0),
         );
+        let reflected = if self.elite_bounty(
+            runtime,
+            target,
+            session,
+            &snapshot.state.policy.definition_key,
+        ) {
+            reflected / 2
+        } else {
+            reflected
+        };
         if reflected == 0 {
             return true;
         }

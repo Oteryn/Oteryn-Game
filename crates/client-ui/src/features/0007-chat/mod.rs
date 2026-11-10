@@ -18,7 +18,7 @@ pub use protocol::{console_request, request};
 pub use state::{
     ChatPanel, CommunicationList, CommunicationLists, ComposerMode, Console, ConsoleTab, Mode,
 };
-pub use view::{panel_text, write_log};
+pub use view::{mirror_text, panel_text, write_log};
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;

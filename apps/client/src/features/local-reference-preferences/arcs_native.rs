@@ -49,6 +49,29 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             if !data.is_null()
                 && let Some(layout) = &(*data).layout
             {
+                SetBkMode(dc, TRANSPARENT as i32);
+                SetTextColor(dc, 0x00ffffff);
+                for (index, icon) in layout.condition_icons.iter().enumerate() {
+                    let top = index as i32 * 18;
+                    let rect = windows_sys::Win32::Foundation::RECT {
+                        left: 0,
+                        top,
+                        right: 26,
+                        bottom: top + 18,
+                    };
+                    let brush = CreateSolidBrush(0x00202020);
+                    FillRect(dc, &rect, brush);
+                    DeleteObject(brush);
+                    let mut rect = rect;
+                    let text: Vec<u16> = icon.encode_utf16().collect();
+                    DrawTextW(
+                        dc,
+                        text.as_ptr(),
+                        text.len() as i32,
+                        &mut rect,
+                        DT_CENTER | DT_VCENTER | DT_SINGLELINE,
+                    );
+                }
                 for stroke in &layout.strokes {
                     path(dc, &stroke.points, 0x00484848);
                     path(

@@ -30,6 +30,12 @@ impl PlayLink {
         #[cfg(windows)]
         soulseals_window::open(self);
         #[cfg(not(windows))]
-        { lock(&self.mailbox).task_board.soulseals_open=true; }
+        {
+            lock(&self.mailbox).task_board.soulseals_open = true;
+        }
     }
 }
+
+#[cfg(windows)]
+#[path = "weekly_results_window.rs"]
+pub(in crate::play) mod weekly_results_window;
