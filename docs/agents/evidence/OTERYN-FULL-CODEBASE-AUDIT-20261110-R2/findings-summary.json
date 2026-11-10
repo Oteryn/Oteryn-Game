@@ -5,7 +5,7 @@
       "id": "GR-SOUL-001",
       "severity": "P2",
       "status": "CONFIRMED",
-      "verification": "Independent static caller/state proof; native SQL/server tests not run",
+      "verification": "Independent static caller/state proof for fresh restore, bed wake and an additional alive current-Premium promoted live level-up path; same P2 family, no new ID; no native/Cargo/SQL execution.",
       "report": "verify-soul-cap.md",
       "public_safe": true
     },

@@ -162,6 +162,16 @@
       "auditor": "lead"
     },
     {
+      "module": "oteryn-gameplay-spell",
+      "path": "crates/gameplay/spell",
+      "report": "spell-review.md",
+      "verification": "All83 tracked files/41,011 lines reviewed; exact Git/worktree SHA, complete line unions and clean source PASS. Two embedded JSON literal lines fully semantically analyzed;817 read-only closure/graph checks PASS. Test sources read only; no spell Cargo/SQL/native runtime execution claim.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
       "module": "oteryn-identity",
       "status": "REVIEWED",
       "report": "protocol-session.md",

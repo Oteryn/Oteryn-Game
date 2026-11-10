@@ -1,0 +1,1191 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "observed_at_utc": "2026-11-10T14:48:07.373986+00:00",
+  "package": "oteryn-gameplay-spell",
+  "tracked_files": 83,
+  "full_files": 83,
+  "total_lines": 41011,
+  "errors": [],
+  "source_checkout_clean": true,
+  "method": "Substantive manual source/test review, with complete semantic analysis of two embedded JSON literal lines. No Rust/SQL/native package execution claimed.",
+  "embedded_data_checks": 817,
+  "embedded_data_result": "spell-embedded-source-validation.json",
+  "files": [
+    {
+      "path": "crates/gameplay/spell/Cargo.toml",
+      "sha256": "d160e66b545eaab49c4f3d585f056d4712f9eb36c9ec28f998e47e9f3d0e7380",
+      "lines": 46,
+      "ranges": [
+        [
+          1,
+          46
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/creature_damage_spell/activity_time.rs",
+      "sha256": "896e1667585f1dc503f44d89460b2d3d575b10d0bfb4e14c566740ee74bee7e7",
+      "lines": 23,
+      "ranges": [
+        [
+          1,
+          23
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/creature_damage_spell/composed.rs",
+      "sha256": "daa7d0be112f5ab0463e1bd4e1530a0c64611c2a2aee0c6d83c45ad79518c804",
+      "lines": 1014,
+      "ranges": [
+        [
+          1,
+          1014
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/creature_damage_spell/mod.rs",
+      "sha256": "5c7ceebc93c8ad9fd4b6ed385469c0b7756669f99ea7ba1446a5cc8414312e51",
+      "lines": 2729,
+      "ranges": [
+        [
+          1,
+          2729
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/creature_damage_spell_delayed.rs",
+      "sha256": "784b91f4e83b1cd9be86c0737ff27e16ccca03a6a66466784469200ac82d0a3e",
+      "lines": 283,
+      "ranges": [
+        [
+          1,
+          283
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "sha256": "a6daa23b81e45ebb0f16183756241e6db53788cd0abc6339eaf5076b24915763",
+      "lines": 54,
+      "ranges": [
+        [
+          1,
+          54
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/actor_conditions.rs",
+      "sha256": "08eee65d50c613203f6100a2e78cb82219c983a07e16cfd1ce5087b3fef7d4dc",
+      "lines": 1904,
+      "ranges": [
+        [
+          1,
+          1904
+        ]
+      ],
+      "reviewers": [
+        "client-support",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/actor_conditions/agony_tests.rs",
+      "sha256": "27d750a0ab16348cf47f8a32ca56af396e8c0bb10748de8e96933cd693115859",
+      "lines": 183,
+      "ranges": [
+        [
+          1,
+          183
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/actor_conditions/energy_ring_tests.rs",
+      "sha256": "d2c6ee7f5f2b51f6391bceac900f0742365630ccb4d0914dfbbf8b6eb99ebfa8",
+      "lines": 85,
+      "ranges": [
+        [
+          1,
+          85
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/actor_conditions/gourmet_food.rs",
+      "sha256": "cc7066ecfe05b4d5838e0c049d998681f5d9d6d2f195b0586f4a168847ba1594",
+      "lines": 233,
+      "ranges": [
+        [
+          1,
+          233
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/actor_conditions/item_actions.rs",
+      "sha256": "25b81f1070ed157e1bb42928466ae19c772e7c2668cc9f60cdedaa423414db97",
+      "lines": 97,
+      "ranges": [
+        [
+          1,
+          97
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/actor_conditions/srvgap_c4_tests.rs",
+      "sha256": "c83251d9a296296b980906dbfd3e22a19a6de4f37be5151750d7b87ff6af3473",
+      "lines": 39,
+      "ranges": [
+        [
+          1,
+          39
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/actor_execution.rs",
+      "sha256": "72016b06fb5ad71ad194c280a1e044408a34494069e11ad8e192211af2797264",
+      "lines": 151,
+      "ranges": [
+        [
+          1,
+          151
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/bed_regen.rs",
+      "sha256": "2cfe0631468bbdd1952a2f3b18f82c003b5c31b29d00e315ebcc022a2bf35ff5",
+      "lines": 35,
+      "ranges": [
+        [
+          1,
+          35
+        ]
+      ],
+      "reviewers": [
+        "gameplay-rules",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/bed_regen_tests.rs",
+      "sha256": "90d7a24d0d674ee643b0070d1ec3e5acc59de6c429ea7bc9f1fdc2596832a7dc",
+      "lines": 31,
+      "ranges": [
+        [
+          1,
+          31
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast.rs",
+      "sha256": "ef70635fe087fe63e8656abdf778ee87abae9511c73862cc0b8a77cffacf886d",
+      "lines": 297,
+      "ranges": [
+        [
+          1,
+          297
+        ]
+      ],
+      "reviewers": [
+        "client-support",
+        "gameplay-rules",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/drome.rs",
+      "sha256": "3b11408c3d2c80a35c6a16b5cb7fb5c451ee95ac0143205c819c54632b6d6b51",
+      "lines": 332,
+      "ranges": [
+        [
+          1,
+          332
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/equipped_armor.rs",
+      "sha256": "df78ca938568aedf6f9b7a29903aa31dea904ae73780732ff3c9da882bbf8444",
+      "lines": 243,
+      "ranges": [
+        [
+          1,
+          243
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/equipped_invisibility.rs",
+      "sha256": "630a09bb459e74a3883b0d42d596afbae17c0f56f4a11a73d56a4d94c29610ab",
+      "lines": 50,
+      "ranges": [
+        [
+          1,
+          50
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/equipped_regeneration.rs",
+      "sha256": "3b9a385bb3a0a6d5b9244b0012ba533b5d02e96a8809b0312e8d839514f46356",
+      "lines": 36,
+      "ranges": [
+        [
+          1,
+          36
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/gate.rs",
+      "sha256": "c9842974b0897f996c45a6ae7e5b2756b1311ddde71543f680a5d741e1808063",
+      "lines": 304,
+      "ranges": [
+        [
+          1,
+          304
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/gate_tests.rs",
+      "sha256": "311f16f4ca89edf053ed01171b8f4be454be8c65e5b3c37bce2172e02a5dbf9e",
+      "lines": 358,
+      "ranges": [
+        [
+          1,
+          358
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/level_up_vitals.rs",
+      "sha256": "daceba5042efa7c0a9dd0c934a9eed4a5f779fc385972c356061dc23d53a11dc",
+      "lines": 183,
+      "ranges": [
+        [
+          1,
+          183
+        ]
+      ],
+      "reviewers": [
+        "client-support",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/live_skill.rs",
+      "sha256": "01e5e0715259f584ba8d56a8438cd3691ee8313a9501f5e69adcfb9c2e2da93f",
+      "lines": 83,
+      "ranges": [
+        [
+          1,
+          83
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/prepare.rs",
+      "sha256": "18e8912e4adb4482ba0804b669ac36548bbc38173f074fdd48e2933dbceb6de0",
+      "lines": 1032,
+      "ranges": [
+        [
+          1,
+          1032
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/state.rs",
+      "sha256": "de2b48fa3889454ecc601cc1921eac0a0309909381ab59b54223d4198abc93ae",
+      "lines": 677,
+      "ranges": [
+        [
+          1,
+          677
+        ]
+      ],
+      "reviewers": [
+        "client-support",
+        "gameplay-rules",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/tests.rs",
+      "sha256": "edadf3e3184509be8c3a71bddc4e20e991048c86ec52731d988ac173990aff9d",
+      "lines": 1515,
+      "ranges": [
+        [
+          1,
+          1515
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/vocationless_vitals.rs",
+      "sha256": "201a49c9147e3063d2be1975224625d967c454a330d2cd93f608003be3ac75c1",
+      "lines": 18,
+      "ranges": [
+        [
+          1,
+          18
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/wheel.rs",
+      "sha256": "020a7030c92e4e28022fd017b83d79fd4570baf34cc1be3291ea758f7ee853af",
+      "lines": 1197,
+      "ranges": [
+        [
+          1,
+          1197
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/wheel_attack.rs",
+      "sha256": "60dd61507055b58472ce013bf22249e41c15f14385f0321e39cd70ecb52b3ce6",
+      "lines": 170,
+      "ranges": [
+        [
+          1,
+          170
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast_property_tests.rs",
+      "sha256": "0edfe46ebe77636b9a0411e021d1a8fc039195a4968d67ff2cabaf7ba6c46003",
+      "lines": 76,
+      "ranges": [
+        [
+          1,
+          76
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/chain_tests.rs",
+      "sha256": "212167d1a9e72838065f462c239f20ee61644093bdb73029a1629231fe48cdb9",
+      "lines": 677,
+      "ranges": [
+        [
+          1,
+          677
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/combat_batch.rs",
+      "sha256": "8010a314a7b86a05b5c70bcbea0774e489a059b4124700847e9035c29f3a4257",
+      "lines": 267,
+      "ranges": [
+        [
+          1,
+          267
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/combat_execution.rs",
+      "sha256": "4ad299bba9176dc5b4e6f8a67210d1759107e197c64b56802cd0235095b60fb9",
+      "lines": 169,
+      "ranges": [
+        [
+          1,
+          169
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/combat_execution/tests.rs",
+      "sha256": "f680b8e3edca61144f448a24bb8dcca756e4b5bd75fed4afa7b75a30c10b135f",
+      "lines": 395,
+      "ranges": [
+        [
+          1,
+          395
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/companion_execution.rs",
+      "sha256": "adac2f1f0593c6f2b4d929f620e2aff79286a2d924bb08884b9d4b677b527b36",
+      "lines": 887,
+      "ranges": [
+        [
+          1,
+          887
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/companion_lifecycle.rs",
+      "sha256": "0d1240f5d34016b461e554dbf0b8d762de77fd4b9fe20324ccb39429d603c405",
+      "lines": 3040,
+      "ranges": [
+        [
+          1,
+          3040
+        ]
+      ],
+      "reviewers": [
+        "gameplay-rules",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/companion_lifecycle/tests/cooldown_source.rs",
+      "sha256": "82164009df31689a72366373aa1796269005c774de7fd4a92c2171cb57678346",
+      "lines": 28,
+      "ranges": [
+        [
+          1,
+          28
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/companion_lifecycle/tests/familiar_login_lifecycle.rs",
+      "sha256": "73f18318fdf37ef1af3b041e96444a9ace7a4051778174dbb42e485a1227f341",
+      "lines": 6,
+      "ranges": [
+        [
+          1,
+          6
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/companion_lifecycle/tests/lifecycle.rs",
+      "sha256": "c48d9f9113f0e25dfb1789a2918774a7026fbb658415a0d168de46ff5558f362",
+      "lines": 346,
+      "ranges": [
+        [
+          1,
+          346
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/companion_lifecycle/tests/login.rs",
+      "sha256": "969bdc2186ca0d0b8a93d55536cccd67b7098b23f0f7ceac514011165b634759",
+      "lines": 297,
+      "ranges": [
+        [
+          1,
+          297
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/companion_lifecycle/tests/support.rs",
+      "sha256": "0bc2a413b2554df18197b9361aafd3c341c526e7e6bae0670ae61a1047a8586c",
+      "lines": 29,
+      "ranges": [
+        [
+          1,
+          29
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/delayed_execution.rs",
+      "sha256": "6ef2441451c6a39c917f078b4aa39867f25529fedf3121487d85ab5ed299ecb6",
+      "lines": 1802,
+      "ranges": [
+        [
+          1,
+          1802
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/delayed_execution/lifecycle.rs",
+      "sha256": "99d9020962da2cb366185455d413cb7c61f025519b58b02d8404c8d1636c2bcd",
+      "lines": 290,
+      "ranges": [
+        [
+          1,
+          290
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/executable_catalog.rs",
+      "sha256": "3dee7f037d75c502a7c3d5f2b08177a486e804d0996c536f0857b6d1d90aa888",
+      "lines": 22,
+      "ranges": [
+        [
+          1,
+          22
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/field_history.rs",
+      "sha256": "ee1a6386afe57a54044cf9b813776bfced3bdd63d804c96097a1fa6abc7a62ca",
+      "lines": 79,
+      "ranges": [
+        [
+          1,
+          79
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/find_person_execution.rs",
+      "sha256": "48acd08839cb7efae1e45408a7f0ec75de93a10de3dda5f90ad5b08f5ca51ff0",
+      "lines": 264,
+      "ranges": [
+        [
+          1,
+          264
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/food_regeneration.rs",
+      "sha256": "09e1ed24cc72fd4c8b348906e3ca3693efa40c3d45e967d225a763a52e565c20",
+      "lines": 596,
+      "ranges": [
+        [
+          1,
+          596
+        ]
+      ],
+      "reviewers": [
+        "client-support",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/harmony.rs",
+      "sha256": "af458f830fe5ed40118bde10b2fbbe0a274838bccb7b17a944c7ca3a6bf53049",
+      "lines": 303,
+      "ranges": [
+        [
+          1,
+          303
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/harmony_crystal_parity_tests.rs",
+      "sha256": "a2234d265b395798d5ffd7c370207744486b604893e2a8679eed55563e9ab387",
+      "lines": 239,
+      "ranges": [
+        [
+          1,
+          239
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/harmony_tests.rs",
+      "sha256": "df052adecd10cd167f05d5f02c2f4b1ea1b6d9710592f0c1eecf3851d1fb0dd5",
+      "lines": 419,
+      "ranges": [
+        [
+          1,
+          419
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/house_execution.rs",
+      "sha256": "1a6fcc7b4e40d4f4c746fc298839344339b8ee22e945efa1ea3d3e5db5286a2e",
+      "lines": 338,
+      "ranges": [
+        [
+          1,
+          338
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/magnitude_owner.rs",
+      "sha256": "b650a944488f6b40d3877ecadc4869835d8ca1580194647402629f3c585f630c",
+      "lines": 1612,
+      "ranges": [
+        [
+          1,
+          1612
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/mana_training.rs",
+      "sha256": "1a0975e21c7779d71ac970e9d44a94ba329972c2e6cfe9ae86be6f07e7d297f3",
+      "lines": 1308,
+      "ranges": [
+        [
+          1,
+          1308
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/mana_training/first_vocation_vitals.rs",
+      "sha256": "bc9b7e7971054ad7e77ae43406ef8f1b059bb5d67c7e0060142b6babe5fdc1f5",
+      "lines": 111,
+      "ranges": [
+        [
+          1,
+          111
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/mana_training/tests/first_vocation_vitals_tests.rs",
+      "sha256": "6a48b593d24278219c97936759d0d21fc07d986ff6b60908c9a2f773b49c2b25",
+      "lines": 267,
+      "ranges": [
+        [
+          1,
+          267
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/mod.rs",
+      "sha256": "b27b533d6cde2b3a07de7e5e93ffbcc06d9c4e5febaeec54f0d2367c3f343093",
+      "lines": 841,
+      "ranges": [
+        [
+          1,
+          841
+        ]
+      ],
+      "reviewers": [
+        "gameplay-rules",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/native.rs",
+      "sha256": "3ea976610a6fd90ef275a5b8fe5b94af002d743f8bf1265f7b33c85a8fd22168",
+      "lines": 149,
+      "ranges": [
+        [
+          1,
+          149
+        ]
+      ],
+      "reviewers": [
+        "gameplay-rules",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/native_cast_commit.rs",
+      "sha256": "193908f2ea498403dccdc14ccff46af29ec5ef4edbfcaba14432f4ca37a5ae78",
+      "lines": 159,
+      "ranges": [
+        [
+          1,
+          159
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/native_combat.rs",
+      "sha256": "ea63b8cfa7ad28e97418a97442b5359f24026bb2249a8af4c3cc6c8f3f8ddc5d",
+      "lines": 1264,
+      "ranges": [
+        [
+          1,
+          1264
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/native_delayed.rs",
+      "sha256": "5844babe8ac8e79306c0d77c4ea1c919f4b02e3dafac8b546967dfc3d4d38211",
+      "lines": 1130,
+      "ranges": [
+        [
+          1,
+          1130
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/native_house_movement.rs",
+      "sha256": "d4a0f5f60ef2b2c071498d5e6b0678cee0bc364eee145dac68ea9d77dc7d12d4",
+      "lines": 1112,
+      "ranges": [
+        [
+          1,
+          1112
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/ordinary_timer.rs",
+      "sha256": "8f53ed3176e32e75d8554e37a67129b00f5efae61742ead7747fb3005c379109",
+      "lines": 533,
+      "ranges": [
+        [
+          1,
+          533
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/owned_cast_facts.rs",
+      "sha256": "cb486c1fd3ed2616e72ace2d599009a96f3b26aff890c036a9b3538342db9b73",
+      "lines": 426,
+      "ranges": [
+        [
+          1,
+          426
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/part_b_tests.rs",
+      "sha256": "95c93ef5ddbc986cc5ee31c0b2a92e0d9de73fe2e2200b73dc9e1c791ba1abd7",
+      "lines": 538,
+      "ranges": [
+        [
+          1,
+          538
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/part_d_tests.rs",
+      "sha256": "b5f6819b693930c7935b38e08c2bd9b91e20fb4ba5a18e697098b6bbad834437",
+      "lines": 673,
+      "ranges": [
+        [
+          1,
+          673
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/party.rs",
+      "sha256": "c550cd2430082b6a593a924cc813d74f179fd5fdf73fa5cfe351d5f217b925d1",
+      "lines": 105,
+      "ranges": [
+        [
+          1,
+          105
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/party_tests.rs",
+      "sha256": "4575f8da23d02b02fffa18b6b58e47e7203efe5db635c19de66b703b2dad77b7",
+      "lines": 555,
+      "ranges": [
+        [
+          1,
+          555
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/periodic_execution.rs",
+      "sha256": "3eef34862d6616649ccd9e2211d86ef5a9a84fe101d9d4ebc98ed4ae278e5a4b",
+      "lines": 107,
+      "ranges": [
+        [
+          1,
+          107
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/plan.rs",
+      "sha256": "b7de90930346eea41926fa4bd73da67b45b7665a9513200bed3c9d32727f3748",
+      "lines": 207,
+      "ranges": [
+        [
+          1,
+          207
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/soul_window.rs",
+      "sha256": "54afdc48400c4495540caeba5c94baa14ed6259fd911706bd3eecfa456a4b457",
+      "lines": 389,
+      "ranges": [
+        [
+          1,
+          389
+        ]
+      ],
+      "reviewers": [
+        "client-support",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/source_map_initialization.rs",
+      "sha256": "283ff74e64b937ddb69aca00e7b81823ca6784303437fd5cf91e2b139142f6e8",
+      "lines": 173,
+      "ranges": [
+        [
+          1,
+          173
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/source_player_conditions.rs",
+      "sha256": "3011435b9caeaf54f76965e6904aa96b0d37bfebbf5860e13d0886422adfc0fd",
+      "lines": 992,
+      "ranges": [
+        [
+          1,
+          992
+        ]
+      ],
+      "reviewers": [
+        "client-support",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/spell_presentations.rs",
+      "sha256": "d9b2af3ed6b5c4ac0378f48a552f84e1d0c10a86fc0970f5f41048239d573714",
+      "lines": 715,
+      "ranges": [
+        [
+          1,
+          715
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/spell_presentations/familiar.rs",
+      "sha256": "3096a0b5c9daf9bd76d37e88fcadd1d3eddb9966a7791a036c361d7de6d668ed",
+      "lines": 91,
+      "ranges": [
+        [
+          1,
+          91
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/spell_presentations/tests.rs",
+      "sha256": "ee720592aaee6e582df66258f57682470148a43584663a7f8bf0c9ffc6ae677b",
+      "lines": 454,
+      "ranges": [
+        [
+          1,
+          454
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/stance_execution.rs",
+      "sha256": "5bf4497fece9d3570a6385f0ad99385c9dda29473146a01cc5725cb35bea4f06",
+      "lines": 236,
+      "ranges": [
+        [
+          1,
+          236
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/target.rs",
+      "sha256": "25898941fcfe04ab481577557ea561d82da9475a629d884ce50cb02c8a09c2df",
+      "lines": 34,
+      "ranges": [
+        [
+          1,
+          34
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/tests.rs",
+      "sha256": "001b67ddbe692c55e814b0d89d87a4d41994103aaa55a17c9215c7bcf81afc4a",
+      "lines": 760,
+      "ranges": [
+        [
+          1,
+          760
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/wheel_formula.rs",
+      "sha256": "07a914a357e10798d01631bf433a128d1966f58ff4bc884fb3e87b35a0c46ff8",
+      "lines": 426,
+      "ranges": [
+        [
+          1,
+          426
+        ]
+      ],
+      "reviewers": [
+        "gameplay-rules",
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/wheel_gift.rs",
+      "sha256": "60bd9835ccaeb4a49591019688f041b4de102721202b4e734d186d8ad7d61dc1",
+      "lines": 435,
+      "ranges": [
+        [
+          1,
+          435
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/world_execution.rs",
+      "sha256": "63cee7daa384c166e5763b6fdf959208d986cac2a40ed581a63b669a7d00596a",
+      "lines": 1184,
+      "ranges": [
+        [
+          1,
+          1184
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/world_execution_bundle_tests.rs",
+      "sha256": "13fbcc881d38b832da80be021249ce2eb326df28486b12ac59b056cbd06cf0f0",
+      "lines": 54,
+      "ranges": [
+        [
+          1,
+          54
+        ]
+      ],
+      "reviewers": [
+        "lead"
+      ]
+    }
+  ]
+}

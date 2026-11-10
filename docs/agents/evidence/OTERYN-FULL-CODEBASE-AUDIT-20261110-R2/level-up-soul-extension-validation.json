@@ -1,0 +1,343 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "family": "GR-SOUL-001",
+  "status": "CONFIRMED_STATIC_ADDITIONAL_LIVE_LEVEL_UP_PATH",
+  "new_finding": false,
+  "independent_review": "client-support/verify-level-up-soul.md",
+  "lead_review": "Raw facts/clamp, actual cadence order, committed kill-level mark, current Soul hook, accepted repository norm and later preserving cap transition read by lead. 23 independent source hashes/ranges and selected embedded Knight row checked against immutable Git.",
+  "validated_at_utc": "2026-11-10T14:31:27.507224+00:00",
+  "evidence": [
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/level_up_vitals.rs",
+      "sha256": "daceba5042efa7c0a9dd0c934a9eed4a5f779fc385972c356061dc23d53a11dc",
+      "ranges": [
+        [
+          1,
+          183
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/level_up_live.rs",
+      "sha256": "e27489fa16f02bf2a4b7667e202429119a682aad66ceb1c260b25fa3a4347252",
+      "ranges": [
+        [
+          1,
+          196
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/characters/src/vitals.rs",
+      "sha256": "99ea6f3d0d9f1aafea9fb74634eb21b211c0fc06fe20469c9a4f2f52b8812fd7",
+      "ranges": [
+        [
+          1,
+          108
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/spell_character_facts.rs",
+      "sha256": "5ed5bb15a4ee61c52f4919723beb970d081db9bd9e160d44893f7ab48121649c",
+      "ranges": [
+        [
+          1,
+          312
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast/state.rs",
+      "sha256": "de2b48fa3889454ecc601cc1921eac0a0309909381ab59b54223d4198abc93ae",
+      "ranges": [
+        [
+          1,
+          115
+        ],
+        [
+          275,
+          320
+        ],
+        [
+          490,
+          630
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/vitals.rs",
+      "sha256": "1651aaa7890b6eb9640ce7474e6ea033c41967f55f938089e6459e7b7cecdbc5",
+      "ranges": [
+        [
+          1,
+          235
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/domain/src/domain/premium.rs",
+      "sha256": "a17c377af1b91179fa3a20f7a79b1fc9d68f532ec3fd0571ec6f1423c2c59989",
+      "ranges": [
+        [
+          1,
+          115
+        ]
+      ]
+    },
+    {
+      "path": "docs/reference/soul-maximum.md",
+      "sha256": "0231d898dd4f7280f8515b018421b91377775fc7cdd30969965c35396355d8fd",
+      "ranges": [
+        [
+          1,
+          32
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs",
+      "sha256": "19b9a3126d950e9c90759025dba44f8c4817272536026a97130b4860b15afef1",
+      "ranges": [
+        [
+          450,
+          535
+        ],
+        [
+          998,
+          1043
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs",
+      "sha256": "eee7e581c65e7f086e83a4754c6e01c3f55edeb10a6dc6e19559fda5857bc7b0",
+      "ranges": [
+        [
+          545,
+          772
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs",
+      "sha256": "0f2b63f0952e5e60bfe46eebede785bd1f480cdded78be0adcf4719d258a19aa",
+      "ranges": [
+        [
+          3190,
+          3280
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs",
+      "sha256": "0f2c457f58c2be51cd6a2fcfb675b9c31d57e7a00fc541108abcf5623b66aee1",
+      "ranges": [
+        [
+          535,
+          590
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/soul_kill_live.rs",
+      "sha256": "15f91afc2703a0825e06983a85a8827021b96be7de4ed00a6aecd48c9cb32172",
+      "ranges": [
+        [
+          1,
+          160
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/characters/src/soul.rs",
+      "sha256": "5ffaf79005faca0b163606af02faa75b95403edc70a49bb6dbca4477e907349e",
+      "ranges": [
+        [
+          1,
+          178
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/soul_window.rs",
+      "sha256": "54afdc48400c4495540caeba5c94baa14ed6259fd911706bd3eecfa456a4b457",
+      "ranges": [
+        [
+          1,
+          108
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/cast.rs",
+      "sha256": "ef70635fe087fe63e8656abdf778ee87abae9511c73862cc0b8a77cffacf886d",
+      "ranges": [
+        [
+          180,
+          225
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/wheel_gift.rs",
+      "sha256": "f4e34f299971a75f559e228961c474aa7121ec66d294cf3d127a25fce159e236",
+      "ranges": [
+        [
+          1,
+          144
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/wheel.rs",
+      "sha256": "ed99139f2278d7be289a4577ae051fa7aed77a4aeb287d1995d92cc56b40b552",
+      "ranges": [
+        [
+          1,
+          281
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_progression.rs",
+      "sha256": "b62d9fd9d96c1aa87b79251dc53fe19b0fba35749a35aca96340edc6ce820b71",
+      "ranges": [
+        [
+          180,
+          295
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_experience_transaction.rs",
+      "sha256": "c96870011ca7d0584fdf68bb8a3c4a81207b48bad5656301e05dbe342979a3fc",
+      "ranges": [
+        [
+          190,
+          242
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/automatic_spell_progression.rs",
+      "sha256": "af0531700a1bf75c897e2c4081f3776dd552774f4e549b6d7981c2543bf57272",
+      "ranges": [
+        [
+          1,
+          108
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/actor_conditions.rs",
+      "sha256": "08eee65d50c613203f6100a2e78cb82219c983a07e16cfd1ce5087b3fef7d4dc",
+      "ranges": [
+        [
+          1470,
+          1515
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/resting_area.rs",
+      "sha256": "267e2dca144cd8058db7839d8d7641f3d44b5ac956347e78c953065b96f9e317",
+      "ranges": [
+        [
+          1,
+          100
+        ]
+      ]
+    }
+  ],
+  "selected_asset": {
+    "path": "tools/content-schema/spell-authoring/samples/vocation-vitals-candidate-2026-09-28.json",
+    "sha256": "c72119722cc5375d18c127f0a1bd85cb630989cc8b8c33e3a6afed5284115406",
+    "json_pointer": "/vocations/knight",
+    "reviewed_value": {
+      "capacity": {
+        "per_level": 25,
+        "provenance": "wiki:Formulae",
+        "rookie_total": {
+          "level_factor": 10,
+          "offset": 390
+        },
+        "total": {
+          "level_factor": 25,
+          "offset": 270
+        }
+      },
+      "hitpoints": {
+        "per_level": 15,
+        "provenance": "wiki:Formulae",
+        "rookie_total": {
+          "level_factor": 5,
+          "offset": 145
+        },
+        "total": {
+          "level_factor": 15,
+          "offset": 65
+        }
+      },
+      "mana": {
+        "per_level": 5,
+        "provenance": "wiki:Formulae",
+        "rookie_total": {
+          "level_factor": 5,
+          "offset": 50
+        },
+        "total": {
+          "level_factor": 5,
+          "offset": 50
+        }
+      },
+      "regeneration": {
+        "gainhpamount": 1,
+        "gainhpticks": 6000,
+        "gainmanaamount": 2,
+        "gainmanaticks": 6000,
+        "provenance": "sources: equal values, else Canary 15.30 (owner D5b)"
+      },
+      "rookie_until_level": 8,
+      "soul": {
+        "max": {
+          "free_account": 100,
+          "premium_account": 200
+        },
+        "provenance": "wiki:Soul Point (owner D5a)",
+        "regen_ms": 120000
+      }
+    },
+    "full_file_ledger_credit": false
+  },
+  "trace": {
+    "precondition": {
+      "base_vocation": "Knight",
+      "level": 20,
+      "alive": true,
+      "stored_promotion": true,
+      "current_premium": true,
+      "soul": 150,
+      "projected_max_soul": 200,
+      "pending_spell_commit": false,
+      "soul_gain_due_on_cycle": false
+    },
+    "committed_facts": {
+      "level": 21,
+      "max_health": 380,
+      "max_mana": 155,
+      "max_soul": 100
+    },
+    "after_level_up": {
+      "soul": 100,
+      "max_soul": 100
+    },
+    "after_current_premium_refresh": {
+      "soul": 100,
+      "max_soul": 200
+    },
+    "resource_lost": 50
+  },
+  "runtime_tests_run": false,
+  "scope": "Alive current actor with durable promotion and current Premium; no pending spell commit; same-vocation committed level gain. Current150 ->100 despite maximum200 restored later; no separate finding ID, no deployment claim."
+}

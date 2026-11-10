@@ -1,6 +1,6 @@
 {
   "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
-  "observed_at_utc": "2026-11-10T14:24:56.608908+00:00",
+  "observed_at_utc": "2026-11-10T14:50:31.413824+00:00",
   "lifecycle": "AUTHORING",
   "branch": "audit/full-codebase-20261110-4f0b6c62",
   "sole_writer": "lead /root",
@@ -8,7 +8,7 @@
   "lanes": [
     {
       "lane": "lead",
-      "ledger_rows": 573,
+      "ledger_rows": 605,
       "reported_completed_modules": [
         "oteryn-admin-contracts",
         "oteryn-admin-agent",
@@ -25,12 +25,13 @@
         "oteryn-gameplay-combat",
         "oteryn-gameplay-entities",
         "oteryn-gameplay-progression",
-        "oteryn-gameplay-monster-ai"
+        "oteryn-gameplay-monster-ai",
+        "oteryn-gameplay-spell"
       ]
     },
     {
       "lane": "protocol-session",
-      "ledger_rows": 1307,
+      "ledger_rows": 1393,
       "reported_completed_modules": [
         "oteryn-identity",
         "oteryn-platform-contracts",
@@ -61,7 +62,7 @@
     },
     {
       "lane": "client-support",
-      "ledger_rows": 2990,
+      "ledger_rows": 3068,
       "reported_completed_modules": [
         "oteryn-client-domain",
         "oteryn-synthetic-assets",
@@ -84,11 +85,11 @@
       ]
     }
   ],
-  "checkpoint": 11,
-  "allocation_comment": 6769853774,
-  "predecessor": "90162e10ce97f804d1e4f5130f6b046ba32cc8e4",
-  "predecessor_tree": "cd23cf5591fbe1ab9f00a820a597f88170075819",
-  "expected_sha": "90162e10ce97f804d1e4f5130f6b046ba32cc8e4",
+  "checkpoint": 12,
+  "allocation_comment": 6770484480,
+  "predecessor": "2beefdcd0b1513f479f06f25ef7ae29870329c6d",
+  "predecessor_tree": "d81299a8d8ed65db1f81bbab6a63f84103c72c92",
+  "expected_sha": "2beefdcd0b1513f479f06f25ef7ae29870329c6d",
   "latest_main": "af33fd3baeac15d9991bd24c91bcacc8733492e2",
-  "latest_main_observed_at_utc": "2026-11-10T14:25:00Z"
+  "latest_main_observed_at_utc": "2026-11-10T14:49:53Z"
 }

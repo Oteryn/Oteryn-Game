@@ -1,12 +1,12 @@
-# OTERYN FULL AUDIT — continuation checkpoint 11
+# OTERYN FULL AUDIT — continuation checkpoint 12
 
 Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues across all remaining packages and supplementary domains.
 
 ## Verified evidence at this checkpoint
 
 - 67 workspace packages; 11 supplementary domains; 27900 tracked input files.
-- **56 packages REVIEWED / 11 IN PROGRESS / 0 NOT STARTED / 0 VERIFIED**.
-- **5,090 distinct substantively analyzed files**: 4,910 full and 180 selected-range files; 800,249 deduplicated text line positions.
+- **57 packages REVIEWED / 10 IN PROGRESS / 0 NOT STARTED / 0 VERIFIED**.
+- **5,260 distinct substantively analyzed files**: 5,080 full and 180 selected-range files; 872,856 deduplicated text line positions.
 - Four binary fixtures were semantically decoded in full, totaling 475 bytes. Their exact ranges use bytes and are excluded from line counts.
 - 192 historical files retain their exact ranges only because their Git blobs are identical. Four changed historical files receive no automatic carryover credit; fresh review is attributed separately.
 - REVIEWED requires every tracked package file and a substantive report. File discovery, text search, hash checks and test-source inspection are not runtime execution.
@@ -19,7 +19,7 @@ Twelve additional findings have independent lead verification:
 
 | ID | Confirmed bounded effect | Evidence |
 |---|---|---|
-| GR-SOUL-001 | Fresh restoration clamps valid promoted Premium soul above the free cap before the current cap is applied | `verify-soul-cap.md` |
+| GR-SOUL-001 | Fresh restoration, bed wake and a separately verified live level-up path clamp valid promoted/current-Premium Soul before the current cap is applied | `verify-soul-cap.md` |
 | CL-001 | Valid UseOn sources in open nested carried containers fail client freshness revalidation | `verify-client-item-actions.md` |
 | CL-002 | Plain custom Use item hotkeys are rejected because their command has no world selection | `verify-client-item-actions.md` |
 | CL-003 | Three Polish movement-spell controls send translated words that do not match the canonical spells | `verify-localized-movement.md` |
@@ -44,7 +44,7 @@ Fresh main is `af33fd3baeac15d9991bd24c91bcacc8733492e2`. Its complete diff from
 - `module-reports.json`: completed package reports; client-support reports are inline.
 - Lead: `admin-review.md`, `admission-recovery-review.md`, `determinism-ops-review.md`, `world-bundle-review.md`, `dev-client-bots-review.md`, `architecture-review.md`, `world-compiler-review.md`, `domain-review.md`, `combat-review.md`, `entities-review.md`, `progression-review.md`, `monster-ai-review.md`.
 - Gameplay foundation, content promotion and native admission source: `foundation.md`, `content-promotion.md`, `native-admission-source.md`.
-- Remaining spell source: `spell-progress.md`.
+- Complete spell source: `spell-review.md`, `spell-coverage-validation.json`, `spell-embedded-source-validation.json`; partial content: `content-progress.md`.
 - Native client application: `apps-client.md`; 1,180 full files, with unresolved candidates separated from confirmed findings.
 - Protocol/session: `protocol-session.md`, `platform-client.md`, `session.md`, `protocol.md`; partial `durability-progress.md` and `game-server-progress.md`.
 - Gameplay: `characters.md`, `node-files.md`, `weather.md`, `source-critical-baseline.md`, `housing.md`, `economy.md`, `combat-rules.md`, `encounter-rules.md`, `social-rules.md`, `spell-rules.md`, `world-change.md`, `npc.md`.
@@ -62,8 +62,10 @@ Entities retains **86/86 full files and 37,547 lines**. Eight existing tests in 
 
 Monster AI is now **REVIEWED: 64/64 files and 17,496 lines**. Seven existing pure AI tests passed through an unchanged path-only rustc harness; the native runtime and host benchmark were not run. A catalog/caller compatibility question remains private and unconfirmed.
 
-Frozen durability cumulative coverage is **275/721 complete files**, 297 files with substantive ranges and **95,715 lines**. Frozen game-server cumulative coverage is **312/873 complete files**, 325 files with substantive ranges and **68,061 lines**. Spell cumulative coverage is **53/83 complete files**, 55 files with substantive ranges and **24,056 lines**. These totals include attributed earlier cross-references. The server worker's superseding 304-file capture was independently validated before parent integration. Later live progress is not credited to this frozen checkpoint.
+Spell is now **REVIEWED: 83/83 files and 41,011 lines**, including every source and test file. Two embedded JSON literal lines were completely semantically analyzed against selected native closures: **817 read-only checks PASS**. This is data/source verification, not Cargo/native/SQL execution. GR-SOUL-001 has an additional independently confirmed live level-up path under the same existing P2 ID; the report and exact source evidence are updated.
 
-All 67 packages now have substantive review coverage; eleven remain incomplete. The eleven supplementary domains remain **4 IN PROGRESS / 7 NOT STARTED**. The lead and delegated lanes continue every remaining package and supplementary domain. Confirmed totals are unchanged: **P0=0 / P1=4 / P2=14 / P3=0**. Existing restricted findings, duplicate corroboration and new candidates remain separately tracked. No source fixes or deployed-system reproduction are claimed.
+Frozen durability cumulative coverage is **317/721 full files**, 339 with substantive ranges and **108,862 lines**. Frozen game-server coverage is **349/873 full files**, 362 with ranges and **73,309 lines**. Frozen content coverage is **57/139 full files**, 62 with ranges and **36,709 lines**. Attributed cross-references are included without double counting. The superseding 342-file server capture was parent-validated before integration. Later live work is excluded from this frozen checkpoint.
+
+All 67 packages have substantive review coverage; ten remain incomplete. The eleven supplementary domains remain **4 IN PROGRESS / 7 NOT STARTED**. Lead continues items and the remaining gameplay packages while delegated lanes complete content/dispatch, durability and server. Every supplementary domain remains in scope. Confirmed totals are unchanged: **P0=0 / P1=4 / P2=14 / P3=0**. No source fixes or deployed-system reproduction are claimed.
 
 The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and lifecycle. Repairs remain separate work; this branch changes audit evidence only.
