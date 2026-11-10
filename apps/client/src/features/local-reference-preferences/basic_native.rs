@@ -175,6 +175,14 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             [540, 366, 130, 28],
             BS_AUTOCHECKBOX as u32,
         );
+        let cooldown_bar = control(
+            hwnd,
+            "BUTTON",
+            "Show cooldown bar above console",
+            910,
+            [34, 193, 430, 26],
+            BS_AUTOCHECKBOX as u32,
+        );
         let apply = control(
             hwnd,
             "BUTTON",
@@ -185,7 +193,16 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
         );
         let feedback = control(hwnd, "STATIC", "", 0, [16, 486, 680, 50], 0);
         controls.extend([
-            movement, mouse, zoom, foreground, background, volume, mute, apply, feedback,
+            movement,
+            mouse,
+            zoom,
+            foreground,
+            background,
+            volume,
+            mute,
+            cooldown_bar,
+            apply,
+            feedback,
         ]);
         if controls.iter().any(|h| h.is_null()) {
             DestroyWindow(hwnd);
@@ -253,6 +270,8 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
                             } else {
                                 MousePreset::Standard
                             },
+                            cooldown_bar_enabled: SendMessageW(cooldown_bar, BM_GETCHECK, 0, 0)
+                                == BST_CHECKED as isize,
                             muted: SendMessageW(mute, BM_GETCHECK, 0, 0) == BST_CHECKED as isize,
                         };
                         if let Err(error) = state.apply_basic(&options) {
@@ -293,6 +312,12 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
                     SetWindowTextW(field, wide(&value.to_string()).as_ptr());
                 }
                 SendMessageW(mute, BM_SETCHECK, usize::from(p.muted), 0);
+                SendMessageW(
+                    cooldown_bar,
+                    BM_SETCHECK,
+                    usize::from(p.cooldown_bar_enabled),
+                    0,
+                );
                 held = Some(snapshot);
             }
             SetWindowTextW(

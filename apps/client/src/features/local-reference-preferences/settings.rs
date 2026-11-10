@@ -95,6 +95,8 @@ use defaults::*;
 pub struct ReferencePreferences {
     #[serde(default)]
     pub performance: PerformanceSettings,
+    #[serde(default)]
+    pub stash_stock_order: bool,
     #[serde(skip)]
     pub miscellaneous: MiscellaneousPreferences,
     #[serde(default)]
@@ -141,6 +143,12 @@ pub struct ReferencePreferences {
     pub skill_order: Vec<u8>,
     #[serde(default)]
     pub condition_order: Vec<u8>,
+    #[serde(default)]
+    pub special_condition_order: Vec<String>,
+    #[serde(default)]
+    pub condition_status_hidden: Vec<String>,
+    #[serde(default)]
+    pub condition_hud_hidden: Vec<String>,
     #[serde(default)]
     pub audio_device: String,
     #[serde(default = "default_opacity")]
@@ -265,6 +273,7 @@ impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
             performance: PerformanceSettings::default(),
+            stash_stock_order: false,
             miscellaneous: Default::default(),
             boss_area_opacity: default_boss_opacity(),
             graphics: GraphicsPreferences::default(),
@@ -286,6 +295,9 @@ impl Default for ReferencePreferences {
             status_panel_visible: true,
             skill_order: Vec::new(),
             condition_order: Vec::new(),
+            special_condition_order: Vec::new(),
+            condition_status_hidden: Vec::new(),
+            condition_hud_hidden: Vec::new(),
             audio_device: String::new(),
             effect_opacity: default_opacity(),
             optimise_connection: false,

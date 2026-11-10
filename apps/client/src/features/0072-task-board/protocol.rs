@@ -1,5 +1,9 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
+    pub(in crate::play) fn task_board_weekly_results_initialize(&self, selected: bool) {
+        lock(&self.0).task_board.weekly_results_selected = selected;
+    }
+
     pub(in crate::play) fn task_board_initialize(&self, selected: bool) {
         let mut m = lock(&self.0);
         m.task_board.selected = selected;

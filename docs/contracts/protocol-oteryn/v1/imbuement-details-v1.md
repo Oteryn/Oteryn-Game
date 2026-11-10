@@ -15,8 +15,8 @@ No client recipe, cost, material count or success outcome is accepted.
 ## Reply
 
 At most 32,768 bytes. Field 1 echoes the queried item handle; repeated field 2
-contains at most 60 quotes, strictly ordered by `(family, tier)`.
-Each quote has varint fields 1 family (1–20), 2 tier (1–3), 3 gold (u32),
+contains at most 78 quotes, strictly ordered by `(family, tier)`.
+Each quote has varint fields 1 family (1–26; families above 20 require capability 470), 2 tier (1–3), 3 gold (u32),
 4 Premium required (0/1), 5 success percent (100), 6 recipe available (0/1),
 and up to three repeated field-7 materials. Each material has field 1 UTF-8
 canonical item key (1–128 bytes) and field 2 required quantity (positive u32).

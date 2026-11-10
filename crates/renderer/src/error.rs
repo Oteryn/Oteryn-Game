@@ -59,7 +59,7 @@ impl Display for RendererError {
             ),
             Self::SurfaceCreation => formatter.write_str("renderer surface creation failed"),
             Self::AdapterUnavailable => {
-                formatter.write_str("renderer found no compatible DX12 adapter")
+                formatter.write_str("renderer found no compatible adapter for the selected engine")
             }
             Self::DeviceRequest => formatter.write_str("renderer device creation failed"),
             Self::SurfaceUnsupported => {

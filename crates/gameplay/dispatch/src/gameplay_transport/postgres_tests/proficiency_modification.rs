@@ -6,7 +6,7 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_proficiency::ProficiencyDefinitions;
-use crate::foundation::{ChannelContentPin, MovementLocalPosition};
+use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogue;
 use crate::map::boot::tests::{floor_items, floor_pins, teleport_bundle};
@@ -71,10 +71,10 @@ fn scenario_with_state(project_state: bool) -> TestResult {
         let map = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
             .map_err(debug)?;
         let cells = map.movement_cells(room.movement_cells()).map_err(debug)?;
-        // The runtime must pin the same bundle revision as the PZ lookup,
-        // while retaining the production gameplay generation's identity.
+        // Pair bundle-backed cells with that bundle's frame and map identity.
+        // A production-room map pin is foreign to this teleport-map fixture.
         let frame_digest = map.frame_binding_digest(world);
-        let pin = ChannelContentPin::from_activation(
+        let pin = crate::foundation::ChannelContentPin::from_activation(
             world,
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
@@ -141,7 +141,7 @@ fn scenario_with_state(project_state: bool) -> TestResult {
                 &mut runtime,
                 owner.movement_cells(),
                 actor,
-            )
+            ) == Some(true)
         };
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
@@ -317,11 +317,7 @@ fn scenario_with_state(project_state: bool) -> TestResult {
         };
 
         // 1B §5 check 4: every modification needs a protection zone.
-        assert_eq!(
-            in_zone,
-            Some(true),
-            "the fixture tile (5, 1, 8) is a protection zone"
-        );
+        assert!(in_zone, "the fixture tile (5, 1, 8) is a protection zone");
 
         // MODIFY: 250 dust, rank 0 (PROFICIENCY-1C §2, §4).
         let modified = modify(10, ModificationOperation::Modify { level: 0 }).await?;

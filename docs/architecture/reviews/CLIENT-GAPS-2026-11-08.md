@@ -17,7 +17,8 @@ Zasady przeciw dublowaniu:
 | cg_options | 43 | 12 | 55 |
 | cg_ui | 39 | 9 | 48 |
 | cg_mobile | 0 | 2 | 2 |
-| razem | 134 | 34 | 168 |
+| cg_reward | 2 | 0 | 2 |
+| razem | 136 | 34 | 170 |
 
 ## cg_account
 
@@ -216,3 +217,16 @@ Zasady przeciw dublowaniu:
 |---|---|---|---|---|
 | O035 | Mobile | Mobilny joystick ruchu | DONE | Joystick dotykowy w istniejącym kliencie Windows: osiem sektorów, martwa strefa, powtarzanie w kolejce paced-movement i zatrzymanie po puszczeniu/anulowaniu lub utracie fokusu. Sektory ukośne naprzemiennie wysyłają istniejące kroki kardynalne; protokół obsługuje cztery kierunki. Bez portu Android/iOS. evidence: apps/client/src/features/0233-touch-controls/input.rs:91 + touch_joystick_uses_paced_keyboard_steps_and_release_stops; apps/client/src/features/0233-touch-controls/native.rs:7 + touch_default_tap_dead_zone_and_contact_ownership |
 | O056 | Mobile | Mobilny pasek skrótów | DONE | Dotykowy pasek attack/look/follow/use z widocznym wyborem i powrotem do domyślnego walk-to/use po ponownym dotknięciu. Korzysta z istniejących ścieżek myszy/klawiatury, pokazuje się po pierwszym dotyku i nie przechwytuje myszy; napisy we wszystkich sześciu lokalizacjach. evidence: apps/client/src/features/0233-touch-controls/input.rs:110 + touch_hotbar_world_taps_equal_mouse_context_and_follow_keys; apps/client/src/features/0233-touch-controls/view.rs:6 + touch_overlay_is_hidden_until_touch_and_highlights_the_selected_mode |
+
+## cg_tasks — TIBAUD-2
+
+| id | obszar | funkcja | status | brak |
+|---|---|---|---|---|
+| T201 | Hunting tasks | Elite checkbox i Platinum tasks w Bounty Board | DONE | Owner-approved numeric profile remains PARITY_PENDING. Real rolls, persisted rarity growth/reset, combat modifiers, Platinum XP and Premium-only dust/replay verified. Evidence: apps/client/src/features/0072-task-board/tests/controls.rs:171 + elite_checkbox_uses_the_real_play_queue; crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/task_board.rs:203 + task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust; crates/gameplay/dispatch/src/gameplay_transport/bounty_talisman.rs:287 + elite_spell_batch_halves_actual_hp_and_replay. Focused dispatch: 2 passed, 132.49s, real local PostgreSQL. All six locale catalogs checked. |
+
+## cg_reward — uzupełnienie audytu 2026-11-09
+
+| id | obszar | funkcja | status | brak |
+|---|---|---|---|---|
+| T193 | Rewards / Store | Cosmetic Tokens: saldo postaci i płatność w Store | DONE | evidence: rulesets/economy/store/cosmetics.json:21 + crates/gameplay/durability/src/durability/store/cosmetic_tokens.rs:99 + crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cosmetic_tokens.rs:14 cosmetic_tokens_real_dispatch_debits_character_and_unlocks_once + cosmetic_tokens_real_dispatch_coin_payment_grants_and_replays; apps/client/src/features/0154-store/tests/cosmetic_tokens.rs:133 cosmetic_tokens_cross_real_session_loop_and_native_confirmation |
+| T196 | Rewards | Daily Reward: szansa na podwojenie weapon proficiency XP | DONE | evidence: crates/client-ui/src/features/0182-daily-reward/view.rs:23 + apps/client/src/features/0182-daily-reward/tests/play.rs:103 daily_reward_query_and_claim_drive_the_panel |

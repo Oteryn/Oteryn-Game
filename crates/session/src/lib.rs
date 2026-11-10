@@ -173,6 +173,7 @@ pub use oteryn_protocol_oteryn::{
 };
 mod vip_presence;
 pub use oteryn_protocol_oteryn::achievement_notices::{AchievementEarned, AchievementWatermark};
+pub use oteryn_protocol_oteryn::action_bar_cooldowns;
 pub use oteryn_protocol_oteryn::battle_instinct_status;
 pub use oteryn_protocol_oteryn::condition_status;
 pub use oteryn_protocol_oteryn::death_protection;

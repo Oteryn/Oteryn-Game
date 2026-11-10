@@ -34,7 +34,7 @@ pub(super) fn export(panel: &Panel, path: &Path) -> io::Result<()> {
                 "Refresh complete party measurements before export"
             )));
         }
-        party_import::export_rows(&panel.party)
+        party_import::export_adjusted(&panel.party, &panel.party_adjustments)
     }
     .map_err(io::Error::other)?;
     std::fs::write(path, text)

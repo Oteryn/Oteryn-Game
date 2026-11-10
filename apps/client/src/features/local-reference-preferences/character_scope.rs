@@ -49,6 +49,7 @@ impl SettingsState {
         self.minimap_edit = self.battle_edit;
         self.hud_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
+        self.stash_sort_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
     }
 }

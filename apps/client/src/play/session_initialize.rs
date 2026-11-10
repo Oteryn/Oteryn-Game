@@ -13,6 +13,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     }
     outbox.battle_metadata_initialize(session.server_mechanic_selected(17));
     outbox.spell_bar_initialize(session.feature_snapshot(20));
+    outbox.bar_item_cooldowns_initialize(session.feature_selected(463));
     outbox.appearance_initialize(session);
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
@@ -47,6 +48,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.death_protection_initialize(session.feature_selected(382));
     outbox.quest_initialize(session.quest_state());
     outbox.task_board_initialize(session.task_board_selected());
+    outbox.task_board_weekly_results_initialize(session.feature_selected(474));
     outbox.stash_initialize(session.stash_selected());
     outbox.dialogue_initialize(session);
     outbox.npc_shop_initialize(session);
@@ -101,7 +103,11 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.hotkey_own_actor(session.hotkey_own_actor());
     outbox.item_forge_initialize(session.server_mechanic_selected(152));
-    outbox.store_initialize(session.server_mechanic_selected(154));
+    outbox.store_initialize(
+        session.server_mechanic_selected(154),
+        session.feature_selected(450),
+    );
+    outbox.store_tokens_initialize(session.server_mechanic_selected(479));
     outbox.premium_game_initialize(session.feature_selected(97));
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));

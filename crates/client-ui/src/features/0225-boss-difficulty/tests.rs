@@ -20,8 +20,12 @@ fn server_window_drives_difficulty_and_closed_context_cannot_start() -> Result<(
         &result(Reply::Window {
             context: [1; 16],
             boss_key: "oteryn:dragon".into(),
+            boss_creature_key: "oteryn:dragon".into(),
             content_revision: "r1".into(),
-            selected_difficulty: 7
+            selected_difficulty: 7,
+            personal_highest: 0,
+            unlocked_max: 1,
+            maximum_difficulty: 25,
         })
     ));
     let preview = request(&mut p, Intent::Preview).ok_or("preview")?;

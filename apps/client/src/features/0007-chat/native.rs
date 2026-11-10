@@ -72,9 +72,12 @@ pub(in crate::play) fn open_shared(
 
 fn close(weak: &WeakMailbox) {
     if let Some(mailbox) = weak.upgrade() {
-        lock(&mailbox).chat.open = false;
+        console::close(&mut lock(&mailbox));
     }
 }
 
 #[path = "chat_dialog.rs"]
 mod dialog;
+
+#[path = "native_mirror.rs"]
+mod mirror;

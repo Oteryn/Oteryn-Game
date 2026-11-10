@@ -838,4 +838,4 @@ pub mod source_map_initialization;
 
 pub mod periodic_execution;
 
-mod source_player_conditions;
+pub mod source_player_conditions;

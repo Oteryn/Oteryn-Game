@@ -15,6 +15,8 @@ pub struct Request {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Card {
+    /// First-species Warden completion; absent on non-creature/legacy cards.
+    pub echo_warden_completed: Option<bool>,
     pub outfit_look_type: u32,
     pub object_look_type: Option<u32>,
     pub race: u16,
@@ -42,7 +44,17 @@ pub fn encode_request(request: Request) -> Result<Vec<u8>> {
     out.push(request.category);
     Ok(out)
 }
+/// Opt in to the T185 card field; legacy seven-byte requests keep their old reply shape.
+pub fn encode_echo_request(request: Request) -> Result<Vec<u8>> {
+    let mut body = encode_request(request)?;
+    body.push(1);
+    Ok(body)
+}
 pub fn decode_request(body: &[u8]) -> Result<Request> {
+    let body = match body {
+        [255, 1, _, _, _, _, _, 1] => &body[..7],
+        _ => body,
+    };
     let [255, 1, a, b, c, d, category] = body else {
         return Err(Error::Malformed);
     };
@@ -111,6 +123,9 @@ pub fn encode_page(page: &Page) -> Result<Vec<u8>> {
         if let Some(object) = card.object_look_type {
             scalar(&mut row, 6, object.into());
         }
+        if let Some(completed) = card.echo_warden_completed {
+            scalar(&mut row, 7, u64::from(completed));
+        }
         bytes(&mut out, 2, &row);
     }
     for category in &page.categories {
@@ -128,7 +143,7 @@ fn card(body: &[u8]) -> Result<Card> {
     while cursor < body.len() {
         let key = read_varint(body, &mut cursor)?;
         let tag = key >> 3;
-        if !(1..=6).contains(&tag) || seen & (1 << tag) != 0 {
+        if !(1..=7).contains(&tag) || seen & (1 << tag) != 0 {
             return Err(Error::Malformed);
         }
         seen |= 1 << tag;
@@ -152,6 +167,13 @@ fn card(body: &[u8]) -> Result<Card> {
                         .try_into()
                         .map_err(|_| Error::Malformed)?,
                 )
+            }
+            56 => {
+                card.echo_warden_completed = Some(match read_varint(body, &mut cursor)? {
+                    0 => false,
+                    1 => true,
+                    _ => return Err(Error::Malformed),
+                });
             }
             _ => return Err(Error::Malformed),
         }
@@ -228,6 +250,49 @@ mod tests {
     }
 
     #[test]
+    fn echo_request_opts_in_without_changing_legacy_requests() -> Result<()> {
+        let request = Request {
+            after: 0,
+            race: 7,
+            category: 0,
+        };
+        let legacy = encode_request(request)?;
+        assert_eq!(legacy, [255, 1, 0, 0, 7, 0, 0]);
+        let mut echo = encode_echo_request(request)?;
+        assert_eq!(&echo[..7], legacy);
+        assert_eq!(decode_request(&echo)?, request);
+        echo[7] = 2;
+        assert!(decode_request(&echo).is_err());
+        echo[7] = 1;
+        echo.push(1);
+        assert!(decode_request(&echo).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn echo_warden_boolean_is_optional_strict_and_not_duplicated() -> Result<()> {
+        let prefix = [8, 7, 18, 1, b'R', 26, 1, b'F', 34, 0];
+        assert_eq!(card(&prefix)?.echo_warden_completed, None);
+        for (value, completed) in [(0, false), (1, true)] {
+            let mut row = prefix.to_vec();
+            row.extend([56, value]);
+            assert_eq!(card(&row)?.echo_warden_completed, Some(completed));
+            let page = Page {
+                next: None,
+                categories: vec!["F".into()],
+                cards: vec![card(&row)?],
+            };
+            assert_eq!(decode_page(&encode_page(&page)?)?, page);
+            row.extend([56, value]);
+            assert!(card(&row).is_err());
+        }
+        let mut row = prefix.to_vec();
+        row.extend([56, 2]);
+        assert!(card(&row).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn catalogue_wire_checks_bounds_duplicates_and_round_trip() -> Result<()> {
         let request = Request {
             after: 0,
@@ -251,6 +316,7 @@ mod tests {
             next: Some(20),
             categories: vec!["Forest dwellers".into()],
             cards: vec![Card {
+                echo_warden_completed: None,
                 outfit_look_type: 128,
                 object_look_type: None,
                 race: 7,

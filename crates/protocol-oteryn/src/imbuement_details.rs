@@ -9,7 +9,7 @@ pub const CAPABILITY_IMBUEMENT_DETAILS_V1: u32 = 447;
 pub const COMMAND_TYPE_IMBUEMENT_DETAILS: u32 = 731;
 pub const MAX_REQUEST_BYTES: usize = 11;
 pub const MAX_REPLY_BYTES: usize = 32768;
-pub const MAX_QUOTES: usize = 60;
+pub const MAX_QUOTES: usize = crate::imbuement::MAX_OFFERS;
 pub const MAX_MATERIALS: usize = 3;
 pub const MAX_KEY_BYTES: usize = 128;
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -61,7 +61,7 @@ fn valid_material(material: &Material) -> bool {
         && material.quantity > 0
 }
 fn valid_quote(quote: &Quote) -> bool {
-    (1..=20).contains(&quote.family)
+    (1..=crate::imbuement::MAX_FAMILY).contains(&quote.family)
         && (1..=3).contains(&quote.tier)
         && quote.success_percent == 100
         && quote.materials.len() <= MAX_MATERIALS

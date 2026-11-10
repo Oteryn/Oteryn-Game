@@ -659,6 +659,9 @@ fn scenario(expansion: bool, premium_current: bool) -> TestResult {
         .fetch_one(&harness.pool)
         .await?;
         assert_eq!(receipt_count, 1);
+        if !expansion && !premium_current {
+            catalogue::verify_echo(&owner, &mut admitted, races).await?;
+        }
         eprintln!(
             "WB2_P01_RESET_PREMIUM_POSTGRES_COMPLETED expansion={expansion} premium={premium_current}"
         );

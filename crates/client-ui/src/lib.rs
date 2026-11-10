@@ -252,6 +252,8 @@ pub mod server_save_countdown;
 /// Weekly Task Board state and controls.
 #[path = "features/0072-task-board/mod.rs"]
 pub mod task_board;
+#[path = "features/0474-task-board-weekly-results/mod.rs"]
+pub mod task_board_weekly_results;
 
 #[path = "features/0051-staff/mod.rs"]
 pub mod staff;
@@ -309,6 +311,8 @@ pub mod death_protection;
 pub mod mechanics_status;
 #[path = "features/0280-party-effects/mod.rs"]
 pub mod party_effects;
+#[path = "features/0461-party-list/mod.rs"]
+pub mod party_list;
 #[path = "features/0383-party-member-effects/mod.rs"]
 pub mod party_member_effects;
 #[path = "features/0381-potion-durations/mod.rs"]
@@ -333,3 +337,11 @@ pub mod wheel_presentation;
 
 #[path = "features/0450-server-modal/mod.rs"]
 pub mod server_modal;
+
+#[path = "features/0479-store-cosmetic-tokens/mod.rs"]
+pub mod store_cosmetic_tokens;
+
+#[path = "features/0463-action-bar-cooldowns/mod.rs"]
+pub mod action_bar_cooldowns;
+#[path = "features/0462-support-intake/mod.rs"]
+pub mod support_intake;

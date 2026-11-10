@@ -288,7 +288,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                             state.feedback = tr!("Enter a keyboard delay from 0 to 1000 ms").into()
                         }
                     }
-                } else if (241..=244).contains(&action) {
+                } else if (241..=244).contains(&action) || (300..=359).contains(&action) {
                     if state.page == SettingsPage::Status
                         && layout.reorder(action, &mut preferences)
                     {
@@ -375,6 +375,15 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 selected = -1;
                 held = Some(state.preferences.clone());
             }
+            let status_page = state.page == SettingsPage::Status;
+            MoveWindow(
+                feedback,
+                10,
+                if status_page { 540 } else { 380 },
+                710,
+                if status_page { 60 } else { 90 },
+                1,
+            );
             controls::update_feedback(feedback, &state, navigation_controls::page_help(state.page));
             drop(state);
             std::thread::sleep(Duration::from_millis(20));

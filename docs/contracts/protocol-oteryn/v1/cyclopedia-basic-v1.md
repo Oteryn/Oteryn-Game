@@ -23,12 +23,12 @@ code u8, Character revision u64, discovered bool u8, found u8, area percent u8,
 World pool u64,
 reset epoch u64, respawn factor u8 (1 or 2), visible count u8, then count records
 of x u16, y u16, native floor i8. At most eight records. Code 0 success, 1 invalid,
-2 Premium required, 3 already discovered, 4 no active exploration, 5 insufficient
-pool outside current window, 6 insufficient funds, 7 historical area-improved
+2 historical Premium refusal, 3 already discovered, 4 historical no-exploration
+refusal, 5 insufficient reachable pool, 6 insufficient funds, 7 historical area-improved
 refusal. Current donations remain allowed during an active boost and fund a future
 save. Area percent counts completed canonical subareas within the current main area.
 Only the requesting character's unfound same-floor POIs in its viewport are sent.
-Committed intent receipts retain the exact result, including query-time facts, for retries.
+Committed intent and initializing-query receipts retain the exact result, including query-time facts, for retries.
 New queries read current facts; progress survives session and process replacement.
 An epoch is improved iff the pool is at least 10,000,000; the goal is subtracted
 and the excess carries over.
@@ -54,11 +54,45 @@ exactly 10,000,000 gp, carries excess, and may improve consecutive days. There i
 random draw or prior-winner exclusion. Exact source locators and compatibility
 decisions: `docs/reference/content-prep/world-src-1105/map.md`.
 
-The basic server exposes position checking as intent 3, using the current committed
-runtime position. Queries poll the requesting character's visible POIs. Automatic
-effect/message events remain subsequent presentation work. The native client
-selects existing capability 57, routes 72/73 through its session loop, and exposes
-the controls and key binding already implemented by main's0057 client feature.
+## Automatic discovery and POI reset (T186/T187, 2026-11-09)
+
+Every admitted subarea is active for every character without Start or Premium.
+The first current-location query or accepted STEP materializes the character's
+private POIs; an initializing query advances the Character revision atomically.
+Accepted movement finds POIs at the server-owned position. Intent 3 remains a
+compatible explicit position check. Legacy Start initializes an absent run and is
+idempotent while one is active. Sampling prefers spaced points outside the current
+viewport; inside points and relaxed spacing allow seven POIs in dense, bounded
+subareas.
+
+Shuffle resets POIs, found count and completion. A same-transaction typed reset
+receipt permits the affected canonical subarea to lose completion; other progress
+regressions remain rejected. Area percentages and completed-area census are derived
+from current subarea rows. Completion is persisted, not the resulting bonus.
+
+The seventh accepted STEP queues the completion banner through the existing
+capability-31 status-text channel. The capability-57 client presents completion
+and labels Shuffle as Reset POIs.
+
+### Discovery speed query
+
+Command 6178, capability 57, has an empty request and a two-byte little-endian
+u16 reply containing the current discovery speed contribution (zero when inactive).
+The client queues it after current-location map actions and shows the confirmed
+value in the native hover tooltip and accessible panel text. Legacy 72/73 layouts
+and receipt replay remain unchanged.
+
+Owner decision 2026-11-09 (T187) sets content-defined `PARITY_PENDING` starting
+endpoints in `content/cyclopedia/discovery-speed.json`. For n fully discovered
+areas among N discoverable areas, the bonus is
+`minimum + floor((maximum-minimum)*(n-1)/(N-1))`; N=1 uses maximum.
+The contribution applies only inside a fully discovered area. The existing actor
+speed owner adds it once alongside condition and equipment contributions. Actual
+movement refreshes it before stepping and after arrival/completion; reset refreshes
+it immediately. Runtime values are rebuilt from fenced PostgreSQL progress, never
+used as an independent source of completion truth. Official news 8834 establishes
+the 100–195 envelope; the formula is the owner's enabled starting interpretation,
+not a newly claimed official formula.
 
 ## Public atlas extension (O078)
 

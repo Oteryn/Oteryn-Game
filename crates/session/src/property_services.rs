@@ -110,3 +110,4 @@ pub use oteryn_protocol_oteryn::{party_skull, timed_item};
 pub mod cyclopedia_map;
 
 pub use oteryn_protocol_oteryn::server_modal;
+pub use oteryn_protocol_oteryn::support_intake;

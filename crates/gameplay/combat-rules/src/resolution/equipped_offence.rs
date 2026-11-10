@@ -13,6 +13,11 @@ pub struct EquippedOffence {
     pub critical_damage: u16,
     pub life_leech: u16,
     pub mana_leech: u16,
+    /// Active weapon imbuement: element and percentage of physical attack damage.
+    pub elemental_conversion:
+        Option<(oteryn_gameplay_content::content::ProjectV2RangedElement, u8)>,
+    /// Active Vibrancy percentage; installed into the player's condition owner.
+    pub paralysis_deflection_percent: u8,
     /// EQMOD2: hundredths of a percent, before defence; extension hits never crit/leech.
     pub cleave: u64,
     /// Canary item.cpp:571-583,607-619: installed weapon and boots tiers.
@@ -26,6 +31,27 @@ pub struct EquippedOffence {
 }
 
 impl EquippedOffence {
+    /// Canary combat.cpp:942-979: replace the secondary component from the physical primary.
+    pub fn convert_physical(
+        &self,
+        physical: i64,
+        secondary: i64,
+        element: oteryn_gameplay_content::content::ProjectV2RangedElement,
+    ) -> Option<(
+        i64,
+        i64,
+        oteryn_gameplay_content::content::ProjectV2RangedElement,
+    )> {
+        match self.elemental_conversion {
+            Some((converted, percent)) if physical > 0 && percent <= 100 => Some((
+                physical.checked_mul(i64::from(100 - percent))? / 100,
+                physical.checked_mul(i64::from(percent))? / 100,
+                converted,
+            )),
+            _ => Some((physical, secondary, element)),
+        }
+    }
+
     /// Global news 8421: intrinsic 5% chance and 10% extra damage, additive with
     /// equipment/imbuements. Keep the equipment projection itself equipment-only.
     /// Skill sums saturate at the existing u16 limit; rolls remain 1..=10000.

@@ -35,6 +35,10 @@ pub struct TaskBoardPanel {
     pub selected: bool,
     pub open: bool,
     pub soulseals_open: bool,
+    pub weekly_results_selected: bool,
+    pub weekly_checked: bool,
+    pub weekly_results_open: bool,
+    pub weekly_results_seen: Option<u64>,
     pub pending: bool,
     pub state: Option<task_board::TaskBoardReply>,
     pub feedback: Option<&'static str>,
@@ -65,6 +69,9 @@ pub fn weekly_request(
 pub fn apply_weekly(panel: &mut TaskBoardPanel, reply: task_board::full::Reply) {
     panel.pending = false;
     panel.feedback = tree::refusal_message(reply.refusal);
+    if reply.weekly_results.is_none() {
+        panel.weekly_results_open = false;
+    }
     panel.weekly = Some(reply);
 }
 

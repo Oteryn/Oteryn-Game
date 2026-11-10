@@ -9,13 +9,15 @@ use crate::charm_wire::{
 use crate::item_view::ItemHandle;
 
 pub const CAPABILITY_IMBUE_V1: u32 = 68;
+/// Extends family data without changing command 85 or legacy offer indices.
+pub const CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1: u32 = 470;
 pub const COMMAND_TYPE_IMBUEMENT: u32 = 85;
 /// IMBUEWIRE1-RL-01.
 pub const MAX_REQUEST_BYTES: usize = 32;
-/// IMBUEWIRE1-RL-02: 3 applied rows and 20 families x 3 tiers of offers.
-pub const MAX_REPLY_BYTES: usize = 1024;
+/// IMBUEWIRE1-RL-02: 3 applied rows and at most 26 families x 3 tiers of offers.
+pub const MAX_REPLY_BYTES: usize = 2048;
 pub const MAX_SLOTS: u8 = 3;
-pub const MAX_FAMILY: u8 = 20;
+pub const MAX_FAMILY: u8 = 26;
 pub const MAX_OFFERS: usize = MAX_FAMILY as usize * 3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,7 +48,7 @@ pub enum ImbuementResult {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AppliedImbuement {
     pub slot: u8,
-    /// Imbuement family 1-20 (stored category + 1).
+    /// Imbuement family 1-26 (stored category + 1).
     pub family: u8,
     pub tier: u8,
     pub remaining_ms: u32,

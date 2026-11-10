@@ -7,6 +7,30 @@ use oteryn_client_runtime::{
     raw_feature::{CommandStatus, GatedCommandResult},
 };
 
+/// Takes the next gameplay command and answers the speed query that follows an atlas intent.
+fn next_command(
+    receiver: &mut tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
+    outbox: &crate::play::mailbox::Outbox,
+) -> Result<PlayCommand, Box<dyn std::error::Error>> {
+    let command = receiver.try_recv()?;
+    if let Ok(PlayCommand::Feature(speed)) = receiver.try_recv() {
+        assert_eq!(
+            (speed.capability, speed.kind),
+            (57, cyclopedia_map::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY)
+        );
+        outbox.properties_result(
+            &speed,
+            &GatedCommandResult {
+                command_id: 100,
+                server_sequence: 100,
+                status: CommandStatus::Accepted,
+                payload: 0u16.to_le_bytes().to_vec(),
+            },
+        );
+    }
+    Ok(command)
+}
+
 #[test]
 fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -34,7 +58,7 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
             repeat: false,
         }])
     );
-    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+    let PlayCommand::Feature(command) = next_command(&mut receiver, &outbox)? else {
         return Err("missing region query".into());
     };
     assert_eq!((command.capability, command.kind), (57, 72));
@@ -60,7 +84,7 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
         },
     );
     link.cyclopedia_atlas_action(5);
-    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+    let PlayCommand::Feature(command) = next_command(&mut receiver, &outbox)? else {
         return Err("missing geometry query".into());
     };
     let request = wire::decode_request(&command.payload).map_err(|e| format!("{e:?}"))?;
@@ -93,7 +117,7 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
     );
     assert_eq!(link.cyclopedia_map_panel().geometry.runs.len(), 1024);
     link.cyclopedia_atlas_pump();
-    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+    let PlayCommand::Feature(command) = next_command(&mut receiver, &outbox)? else {
         return Err("missing geometry continuation".into());
     };
     assert_eq!(
@@ -127,7 +151,7 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
         },
     );
     link.cyclopedia_map_request(oteryn_client_ui::cyclopedia_map::Intent::Query);
-    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+    let PlayCommand::Feature(command) = next_command(&mut receiver, &outbox)? else {
         return Err("missing live discovery query".into());
     };
     let points = cyclopedia_map::MapResult {
@@ -167,7 +191,7 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
             .is_empty()
     );
     link.cyclopedia_atlas_action(6);
-    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+    let PlayCommand::Feature(command) = next_command(&mut receiver, &outbox)? else {
         return Err("missing floor-filter query".into());
     };
     assert_eq!(

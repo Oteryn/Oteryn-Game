@@ -36,6 +36,14 @@ impl AppearanceContent<String> for NativeCosmeticsView {
                 keys.push(key.into());
             }
         }
+        if let Some(offers) = crate::content::store_cosmetics::offers() {
+            keys.extend(
+                offers
+                    .iter()
+                    .filter(|offer| crate::content::store_cosmetics::compatible(self, offer))
+                    .map(|offer| offer.key.clone()),
+            );
+        }
         keys.push(MARRIAGE_GRANT_KEY.into());
         keys.sort();
         keys.dedup();
@@ -47,6 +55,11 @@ impl AppearanceContent<String> for NativeCosmeticsView {
         provenance: &str,
         target: EarnedCosmetic<'_>,
     ) -> UnlockFact {
+        if let Some(fact) =
+            crate::content::store_cosmetics::unlock(self, grant_key, provenance, target)
+        {
+            return fact;
+        }
         if grant_key == MARRIAGE_GRANT_KEY {
             let compatible = provenance == MARRIAGE_PROVENANCE
                 && match target {
@@ -89,7 +102,9 @@ impl AppearanceContent<String> for NativeCosmeticsView {
         target: EarnedCosmetic<'_>,
         sex: crate::domain::appearance::Sex,
     ) -> UnlockFact {
-        if provenance == DROME_PROVENANCE {
+        if provenance == DROME_PROVENANCE
+            || provenance == crate::content::store_cosmetics::PROVENANCE
+        {
             self.earned_unlock(grant_key, provenance, target)
         } else {
             self.content

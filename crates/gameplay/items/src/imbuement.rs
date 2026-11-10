@@ -17,7 +17,7 @@ pub const IMBUEMENT_CHECKPOINT_INTERVAL_MS: u64 = 60_000;
 /// Paralysis deflection keeps pinned Canary's non-aggressive classification
 /// (47dfd51f, imbuements.xml category 19); not verified against Global.
 pub fn consumes_elapsed(category: u8, in_combat: bool) -> bool {
-    matches!(category, 8 | 9 | 12) || in_combat
+    matches!(category, 8 | 9 | 12 | 25) || in_combat
 }
 // Single-slot shrine removal; the 30,000-gold cleansing item in news 8396 is separate.
 // Reference: imports/canary/imbuements-xml/imbuements.xml (47dfd51f).
@@ -39,189 +39,248 @@ pub struct ImbuementScroll {
     pub tier: u8,
 }
 
-/// The 36 scrolls whose recipes exist in the native catalogue and have a Global scroll.
-/// Elemental damage-conversion recipes and Vibrancy have no native scroll mapping here, so their
-/// ids fail closed rather than becoming a different imbuement.
-pub const IMBUEMENT_SCROLLS: [ImbuementScroll; 36] = [
+/// All 24 Powerful and 24 Intricate scrolls; ids from pinned Canary items.xml.
+/// Ordered by (family, tier), as required by the shrine wire window.
+pub const IMBUEMENT_SCROLLS: [ImbuementScroll; 48] = [
     ImbuementScroll {
-        item_id: 51_462,
-        family: 1,
-        tier: 3,
-    },
-    ImbuementScroll {
-        item_id: 51_742,
+        item_id: 51742,
         family: 1,
         tier: 2,
     },
     ImbuementScroll {
-        item_id: 51_454,
+        item_id: 51462,
+        family: 1,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51734,
+        family: 3,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51454,
         family: 3,
         tier: 3,
     },
     ImbuementScroll {
-        item_id: 51_734,
-        family: 3,
-        tier: 2,
-    },
-    ImbuementScroll {
-        item_id: 51_461,
-        family: 4,
-        tier: 3,
-    },
-    ImbuementScroll {
-        item_id: 51_741,
+        item_id: 51741,
         family: 4,
         tier: 2,
     },
     ImbuementScroll {
-        item_id: 51_447,
+        item_id: 51461,
+        family: 4,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51727,
+        family: 5,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51447,
         family: 5,
         tier: 3,
     },
     ImbuementScroll {
-        item_id: 51_727,
-        family: 5,
-        tier: 2,
-    },
-    ImbuementScroll {
-        item_id: 51_449,
-        family: 6,
-        tier: 3,
-    },
-    ImbuementScroll {
-        item_id: 51_729,
+        item_id: 51729,
         family: 6,
         tier: 2,
     },
     ImbuementScroll {
-        item_id: 51_448,
+        item_id: 51449,
+        family: 6,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51728,
+        family: 7,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51448,
         family: 7,
         tier: 3,
     },
     ImbuementScroll {
-        item_id: 51_728,
-        family: 7,
-        tier: 2,
-    },
-    ImbuementScroll {
-        item_id: 51_457,
-        family: 8,
-        tier: 3,
-    },
-    ImbuementScroll {
-        item_id: 51_737,
+        item_id: 51737,
         family: 8,
         tier: 2,
     },
     ImbuementScroll {
-        item_id: 51_452,
+        item_id: 51457,
+        family: 8,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51732,
+        family: 9,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51452,
         family: 9,
         tier: 3,
     },
     ImbuementScroll {
-        item_id: 51_732,
-        family: 9,
-        tier: 2,
-    },
-    ImbuementScroll {
-        item_id: 51_463,
-        family: 10,
-        tier: 3,
-    },
-    ImbuementScroll {
-        item_id: 51_743,
+        item_id: 51743,
         family: 10,
         tier: 2,
     },
     ImbuementScroll {
-        item_id: 51_464,
+        item_id: 51463,
+        family: 10,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51744,
+        family: 11,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51464,
         family: 11,
         tier: 3,
     },
     ImbuementScroll {
-        item_id: 51_744,
-        family: 11,
-        tier: 2,
-    },
-    ImbuementScroll {
-        item_id: 51_467,
-        family: 12,
-        tier: 3,
-    },
-    ImbuementScroll {
-        item_id: 51_747,
+        item_id: 51747,
         family: 12,
         tier: 2,
     },
     ImbuementScroll {
-        item_id: 51_446,
+        item_id: 51467,
+        family: 12,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51726,
+        family: 14,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51446,
         family: 14,
         tier: 3,
     },
     ImbuementScroll {
-        item_id: 51_726,
-        family: 14,
-        tier: 2,
-    },
-    ImbuementScroll {
-        item_id: 51_444,
-        family: 15,
-        tier: 3,
-    },
-    ImbuementScroll {
-        item_id: 51_724,
+        item_id: 51724,
         family: 15,
         tier: 2,
     },
     ImbuementScroll {
-        item_id: 51_455,
+        item_id: 51444,
+        family: 15,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51735,
+        family: 16,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51455,
         family: 16,
         tier: 3,
     },
     ImbuementScroll {
-        item_id: 51_735,
-        family: 16,
-        tier: 2,
-    },
-    ImbuementScroll {
-        item_id: 51_456,
-        family: 17,
-        tier: 3,
-    },
-    ImbuementScroll {
-        item_id: 51_736,
+        item_id: 51736,
         family: 17,
         tier: 2,
     },
     ImbuementScroll {
-        item_id: 51_451,
+        item_id: 51456,
+        family: 17,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51731,
+        family: 18,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51451,
         family: 18,
         tier: 3,
     },
     ImbuementScroll {
-        item_id: 51_731,
-        family: 18,
-        tier: 2,
-    },
-    ImbuementScroll {
-        item_id: 51_445,
-        family: 19,
-        tier: 3,
-    },
-    ImbuementScroll {
-        item_id: 51_725,
+        item_id: 51725,
         family: 19,
         tier: 2,
     },
     ImbuementScroll {
-        item_id: 51_460,
+        item_id: 51445,
+        family: 19,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51740,
+        family: 20,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51460,
         family: 20,
         tier: 3,
     },
     ImbuementScroll {
-        item_id: 51_740,
-        family: 20,
+        item_id: 51739,
+        family: 21,
         tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51459,
+        family: 21,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51745,
+        family: 22,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51465,
+        family: 22,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51733,
+        family: 23,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51453,
+        family: 23,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51730,
+        family: 24,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51450,
+        family: 24,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51738,
+        family: 25,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51458,
+        family: 25,
+        tier: 3,
+    },
+    ImbuementScroll {
+        item_id: 51746,
+        family: 26,
+        tier: 2,
+    },
+    ImbuementScroll {
+        item_id: 51466,
+        family: 26,
+        tier: 3,
     },
 ];
 
@@ -327,6 +386,8 @@ pub use catalogue::{IMBUEMENT_CATALOGUE_REVISION, IMBUEMENT_RECIPES};
 
 /// The catalogue recipe of one family and tier.
 pub fn imbuement_recipe(family: u8, tier: u8) -> Option<&'static ImbuementRecipe> {
+    // Family 13 is the pre-catalogue paralysis family; existing items remain readable.
+    let family = if family == 13 { 26 } else { family };
     IMBUEMENT_RECIPES
         .binary_search_by_key(&(family, tier), |recipe| (recipe.family, recipe.tier))
         .ok()
@@ -336,3 +397,13 @@ pub fn imbuement_recipe(family: u8, tier: u8) -> Option<&'static ImbuementRecipe
 #[cfg(test)]
 #[path = "imbuement_tests.rs"]
 mod tests;
+
+/// Elemental conversions conflict with each other and legacy family 2.
+/// Legacy paralysis and Vibrancy likewise share one exclusion group.
+pub const fn imbuement_category_group(category: u8) -> u8 {
+    match category {
+        20..=24 => 1,
+        25 => 12,
+        other => other,
+    }
+}

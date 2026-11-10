@@ -1,0 +1,17 @@
+{
+  "id": 461,
+  "name": "PARTY_LIST_V1",
+  "constant": "party::CAPABILITY_PARTY_LIST_V1",
+  "requires": [
+    42
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

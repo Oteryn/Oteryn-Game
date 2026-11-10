@@ -1,6 +1,6 @@
 //! Local spell row; server cast indices are never display row numbers.
 use std::num::NonZeroU32;
-pub const ACTION_BAR_SLOTS: usize = 36;
+pub const ACTION_BAR_SLOTS: usize = 150;
 #[derive(Debug, Clone)]
 pub struct ActionBar {
     slots: [Option<NonZeroU32>; ACTION_BAR_SLOTS],

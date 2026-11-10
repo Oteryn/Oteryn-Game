@@ -1,14 +1,19 @@
 use super::Panel;
 pub fn panel_text(panel: &Panel) -> String {
     if panel.atlas.is_some() {
-        return format!("Cyclopedia atlas\r\n{}", super::atlas_detail(panel));
+        return format!(
+            "Cyclopedia atlas\r\n{}\r\n{}",
+            super::atlas_detail(panel),
+            discovery_speed_tooltip(panel)
+        );
     }
     format!(
-        "Cyclopedia map\r\nWorld atlas: Ctrl+Alt+Shift+F9\r\n{}\r\n{}\r\n{}\r\n{}",
+        "Cyclopedia map\r\nWorld atlas: Ctrl+Alt+Shift+F9\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}",
+        discovery_speed_tooltip(panel),
         panel.summary,
         super::region_atlas_view::text(panel),
         map_text(panel),
-        if panel.pending {
+        if panel.pending || panel.speed_pending {
             tr!("Waiting for the server")
         } else if !panel.selected && panel.feedback.is_empty() {
             tr!("Unavailable in this session")
@@ -85,4 +90,16 @@ pub fn map_text(panel: &Panel) -> String {
         "Only server-visible POIs are shown. Region, passage and NPC geometry is unavailable.\r\n"
     ));
     out
+}
+
+/// Reference manual §3.2.2 and the official 8834 source capture: range only.
+pub fn discovery_speed_tooltip(panel: &Panel) -> String {
+    format!(
+        "{}\r\n{} +{}",
+        tr!(
+            "Discovery speed bonus: +100–195 in fully discovered areas, depending on the number of fully discovered areas. Resetting a subarea removes its discovery credit."
+        ),
+        tr!("Current discovery speed bonus:"),
+        panel.speed_bonus
+    )
 }

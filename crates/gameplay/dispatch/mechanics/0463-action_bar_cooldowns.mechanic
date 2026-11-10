@@ -1,0 +1,8 @@
+name=action_bar_cooldowns
+commands=6147
+transport=action_bar_cooldowns
+composed=action_bar_cooldowns
+authority=action_bar_cooldowns
+offer=463,action_bar_cooldowns::offered,action_bar_cooldowns_available
+[route]
+routing::action_bar_cooldowns::route(authority, &session.admitted, command).await

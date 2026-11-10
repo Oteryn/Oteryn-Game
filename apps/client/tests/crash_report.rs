@@ -31,9 +31,14 @@ fn pending_crash_review_declines_discards_and_retains_on_failed_export()
     assert!(!pending.exists());
     assert!(!destination.exists());
     report.save(&pending, true)?;
-    assert!(review_pending_at(&pending, &destination, |_| true)?);
+    let mut shown = String::new();
+    assert!(review_pending_at(&pending, &destination, |preview| {
+        shown = preview.to_owned();
+        true
+    })?);
     assert!(!pending.exists());
-    assert_eq!(std::fs::read_to_string(&destination)?, report.preview());
+    assert_eq!(std::fs::read_to_string(&destination)?, shown);
+    assert!(shown.ends_with(&report.preview()));
     report.save(&pending, true)?;
     assert!(review_pending_at(&pending, &destination, |_| true).is_err());
     assert!(pending.exists());

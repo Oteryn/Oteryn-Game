@@ -243,6 +243,7 @@ impl Settings {
         state.sync_item_hotkeys(link);
         state.sync_bar_actions(link);
         state.sync_spellbook_filter(link);
+        state.sync_stash_sort(link);
         state.sync_archive_bindings(link);
         state.refresh_custom_choices(link);
         state.sync_chat_context(link);
@@ -295,6 +296,20 @@ impl Settings {
     ) -> (oteryn_client::play::GraphicsPreferences, u16) {
         let state = lock(&self.shared);
         (state.preferences.graphics, state.preferences.ui_scale)
+    }
+    pub(in super::super) fn reject_graphics(
+        &self,
+        engine: oteryn_renderer::GraphicsEngine,
+        antialiasing: oteryn_renderer::Antialiasing,
+    ) {
+        let mut state = lock(&self.shared);
+        let mut preferences = state.preferences.clone();
+        preferences.graphics.engine = engine;
+        preferences.graphics.antialiasing = antialiasing;
+        state.apply(preferences);
+        state.feedback =
+            "Selected graphics mode is unavailable on this device; restored the working mode."
+                .into();
     }
     pub(in super::super) fn capture(&self, view: &mut PlayView) {
         let mut state = lock(&self.shared);

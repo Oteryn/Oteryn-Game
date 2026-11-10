@@ -213,16 +213,17 @@ different content, `429` rate limited, `503` unavailable.
 {"contract_version":1,"operation":"PublishWorldHighscoresV1","source_authority":"oteryn:game:primary","world_id":"01934f10-7c02-7001-805b-3b1122334401","category":1,"filter":0,"projection_epoch":"1","projection_revision":"17","source_observed_at":"1790000000","computed_at":"1790000000","rows":[{"rank":"1","character_id":"01934f10-7c04-7001-805b-3b1122334401","name":"Aldric","vocation":4,"level":"412","value":"11400000000"}]}
 ```
 
-- Subject: `world_id`, `category` 1..12, 14 or 17, and `filter` 0..5 (0 = all, otherwise a base
+- Subject: `world_id`, `category` 1..12, 14, 16 or 17, and `filter` 0..5 (0 = all, otherwise a base
   vocation by its §4.0 id 1..5, HIGHSCORES-0 §5). Every row of a base-vocation filter carries
   that `vocation`; Game refuses a list that does not.
 - Category 14 uses the reserved HIGHSCORES-0 Drome Score id for lifetime cumulative
   Drome levels; 17 is the next free id for current-rotation Drome levels
   (source: `docs/reference/tibia-manual/combat.md:262`). Category 13 remains Platform Loyalty
-  and is never published by Game. Reserved 15 (Goshnar's Taint) and 16 (Phosphorus Record)
-  remain outside this Game export until their owning sources are admitted.
+  and is never published by Game. Reserved 15 (Goshnar's Taint) remains outside this Game export. Category 16
+  (Phosphorus Record) ranks characters with a recorded Phosphorus victory by
+  their highest defeated difficulty (owner-supplied TibiaWiki extract, 2026-11-09).
   This adds allowed subject values without changing the v1 envelope or exact member grammar.
-  Consumers must accept 14 and 17 before those exports are enabled; older consumers may refuse
+  Consumers must accept 14, 16 and 17 before those exports are enabled; older consumers may refuse
   them as unsupported. No existing category is reassigned and no Platform page is created.
 - `computed_at` is the snapshot's `computed_at`. `rows` are the snapshot's rows for that filter in
   `position` order: 0..1,000 rows (`HIGHSCORES0-RL-02`). Under filter 0, `rank` is the competition

@@ -20,7 +20,7 @@ impl Outbox {
             })
         };
         let before = members(&mailbox.party);
-        oteryn_client_ui::party_member_effects::apply_result(&mut mailbox.party, response);
+        oteryn_client_ui::party_list::apply_result(&mut mailbox.party, response);
         let after = members(&mailbox.party);
         let shown: std::collections::BTreeSet<_> = mailbox
             .analyser
