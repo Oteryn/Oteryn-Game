@@ -186,6 +186,7 @@ pub struct ChannelSpellStates {
     pub(super) native_callbacks: super::monster_profile_cycle::native_callbacks::NativeCallbacks,
     pub(super) source_death_action: Option<super::source_death::PreparedSourceDeathAction>,
     pub(super) source_death_action_ready: bool,
+    pub(super) source_death_corpse: Option<std::sync::Arc<tokio::sync::Mutex<super::source_death::PendingSourceCorpse>>>,
     pub(super) source_death_action_reservation: Option<oteryn_gameplay_entities::carrier::runtime_actor_source_reservation::SourceDeathActionReservation>,
     pub(in crate::gameplay_transport) rotten_waves:
         super::monster_profile_cycle::rotten_waves::RoomWaveStates,
@@ -364,6 +365,7 @@ impl Default for ChannelSpellStates {
             native_callbacks: Default::default(),
             source_death_action: None,
             source_death_action_ready: false,
+            source_death_corpse: None,
             source_death_action_reservation: None,
             rotten_waves: Default::default(),
             next_monster_ai_pass_us: Default::default(),

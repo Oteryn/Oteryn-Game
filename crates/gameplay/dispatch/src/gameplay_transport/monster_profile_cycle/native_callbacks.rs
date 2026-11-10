@@ -699,6 +699,17 @@ impl NativeCallbacks {
     ) -> Vec<outburst_cast::OutburstNullDeath> {
         self.owner.lock().await.casts.take_outburst_null_deaths()
     }
+    pub(in crate::gameplay_transport) fn acknowledge_outburst_null_death(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        completed: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathCompletion,
+    ) -> Result<(), ()> {
+        self.owner
+            .try_lock()
+            .map_err(|_| ())?
+            .casts
+            .acknowledge_outburst_null_death(runtime, completed)
+    }
     pub(in crate::gameplay_transport) fn retained_owner(
         &self,
     ) -> std::sync::Arc<tokio::sync::Mutex<NativeCallbackState>> {

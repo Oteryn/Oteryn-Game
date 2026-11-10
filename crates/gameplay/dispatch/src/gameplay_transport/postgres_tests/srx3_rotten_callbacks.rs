@@ -812,7 +812,7 @@ fn run_rotten_native_lethal_case_checks(
                 );
                 publish_native_fixture_player_source(&owner, fence, actor, command, now.get())
                     .await?;
-                {
+                let child = {
                     use crate::foundation::runtime_actor_spell_types::{
                         OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect,
                         SpellOccurrenceBinding,
@@ -905,7 +905,9 @@ fn run_rotten_native_lethal_case_checks(
                         &receipt,
                         now.get() / 1000,
                     );
-                }
+                    child.actor
+                };
+                super::srx3_native_source_cast::drain_source_death(&owner, child, now).await?;
                 assert_eq!(
                     owner.drain_kill_rewards(admitted.game_session_id).await,
                     crate::gameplay_transport::kill_reward::DrainOutcome::Drained

@@ -8,6 +8,7 @@ use crate::gameplay_transport::connection::UseCommand;
 use crate::gameplay_transport::item_move::{LoopMove, LoopTarget};
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::map::{overlay::TilePos, view::MapFacts};
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
     elemental_spheres::{self, SummonRule},
     world_callbacks::Position,

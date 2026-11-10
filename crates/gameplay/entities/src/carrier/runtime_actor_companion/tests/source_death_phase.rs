@@ -1,6 +1,10 @@
 use super::*;
 
 fn registered_source_fixture_at(scope_id: u8) -> (ChannelRuntimeV1, ExactActorRef) {
+    registered_source_fixture_for(scope_id, "oteryn:creature.goshnar_s_megalomania_blue")
+}
+
+fn registered_source_fixture_for(scope_id: u8, key: &str) -> (ChannelRuntimeV1, ExactActorRef) {
     let world = WorldId::decode(&id(1)).unwrap();
     let scope = RuntimeScopeRefV1::instance(world, id(scope_id)).unwrap();
     let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
@@ -17,7 +21,6 @@ fn registered_source_fixture_at(scope_id: u8) -> (ChannelRuntimeV1, ExactActorRe
     runtime
         .install_companion_policies(crate::carrier::soul_war_mirror_runtime::tests::policies())
         .unwrap();
-    let key = "oteryn:creature.goshnar_s_megalomania_blue";
     let policy = runtime.companion_policy(key).unwrap();
     let actor = ExactActorRef(
         runtime
@@ -65,6 +68,203 @@ fn canonical_lethal(
         .project_committed_lethal(receipt)
         .unwrap();
     key
+}
+
+#[test]
+fn uncredited_source_corpse_has_one_sealed_pin_independent_of_all_ordinary_pins() {
+    const OUTBURST: &str = "oteryn:creature.outburst";
+    let (mut runtime, source) = registered_source_fixture_for(20, OUTBURST);
+    let admit = |runtime: &mut ChannelRuntimeV1, key: &str| {
+        let policy = runtime.companion_policy(key).unwrap();
+        let actor = ExactActorRef(
+            runtime
+                .admit_encounter_fixture_actor(
+                    ActorState(1),
+                    key,
+                    policy.maximum_health,
+                    Some(LocalPosition {
+                        x: 33711,
+                        y: 31634,
+                        floor: 14,
+                    }),
+                )
+                .unwrap(),
+        );
+        runtime.install_creature_policy(actor, key).unwrap();
+        actor
+    };
+    let kill_rat = |runtime: &mut ChannelRuntimeV1| {
+        let actor = admit(runtime, "oteryn:creature.rat");
+        canonical_lethal(runtime, actor, "oteryn:creature.rat");
+        runtime.remove_encounter_actor(actor).unwrap();
+        actor
+    };
+    let mut ordinary = Vec::new();
+    for _ in 0..MAX_PINNED_CORPSE_PROJECTIONS {
+        let actor = kill_rat(&mut runtime);
+        runtime.pin_corpse_projection(actor).unwrap();
+        ordinary.push(actor);
+    }
+    assert_eq!(
+        ordinary.len(),
+        64,
+        "the ordinary reward budget is unchanged"
+    );
+    canonical_lethal(&mut runtime, source, OUTBURST);
+    let notice = runtime.next_source_creature_death().unwrap().unwrap();
+    let begin = runtime.begin_source_creature_death(&notice).unwrap();
+    assert!(!begin.has_reward_damage_credit());
+    assert!(
+        begin
+            .events()
+            .iter()
+            .any(|event| event.name() == "HeartBossDeath")
+    );
+    assert_eq!(
+        runtime.pin_corpse_projection(source),
+        Err(CarrierError::CapacityExceeded),
+        "the 65th ordinary pin is still forbidden"
+    );
+    runtime
+        .pin_uncredited_source_corpse_projection(&begin)
+        .unwrap();
+    runtime
+        .pin_uncredited_source_corpse_projection(&begin)
+        .unwrap();
+    runtime.retain_corpse_projection_pins(&ordinary);
+    runtime.unpin_corpse_projection(source);
+    assert!(
+        runtime.corpse_projection_pinned(source),
+        "ordinary cleanup cannot clear the source owner"
+    );
+
+    for event in begin.events() {
+        runtime
+            .acknowledge_source_creature_death_event(&begin, event)
+            .unwrap();
+    }
+    let completed = runtime.finish_source_creature_death_task(&begin).unwrap();
+    assert!(
+        runtime
+            .release_uncredited_source_corpse_projection(&completed)
+            .is_err(),
+        "source completion without a physical corpse binding is not a MINT ACK"
+    );
+    let second = admit(&mut runtime, OUTBURST);
+    canonical_lethal(&mut runtime, second, OUTBURST);
+    let notice = runtime.next_source_creature_death().unwrap().unwrap();
+    let second_begin = runtime.begin_source_creature_death(&notice).unwrap();
+    assert!(
+        runtime
+            .pin_uncredited_source_corpse_projection(&second_begin)
+            .is_err(),
+        "a second genuine source task cannot replace the pending physical owner"
+    );
+    for event in second_begin.events() {
+        runtime
+            .acknowledge_source_creature_death_event(&second_begin, event)
+            .unwrap();
+    }
+    let second_completed = runtime
+        .finish_source_creature_death_task(&second_begin)
+        .unwrap();
+    assert!(
+        runtime
+            .release_uncredited_source_corpse_projection(&second_completed)
+            .is_err(),
+        "another completed source task cannot clear the retained owner"
+    );
+    for _ in 0..2 * MAX_RETAINED_CORPSE_PROJECTIONS {
+        kill_rat(&mut runtime);
+    }
+    assert!(runtime.retains_corpse_projection(source));
+    assert!(
+        ordinary
+            .iter()
+            .all(|actor| runtime.retains_corpse_projection(*actor))
+    );
+    assert_eq!(
+        runtime.carrier.corpse_projections.len(),
+        MAX_PINNED_CORPSE_PROJECTIONS + MAX_RETAINED_CORPSE_PROJECTIONS + 1,
+        "64 ordinary pins, one source pin and the unchanged 64 unpinned FIFO"
+    );
+    runtime
+        .bind_corpse_item(
+            source,
+            id(21),
+            "Item",
+            "oteryn:item.tibia.i23564",
+            "definition-r1",
+        )
+        .unwrap();
+    runtime
+        .release_uncredited_source_corpse_projection(&completed)
+        .unwrap();
+    assert!(!runtime.corpse_projection_pinned(source));
+    assert!(
+        runtime
+            .release_uncredited_source_corpse_projection(&completed)
+            .is_err()
+    );
+    assert!(
+        runtime
+            .pin_uncredited_source_corpse_projection(&begin)
+            .is_err(),
+        "a completed old BEGIN cannot acquire a fresh source pin"
+    );
+    kill_rat(&mut runtime);
+    assert!(!runtime.retains_corpse_projection(source));
+    assert!(
+        ordinary
+            .iter()
+            .all(|actor| runtime.corpse_projection_pinned(*actor))
+    );
+}
+
+#[test]
+fn uncredited_source_pin_refuses_foreign_stale_and_other_native_handlers() {
+    const OUTBURST: &str = "oteryn:creature.outburst";
+    let (mut runtime, source) = registered_source_fixture_for(22, OUTBURST);
+    canonical_lethal(&mut runtime, source, OUTBURST);
+    let notice = runtime.next_source_creature_death().unwrap().unwrap();
+    let begin = runtime.begin_source_creature_death(&notice).unwrap();
+    let (mut foreign, actor) = registered_source_fixture_for(23, OUTBURST);
+    canonical_lethal(&mut foreign, actor, OUTBURST);
+    let notice = foreign.next_source_creature_death().unwrap().unwrap();
+    let foreign_begin = foreign.begin_source_creature_death(&notice).unwrap();
+    assert!(
+        runtime
+            .pin_uncredited_source_corpse_projection(&foreign_begin)
+            .is_err()
+    );
+    runtime
+        .pin_uncredited_source_corpse_projection(&begin)
+        .unwrap();
+    runtime.retire_owner_cycle();
+    assert!(
+        runtime
+            .pin_uncredited_source_corpse_projection(&begin)
+            .is_err()
+    );
+    assert!(
+        runtime.corpse_projection_pinned(source),
+        "stale work cannot clear the pending owner"
+    );
+
+    let (mut other, actor) = registered_source_fixture_at(24);
+    canonical_lethal(
+        &mut other,
+        actor,
+        "oteryn:creature.goshnar_s_megalomania_blue",
+    );
+    let notice = other.next_source_creature_death().unwrap().unwrap();
+    let other_begin = other.begin_source_creature_death(&notice).unwrap();
+    assert!(
+        other
+            .pin_uncredited_source_corpse_projection(&other_begin)
+            .is_err(),
+        "the extra source pin does not admit an unfinished unrelated handler"
+    );
 }
 
 #[test]
