@@ -13,6 +13,7 @@ use tokio::sync::Mutex;
 
 use super::fixture::{Harness, debug, id, run};
 use super::{TestResult, prepare_current_session};
+use crate::domain::forge_creature::ForgeCreature;
 use crate::foundation::{
     ChannelId, ChannelRuntimeV1, CommandStatus, GameSessionId, MessageType, MovementLocalPosition,
     NodeId, WorldId, decode_wire_envelope,
@@ -625,8 +626,26 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
         println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: weekly_start_and_exact_replay");
         let before_real_kill = experience(&harness).await?;
         // A real rat kill: auto-attack swings, then the durable kill settle credits the task.
-        {
+        let (rat_forge, expected_rat_xp) = {
             let runtime = owner.runtime.lock().await;
+            assert!(
+                runtime.daily_boost().is_none(),
+                "the native source-map fixture has no daily creature boost"
+            );
+            // Earlier wire exchanges can mark the rat; the manual attack/settlement
+            // loop below does not advance the Forge population.
+            let rat_forge = runtime.companion_snapshot(rat_actor).map_err(debug)?.forge;
+            let expected_rat_xp = match rat_forge {
+                None => RAT_XP_AT_LEVEL_8,
+                Some(ForgeCreature::Influenced(stacks)) => {
+                    assert!(
+                        (1..=5).contains(&stacks),
+                        "the pre-kill Forge tag has valid stacks: {rat_forge:?}"
+                    );
+                    RAT_XP_AT_LEVEL_8
+                }
+                Some(ForgeCreature::Fiendish) => 2 * RAT_XP_AT_LEVEL_8,
+            };
             let now = owner.owner_now();
             assert_eq!(
                 owner.states.attack.lock().await.set_target(
@@ -640,7 +659,8 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
                 ),
                 oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
             );
-        }
+            (rat_forge, expected_rat_xp)
+        };
         let mut swings = 0;
         loop {
             owner.refresh_attack_weapon(actor, session).await;
@@ -669,7 +689,8 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
         }
         assert_eq!(
             experience(&harness).await?,
-            before_real_kill + RAT_XP_AT_LEVEL_8
+            before_real_kill + expected_rat_xp,
+            "the real kill's XP matches its pre-kill Forge tag: {rat_forge:?}"
         );
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
