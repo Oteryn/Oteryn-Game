@@ -1,0 +1,15 @@
+# Supplementary tools and retained configuration — partial source review
+
+Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Original reviewer: `/root/r2_dispatch_items_resume2`; root independently qualified this exact capture06. **130/2,794 full files,25,330 physical text lines;2,664 remaining.** The assignment owns2,681 tools files plus113 agent/configuration/evidence files, excluding all Cargo-owned descendants. At this cutoff96 tools and34 configuration/evidence files are reviewed in this reservation; the global ledger separately unions earlier reviews.
+
+The method is explicit:129 files received complete manual semantic review; one425-line scheduling-estimate map received whole-corpus semantic analysis of all423 records against its actual producer and both full-archive scheduling consumers. This is not presented as manual line-by-line data reading. Historical timing provenance remains unknown; weights affect scheduling while archive manifests and independent partition invariants select the cases.
+
+The completed source groups cover local merge drivers, repository policy/settings/routing/cache controllers and tests, agent validators, contract fixture/pin writers, architecture/error registries, E2E/native-room/node-boot/spell qualification, and retained .agents/.claude/.codex-report material. Repository skill/model and historical review instructions were analyzed as source; they did not authorize paid review or override the audit-only task.
+
+Root read all130 primary semantic notes,15 supporting notes, cumulative report content and the administration/routing/cache method maps plus the full corpus-check program. All six immutable capture manifests, source hashes/Git blobs/full ranges, original reviewer identity and exact assignment/remaining sets were verified. Source reads of test programs do not mean the tests ran.
+
+One local-tool defect, **R2-SUP-TOOLS-001 / P2**, is independently confirmed under the stated empty staging-selection condition. Three bounded fixtures ran actual main/path selection and actual Git index operations; all heavy generators/checks and bundle refresh were intercepted. Explicit derived selection and no-stage counterguards were checked. Full production regeneration, current donor availability and any accidental user commit remain unestablished. Detailed evidence stays private.
+
+No new cache/routing/admin bypass was inferred from configured permissions, plain result markers or a candidate helper alone. The protected-base controller, exact source closure, success-record producer, cache service/writer boundary and final aggregate are distinct. Live cache state, runner integrity and effective remote policy were not queried here. Node-boot diagnostic output and provisioning/source bounds were reviewed without invoking topology, credentials, databases or native services.
+
+No source was fixed and no Actions, paid review, Cargo, SQL, Docker, native runtime or deployment was executed. Later worker capture07 and beyond are outside this frozen count until separately qualified.

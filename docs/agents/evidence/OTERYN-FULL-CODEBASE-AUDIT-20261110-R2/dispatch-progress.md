@@ -19,6 +19,6 @@ The two final99-file test reservations are now closed. Root read all198 primary 
 
 The final sources cover physical room/gate triggers, native crop boundaries, tools/crafting/timers, task/currency/value participants, shared admission, retained progression, boss/reward consumers, world-change producers and NPC barter. Source tests distinguish actual framed command/owner calls from fixture minting, administrative state, selected clocks/randomness, synthetic maps, supplied deaths and same-process owner reconstruction. These distinctions prevent fixtures from being misreported as maintained production producers or observed runtime results.
 
-No Cargo, PostgreSQL integration, native server/client, Actions or long timer scenario was executed for this closure. Root qualification is not a second complete source reread of delegated files. Newly reviewed test sources add no confirmed finding; totals remain22 (P1=4/P2=18).
+No Cargo, PostgreSQL integration, native server/client, Actions or long timer scenario was executed for this closure. Root qualification is not a second complete source reread of delegated files. Newly reviewed test sources add no confirmed finding; at the checkpoint26 Dispatch closure totals were22 (P1=4/P2=18); the current cumulative register is findings-summary.json.
 
 All67 Cargo packages now have complete source review. The full repository audit continues through all11 supplementary domains and all27,900 tracked input files.

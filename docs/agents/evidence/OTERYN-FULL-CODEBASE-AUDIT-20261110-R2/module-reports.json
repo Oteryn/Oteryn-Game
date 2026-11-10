@@ -232,6 +232,15 @@
       "auditor": "lead"
     },
     {
+      "module": ".github",
+      "report": "github-review.md",
+      "verification": "All75tracked files/12301lines manually source-reviewed; source hashes/ranges exact, no Actions execution.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
       "module": "oteryn-identity",
       "status": "REVIEWED",
       "report": "protocol-session.md",
@@ -884,7 +893,6 @@
     },
     {
       "module": "oteryn-gameplay-dispatch",
-      "path": "crates/gameplay/dispatch",
       "status": "REVIEWED",
       "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
       "auditor": "Root-integrated independently attributed lanes",
@@ -893,7 +901,7 @@
       "analyzed_files": 1668,
       "analyzed_lines": 517542,
       "remaining_files": [],
-      "qualification": "Exact original source captures, ownership and final assignment closure in capture-validation-26.json. Test-source inspection is not runtime execution; restricted findings remain private."
+      "qualification": "Complete independently attributed reservations retained in capture-validation-26.json and rechecked in27; no runtime execution claim."
     }
   ]
 }

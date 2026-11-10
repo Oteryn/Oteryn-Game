@@ -73,14 +73,14 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-synthetic-asset-compiler | REVIEWED | 2 | 2 | 2 | 46 |
 | oteryn-synthetic-client-harness | REVIEWED | 40 | 40 | 40 | 10454 |
 | oteryn-world-bundle-compiler | REVIEWED | 31 | 31 | 31 | 10189 |
-| .github | IN PROGRESS | 75 | 15 | 14 | 1641 |
-| agent-configuration-and-retained-evidence | NOT STARTED | 113 | 0 | 0 | 0 |
+| .github | REVIEWED | 75 | 75 | 75 | 12301 |
+| agent-configuration-and-retained-evidence | IN PROGRESS | 113 | 34 | 34 | 2248 |
 | content | IN PROGRESS | 8032 | 3 | 2 | 78 |
 | deploy | REVIEWED | 16 | 16 | 16 | 1694 |
-| docs | IN PROGRESS | 7398 | 45 | 24 | 3701 |
+| docs | IN PROGRESS | 7398 | 46 | 24 | 3712 |
 | imports | NOT STARTED | 565 | 0 | 0 | 0 |
 | repository-root | REVIEWED | 16 | 16 | 16 | 7392 |
 | rulesets | IN PROGRESS | 77 | 4 | 3 | 359 |
 | tests | REVIEWED | 12 | 12 | 12 | 852 |
-| tools | IN PROGRESS | 2681 | 14 | 9 | 2004 |
+| tools | IN PROGRESS | 2681 | 110 | 105 | 25086 |
 | vendor | NOT STARTED | 793 | 0 | 0 | 0 |

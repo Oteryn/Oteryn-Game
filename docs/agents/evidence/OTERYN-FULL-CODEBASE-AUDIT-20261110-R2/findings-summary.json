@@ -130,13 +130,22 @@
       "report": "Restricted independent evidence retained privately under SECURITY.md",
       "public_safe": false,
       "public_abstract": "A legitimately upgraded weapon retains its durable Forge tier, but the current equipment projection omits the expected primary auto-attack contribution for a supported weapon placement. This is a conditional source-confirmed integration defect; no live incident, item loss, payment loss or duplication is asserted."
+    },
+    {
+      "id": "R2-SUP-TOOLS-001",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent complete source-owner and maintained-caller review; three bounded actual-main/Git index fixture cases passed. Production generator/check fixed point remains UNKNOWN; no unrelated user data committed or published.",
+      "report": "Restricted independent evidence retained privately",
+      "public_safe": false,
+      "public_abstract": "The local content-regeneration helper can stage unrelated worktree changes when its selected derived staging set is empty. This is conditional local index mutation; no automatic commit/push or production incident is asserted. Explicit no-stage mitigation was independently checked."
     }
   ],
   "prior_checkpoint": "1c39ebc3347319fe08eaf58299a8a9e9339b0367",
   "cumulative_confirmed_counts": {
     "P0": 0,
     "P1": 4,
-    "P2": 18,
+    "P2": 19,
     "P3": 0
   },
   "prior_likely": 2,
