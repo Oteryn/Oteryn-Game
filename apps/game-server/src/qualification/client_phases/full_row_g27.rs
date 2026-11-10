@@ -185,15 +185,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err("step=badge-hide observed=reply-not-applied".into());
         }
         if !panel_call(&mut a, &mut panel, cyc::Intent::Badges).await?
-            || !panel.hidden_badges.contains(&badge)
+            || !panel.badge_visibility_known
+            || !panel.server_hidden_badges.contains(&badge)
         {
             return Err(format!(
-                "step=badge-hide observed=hidden:{:?};needed=contains-{badge}",
-                panel.hidden_badges
+                "step=badge-hide observed=server-hidden:{:?};known:{};needed=contains-{badge}",
+                panel.server_hidden_badges, panel.badge_visibility_known
             )
             .into());
         }
-        panel_call(
+        if !panel_call(
             &mut a,
             &mut panel,
             cyc::Intent::SetBadgeVisibility {
@@ -201,7 +202,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 public: true,
             },
         )
-        .await?;
+        .await?
+        {
+            return Err("step=badge-restore observed=reply-not-applied".into());
+        }
+        if !panel_call(&mut a, &mut panel, cyc::Intent::Badges).await?
+            || !panel.badge_visibility_known
+            || panel.server_hidden_badges.contains(&badge)
+        {
+            return Err(format!(
+                "step=badge-restore observed=server-hidden:{:?};known:{};needed=not-contains-{badge}",
+                panel.server_hidden_badges, panel.badge_visibility_known
+            )
+            .into());
+        }
         badge_note = format!("badge-{badge}-hidden-and-restored");
     }
     let (code, _) = friends(&mut a, vip::Operation::FriendRevoke, outgoing, "").await?;

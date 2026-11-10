@@ -110,6 +110,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     let list = read(&mut client, boss).await?;
     expect(has(&list, BOSS), "read-after-add", "boss-missing")?;
+    // Durable: the entry survives logout and a fresh admission.
+    logout(&mut client).await?;
+    let mut client = connect_world(clients, 0xd3).await?;
+    selected(&client)?;
+    let list = read(&mut client, boss).await?;
+    expect(
+        has(&list, BOSS),
+        "relog-with-entry",
+        "boss-lost-after-relog",
+    )?;
     let (status, list) = call(&mut client, boss, &change(tr::TrackerAction::Remove, BOSS)).await?;
     expect(
         status == CommandStatus::Accepted && !has(&list, BOSS),
@@ -118,10 +128,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     let list = read(&mut client, boss).await?;
     expect(!has(&list, BOSS), "read-after-remove", "boss-still-tracked")?;
+    // Durable: the removal also survives logout and a fresh admission.
+    logout(&mut client).await?;
+    let mut client = connect_world(clients, 0xd4).await?;
+    selected(&client)?;
+    let list = read(&mut client, boss).await?;
+    expect(
+        !has(&list, BOSS),
+        "relog-after-remove",
+        "boss-back-after-relog",
+    )?;
     logout(&mut client).await?;
     Ok((
         "PASS",
-        "boss-add-remove-with-credited-kill-validated".to_owned(),
+        "boss-add-relog-remove-relog-with-credited-kill-validated".to_owned(),
     ))
 }
 
@@ -136,7 +156,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
     evidence(&format!(
-        "e2e_all scenario=P22B.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=P22b.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }

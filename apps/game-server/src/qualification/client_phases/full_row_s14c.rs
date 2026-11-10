@@ -3,11 +3,15 @@
 //! 2. Deny: accepted, applicant and browse show Denied. The member cancels back to no status.
 //! 3. The member requests again; Invite: accepted, applicant and browse show Invited.
 //! 4. Accept: the server forms the party; the accepted reply and an Accepted status are
-//!    required. A refusal (for example no visible party target) is reported as the observed
-//!    precondition after cleanup, never as a pass.
-//! 5. Cleanup: the member cancels, the leader removes the advertisement, both log out.
+//!    required. The party effect is then proved: the member must hold the party invitation the
+//!    Accept issued, accept it, and the leader's party state must list both members. A refusal
+//!    (for example no visible party target) is reported as the observed precondition after
+//!    cleanup, never as a pass.
+//! 5. Cleanup: both leave the party, the member cancels, the leader removes the advertisement,
+//!    both log out.
 use super::*;
 use oteryn_dev_client::DevClientSession;
+use oteryn_dev_client::client_runtime::party::party::{PartyDisposition, PartyIntent};
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::team_finder::{self as leader, LeaderListing, TeamTarget};
 use oteryn_protocol_oteryn::team_finder_members as tf;
@@ -33,6 +37,57 @@ async fn query(
     )?;
     Ok(tf::decode_result(&reply.payload)
         .map_err(|error| format!("step=query-decode;observed={error:?}"))?)
+}
+
+async fn party(
+    client: &mut DevClientSession,
+    intent: Option<PartyIntent>,
+) -> TestResult<(
+    PartyDisposition,
+    oteryn_dev_client::client_runtime::party::party::PartyResult,
+)> {
+    use oteryn_dev_client::client_runtime::party as runtime;
+    let command = match intent {
+        Some(intent) => {
+            runtime::PartyCommand::intent(intent).map_err(|e| format!("step=party encode={e:?}"))?
+        }
+        None => runtime::PartyCommand::query(),
+    };
+    let reply = runtime::send(client.session_mut(), &command).await?;
+    let operation = runtime::party::decode_party_result(&reply.operation)
+        .map_err(|e| format!("step=party operation={e:?}"))?;
+    let view =
+        runtime::party::decode_party_result(reply.view.as_deref().ok_or("step=party view-absent")?)
+            .map_err(|e| format!("step=party view={e:?}"))?;
+    Ok((operation.disposition, view))
+}
+
+/// The member holds the invitation the Accept issued, accepts it, and the leader's party lists
+/// both members. Returns the observation when the party transition did not happen.
+async fn prove_party(
+    lead: &mut DevClientSession,
+    member: &mut DevClientSession,
+) -> TestResult<String> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    let handle = loop {
+        let (_, view) = party(member, None).await?;
+        if let Some(invitation) = view.invitations.first() {
+            break invitation.handle;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Ok("member-has-no-party-invitation".to_owned());
+        }
+        member.service_liveness(Duration::from_millis(100)).await?;
+    };
+    let (reply, _) = party(member, Some(PartyIntent::Accept(handle))).await?;
+    if reply != PartyDisposition::Ok {
+        return Ok(format!("invitation-accept-reply:{reply:?}"));
+    }
+    let (_, view) = party(lead, None).await?;
+    if view.members.len() < 2 {
+        return Ok(format!("leader-party-members:{}", view.members.len()));
+    }
+    Ok(String::new())
 }
 
 fn same(left: &LeaderListing, right: &LeaderListing) -> bool {
@@ -256,19 +311,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         .iter()
         .any(|entry| entry.status == tf::MemberStatus::Accepted);
 
+    let party_gap = if accepted == CommandStatus::Accepted && reached {
+        prove_party(&mut lead, &mut member).await?
+    } else {
+        "accept-not-reached".to_owned()
+    };
+
     // Cleanup runs whatever Accept answered.
+    party(&mut member, Some(PartyIntent::Leave)).await.ok();
+    party(&mut lead, Some(PartyIntent::Leave)).await.ok();
     member_action(&mut member, tf::MemberAction::Cancel { leader: handle }).await?;
     let status = remove(&mut lead).await?;
     expect(status == CommandStatus::Accepted, "leader-remove", status)?;
     logout(&mut member).await?;
     logout(&mut lead).await?;
-    if accepted == CommandStatus::Accepted && reached {
-        Ok(("PASS", "deny-invite-accept-lifecycle-validated".to_owned()))
+    if accepted == CommandStatus::Accepted && reached && party_gap.is_empty() {
+        Ok((
+            "PASS",
+            "deny-invite-accept-and-party-formed-validated".to_owned(),
+        ))
     } else {
         Ok((
             "FAIL",
             format!(
-                "step=accept;observed=reply:{accepted:?},applicant-accepted:{reached};needed=party-invitation-target-visible-with-free-slots"
+                "step=accept;observed=reply:{accepted:?},applicant-accepted:{reached},party:{party_gap};needed=party-invitation-target-visible-with-free-slots"
             ),
         ))
     }
@@ -285,7 +351,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
     evidence(&format!(
-        "e2e_all scenario=S14C.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=S14c.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }

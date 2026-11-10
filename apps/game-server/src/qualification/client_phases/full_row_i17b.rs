@@ -3,7 +3,7 @@
 //! the same hotkey again (worn match: Moved, item back in the main backpack, slot empty), equips
 //! once more and re-reads the worn item after logout and a fresh admission, then toggles off.
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::DevClientSession;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -15,7 +15,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
     evidence(&format!(
-        "e2e_all scenario=I17B.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=I17b.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }
@@ -47,12 +47,10 @@ async fn wait_quantity(
 ) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        for event in client.take_events() {
-            if let SessionEvent::Inventory(delta) = event
-                && quantity(client, reference)? == expected
-            {
-                return Ok(delta.server_sequence);
-            }
+        // The expected state may already be in the snapshot: `settle` drained its event.
+        client.take_events();
+        if quantity(client, reference)? == expected {
+            return Ok(client.last_server_sequence());
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
@@ -292,24 +290,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     use oteryn_dev_client::ItemMoveOutcome as Out;
     let helmet = reference(3355)?;
     let mut client = connect_world(clients, 0xe2).await?;
+    // Earlier rows may leave a helmet in the shared character's backpack: count from here.
+    let base = quantity(&client, helmet)?;
+    if worn(&client, helmet).is_some() {
+        logout(&mut client).await?;
+        return Err("step=precondition observed=helmet-already-worn;needed:unworn-helmet".into());
+    }
     buy(&mut client, world, 3355, 1).await?;
     expect(&mut client, helmet, "equip", Out::Moved).await?;
     settle(&mut client, helmet, true).await?;
-    if quantity(&client, helmet)? != 0 {
-        return Err("step=equip observed=item-still-in-backpack".into());
+    let after_equip = quantity(&client, helmet)?;
+    if after_equip != base {
+        return Err(format!("step=equip observed=backpack:{after_equip};needed={base}").into());
     }
     expect(&mut client, helmet, "toggle-off", Out::Moved).await?;
     settle(&mut client, helmet, false).await?;
-    wait_quantity(&mut client, helmet, 1).await?;
+    wait_quantity(&mut client, helmet, base + 1).await?;
     expect(&mut client, helmet, "equip-again", Out::Moved).await?;
     settle(&mut client, helmet, true).await?;
     let mut client = relog(&mut client, clients, 0xe2).await?;
-    if worn(&client, helmet).is_none() || quantity(&client, helmet)? != 0 {
+    if worn(&client, helmet).is_none() || quantity(&client, helmet)? != base {
         return Err("step=fresh-admission observed=worn-state-lost".into());
     }
     expect(&mut client, helmet, "final-toggle-off", Out::Moved).await?;
     settle(&mut client, helmet, false).await?;
-    wait_quantity(&mut client, helmet, 1).await?;
+    wait_quantity(&mut client, helmet, base + 1).await?;
     logout(&mut client).await?;
     Ok("toggle-unequips-to-main-backpack-and-durable".to_owned())
 }

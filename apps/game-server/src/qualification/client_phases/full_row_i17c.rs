@@ -4,7 +4,8 @@
 //! quiver (35562) and arrows (3447): arrows before a quiver must be refused `SlotMismatch` with
 //! no change, after the quiver is worn the arrows must leave the backpack for the quiver.
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::DevClientSession;
+use sqlx::Connection;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -16,7 +17,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
     evidence(&format!(
-        "e2e_all scenario=I17C.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=I17c.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }
@@ -48,12 +49,10 @@ async fn wait_quantity(
 ) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        for event in client.take_events() {
-            if let SessionEvent::Inventory(delta) = event
-                && quantity(client, reference)? == expected
-            {
-                return Ok(delta.server_sequence);
-            }
+        // The expected state may already be in the snapshot: `settle` drained its event.
+        client.take_events();
+        if quantity(client, reference)? == expected {
+            return Ok(client.last_server_sequence());
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
@@ -279,6 +278,17 @@ async fn buy(
         })
 }
 
+/// Arrows held by quivers (read-only): the quiver contents are not part of the client snapshot.
+async fn quiver_arrows(clients: &SeamClients<'_>) -> TestResult<i64> {
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let total: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(sum(a.quantity),0)::bigint FROM game_item_nested_entries e JOIN game_item_instances a ON a.item_instance_id=e.item_instance_id JOIN game_item_instances q ON q.item_instance_id=e.parent_item_instance_id WHERE a.definition_production_key='oteryn:item.tibia.i3447' AND a.lifecycle=1 AND q.definition_production_key='oteryn:item.tibia.i35562' AND q.lifecycle=1",
+    )
+    .fetch_one(&mut connection)
+    .await?;
+    Ok(total)
+}
+
 async fn relog(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
@@ -296,6 +306,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let quiver = reference(35562)?;
     let arrow = reference(3447)?;
     let mut client = connect_world(clients, 0xe3).await?;
+    let shield_base = quantity(&client, shield)?;
     buy(&mut client, world, 3412, 1).await?;
     buy(&mut client, world, 3265, 1).await?;
     expect(&mut client, shield, "equip-shield", Out::Moved).await?;
@@ -303,7 +314,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     expect(&mut client, sword, "equip-two-hander", Out::Moved).await?;
     settle(&mut client, sword, true).await?;
     settle(&mut client, shield, false).await?;
-    wait_quantity(&mut client, shield, 1).await?;
+    wait_quantity(&mut client, shield, shield_base + 1).await?;
     buy(&mut client, world, 3447, 10).await?;
     let before = quantity(&client, arrow)?;
     let refused = hotkey(&mut client, arrow).await?;
@@ -319,14 +330,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     buy(&mut client, world, 35562, 1).await?;
     expect(&mut client, quiver, "equip-quiver", Out::Moved).await?;
     settle(&mut client, quiver, true).await?;
+    let quiver_before = quiver_arrows(clients).await?;
     expect(&mut client, arrow, "arrow-into-quiver", Out::Moved).await?;
     wait_quantity(&mut client, arrow, 0).await?;
+    // Credit side: every arrow that left the backpack must now sit in the quiver.
+    let moved = i64::try_from(before)?;
+    let credited = quiver_arrows(clients).await? - quiver_before;
+    if moved == 0 || credited != moved {
+        return Err(format!("step=arrow-into-quiver observed=backpack-debit:{moved};quiver-credit:{credited};needed=equal-and-positive").into());
+    }
     let mut client = relog(&mut client, clients, 0xe3).await?;
     if worn(&client, sword).is_none()
         || worn(&client, quiver).is_none()
-        || quantity(&client, shield)? != 1
+        || quantity(&client, shield)? != shield_base + 1
+        || quantity(&client, arrow)? != 0
     {
         return Err("step=fresh-admission observed=swap-or-quiver-state-lost".into());
+    }
+    let credited = quiver_arrows(clients).await? - quiver_before;
+    if credited != moved {
+        return Err(format!(
+            "step=fresh-admission observed=quiver-credit:{credited};needed={moved}"
+        )
+        .into());
     }
     logout(&mut client).await?;
     Ok("two-hand-swap-and-arrows-to-quiver-durable".to_owned())

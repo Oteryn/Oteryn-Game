@@ -99,7 +99,9 @@ async fn state(client: &mut DevClientSession, definition: u32) -> TestResult<wir
     Ok(state)
 }
 
-async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> TestResult {
+async fn catalogue_page(
+    client: &mut DevClientSession,
+) -> TestResult<catalogue::ProficiencyCataloguePage> {
     let payload = accepted(
         client,
         catalogue::CAPABILITY_WEAPON_PROFICIENCY_V1,
@@ -107,8 +109,13 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
         &0u32.to_be_bytes(),
     )
     .await?;
-    let page = catalogue::ProficiencyCataloguePage::decode(&payload)
-        .ok_or("step=catalogue observed=decode-failed")?;
+    catalogue::ProficiencyCataloguePage::decode(&payload)
+        .ok_or_else(|| "step=catalogue observed=decode-failed".into())
+}
+
+/// Select the first perk on a slot with offers; returns `(definition, level, revision)`.
+async fn body(client: &mut DevClientSession) -> TestResult<(u32, u8, u64)> {
+    let page = catalogue_page(client).await?;
     let definitions: Vec<(u32, u32)> = page
         .entries
         .iter()
@@ -144,6 +151,14 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
         let reply = catalogue::SelectPerkReply::decode(&payload)
             .ok_or("step=perk observed=reply-decode-failed")?;
         let after = state(client, definition).await?;
+        let chosen = reply.selections.get(usize::from(slot.level)).copied();
+        if reply.result != catalogue::SelectPerkResult::Accepted || chosen != Some(Some(0)) {
+            return Err(format!(
+                "step=perk observed=reply:{:?}-selection:{chosen:?} needed=accepted-selection-of-perk-0",
+                reply.result
+            )
+            .into());
+        }
         if after.revision <= before.revision {
             return Err(format!(
                 "step=perk observed=slot{index}-reply:{:?}-revision:{}->{} needed=state-revision-advance",
@@ -151,7 +166,7 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
             )
             .into());
         }
-        return Ok(());
+        return Ok((definition, slot.level, after.revision));
     }
     Err(format!(
         "step=state observed=no-slot-with-offers:{} needed=weapon-proficiency-experience",
@@ -162,10 +177,48 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0x72).await?;
-    let outcome = body(&mut client, clients).await;
+    let outcome = body(&mut client).await;
     let closed = finish(&mut client).await;
-    outcome?;
+    let (definition, level, revision) = outcome?;
+    closed?;
+    drop(client);
+
+    let mut fresh = connect_world(clients, 0x73).await?;
+    let durable = durable_selection(&mut fresh, definition, level, revision).await;
+    let closed = finish(&mut fresh).await;
+    durable?;
     closed
+}
+
+/// After relog the committed selection and the state revision must still be there.
+async fn durable_selection(
+    client: &mut DevClientSession,
+    definition: u32,
+    level: u8,
+    revision: u64,
+) -> TestResult {
+    let page = catalogue_page(client).await?;
+    let selected = page
+        .entries
+        .iter()
+        .find(|entry| entry.definition == definition)
+        .and_then(|entry| entry.levels.get(usize::from(level)))
+        .map(|slot| slot.selected);
+    if selected != Some(Some(0)) {
+        return Err(format!(
+            "step=relog observed=selection:{selected:?} needed=durable-perk-0-at-level-{level}"
+        )
+        .into());
+    }
+    let after = state(client, definition).await?;
+    if after.revision < revision {
+        return Err(format!(
+            "step=relog observed=revision:{} needed=at-least:{revision}",
+            after.revision
+        )
+        .into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]

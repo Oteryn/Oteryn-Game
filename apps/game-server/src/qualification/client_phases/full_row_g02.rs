@@ -114,12 +114,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if panel.points[CORE_SLOT] != POINTS {
         return Err("step=import observed=points-not-loaded".into());
     }
+    // `apply_result` overwrites `panel.points` with the server answer, so keep the import.
+    let imported = panel.points;
     press(&mut client, &mut panel, Intent::Save, 2, "save").await?;
     let saved = panel
         .confirmed_wheel
         .clone()
         .ok_or("step=save observed=no-wheel")?;
-    if saved.refused || saved.revision != initial.revision + 1 || saved.points != panel.points {
+    if saved.refused || saved.revision != initial.revision + 1 || saved.points != imported {
         return Err(format!("step=save observed={saved:?};needed=imported-build-confirmed").into());
     }
     logout(&mut client).await?;
@@ -132,7 +134,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .confirmed_wheel
         .clone()
         .ok_or("step=fresh observed=no-wheel")?;
-    if durable.points != saved.points || durable.revision != saved.revision {
+    if durable.points != imported || durable.revision != saved.revision {
         return Err(format!("step=fresh observed={durable:?};needed={saved:?}").into());
     }
     press(&mut fresh, &mut again, Intent::Reset, 4, "reset").await?;

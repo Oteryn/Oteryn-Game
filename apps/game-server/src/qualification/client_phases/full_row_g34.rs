@@ -6,9 +6,10 @@
 //!    track write) a fresh character can trigger, reachable by walking.
 //! 2. Walk to it, say "hi" and the offer keyword through the real NPC talk command; require
 //!    `Ok` replies and the NPC's reply text in the chat log.
-//! 3. Read the durable track (`game_character_quest_tracks`, read-only SQL) and require the
-//!    offer's `set` value; the receipt row of the same revision must exist.
-//! 4. Log out, freshly admit and require the track value again.
+//! 3. Read the track before the talk (it must differ from the offer's `set`), then require the
+//!    durable track (`game_character_quest_tracks`, read-only SQL) to hold `set` and a receipt
+//!    that wrote that track from another value at the track's own last-write revision.
+//! 4. Log out, freshly admit and require the track value and that receipt again.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::chat::ChatLine;
@@ -128,12 +129,22 @@ async fn track_value(clients: &SeamClients<'_>, track: &str) -> TestResult<Optio
     Ok(value)
 }
 
-async fn receipts(clients: &SeamClients<'_>) -> TestResult<i64> {
+/// Receipts of the character that wrote `track` from another value to `set` at the same
+/// character revision the track row records as its last write (read-only SQL).
+async fn bound_receipts(clients: &SeamClients<'_>, track: &str, set: i64) -> TestResult<i64> {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let count: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_character_quest_receipts WHERE character_id = encode($1, 'hex')::uuid",
+        "SELECT count(*) FROM game_character_quest_receipts r \
+         JOIN game_character_quest_tracks t ON t.character_id = r.character_id AND t.track_key = $2 \
+         WHERE r.character_id = encode($1, 'hex')::uuid \
+           AND r.committed_character_revision = t.committed_character_revision \
+           AND t.quest_key = r.quest_key AND t.value = $3 \
+           AND r.values_after[array_position(r.track_keys, $2)] = $3 \
+           AND r.values_before[array_position(r.track_keys, $2)] IS DISTINCT FROM $3",
     )
     .bind(clients.characters[1].as_slice())
+    .bind(track)
+    .bind(set)
     .fetch_one(&mut database)
     .await?;
     database.close().await?;
@@ -177,7 +188,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
         .min_by_key(|(_, _, path)| path.len())
         .ok_or("step=select;needed=walkable-quest-npc-with-first-step-offer")?;
-    let receipts_before = receipts(clients).await?;
+    let track_before = track_value(clients, &offer.track).await?;
+    if track_before == Some(offer.set) {
+        let _ = logout(&mut client).await;
+        return Err(format!(
+            "step=initial;track={};observed=already:{track_before:?};needed=track-not-yet-set",
+            offer.track
+        )
+        .into());
+    }
     walk(&mut client, world, &path).await?;
     let actor = client
         .world_entities()
@@ -220,21 +239,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         client.take_events();
     }
     let value = track_value(clients, &offer.track).await?;
-    let receipts_after = receipts(clients).await?;
+    let bound = bound_receipts(clients, &offer.track, offer.set).await?;
     logout(&mut client).await?;
     drop(client);
-    if value != Some(offer.set) || receipts_after <= receipts_before {
+    if value != Some(offer.set) || bound == 0 {
         return Err(format!(
-            "step=receipt;track={};observed=value:{value:?},receipts:{receipts_before}->{receipts_after};needed=set:{}",
+            "step=receipt;track={};observed=value:{track_before:?}->{value:?},bound-receipts:{bound};needed=change-to-set:{}-with-receipt-of-that-revision",
             offer.track, offer.set
         )
         .into());
     }
     let mut fresh = connect_world(clients, 0xe5).await?;
     let durable = track_value(clients, &offer.track).await;
+    let durable_bound = bound_receipts(clients, &offer.track, offer.set).await;
     logout(&mut fresh).await?;
-    if durable? != Some(offer.set) {
-        return Err("step=fresh;observed=track-not-durable".into());
+    if durable? != Some(offer.set) || durable_bound? == 0 {
+        return Err("step=fresh;observed=track-or-bound-receipt-not-durable".into());
     }
     Ok(format!("npc={};track-set={}", offer.npc, offer.set))
 }

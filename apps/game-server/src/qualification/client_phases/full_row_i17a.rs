@@ -5,7 +5,7 @@
 //! the server must equip it; without it the server must refuse `NotSupported` with no change
 //! (FAIL `needed:capability-180`). The worn state is re-read after logout and a fresh admission.
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::DevClientSession;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -17,7 +17,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
     evidence(&format!(
-        "e2e_all scenario=I17A.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=I17a.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }
@@ -49,12 +49,10 @@ async fn wait_quantity(
 ) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        for event in client.take_events() {
-            if let SessionEvent::Inventory(delta) = event
-                && quantity(client, reference)? == expected
-            {
-                return Ok(delta.server_sequence);
-            }
+        // The expected state may already be in the snapshot: `settle` drained its event.
+        client.take_events();
+        if quantity(client, reference)? == expected {
+            return Ok(client.last_server_sequence());
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
@@ -295,6 +293,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let helmet = reference(3355)?;
     let bag = reference(2853)?;
     let mut client = connect_world(clients, 0xe1).await?;
+    // A spare helmet in the backpack would be picked by the hotkey instead of the pouch one.
+    let spare = quantity(&client, helmet)?;
+    if spare != 0 || worn(&client, helmet).is_some() {
+        logout(&mut client).await?;
+        return Err(format!("step=precondition observed=helmet-backpack:{spare};needed:character-without-leather-helmet").into());
+    }
     buy(&mut client, world, 3355, 1).await?;
     buy(&mut client, world, 2853, 1).await?;
     expect(&mut client, helmet, "equip-from-backpack", Out::Moved).await?;

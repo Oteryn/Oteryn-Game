@@ -17,7 +17,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
     evidence(&format!(
-        "e2e_all scenario=C19B.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=C19b.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }
@@ -54,11 +54,15 @@ fn kit_report(client: &DevClientSession) -> TestResult<(Vec<u32>, usize)> {
         .inventory()
         .ok_or("step=inventory observed=snapshot-absent")?;
     let held = quantities(client)?;
-    let missing = NONE_KIT
-        .iter()
-        .copied()
-        .filter(|id| held.get(id).copied().unwrap_or(0) == 0)
-        .collect();
+    let index = provisioning::item_index()?;
+    let mut missing = Vec::new();
+    for id in NONE_KIT {
+        // Held quantities are keyed by the generation's definition reference, not the native id.
+        let reference = provisioning::item_reference(&index, id)?;
+        if held.get(&reference.get()).copied().unwrap_or(0) == 0 {
+            missing.push(id);
+        }
+    }
     Ok((missing, inventory.equipment.len()))
 }
 

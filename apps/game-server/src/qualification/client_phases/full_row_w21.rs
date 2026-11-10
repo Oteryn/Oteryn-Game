@@ -3,13 +3,14 @@
 //! 1. Admit the node-boot character and require capability 225; read (read-only SQL) one enabled
 //!    boss key of the room catalogue, the only key the server accepts.
 //! 2. Drive the native client panel: Open expects a server `Window` with a fresh context, the
-//!    requested boss key and difficulty 0.
-//! 3. Preview difficulty 5; expect a `Window` with difficulty 5 and the durable context row to
-//!    hold 5 (read-only SQL).
-//! 4. Start difficulty 5; a started fight needs the server's accepted profile. The server answers
-//!    `NoAcceptedProfile` for every Start, so the selection can never begin a fight: that is a
-//!    missing server route, cited at the refusal.
-//! 5. Cancel; expect `Closed` and the durable context row closed. Log out.
+//!    requested boss key and its current opening difficulty (any value the server chose).
+//! 3. Preview a different difficulty (5, or 4 when it opened at 5); expect a `Window` with it and
+//!    the durable context row to hold it (read-only SQL).
+//! 4. Start it; a started fight needs the server's accepted profile. The server answers
+//!    `NoAcceptedProfile` for every Start, so the selection can never begin a fight: the row ends
+//!    FAIL citing the refusal and the needed accepted profile.
+//! 5. Cancel with the context the server returned (the panel drops it on a refusal); expect
+//!    `Closed` and the durable context row closed. Log out.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::{
@@ -25,14 +26,14 @@ const START_REFUSAL: &str =
     "source:crates/gameplay/durability/src/durability/boss_difficulty.rs:184";
 
 enum Verdict {
-    Missing(&'static str),
+    Fail(String),
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
     let (status, detail) = match result {
-        Ok(Ok(Verdict::Missing(source))) => ("MISSING-SERVER", source.to_owned()),
+        Ok(Ok(Verdict::Fail(detail))) => ("FAIL", detail),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
         Err(_) => ("FAIL", "step=journey-observed=timeout".to_owned()),
     };
@@ -116,27 +117,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         boss_key: boss.clone(),
         ..Default::default()
     };
-    let context = match act(&mut client, &mut panel, Intent::Open, "open").await? {
+    let (context, opening) = match act(&mut client, &mut panel, Intent::Open, "open").await? {
         Reply::Window {
             context,
             boss_key,
-            selected_difficulty: 0,
+            selected_difficulty,
             ..
-        } if boss_key == boss => context,
+        } if boss_key == boss => (context, selected_difficulty),
         other => return Err(format!("step=open observed={other:?}").into()),
     };
 
-    panel.difficulty = 5;
+    let chosen: u16 = if opening == 5 { 4 } else { 5 };
+    panel.difficulty = chosen;
     match act(&mut client, &mut panel, Intent::Preview, "preview").await? {
         Reply::Window {
             context: replied,
-            selected_difficulty: 5,
+            selected_difficulty,
             ..
-        } if replied == context => {}
+        } if replied == context && selected_difficulty == chosen => {}
         other => return Err(format!("step=preview observed={other:?}").into()),
     }
-    if context_row(clients, context).await? != Some((Some(5), false)) {
-        return Err("step=preview observed=durable-context-not-difficulty-5-open".into());
+    if context_row(clients, context).await? != Some((Some(i32::from(chosen)), false)) {
+        return Err(
+            format!("step=preview observed=durable-context-not-difficulty-{chosen}-open").into(),
+        );
     }
 
     let start = act(&mut client, &mut panel, Intent::Start, "start").await?;
@@ -151,8 +155,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         return Err(format!("step=start observed={start:?}").into());
     }
 
-    // The refusal leaves the context usable; cancel it and require the durable close.
+    // The refusal leaves the context usable, but the panel dropped it: restore the returned
+    // context, cancel it and require the durable close.
     panel.pending = false;
+    panel.context = Some(context);
     match act(&mut client, &mut panel, Intent::Cancel, "cancel").await? {
         Reply::Closed { context: closed } if closed == context => {}
         other => return Err(format!("step=cancel observed={other:?}").into()),
@@ -165,7 +171,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     {
         return Err("step=logout observed=refused".into());
     }
-    Ok(Verdict::Missing(START_REFUSAL))
+    Ok(Verdict::Fail(format!(
+        "step=start;observed=NoAcceptedProfile;{START_REFUSAL};needed=accepted-profile-for-{boss}"
+    )))
 }
 
 #[cfg(test)]

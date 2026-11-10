@@ -7,22 +7,23 @@
 //!
 //! The server-driven parts are judged on real frames. Minimap markers are client-local state
 //! (`apps/client/src/features/local-minimap/state.rs`, `Marker`): no protocol command carries
-//! them and the dev client has no minimap, so a row whose server parts pass ends
-//! MISSING-CLIENT naming that source.
+//! them and the dev client links no marker store, so a row whose server parts pass cannot prove
+//! the markers and ends FAIL with `needed:` naming the missing local driver (never a claimed
+//! missing client surface).
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::boss_encounter as boss;
 use oteryn_dev_client::client_runtime::character_info_panel as info;
 use oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse;
 
-const SOURCE: &str = "source:apps/client/src/features/local-minimap/state.rs:23";
+const NEEDED: &str = "needed:minimap-marker-add-remove-driver;server-parts=pass";
 const ANALYSER_CAPABILITY: u32 = 10;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
     let (status, detail) = match result {
-        Ok(Ok(())) => ("MISSING-CLIENT", SOURCE.to_owned()),
+        Ok(Ok(())) => ("FAIL", NEEDED.to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
@@ -161,8 +162,8 @@ mod tests {
     }
 
     #[test]
-    fn source_token_has_no_spaces() {
-        assert!(SOURCE.starts_with("source:") && !SOURCE.contains(' '));
+    fn needed_token_has_no_spaces() {
+        assert!(NEEDED.starts_with("needed:") && !NEEDED.contains(' '));
         assert_eq!(token("a\nb"), "a-b");
     }
 }

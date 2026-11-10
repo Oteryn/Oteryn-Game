@@ -66,7 +66,7 @@ fn load(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
     )
 }
 
-fn door_tiles(world: &BundleWorld) -> Vec<(TilePos, u8)> {
+fn door_tiles(world: &BundleWorld) -> Vec<(TilePos, u8, u16)> {
     let mut found = Vec::new();
     for (floor, x, y, view) in world.base().tiles() {
         let at = TilePos { x, y, floor };
@@ -80,12 +80,12 @@ fn door_tiles(world: &BundleWorld) -> Vec<(TilePos, u8)> {
             if world.facts().base_hidden(key) {
                 continue;
             }
-            if (22001..=22004).any(|unique| {
+            if let Some(unique) = (22001..=22004).find(|unique| {
                 world
                     .facts()
-                    .quest_callback_matches(key, Some(unique), None, None)
+                    .quest_callback_matches(key, Some(*unique), None, None)
             }) {
-                found.push((at, ordinal));
+                found.push((at, ordinal, unique));
             }
         }
     }
@@ -99,10 +99,31 @@ fn placement(world: &BundleWorld, at: TilePos, ordinal: u8) -> TestResult<Vec<u8
     Ok(placement)
 }
 
-fn items(client: &DevClientSession) -> usize {
-    client
-        .inventory()
-        .map_or(0, |inventory| inventory.entries.len())
+/// Every prohibited (mainland) item id the character carries in the visible inventory view:
+/// the main backpack, its direct entries and the equipment slots, as native item references.
+fn prohibited_carried(
+    client: &DevClientSession,
+    prohibited: &[(u32, std::num::NonZeroU32)],
+) -> TestResult<Vec<u32>> {
+    let inventory = client.inventory().ok_or("step=inventory;observed=none")?;
+    let carried = inventory
+        .main_backpack
+        .iter()
+        .chain(inventory.entries.iter())
+        .chain(inventory.equipment.iter().map(|equipped| &equipped.item))
+        .map(|entry| entry.item_definition_ref)
+        .collect::<Vec<_>>();
+    Ok(prohibited
+        .iter()
+        .filter(|(_, reference)| carried.contains(reference))
+        .map(|(id, _)| *id)
+        .collect())
+}
+
+/// The expected landing tile of the selected door (`starting_loadout::departure`).
+fn landed(client: &DevClientSession, destination: (i32, i32, i16)) -> bool {
+    let at = client.world_spatial().actor_position;
+    (at.x, at.y, at.floor) == destination
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
@@ -118,12 +139,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let mut client = connect_world(clients, 0xf3).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let near = |at: TilePos| {
-        doors.iter().any(|(door, _)| {
+        doors.iter().any(|(door, _, _)| {
             door.floor == at.floor && door.x.abs_diff(at.x).max(door.y.abs_diff(at.y)) <= 1
         })
     };
     let Some(path) = far_route(world, from, near) else {
-        let (door, ordinal) = doors[0];
+        let (door, ordinal, _) = doors[0];
         let reply = client
             .use_object(&placement(world, door, ordinal)?, 0)
             .await?
@@ -141,15 +162,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     };
     walk(&mut client, world, &path).await?;
     let here = tile(client.world_spatial().actor_position)?;
-    let (door, ordinal) = doors
+    let (door, ordinal, unique) = doors
         .iter()
         .copied()
-        .find(|(door, _)| {
+        .find(|(door, _, _)| {
             door.floor == here.floor && door.x.abs_diff(here.x).max(door.y.abs_diff(here.y)) <= 1
         })
         .ok_or("step=walk;observed=route-ended-away-from-a-door")?;
+    let (_, destination) =
+        oteryn_gameplay_items::starter_grant::starting_loadout::departure(unique)
+            .ok_or("step=door;observed=no-departure-for-door")?;
+    let index = provisioning::item_index()?;
+    let prohibited = oteryn_gameplay_items::starter_grant::starting_loadout::PROHIBITED
+        .iter()
+        .filter_map(|id| {
+            provisioning::item_reference(&index, *id)
+                .ok()
+                .map(|reference| (*id, reference))
+        })
+        .collect::<Vec<_>>();
     let position = client.world_spatial().actor_position;
-    let carried = items(&client);
+    let carried = prohibited_carried(&client, &prohibited)?;
     let reply = client
         .use_object(&placement(world, door, ordinal)?, 0)
         .await?
@@ -163,8 +196,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         client.service_liveness(Duration::from_millis(100)).await?;
     }
     let moved = client.world_spatial().actor_position;
-    expect(moved != position, "door-teleport", (position, moved))?;
-    let after = items(&client);
+    expect(
+        landed(&client, destination),
+        "door-destination",
+        (position, moved, destination),
+    )?;
+    let after = prohibited_carried(&client, &prohibited)?;
+    expect(after.is_empty(), "prohibited-items-after-door", &after)?;
     logout(&mut client).await?;
 
     let mut fresh = connect_world(clients, 0xf4).await?;
@@ -173,11 +211,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         "position-after-relog",
         (moved, fresh.world_spatial().actor_position),
     )?;
+    expect(
+        landed(&fresh, destination),
+        "destination-after-relog",
+        (fresh.world_spatial().actor_position, destination),
+    )?;
+    let relogged = prohibited_carried(&fresh, &prohibited)?;
+    expect(
+        relogged.is_empty(),
+        "prohibited-items-after-relog",
+        &relogged,
+    )?;
     logout(&mut fresh).await?;
+    if carried.is_empty() {
+        return Ok((
+            "FAIL",
+            format!(
+                "step=item-removal;observed=door-landed-at-{destination:?}-but-no-prohibited-item-was-carried;needed=carried-prohibited-item-before-door"
+            ),
+        ));
+    }
     Ok((
         "PASS",
         format!(
-            "door-committed;teleported:{position:?}->{moved:?};items:{carried}->{after};position-durable"
+            "door-committed;teleported:{position:?}->{moved:?}=destination;prohibited-removed:{carried:?};destination-and-removal-durable"
         ),
     ))
 }
@@ -193,7 +250,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
     evidence(&format!(
-        "e2e_all scenario=S16D.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=S16d.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }

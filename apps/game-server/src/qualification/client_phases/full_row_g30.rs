@@ -59,7 +59,7 @@ fn require_cyclopedia(client: &DevClientSession) -> TestResult {
 
 async fn misc(
     client: &mut DevClientSession,
-) -> TestResult<(Vec<(&'static str, String)>, [(u16, u16); 2])> {
+) -> TestResult<(Vec<(&'static str, String)>, [(u16, u16); 2], (u32, u32))> {
     let mut panel = cyc::CyclopediaCharacterPanel {
         selected: true,
         ..Default::default()
@@ -76,28 +76,41 @@ async fn misc(
     if cards.is_empty() {
         return Err("step=misc-cards observed=empty".into());
     }
+    // The bars clamp, so the range is judged on the raw server values.
+    let raw = panel
+        .misc_general
+        .map(|stats| {
+            (
+                u32::from(stats.stamina_minutes),
+                u32::from(stats.offline_training_minutes),
+            )
+        })
+        .ok_or("step=misc-raw observed=no-general-stats")?;
+    if raw.0 > 2520 || raw.1 > 720 {
+        return Err(
+            format!("step=misc-raw observed={raw:?};needed=stamina<=2520-offline<=720").into(),
+        );
+    }
     if bars[0].1 != 2520 || bars[1].1 != 720 || bars[0].0 > 2520 || bars[1].0 > 720 {
         return Err(
             format!("step=misc-bars observed={bars:?};needed=stamina<=2520-offline<=720").into(),
         );
     }
-    Ok((cards, bars))
+    Ok((cards, bars, raw))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xda).await?;
     require_cyclopedia(&client)?;
-    let (cards, bars) = misc(&mut client).await?;
+    let (cards, _, raw) = misc(&mut client).await?;
     logout(&mut client).await?;
     let mut fresh = connect_world(clients, 0xda).await?;
-    let (again, bars_again) = misc(&mut fresh).await?;
+    let (again, bars_again, raw_again) = misc(&mut fresh).await?;
     logout(&mut fresh).await?;
     // Skill cards are durable character state; stamina may tick while the character is offline.
-    if again.len() != cards.len() || bars_again[1] != bars[1] || bars_again[0].0 < bars[0].0 {
+    if again != cards || raw_again.1 != raw.1 || raw_again.0 < raw.0 {
         return Err(format!(
-            "step=fresh-admission observed=cards:{}->{};bars:{bars:?}->{bars_again:?}",
-            cards.len(),
-            again.len()
+            "step=fresh-admission observed=cards:{cards:?}->{again:?};raw:{raw:?}->{raw_again:?}"
         )
         .into());
     }

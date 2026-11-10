@@ -112,6 +112,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             continue;
         };
         tried += 1;
+        if unlocked(clients, &rule.grant_key).await? {
+            // A grant that already exists cannot prove this USE created it.
+            observed = format!("item={id},unlock-already-present");
+            continue;
+        }
         let before = carried(&client, definition);
         let (status, disposition) = use_by_definition(&mut client, definition).await?;
         if status == CommandStatus::Accepted && disposition == UseDisposition::Committed {
@@ -121,13 +126,35 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 )
                 .into());
             }
+            // Debit side: exactly one unit leaves the character.
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            while carried(&client, definition) != before - 1 {
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!(
+                        "step=use item={id} observed=carried:{};needed={}",
+                        carried(&client, definition),
+                        before - 1
+                    )
+                    .into());
+                }
+                client.take_events();
+                client.service_liveness(Duration::from_millis(50)).await?;
+            }
             logout(&mut client).await?;
             drop(client);
             let mut fresh = connect_world(clients, 0xcc).await?;
             let durable = unlocked(clients, &rule.grant_key).await;
+            let remaining = carried(&fresh, definition);
             logout(&mut fresh).await?;
             if !durable? {
                 return Err(format!("step=fresh item={id} observed=unlock-lost").into());
+            }
+            if remaining != before - 1 {
+                return Err(format!(
+                    "step=fresh item={id} observed=carried:{remaining};needed={}",
+                    before - 1
+                )
+                .into());
             }
             return Ok(());
         }

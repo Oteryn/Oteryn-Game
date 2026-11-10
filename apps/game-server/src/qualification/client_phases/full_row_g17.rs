@@ -3,8 +3,12 @@
 //! 2. With no entitlement (state 0) a claim for an unknown identity must be refused and leave
 //!    the inventory and the state unchanged; the row then fails naming the precondition,
 //!    because an entitlement needs twelve months of inactivity evidence no player route makes.
-//! 3. With an entitlement (state 1) claim its identity, require state 2 and a changed inventory,
-//!    log out, freshly admit and require the claimed state to persist.
+//! 3. With an entitlement (state 1) claim its identity: the reply must be disposition 1 carrying
+//!    that identity, the same session then reads state 2, a second claim is disposition 2, and
+//!    the durable claim receipt joined to its minted item instance must exist (read-only SQL).
+//!    The reward is delivered to the reward inbox, not the backpack, so the inventory is not the
+//!    evidence. After logout and a fresh admission the receipt must still exist and the
+//!    entitlement must not be offered again (state 2 is tied to the source session).
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -15,7 +19,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
     let (status, detail) = match result {
-        Ok(Ok(())) => ("PASS", "returner-reward-claimed-and-durable".to_owned()),
+        Ok(Ok(())) => ("PASS", "returner-reward-claimed-receipt-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
         Err(_) => ("FAIL", "step=journey-observed=timeout".to_owned()),
     };
@@ -90,17 +94,53 @@ async fn state(client: &mut DevClientSession) -> TestResult<returner::Reply> {
     Ok(returner::Reply::decode(&payload)?)
 }
 
-async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> TestResult<u8> {
+/// Claim reply: field 1 = disposition, field 2 (when claimed) = the 16-byte transaction id.
+fn claim_reply_matches(payload: &[u8], disposition: u8, id: Option<[u8; 16]>) -> bool {
+    let mut expected = vec![0x08, disposition];
+    if let Some(id) = id {
+        expected.extend_from_slice(&[0x12, 16]);
+        expected.extend_from_slice(&id);
+    }
+    payload == expected.as_slice()
+}
+
+/// Whether the durable claim receipt for `offer` joins a minted item instance (read-only).
+async fn receipt_exists(clients: &SeamClients<'_>, offer: &[u8; 16]) -> TestResult<bool> {
+    use sqlx::Connection;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let count: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_returner_reward_claims c \
+         JOIN game_item_instances i ON i.item_instance_id = c.item_instance_id \
+         WHERE c.offer_id = encode($1, 'hex')::uuid",
+    )
+    .bind(offer.as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    database.close().await?;
+    Ok(count == 1)
+}
+
+async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult<[u8; 16]> {
     let initial = state(client).await?;
     let inventory = client.inventory().cloned();
     match (initial.state, initial.id) {
         (1, Some(id)) => {
-            accepted(client, CAPABILITY, returner::CLAIM, &id).await?;
+            let reply = accepted(client, CAPABILITY, returner::CLAIM, &id).await?;
+            if !claim_reply_matches(&reply, 1, Some(id)) {
+                return Err(format!("step=claim observed=reply:{reply:?}").into());
+            }
             let after = state(client).await?;
-            if after.state != 2 || client.inventory().cloned() == inventory {
+            if after.state != 2 {
                 return Err(format!("step=claim observed=state:{}", after.state).into());
             }
-            Ok(after.state)
+            let replay = accepted(client, CAPABILITY, returner::CLAIM, &id).await?;
+            if !claim_reply_matches(&replay, 2, None) {
+                return Err(format!("step=claim-replay observed=reply:{replay:?}").into());
+            }
+            if !receipt_exists(clients, &id).await? {
+                return Err("step=claim observed=no-claim-receipt-with-item".into());
+            }
+            Ok(id)
         }
         (0, _) => {
             let (status, _) = send(client, CAPABILITY, returner::CLAIM, &BOGUS).await?;
@@ -126,12 +166,15 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
 
 async fn verify(
     client: &mut DevClientSession,
-    _clients: &SeamClients<'_>,
-    data: &u8,
+    clients: &SeamClients<'_>,
+    data: &[u8; 16],
 ) -> TestResult {
     let after = state(client).await?;
-    if after.state != *data {
-        return Err(format!("step=relog observed=state-{}", after.state).into());
+    if after.state == 1 {
+        return Err("step=relog observed=claimed-entitlement-offered-again".into());
+    }
+    if !receipt_exists(clients, data).await? {
+        return Err("step=relog observed=no-claim-receipt-with-item".into());
     }
     Ok(())
 }
@@ -161,6 +204,16 @@ mod tests {
         );
         assert!(!compact(&"x ".repeat(500)).contains(' '));
         assert!(compact(&"y".repeat(900)).len() <= 400);
+    }
+
+    #[test]
+    fn claim_reply_is_matched_exactly() {
+        let mut claimed = vec![0x08, 1, 0x12, 16];
+        claimed.extend_from_slice(&BOGUS);
+        assert!(claim_reply_matches(&claimed, 1, Some(BOGUS)));
+        assert!(!claim_reply_matches(&claimed, 2, None));
+        assert!(claim_reply_matches(&[0x08, 2], 2, None));
+        assert!(!claim_reply_matches(&[0x08, 3], 1, Some(BOGUS)));
     }
 
     #[test]

@@ -57,8 +57,10 @@ fn agrees(
     state: &wire::WorldEventState,
     row_active: Option<bool>,
     row_announcement: Option<&str>,
+    row_epoch: &str,
 ) -> bool {
-    state.active == row_active.unwrap_or(false)
+    state.reset_epoch.to_string() == row_epoch
+        && state.active == row_active.unwrap_or(false)
         && state.announcement == row_announcement.unwrap_or_default()
 }
 
@@ -108,10 +110,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<wire::WorldEventState>
     let mut client = connect_world(clients, 0xe2).await?;
     let first = query(&mut client).await?;
     let (active, announcement, epoch) = durable(clients).await?;
-    if !agrees(&first, active, announcement.as_deref()) {
+    if !agrees(&first, active, announcement.as_deref(), &epoch) {
         return Err(format!(
-            "step=durable-compare observed=reply-active:{}-row-active:{active:?}-epoch:{epoch}",
-            first.active
+            "step=durable-compare observed=reply-active:{}-row-active:{active:?}-reply-epoch:{}-row-epoch:{epoch}",
+            first.active, first.reset_epoch
         )
         .into());
     }
@@ -143,10 +145,21 @@ mod tests {
 
     #[test]
     fn reply_must_agree_with_the_durable_row() {
-        assert!(agrees(&state(false, ""), None, None));
-        assert!(agrees(&state(true, "Fair"), Some(true), Some("Fair")));
-        assert!(!agrees(&state(true, "Fair"), Some(false), Some("Fair")));
-        assert!(!agrees(&state(true, "Fair"), Some(true), Some("Other")));
+        assert!(agrees(&state(false, ""), None, None, "3"));
+        assert!(agrees(&state(true, "Fair"), Some(true), Some("Fair"), "3"));
+        assert!(!agrees(
+            &state(true, "Fair"),
+            Some(false),
+            Some("Fair"),
+            "3"
+        ));
+        assert!(!agrees(
+            &state(true, "Fair"),
+            Some(true),
+            Some("Other"),
+            "3"
+        ));
+        assert!(!agrees(&state(true, "Fair"), Some(true), Some("Fair"), "4"));
     }
 
     #[test]

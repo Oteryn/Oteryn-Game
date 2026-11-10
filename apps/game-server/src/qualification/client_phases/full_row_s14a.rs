@@ -23,10 +23,27 @@ async fn rows(clients: &SeamClients<'_>, index: usize, sql: &str) -> TestResult<
 }
 
 fn template_sql(listing: &LeaderListing) -> String {
+    let (team_type, target_id, hunt_area) = match listing.target {
+        TeamTarget::Boss(id) => (1, id, None),
+        TeamTarget::Hunt { kind, area } => (2, kind, Some(area)),
+        TeamTarget::Quest(id) => (3, id, None),
+    };
+    let area = hunt_area.map_or_else(
+        || "hunt_area IS NULL".to_owned(),
+        |area| format!("hunt_area::bigint={area}"),
+    );
     format!(
         "SELECT count(*) FROM game_team_finder_leader_listings WHERE leader_character_id=encode($1,'hex')::uuid \
-         AND min_level::bigint={} AND max_level::bigint={} AND team_slots::bigint={} AND free_slots::bigint={}",
-        listing.min_level, listing.max_level, listing.slots, listing.free_slots
+         AND min_level::bigint={} AND max_level::bigint={} AND team_slots::bigint={} AND free_slots::bigint={} \
+         AND vocation_mask::bigint={} AND party_members_join={} AND client_timestamp={} \
+         AND team_type::bigint={team_type} AND target_id::bigint={target_id} AND {area}",
+        listing.min_level,
+        listing.max_level,
+        listing.slots,
+        listing.free_slots,
+        listing.vocation_mask,
+        listing.party_members_join,
+        listing.timestamp,
     )
 }
 
@@ -77,7 +94,13 @@ fn listing(min_level: u16, max_level: u16, slots: u16, free_slots: u16) -> Leade
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let first = listing(11, 1_234, 5, 4);
-    let edited = listing(22, 1_500, 4, 2);
+    let edited = LeaderListing {
+        vocation_mask: 0x0f,
+        party_members_join: true,
+        timestamp: 2,
+        target: TeamTarget::Quest(7),
+        ..listing(22, 1_500, 4, 2)
+    };
     let mut client = connect_world(clients, 0xe0).await?;
     expect(
         client
@@ -200,7 +223,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
     evidence(&format!(
-        "e2e_all scenario=S14A.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=S14a.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }
@@ -254,5 +277,9 @@ mod tests {
         let sql = template_sql(&listing(11, 1_234, 5, 4));
         assert!(sql.contains("min_level::bigint=11") && sql.contains("max_level::bigint=1234"));
         assert!(sql.contains("team_slots::bigint=5") && sql.contains("free_slots::bigint=4"));
+        assert!(
+            sql.contains("vocation_mask::bigint=63") && sql.contains("party_members_join=false")
+        );
+        assert!(sql.contains("team_type::bigint=1") && sql.contains("target_id::bigint=1"));
     }
 }

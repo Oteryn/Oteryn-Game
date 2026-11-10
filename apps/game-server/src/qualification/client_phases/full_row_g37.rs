@@ -7,11 +7,16 @@
 //! 2. daily-reward wall QUERY: accepted and decodable as a wall.
 //! 3. task-board QUERY (the weekly-results window's source): a decodable reply.
 //! 4. walk to the depot locker and stash BROWSE: `Opened` with the page echoed.
-//! 5. log out and require Accepted.
+//! 5. support intake (`client_ui::support_intake::submission` through `raw_feature::send`):
+//!    a consented crash preview is Accepted with the one-byte stored reply; no consent yields no
+//!    command at all.
+//! 6. party list (`client_runtime::party` query): Ok disposition and a decodable current view.
+//! 7. log out and require Accepted.
 //!
-//! A failed probe makes the row FAIL. When every probe passes the remaining windows (party list,
-//! support intake, action-bar cooldowns, store cosmetic tokens, imbue, market, chat dialog) have
-//! no dev-client driver, so the row ends MISSING-CLIENT naming the package's client sources.
+//! A failed probe makes the row FAIL. The row never reports PASS or MISSING-CLIENT: the
+//! action-bar cooldown query needs an item definition the character owns, and the cosmetic-token,
+//! imbue, market and chat-dialog windows are not driven here, so a row whose probes all pass ends
+//! FAIL naming those undriven windows (`needed:`), not a claimed missing client surface.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::{
@@ -22,13 +27,14 @@ use oteryn_dev_client::client_runtime::{
 use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
 use oteryn_protocol_oteryn::task_board::full::Request;
 
-const SOURCE: &str = "source:apps/client/src/features/0462-support-intake/input.rs:1";
+const UNDRIVEN: &str =
+    "needed:driver-for-0463-cooldowns-0479-cosmetic-tokens-0068-imbue-0063-market-0007-chat-dialog";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result = tokio::time::timeout(Duration::from_secs(150), journey(clients)).await;
     let (status, detail) = match result {
-        Ok(Ok(failures)) if failures.is_empty() => ("MISSING-CLIENT", SOURCE.to_owned()),
+        Ok(Ok(failures)) if failures.is_empty() => ("FAIL", UNDRIVEN.to_owned()),
         Ok(Ok(failures)) => ("FAIL", token(&failures.join(";"))),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
@@ -123,6 +129,34 @@ async fn task_board_query(client: &mut DevClientSession) -> TestResult {
     .map_err(|error| format!("{error:?}").into())
 }
 
+async fn support_intake(client: &mut DevClientSession) -> TestResult {
+    use oteryn_dev_client::client_runtime::{raw_feature, support_intake as wire};
+    use oteryn_dev_client::client_ui::support_intake;
+    if support_intake::submission(wire::CRASH, "Reference: g37", false).is_some() {
+        return Err("submission-without-consent-encoded".into());
+    }
+    let command = support_intake::submission(wire::CRASH, "Reference: g37\nAnswer: Easy", true)
+        .ok_or("input-refused")?;
+    let reply = raw_feature::send(client.session_mut(), &command).await?;
+    if reply.status != CommandStatus::Accepted || reply.payload != [1] {
+        return Err(format!("status:{:?},payload:{:?}", reply.status, reply.payload).into());
+    }
+    Ok(())
+}
+
+async fn party_list(client: &mut DevClientSession) -> TestResult {
+    use oteryn_dev_client::client_runtime::party as runtime;
+    let reply = runtime::send(client.session_mut(), &runtime::PartyCommand::query()).await?;
+    let operation = runtime::party::decode_party_result(&reply.operation)
+        .map_err(|error| format!("operation:{error:?}"))?;
+    if operation.disposition != runtime::party::PartyDisposition::Ok {
+        return Err(format!("disposition:{:?}", operation.disposition).into());
+    }
+    let view = reply.view.ok_or("view-absent")?;
+    runtime::party::decode_party_result(&view).map_err(|error| format!("view:{error:?}"))?;
+    Ok(())
+}
+
 async fn stash_browse(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     use oteryn_dev_client::client_runtime::stash;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
@@ -166,6 +200,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Vec<String>> {
     record(&mut failures, "task-board", result);
     let result = stash_browse(&mut client, world).await;
     record(&mut failures, "stash", result);
+    let result = support_intake(&mut client).await;
+    record(&mut failures, "support-intake", result);
+    let result = party_list(&mut client).await;
+    record(&mut failures, "party-list", result);
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {

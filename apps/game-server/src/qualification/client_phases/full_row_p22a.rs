@@ -98,6 +98,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let list = read(&mut client, best).await?;
     expect(!has(&list, UNKNOWN), "unknown-race", "unknown-key-tracked")?;
 
+    // Durable: the entry survives logout and a fresh admission, and stays out of the bosses.
+    logout(&mut client).await?;
+    let mut client = connect_world(clients, 0xd3).await?;
+    selected(&client)?;
+    let list = read(&mut client, best).await?;
+    expect(has(&list, RAT), "relog-with-entry", "race-lost-after-relog")?;
+    let bosses = read(&mut client, boss).await?;
+    expect(
+        !has(&bosses, RAT),
+        "relog-bosstiary-isolated",
+        "race-in-boss-list",
+    )?;
+
     let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Remove, RAT)).await?;
     expect(
         status == CommandStatus::Accepted && !has(&list, RAT),
@@ -106,10 +119,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     let list = read(&mut client, best).await?;
     expect(!has(&list, RAT), "read-after-remove", "race-still-tracked")?;
+    // Durable: the removal also survives logout and a fresh admission.
+    logout(&mut client).await?;
+    let mut client = connect_world(clients, 0xd4).await?;
+    selected(&client)?;
+    let list = read(&mut client, best).await?;
+    expect(
+        !has(&list, RAT),
+        "relog-after-remove",
+        "race-back-after-relog",
+    )?;
     logout(&mut client).await?;
     Ok((
         "PASS",
-        "add-read-remove-and-unknown-refusal-validated".to_owned(),
+        "add-read-relog-remove-relog-and-unknown-refusal-validated".to_owned(),
     ))
 }
 
@@ -124,7 +147,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
     evidence(&format!(
-        "e2e_all scenario=P22A.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=P22a.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }

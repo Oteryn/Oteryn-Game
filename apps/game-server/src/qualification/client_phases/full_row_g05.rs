@@ -5,12 +5,13 @@
 //! `client-ui`, whose `reference_preferences` module exposes just the open shortcut, so the
 //! import/export/backup/defaults controls cannot be driven from it.
 //!
-//! The row does not fake a pass: it proves the one surface the dev client does have (the
-//! shortcut predicate answers `false` for no input) and reports MISSING-CLIENT naming it.
+//! The row does not fake a pass or claim a missing client surface: it proves the one surface the
+//! dev client does reach (the shortcut predicate answers `false` for no input) and otherwise ends
+//! FAIL with `needed:` naming the local driver the row's controls would require.
 use super::*;
 use oteryn_dev_client::client_ui::reference_preferences;
 
-const SOURCE: &str = "source:crates/client-ui/src/features/local-reference-preferences/input.rs:4";
+const NEEDED: &str = "needed:local-settings-import-export-backup-defaults-driver";
 
 pub(super) async fn run_packet(_clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -28,7 +29,7 @@ fn verdict(shortcut_fired_without_input: bool) -> (&'static str, String) {
             "step=open-key;observed=fired-without-input".to_owned(),
         );
     }
-    ("MISSING-CLIENT", SOURCE.to_owned())
+    ("FAIL", NEEDED.to_owned())
 }
 
 #[cfg(test)]
@@ -36,10 +37,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn verdict_names_the_dev_client_surface_without_spaces() {
+    fn verdict_names_the_needed_driver_without_spaces() {
         let (status, detail) = verdict(false);
-        assert_eq!(status, "MISSING-CLIENT");
-        assert!(detail.starts_with("source:") && !detail.contains(' '));
+        assert_eq!(status, "FAIL");
+        assert!(detail.starts_with("needed:") && !detail.contains(' '));
         assert_eq!(verdict(true).0, "FAIL");
     }
 }

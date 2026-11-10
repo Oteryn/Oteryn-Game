@@ -9,6 +9,7 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::EntityRef;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::battle_metadata as wire;
+use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -138,13 +139,36 @@ fn unknown_entity() -> EntityRef {
     }
 }
 
-fn judge(rows: &[wire::PlayerMetadata], player: EntityRef) -> TestResult {
+/// The durable vocation family of a provisioned character (0 none .. 5 monk), read-only SQL.
+async fn durable_family(clients: &SeamClients<'_>, index: usize) -> TestResult<u8> {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let family: i16 = sqlx::query_scalar(
+        "SELECT CASE COALESCE((SELECT vocation::text FROM game_character_build_state \
+         WHERE character_id = encode($1, 'hex')::uuid), 'none') \
+         WHEN 'sorcerer' THEN 1 WHEN 'master_sorcerer' THEN 1 \
+         WHEN 'druid' THEN 2 WHEN 'elder_druid' THEN 2 \
+         WHEN 'paladin' THEN 3 WHEN 'royal_paladin' THEN 3 \
+         WHEN 'knight' THEN 4 WHEN 'elite_knight' THEN 4 \
+         WHEN 'monk' THEN 5 WHEN 'exalted_monk' THEN 5 ELSE 0 END::smallint",
+    )
+    .bind(clients.characters[index].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    database.close().await?;
+    Ok(u8::try_from(family)?)
+}
+
+fn judge(rows: &[wire::PlayerMetadata], player: EntityRef, expected: u8) -> TestResult {
     let row = rows
         .iter()
         .find(|row| row.entity == player)
         .ok_or("step=metadata observed=no-row-for-visible-player")?;
-    if row.vocation.is_none() {
-        return Err("step=metadata observed=vocation-missing-for-visible-player".into());
+    if row.vocation != Some(expected) {
+        return Err(format!(
+            "step=metadata observed=vocation:{:?} needed=durable-family:{expected}",
+            row.vocation
+        )
+        .into());
     }
     if rows.iter().any(|row| {
         row.entity == unknown_entity() && (row.vocation.is_some() || row.same_guild.is_some())
@@ -173,14 +197,18 @@ async fn ask(
 async fn body(
     a: &mut DevClientSession,
     b: &mut DevClientSession,
-    _clients: &SeamClients<'_>,
+    clients: &SeamClients<'_>,
 ) -> TestResult {
+    let (a_family, b_family) = (
+        durable_family(clients, 0).await?,
+        durable_family(clients, 1).await?,
+    );
     let b_seen = see_each_other(a, b).await?;
     let a_own = own(a)?;
     let a_seen =
         seen(b, a_own.identity).ok_or("step=admit observed=first-player-not-in-view-of-second")?;
-    judge(&ask(a, b_seen).await?, b_seen)?;
-    judge(&ask(b, a_seen).await?, a_seen)
+    judge(&ask(a, b_seen).await?, b_seen, b_family)?;
+    judge(&ask(b, a_seen).await?, a_seen, a_family)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -226,13 +254,15 @@ mod tests {
             vocation,
             same_guild: None,
         };
-        assert!(judge(&[row(player, Some(2))], player).is_ok());
-        assert!(judge(&[row(player, None)], player).is_err());
-        assert!(judge(&[], player).is_err());
+        assert!(judge(&[row(player, Some(2))], player, 2).is_ok());
+        assert!(judge(&[row(player, None)], player, 0).is_err());
+        assert!(judge(&[row(player, Some(1))], player, 2).is_err());
+        assert!(judge(&[], player, 2).is_err());
         assert!(
             judge(
                 &[row(player, Some(2)), row(unknown_entity(), Some(1))],
-                player
+                player,
+                2
             )
             .is_err()
         );

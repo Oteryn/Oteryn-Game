@@ -250,18 +250,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let trumpet = provisioning::item_reference(&index, TRUMPET)?;
     let played = provisioning::item_reference(&index, PLAYED_TRUMPET)?;
     let mut client = connect_world(clients, 0xe6).await?;
+    let trumpet_base = quantity(&client, trumpet)?;
+    let played_base = quantity(&client, played)?;
     let bought = acquire(&mut client, world, TRUMPET, 1).await?;
     let (reply, _) = use_one(&mut client, trumpet).await?;
     if reply != UseDisposition::Committed {
         return Err(format!("step=use observed=reply-{reply:?}").into());
     }
-    wait_quantity(&mut client, played, 1).await?;
-    wait_quantity(&mut client, trumpet, 1).await?;
+    // Source debit and transform credit, then the decay: restored trumpet back, played one gone.
+    wait_quantity(&mut client, played, played_base + 1).await?;
+    wait_quantity(&mut client, trumpet, trumpet_base + 1).await?;
+    wait_quantity(&mut client, played, played_base).await?;
     let durable = quantities(&client)?;
     let session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xe6).await?;
-    if client.join_snapshot().game_session_id == session || quantities(&client)? != durable {
+    if client.join_snapshot().game_session_id == session
+        || quantities(&client)? != durable
+        || quantity(&client, trumpet)? != trumpet_base + 1
+        || quantity(&client, played)? != played_base
+    {
         return Err("step=fresh-admission observed=durable-quantities-changed".into());
     }
     logout(&mut client).await?;

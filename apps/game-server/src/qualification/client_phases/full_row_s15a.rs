@@ -27,7 +27,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let (monster, own) = actors(&client)?;
     let used = admitted.elapsed();
-    if used + MARGIN + MARGIN >= WINDOW {
+    if used + MARGIN >= WINDOW {
         logout(&mut client).await?;
         return Ok((
             "FAIL",
@@ -38,11 +38,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         ));
     }
     client.take_events();
+    // Absolute boundary: quiet through admission + 10 s, damage counts only after it.
     require_quiet(
         &mut client,
         monster,
         own,
-        WINDOW.saturating_sub(used + MARGIN),
+        admitted + WINDOW,
         "step=protected-window",
     )
     .await?;
@@ -58,8 +59,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     Ok((
         "PASS",
         format!(
-            "quiet-for-{:.1}s-then-monster-damage",
-            WINDOW.saturating_sub(used + MARGIN).as_secs_f64()
+            "quiet-until-{:.1}s-after-admission-then-monster-damage",
+            WINDOW.as_secs_f64()
         ),
     ))
 }
@@ -111,11 +112,10 @@ async fn require_quiet(
     client: &mut DevClientSession,
     monster: EntityRef,
     own: EntityRef,
-    duration: Duration,
+    deadline: tokio::time::Instant,
     step: &str,
 ) -> TestResult {
     let before = health(client, own)?;
-    let deadline = tokio::time::Instant::now() + duration;
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(25)).await?;
         if client
@@ -189,7 +189,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
     evidence(&format!(
-        "e2e_all scenario=S15A.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=S15a.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }

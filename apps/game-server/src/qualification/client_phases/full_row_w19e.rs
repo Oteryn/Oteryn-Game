@@ -103,7 +103,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             continue;
         };
         if before.contains_key(&reference.get()) {
-            // The character holds it: the effect steps of this row are not driven here.
+            // The character holds it: the effect steps of this row are not driven here. Close the
+            // session with an accepted logout so the next admission does not wait on loss/grace.
+            if client.session_mut().logout().await?.result
+                != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+            {
+                return Err("step=logout observed=refused".into());
+            }
             return Ok(());
         }
         let (status, text) = use_by_definition(&mut client, reference).await?;

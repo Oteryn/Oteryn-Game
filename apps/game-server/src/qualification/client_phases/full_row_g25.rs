@@ -138,6 +138,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if transfer == "unavailable" || listed == "unavailable" {
         return Err(format!("step=quote observed=transfer:{transfer};market:{listed};state_unchanged={unchanged};needed:platform-coin-api-in-node-boot").into());
     }
+    if listed == "depot_required" {
+        return Err(format!("step=market observed=market:{listed};transfer:{transfer};needed:depot-access-for-coin-market").into());
+    }
+    if listed != "ok" {
+        return Err(format!(
+            "step=market observed=market:{listed};transfer:{transfer};needed=ok-listing"
+        )
+        .into());
+    }
     if transfer != "ok" || reviewed["quote"].is_null() || !unchanged {
         return Err(format!("step=quote observed=transfer:{transfer};market:{listed};quote_present={};state_unchanged={unchanged};needed=ok-with-quote", !reviewed["quote"].is_null()).into());
     }

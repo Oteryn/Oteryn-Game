@@ -4,7 +4,7 @@
 //! step and action commands the server already serves.
 //! 1. Admit the node-boot character and send the step the joystick would emit; the server
 //!    answers it like any step (the disposition is not judged: the touch layer is the subject).
-//! 2. Log out and require Accepted.
+//! 2. Step back to the admission tile, require it, then log out and require Accepted.
 //!
 //! The dev client has no touch or window layer and cannot synthesize a touch event, so the
 //! joystick and hotbar themselves are unreachable: the row ends MISSING-CLIENT.
@@ -32,8 +32,26 @@ fn token(value: &str) -> String {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xe9).await?;
-    client.step_retrying(StepDirection::North).await?;
-    client.service_liveness(Duration::from_millis(50)).await?;
+    let start = client.world_spatial().actor_position;
+    let outcome = client.step_retrying(StepDirection::North).await?;
+    if outcome.disposition == StepDisposition::Moved {
+        // Walk the shared character back so the next journey is admitted at its fixture tile.
+        let back = client.step_retrying(StepDirection::South).await?;
+        if back.disposition != StepDisposition::Moved {
+            return Err(format!("step=restore-position;observed={:?}", back.disposition).into());
+        }
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let at = client.world_spatial().actor_position;
+        if at.x == start.x && at.y == start.y && at.floor == start.floor {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=restore-position;observed=not-at-start".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
