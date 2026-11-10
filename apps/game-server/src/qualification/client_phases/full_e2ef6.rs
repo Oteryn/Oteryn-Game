@@ -805,11 +805,12 @@ fn check_starter(inventory: &CharacterInventory, definition: NonZeroU32) -> Test
 async fn logout(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        match client.session_mut().logout().await?.result {
+        let logout = client.session_mut().logout().await?;
+        match logout.result {
             Some(LogoutResult::Accepted) => return Ok(()),
             Some(LogoutResult::Busy | LogoutResult::InFight { .. })
                 if tokio::time::Instant::now() < deadline => {}
-            result => return Err(format!("E2EF6 logout did not settle: {result:?}").into()),
+            _ => return Err(format!("E2EF6 logout did not settle: {logout:?}").into()),
         }
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();

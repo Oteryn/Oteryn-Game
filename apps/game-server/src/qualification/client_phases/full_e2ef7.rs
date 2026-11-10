@@ -336,10 +336,11 @@ async fn refused(
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+    let logout = client.session_mut().logout().await?;
+    if logout.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
-        return Err("ranking character logout refused".into());
+        return Err(format!("ranking character logout refused: {logout:?}").into());
     }
     Ok(())
 }
@@ -637,7 +638,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             cleanup => {
                 evidence(&format!("E2EF7_GAP W20a final-logout {cleanup:?}"));
                 if result.is_ok() {
-                    result = Err("world-clock final logout did not succeed".into());
+                    result = Err(format!("world-clock final logout did not succeed: {cleanup:?}").into());
                 }
             }
         }
@@ -1785,7 +1786,7 @@ impl LightClient {
                 .map_err(|e| format!("personal-light logout codec: {e:?}"))?
                 != native::logout::LogoutResult::Accepted
         {
-            return Err("personal-light logout refused".into());
+            return Err(format!("personal-light logout refused: status={status:?}; result={:?}", native::logout::decode_logout_result(&payload)).into());
         }
         Ok(())
     }
@@ -4189,6 +4190,7 @@ struct PvpAttack {
 }
 #[derive(Debug)]
 struct PvpLogout {
+    status: CommandStatus,
     result: Option<native::logout::LogoutResult>,
 }
 #[derive(Debug)]
@@ -4554,10 +4556,10 @@ impl PvpClient {
             )
         };
         if result.is_some_and(|r| r.is_rejected() != (reply.status == CommandStatus::Rejected)) {
-            return Err("PvP logout status mismatch".into());
+            return Err(format!("PvP logout status mismatch: status={:?}; result={result:?}", reply.status).into());
         }
         self.released = result == Some(native::logout::LogoutResult::Accepted);
-        Ok(PvpLogout { result })
+        Ok(PvpLogout { status: reply.status, result })
     }
     async fn step(&mut self, direction: StepDirection) -> TestResult<PvpStep> {
         let reply = self
@@ -4625,10 +4627,10 @@ async fn pvp_release(client: &mut PvpClient, budget: Duration) -> TestResult {
                 Duration::from_millis(u64::from(retry_after_ms)).min(Duration::from_secs(30))
             }
             Some(native::logout::LogoutResult::Busy) => Duration::from_millis(250),
-            other => return Err(format!("PvP ordinary release blocked:{other:?}").into()),
+            _ => return Err(format!("PvP ordinary release blocked: status={:?}; result={:?}", reply.status, reply.result).into()),
         };
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("PvP ordinary release deadline:{reply:?}").into());
+            return Err(format!("PvP ordinary release deadline: status={:?}; result={:?}", reply.status, reply.result).into());
         }
         let until = (tokio::time::Instant::now() + wait).min(deadline);
         while tokio::time::Instant::now() < until {
@@ -4889,6 +4891,7 @@ struct ForgeAttack {
 }
 #[derive(Debug)]
 struct ForgeLogout {
+    status: CommandStatus,
     result: Option<native::logout::LogoutResult>,
 }
 #[derive(Debug)]
@@ -5274,10 +5277,10 @@ impl ForgeClient {
             )
         };
         if result.is_some_and(|r| r.is_rejected() != (reply.status == CommandStatus::Rejected)) {
-            return Err("Forge logout status mismatch".into());
+            return Err(format!("Forge logout status mismatch: status={:?}; result={result:?}", reply.status).into());
         }
         self.released = result == Some(native::logout::LogoutResult::Accepted);
-        Ok(ForgeLogout { result })
+        Ok(ForgeLogout { status: reply.status, result })
     }
     async fn step(&mut self, direction: StepDirection) -> TestResult<ForgeStep> {
         let reply = self
@@ -5431,7 +5434,7 @@ async fn forge_release(client: &mut ForgeClient) -> TestResult {
             Some(
                 native::logout::LogoutResult::InFight { .. } | native::logout::LogoutResult::Busy,
             ) if tokio::time::Instant::now() < deadline => client.barrier().await?,
-            _ => return Err(format!("forge ordinary logout:{reply:?}").into()),
+            _ => return Err(format!("forge ordinary logout: status={:?}; result={:?}", reply.status, reply.result).into()),
         }
     }
 }

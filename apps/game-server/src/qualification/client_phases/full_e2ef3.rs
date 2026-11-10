@@ -266,9 +266,9 @@ pub(super) async fn run(
         let before = backpack_inspection(&mut client).await?;
         let session = client.join_snapshot().game_session_id;
         let saved_position = client.world_spatial().actor_position;
-        let (result, _, _, _) = super::logout_retrying_busy(&mut client).await?;
+        let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(&mut client).await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err("E2EF3 fresh admission logout refused".into());
+            return Err(format!("E2EF3 fresh admission logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
         }
         drop(client);
         client = connect_world(clients, 0x79).await?;

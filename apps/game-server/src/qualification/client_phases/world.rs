@@ -274,14 +274,19 @@ pub(super) async fn logout_retrying_busy(
     let mut attempts = 0;
     loop {
         attempts += 1;
-        let outcome = client.session_mut().logout().await?;
+        let outcome = client
+            .session_mut()
+            .logout()
+            .await
+            .map_err(|error| format!("logout attempt {attempts} failed: {error}"))?;
         if outcome.result != Some(LogoutResult::Busy) {
             return Ok((outcome.result, format!("{outcome:?}"), attempts, false));
         }
         if tokio::time::Instant::now() >= deadline {
             return Ok((outcome.result, format!("{outcome:?}"), attempts, true));
         }
-        client.service_liveness(Duration::from_millis(250)).await?;
+        client.service_liveness(Duration::from_millis(250)).await
+            .map_err(|error| format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}"))?;
     }
 }
 
@@ -310,9 +315,9 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         )
         .into());
     }
-    let (result, _, _, _) = logout_retrying_busy(&mut client).await?;
+    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("first town entry logout refused".into());
+        return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     drop(client);
     // Keep the high-level fixture on the other Character: the original
@@ -407,13 +412,12 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     let old_session = client.join_snapshot().game_session_id;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        if client.session_mut().logout().await?.result
-            == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-        {
+        let logout = client.session_mut().logout().await?;
+        if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("death relog logout was not accepted".into());
+            return Err(format!("death relog logout was not accepted: {logout:?}").into());
         }
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
@@ -486,13 +490,14 @@ async fn profile_journey(
     // before restoring the peer that main's trade/party phases use.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        if client.session_mut().logout().await?.result
-            == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-        {
+        let logout = client.session_mut().logout().await?;
+        if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("profile combat lock did not settle before logout".into());
+            return Err(
+                format!("profile combat lock did not settle before logout: {logout:?}").into(),
+            );
         }
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
@@ -504,9 +509,9 @@ async fn profile_journey(
     })
     .ok_or("profile journey has no return route")?;
     walk(&mut client, world, &back).await?;
-    let (result, _, _, _) = logout_retrying_busy(&mut client).await?;
+    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("profile journey logout refused".into());
+        return Err(format!("profile journey logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     map?;
     combat?;

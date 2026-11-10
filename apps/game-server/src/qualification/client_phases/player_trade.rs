@@ -48,10 +48,9 @@ pub(super) async fn pair(
         .and_then(|inventory| inventory.entries.first())
         .copied()
     else {
-        if partner.session_mut().logout().await?.result
-            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-        {
-            return Err("trade partner logout refused".into());
+        let logout = partner.session_mut().logout().await?;
+        if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("trade partner logout refused: {logout:?}").into());
         }
         evidence(
             "mechanic=player_trade skipped=second_platform_created_character_has_no_carried_offer_item source=crates/gameplay/dispatch/src/gameplay_transport/item_ref_admission.rs:373",
@@ -166,10 +165,9 @@ pub(super) async fn pair(
     evidence(
         "mechanic=player_trade completion=committed both_inventories=changed exchanged_definitions=present",
     );
-    if partner.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("trade partner logout refused".into());
+    let logout = partner.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("trade partner logout refused: {logout:?}").into());
     }
     Ok(())
 }
