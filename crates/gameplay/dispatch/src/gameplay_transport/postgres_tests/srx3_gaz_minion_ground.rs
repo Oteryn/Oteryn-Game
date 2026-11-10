@@ -4,6 +4,15 @@ use super::{Dependencies, TestResult, reset};
 use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+async fn assert_ground_history(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    crate::durability::spell_item_transaction::verify_spell_item_chain(&mut tx)
+        .await
+        .map_err(debug)?;
+    tx.rollback().await?;
+    Ok(())
+}
+
 fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -181,6 +190,17 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
                 owner.drain_monster_melee().await;
                 let death_at = owner.owner_now().get();
                 death_times.push(death_at);
+                // The detached Item commit ACKs the copied handler. Its next
+                // native turn completes the FIFO death task before later timers.
+                owner.drain_monster_melee().await;
+                assert!(
+                    !owner
+                        .runtime
+                        .lock()
+                        .await
+                        .has_pending_source_creature_deaths(),
+                    "actual copied death must finish before advancing its expiry clock"
+                );
                 if death_index == 0 {
                     let minted:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_spell_item_receipts r ON r.transaction_id=i.minted_transaction_id WHERE g.scope_kind=1 AND g.channel_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.definition_production_key=$2 AND r.cause_kind=3 AND ($3 OR convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'action_id'='33542')")
                 .bind(owner.channel_id.as_bytes().as_slice()).bind(item).bind(corrupted).fetch_one(&h.pool).await?;
@@ -243,6 +263,9 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
                         item_ids.push(rows[0].0.clone());
                     }
                 }
+                // Recovery must accept each committed physical successor, including
+                // the retained existing23728 no-op and its unchanged Item history.
+                assert_ground_history(&h).await?;
             }
             if followup {
                 let first_due = if corrupted {
@@ -271,6 +294,7 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
                         "first60s timer removes newest CURRENT20121, not its own originally minted UUID"
                     );
                 }
+                assert_ground_history(&h).await?;
                 let last_due = death_times
                     .last()
                     .copied()
@@ -298,6 +322,7 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
                     if corrupted { 3 } else { 2 },
                     "existing23728 zero-op must still schedule its own30s removal; first absent create schedules none"
                 );
+                assert_ground_history(&h).await?;
             }
             drop(owner);
             drop(authority);
