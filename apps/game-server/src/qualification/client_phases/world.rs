@@ -270,7 +270,9 @@ pub(super) async fn logout_retrying_busy(
 )> {
     use oteryn_protocol_oteryn::logout::LogoutResult;
 
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    // Node boot can leave each durability pass CPU-starved for well over a second. Match the
+    // other node-boot admission/recovery waits: Busy remains retryable for one bounded minute.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     let mut attempts = 0;
     loop {
         attempts += 1;
@@ -310,9 +312,12 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         )
         .into());
     }
-    let (result, _, _, _) = logout_retrying_busy(&mut client).await?;
+    let (result, logout, attempts, _) = logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("first town entry logout refused".into());
+        return Err(format!(
+            "first town entry logout refused: {logout}; attempt count: {attempts}"
+        )
+        .into());
     }
     drop(client);
     // Keep the high-level fixture on the other Character: the original
@@ -504,9 +509,11 @@ async fn profile_journey(
     })
     .ok_or("profile journey has no return route")?;
     walk(&mut client, world, &back).await?;
-    let (result, _, _, _) = logout_retrying_busy(&mut client).await?;
+    let (result, logout, attempts, _) = logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("profile journey logout refused".into());
+        return Err(
+            format!("profile journey logout refused: {logout}; attempt count: {attempts}").into(),
+        );
     }
     map?;
     combat?;

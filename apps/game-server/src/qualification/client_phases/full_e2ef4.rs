@@ -248,10 +248,14 @@ async fn wait_inventory(
 
 async fn relog(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     let old = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result
+    let logout = client.session_mut().logout().await?;
+    if logout.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
-        return Err("durability-check logout refused".into());
+        return Err(format!(
+            "durability-check logout refused: {logout:?}; attempt count: 1"
+        )
+        .into());
     }
     *client = connect_character(clients, 0x85, 1).await?;
     if client.join_snapshot().game_session_id == old {
@@ -467,7 +471,10 @@ async fn trade(
     .await;
     let cleanup = peer.session_mut().logout().await?;
     if cleanup.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("trade peer cleanup logout refused".into());
+        return Err(format!(
+            "trade peer cleanup logout refused: {cleanup:?}; attempt count: 1"
+        )
+        .into());
     }
     result
 }
@@ -769,7 +776,10 @@ async fn party(
     let _ = send(client, Some(PartyIntent::Leave)).await;
     let cleanup = peer.session_mut().logout().await?;
     if cleanup.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("party peer cleanup logout refused".into());
+        return Err(format!(
+            "party peer cleanup logout refused: {cleanup:?}; attempt count: 1"
+        )
+        .into());
     }
     result
 }
@@ -807,10 +817,11 @@ async fn logout(
         return Err("logout peer is not on authored PZ tile".into());
     }
     let session = peer.join_snapshot().game_session_id;
-    if peer.session_mut().logout().await?.result
+    let logout = peer.session_mut().logout().await?;
+    if logout.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
-        return Err("PZ logout refused".into());
+        return Err(format!("PZ logout refused: {logout:?}; attempt count: 1").into());
     }
     row.pass("pz-logout", "authored-PZ-native-logout-accepted");
     drop(peer);

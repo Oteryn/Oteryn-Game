@@ -336,10 +336,14 @@ async fn refused(
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+    let logout = client.session_mut().logout().await?;
+    if logout.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
-        return Err("ranking character logout refused".into());
+        return Err(format!(
+            "ranking character logout refused: {logout:?}; attempt count: 1"
+        )
+        .into());
     }
     Ok(())
 }
@@ -1780,12 +1784,13 @@ impl LightClient {
         let (status, payload) = self
             .command(native::logout::COMMAND_TYPE_LOGOUT_INTENT, &[])
             .await?;
-        if status != CommandStatus::Accepted
-            || native::logout::decode_logout_result(&payload)
-                .map_err(|e| format!("personal-light logout codec: {e:?}"))?
-                != native::logout::LogoutResult::Accepted
-        {
-            return Err("personal-light logout refused".into());
+        let result = native::logout::decode_logout_result(&payload)
+            .map_err(|e| format!("personal-light logout codec: {e:?}"))?;
+        if status != CommandStatus::Accepted || result != native::logout::LogoutResult::Accepted {
+            return Err(format!(
+                "personal-light logout refused: status={status:?} result={result:?}; attempt count: 1"
+            )
+            .into());
         }
         Ok(())
     }

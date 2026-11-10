@@ -113,7 +113,10 @@ async fn character_core(
         .into());
     }
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("core logout refused: {logout}").into());
+        return Err(format!(
+            "core logout refused: {logout}; attempt count: {attempts}"
+        )
+        .into());
     }
     drop(client);
     client = connect_world(clients, 0x76).await?;

@@ -203,10 +203,11 @@ async fn say(
         .await?)
 }
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+    let logout = client.session_mut().logout().await?;
+    if logout.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
-        return Err("C17c logout refused".into());
+        return Err(format!("C17c logout refused: {logout:?}; attempt count: 1").into());
     }
     Ok(())
 }
