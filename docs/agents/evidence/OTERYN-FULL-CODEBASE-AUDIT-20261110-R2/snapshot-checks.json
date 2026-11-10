@@ -10,10 +10,10 @@
     "workspace_packages": 67,
     "supplementary_domains": 11,
     "tracked_files": 27900,
-    "unique_substantively_analyzed_files": 8844,
-    "fully_analyzed_files": 8818,
-    "selected_range_files": 26,
-    "analyzed_lines_union": 2551081,
+    "unique_substantively_analyzed_files": 8987,
+    "fully_analyzed_files": 8962,
+    "selected_range_files": 25,
+    "analyzed_lines_union": 2567687,
     "binary_files_analyzed": 7,
     "analyzed_binary_bytes_union": 3178,
     "workspace_statuses": {
@@ -24,5 +24,16 @@
       "IN PROGRESS": 5,
       "NOT STARTED": 1
     }
+  },
+  "preserved_report_closures": [
+    "oteryn-gameplay-dispatch",
+    "rulesets"
+  ],
+  "targeted_registry_tests": {
+    "executed": 7,
+    "pass": 6,
+    "fail": 1,
+    "exit": 1,
+    "runtime_or_CI_impact": "UNKNOWN"
   }
 }

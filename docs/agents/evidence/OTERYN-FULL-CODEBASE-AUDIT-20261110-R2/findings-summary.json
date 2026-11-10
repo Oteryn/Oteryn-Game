@@ -166,13 +166,22 @@
       "report": "Restricted independent evidence retained privately",
       "public_safe": false,
       "public_abstract": "The donor-only capture CLI aborts after agreeing multi-page item-ID evidence because diagnostic formatting assumes the direct-record variant. Independent offline actual-main cases reproduce the conditional failure before output writes; existing fixture output is unchanged. Current real external-source incidence remains UNKNOWN."
+    },
+    {
+      "id": "GR-CRAFT-001",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent root and secondary real-caller, complete resolver/writer, accepted lifecycle norm, current concrete materializable recipe, fluid producer and SQL-counterguard proof. Relevant source changes through observed main qualified. No native/SQL execution or deployed incident claim.",
+      "report": "Restricted independent evidence retained privately",
+      "public_safe": false,
+      "public_abstract": "A maintained carried-crafting flow replaces an item whose authored contract declares identity-preserving transformation. Independent current-data, producer, caller, complete resolver/writer and SQL-counterguard review confirms the bounded lifecycle mismatch. No native/SQL execution, item duplication or deployed incident is claimed."
     }
   ],
   "prior_checkpoint": "1c39ebc3347319fe08eaf58299a8a9e9339b0367",
   "cumulative_confirmed_counts": {
     "P0": 0,
     "P1": 4,
-    "P2": 22,
+    "P2": 23,
     "P3": 0
   },
   "prior_likely": 2,

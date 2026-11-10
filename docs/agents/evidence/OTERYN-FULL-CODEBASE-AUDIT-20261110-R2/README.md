@@ -1,4 +1,4 @@
-# OTERYN FULL AUDIT — continuation checkpoint 30
+# OTERYN FULL AUDIT — continuation checkpoint 31
 
 Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues across all remaining packages and supplementary domains.
 
@@ -6,7 +6,7 @@ Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues acro
 
 - 67 workspace packages; 11 supplementary domains; 27900 tracked input files.
 - **67 packages REVIEWED / 0 IN PROGRESS / 0 NOT STARTED / 0 VERIFIED**.
-- **8,844 distinct substantively analyzed files**: 8,818 full and 26 selected-range files; 2,551,081 deduplicated text line positions.
+- **8,987 distinct substantively analyzed files**: 8,962 full and 25 selected-range files; 2,567,687 deduplicated text line positions.
 - Seven binary fixtures were semantically decoded in full, totaling 3,178 bytes. Their exact ranges use bytes and are excluded from line counts.
 - 192 historical files retain their exact ranges only because their Git blobs are identical. Four changed historical files receive no automatic carryover credit; fresh review is attributed separately.
 - REVIEWED requires every tracked package file and a substantive report. File discovery, text search, hash checks and test-source inspection are not runtime execution.
@@ -15,7 +15,7 @@ Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues acro
 
 The [first published checkpoint](https://github.com/Oteryn/Oteryn-Game/tree/1c39ebc3347319fe08eaf58299a8a9e9339b0367/docs/agents/evidence/OTERYN-FULL-CODEBASE-AUDIT-20261110) retains three confirmed P1, three confirmed P2, two LIKELY findings and four rejected hypotheses.
 
-Twenty additional findings have independent lead verification:
+Twenty-one additional findings have independent lead verification:
 
 | ID | Confirmed bounded effect | Evidence |
 |---|---|---|
@@ -39,12 +39,13 @@ Twenty additional findings have independent lead verification:
 | R2-SUP-TOOLS-002 | A selected local login proxy omits routes required by the runner; conditional qualification failure, without a deployed outage claim | Restricted independent source and bounded route-check evidence retained privately |
 | R2-SUP-TOOLS-003 | A qualifying mixture of title and disambiguation evidence aborts manual family capture before output writes | Restricted independent source and actual-main offline evidence retained privately |
 | R2-SUP-TOOLS-004 | Donor capture diagnostic handling aborts on valid grouped evidence before output writes | Restricted independent source and actual-main offline evidence retained privately |
+| GR-CRAFT-001 | A maintained carried-crafting flow replaces a target whose authored lifecycle requires identity preservation; no duplication or deployed incident claim | Restricted independent evidence retained privately under SECURITY.md |
 
 Cumulative confirmed counts: **P0=0 / P1=4 / P2=22 / P3=0**. Existing LIKELY=2 and earlier rejected hypotheses=4 remain. New unconfirmed hardening and integration candidates are excluded. Static confirmation does not claim a deployed incident, permanent reconnect failure or native end-to-end reproduction.
 
 ## Current main and scope
 
-Fresh main reconfirmed at22:00:32 UTC during checkpoint30 preparation remains `c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f` (#3096, LOG-17), sole parent `43f48d1f3bf932bfaef6ca47334aa72117db6c81`. Its complete14-path successor delta is now **REVIEWED and independently root-qualified**:12 complete target files and2 complete deltas, totaling3,320 target lines plus27 cross-reference lines. The two delta files are not claimed as full target rereads. Return/panic preservation, held blocking permits, signature-before-decode, acknowledgement ordering and lexical-check limitations were examined. No new confirmed finding or Rust/native/SQL execution follows from this review. See `latest-main-log17-review.md` and its exact validation/check/root packets.
+Fresh main reconfirmed at22:49:18 UTC during checkpoint31 preparation remains `c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f` (#3096, LOG-17), sole parent `43f48d1f3bf932bfaef6ca47334aa72117db6c81`. Its complete14-path successor delta is now **REVIEWED and independently root-qualified**:12 complete target files and2 complete deltas, totaling3,320 target lines plus27 cross-reference lines. The two delta files are not claimed as full target rereads. Return/panic preservation, held blocking permits, signature-before-decode, acknowledgement ordering and lexical-check limitations were examined. No new confirmed finding or Rust/native/SQL execution follows from this review. See `latest-main-log17-review.md` and its exact validation/check/root packets.
 
 The prior main `43f48d1f3bf932bfaef6ca47334aa72117db6c81` retains its separately attributed117 successor-path reviews and historical reconciliation `latest-main-reconciliation-43f48.json`:64 final-commit full targets/19,875 lines, with another27 full targets and26 complete deltas/9,414 lines at that cutoff. Overlapping successor versions are not blindly summed as unique files. Immutable input counts and findings remain bound to `4f0b6c62a789489fca6c37dd36d5917d096f328e`.
 
@@ -65,7 +66,7 @@ The Forge/equipment finding has a bounded public summary in `forge-equipment-rev
 - Complete spell source: `spell-review.md`, `spell-coverage-validation.json`, `spell-embedded-source-validation.json`; complete content: `content.md`, `content-completion-validation.json`; complete items: `items-review.md`, `items-coverage-validation.json`, `items-imbuement-unchanged-tests.json`.
 - Complete encounters: `encounters-review.md`, `encounters-coverage-validation.json`, `encounters-entry-unchanged-tests.json`; complete dispatch: `dispatch-progress.md`; complete quests: `quests-review.md`, `quests-coverage-validation.json`, `quests-calendar-unchanged-tests.json`.
 - Complete social: `social-review.md`, `social-coverage-validation.json`, `social-rate-window-unchanged-tests.json`; Task Board durable-owner closure: `task-board-owner-links.md`, `task-board-owner-links.json`, `task-board-owner-validation.json`.
-- Complete World: `world-review.md`, `world-root-validation.json`, three `world-*-unchanged-tests.json` records, floor validation and immovable method map/semantic validation; delegated capture qualification: `capture-validation-30.json` and seven `game-server-*-method-map.md` files.
+- Complete World: `world-review.md`, `world-root-validation.json`, three `world-*-unchanged-tests.json` records, floor validation and immovable method map/semantic validation; delegated capture qualification: `capture-validation-31.json` and seven `game-server-*-method-map.md` files.
 - Native client application: `apps-client.md`; 1,180 full files, with unresolved candidates separated from confirmed findings.
 - Protocol/session: `protocol-session.md`, `platform-client.md`, `session.md`, `protocol.md`; complete `durability-review.md` and `durability-completion-validation.json`; complete `game-server-review.md` and `game-server-completion-root-validation.json`; complete `harness-review.md` and `harness-coverage-validation.json`.
 - Gameplay: `characters.md`, `node-files.md`, `weather.md`, `source-critical-baseline.md`, `housing.md`, `economy.md`, `combat-rules.md`, `encounter-rules.md`, `social-rules.md`, `spell-rules.md`, `world-change.md`, `npc.md`.
@@ -94,7 +95,7 @@ Encounters is now **REVIEWED: 93/93 files and 22,624 lines**. The complete sourc
 
 Frozen durability remains **721/721 full files / 216,548 lines — REVIEWED**. Game-server is now **REVIEWED: 873/873 files / 489,700 text lines / 2,703 binary bytes**, comprising **862 manual and 11 mixed semantic reviews**. All migrations, source, tests/support, examples and package root files are covered. The final substantive report, independent root qualification and earlier method maps distinguish source/data review from execution.
 
-Frozen Dispatch coverage is **1,668/1,668 full files and517,542 deduplicated lines — REVIEWED**, with no remaining package files. Final quest-test captures18 and15 each contain99 full files; all original reservations and the root158 share are complete. Root read all198 quest notes across checkpoints,39 supporting notes and final reports, then qualified exact assignment/history/source/attribution. See `capture-validation-30.json`, `dispatch-progress.md` and the root implementation report. No runtime execution or second complete manual reread of delegated sources is claimed.
+Frozen Dispatch coverage is **1,668/1,668 full files and517,542 deduplicated lines — REVIEWED**, with no remaining package files. Final quest-test captures18 and15 each contain99 full files; all original reservations and the root158 share are complete. Root read all198 quest notes across checkpoints,39 supporting notes and final reports, then qualified exact assignment/history/source/attribution. See `capture-validation-31.json`, `dispatch-progress.md` and the root implementation report. No runtime execution or second complete manual reread of delegated sources is claimed.
 
 Supplementary repository-root16/16, deploy16/16 and tests12/12 are **REVIEWED**, totaling44 files and9,938 lines. Every file has a full semantic note; root checked the complete packet. Bounded workspace/lock/fixture/staging consistency checks and unexecuted runtime limits are stated in `supplementary-core-review.md`. Historical NAS format/pin drift remains qualified by the explicit retirement instruction; active host impact is unknown.
 
@@ -102,8 +103,12 @@ The synthetic client harness is now **REVIEWED: 40/40 files / 10,454 lines**, al
 
 World remains **REVIEWED: 73/73 files / 28,966 lines**, with 72 manual and one documented mixed semantic review, 29 original unchanged-source Rust tests and the original ladder check passed. Quests remains **103/103 files / 30,058 lines** with three original calendar tests passed; Social remains **56/56 / 11,871 lines** with one original rate-window test passed. Their reports and exact version attribution remain retained.
 
-All **67 Cargo packages are REVIEWED**. Supplementary domains remain **5 REVIEWED / 5 IN PROGRESS / 1 NOT STARTED** at this exact cutoff; all 11 domains and all 27,900 input files remain mandatory. Completed domains are repository-root, deploy, tests, .github and rulesets. Tools/configuration capture16 now contains 302 full files and 72,859 physical lines: 277 original manual reviews, 24 attributed manual transfers and one complete PG-estimate corpus. Root qualified all notes and reports, 328 source identities, 302 provenance records and 21 historical manifests. The 172 newly included full reviews add 170 distinct paths and complete two previously partial paths; supporting rereads add no new primary credit. Import capture09 remains 163 full files / 292,492 lines with its explicit method amendments. Later worker cuts remain excluded until separately qualified; documentation, content, imports and vendor work remain mandatory.
+All **67 Cargo packages are REVIEWED**. Supplementary domains remain **5 REVIEWED / 5 IN PROGRESS / 1 NOT STARTED** at this exact cutoff; all11 domains and all27,900 input files remain mandatory. Completed domains are repository-root, deploy, tests, .github and rulesets. Qualified content/rulesets capture16 contains150 full files/136,595 lines, including73 new content files. This cut also adds71 complete documentation reviews/4,815 physical lines:62 root manual reviews and9 explicitly attributed manual transfers. The global union adds143 distinct paths and completes one previously partial document. Root checked382 primary/supporting source identities and198 secondary evidence pins. Three later sidecar pins are explicitly not backdated.
 
-There are now **26 confirmed findings: P0=0 / P1=4 / P2=22 / P3=0**. This cut adds three independently qualified P2 findings: a conditional local login routing failure and two conditional manual capture failures. The capture errors occur before output writes; current real external-source incidence and complete local topology execution remain UNKNOWN. Earlier LIKELY=2 and formally rejected hypotheses=4 remain separate. Restricted proof stays private. No game-source fix, full Cargo/SQL/native suite, live server or deployment execution is claimed.
+There are now **27 confirmed findings: P0=0 / P1=4 / P2=23 / P3=0**. This cut adds GR-CRAFT-001, independently source-confirmed lifecycle-contract divergence. No item duplication, live incident or native/SQL reproduction is claimed. Earlier LIKELY=2 and formally rejected hypotheses=4 remain separate. Restricted proof stays private.
+
+The original bounded registry suite actually ran: **7 tests, 6 PASS / 1 FAIL**. The failure is an exact filename roundtrip mismatch in three protocol fragments; runtime and CI impact remain UNKNOWN. Separate passing governance checks do not turn this into a passing test result. No game-source fix, full Cargo/SQL/native suite, live server or deployment execution is claimed.
+
+The previously qualified dispatch and rulesets closure records were explicitly preserved by a checked addendum after the initial build omitted them from the live report list. Their complete source coverage never changed, and this restoration adds no review credit. Tools capture16 and imports capture09 remain the included cuts; later worker progress and every remaining documentation/content/import/vendor/tool path remain mandatory.
 
 The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and lifecycle. Repairs remain separate work; this branch changes audit evidence only.

@@ -1,0 +1,328 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T22:51:23.849027+00:00",
+  "captures": {
+    "durability": {
+      "path": "protocol-session/durability/captures/checkpoint-50-ledger.json",
+      "sha256": "4fdb43477aefdac4adbc679b8c1f91406769ead34deba052f7eb5f6f8599ddc4",
+      "full_files": 721,
+      "full_file_physical_lines": 216548,
+      "all_scope_text_lines_union": 216548,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "server": {
+      "path": "protocol-session/game-server-worker-captures/checkpoint-873-ledger.json",
+      "sha256": "0272f69956687e04b05e6a6461fa4dc5e8e3e40217335596abde763ea68e4e7b",
+      "full_files": 873,
+      "full_file_physical_lines": 489700,
+      "all_scope_text_lines_union": 489700,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 2703,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_client": {
+      "path": "client-support/dispatch-checkpoint79-ledger.json",
+      "sha256": "0a65152ddb0b67a9a1bb3cd4d9ca78c45622b426ce389ad324fab0e43979437c",
+      "full_files": 871,
+      "full_file_physical_lines": 255332,
+      "all_scope_text_lines_union": 258825,
+      "partial_reviewed_lines": 3493,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_social_world": {
+      "path": "protocol-session/dispatch-social-world/captures/checkpoint-26-ledger.json",
+      "sha256": "0fd3f2f9679cb7e58f83252b4009f6c3b5f74c93bf02ad296897775bbd019ffa",
+      "full_files": 226,
+      "full_file_physical_lines": 67091,
+      "all_scope_text_lines_union": 67091,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_items_economy": {
+      "path": "protocol-session/game-server-worker/dispatch-items-economy/captures/checkpoint-21-ledger.json",
+      "sha256": "2ef1eb9dc1c9cc36238592b5a0f528c4ef116a17b91126493d394c2d82007aaf",
+      "full_files": 207,
+      "full_file_physical_lines": 73025,
+      "all_scope_text_lines_union": 73025,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_root": {
+      "path": "lead/dispatch-quests-npc-encounters/checkpoint-158-ledger.json",
+      "sha256": "fd11085a9d81cb53d3834e02ce8a67a668619c419ad56cecea611786a02b4128",
+      "full_files": 158,
+      "full_file_physical_lines": 43986,
+      "all_scope_text_lines_union": 44058,
+      "partial_reviewed_lines": 72,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_quest_social": {
+      "path": "control/checkpoint26-inputs/quest-social-ledger.json",
+      "sha256": "1fe768d8fce3b16d381d0598ced329838901bfe2b2a67bc7e4f98cf80859d918",
+      "full_files": 99,
+      "full_file_physical_lines": 34122,
+      "all_scope_text_lines_union": 34122,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_quest_items": {
+      "path": "control/checkpoint26-inputs/quest-items-ledger.json",
+      "sha256": "d4913ca6f2ba35187b1c044805d7ca83e65d5defd7b32bdbb3e39984ddaa574f",
+      "full_files": 99,
+      "full_file_physical_lines": 41793,
+      "all_scope_text_lines_union": 41793,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "supplementary_core": {
+      "path": "control/checkpoint26-inputs/supplementary-core-ledger.json",
+      "sha256": "52581faf0b04ba52768d2563a9c90d61a64e05ea80cf952e6bb1fb8959d399a3",
+      "full_files": 44,
+      "full_file_physical_lines": 9938,
+      "all_scope_text_lines_union": 9938,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "supplementary_tools": {
+      "path": "control/checkpoint30-inputs/supplementary-tools-ledger.json",
+      "sha256": "d2b68b02d37189dda0ea5f9c0eca2af422914c0bfa778b774619f4ac65b675c6",
+      "full_files": 302,
+      "full_file_physical_lines": 72859,
+      "all_scope_text_lines_union": 72859,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "review_methods": {
+        "manual-semantic-full": 301,
+        "whole-corpus-semantic": 1
+      },
+      "attributed_manual_full_files": 24,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "supplementary_imports": {
+      "path": "control/checkpoint29-inputs/supplementary-imports-ledger.json",
+      "sha256": "98878915e880f22123658af7e7351c9b1c4571f01921a4ac0e17b20a59f08858",
+      "full_files": 163,
+      "full_file_physical_lines": 292492,
+      "all_scope_text_lines_union": 292492,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "review_methods": {
+        "manual-full": 26,
+        "whole-corpus-semantic": 115,
+        "mixed-full": 22
+      },
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "supplementary_content_rulesets": {
+      "path": "control/checkpoint31-inputs/supplementary-content-ledger.json",
+      "sha256": "7ca7506590d34b96b0431400517595b68da34d8d7f8e417c80779a35338fc2d2",
+      "full_files": 150,
+      "full_file_physical_lines": 136595,
+      "all_scope_text_lines_union": 136595,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "review_methods": {
+        "manual_full_semantic": 128,
+        "mixed_full_semantic": 22
+      },
+      "rulesets_full": 77,
+      "content_full": 73,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    }
+  },
+  "server_method_maps": {
+    "game-server-appearance-capture-method-map.md": "90fb804da69c6658b0276f7c488d6862b2d09d3dc371795f3f51dbda51308aa8",
+    "game-server-spawn-fixture-method-map.md": "2219981460bf6bd58cf0e9ddf7306a90584b0bb9fe239b1ae4cdf8b087be9df3",
+    "game-server-seven-fixture-method-map.md": "348390d50ea1da0dd25ae206bd8c550cc9120851d94c0d0067e267359311480b",
+    "game-server-auto-attack-fixture-method-map.md": "d7593104034863d3328a3bef6c649fbcd83965e39db31e895e639f3cdb126ba5",
+    "game-server-callback-cast-fixture-method-map.md": "3fbba196681354508896b1f61c4cb865a8ec62b53118d75943b982b32e9c3538",
+    "game-server-tls-fixture-method-map.md": "51e1efbd633d88829848ddd3653328cbc985da328a24383dc47d1f9187d92836",
+    "game-server-transport-tls-method-map.md": "429224a77cf514e99c1b92d4872b99d6b9a5f52529c2bf3a7edf2f8a0cf9366f"
+  },
+  "dispatch_aggregate": {
+    "full_files": 1668,
+    "text_lines": 517542,
+    "remaining_files": 0,
+    "status": "REVIEWED"
+  },
+  "prior_qualification": "capture-validation-30.json retains all67 Cargo reviews, five completed supplementary domains, tools16 and import09. The former rulesets77 capture is extended to150 ruleset/content files; capture totals are never summed as disjoint global coverage.",
+  "supplementary_content": {
+    "checkpoint": 16,
+    "full_files": 150,
+    "rulesets_full": 77,
+    "content_full": 73,
+    "text_lines": 136595,
+    "new_content_physical_lines": 11857,
+    "remaining_files": 7959,
+    "binary_bytes": 0,
+    "assignment_sha256": "fb588d25724fc55aac6330f07f0bd50d07f8afd7853f003cba5d8ccb10602c63",
+    "ledger_sha256": "7ca7506590d34b96b0431400517595b68da34d8d7f8e417c80779a35338fc2d2",
+    "validation_sha256": "ff4976af6b2242fb01426d520dbc149d0ec761a82eb2c682d5322ae4e10b2bb4",
+    "report_sha256": "0327b3823a7ee5cdc2eba04dc2a39b8175df5dd987be40d8c975894b3703b4bb",
+    "new_methods": {
+      "manual_full_semantic": 61,
+      "mixed_full_semantic": 12
+    },
+    "all_methods": {
+      "manual_full_semantic": 128,
+      "mixed_full_semantic": 22
+    },
+    "primary_new_notes_read_by_root": 73,
+    "new_report_characters_read_by_root": 17055,
+    "root_read_secondary_result_report_and_method_map": true,
+    "secondary_reviewer": "/root/r2_dispatch_items_resume2",
+    "secondary_result_sha256": "a24e6d0293af2faa5f953a81a8c630a49bcf0123e5f3a620456ba083c5ccb10e",
+    "secondary_report_sha256": "57df2bc875990622e287f107ef8b72a56279b0870248e297c306977f09e35d43",
+    "secondary_manifest_sha256": "68e60b39a272fe9a2d71feb1e234be6fb1f58cd3d9d02d0ad9fb5c466da13c86",
+    "secondary_read_counts": {
+      "complete_method_programs": 17,
+      "method_program_physical_lines": 1368,
+      "supporting_notes": 98,
+      "new_supporting_notes": 94,
+      "expanded_supporting_notes": 4,
+      "complete_semantic_views_tables_and_donor_excerpts": 16,
+      "complete_other_evidence_and_receipts": 17
+    },
+    "secondary_frozen_artifact_pins": 198,
+    "primary_and_supporting_source_identity_checks": 311,
+    "historical_core_pins": 54,
+    "history": [
+      {
+        "checkpoint": 8,
+        "manifest_sha256": "28e47c50eb4845b146c78764170338d436586d09e29d68cf80a523a507bae27d",
+        "core_artifact_pins": 6,
+        "primary_full_files": 77
+      },
+      {
+        "checkpoint": 9,
+        "manifest_sha256": "1111552f262197e059a8dc8e34c2df077ef4fb5b2ac08e03270809c0bcd0134f",
+        "core_artifact_pins": 6,
+        "primary_full_files": 111
+      },
+      {
+        "checkpoint": 10,
+        "manifest_sha256": "547c97b5da92726944313d68687b89901e92cb21bd20bbde75af2d2b1883defd",
+        "core_artifact_pins": 6,
+        "primary_full_files": 123
+      },
+      {
+        "checkpoint": 11,
+        "manifest_sha256": "81514a71ba0410af0f92d3143b71dc49c1c0f6fc41d6ca36830d677b7aba8a93",
+        "core_artifact_pins": 6,
+        "primary_full_files": 128
+      },
+      {
+        "checkpoint": 12,
+        "manifest_sha256": "60334a9209a81a644d217dc67bf8bdbf266e89459fd66ae0a39f538297bd4a3a",
+        "core_artifact_pins": 6,
+        "primary_full_files": 128
+      },
+      {
+        "checkpoint": 13,
+        "manifest_sha256": "ab3b589e58937409a9dac3b13c2d50cd96d43a7858c8d6ffe64d47ad62e320cb",
+        "core_artifact_pins": 6,
+        "primary_full_files": 134
+      },
+      {
+        "checkpoint": 14,
+        "manifest_sha256": "8e2030e8f9987e6907e25229b8819d8e5d2855b514902e364ac4ab6e8219b857",
+        "core_artifact_pins": 6,
+        "primary_full_files": 136
+      },
+      {
+        "checkpoint": 15,
+        "manifest_sha256": "1225cba8b05defe35fe8b85dae77a8bead477fd03c3acfc16d08f556dabf932b",
+        "core_artifact_pins": 6,
+        "primary_full_files": 141
+      },
+      {
+        "checkpoint": 16,
+        "manifest_sha256": "fd5b0398f5501f9c11c4d1d4460a9342f3c6095a36a9e4d771190a6abbf5305c",
+        "core_artifact_pins": 6,
+        "primary_full_files": 150
+      }
+    ],
+    "earliest_demonstrated_archive_pins": {
+      "checkpoint28": 32,
+      "checkpoint29": 44,
+      "checkpoint30": 33
+    },
+    "later_only_sidecar_pins": [
+      "l6-checkpoint16-artifact-manifest.json",
+      "l6-selected-native-profiles.json",
+      "supporting-full-quest-tools-checkpoint16.json"
+    ],
+    "source_authorship": "/root/r2_dispatch_social_resume",
+    "supporting_new_primary_credit_from_secondary": 0
+  },
+  "documentation": {
+    "new_full_reviews": 71,
+    "physical_lines": 4815,
+    "root_manual_full": 62,
+    "root_manual_physical_lines": 3818,
+    "attributed_manual_full": 9,
+    "attributed_physical_lines": 997,
+    "original_attributed_reviewer": "/root/r2_dispatch_social_resume",
+    "transfer_qualification_sha256": "fe88b4219119b5340e9faa19b958ee2e9d0fb914231ed116fac0735018b4a029",
+    "group_records": {
+      "group01-record.json": "b42abee4951d4c1f3e4132f3ed00a8ea4fa422fcd14d7ae2b74b75823cf73fc2",
+      "group02-record.json": "a711848975a28acc3cdcb154fe96253b2d72c6144f2b1db01797cf9cd075c421",
+      "group03-record.json": "e9ae5a7c37808769276c03c5baba85598ec45425375e6387cab683ba1b1f7adf"
+    },
+    "actual_registry_tests": {
+      "tests": 7,
+      "pass": 6,
+      "fail": 1,
+      "exit": 1,
+      "seconds": 0.456,
+      "record_sha256": "83000264cc2d0a3015183a6c90d7a19c81f6a5d626b99bb53227e1d9b36e0cef",
+      "impact": "Three protocol fragment filename roundtrip differences; CI/runtime impact UNKNOWN; not promoted as a finding."
+    }
+  },
+  "independent_new_findings": [
+    {
+      "id": "GR-CRAFT-001",
+      "severity": "P2",
+      "status": "CONFIRMED source contract divergence",
+      "root_result_sha256": "3f9c9dfc4824d94e089c2a58bc829ed00c2cb13f71f7336ca33b5d49e4e89b9c",
+      "runtime_executed": false
+    }
+  ],
+  "new_source_identity_checks": 382,
+  "root_qualification_sha256": "27e9c6345a905bb91b494deabad59ec33efa4c80c57b1fbd21ff7bf68c29880d",
+  "preserved_closure_addendum": {
+    "sha256": "9b61e45e9a60de22cd82cd3b0962f37b4516375655f94bf34a4f227f680105b7",
+    "restored_existing_rows": [
+      "oteryn-gameplay-dispatch",
+      "rulesets"
+    ],
+    "reason": "Freezing the current live lead report list omitted two already-qualified closure rows that had been integrated only in earlier frozen report lists. The complete prior frozen reports are retained and hash-pinned. This addendum restores those existing reports after checking full current scope; it adds no new review or source credit. The original checkpoint31 freeze/build output is retained, not rewritten or rerun.",
+    "new_source_credit": 0
+  },
+  "scope": "Original primary source review remains attributed. Root read every73 new primary notes and all new report text, then the complete independent secondary report/result/method map. Secondary actually read17 whole programs,98 supporting notes and complete lossless sidecars. Hash/range checks alone do not award semantic credit. Only9 explicitly qualified supporting documents transfer to primary docs; other supporting sources gain no automatic FULL.",
+  "unresolved": "All later worker cuts remain excluded. The three late sidecars are not backdated. Exact unavailable donor cuts, UID3073 all-world presence, instrument-failure scope, external-source truth and native/SQL/live runtime results remain unknown.",
+  "runtime_limitations": "Only the original seven bounded registry Python tests and read-only data/source checks ran in the new root docs/craft scope. Their one real failure is retained. No game-source change, native/Cargo/SQL execution, deployment or workflow run.",
+  "root_norm_wording_qualification": "The secondary report uses supersede for later no-bait implementation. Root accepts only the verified later explicit intended behavior; formal supersession of accepted C4 by an unavailable owner conversation remains UNKNOWN. The bait question is not promoted."
+}

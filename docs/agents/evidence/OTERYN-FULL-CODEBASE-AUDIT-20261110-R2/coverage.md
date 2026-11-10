@@ -1,8 +1,8 @@
 # Coverage — continuation
 
-Base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Actual analyzed ranges and hashes are in `coverage-ledger.json`.
+Base: 4f0b6c62a789489fca6c37dd36d5917d096f328e. Exact source ranges and hashes are in coverage-ledger.json.
 
-A REVIEWED package has all tracked package files covered and a substantive module report. Tests inspected are not tests executed. Remaining files are explicit in the JSON ledger. No percentage estimate is used.
+REVIEWED requires complete tracked-file coverage and a substantive report. Test source inspection is not execution; the registry test failure is separately retained.
 
 | Module | Status | Tracked files | Analyzed files | Full files | Analyzed lines |
 |---|---|---:|---:|---:|---:|
@@ -75,9 +75,9 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-world-bundle-compiler | REVIEWED | 31 | 31 | 31 | 10189 |
 | .github | REVIEWED | 75 | 75 | 75 | 12301 |
 | agent-configuration-and-retained-evidence | IN PROGRESS | 113 | 34 | 34 | 2248 |
-| content | IN PROGRESS | 8032 | 3 | 2 | 78 |
+| content | IN PROGRESS | 8032 | 76 | 75 | 11935 |
 | deploy | REVIEWED | 16 | 16 | 16 | 1694 |
-| docs | IN PROGRESS | 7398 | 46 | 24 | 3712 |
+| docs | IN PROGRESS | 7398 | 116 | 95 | 8461 |
 | imports | IN PROGRESS | 565 | 163 | 163 | 292492 |
 | repository-root | REVIEWED | 16 | 16 | 16 | 7392 |
 | rulesets | REVIEWED | 77 | 77 | 77 | 124738 |
