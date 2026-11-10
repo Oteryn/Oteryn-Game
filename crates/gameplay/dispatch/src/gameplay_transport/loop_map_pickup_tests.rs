@@ -1,7 +1,8 @@
 //! MAP-PICKUP-1 through the production command-9 dispatch, composed authority and PostgreSQL.
 //! Reuses the existing fresh-session Harness, Dependencies and activated production generation.
 
-use super::fixture::{Harness, debug, id, run};
+use super::fixture::{Harness, debug, id};
+use super::kill_reward_e2e::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::{
@@ -49,7 +50,7 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
     let _database_boot = DATABASE_BOOT
         .lock()
         .map_err(|_| "map pickup test gate poisoned")?;
-    run(async |admin| {
+    run(async move |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "map_pickup_dispatch", true, false).await?;
         if epoch != 0 {

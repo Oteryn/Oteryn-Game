@@ -31,7 +31,7 @@ BEGIN
       WHERE g.item_instance_id=l.source_corpse_root AND i.lifecycle=1 AND m.loot_purpose_key='CORPSE_MATERIALIZATION'
        AND (g.world_id,g.channel_id)=(r.world_id,r.channel_id)
        AND (g.runtime_scope_ownership_generation=r.ownership_generation
-         OR (r.cause_kind=2 AND g.scope_kind=1 AND g.instance_id IS NULL
+         OR (r.cause_kind=5 AND g.scope_kind=1 AND g.instance_id IS NULL
            AND g.runtime_scope_ownership_generation<r.ownership_generation))
        AND (g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context)=(l.spatial_position,l.map_revision,l.content_revision,l.placement_context)) THEN
    RAISE EXCEPTION 'contained retirement root lacks actual current corpse placement' USING ERRCODE='23514';

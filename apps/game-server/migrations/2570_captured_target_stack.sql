@@ -14,9 +14,9 @@ BEGIN
  before:=$old$ THEN RAISE EXCEPTION 'craft requires unchanged plain carried input'$old$;
  after:=$new$
     OR NEW.ingredient_consumed_quantity IS DISTINCT FROM
-       (CASE WHEN NEW.recipe='oteryn:item-conversion.tainted-antler-talisman'
+       (CASE WHEN NEW.recipe='oteryn:item-conversion.tainted-souls-antler-talisman'
          THEN (NEW.ingredient_before_item->>'quantity')::bigint ELSE 1 END)
-    OR (NEW.recipe='oteryn:item-conversion.tainted-antler-talisman' AND (
+    OR (NEW.recipe='oteryn:item-conversion.tainted-souls-antler-talisman' AND (
         NEW.ingredient_item_instance_id IS NULL OR NOT NEW.consume_source
         OR NEW.before_item->>'definition_production_key'<>'oteryn:item.tibia.i3736'
         OR NEW.before_item->>'definition_revision_ref'<>'definition-r1'

@@ -571,10 +571,10 @@ async fn assert_corpse_scope_guards(
         .and_then(|generation| generation.native_gameplay())
         .ok_or("actual corpse source native generation")?;
     let row = native.reward_table().row(creature).map_err(debug)?;
-    let race = row
-        .race
-        .clone()
-        .ok_or("actual corpse source Creature race")?;
+    let with_source_race = |cause: ItemMintCause| match &row.race {
+        Some(race) => cause.with_corpse_race(race.clone()),
+        None => Ok(cause),
+    };
     let source_corpse = row
         .corpse_item
         .as_ref()
@@ -602,33 +602,41 @@ async fn assert_corpse_scope_guards(
     );
     assert_eq!(source.loot_purpose_key, CORPSE_MATERIALIZATION_PURPOSE_KEY);
     assert_eq!(source.draw_ordinal, 0);
-    let stored_race: (String, String, Vec<u8>) = sqlx::query_as(
+    let stored_race: Option<(String, String, Vec<u8>)> = sqlx::query_as(
         "SELECT race_key,race_definition_revision,uuid_send(mint_transaction_id) \
          FROM game_corpse_source_races WHERE item_instance_id=encode($1,'hex')::uuid",
     )
     .bind(item_id.as_slice())
-    .fetch_one(&h.pool)
+    .fetch_optional(&h.pool)
     .await?;
-    assert_eq!(stored_race.0, race.key());
-    assert_eq!(stored_race.1, race.definition_revision());
+    let transaction_id = &envelope
+        .transaction_event
+        .as_ref()
+        .ok_or("corpse audit transaction membership")?
+        .transaction_id;
     assert_eq!(
-        stored_race.2,
-        envelope
-            .transaction_event
-            .as_ref()
-            .ok_or("corpse audit transaction membership")?
-            .transaction_id,
-        "source race belongs to this exact committed corpse audit transaction"
+        stored_race.as_ref().map(|(key, revision, transaction)| (
+            key.as_str(),
+            revision.as_str(),
+            transaction.as_slice()
+        )),
+        row.race.as_ref().map(|race| (
+            race.key(),
+            race.definition_revision(),
+            transaction_id.as_slice()
+        )),
+        "corpse provenance must match the source's optional Bestiary race and exact audit transaction"
     );
     let mut request = ItemMintRequest {
-        cause: ItemMintCause::from_creature_death(
-            death,
-            item.clone(),
-            CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
-            0,
+        cause: with_source_race(
+            ItemMintCause::from_creature_death(
+                death,
+                item.clone(),
+                CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+                0,
+            )
+            .map_err(debug)?,
         )
-        .map_err(debug)?
-        .with_corpse_race(race.clone())
         .map_err(debug)?,
         item: item.clone(),
         quantity: after.quantity,
@@ -659,7 +667,7 @@ async fn assert_corpse_scope_guards(
     };
     let shadow_channel = crate::foundation::ChannelId::decode(&instance_id).map_err(debug)?;
     let original = request.clone();
-    request.cause = ItemMintCause::for_test_scope(
+    request.cause = with_source_race(ItemMintCause::for_test_scope(
         RuntimeScopeRefV1::channel(death.world_id(), shadow_channel),
         death.scope_ownership_generation(),
         death.actor_local_id(),
@@ -667,8 +675,7 @@ async fn assert_corpse_scope_guards(
         item.clone(),
         CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
         0,
-    )
-    .with_corpse_race(race.clone())
+    ))
     .map_err(debug)?;
     assert!(
         matches!(
@@ -680,7 +687,7 @@ async fn assert_corpse_scope_guards(
         ),
         "equal UUIDs cannot replay an Instance receipt through Channel custody"
     );
-    request.cause = ItemMintCause::for_test_scope(
+    request.cause = with_source_race(ItemMintCause::for_test_scope(
         death.runtime_scope(),
         crate::foundation::ScopeOwnershipGeneration::new(
             death.scope_ownership_generation().get() + 1,
@@ -691,8 +698,7 @@ async fn assert_corpse_scope_guards(
         item,
         CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
         0,
-    )
-    .with_corpse_race(race.clone())
+    ))
     .map_err(debug)?;
     assert!(
         matches!(

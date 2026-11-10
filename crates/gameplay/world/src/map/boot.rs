@@ -18,7 +18,7 @@ use crate::content::{
     CollisionClass, ContentError, CoordinateFrameRef, LogicalCell, MapRevisionRef,
     NativeEntryMovementCells,
 };
-use crate::foundation::{ChannelId, WorldId};
+use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
 use crate::movement::speed::{EngineeringGroundSpeed, GroundSpeedSource};
 use oteryn_world_bundle::bundle;
 use sha2::{Digest, Sha256};
@@ -130,8 +130,7 @@ impl PartialEq for BundleWorld {
             && self.start == other.start
             && self.blocked == other.blocked
             && self.map.facts.doors().len() == other.map.facts.doors().len()
-            && self.map.overlay.world_id() == other.map.overlay.world_id()
-            && self.map.overlay.channel_id() == other.map.overlay.channel_id()
+            && self.map.overlay.runtime_scope() == other.map.overlay.runtime_scope()
             && self.map.overlay.tiles().next().is_none()
             && other.map.overlay.tiles().next().is_none()
     }
@@ -311,9 +310,19 @@ impl CheckedBundle {
     /// Item key it does not serve at its palette `id` refuses the boot (§1.6), and so does a
     /// start tile a solid item blocks.
     pub fn boot(
-        mut self,
+        self,
         world_id: WorldId,
         channel_id: ChannelId,
+        item: impl Fn(&str) -> Option<ItemDefinition>,
+    ) -> Result<BundleWorld, BootRefusal> {
+        self.boot_for_scope(RuntimeScopeRefV1::channel(world_id, channel_id), item)
+    }
+
+    /// Builds fresh map facts and an empty overlay for the supplied runtime scope.
+    /// The caller retains responsibility for its independent assignment and readiness.
+    pub fn boot_for_scope(
+        mut self,
+        scope: RuntimeScopeRefV1,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<BundleWorld, BootRefusal> {
         let projection = self
@@ -397,7 +406,7 @@ impl CheckedBundle {
             map: Arc::new(
                 BundleMap {
                     entry_start: self.start,
-                    overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
+                    overlay: ChannelOverlay::for_scope(Arc::clone(&self.base), scope),
                     facts,
                     floors,
                     spell_tiles,
@@ -1665,6 +1674,26 @@ pub mod tests {
             map_revision: revision,
             start: TilePos { x, y: 0, floor: -7 },
         }
+    }
+
+    #[test]
+    fn checked_bundle_boot_retains_the_exact_instance_scope() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = bundle();
+        let pins = pins(load, 2);
+        let world = WorldId::decode(&id(1))?;
+        let first_scope =
+            RuntimeScopeRefV1::instance(world, id(2)).map_err(|error| format!("{error:?}"))?;
+        let second_scope =
+            RuntimeScopeRefV1::instance(world, id(3)).map_err(|error| format!("{error:?}"))?;
+        let first = check(bytes.clone(), pins.clone())?.boot_for_scope(first_scope, items)?;
+        let rebuilt = check(bytes.clone(), pins.clone())?.boot_for_scope(first_scope, items)?;
+        let second = check(bytes, pins)?.boot_for_scope(second_scope, items)?;
+        assert_eq!(first.map.overlay.runtime_scope(), first_scope);
+        assert_eq!(second.map.overlay.runtime_scope(), second_scope);
+        assert_eq!(first, rebuilt);
+        assert_ne!(first, second);
+        assert_eq!(first.map_revision_digest(), second.map_revision_digest());
+        Ok(())
     }
 
     #[test]

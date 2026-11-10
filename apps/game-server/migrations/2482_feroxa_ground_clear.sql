@@ -1,16 +1,30 @@
 -- M52: a genuine World-map phase cause on the existing physical Item ledger.
 -- No Player command, spell cost, Creature placement or Ability is fabricated.
+-- Source classes 2..4 already belong to Encounter/Creature/Global callbacks.
+-- Feroxa has its own discriminator and retains every preceding source proof.
 ALTER TABLE game_spell_item_receipts DROP CONSTRAINT game_spell_item_receipts_cause_kind_check;
-ALTER TABLE game_spell_item_receipts ADD CHECK(cause_kind IN(0,1,2));
+ALTER TABLE game_spell_item_receipts ADD CONSTRAINT game_spell_item_receipts_cause_kind_check
+ CHECK(cause_kind IN(0,1,2,3,4,5));
 ALTER TABLE game_spell_item_receipts
  ADD COLUMN feroxa_firing_id uuid REFERENCES game_world_raid_firings(firing_id),
  ADD COLUMN feroxa_phase smallint,
  ADD COLUMN feroxa_reset_epoch numeric(20,0);
-DO $$ DECLARE previous text; BEGIN
- SELECT pg_get_expr(conbin,conrelid) INTO STRICT previous FROM pg_constraint
- WHERE conrelid='game_spell_item_receipts'::regclass AND conname='game_spell_item_typed_cause';
- ALTER TABLE game_spell_item_receipts DROP CONSTRAINT game_spell_item_typed_cause;
- EXECUTE format('ALTER TABLE game_spell_item_receipts ADD CONSTRAINT game_spell_item_typed_cause CHECK (((cause_kind IN(0,1) AND (%s) AND num_nonnulls(feroxa_firing_id,feroxa_phase,feroxa_reset_epoch)=0) OR (cause_kind=2 AND spell_family=''WorldEvent'' AND spell_production_key=''oteryn:world-event.feroxa.map-clear'' AND spell_revision=''source-9f5a72c-r1'' AND game_session_id IS NULL AND command_id IS NULL AND character_id IS NULL AND cost IS NULL AND cost_binding IS NULL AND caster_lease_generation IS NULL AND caster_placement_digest IS NULL AND num_nonnulls(creature_placement,creature_actor_generation,creature_definition_key,creature_definition_revision,creature_occurrence,creature_map_digest,creature_frame_digest,creature_source_body_digest,creature_cast_digest)=0 AND feroxa_firing_id IS NOT NULL AND feroxa_phase IN(1,2) AND feroxa_reset_epoch BETWEEN 1 AND 18446744073709551615)) IS TRUE)',previous);
+DO $$ DECLARE previous text; name text; arm text; BEGIN
+ arm:=$predicate$(cause_kind=5 AND spell_family='WorldEvent'
+  AND spell_production_key='oteryn:world-event.feroxa.map-clear' AND spell_revision='source-9f5a72c-r1'
+  AND runtime_scope_kind=1 AND channel_id IS NOT NULL AND instance_id IS NULL AND swing_ordinal IS NULL
+  AND game_session_id IS NULL AND command_id IS NULL AND character_id IS NULL
+  AND cost IS NULL AND cost_binding IS NULL AND caster_lease_generation IS NULL AND caster_placement_digest IS NULL
+  AND num_nonnulls(creature_placement,creature_actor_generation,creature_definition_key,creature_definition_revision,
+      creature_occurrence,creature_map_digest,creature_frame_digest,creature_source_body_digest,creature_cast_digest)=0
+  AND feroxa_firing_id IS NOT NULL AND feroxa_phase IN(1,2)
+  AND feroxa_reset_epoch BETWEEN 1 AND 18446744073709551615)$predicate$;
+ FOREACH name IN ARRAY ARRAY['game_spell_item_typed_cause','game_spell_item_exact_runtime_scope'] LOOP
+  SELECT pg_get_expr(conbin,conrelid) INTO STRICT previous FROM pg_constraint
+   WHERE conrelid='game_spell_item_receipts'::regclass AND conname=name;
+  EXECUTE format('ALTER TABLE game_spell_item_receipts DROP CONSTRAINT %I',name);
+  EXECUTE format('ALTER TABLE game_spell_item_receipts ADD CONSTRAINT %I CHECK (((cause_kind<>5 AND (%s) AND num_nonnulls(feroxa_firing_id,feroxa_phase,feroxa_reset_epoch)=0) OR (%s)) IS TRUE)',name,previous,arm);
+ END LOOP;
 END $$;
 CREATE TABLE game_world_feroxa_ground_clears (
  firing_id uuid NOT NULL,
@@ -37,7 +51,7 @@ $$;
 
 CREATE FUNCTION game_feroxa_ground_cause_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE p jsonb; BEGIN
- IF NEW.cause_kind<>2 THEN RETURN NULL; END IF;
+ IF NEW.cause_kind<>5 THEN RETURN NULL; END IF;
  p:=convert_from(NEW.intent,'UTF8')::jsonb;
  IF p->>'schema' IS DISTINCT FROM 'OTERYN_FEROXA_MAP_CLEAR/v1'
   OR p->>'firing' IS DISTINCT FROM NEW.feroxa_firing_id::text
@@ -138,7 +152,7 @@ BEGIN
     spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,operation_count,
     occurred_at_unix_ms,cause_kind,feroxa_firing_id,feroxa_phase,feroxa_reset_epoch)
    VALUES(txid,eventid,f.world_id,p_channel,p_generation,'WorldEvent','oteryn:world-event.feroxa.map-clear',
-    'source-9f5a72c-r1',p_content,sha256(intent),intent,cardinality(ids),observed,2,p_firing,p_phase,f.reset_epoch);
+    'source-9f5a72c-r1',p_content,sha256(intent),intent,cardinality(ids),observed,5,p_firing,p_phase,f.reset_epoch);
   FOR r IN SELECT i.*,g.stack_ordinal,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context
     FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) WHERE i.item_instance_id=ANY(ids) ORDER BY i.item_instance_id LOOP
    ordinal:=ordinal+1;

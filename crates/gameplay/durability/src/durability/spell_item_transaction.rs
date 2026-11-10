@@ -2743,6 +2743,17 @@ pub async fn verify_spell_item_chain(
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
             let cause: i16 = row.try_get("cause_kind")?;
             let bytes: Option<Vec<u8>> = row.try_get("cost")?;
+            if cause == 5 {
+                let proven: bool =
+                    sqlx::query_scalar(include_str!("spell_item_transaction/feroxa_history.sql"))
+                        .bind(&cursor)
+                        .fetch_one(&mut **tx)
+                        .await?;
+                if !proven {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                continue;
+            }
             if cause != 0 {
                 let schema = match cause {
                     1 => "OTERYN_CREATURE_GROUND_CAUSE/v1",

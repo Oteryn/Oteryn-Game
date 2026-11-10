@@ -24,7 +24,7 @@ BEGIN
  ELSE
   IF NOT ((l.source_entry_is_corpse AND EXISTS(SELECT 1 FROM game_item_corpse_container_entries e WHERE e.item_instance_id=OLD.item_instance_id AND e.world_id=r.world_id AND e.parent_item_instance_id=l.source_parent_item_instance_id AND e.placement_ordinal=l.source_placement_ordinal))
      OR (NOT l.source_entry_is_corpse AND EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=OLD.item_instance_id AND e.world_id=r.world_id AND e.parent_item_instance_id=l.source_parent_item_instance_id AND e.placement_ordinal=l.source_placement_ordinal))
-     OR (r.cause_kind=2 AND NOT l.source_entry_is_corpse AND EXISTS(SELECT 1 FROM game_item_nested_entries e
+     OR (r.cause_kind=5 AND NOT l.source_entry_is_corpse AND EXISTS(SELECT 1 FROM game_item_nested_entries e
        WHERE e.item_instance_id=OLD.item_instance_id AND e.world_id=r.world_id
          AND e.parent_item_instance_id=l.source_parent_item_instance_id AND e.placement_ordinal=l.source_placement_ordinal))) THEN
    RAISE EXCEPTION 'contained spell retirement source custody changed' USING ERRCODE='23514';
@@ -33,7 +33,7 @@ BEGIN
       WHERE g.item_instance_id=l.source_corpse_root AND i.lifecycle=1 AND m.loot_purpose_key='CORPSE_MATERIALIZATION'
        AND (g.world_id,g.channel_id)=(r.world_id,r.channel_id)
        AND (g.runtime_scope_ownership_generation=r.ownership_generation
-         OR (r.cause_kind=2 AND g.scope_kind=1 AND g.instance_id IS NULL
+         OR (r.cause_kind=5 AND g.scope_kind=1 AND g.instance_id IS NULL
            AND g.runtime_scope_ownership_generation<r.ownership_generation))
        AND (g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context)=(l.spatial_position,l.map_revision,l.content_revision,l.placement_context)) THEN
    RAISE EXCEPTION 'contained retirement root lacks actual current corpse placement' USING ERRCODE='23514';
@@ -255,7 +255,7 @@ BEGIN
     IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_spell_item_lines l
         JOIN game_spell_item_receipts r USING(transaction_id) JOIN game_item_instances i ON i.item_instance_id=l.item_instance_id
         JOIN game_spell_item_source_custody c ON c.transaction_id=l.transaction_id AND c.item_instance_id=i.item_instance_id
-        WHERE (l.operation_kind=5 OR (l.operation_kind=6 AND r.cause_kind=2 AND NOT l.source_entry_is_corpse)) AND l.item_instance_id=OLD.item_instance_id AND l.quantity_after=0
+        WHERE (l.operation_kind=5 OR (l.operation_kind=6 AND r.cause_kind=5 AND NOT l.source_entry_is_corpse)) AND l.item_instance_id=OLD.item_instance_id AND l.quantity_after=0
           AND l.source_parent_item_instance_id=OLD.parent_item_instance_id AND l.source_placement_ordinal=OLD.placement_ordinal
           AND c.source_parent=OLD.parent_item_instance_id AND c.source_ordinal=OLD.placement_ordinal
           AND i.lifecycle=2 AND i.quantity=0 AND i.last_transaction_id=l.transaction_id AND i.state_revision=l.state_revision_before+1
@@ -400,7 +400,7 @@ BEGIN
     spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,operation_count,
     occurred_at_unix_ms,cause_kind,feroxa_firing_id,feroxa_phase,feroxa_reset_epoch)
    VALUES(txid,eventid,f.world_id,p_channel,p_generation,'WorldEvent','oteryn:world-event.feroxa.map-clear',
-    'source-9f5a72c-r1',p_content,sha256(intent),intent,jsonb_array_length(removals),observed,2,p_firing,p_phase,f.reset_epoch);
+    'source-9f5a72c-r1',p_content,sha256(intent),intent,jsonb_array_length(removals),observed,5,p_firing,p_phase,f.reset_epoch);
   -- Children must retire while the actual corpse Ground root is still live.
   -- Existing deferred operation6 guards also prove its same-transaction root line.
   FOR r IN SELECT * FROM jsonb_to_recordset(children) AS child(

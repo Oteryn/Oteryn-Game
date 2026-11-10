@@ -7,7 +7,7 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM game_spell_item_receipts r
     JOIN game_item_ground_locations g ON g.item_instance_id=p.source_corpse_root
     JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id
-   WHERE r.transaction_id=p.transaction_id AND r.cause_kind=2 AND r.created_xact_id=pg_current_xact_id()
+   WHERE r.transaction_id=p.transaction_id AND r.cause_kind=5 AND r.created_xact_id=pg_current_xact_id()
     AND i.lifecycle=1 AND g.scope_kind=1 AND g.instance_id IS NULL
     AND g.runtime_scope_ownership_generation<=r.ownership_generation
     AND (g.world_id,g.channel_id,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context)
@@ -86,7 +86,7 @@ BEGIN
       IF NEW.operation_kind=6 AND NOT EXISTS(
          SELECT 1 FROM game_spell_item_lines root LEFT JOIN game_item_mint_receipts m ON m.item_instance_id=root.item_instance_id
           WHERE root.transaction_id=NEW.transaction_id AND root.item_instance_id=NEW.source_corpse_root AND root.operation_kind IN(2,3)
-           AND root.created_xact_id=pg_current_xact_id() AND (m.loot_purpose_key='CORPSE_MATERIALIZATION' OR (root.operation_kind=2 AND EXISTS(SELECT 1 FROM game_spell_item_receipts event WHERE event.transaction_id=NEW.transaction_id AND event.cause_kind=2 AND event.created_xact_id=pg_current_xact_id())))
+           AND root.created_xact_id=pg_current_xact_id() AND (m.loot_purpose_key='CORPSE_MATERIALIZATION' OR (root.operation_kind=2 AND EXISTS(SELECT 1 FROM game_spell_item_receipts event WHERE event.transaction_id=NEW.transaction_id AND event.cause_kind=5 AND event.created_xact_id=pg_current_xact_id())))
            AND (root.world_id,root.runtime_scope_kind,coalesce(root.channel_id,root.instance_id),root.spatial_position,root.map_revision,root.content_revision,root.placement_context)
              =(NEW.world_id,NEW.runtime_scope_kind,coalesce(NEW.channel_id,NEW.instance_id),NEW.spatial_position,NEW.map_revision,NEW.content_revision,NEW.placement_context)
            AND (NEW.source_parent_item_instance_id=root.item_instance_id OR EXISTS(SELECT 1 FROM game_spell_item_lines parent WHERE parent.transaction_id=NEW.transaction_id AND parent.operation_kind=6 AND parent.item_instance_id=NEW.source_parent_item_instance_id AND parent.source_corpse_root=NEW.source_corpse_root AND parent.created_xact_id=pg_current_xact_id()))) THEN
@@ -260,7 +260,7 @@ BEGIN
     spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,operation_count,
     occurred_at_unix_ms,cause_kind,feroxa_firing_id,feroxa_phase,feroxa_reset_epoch)
    VALUES(txid,eventid,f.world_id,p_channel,p_generation,'WorldEvent','oteryn:world-event.feroxa.map-clear',
-    'source-9f5a72c-r1',p_content,sha256(intent),intent,jsonb_array_length(removals),observed,2,p_firing,p_phase,f.reset_epoch);
+    'source-9f5a72c-r1',p_content,sha256(intent),intent,jsonb_array_length(removals),observed,5,p_firing,p_phase,f.reset_epoch);
   -- Children must retire while the actual Ground root is still live.
   -- Deferred operation6 guards prove a retired root line or this retained live root.
   FOR r IN SELECT * FROM jsonb_to_recordset(children) AS child(

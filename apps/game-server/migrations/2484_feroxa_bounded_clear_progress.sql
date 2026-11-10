@@ -98,7 +98,7 @@ BEGIN
     spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,operation_count,
     occurred_at_unix_ms,cause_kind,feroxa_firing_id,feroxa_phase,feroxa_reset_epoch)
    VALUES(txid,eventid,f.world_id,p_channel,p_generation,'WorldEvent','oteryn:world-event.feroxa.map-clear',
-    'source-9f5a72c-r1',p_content,sha256(intent),intent,jsonb_array_length(removals),observed,2,p_firing,p_phase,f.reset_epoch);
+    'source-9f5a72c-r1',p_content,sha256(intent),intent,jsonb_array_length(removals),observed,5,p_firing,p_phase,f.reset_epoch);
   -- Children must retire while the actual corpse Ground root is still live.
   -- Existing deferred operation6 guards also prove its same-transaction root line.
   FOR r IN SELECT i.*,e.parent_item_instance_id,e.placement_ordinal,

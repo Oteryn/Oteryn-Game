@@ -3,7 +3,7 @@
 //! are resolved anew against the same active generation as the qualified source room.
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::content::{ActiveGeneration, NativeEntryStart, QualifiedNativeEntryRoom};
-use crate::foundation::{ChannelId, WorldId};
+use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
 use oteryn_world_bundle::{bundle, sector, writer};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -68,7 +68,23 @@ pub(in crate::gameplay_transport) fn qualify(
     world: WorldId,
     channel: ChannelId,
 ) -> Result<QualifiedNativeEntryRoom, ()> {
-    if room.map_revision_digest() != <[u8; 32]>::from(Sha256::digest(source.bytes()))
+    qualify_for_scope(
+        room,
+        source,
+        active,
+        RuntimeScopeRefV1::channel(world, channel),
+    )
+}
+
+pub(in crate::gameplay_transport) fn qualify_for_scope(
+    room: &QualifiedNativeEntryRoom,
+    source: PinnedActivitySourceRoom,
+    active: &ActiveGeneration,
+    scope: RuntimeScopeRefV1,
+) -> Result<QualifiedNativeEntryRoom, ()> {
+    let world = scope.world_id();
+    if room.movement_cells().scope().world_id != world
+        || room.map_revision_digest() != <[u8; 32]>::from(Sha256::digest(source.bytes()))
         || room.compiled().server_digest() != active.identity().server_artifact_digest()
         || room.compiled().client_digest() != active.identity().client_artifact_digest()
         || room.source_world().is_none()
@@ -400,9 +416,20 @@ pub(in crate::gameplay_transport) fn qualify(
     let base =
         crate::map::load(&bytes, &pins).map_err(|error| refusal(source, "base load", error))?;
     let [x, y, z] = capture.source_entry;
-    let map = crate::map::boot::boot(&bytes, &crate::map::boot::BootPins {
-        bundle: pins, map_revision: crate::map::overlay::map_revision(&base), start: crate::map::overlay::TilePos { x: u16::try_from(x).map_err(|_| ())?, y: u16::try_from(y).map_err(|_| ())?, floor: i8::try_from(z.checked_neg().ok_or(())?).map_err(|_| ())? },
-    }, world, channel, |key| {
+    let checked = crate::map::boot::check(
+        bytes.clone(),
+        crate::map::boot::BootPins {
+            bundle: pins,
+            map_revision: crate::map::overlay::map_revision(&base),
+            start: crate::map::overlay::TilePos {
+                x: u16::try_from(x).map_err(|_| ())?,
+                y: u16::try_from(y).map_err(|_| ())?,
+                floor: i8::try_from(z.checked_neg().ok_or(())?).map_err(|_| ())?,
+            },
+        },
+    )
+    .map_err(|error| refusal(source, "map check", error))?;
+    let map = checked.boot_for_scope(scope, |key| {
         let (id, target) = bindings.iter().find(|(_, target)| target.key == key)?;
         let policy = policies.get(id)?;
         let admitted = native.item_policy(&target.key, &target.revision).map(|policy| policy.record());
@@ -854,11 +881,21 @@ mod tests {
         registry
             .register_source_room(kind, &canonical)
             .map_err(|_| "register source template")?;
+        let first_scope =
+            RuntimeScopeRefV1::instance(world, id(3)).map_err(|error| format!("{error:?}"))?;
+        let second_scope =
+            RuntimeScopeRefV1::instance(world, id(4)).map_err(|error| format!("{error:?}"))?;
+        assert!(
+            registry
+                .fresh_source_room(kind, active, RuntimeScopeRefV1::channel(world, channel))
+                .is_err(),
+            "a private activity factory requires an Instance scope"
+        );
         let first = registry
-            .fresh_source_room(kind, active, world, channel)
+            .fresh_source_room(kind, active, first_scope)
             .map_err(|_| "first Instance facts")?;
         let second = registry
-            .fresh_source_room(kind, active, world, channel)
+            .fresh_source_room(kind, active, second_scope)
             .map_err(|_| "second Instance facts")?;
         fn map(room: &QualifiedNativeEntryRoom) -> Option<&crate::map::boot::BundleMap> {
             match room.movement_cells().index() {
@@ -893,6 +930,12 @@ mod tests {
         let first = map(&first).ok_or("first Bundle owner")?;
         let second = map(&second).ok_or("second Bundle owner")?;
         let canonical = map(&canonical).ok_or("template Bundle owner")?;
+        assert_eq!(first.overlay.runtime_scope(), first_scope);
+        assert_eq!(second.overlay.runtime_scope(), second_scope);
+        assert_eq!(
+            canonical.overlay.runtime_scope(),
+            RuntimeScopeRefV1::channel(world, channel)
+        );
         assert_eq!(first.facts.object_revision(key), 0);
         assert!(
             first.facts.transform_movement_item(key, 409),

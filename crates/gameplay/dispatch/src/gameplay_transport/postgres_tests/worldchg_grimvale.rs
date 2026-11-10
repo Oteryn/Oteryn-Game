@@ -958,7 +958,7 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
             tx.commit().await?;
             assert!(owner.apply_feroxa_map_clock(firing, 1_800_000).await.is_err(),
                 "a successor must not consume future-generation custody");
-            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=2")
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=5")
                 .fetch_one(&harness.pool).await?;
             assert_eq!(receipts,0,"foreign-generation refusal must commit no partial clear");
             for item in std::iter::once(&corpse).chain(clear_corpses[0].1.iter()) {
@@ -979,9 +979,10 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
                     assert_eq!(row,(2,0));
                 }
             }
-            let generations: Vec<String> = sqlx::query_scalar("SELECT ownership_generation::text FROM game_spell_item_receipts WHERE cause_kind=2")
+            let generations: Vec<String> = sqlx::query_scalar("SELECT ownership_generation::text FROM game_spell_item_receipts WHERE cause_kind=5")
                 .fetch_all(&harness.pool).await?;
             assert_eq!(generations,vec!["2"]);
+            assert_feroxa_recovery(harness, false).await?;
             eprintln!("QN5_M52_HANDOFF_CLEAR_PG_EXECUTED elapsed={:?}",start.elapsed());
             return Ok(());
         }
@@ -1000,9 +1001,10 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
             if prove_batches && now == 1_800_000 {
                 assert!(owner.apply_feroxa_map_clock(firing, now).await.is_err(),
                     "an incomplete physical batch must defer native map publication");
-                let batches: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=2 AND feroxa_firing_id=encode($1,'hex')::uuid AND feroxa_phase=1")
+                let batches: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=5 AND feroxa_firing_id=encode($1,'hex')::uuid AND feroxa_phase=1")
                     .bind(firing.as_slice()).fetch_one(&harness.pool).await?;
                 assert_eq!(batches, 1, "first bounded batch must actually commit, not roll back forever");
+                assert_feroxa_recovery(harness, false).await?;
                 let complete: bool = sqlx::query_scalar("SELECT complete FROM game_world_feroxa_ground_clears WHERE firing_id=encode($1,'hex')::uuid AND phase=1")
                     .bind(firing.as_slice()).fetch_one(&harness.pool).await?;
                 assert!(!complete);
@@ -1016,16 +1018,17 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
                         complete = true;
                         break;
                     }
-                    let batches: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=2 AND feroxa_firing_id=encode($1,'hex')::uuid")
+                    let batches: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=5 AND feroxa_firing_id=encode($1,'hex')::uuid")
                         .bind(firing.as_slice()).fetch_one(&harness.pool).await?;
                     assert!(batches > 0, "oversized trees must commit bounded progress");
+                    assert_feroxa_recovery(harness, false).await?;
                     let live: i16 = sqlx::query_scalar("SELECT lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
                         .bind(root.as_slice()).fetch_one(&harness.pool).await?;
                     assert_eq!(live, 1, "an unfinished tree retains its actual Ground root");
                     assert!(owner.bundle_map().ok_or("map")?.facts.phase_tile(at).map_err(debug)?.is_none());
                 }
                 assert!(complete, "bounded leaf batches must finish the tree");
-                let counts: Vec<i32> = sqlx::query_scalar("SELECT operation_count FROM game_spell_item_receipts WHERE cause_kind=2 AND feroxa_firing_id=encode($1,'hex')::uuid")
+                let counts: Vec<i32> = sqlx::query_scalar("SELECT operation_count FROM game_spell_item_receipts WHERE cause_kind=5 AND feroxa_firing_id=encode($1,'hex')::uuid")
                     .bind(firing.as_slice()).fetch_all(&harness.pool).await?;
                 assert!(counts.iter().all(|count| (1..=500).contains(count)));
                 assert_eq!(counts.iter().sum::<i32>(), 577, "all32 corpses,32 backpacks,512 coins and the first drop retire");
@@ -1091,23 +1094,24 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
                 let second: (i16, i64) = sqlx::query_as("SELECT lifecycle,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
                     .bind(id(113).as_slice()).fetch_one(&harness.pool).await?;
                 assert_eq!(second, (2, 0), "final map has its own clear, independent of middle-map replay");
-                let audits: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts r JOIN game_spell_item_audit_outbox a USING(transaction_id,event_id) WHERE r.cause_kind=2 AND r.feroxa_firing_id=encode($1,'hex')::uuid AND r.character_id IS NULL AND r.cost IS NULL")
+                let audits: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts r JOIN game_spell_item_audit_outbox a USING(transaction_id,event_id) WHERE r.cause_kind=5 AND r.feroxa_firing_id=encode($1,'hex')::uuid AND r.character_id IS NULL AND r.cost IS NULL")
                     .bind(firing.as_slice()).fetch_one(&harness.pool).await?;
                 if large_tree {
                     assert!((3..=5).contains(&audits), "bounded partial trees have their own World-event audits");
-                    let lines: i64 = sqlx::query_scalar("SELECT sum(operation_count)::bigint FROM game_spell_item_receipts WHERE cause_kind=2 AND feroxa_firing_id=encode($1,'hex')::uuid")
+                    let lines: i64 = sqlx::query_scalar("SELECT sum(operation_count)::bigint FROM game_spell_item_receipts WHERE cause_kind=5 AND feroxa_firing_id=encode($1,'hex')::uuid")
                         .bind(firing.as_slice()).fetch_one(&harness.pool).await?;
                     assert_eq!(lines, 578, "every physical identity is retired exactly once across both phases");
                     eprintln!("QN5_M52_LARGE_TREE_PG_EXECUTED elapsed={:?}", start.elapsed());
                 } else if prove_batches {
                     assert_eq!(audits, 3, "two middle-map batches plus one final-map batch");
-                    let lines: i64 = sqlx::query_scalar("SELECT sum(operation_count)::bigint FROM game_spell_item_receipts WHERE cause_kind=2 AND feroxa_firing_id=encode($1,'hex')::uuid")
+                    let lines: i64 = sqlx::query_scalar("SELECT sum(operation_count)::bigint FROM game_spell_item_receipts WHERE cause_kind=5 AND feroxa_firing_id=encode($1,'hex')::uuid")
                         .bind(firing.as_slice()).fetch_one(&harness.pool).await?;
                     assert_eq!(lines, 512, "all510 corpse/loot identities and both ordinary drops are audited");
                     eprintln!("QN5_M52_CROWDED_CLEAR_PG_EXECUTED elapsed={:?}", start.elapsed());
                 } else {
                     assert_eq!(audits, 2, "each actual clear has a World-event audit, no Player or Ability impersonation");
                 }
+                assert_feroxa_recovery(harness, true).await?;
             }
 
             if prove_clear && now == 1_800_000 {
@@ -1573,6 +1577,52 @@ async fn mint_feroxa_clear_corpse(
         tx.commit().await?;
     }
     Ok((corpse, loot))
+}
+
+async fn assert_feroxa_recovery(h: &Harness, reject_forged: bool) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    crate::durability::spell_item_transaction::verify_spell_item_chain(&mut tx)
+        .await
+        .map_err(debug)?;
+    tx.rollback().await?;
+    if !reject_forged {
+        return Ok(());
+    }
+    // Keep the common receipt/audit hashes coherent: each rollback-only mutation
+    // must be rejected by the historical World-event proof itself.
+    for (path, value) in [
+        (vec!["phase"], "9"),
+        (vec!["generation"], "18446744073709551615"),
+        (
+            vec!["removals", "0", "item_instance_id"],
+            "00000000-0000-7000-8000-000000000001",
+        ),
+    ] {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        let changed: String = sqlx::query_scalar(
+            "WITH candidate AS (SELECT transaction_id,convert_to(jsonb_set(convert_from(intent,'UTF8')::jsonb,$1::text[],$2::jsonb)::text,'UTF8') AS intent FROM game_spell_item_receipts WHERE cause_kind=5 ORDER BY transaction_id LIMIT 1) UPDATE game_spell_item_receipts r SET intent=c.intent,binding=sha256(c.intent) FROM candidate c WHERE r.transaction_id=c.transaction_id RETURNING r.transaction_id::text",
+        )
+        .bind(&path)
+        .bind(sqlx::types::Json(value))
+        .fetch_one(&mut *tx)
+        .await?;
+        sqlx::query("UPDATE game_spell_item_audit_outbox a SET envelope=r.intent,envelope_sha256=r.binding FROM game_spell_item_receipts r WHERE r.transaction_id=$1::uuid AND a.transaction_id=r.transaction_id")
+            .bind(changed)
+            .execute(&mut *tx)
+            .await?;
+        assert!(
+            matches!(
+                crate::durability::spell_item_transaction::verify_spell_item_chain(&mut tx).await,
+                Err(crate::durability::DurabilityError::InvalidStoredState)
+            ),
+            "history must reject a substituted Feroxa {path:?} even with matching hashes"
+        );
+        tx.rollback().await?;
+    }
+    Ok(())
 }
 
 // Trusted imported tree custody; every identity was minted by the real corpse owners.

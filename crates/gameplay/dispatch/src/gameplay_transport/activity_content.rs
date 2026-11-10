@@ -126,7 +126,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 }
                 let owned_room = self
                     .activity_runtimes
-                    .fresh_source_room(source, active, world_id, channel_id)
+                    .fresh_source_room(source, active, allocation.scope)
                     .map_err(|_| ActivityRefusal::ContentUnavailable)?;
                 let room = owned_room.as_ref();
                 let start = room.entry_start();

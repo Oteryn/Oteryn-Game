@@ -301,14 +301,16 @@ impl<'a> ActivityRuntimeRegistry<'a> {
         &self,
         source: crate::content::bosses::activity_template::PinnedActivitySourceRoom,
         active: &crate::content::ActiveGeneration,
-        world: crate::foundation::WorldId,
-        channel: crate::foundation::ChannelId,
+        scope: RuntimeScopeRefV1,
     ) -> Result<Arc<crate::content::QualifiedNativeEntryRoom>, ()> {
+        if !matches!(scope, RuntimeScopeRefV1::Instance { .. }) {
+            return Err(());
+        }
         let template = self.source_room(source).ok_or(())?;
         let source_room = active
             .qualify_activity_source_room(template, source)
             .map_err(|_| ())?;
-        source_bundle::qualify(&source_room, source, active, world, channel).map(Arc::new)
+        source_bundle::qualify_for_scope(&source_room, source, active, scope).map(Arc::new)
     }
 
     pub(super) fn register_template(
