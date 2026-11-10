@@ -253,7 +253,7 @@ where
                 current_server_sequence: 0,
                 next_command_id: 1,
                 schema_revision: 1,
-                selected_capabilities: &[6, 19],
+                selected_capabilities: &[6, 19, 21],
             })?,
         )
         .await?;
@@ -337,6 +337,80 @@ where
 #[test]
 fn clock_offset_epochs_attribute_a_queued_plateau_tls_frame() -> TestResult {
     run_transport(|| queued_frame(1, 29, 60))
+}
+
+#[test]
+fn clock_deadline_discards_an_in_flight_logout_without_another_command() -> TestResult {
+    run_transport(|| async {
+        let received = Arc::new(Notify::new());
+        let observed = Arc::clone(&received);
+        let (client, peer) = connect_peer(reading(359), 7, move |mut stream| async move {
+            let bytes = light_read(&mut stream).await?;
+            let command = native::decode_wire_envelope(&bytes)?.client_command(1)?;
+            assert_eq!(command.command_id, 1);
+            assert_eq!(
+                command.command_type,
+                native::logout::COMMAND_TYPE_LOGOUT_INTENT
+            );
+            observed.notify_one();
+            // Withhold command 1's result so cancellation has an uncertain outcome.
+            // The next application byte must never be a cleanup command 2.
+            let mut byte = [0];
+            match stream.read(&mut byte).await {
+                Ok(0) => Ok(()),
+                Err(error)
+                    if matches!(
+                        error.kind(),
+                        std::io::ErrorKind::UnexpectedEof | std::io::ErrorKind::ConnectionReset
+                    ) =>
+                {
+                    Ok(())
+                }
+                other => Err(format!("cancelled clock journey sent more bytes: {other:?}").into()),
+            }
+        })
+        .await?;
+        let mut connection = Some(client);
+        let completed = clock_journey_outcome(
+            Ok(Err("completed assertion failure".into())),
+            &mut connection,
+        );
+        assert_eq!(
+            completed.unwrap_err().to_string(),
+            "completed assertion failure"
+        );
+        assert!(
+            connection.is_some(),
+            "a completed result retains ordinary cleanup"
+        );
+        let result = {
+            let operation = logout(connection.as_mut().ok_or("clock connection absent")?);
+            tokio::pin!(operation);
+            tokio::select! {
+                _ = received.notified() => {}
+                result = &mut operation => {
+                    return Err(format!("logout completed before its withheld reply: {result:?}").into());
+                }
+            }
+            tokio::time::timeout(Duration::ZERO, &mut operation).await
+        };
+        assert!(
+            result.is_err(),
+            "the real first logout must still be in flight"
+        );
+        let result = clock_journey_outcome(result, &mut connection);
+        // This is run_packet's cleanup boundary: there must be no usable owner.
+        if let Some(client) = connection.as_mut() {
+            let _ = logout(client).await;
+        }
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "world-clock deadline: full cycle not observed within wall-time budget"
+        );
+        assert!(connection.is_none());
+        peer.await??;
+        Ok(())
+    })
 }
 
 #[test]
