@@ -136,8 +136,8 @@ def refresh_bestiary_inventory(root: Path) -> None:
     golden = root / "tools/content-migration/test_world_project_v2_to_tree.py"
     golden_text = golden.read_text()
     for pattern in (
-        r"(?m)^(assert family_counts\['Creature'\] == )[0-9_]+$",
-        r'(assert lock\["source_binding_counts"\] == \{[^\n]*"Creature": )[0-9_]+',
+        r'''(?m)^(assert family_counts\[(?:'Creature'|"Creature")\] == )[0-9_]+$''',
+        r'(?m)^(assert lock\["source_binding_counts"\] == \{[^{}]*?"Creature":\s*)[0-9_]+',
     ):
         golden_text, guarded = re.subn(pattern, lambda match: match.group(1) + f"{count:_}", golden_text)
         if guarded != 1:
