@@ -401,6 +401,137 @@ fn the_buffer_is_dropped_at_disconnect_and_a_resumed_connection_starts_empty()
     })
 }
 
+/// The production ledger reserves an ID before pacing, unlike the transport-only fixture.
+struct RetainedPacedAuthority {
+    movement: PacedAuthority,
+    commands: crate::gameplay_transport::session_ingress::SessionCommands,
+}
+
+impl FreshAdmissionAuthority for RetainedPacedAuthority {
+    fn session_commands(
+        &self,
+    ) -> Option<&crate::gameplay_transport::session_ingress::SessionCommands> {
+        Some(&self.commands)
+    }
+
+    async fn admit(
+        &self,
+        _: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+
+    async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+        self.movement.observe(actor).await
+    }
+
+    fn step_wait_receipts(&self) -> bool {
+        self.movement.step_wait_receipts()
+    }
+
+    async fn paced_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+    ) -> (StepOutcome, Option<std::time::Duration>) {
+        self.movement.paced_step(actor, session, direction).await
+    }
+}
+
+#[test]
+fn buffered_step_disconnect_retains_rejection_and_resumes_without_reexecuting()
+-> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            run(async {
+                tokio::time::pause();
+                let authority = RetainedPacedAuthority {
+                    movement: PacedAuthority {
+                        steps: RefCell::new(Vec::new()),
+                        turn: std::time::Duration::ZERO,
+                        receipts: true,
+                    },
+                    commands: Default::default(),
+                };
+                let start = tokio::time::Instant::now();
+                let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+                let (end, frames) = drive_session(
+                    &authority,
+                    paced_session(&[13])?,
+                    &[
+                        command(1, 1, step, StepDirection::East),
+                        command(1, 2, step, StepDirection::East),
+                    ],
+                )
+                .await?;
+                let ConnectionEnd::AdmittedThenDisconnected(mut ended) = end else {
+                    return Err(format!("unexpected end {end:?}").into());
+                };
+                assert!(tokio::time::Instant::now() < start + PACE);
+                assert_eq!(authority.movement.steps.borrow().len(), 1);
+                assert_eq!(frames.len(), baseline().len() + 2);
+                assert_eq!(ended.continuity.next_command_id, 3);
+                assert_eq!(ended.continuity.server_sequence, 2);
+                authority
+                    .commands
+                    .recover_trade_continuity(&mut ended)
+                    .ok_or("settle the discarded original step")?;
+                assert_eq!(ended.continuity.next_command_id, 3);
+                assert_eq!(ended.continuity.server_sequence, 3);
+                assert!(authority.commands.resumable(&ended));
+                authority
+                    .commands
+                    .recover_trade_continuity(&mut ended)
+                    .ok_or("repeat settled continuity")?;
+                assert_eq!(ended.continuity.server_sequence, 3);
+
+                ended.continuity.connection_generation = 2;
+                let (end, frames) = drive_open(
+                    &authority,
+                    ended,
+                    &[
+                        command(2, 2, step, StepDirection::North),
+                        command(2, 3, step, StepDirection::East),
+                    ],
+                    3,
+                )
+                .await?;
+                let replay =
+                    decode_wire_envelope(frames.get(baseline().len()).ok_or("retained result")?)?;
+                let result = oteryn_protocol_oteryn::decode_command_result(replay.payload())?;
+                assert_eq!(replay.connection_generation(), 2);
+                assert_eq!(replay.server_sequence(), 4);
+                assert_eq!(result.command_id, 2);
+                assert_eq!(result.status, CommandStatus::DuplicateReplay);
+                assert_eq!(
+                    result.payload,
+                    encode_step_result(StepDisposition::Rejected)
+                );
+                assert_eq!(authority.movement.steps.borrow().len(), 2);
+                assert!(
+                    authority
+                        .movement
+                        .steps
+                        .borrow()
+                        .iter()
+                        .all(|(direction, _)| *direction == StepDirection::East)
+                );
+                let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                    return Err(format!("unexpected resumed end {end:?}").into());
+                };
+                assert_eq!(ended.continuity.next_command_id, 4);
+                assert!(authority.commands.resumable(&ended));
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "buffered step test thread")?
+        .map_err(Into::into)
+}
+
 /// A real movement owner beneath command replay, rather than a direction-only stub.
 struct DromeDrunkMovementAuthority {
     owner: RefCell<(

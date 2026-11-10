@@ -549,8 +549,8 @@ impl StepOutcome {
 }
 
 /// SPEED-1: the one early step a connection holds, as its frame, until its pacing clock is due.
-/// The frame then runs through the ordinary path: its CommandId is still the next one, because
-/// no result has been sent for it.
+/// The frame then runs through the ordinary path under its original reserved CommandId;
+/// dropping the stream before dispatch leaves a known refusal for that same reservation.
 struct BufferedStep {
     frame: Vec<u8>,
     due: tokio::time::Instant,
