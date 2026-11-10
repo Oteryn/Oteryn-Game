@@ -55,7 +55,7 @@ pub(super) unsafe fn paint(
             && panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::StoreSummary;
         let misc =
             !badges && panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc;
-        super::misc_layout::layout(&cards, [stamina_bar, training_bar], heading, detail, misc);
+        super::misc_layout::layout(cards, [stamina_bar, training_bar], heading, detail, misc);
         let card_rows = if misc {
             oteryn_client_ui::cyclopedia_character::misc_cards(panel)
         } else if store {
@@ -205,7 +205,7 @@ pub(super) unsafe fn paint(
         super::profile_table::paint(
             panel,
             [history, heading, detail, output],
-            &cards,
+            cards,
             [stamina_bar, training_bar],
             &mut state.profile,
         );

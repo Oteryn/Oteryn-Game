@@ -90,7 +90,7 @@ pub(super) fn run(
                 }
                 let selected_charm = SendMessageW(charms, CB_GETCURSEL, 0, 0);
                 let selected_race = SendMessageW(races, CB_GETCURSEL, 0, 0);
-                let mut requested = actions.0.drain(..).collect::<Vec<_>>();
+                let mut requested = std::mem::take(&mut actions.0);
                 if requested.contains(&6) {
                     if let Some(mailbox) = weak.upgrade() {
                         super::super::open_classic_window(&PlayLink {

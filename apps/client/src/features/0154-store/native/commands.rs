@@ -77,15 +77,14 @@ pub(super) unsafe fn handle(
                         wide(tr!("Confirm purchase")).as_ptr(),
                         MB_YESNO | MB_ICONQUESTION,
                     ) == IDYES
+                    && let Some(quote) = &quote
                 {
-                    if let Some(quote) = &quote {
-                        link.store_confirm_purchase(
-                            quote,
-                            &text(name),
-                            &text(sex),
-                            &text(identity),
-                        );
-                    }
+                    link.store_confirm_purchase(
+                        quote,
+                        &text(name),
+                        &text(sex),
+                        &text(identity),
+                    );
                 }
                 continue;
             }

@@ -26,7 +26,7 @@ impl Vault for WindowsVault {
             };
         }
         // SAFETY: success guarantees a valid CREDENTIALW allocation until CredFree.
-        let result = unsafe {
+        unsafe {
             let c = &*credential;
             let bytes = if c.CredentialBlobSize == 0
                 || c.CredentialBlobSize > 1024
@@ -41,8 +41,7 @@ impl Vault for WindowsVault {
             };
             CredFree(credential.cast());
             bytes
-        };
-        result
+        }
     }
     fn write(&self, bytes: &[u8]) -> Result<(), String> {
         if bytes.is_empty() || bytes.len() > 1024 {

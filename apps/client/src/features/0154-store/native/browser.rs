@@ -148,7 +148,7 @@ unsafe fn run(link: &PlayLink) {
                 if let Some(page) = &panel.browser.page {
                     for (i, c) in page.categories.iter().enumerate() {
                         let label =
-                            format!("{}{}", &"    ".repeat(c.key.matches('.').count()), c.title);
+                            format!("{}{}", "    ".repeat(c.key.matches('.').count()), c.title);
                         SendMessageW(category, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                         if c.key == panel.browser.category {
                             SendMessageW(category, LB_SETCURSEL, i, 0);
