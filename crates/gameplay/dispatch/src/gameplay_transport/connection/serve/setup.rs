@@ -362,6 +362,7 @@ async fn live<A: FreshAdmissionAuthority>(
     let chase_yielded = false;
     Ok(ServeState {
         input_after_refresh: false,
+        next_periodic_refresh: 0,
         activity_ack: None,
         cast_chat_revision: u64::from(cast_chat_active),
         spell_catalog,

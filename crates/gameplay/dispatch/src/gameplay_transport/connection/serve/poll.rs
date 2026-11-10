@@ -1,6 +1,8 @@
-//! Cancel-safe polling with a bounded input turn after periodic work.
+//! Cancel-safe polling with a bounded input turn and fair periodic refreshes.
 
 use super::*;
+
+const PERIODIC_REFRESHES: u8 = 6;
 
 pub(super) enum Next {
     Frame(std::io::Result<Vec<u8>>),
@@ -135,23 +137,24 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             if server_message.as_mut().poll(context).is_ready() {
                 return std::task::Poll::Ready(Next::ServerMessage);
             }
-            if serene_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::Serene);
-            }
-            if quest_log_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::QuestLog);
-            }
-            if chat_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::Chat);
-            }
-            if visibility_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::Visibility);
-            }
-            if combat_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::Combat);
-            }
-            if npc_tick.as_mut().poll(context).is_ready() {
-                return std::task::Poll::Ready(Next::Npc);
+            // A refresh (or its following input turn) may outlast the timer's period.
+            // Rotate only after selecting a refresh: every continuously ready timer gets
+            // a turn within six refresh selections, even when Serene is always overdue.
+            // Probe/server-message priority and the one input turn remain above this ring.
+            for offset in 0..PERIODIC_REFRESHES {
+                let refresh = (session.next_periodic_refresh + offset) % PERIODIC_REFRESHES;
+                let (next, ready) = match refresh {
+                    0 => (Next::Serene, serene_tick.as_mut().poll(context)),
+                    1 => (Next::QuestLog, quest_log_tick.as_mut().poll(context)),
+                    2 => (Next::Chat, chat_tick.as_mut().poll(context)),
+                    3 => (Next::Visibility, visibility_tick.as_mut().poll(context)),
+                    4 => (Next::Combat, combat_tick.as_mut().poll(context)),
+                    _ => (Next::Npc, npc_tick.as_mut().poll(context)),
+                };
+                if ready.is_ready() {
+                    session.next_periodic_refresh = (refresh + 1) % PERIODIC_REFRESHES;
+                    return std::task::Poll::Ready(next);
+                }
             }
             if let Some(next) = input(context) {
                 return std::task::Poll::Ready(next);
@@ -173,3 +176,7 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
         next
     }
 }
+
+#[cfg(test)]
+#[path = "poll_tests.rs"]
+mod tests;
