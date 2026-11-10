@@ -69,25 +69,28 @@ impl SoulWarCallbacks {
     /// Initialized source bosses always rematch their actual committed handoff,
     /// even after the once-only timer activation has already happened.
     pub(super) fn requires_committed_entry(&self) -> bool {
-        self.qualified_content.is_some()
-            && (self.boss.is_some()
-                || self.malice.is_some()
-                || self.hatred.is_some()
-                || self.cruelty.is_some()
-                || self.megalomania.is_some())
+        self.entry_state.has_ambient()
+            || (self.qualified_content.is_some()
+                && (self.boss.is_some()
+                    || self.malice.is_some()
+                    || self.hatred.is_some()
+                    || self.cruelty.is_some()
+                    || self.megalomania.is_some()))
     }
     /// The actual current handoff calls this after physical/state installation.
     /// One never-reused Instance owns this bit across all participants/retries.
-    pub(super) fn committed_entry(&mut self, now_us: u64, elapsed_ms: u64) -> bool {
-        if self.qualified_content.is_none()
-            || (self.boss.is_none()
-                && self.malice.is_none()
-                && self.hatred.is_none()
-                && self.cruelty.is_none()
-                && self.megalomania.is_none())
-            || !self.entry_state.claim()
+    pub(super) fn committed_entry(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_us: u64,
+        elapsed_ms: u64,
+    ) -> Result<bool, ()> {
+        if !self.requires_committed_entry()
+            || !self
+                .entry_state
+                .claim_with_ambient(runtime, now_us, elapsed_ms)?
         {
-            return false;
+            return Ok(false);
         }
         if self.boss.is_some() {
             self.greed
@@ -99,7 +102,7 @@ impl SoulWarCallbacks {
         if let Some(hatred) = &mut self.hatred {
             hatred.committed_entry();
         }
-        true
+        Ok(true)
     }
     /// Real source scheduler work, including lethal notices not consumed yet.
     pub(super) fn next_native_due(&self) -> Option<u64> {

@@ -381,7 +381,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                             action
                                                 .soul_war
                                                 .as_ref()
-                                                .map_or(&[], |soul_war| soul_war.actors())
+                                                .map_or(&[] as &[ExactActorRef], |soul_war| {
+                                                    soul_war.actors()
+                                                })
                                         },
                                         |heart| heart.actors(),
                                     ),
