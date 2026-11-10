@@ -11,12 +11,16 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 
 #[test]
 fn srx3_greed_actual_source_entry_and_native_minion_chain_postgres() -> TestResult {
+    run_source_entry(false)
+}
+
+pub(super) fn run_source_entry(retention: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-greed-native", || {
-        run(async |admin| {
+    super::kill_reward_e2e::scenario_thread::run("srx3-greed-native", move || {
+        run(async move |admin| {
             reset();
             // Crystal201189f lib/quests/soul_war.lua:355-392: literal first
             // waiting tile and its real source map; no seeded catalogue recipe.
@@ -188,46 +192,51 @@ fn srx3_greed_actual_source_entry_and_native_minion_chain_postgres() -> TestResu
                     .ok_or("source clock after row wait")?;
                 assert!(after_wait.0.elapsed_ms >= current.0.elapsed_ms);
             }
-            owner.runtime_view(&registered).drain_monster_melee().await;
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(std::time::Duration::from_secs(10))
-                .ok_or("owner clock")?;
-            let view = owner.runtime_view(&registered);
-            view.drain_monster_melee().await;
-            let runtime = view.runtime.lock().await;
-            let creatures = runtime.visible_entities().creatures;
-            for key in [
-                b"oteryn:creature.goshnar_s_greed".as_slice(),
-                b"oteryn:creature.greedbeast".as_slice(),
-                b"oteryn:creature.soulsnatcher".as_slice(),
-                b"oteryn:creature.weak_soul".as_slice(),
-            ] {
-                assert_eq!(
+            if retention {
+                super::srx3_greed_retention::exercise(&owner.runtime_view(&registered), &admitted)
+                    .await?;
+            } else {
+                owner.runtime_view(&registered).drain_monster_melee().await;
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(10))
+                    .ok_or("owner clock")?;
+                let view = owner.runtime_view(&registered);
+                view.drain_monster_melee().await;
+                let runtime = view.runtime.lock().await;
+                let creatures = runtime.visible_entities().creatures;
+                for key in [
+                    b"oteryn:creature.goshnar_s_greed".as_slice(),
+                    b"oteryn:creature.greedbeast".as_slice(),
+                    b"oteryn:creature.soulsnatcher".as_slice(),
+                    b"oteryn:creature.weak_soul".as_slice(),
+                ] {
+                    assert_eq!(
+                        creatures
+                            .iter()
+                            .filter(|c| runtime.matches_live_creature_identity(c.actor, key))
+                            .count(),
+                        1,
+                        "literal onUseExtra→7/8/9s warning→10s native spawn: {:?}",
+                        key
+                    );
+                }
+                assert!(
                     creatures
                         .iter()
-                        .filter(|c| runtime.matches_live_creature_identity(c.actor, key))
-                        .count(),
-                    1,
-                    "literal onUseExtra→7/8/9s warning→10s native spawn: {:?}",
-                    key
+                        .all(|c| c.actor.runtime_scope() == instance)
                 );
+                drop(runtime);
+                view.drain_monster_melee().await;
+                let runtime = view.runtime.lock().await;
+                assert_eq!(
+                    runtime.visible_entities().creatures.len(),
+                    creatures.len(),
+                    "replayed scheduler drain creates no additional source actors"
+                );
+                drop(runtime);
+                drop(view);
             }
-            assert!(
-                creatures
-                    .iter()
-                    .all(|c| c.actor.runtime_scope() == instance)
-            );
-            drop(runtime);
-            view.drain_monster_melee().await;
-            let runtime = view.runtime.lock().await;
-            assert_eq!(
-                runtime.visible_entities().creatures.len(),
-                creatures.len(),
-                "replayed scheduler drain creates no additional source actors"
-            );
-            drop(runtime);
-            drop(view);
             drop(owner);
             drop(authority);
             drop(seal);
@@ -235,7 +244,7 @@ fn srx3_greed_actual_source_entry_and_native_minion_chain_postgres() -> TestResu
         })
     })?;
     eprintln!(
-        "SRX3_GREED_NATIVE_POSTGRES_CASE_EXECUTED duration={:?}",
+        "SRX3_GREED_NATIVE_POSTGRES_CASE_EXECUTED retention={retention} duration={:?}",
         started.elapsed()
     );
     Ok(())

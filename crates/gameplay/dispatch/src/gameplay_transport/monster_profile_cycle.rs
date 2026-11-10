@@ -338,7 +338,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::soul_war_callbacks::refresh_taints(owner.root,runtime,states,room,native,&mut map,now,published_soul_war_world.as_ref())
                     .await.map_err(|()|crate::durability::DurabilityError::Unavailable)?;
                 super::soul_war_callbacks::drive(
-                    runtime, states, attack, room, native, &mut map, batch.occurrences(), now, &owner.states.server_messages,
+                    runtime, states, attack, room, native, &mut map, batch.occurrences(), now, execution_now, &owner.states.server_messages,
                 ).await.map_err(|()| crate::durability::DurabilityError::Unavailable)?;
                 let primal_due = if room.pinned_activity_source_room() == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal)
                     && matches!(runtime.binding().runtime_scope(),crate::foundation::RuntimeScopeRefV1::Instance{..}) {

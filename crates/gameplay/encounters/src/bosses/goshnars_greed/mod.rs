@@ -412,6 +412,17 @@ impl GoshnarsGreedRoom {
         self.scheduled.iter().map(|(due, _)| *due).min()
     }
 
+    /// Removes one actual addEvent callback by original deadline/insertion order.
+    /// The consumer retains this DATA before awaiting any current physical read.
+    pub fn take_next_due_through(&mut self, through_ms: u64) -> Option<(u64, GreedEffect)> {
+        let (index, &(due, _)) = self
+            .scheduled
+            .iter()
+            .enumerate()
+            .min_by_key(|(_, (due, _))| *due)?;
+        (due <= through_ms).then(|| self.scheduled.remove(index))
+    }
+
     /// Releases due greed-spawn effects in due-time and insertion order.
     pub fn advance(&mut self, now_ms: u64) -> Vec<GreedEffect> {
         self.scheduled.sort_by_key(|(due_ms, _)| *due_ms);

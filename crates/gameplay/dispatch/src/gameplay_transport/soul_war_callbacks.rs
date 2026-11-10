@@ -6,7 +6,9 @@ use super::{actor_spell::ChannelSpellStates, attack::ChannelAttackStates};
 use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplayState};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, ThinkOccurrence};
 use crate::movement::monster_map::CurrentMonsterMap;
-use oteryn_gameplay_encounters::bosses::goshnars_greed::{self as greed, GreedEffect, GreedMinion};
+use oteryn_gameplay_encounters::bosses::goshnars_greed::{
+    self as greed_model, GreedEffect, GreedMinion,
+};
 use oteryn_gameplay_encounters::bosses::rotten_blood::RoomPosition;
 use oteryn_gameplay_entities::carrier::soul_war::SoulWarCreatureChange as Change;
 use oteryn_simulation_determinism::{
@@ -18,6 +20,7 @@ mod attacks;
 pub(super) mod cruelty;
 mod entry;
 mod entry_state;
+pub(super) mod greed;
 mod hatred;
 pub(super) mod megalomania;
 pub(super) mod player_source;
@@ -74,7 +77,8 @@ pub(super) struct SoulWarCallbacks {
     qualified_content: Option<[u8; 32]>,
     boss: Option<ExactActorRef>,
     spawn_source: Option<oteryn_gameplay_entities::carrier::soul_war::SoulWarSpawnSource>,
-    greed: greed::GoshnarsGreedRoom,
+    greed: greed_model::GoshnarsGreedRoom,
+    greed_work: greed::Retention,
     observed: Vec<Observed>,
     next_id: u64,
 }
@@ -118,7 +122,7 @@ impl SoulWarCallbacks {
         }
         Ok(true)
     }
-    /// Real source scheduler work, including lethal notices not consumed yet.
+    /// Real source scheduler work; copied deaths belong to the canonical FIFO.
     pub(super) fn next_native_due(&self) -> Option<u64> {
         self.next_native_due_except(None)
     }
@@ -149,31 +153,24 @@ impl SoulWarCallbacks {
         self.attacks.next_due()
     }
     fn next_native_due_except(&self, omitted: Option<OmittedTimer>) -> Option<u64> {
-        self.greed
-            .next_due_ms()
+        self.greed_work
+            .next_due_us(&self.greed)
+            .filter(|_| omitted != Some(OmittedTimer::InlineCallbacks))
             .into_iter()
-            .chain(self.observed.iter().filter_map(|entry| {
-                if entry.death_observed {
-                    return None;
-                }
-                *entry
-                    .death_at_ms
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
-            }))
             .chain(
                 self.malice
                     .as_ref()
                     .filter(|_| omitted != Some(OmittedTimer::Malice))
-                    .and_then(|owner| owner.next_due_ms()),
+                    .and_then(|owner| owner.next_due_ms())
+                    .and_then(|ms| ms.checked_mul(1_000)),
             )
             .chain(
                 self.megalomania
                     .as_ref()
                     .filter(|_| omitted != Some(OmittedTimer::Megalomania))
-                    .and_then(|owner| owner.next_due_ms()),
+                    .and_then(|owner| owner.next_due_ms())
+                    .and_then(|ms| ms.checked_mul(1_000)),
             )
-            .filter_map(|ms| ms.checked_mul(1_000))
             .chain(
                 self.attacks
                     .next_due()
@@ -209,7 +206,7 @@ impl SoulWarCallbacks {
             || runtime.content_pin().frame_binding_digest() != room.frame_binding().digest()
             || runtime.map_revision_digest() != room.map_revision_digest()
             || !qualifies_source(runtime, native)
-            || source_actor(runtime, native, boss).as_deref() != Some(greed::GOSHNARS_GREED)
+            || source_actor(runtime, native, boss).as_deref() != Some(greed_model::GOSHNARS_GREED)
             || !runtime
                 .read_actor_position(boss)
                 .is_ok_and(|p| in_greed(p.position()))
@@ -220,6 +217,7 @@ impl SoulWarCallbacks {
             taints: taints::CurrentTaints::for_room(runtime, room),
             taint_one: taint_one::TaintOne::at_birth(now_us),
             greed: entry_state::greed_at_birth(),
+            greed_work: greed::Retention::capture(runtime)?,
             qualified_content: Some(native.source_digest()),
             boss: Some(boss),
             spawn_source: Some(
@@ -316,8 +314,8 @@ impl SoulWarCallbacks {
     }
 
     /// The lethal owner calls before corpse projection can retire this actor.
-    /// Each already observed physical actor owns one notice slot; there is no
-    /// unbounded queue, allocation, await or borrowed player-state mutation.
+    /// This is observation DATA only. The canonical copied SourceDeath event
+    /// owns the counter and spawn schedule; this slot never orders or drains work.
     pub(super) fn record_committed_death(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -450,6 +448,7 @@ pub(super) async fn drive(
     map: &mut CurrentMonsterMap<'_, '_>,
     occurrences: &[ThinkOccurrence],
     now: u64,
+    execution_now: u64,
     messages: &super::raid_notices::ServerMessageHub,
 ) -> Result<(), ()> {
     taint_one::drive(runtime, states, room, native, map, now).await?;
@@ -485,416 +484,16 @@ pub(super) async fn drive(
     if room.pinned_activity_source_room()==Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::GoshnarsMegalomania) {
         return megalomania::drive(runtime,states,room,native,map,occurrences,now).await;
     }
-    runtime.owner_fence().map_err(|_| ())?;
-    if !matches!(
-        runtime.binding().runtime_scope(),
-        crate::foundation::RuntimeScopeRefV1::Instance { .. }
-    ) {
-        return Ok(());
-    }
-    if room.pinned_activity_source_room()
-        != Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::GoshnarsGreed)
-    {
-        return Ok(());
-    }
-    let census = runtime.positioned_actor_census().map_err(|_| ())?;
-    let bosses = census
-        .iter()
-        .filter(|(actor, position, session)| {
-            session.is_none()
-                && in_greed(position.position())
-                && runtime.matches_live_creature_identity(*actor, greed::GOSHNARS_GREED.as_bytes())
-                && source_actor(runtime, native, *actor).as_deref() == Some(greed::GOSHNARS_GREED)
-                && runtime.contains_live_creature(*actor)
-        })
-        .map(|(actor, ..)| *actor)
-        .collect::<Vec<_>>();
-    // Scheduled Lua continuations and minion callbacks outlive the original
-    // boss. Their retained source token remains fenced to this exact Instance.
-    let boss = match bosses.as_slice() {
-        [boss] => *boss,
-        [] => match (
-            &states.soul_war_callbacks.spawn_source,
-            states.soul_war_callbacks.boss,
-        ) {
-            (Some(_), Some(boss)) => boss,
-            _ => return Ok(()),
-        },
-        _ => return Ok(()),
-    };
-    if states
-        .soul_war_callbacks
-        .qualified_content
-        .is_some_and(|pin| pin != native.source_digest())
-    {
-        return Ok(());
-    }
-    if states.soul_war_callbacks.qualified_content.is_none() && !qualifies_source(runtime, native) {
-        return Ok(());
-    }
-    for destination in [
-        greed::BOSS_HOME,
-        greed::BOSS_SPHERE_SPOT,
-        greed::SPHERE_SPAWN,
-        GreedMinion::Greedbeast.spawn_position(),
-        GreedMinion::Soulsnatcher.spawn_position(),
-        GreedMinion::WeakSoul.spawn_position(),
-    ] {
-        if map.read(runtime, at(destination)).await.is_none() {
-            // A missing source map refuses this encounter; unrelated actors still
-            // execute their normal native schedules in this same owner turn.
-            return Ok(());
-        }
-    }
-    if !map.validate_transaction(runtime).await {
-        return Ok(());
-    }
-    let mut owner = std::mem::take(&mut states.soul_war_callbacks);
-    let result = drive_greed(
-        &mut owner,
+    greed::drive(
         runtime,
         states,
         room,
         native,
         map,
         occurrences,
-        boss,
-        now,
+        execution_now,
     )
-    .await;
-    states.soul_war_callbacks = owner;
-    result
-}
-
-#[allow(clippy::too_many_arguments)]
-async fn drive_greed(
-    owner: &mut SoulWarCallbacks,
-    runtime: &mut ChannelRuntimeV1,
-    states: &mut ChannelSpellStates,
-    room: &QualifiedNativeEntryRoom,
-    native: &NativeGameplayState,
-    map: &mut CurrentMonsterMap<'_, '_>,
-    occurrences: &[ThinkOccurrence],
-    boss: ExactActorRef,
-    now: u64,
-) -> Result<(), ()> {
-    let mut effects = Vec::new();
-    if owner.boss != Some(boss) {
-        *owner = SoulWarCallbacks::initialize_greed(runtime, native, room, boss, now)?;
-    }
-    let census = runtime.positioned_actor_census().map_err(|_| ())?;
-    let players = census
-        .iter()
-        .filter_map(|(actor, position, session)| {
-            session
-                .filter(|_| in_greed(position.position()) && !states.is_dead(*actor))
-                .map(|session| (*actor, session))
-        })
-        .collect::<Vec<_>>();
-    for (actor, position, session) in &census {
-        if session.is_some() || !in_greed(position.position()) {
-            continue;
-        }
-        let Some(key) = source_actor(runtime, native, *actor) else {
-            continue;
-        };
-        let minion = GreedMinion::from_creature_key(&key);
-        let sphere = key == greed::SOUL_SPHERE;
-        if minion.is_none() && !sphere && *actor != boss {
-            continue;
-        }
-        observe(owner, *actor, minion, sphere)?;
-    }
-    for entry in &mut owner.observed {
-        let notice = entry
-            .death_at_ms
-            .get_mut()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .take();
-        let dead = runtime
-            .companion_snapshot_including_dead(entry.actor)
-            .is_ok_and(|snapshot| snapshot.health == 0);
-        if (dead || notice.is_some()) && !entry.death_observed {
-            entry.death_observed = true;
-            if let Some(minion) = entry.minion {
-                owner
-                    .greed
-                    .minion_died(entry.id, minion, notice.unwrap_or(now / 1_000));
-            } else if entry.sphere {
-                owner.greed.sphere_died(entry.id);
-            }
-        }
-    }
-    for entry in &owner.observed {
-        if entry.death_observed
-            && runtime
-                .companion_snapshot_including_dead(entry.actor)
-                .is_ok_and(|snapshot| snapshot.health == 0)
-            && runtime.assert_actor_spell_unreserved(entry.actor).is_ok()
-            && runtime
-                .borrow_combat_death()
-                .projected_death(entry.actor)
-                .is_ok()
-        {
-            // The existing projection deliberately outlives its actor slot.
-            // A pending physical reservation keeps the slot until a later pass.
-            runtime
-                .remove_encounter_actor(entry.actor)
-                .map_err(|_| ())?;
-        }
-    }
-    effects.extend(owner.greed.advance(now / 1_000));
-    apply_greed_effects(
-        owner,
-        runtime,
-        states,
-        room,
-        native,
-        map,
-        None,
-        boss,
-        &players,
-        now,
-        std::mem::take(&mut effects),
-    )
-    .await?;
-    let player_ids = players
-        .iter()
-        .map(|(actor, _)| u64::from(actor.0.actor_local_id.0))
-        .collect::<Vec<_>>();
-    for occurrence in occurrences {
-        let actor = &occurrence.actor;
-        let Some(entry) = owner
-            .observed
-            .iter_mut()
-            .find(|entry| entry.actor == *actor && !entry.death_observed)
-        else {
-            continue;
-        };
-        if entry.last_think == Some(*occurrence) {
-            continue;
-        }
-        entry.last_think = Some(*occurrence);
-        let interval = crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS;
-        if *actor == boss {
-            effects.extend(owner.greed.boss_think(interval));
-        } else if let Some(minion) = entry.minion {
-            let mut ordinal = 0u64;
-            effects.extend(
-                owner
-                    .greed
-                    .minion_think(entry.id, minion, interval, now / 1_000, &player_ids, || {
-                        ordinal += 1;
-                        soul_damage(native.source_digest(), *actor, occurrence.sequence, ordinal)
-                    })
-                    .map_err(|_| ())?,
-            );
-        } else if entry.sphere {
-            let position = runtime
-                .read_actor_position(*actor)
-                .map_err(|_| ())?
-                .position();
-            let west = MovementLocalPosition {
-                x: position.x.checked_sub(1).ok_or(())?,
-                ..position
-            };
-            if map.read(runtime, west).await.is_none() {
-                return Ok(());
-            }
-            effects.extend(owner.greed.sphere_think(
-                entry.id,
-                interval,
-                RoomPosition {
-                    x: position.x,
-                    y: position.y,
-                    floor: position.floor,
-                },
-                sphere_cell_has_boss(runtime, boss, west),
-            ));
-        }
-        // Source callbacks mutate synchronously. A successful replacement resets
-        // its MonsterType counter before the next actual actor's onThink.
-        apply_greed_effects(
-            owner,
-            runtime,
-            states,
-            room,
-            native,
-            map,
-            Some(*actor),
-            boss,
-            &players,
-            now,
-            std::mem::take(&mut effects),
-        )
-        .await?;
-    }
-    owner.observed.retain(|entry| {
-        runtime
-            .companion_snapshot_including_dead(entry.actor)
-            .is_ok()
-    });
-    Ok(())
-}
-
-#[allow(clippy::too_many_arguments)]
-async fn apply_greed_effects(
-    owner: &mut SoulWarCallbacks,
-    runtime: &mut ChannelRuntimeV1,
-    states: &mut ChannelSpellStates,
-    room: &QualifiedNativeEntryRoom,
-    native: &NativeGameplayState,
-    map: &mut CurrentMonsterMap<'_, '_>,
-    callback_source: Option<ExactActorRef>,
-    boss: ExactActorRef,
-    players: &[(ExactActorRef, crate::foundation::GameSessionId)],
-    now: u64,
-    effects: Vec<GreedEffect>,
-) -> Result<(), ()> {
-    let mut effects = std::collections::VecDeque::from(effects);
-    while let Some(effect) = effects.pop_front() {
-        match effect {
-            GreedEffect::FinishBossThink { interval_ms } => {
-                for followup in owner.greed.finish_boss_think(interval_ms).into_iter().rev() {
-                    effects.push_front(followup);
-                }
-            }
-            GreedEffect::TeleportMagic { position } => {
-                // Crystal utils_definitions.hpp:66: TELEPORT is sent unchanged.
-                super::soul_war_scene::emit_effect(room, at(position), 11);
-            }
-            GreedEffect::SpawnMonster {
-                creature_key,
-                position,
-                forced,
-            } => {
-                if let Some(actor) = spawn_source_child(
-                    runtime,
-                    room,
-                    native,
-                    map,
-                    owner.spawn_source.as_ref().ok_or(())?,
-                    boss,
-                    creature_key,
-                    at(position),
-                    forced,
-                    now,
-                    owner.next_id,
-                )
-                .await
-                {
-                    // Only a successful physical spawn executes the source onSpawn.
-                    observe(
-                        owner,
-                        actor,
-                        GreedMinion::from_creature_key(creature_key),
-                        creature_key == greed::SOUL_SPHERE,
-                    )?;
-                } else if creature_key == greed::SOUL_SPHERE {
-                    owner.greed.sphere_spawn_failed();
-                }
-            }
-            GreedEffect::RemoveMonster { instance } => {
-                if let Some(entry) = owner.observed.iter().find(|entry| entry.id == instance) {
-                    runtime
-                        .remove_encounter_actor(entry.actor)
-                        .map_err(|_| ())?;
-                }
-            }
-            GreedEffect::PlayerHealthLoss { actor, amount } => {
-                if let Some((target, session)) = players
-                    .iter()
-                    .find(|(target, _)| u64::from(target.0.actor_local_id.0) == actor)
-                    && let Some(source) = callback_source
-                {
-                    // Lua ignores addHealth's false result (for example a
-                    // player already killed earlier in this same callback).
-                    // The source still removes itself and schedules its return.
-                    let _ = states.apply_soul_war_lua_health_loss(
-                        runtime,
-                        native,
-                        source,
-                        *target,
-                        *session,
-                        amount,
-                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
-                    );
-                }
-            }
-            GreedEffect::BossBuff {
-                reflect_percent_per_element,
-                defense,
-                max_health,
-                health,
-            } => change(
-                runtime,
-                boss,
-                Change::Buff {
-                    defense: u32::try_from(defense).map_err(|_| ())?,
-                    reflection: u32::from(reflect_percent_per_element),
-                    maximum_health: u32::try_from(max_health).map_err(|_| ())?,
-                    health: u32::try_from(health).map_err(|_| ())?,
-                },
-            )?,
-            GreedEffect::BossImmune { immune } => change(runtime, boss, Change::Immune(immune))?,
-            GreedEffect::BossSpeed { speed } => change(runtime, boss, Change::Speed(speed))?,
-            GreedEffect::BossHealFull => change(runtime, boss, Change::HealFull)?,
-            GreedEffect::BossTeleport { position } => {
-                if !runtime.contains_live_creature(boss) {
-                    continue;
-                }
-                let before = runtime
-                    .read_actor_position(boss)
-                    .map_err(|_| ())?
-                    .position();
-                if let Ok(moved) = map
-                    .view()
-                    .relocate_source_creature(runtime, boss, at(position))
-                {
-                    // Lua teleportTo defaults pushMovement=false: successful
-                    // relocation turns along its x axis first, then y.
-                    use crate::foundation::MovementFacing as F;
-                    let facing = if before.x == position.x {
-                        if before.y < position.y {
-                            F::South
-                        } else {
-                            F::North
-                        }
-                    } else if before.x > position.x {
-                        F::West
-                    } else {
-                        F::East
-                    };
-                    runtime
-                        .borrow_movement_position()
-                        .commit_turn(moved, facing)
-                        .map_err(|_| ())?;
-                }
-                // Lua ignores teleportTo(false), including a same-cell request,
-                // and still executes the following immunity/speed statements.
-            }
-            GreedEffect::SphereMove { instance, position } => {
-                if let Some(entry) = owner.observed.iter().find(|entry| entry.id == instance) {
-                    // Source uses pushMovement=true: preserve its current facing.
-                    let _ = map
-                        .view()
-                        .relocate_source_creature(runtime, entry.actor, at(position));
-                }
-            }
-            GreedEffect::RemoveSoulSphere { instance } => {
-                if let Some(entry) =
-                    instance.and_then(|id| owner.observed.iter().find(|entry| entry.id == id))
-                    && entry.sphere
-                    && runtime.contains_live_creature(entry.actor)
-                {
-                    runtime
-                        .remove_encounter_actor(entry.actor)
-                        .map_err(|_| ())?;
-                }
-            }
-        }
-    }
-    Ok(())
+    .await
 }
 
 /// Crystal map.cpp:234-319: centre first, then separately shuffled
@@ -913,7 +512,12 @@ pub(super) async fn spawn_source_child(
     now: u64,
     event: u64,
 ) -> Option<ExactActorRef> {
-    if forced != matches!(child, greed::SOUL_SPHERE | "oteryn:creature.soul_cage") {
+    if forced
+        != matches!(
+            child,
+            greed_model::SOUL_SPHERE | "oteryn:creature.soul_cage"
+        )
+    {
         return None;
     }
     let center_admits = map.read(runtime, center).await;
@@ -973,7 +577,7 @@ pub(super) async fn spawn_source_child(
     occurrence[8..].copy_from_slice(&event.to_be_bytes());
     let occurrence = DecisionOccurrenceId::from_bytes(occurrence);
     let mut ordinal = 0;
-    let offsets = greed::extended_spawn_offsets(|bound| {
+    let offsets = greed_model::extended_spawn_offsets(|bound| {
         let limit = u64::MAX - u64::MAX % u64::from(bound);
         for _ in 0..64 {
             let draw =
@@ -1077,9 +681,9 @@ mod tests {
     -> Result<(), Box<dyn std::error::Error>> {
         let (mut runtime, player, _) =
             super::super::actor_spell::tests::runtime_with_capacity(180, 4);
-        let west = at(greed::BOSS_SPHERE_SPOT);
+        let west = at(greed_model::BOSS_SPHERE_SPOT);
         let boss = runtime
-            .admit_pinned_monster_lab_creature(west, greed::GOSHNARS_GREED, 20)
+            .admit_pinned_monster_lab_creature(west, greed_model::GOSHNARS_GREED, 20)
             .map_err(|e| format!("{e:?}"))?;
         runtime
             .initialize_pinned_test_position(player, west)
@@ -1124,7 +728,7 @@ mod tests {
                 let record = changed
                     .records
                     .iter_mut()
-                    .find(|record| record.profile.target.key == greed::GOSHNARS_GREED)
+                    .find(|record| record.profile.target.key == greed_model::GOSHNARS_GREED)
                     .ok_or("actual Greed source profile missing")?;
                 let definitions = record
                     .attack_definitions
