@@ -11,9 +11,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> bool {
         // These sealed native owners retain uncertain Item work, including its
         // original CommandRef and audit identity, until a known durable result.
-        if !self.reconcile_pending_item_effects(actor, session).await
-            || !super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await
-        {
+        if !self.reconcile_pending_item_effects(actor, session).await {
+            operator_event("event=control_loss_reconcile_pending stage=item_effects");
+            return false;
+        }
+        if !super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await {
+            operator_event("event=control_loss_reconcile_pending stage=gourmet_checkpoint");
             return false;
         }
         let access = self.refresh_spell_access(actor, session).await;
@@ -22,6 +25,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await,
             Some(actor_spell::NativeCastDispatch::Pending)
         ) {
+            operator_event("event=control_loss_reconcile_pending stage=native_cast");
             return false;
         }
         if matches!(
@@ -29,6 +33,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await,
             Some(actor_spell::NativeCastDispatch::Pending)
         ) {
+            operator_event("event=control_loss_reconcile_pending stage=familiar_cast");
             return false;
         }
         if matches!(
@@ -36,6 +41,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await,
             actor_spell::NativeCastDispatch::Pending
         ) {
+            operator_event("event=control_loss_reconcile_pending stage=world_items");
             return false;
         }
         if self
@@ -43,6 +49,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .is_some_and(|result| matches!(result.cast, actor_spell::NativeCastDispatch::Pending))
         {
+            operator_event("event=control_loss_reconcile_pending stage=parameters");
             return false;
         }
         let _ = self
@@ -55,6 +62,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.save_spell_training(actor, session, true).await
             == actor_spell::TrainingSave::Unknown
         {
+            operator_event("event=control_loss_reconcile_pending stage=training_save");
             return false;
         }
         let runtime = self.runtime.lock().await;
@@ -66,14 +74,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             !runtime.actor_spell_reserved(actor)
         };
-        let settled = !states.has_pending_spell_commit(actor, session) && unreserved;
+        let pending = states.has_pending_spell_commit(actor, session);
+        let settled = !pending && unreserved;
         drop(states);
         drop(runtime);
-        settled
-            && (!self.states.newhaven_travel.held(session)
-                || self
-                    .reconcile_newhaven_travel(actor, session)
-                    .await
-                    .is_some())
+        if !settled {
+            if pending {
+                operator_event("event=control_loss_reconcile_pending stage=pending_spell_commit");
+            } else {
+                operator_event("event=control_loss_reconcile_pending stage=actor_unreserved");
+            }
+            return false;
+        }
+        if self.states.newhaven_travel.held(session)
+            && self
+                .reconcile_newhaven_travel(actor, session)
+                .await
+                .is_none()
+        {
+            operator_event("event=control_loss_reconcile_pending stage=newhaven_travel");
+            return false;
+        }
+        true
     }
 }
