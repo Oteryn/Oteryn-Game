@@ -111,6 +111,9 @@ async fn pick_native_egg(owner:&ComposedFreshAdmission<'_, '_, '_>,a:&AdmittedSe
 pub(super) async fn replenishment(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mut AdmittedSession,h:&Harness)->TestResult {
  assert_eq!(owner.reset_epoch,1);
  assert_eq!(h.root.active_world_reset_epoch(owner.world_id).await?,Some(1));
+ // Production boots each epoch with fresh ChannelSessionStates. This fixture
+ // retains its owner, so discard the prior epoch's cached taken-origin view.
+ owner.states.loop_ground.invalidate();
  let before:String=sqlx::query_scalar("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.hydra_egg_quest'").bind(super::fixture::id(41).as_slice()).fetch_one(&h.pool).await?;
  pick_native_egg(owner,a).await?;
  assert_eq!(super::questpc7_outfit_items::quantity(h,4839).await?,3,"ordinary nest replenishes at the next active reset even after quest completion");
