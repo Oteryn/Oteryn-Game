@@ -17,6 +17,7 @@ impl Outbox {
         self.channel_list_events(&events);
         self.appearance_events(&events);
         self.pvp_expert_events(&events);
+        self.cyclopedia_discovery_events(&events);
         self.inventory_events(&events);
         self.container_events(&events);
         let mut mailbox = lock(&self.0);

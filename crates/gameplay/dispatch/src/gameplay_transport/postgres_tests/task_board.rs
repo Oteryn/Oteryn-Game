@@ -834,8 +834,7 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
         println!(
             "<TASK_BOARD> POSTGRES_CASE_COMPLETED: retired_daily_claim_rejected_without_token_or_timer_change"
         );
-        let free = full_board(&owner, &mut admitted, 11, 0, "").await?;
-        assert_eq!((free.refusal, free.bounty.rerolls), (0, 1));
+        assert_eq!(after_retired.bounty.daily_reroll_at, 0);
         let reroll_id = admitted.continuity.next_command_id;
         let rerolled = full_board(&owner, &mut admitted, 11, 0, "").await?;
         assert_eq!((rerolled.refusal, rerolled.bounty.rerolls), (0, 0));
@@ -846,6 +845,11 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
             wire::full::decode_reply(&replay[0].2).map_err(debug)?,
             rerolled
         );
+        let before_refusal = token_case::value_snapshot(&harness).await?;
+        let refused = full_board(&owner, &mut admitted, 11, 0, "").await?;
+        assert_eq!((refused.refusal, refused.bounty.rerolls), (4, 0));
+        assert_eq!(refused.bounty, rerolled.bounty);
+        assert_eq!(token_case::value_snapshot(&harness).await?, before_refusal);
         println!(
             "<TASK_BOARD> POSTGRES_CASE_COMPLETED: retired_daily_claim_and_paid_reroll_ledger"
         );

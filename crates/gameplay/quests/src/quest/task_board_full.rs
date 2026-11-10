@@ -18,7 +18,6 @@ pub mod elite;
 
 pub const SOULSEALS: &str = "oteryn:taskboard/weekly/soulseals";
 pub const BOARD_REVISION: &str = "oteryn:taskboard/weekly/board-revision";
-pub const FREE_REROLL_SECONDS: i64 = 20 * 60 * 60;
 pub const TALISMAN_PURCHASE_GOLD: u64 = 5_000;
 /// Crystal iobountytasks.hpp:143; PR #2764 ANSWER 6543406906 rejects wrapping.
 pub const MAX_BOUNTY_POINTS: u32 = u32::MAX;
@@ -109,7 +108,6 @@ pub struct BountyBoard {
     pub offers: Vec<BountyTask>,
     pub active: Option<BountyTask>,
     pub lists: [BountyListSlot; 5],
-    pub next_free_reroll_unix: i64,
 }
 
 impl Default for BountyBoard {
@@ -125,7 +123,6 @@ impl Default for BountyBoard {
             offers: Vec::new(),
             active: None,
             lists,
-            next_free_reroll_unix: 0,
         }
     }
 }
@@ -574,16 +571,10 @@ fn apply_inner(
         TaskBoardAction::RerollBounty => {
             // Crystal iobountytasks.cpp:331-351 keeps the chosen difficulty
             // after level loss; only ChangeBountyDifficulty checks its level gate.
-            if data.bounty.next_free_reroll_unix <= context.now_unix_seconds {
-                data.bounty.next_free_reroll_unix = context
-                    .now_unix_seconds
-                    .checked_add(FREE_REROLL_SECONDS)
-                    .ok_or(TaskBoardRefusal::ArithmeticOverflow)?;
-            } else if context.reroll_tokens > 0 {
-                effects.reroll_tokens_spent = 1;
-            } else {
-                return Err(TaskBoardRefusal::Cooldown);
+            if context.reroll_tokens == 0 {
+                return Err(TaskBoardRefusal::InsufficientResources);
             }
+            effects.reroll_tokens_spent = 1;
             generate_bounty(&mut data.bounty, context.creatures, draw)?;
         }
         TaskBoardAction::RetiredDailyReroll => return Err(TaskBoardRefusal::RetiredAction),

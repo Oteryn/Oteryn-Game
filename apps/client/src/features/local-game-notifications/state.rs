@@ -33,14 +33,13 @@ impl State {
             ServerMessage::StatusText(text) | ServerMessage::Advance(text) => (text, false),
             ServerMessage::Warning(text) => (text, true),
         };
+        self.show(&message.server_sequence.to_string(), text, popup);
+    }
+    pub(in crate::play) fn show(&self, id: &str, text: &str, popup: bool) {
         let now_ms = self.elapsed(Instant::now());
-        lock(&self.0).show(
-            &message.server_sequence.to_string(),
-            text,
-            popup,
-            now_ms,
-            8000,
-        );
+        if !lock(&self.0).show(id, text, popup, now_ms, 8000) {
+            return;
+        }
         #[cfg(all(windows, not(test)))]
         if !self
             .0
