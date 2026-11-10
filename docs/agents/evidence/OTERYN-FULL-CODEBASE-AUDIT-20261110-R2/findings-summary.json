@@ -139,13 +139,40 @@
       "report": "Restricted independent evidence retained privately",
       "public_safe": false,
       "public_abstract": "The local content-regeneration helper can stage unrelated worktree changes when its selected derived staging set is empty. This is conditional local index mutation; no automatic commit/push or production incident is asserted. Explicit no-stage mitigation was independently checked."
+    },
+    {
+      "id": "R2-SUP-TOOLS-002",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent root full proxy/overlay and actual caller/guard review; separate bounded literal route check with four admitted controls and two missing required targets PASS. Conditional local topology impact, no end-to-end execution; relevant changes through observed main checked.",
+      "report": "Restricted independent evidence retained privately",
+      "public_safe": false,
+      "public_abstract": "The maintained disposable login runner requires account-character projection acknowledgements, but its selected protected proxy omits the required routes. If earlier boot prerequisites succeed, this blocks that local qualification stage. Authentication guards remain intact; no deployed outage or bypass is claimed."
+    },
+    {
+      "id": "R2-SUP-TOOLS-003",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent root full 1379-line capture owner and exact mapping review; separate six-case actual-main offline witness PASS, including mixed title/disambiguation ValueError. Source enumeration/API boundaries intercepted; current real-source incidence UNKNOWN; failures precede writes. Both source files unchanged through observed main.",
+      "report": "Restricted independent evidence retained privately",
+      "public_safe": false,
+      "public_abstract": "The manual family-capture CLI aborts on a qualifying mixture of direct and disambiguated title evidence because a caller does not consume the complete helper result. Independent offline actual-main cases reproduce the conditional failure before output writes. Current real external-source incidence remains UNKNOWN."
+    },
+    {
+      "id": "R2-SUP-TOOLS-004",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent root full 1379-line capture owner and exact mapping review; separate six-case actual-main offline witness PASS, including donor grouped-evidence KeyError. Source enumeration/API boundaries intercepted; current real-source incidence UNKNOWN; failures precede writes. Both source files unchanged through observed main.",
+      "report": "Restricted independent evidence retained privately",
+      "public_safe": false,
+      "public_abstract": "The donor-only capture CLI aborts after agreeing multi-page item-ID evidence because diagnostic formatting assumes the direct-record variant. Independent offline actual-main cases reproduce the conditional failure before output writes; existing fixture output is unchanged. Current real external-source incidence remains UNKNOWN."
     }
   ],
   "prior_checkpoint": "1c39ebc3347319fe08eaf58299a8a9e9339b0367",
   "cumulative_confirmed_counts": {
     "P0": 0,
     "P1": 4,
-    "P2": 19,
+    "P2": 22,
     "P3": 0
   },
   "prior_likely": 2,

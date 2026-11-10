@@ -82,5 +82,5 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | repository-root | REVIEWED | 16 | 16 | 16 | 7392 |
 | rulesets | REVIEWED | 77 | 77 | 77 | 124738 |
 | tests | REVIEWED | 12 | 12 | 12 | 852 |
-| tools | IN PROGRESS | 2681 | 110 | 105 | 25086 |
+| tools | IN PROGRESS | 2681 | 280 | 277 | 72059 |
 | vendor | NOT STARTED | 793 | 0 | 0 | 0 |

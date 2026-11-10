@@ -5,10 +5,10 @@
     "workspace_packages": 67,
     "supplementary_domains": 11,
     "tracked_files": 27900,
-    "unique_substantively_analyzed_files": 8674,
-    "fully_analyzed_files": 8646,
-    "selected_range_files": 28,
-    "analyzed_lines_union": 2504108,
+    "unique_substantively_analyzed_files": 8844,
+    "fully_analyzed_files": 8818,
+    "selected_range_files": 26,
+    "analyzed_lines_union": 2551081,
     "binary_files_analyzed": 7,
     "analyzed_binary_bytes_union": 3178,
     "workspace_statuses": {
@@ -21055,69 +21055,21 @@
       "sql_files": 1,
       "kind": "supplementary domain",
       "status": "IN PROGRESS",
-      "analyzed_files": 110,
-      "fully_analyzed_files": 105,
-      "analyzed_lines": 25086,
+      "analyzed_files": 280,
+      "fully_analyzed_files": 277,
+      "analyzed_lines": 72059,
       "analyzed_binary_bytes": 0,
       "remaining_files": [
-        "tools/client-assets/README.md",
-        "tools/client-assets/import_assets.py",
-        "tools/client-assets/manifest.schema.json",
-        "tools/client-assets/test_import_assets.py",
-        "tools/combat-parity/README.md",
-        "tools/combat-parity/capture_tibiapal_auto_attack.py",
-        "tools/combat-parity/test_capture_tibiapal_auto_attack.py",
-        "tools/content-census/README.md",
-        "tools/content-census/g4_direct_nonitem_family_crosswalk.py",
-        "tools/content-census/g4_direct_nonitem_family_crosswalk_self_test.py",
-        "tools/content-census/g4_item_binding_pilot.py",
-        "tools/content-census/g4_item_binding_pilot_self_test.py",
-        "tools/content-census/g4_item_crystal_binding_generator.py",
         "tools/content-census/g4_item_crystal_binding_generator_self_test.py",
-        "tools/content-census/g4_item_source_capture.py",
-        "tools/content-census/g4_item_source_capture_self_test.py",
-        "tools/content-census/g4_item_wave1_capture.py",
-        "tools/content-census/g4_item_wave1_capture_self_test.py",
-        "tools/content-census/g4_item_wave1_stage.py",
-        "tools/content-census/g4_item_wave1_stage_self_test.py",
-        "tools/content-census/g4_non_item_source_capture.py",
-        "tools/content-census/g4_non_item_source_capture_self_test.py",
-        "tools/content-census/g4_nonitem_bulk_crosswalk.py",
-        "tools/content-census/g4_nonitem_bulk_crosswalk_self_test.py",
-        "tools/content-census/g4_nonitem_revision_revalidation.py",
-        "tools/content-census/g4_nonitem_revision_revalidation_self_test.py",
-        "tools/content-census/global_source_overlap.py",
-        "tools/content-census/global_source_overlap_fetch_artifacts.py",
-        "tools/content-census/global_source_overlap_self_test.py",
-        "tools/content-census/item_id_alias_table.py",
         "tools/content-census/item_id_alias_table_self_test.py",
-        "tools/content-census/item_key_references.py",
-        "tools/content-census/item_key_references_self_test.py",
-        "tools/content-census/item_wiki_family_capture.py",
-        "tools/content-census/item_wiki_stats_capture.py",
-        "tools/content-census/item_wiki_stats_capture_self_test.py",
-        "tools/content-census/source-surfaces.json",
-        "tools/content-census/source_family_classification.py",
-        "tools/content-census/source_family_classification_self_test.py",
-        "tools/content-census/source_universe.py",
-        "tools/content-census/source_universe_self_test.py",
-        "tools/content-census/stage_appearance_tables.py",
         "tools/content-census/stage_appearance_tables_self_test.py",
-        "tools/content-census/stage_map_areas.py",
         "tools/content-census/stage_map_areas_self_test.py",
-        "tools/content-census/stage_proficiencies.py",
         "tools/content-census/stage_proficiencies_self_test.py",
-        "tools/content-census/stage_staticdata_creatures_bosses_quests.py",
         "tools/content-census/stage_staticdata_creatures_bosses_quests_self_test.py",
-        "tools/content-census/stage_staticdata_houses_achievements.py",
         "tools/content-census/stage_staticdata_houses_achievements_self_test.py",
         "tools/content-census/stage_tibiawiki_achievements.py",
         "tools/content-census/stage_tibiawiki_achievements_self_test.py",
         "tools/content-census/stage_tibiawiki_creatures.py",
-        "tools/content-census/unknown_closure.py",
-        "tools/content-census/unknown_closure_self_test.py",
-        "tools/content-census/unknown_disposition_ledger.py",
-        "tools/content-census/unknown_disposition_ledger_self_test.py",
         "tools/content-format-spike/README.md",
         "tools/content-format-spike/self_test.py",
         "tools/content-format-spike/spike.py",
@@ -21180,8 +21132,6 @@
         "tools/content-migration/harvest_item_profiles.py",
         "tools/content-migration/hireling_item_profiles.py",
         "tools/content-migration/house_decoration_actions.py",
-        "tools/content-migration/imbuement_catalogue.py",
-        "tools/content-migration/imbuement_item_profiles.py",
         "tools/content-migration/import_current_spell_sources.py",
         "tools/content-migration/import_spell_families.py",
         "tools/content-migration/item_bounded7_navigation.py",
@@ -21251,9 +21201,7 @@
         "tools/content-migration/quests_2_greetings.py",
         "tools/content-migration/quests_2_review_snapshots.py",
         "tools/content-migration/quick_loot_item_profiles.py",
-        "tools/content-migration/raid_catalogue.py",
         "tools/content-migration/ranged_item_profiles.py",
-        "tools/content-migration/readable_item_profiles.py",
         "tools/content-migration/recovered_dialogue_associations.py",
         "tools/content-migration/refresh_equipment_profile_pin.py",
         "tools/content-migration/refresh_season_creature_inventory.py",
@@ -21270,7 +21218,6 @@
         "tools/content-migration/samples/official-rule-only-navigation-six.json",
         "tools/content-migration/samples/ranged-content-source.json",
         "tools/content-migration/seasonal_item_profiles.py",
-        "tools/content-migration/seasonal_raids.py",
         "tools/content-migration/seasonal_wiki_evidence.py",
         "tools/content-migration/soulpit_echo_item_profiles.py",
         "tools/content-migration/source_relocations.py",
@@ -21426,9 +21373,7 @@
         "tools/content-migration/wheel_gem_item_profiles.py",
         "tools/content-migration/world_change_loot_inputs.py",
         "tools/content-migration/world_change_profiles.py",
-        "tools/content-migration/world_project_v2_to_tree.py",
         "tools/content-migration/wrath_sleeping_dragon_dialogue.py",
-        "tools/content-migration/writable_item_profiles.py",
         "tools/content-migration/writing_item_admission.py",
         "tools/content-schema/achievement-authoring/README.md",
         "tools/content-schema/achievement-authoring/achievement.schema.json",
@@ -21867,17 +21812,14 @@
         "tools/content-schema/imbuement-authoring/test_research_closure.py",
         "tools/content-schema/item-authoring/AUDIT_2026-09-27.md",
         "tools/content-schema/item-authoring/README.md",
-        "tools/content-schema/item-authoring/appearance_membership.py",
         "tools/content-schema/item-authoring/build_formal_schema.py",
         "tools/content-schema/item-authoring/canary-field-dispositions.json",
         "tools/content-schema/item-authoring/check_stack_default_historical_context.py",
         "tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py",
-        "tools/content-schema/item-authoring/client_appearance_census.py",
         "tools/content-schema/item-authoring/crystal-field-dispositions.json",
         "tools/content-schema/item-authoring/d289_holds.py",
         "tools/content-schema/item-authoring/delivery-task-overrides.json",
         "tools/content-schema/item-authoring/donor_census.py",
-        "tools/content-schema/item-authoring/engine_items.py",
         "tools/content-schema/item-authoring/fandom-field-dispositions.json",
         "tools/content-schema/item-authoring/fandom-real-item-field-supplement.json",
         "tools/content-schema/item-authoring/fandom-use-observation-alias-supplement.json",
@@ -21889,7 +21831,6 @@
         "tools/content-schema/item-authoring/item-dependencies.schema.json",
         "tools/content-schema/item-authoring/item-import-readiness.schema.json",
         "tools/content-schema/item-authoring/item.schema.json",
-        "tools/content-schema/item-authoring/item_weapon_proficiency.py",
         "tools/content-schema/item-authoring/key_ring5801_source_selection.py",
         "tools/content-schema/item-authoring/lower_bed_packet.py",
         "tools/content-schema/item-authoring/lower_client_market_crystal_parity_packet.py",
@@ -21914,7 +21855,6 @@
         "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py",
         "tools/content-schema/item-authoring/lower_promotion_packet.py",
         "tools/content-schema/item-authoring/lower_ranged_packet.py",
-        "tools/content-schema/item-authoring/lower_timed_item_packet.py",
         "tools/content-schema/item-authoring/lower_wiki_capacity_packet.py",
         "tools/content-schema/item-authoring/lower_wiki_movable_d289_packet.py",
         "tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
@@ -21943,7 +21883,6 @@
         "tools/content-schema/item-authoring/samples/population-canary-47dfd51f.json",
         "tools/content-schema/item-authoring/samples/population-crystal-ff7ede5.json",
         "tools/content-schema/item-authoring/samples/promotion-crystal-ff7ede5.json",
-        "tools/content-schema/item-authoring/source_field_catalogs.py",
         "tools/content-schema/item-authoring/synthetic-valid-dependencies.json",
         "tools/content-schema/item-authoring/synthetic-valid-import-readiness.json",
         "tools/content-schema/item-authoring/synthetic-valid-item.json",
@@ -22021,9 +21960,6 @@
         "tools/content-schema/item-authoring/weapon_metadata_source_aliases.py",
         "tools/content-schema/item-authoring/wiki-field-dispositions.json",
         "tools/content-schema/item-authoring/wiki-real-item-field-supplement.json",
-        "tools/content-schema/map-content-linking/README.md",
-        "tools/content-schema/map-content-linking/fill_links.py",
-        "tools/content-schema/map-content-linking/test_fill_links.py",
         "tools/content-schema/monster-authoring/.gitignore",
         "tools/content-schema/monster-authoring/README.md",
         "tools/content-schema/monster-authoring/build_formal_schema.py",
@@ -23370,11 +23306,6 @@
         "tools/content-schema/store-authoring/test_runtime_catalogue.py",
         "tools/content-schema/store-authoring/validate_store.py",
         "tools/content-schema/store-authoring/verify_formal_schema.py",
-        "tools/content-schema/test_validate_full_game_content_tree.py",
-        "tools/content-schema/test_validate_item_master_schema.py",
-        "tools/content-schema/validate_full_game_content_tree.py",
-        "tools/content-schema/validate_item_master_schema.py",
-        "tools/content-schema/validate_materialized_game_tree.py",
         "tools/content-schema/weather-authoring/validate_weather.py",
         "tools/content-schema/wheel-authoring/README.md",
         "tools/content-schema/wheel-authoring/build_report.py",
@@ -23503,97 +23434,6 @@
         "tools/content-schema/world-object-authoring/test_world_objects.py",
         "tools/content-schema/world-object-authoring/world-object.schema.json",
         "tools/content-schema/world-object-authoring/world_objects.py",
-        "tools/fnd02-retained-semantic-record-byte-bound-evidence/evidence.py",
-        "tools/fnd02-terminal-outcome-retention-evidence/README.md",
-        "tools/fnd02-terminal-outcome-retention-evidence/generate.py",
-        "tools/fnd02-terminal-outcome-retention-evidence/model.py",
-        "tools/fnd02-terminal-outcome-retention-evidence/self_test.py",
-        "tools/game-atlas-appearances/README.md",
-        "tools/game-atlas-appearances/export.py",
-        "tools/game-atlas-appearances/self_test.py",
-        "tools/game-atlas-appearances/verify.py",
-        "tools/game-atlas-creature-gameplay/export.py",
-        "tools/game-atlas-creature-gameplay/fixtures/complete-monster.lua",
-        "tools/game-atlas-creature-gameplay/fixtures/complete-npc.lua",
-        "tools/game-atlas-creature-gameplay/fixtures/partial-monster.lua",
-        "tools/game-atlas-creature-gameplay/fixtures/partial-npc.lua",
-        "tools/game-atlas-creature-gameplay/self_test.py",
-        "tools/game-atlas-creatures/README.md",
-        "tools/game-atlas-creatures/animated.py",
-        "tools/game-atlas-creatures/animated_self_test.py",
-        "tools/game-atlas-creatures/export.py",
-        "tools/game-atlas-creatures/identity.py",
-        "tools/game-atlas-creatures/self_test.py",
-        "tools/game-atlas-farm-intelligence/README.md",
-        "tools/game-atlas-farm-intelligence/export.py",
-        "tools/game-atlas-farm-intelligence/test_export.py",
-        "tools/game-atlas-fullworld-source/README.md",
-        "tools/game-atlas-fullworld-source/animated.py",
-        "tools/game-atlas-fullworld-source/animated_self_test.py",
-        "tools/game-atlas-fullworld-source/producer.py",
-        "tools/game-atlas-fullworld-source/self_test.py",
-        "tools/game-atlas-outfit-spatial/export.py",
-        "tools/game-atlas-outfit-spatial/self_test.py",
-        "tools/game-atlas-profile-spike/README.md",
-        "tools/game-atlas-profile-spike/spike.py",
-        "tools/game-atlas-semantic-search/README.md",
-        "tools/game-atlas-semantic-search/export.py",
-        "tools/game-atlas-semantic-search/fixtures/acceptance-source.json",
-        "tools/game-atlas-semantic-search/self_test.py",
-        "tools/game-atlas-thais-fixture/README.md",
-        "tools/game-atlas-thais-fixture/export.py",
-        "tools/game-atlas-thais-fixture/public_policy.py",
-        "tools/game-atlas-thais-fixture/self_test.py",
-        "tools/game-atlas-thais-fixture/verify.py",
-        "tools/game-platform-catalog/README.md",
-        "tools/game-platform-catalog/build.py",
-        "tools/game-platform-catalog/fixtures/public-view-fields.json",
-        "tools/game-platform-catalog/fixtures/unsupported-native-input.json",
-        "tools/game-platform-catalog/producer.py",
-        "tools/game-platform-catalog/refresh_workflow_pin.py",
-        "tools/game-platform-catalog/test_build.py",
-        "tools/game-platform-catalog/test_io.py",
-        "tools/game-platform-catalog/test_producer.py",
-        "tools/game-platform-catalog/test_provenance.py",
-        "tools/game-platform-catalog/test_taxonomy.py",
-        "tools/game-platform-catalog/test_visibility_schemas.py",
-        "tools/game-platform-catalog/test_workflow_pin.py",
-        "tools/monster-lab/README.md",
-        "tools/monster-lab/arena_map.py",
-        "tools/monster-lab/config.example.json",
-        "tools/monster-lab/lab.py",
-        "tools/monster-lab/run.py",
-        "tools/monster-lab/test_arena_map.py",
-        "tools/monster-lab/test_lab.py",
-        "tools/monster-lab/test_run.py",
-        "tools/monster-lab/test_training_profiles.py",
-        "tools/monster-lab/test_validate_full_population.py",
-        "tools/monster-lab/training_profiles.py",
-        "tools/monster-lab/validate_full_population.py",
-        "tools/monster-lab/validate_optional_documents_native.py",
-        "tools/next-wave-limit-evidence/README.md",
-        "tools/next-wave-limit-evidence/main.rs",
-        "tools/official-capture/tibiacom_capture.py",
-        "tools/qualification/login_local/README.md",
-        "tools/qualification/login_local/compose.lan.yml",
-        "tools/qualification/login_local/compose.override.yml",
-        "tools/qualification/login_local/compose.proxy.yml",
-        "tools/qualification/login_local/nginx.conf",
-        "tools/qualification/login_local/nginx.lan.conf",
-        "tools/qualification/login_local/run.sh",
-        "tools/qualification/qready1-s17-main-comparison.md",
-        "tools/qualification/qready1b-validation.md",
-        "tools/qualification/wp5_s3a/compose.yml",
-        "tools/qualification/wp5_s3a/nginx.conf",
-        "tools/qualification/wp5_s3a/platform-fpm.Dockerfile",
-        "tools/qualification/wp5_s3a/run.sh",
-        "tools/qualification/wp5_s3b/README.md",
-        "tools/qualification/wp5_s3b/compose.override.yml",
-        "tools/qualification/wp5_s3b/nginx.conf",
-        "tools/qualification/wp5_s3b/run.sh",
-        "tools/reference-item-resource-profile/item_resource_profile.py",
-        "tools/reference-spatial-resource-profile/spatial_resource_profile.py",
-        "tools/reference-spatial-resource-profile/spatial_resource_profile_self_test.py",
         "tools/reference-world-corridor-census/README.md",
         "tools/reference-world-corridor-census/ability_effect_formula_evidence_catalog.py",
         "tools/reference-world-corridor-census/ability_effect_formula_evidence_catalog_self_test.py",
@@ -23623,19 +23463,7 @@
         "tools/reference-world-corridor-census/npc_service_binding_catalog.py",
         "tools/reference-world-corridor-census/npc_service_binding_catalog_self_test.py",
         "tools/reference-world-corridor-census/phase-a-summary.json",
-        "tools/reference-world-corridor-census/self_test.py",
-        "tools/runtime-actor-resource-evidence/README.md",
-        "tools/runtime-actor-resource-evidence/generate.py",
-        "tools/runtime-actor-resource-evidence/model.py",
-        "tools/runtime-actor-resource-evidence/self_test.py",
-        "tools/tibia-worldmap-reconstruction/README.md",
-        "tools/tibia-worldmap-reconstruction/examples/synthetic-capture.json",
-        "tools/tibia-worldmap-reconstruction/run.py",
-        "tools/tibia-worldmap-reconstruction/tests/test_core.py",
-        "tools/tibia-worldmap-reconstruction/tibia_worldmap_reconstruction/__init__.py",
-        "tools/tibia-worldmap-reconstruction/tibia_worldmap_reconstruction/core.py",
-        "tools/world-project-v2-scale-measurement/Cargo.toml",
-        "tools/world-project-v2-scale-measurement/src/main.rs"
+        "tools/reference-world-corridor-census/self_test.py"
       ]
     },
     {
@@ -316443,6 +316271,138 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "tools/client-assets/README.md",
+      "blob_sha": "7d2e9cf220cfbe418744d8481c3dfc4cc5a53f9a",
+      "sha256": "a7fc68400e2acf32bcce0406e665af2fa88e2ba455e28b3a38f65fae2ab5fb92",
+      "range_unit": "lines",
+      "file_lines": 77,
+      "file_bytes": 4440,
+      "range_extent": 77,
+      "analyzed_ranges": [
+        [
+          1,
+          77
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              77
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 77,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/client-assets/import_assets.py",
+      "blob_sha": "c377e17e02e420a7edb2c4f5158723a7828184ad",
+      "sha256": "792f990081008a6e9cc757af7e848cf3bedd71e71a37f0391684f2323bdb49ad",
+      "range_unit": "lines",
+      "file_lines": 196,
+      "file_bytes": 7897,
+      "range_extent": 196,
+      "analyzed_ranges": [
+        [
+          1,
+          196
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              196
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 196,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/client-assets/manifest.schema.json",
+      "blob_sha": "8ae710cbf76f5aac0f0c979593c6384d721b7b9f",
+      "sha256": "2393ea0a09a74ac4c3b29935c7d282e07612c199dbddec5b7600487279478c84",
+      "range_unit": "lines",
+      "file_lines": 48,
+      "file_bytes": 1835,
+      "range_extent": 48,
+      "analyzed_ranges": [
+        [
+          1,
+          48
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              48
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 48,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/client-assets/test_import_assets.py",
+      "blob_sha": "4a2567594298833189079e2d8350b0bd47f97b59",
+      "sha256": "27124a6f43d476e5fe46c9813cdd6c2e181b3bf8479adfa48ed8e20cba61d17c",
+      "range_unit": "lines",
+      "file_lines": 63,
+      "file_bytes": 2848,
+      "range_extent": 63,
+      "analyzed_ranges": [
+        [
+          1,
+          63
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              63
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 63,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "tools/codex/README.md",
       "blob_sha": "f9da6bf36f613c5426c2133afd0b66159d7525c1",
       "sha256": "d555079e85784e22e88fed6c4e274247f2e76c1e1672e9c10de9d93af855701e",
@@ -316538,6 +316498,1458 @@
         }
       ],
       "analyzed_lines": 48,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/combat-parity/README.md",
+      "blob_sha": "e69612b299b735d6d5dd068f5a849d2f49b2e638",
+      "sha256": "f77fdef9987f7a2bcc4a73089df9402c0ab113d85dd3f281939cf8d192bac3b8",
+      "range_unit": "lines",
+      "file_lines": 36,
+      "file_bytes": 1762,
+      "range_extent": 36,
+      "analyzed_ranges": [
+        [
+          1,
+          36
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              36
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 36,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/combat-parity/capture_tibiapal_auto_attack.py",
+      "blob_sha": "5b2aa51d0e8a22a972bed90932a7dec1b18f43f5",
+      "sha256": "601234b1e9844f8dafbf34bf9f332932cb2b4e19c824e34d99a067278bdc6699",
+      "range_unit": "lines",
+      "file_lines": 262,
+      "file_bytes": 10078,
+      "range_extent": 262,
+      "analyzed_ranges": [
+        [
+          1,
+          262
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              262
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 262,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/combat-parity/test_capture_tibiapal_auto_attack.py",
+      "blob_sha": "3efa0e10b96b4cf8b5146196e3c12fd5fc2bc1fe",
+      "sha256": "f6098cda52a6a5005b1442c0c0731e5bce7ad030a4cc61061e4c454755434a71",
+      "range_unit": "lines",
+      "file_lines": 129,
+      "file_bytes": 6038,
+      "range_extent": 129,
+      "analyzed_ranges": [
+        [
+          1,
+          129
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              129
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 129,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/README.md",
+      "blob_sha": "6c0d23a1752d467123f5b42bba8d5e23db3be34b",
+      "sha256": "fe185287f54979ed309ec2aba1eac75df7002d687c4806c899ae2ee48129a96a",
+      "range_unit": "lines",
+      "file_lines": 69,
+      "file_bytes": 2205,
+      "range_extent": 69,
+      "analyzed_ranges": [
+        [
+          1,
+          69
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              69
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 69,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_direct_nonitem_family_crosswalk.py",
+      "blob_sha": "37e877f88ab555c7a269de73e6f63177a53bd3ba",
+      "sha256": "5e226c2010e82da02d39e2a52d1ab75cc4d6e8375d31d94acf89d836666b946d",
+      "range_unit": "lines",
+      "file_lines": 492,
+      "file_bytes": 26828,
+      "range_extent": 492,
+      "analyzed_ranges": [
+        [
+          1,
+          492
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              492
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 492,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_direct_nonitem_family_crosswalk_self_test.py",
+      "blob_sha": "6f63e86936841272824da22e9349c5a66fe9e6ac",
+      "sha256": "e40b3ceca447a41b35113105f3a0ed5b2ca87539019443d5119a1e11e41756b1",
+      "range_unit": "lines",
+      "file_lines": 185,
+      "file_bytes": 8026,
+      "range_extent": 185,
+      "analyzed_ranges": [
+        [
+          1,
+          185
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              185
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 185,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_item_binding_pilot.py",
+      "blob_sha": "03a6acadce03ab5b5bdc66e95cbb63782b89c3ff",
+      "sha256": "3655fa1bb9687bbd057d3d6276cdcaeedd5013d82d1c8cfac4216ab0ba98246b",
+      "range_unit": "lines",
+      "file_lines": 557,
+      "file_bytes": 31516,
+      "range_extent": 557,
+      "analyzed_ranges": [
+        [
+          1,
+          557
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              557
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 557,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_item_binding_pilot_self_test.py",
+      "blob_sha": "1e2bb7cdc3a10de528699c4fb0eb14028718a281",
+      "sha256": "9b2ed706f54ba9a9fc042029733b08ad0edf09cfcb1c76d6b6d822e175d70512",
+      "range_unit": "lines",
+      "file_lines": 88,
+      "file_bytes": 4921,
+      "range_extent": 88,
+      "analyzed_ranges": [
+        [
+          1,
+          88
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              88
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 88,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_item_crystal_binding_generator.py",
+      "blob_sha": "ea6a6f13c26160e629338f205f5163df85e7386d",
+      "sha256": "a0e6beb752547e81a5246b06b21dd87f1a8cf9c3a6797cd4ada43a85c37efa72",
+      "range_unit": "lines",
+      "file_lines": 1033,
+      "file_bytes": 41898,
+      "range_extent": 1033,
+      "analyzed_ranges": [
+        [
+          1,
+          1033
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              1033
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1033,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_item_source_capture.py",
+      "blob_sha": "bc8eca0928197d743c9267f8f9e38788f253dcd3",
+      "sha256": "f4d89b8d4dab65ea5abd42598598b4f58ab0e438454cc8cf25b70db16749476d",
+      "range_unit": "lines",
+      "file_lines": 246,
+      "file_bytes": 11496,
+      "range_extent": 246,
+      "analyzed_ranges": [
+        [
+          1,
+          246
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              246
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 246,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_item_source_capture_self_test.py",
+      "blob_sha": "0f9198a146b18a4c0969c8c67c769dc6290c87b3",
+      "sha256": "ee541ee20987783c571239b728efb2da6abf396d6f05734f7ef10ce006006952",
+      "range_unit": "lines",
+      "file_lines": 110,
+      "file_bytes": 5917,
+      "range_extent": 110,
+      "analyzed_ranges": [
+        [
+          1,
+          110
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              110
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 110,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_item_wave1_capture.py",
+      "blob_sha": "79497399973a0ebe8c51e4c8dd7d128f6b933c7b",
+      "sha256": "b7155531e52b8ad3139c28c075c10f1f34a75d03247e22384a79b12061a0decd",
+      "range_unit": "lines",
+      "file_lines": 173,
+      "file_bytes": 7730,
+      "range_extent": 173,
+      "analyzed_ranges": [
+        [
+          1,
+          173
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              173
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 173,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_item_wave1_capture_self_test.py",
+      "blob_sha": "9a6223143af71be2732443f7143772486a663fcd",
+      "sha256": "709a52fe78427c21fb26f013df264b82c6529a425705678b4202ac6efbc88458",
+      "range_unit": "lines",
+      "file_lines": 88,
+      "file_bytes": 3501,
+      "range_extent": 88,
+      "analyzed_ranges": [
+        [
+          1,
+          88
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              88
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 88,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_item_wave1_stage.py",
+      "blob_sha": "f4875a89e87d06adbec6f1d9de04384f5fcb0dd0",
+      "sha256": "548390d5f6cfb84bf0ade79b6a43ba92a6502ec9e56440406a8f71aeb0bc51df",
+      "range_unit": "lines",
+      "file_lines": 349,
+      "file_bytes": 15969,
+      "range_extent": 349,
+      "analyzed_ranges": [
+        [
+          1,
+          349
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              349
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 349,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_item_wave1_stage_self_test.py",
+      "blob_sha": "34f166eb9f3c315894cdedf9c71f80095baf1709",
+      "sha256": "7ac4ecc2795c2f1058a2807abd0c7d9fb11ceffa198875d172c434ab71b07700",
+      "range_unit": "lines",
+      "file_lines": 91,
+      "file_bytes": 5102,
+      "range_extent": 91,
+      "analyzed_ranges": [
+        [
+          1,
+          91
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              91
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 91,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_non_item_source_capture.py",
+      "blob_sha": "c93f57723d71f1602499e14e9d67ac7d357d9c5e",
+      "sha256": "9a91d8fd4b541264bb3b35f9c9eb579167b9fe0dcf3b09fdcace7b6b9f9f400a",
+      "range_unit": "lines",
+      "file_lines": 405,
+      "file_bytes": 19933,
+      "range_extent": 405,
+      "analyzed_ranges": [
+        [
+          1,
+          405
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              405
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 405,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_non_item_source_capture_self_test.py",
+      "blob_sha": "5b4835a2f7f8d9498494ead4926f5475048962e2",
+      "sha256": "04710d1f165c4222aa0e81ad102922087b20341e26710f3fb92fc8874123bfc6",
+      "range_unit": "lines",
+      "file_lines": 159,
+      "file_bytes": 7463,
+      "range_extent": 159,
+      "analyzed_ranges": [
+        [
+          1,
+          159
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              159
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 159,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_nonitem_bulk_crosswalk.py",
+      "blob_sha": "98b671237d97b88c81383271551ff443227b6236",
+      "sha256": "d927b2bebf3616f8c6e716ad32018698edd323d745078363448eb3f933c7f2d2",
+      "range_unit": "lines",
+      "file_lines": 597,
+      "file_bytes": 28769,
+      "range_extent": 597,
+      "analyzed_ranges": [
+        [
+          1,
+          597
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              597
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 597,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_nonitem_bulk_crosswalk_self_test.py",
+      "blob_sha": "c97aa6ad89f07c1710813b30c353ac84432d4404",
+      "sha256": "32d78bca1d1582d07a3a956bc773f983b4403c4a313e81a5c056cebd9b74b389",
+      "range_unit": "lines",
+      "file_lines": 128,
+      "file_bytes": 6305,
+      "range_extent": 128,
+      "analyzed_ranges": [
+        [
+          1,
+          128
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              128
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 128,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_nonitem_revision_revalidation.py",
+      "blob_sha": "cb6ab78178a13304eeec6f5a93b179cc716bb367",
+      "sha256": "8758438243ee5efbf44ea60e13d9d585c717276a963182c6d29885078da7139b",
+      "range_unit": "lines",
+      "file_lines": 438,
+      "file_bytes": 23475,
+      "range_extent": 438,
+      "analyzed_ranges": [
+        [
+          1,
+          438
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              438
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 438,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/g4_nonitem_revision_revalidation_self_test.py",
+      "blob_sha": "7da1e32f5b91041f11efc9f138484c4bfa9659a6",
+      "sha256": "932f37e7cb8eab3801a305c4f64e040d6a7e371b9c71c7397610153c1beda780",
+      "range_unit": "lines",
+      "file_lines": 108,
+      "file_bytes": 5704,
+      "range_extent": 108,
+      "analyzed_ranges": [
+        [
+          1,
+          108
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              108
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 108,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/global_source_overlap.py",
+      "blob_sha": "1007260ee1eae58521f19fc1698b4a17e2b2f786",
+      "sha256": "5686f9208cd2adca1d1eb21499a1c09a4aec2ade3bdc176958a74d36e618b0cf",
+      "range_unit": "lines",
+      "file_lines": 246,
+      "file_bytes": 12160,
+      "range_extent": 246,
+      "analyzed_ranges": [
+        [
+          1,
+          246
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              246
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 246,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/global_source_overlap_fetch_artifacts.py",
+      "blob_sha": "fabb4d0dd0534e47e02f0ce0c438c50a7d8937e4",
+      "sha256": "e48027778cde58654389bdc91dd1e8085a6629bd3e98552c67359919af2d28e7",
+      "range_unit": "lines",
+      "file_lines": 207,
+      "file_bytes": 10079,
+      "range_extent": 207,
+      "analyzed_ranges": [
+        [
+          1,
+          207
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              207
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 207,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/global_source_overlap_self_test.py",
+      "blob_sha": "48b35fb7bbccc9938408a21ae35d87d1a9a69579",
+      "sha256": "acea73f4c3d6e357e61380399bd4ef693f810dbb5507c17fdc3ec00767120904",
+      "range_unit": "lines",
+      "file_lines": 86,
+      "file_bytes": 5204,
+      "range_extent": 86,
+      "analyzed_ranges": [
+        [
+          1,
+          86
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              86
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 86,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/item_id_alias_table.py",
+      "blob_sha": "d883a48945e2c7991bfa07437415b1d908bb0f48",
+      "sha256": "ac5588c30bf50d545db63b5a7bf89e7ab53ae0c2c021378af3ff0a86ace2f911",
+      "range_unit": "lines",
+      "file_lines": 290,
+      "file_bytes": 11702,
+      "range_extent": 290,
+      "analyzed_ranges": [
+        [
+          1,
+          290
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              290
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 290,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/item_key_references.py",
+      "blob_sha": "d6d72f14a20570d168b40458e7c512b389700a4f",
+      "sha256": "103753ac005e85704e7357e33052b7a306e3884d05a50db4a0b43e048350e496",
+      "range_unit": "lines",
+      "file_lines": 167,
+      "file_bytes": 6753,
+      "range_extent": 167,
+      "analyzed_ranges": [
+        [
+          1,
+          167
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              167
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 167,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/item_key_references_self_test.py",
+      "blob_sha": "ffaf709e291762f93dc5d1ad6c0fac338b45ce20",
+      "sha256": "40db9f7cd80de0baf997d2bcf6bfb5a83cfb40549eb9abf9e1bf62bbb234e2ec",
+      "range_unit": "lines",
+      "file_lines": 39,
+      "file_bytes": 1420,
+      "range_extent": 39,
+      "analyzed_ranges": [
+        [
+          1,
+          39
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              39
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 39,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/item_wiki_family_capture.py",
+      "blob_sha": "9f72cf73be3f08ac5424631aadd1ab7008b3c936",
+      "sha256": "0abb6b0180eeef98bfa397ca3b7c9192d47806a7e97aa6423159220e82c36f03",
+      "range_unit": "lines",
+      "file_lines": 1379,
+      "file_bytes": 58874,
+      "range_extent": 1379,
+      "analyzed_ranges": [
+        [
+          1,
+          1379
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              1379
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1379,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/item_wiki_stats_capture.py",
+      "blob_sha": "ada265248f2fbab8d89e34c47ecae2718f885f73",
+      "sha256": "159cf6c0c0a085ee1f9c91df0f4a30761184264b108dd5859e172f69ca763f16",
+      "range_unit": "lines",
+      "file_lines": 329,
+      "file_bytes": 11588,
+      "range_extent": 329,
+      "analyzed_ranges": [
+        [
+          1,
+          329
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              329
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 329,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/item_wiki_stats_capture_self_test.py",
+      "blob_sha": "05d9c72887cea2a0151f03884697719866d3a936",
+      "sha256": "968325228a57ff3d6e43902131f20ea783e6438df112b617c8bd016e0cfc748a",
+      "range_unit": "lines",
+      "file_lines": 120,
+      "file_bytes": 4715,
+      "range_extent": 120,
+      "analyzed_ranges": [
+        [
+          1,
+          120
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              120
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 120,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/source-surfaces.json",
+      "blob_sha": "a929d9867582c1ed806fb40c92bc288fb8d00e9f",
+      "sha256": "5e516a2b3ed397085ce58871244f83f3b2bf731ffb340a56031dbcadabaeaf30",
+      "range_unit": "lines",
+      "file_lines": 535,
+      "file_bytes": 10599,
+      "range_extent": 535,
+      "analyzed_ranges": [
+        [
+          1,
+          535
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              535
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 535,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/source_family_classification.py",
+      "blob_sha": "ad534f9ffe4a1419b2f57f4c5286ce3d6e35020b",
+      "sha256": "7f30b200aa4299da20aa9857bc834bf9bcac975c46afc498a0965cee7e8381ae",
+      "range_unit": "lines",
+      "file_lines": 344,
+      "file_bytes": 16735,
+      "range_extent": 344,
+      "analyzed_ranges": [
+        [
+          1,
+          344
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              344
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 344,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/source_family_classification_self_test.py",
+      "blob_sha": "b016e1c1d6a3a805b1adf229f4f4629ea605a5ac",
+      "sha256": "49be461b338c51cc08ccf2d836490f63fe8bd34563119cddfb08e93bd8cf04e5",
+      "range_unit": "lines",
+      "file_lines": 214,
+      "file_bytes": 8760,
+      "range_extent": 214,
+      "analyzed_ranges": [
+        [
+          1,
+          214
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              214
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 214,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/source_universe.py",
+      "blob_sha": "82fd8e040d866e4744026f99a82b1259dc056b72",
+      "sha256": "b6184712b7d3fbc7d4295da5daf666d1041983438455391da40f895a40400af5",
+      "range_unit": "lines",
+      "file_lines": 1367,
+      "file_bytes": 48665,
+      "range_extent": 1367,
+      "analyzed_ranges": [
+        [
+          1,
+          1367
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              1367
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1367,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/source_universe_self_test.py",
+      "blob_sha": "0a85d2d76b02bdc249a26990e4e3edd20b46c8b6",
+      "sha256": "28bbae96343867ede8b697538a695fc9b8c2af5aeca282d74db000e5c5f2c326",
+      "range_unit": "lines",
+      "file_lines": 507,
+      "file_bytes": 15638,
+      "range_extent": 507,
+      "analyzed_ranges": [
+        [
+          1,
+          507
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              507
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 507,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/stage_appearance_tables.py",
+      "blob_sha": "2e636015cf755344d24de546d16e8d2d08fd39ee",
+      "sha256": "9b7db307540bb7ed716748d074185c2d1a9c94584aa0205ff7b56f15fb33d712",
+      "range_unit": "lines",
+      "file_lines": 222,
+      "file_bytes": 10400,
+      "range_extent": 222,
+      "analyzed_ranges": [
+        [
+          1,
+          222
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              222
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 222,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/stage_map_areas.py",
+      "blob_sha": "116e7d97f654fefb73b98c8d8e581d318ee46b39",
+      "sha256": "81661eddd29f9725b9e1cb02ce37e7f8e0d6e75090e843540518b826a5c3604f",
+      "range_unit": "lines",
+      "file_lines": 275,
+      "file_bytes": 13531,
+      "range_extent": 275,
+      "analyzed_ranges": [
+        [
+          1,
+          275
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              275
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 275,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/stage_proficiencies.py",
+      "blob_sha": "017c05c2ac0d5c7944423fab6d2fd161f3f21d12",
+      "sha256": "c5afa128a0b1c893b79b78071090c2404cecfba1a8f971637353e4ad739ec510",
+      "range_unit": "lines",
+      "file_lines": 240,
+      "file_bytes": 10862,
+      "range_extent": 240,
+      "analyzed_ranges": [
+        [
+          1,
+          240
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              240
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 240,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/stage_staticdata_creatures_bosses_quests.py",
+      "blob_sha": "86967f3bf0ab51bec829fb86a9620e22fcb80f6c",
+      "sha256": "be04de9a913c004bb262f4ba111439e89e28590c5edabe1328fce7f3f07262e3",
+      "range_unit": "lines",
+      "file_lines": 133,
+      "file_bytes": 5964,
+      "range_extent": 133,
+      "analyzed_ranges": [
+        [
+          1,
+          133
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              133
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 133,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/stage_staticdata_houses_achievements.py",
+      "blob_sha": "03f6765c37508b3e18e0162f40a514339973c670",
+      "sha256": "9aad75c873435a3fc681edcedc4c849ec17e1402ae782d73e40f86115fbe6e67",
+      "range_unit": "lines",
+      "file_lines": 267,
+      "file_bytes": 11730,
+      "range_extent": 267,
+      "analyzed_ranges": [
+        [
+          1,
+          267
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              267
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 267,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/unknown_closure.py",
+      "blob_sha": "2bc2fe778298ce671ce262e31b286b730207abaf",
+      "sha256": "5f28a5b6afba8e4987ae36b1c090f99221b6cb2ed521ab5715d6462d8c0cddae",
+      "range_unit": "lines",
+      "file_lines": 609,
+      "file_bytes": 28557,
+      "range_extent": 609,
+      "analyzed_ranges": [
+        [
+          1,
+          609
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              609
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 609,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/unknown_closure_self_test.py",
+      "blob_sha": "47f9e84bfa3c4c616666edf8729963e4358cd62a",
+      "sha256": "b240de6816ecdbb7127f5c4d7ae9876953b9c6ce9742780150d4a463601e7c6c",
+      "range_unit": "lines",
+      "file_lines": 172,
+      "file_bytes": 7891,
+      "range_extent": 172,
+      "analyzed_ranges": [
+        [
+          1,
+          172
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              172
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 172,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/unknown_disposition_ledger.py",
+      "blob_sha": "504a2555a823fcdac4d9f7f8a0f73d461117127f",
+      "sha256": "a01a9a05ec9227d9a06cf7956744f71a3b62ee5469458b3d0cc45a99f6c29ac2",
+      "range_unit": "lines",
+      "file_lines": 285,
+      "file_bytes": 17645,
+      "range_extent": 285,
+      "analyzed_ranges": [
+        [
+          1,
+          285
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              285
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 285,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-census/unknown_disposition_ledger_self_test.py",
+      "blob_sha": "bee3d4367f9e34735949c69b57a778975a74a609",
+      "sha256": "f6a21b71590f7c23ad6e62c4878a9acaafd7b7212b8aa8bcd38ea5d558db95b1",
+      "range_unit": "lines",
+      "file_lines": 76,
+      "file_bytes": 4567,
+      "range_extent": 76,
+      "analyzed_ranges": [
+        [
+          1,
+          76
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              76
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 76,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -316641,6 +318053,138 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "tools/content-migration/imbuement_catalogue.py",
+      "blob_sha": "4c250eda4df58a77fae84938ad8706583bc0b881",
+      "sha256": "050b8bdeb4b09f0dba2b5282dda706a7ff9b610f0dd243ed9fc49122a04e59ed",
+      "range_unit": "lines",
+      "file_lines": 197,
+      "file_bytes": 10173,
+      "range_extent": 197,
+      "analyzed_ranges": [
+        [
+          1,
+          197
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              197
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 197,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-migration/imbuement_item_profiles.py",
+      "blob_sha": "c696a452c872170976a815101bb54844735e152b",
+      "sha256": "8e108895da38188b7b46803071e25edb255b7bebcafec8ba1b73f373ef8e4448",
+      "range_unit": "lines",
+      "file_lines": 190,
+      "file_bytes": 10056,
+      "range_extent": 190,
+      "analyzed_ranges": [
+        [
+          1,
+          190
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              190
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 190,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-migration/raid_catalogue.py",
+      "blob_sha": "d941cc14ad5be4bcf44ad61085dbaaf1b4cb8c40",
+      "sha256": "6b743bc0200bd506e9dd828d1d07f4437e621894e9fe8be494a0eae225f88153",
+      "range_unit": "lines",
+      "file_lines": 629,
+      "file_bytes": 36323,
+      "range_extent": 629,
+      "analyzed_ranges": [
+        [
+          1,
+          629
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              629
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 629,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-migration/readable_item_profiles.py",
+      "blob_sha": "6ca26ca68fad2cf7f5f1b46193fa7323e9c99d62",
+      "sha256": "6d0c628f631200331edb6c041452a70a37ae1795ba124a140c23c2a328eb096f",
+      "range_unit": "lines",
+      "file_lines": 162,
+      "file_bytes": 7555,
+      "range_extent": 162,
+      "analyzed_ranges": [
+        [
+          1,
+          162
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              162
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 162,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "tools/content-migration/regenerate_content.py",
       "blob_sha": "2808588022871df70cbe6f33713050edb41b8529",
       "sha256": "0f27809db0b1ee6bf48faa57c14f9c0caf21803ef516013a492f4a18a80a24b8",
@@ -316670,6 +318214,39 @@
         }
       ],
       "analyzed_lines": 681,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-migration/seasonal_raids.py",
+      "blob_sha": "919b521faad18d006c0f3a6d39f1d4e5c694d6ec",
+      "sha256": "22212235f20a47cd871823b839bc24252affe006b93d43e96f6e372188e52b8c",
+      "range_unit": "lines",
+      "file_lines": 99,
+      "file_bytes": 5420,
+      "range_extent": 99,
+      "analyzed_ranges": [
+        [
+          1,
+          99
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              99
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 99,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -316707,6 +318284,72 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "tools/content-migration/world_project_v2_to_tree.py",
+      "blob_sha": "33321b4519708fb94f13b91b3f67fb6a4d748608",
+      "sha256": "d60fd97a350a86fab2b0aa38c232afcc71ddc6318eebc55db1228c8114e9ec24",
+      "range_unit": "lines",
+      "file_lines": 803,
+      "file_bytes": 46383,
+      "range_extent": 803,
+      "analyzed_ranges": [
+        [
+          1,
+          803
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              803
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 803,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-migration/writable_item_profiles.py",
+      "blob_sha": "9282b54e0981820d588563c7365054699fc4a7e8",
+      "sha256": "9aa3ac60a9c5ebd48e163b95c86373a8c58191cc9198b53a0188e8152258533f",
+      "range_unit": "lines",
+      "file_lines": 284,
+      "file_bytes": 14673,
+      "range_extent": 284,
+      "analyzed_ranges": [
+        [
+          1,
+          284
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              284
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 284,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "tools/content-schema/hireling/generate_catalogue.py",
       "blob_sha": "c2e2137e7757c4b9674b342848e70b3a67e32217",
       "sha256": "d32ac58f5d2e8a75fbf4a699e646e81536360e5b20e496980fd18ec1509beed8",
@@ -316740,6 +318383,39 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "tools/content-schema/item-authoring/appearance_membership.py",
+      "blob_sha": "42ff301af6fc40a67ec65d8302b5ad290e346c5b",
+      "sha256": "0746bb0e350fb04503919295a718907afc87866b0299fa277b914c74e85cfc09",
+      "range_unit": "lines",
+      "file_lines": 260,
+      "file_bytes": 10238,
+      "range_extent": 260,
+      "analyzed_ranges": [
+        [
+          1,
+          260
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              260
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 260,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "tools/content-schema/item-authoring/client_appearance_census.py",
       "blob_sha": "d0ba9943fce3e5c36601dd49b3939c74e8bbfd34",
       "sha256": "3af2b7e10c9916a78a37f2f20601b187ba22ee838b08e21496d52c8dc0a67faa",
@@ -316750,10 +318426,23 @@
       "analyzed_ranges": [
         [
           1,
-          125
+          266
         ]
       ],
       "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              266
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        },
         {
           "auditor": "client-support",
           "original_reviewer": "client-support",
@@ -316768,9 +318457,9 @@
           "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
         }
       ],
-      "analyzed_lines": 125,
+      "analyzed_lines": 266,
       "analyzed_bytes": 0,
-      "scope": "SELECTED_RANGES"
+      "scope": "FULL_FILE"
     },
     {
       "path": "tools/content-schema/item-authoring/engine_items.py",
@@ -316783,14 +318472,23 @@
       "analyzed_ranges": [
         [
           1,
-          120
-        ],
-        [
-          230,
-          540
+          3607
         ]
       ],
       "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              3607
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        },
         {
           "auditor": "client-support",
           "original_reviewer": "client-support",
@@ -316809,9 +318507,207 @@
           "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
         }
       ],
-      "analyzed_lines": 431,
+      "analyzed_lines": 3607,
       "analyzed_bytes": 0,
-      "scope": "SELECTED_RANGES"
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/item_weapon_proficiency.py",
+      "blob_sha": "b8cbbc921832d35003785a617ea8683446b66e37",
+      "sha256": "f14b0f55edfe2cdcff9995448e75ed76cab2c5c2ef1f1a81325df78bb9d76962",
+      "range_unit": "lines",
+      "file_lines": 709,
+      "file_bytes": 27635,
+      "range_extent": 709,
+      "analyzed_ranges": [
+        [
+          1,
+          709
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              709
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 709,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/lower_timed_item_packet.py",
+      "blob_sha": "5b05a0a074a4fb890fc6753af7c9e0931b0babb6",
+      "sha256": "9b95dc737d9d66060d19bd1aa747ed7ecf4da4daed518e173f2203cbe86152b3",
+      "range_unit": "lines",
+      "file_lines": 529,
+      "file_bytes": 20463,
+      "range_extent": 529,
+      "analyzed_ranges": [
+        [
+          1,
+          529
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              529
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 529,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/source_field_catalogs.py",
+      "blob_sha": "ecdee7e6f82bb458e531971b9f26d173433b7f7d",
+      "sha256": "b3facfe30ae8beb9e80fff46d4df8870eb1a3a144ba5b0a3278eae3bc98fd423",
+      "range_unit": "lines",
+      "file_lines": 2057,
+      "file_bytes": 67833,
+      "range_extent": 2057,
+      "analyzed_ranges": [
+        [
+          1,
+          2057
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              2057
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 2057,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-schema/map-content-linking/README.md",
+      "blob_sha": "b6f33dd6485c0aac40fbb053fbf6715a3651f3c4",
+      "sha256": "ee2a3ccc21b210ee122d844c8467305e54bfca637038520ab16aff7db9b6211d",
+      "range_unit": "lines",
+      "file_lines": 62,
+      "file_bytes": 3269,
+      "range_extent": 62,
+      "analyzed_ranges": [
+        [
+          1,
+          62
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              62
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 62,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-schema/map-content-linking/fill_links.py",
+      "blob_sha": "fd864f72a2159415ca93ffd620a0fc906e047278",
+      "sha256": "45ac5973e55350baf8e4439cb1b95d1faa8854e6cf482f4a60c0e21f0fa1de76",
+      "range_unit": "lines",
+      "file_lines": 504,
+      "file_bytes": 20942,
+      "range_extent": 504,
+      "analyzed_ranges": [
+        [
+          1,
+          504
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              504
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 504,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-schema/map-content-linking/test_fill_links.py",
+      "blob_sha": "361c515291858abaa183fb23b6458d273af05e61",
+      "sha256": "16fac6e0bc7f72bacab0da93b682c57af49aa466f4d96481ad872bdc42565e90",
+      "range_unit": "lines",
+      "file_lines": 102,
+      "file_bytes": 4823,
+      "range_extent": 102,
+      "analyzed_ranges": [
+        [
+          1,
+          102
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              102
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 102,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
     },
     {
       "path": "tools/content-schema/monster-authoring/capture_soulpit_bestiary.py",
@@ -316909,6 +318805,171 @@
         }
       ],
       "analyzed_lines": 198,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-schema/test_validate_full_game_content_tree.py",
+      "blob_sha": "b2478437fdf01dcb2ae121f8745048a8d1efc240",
+      "sha256": "0476e8a337714aa51ff1d095cce162d07e03e7c1598169f413e19a6d58e39ee1",
+      "range_unit": "lines",
+      "file_lines": 75,
+      "file_bytes": 2680,
+      "range_extent": 75,
+      "analyzed_ranges": [
+        [
+          1,
+          75
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              75
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 75,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-schema/test_validate_item_master_schema.py",
+      "blob_sha": "478dd2de41830ec97e750f7f300122688637f3f0",
+      "sha256": "e1c43214932b345a645c809459fcbfaa645b387d7306cbd53bac4077f0457b4f",
+      "range_unit": "lines",
+      "file_lines": 71,
+      "file_bytes": 2615,
+      "range_extent": 71,
+      "analyzed_ranges": [
+        [
+          1,
+          71
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              71
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 71,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-schema/validate_full_game_content_tree.py",
+      "blob_sha": "8468028c088bd5246058b1e7b019f57f81696a42",
+      "sha256": "06fd367b530c8d7d1c3b84068d48b9f859d91d0fd78d30b4bb6deecd36ae43ef",
+      "range_unit": "lines",
+      "file_lines": 174,
+      "file_bytes": 8674,
+      "range_extent": 174,
+      "analyzed_ranges": [
+        [
+          1,
+          174
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              174
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 174,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-schema/validate_item_master_schema.py",
+      "blob_sha": "c982389580ace80429f9260540dd98d77f86dda2",
+      "sha256": "3df5020b8f1c934a92cef14b94fdc4b55b7594f13f18a011a870f09c8ee41cb2",
+      "range_unit": "lines",
+      "file_lines": 199,
+      "file_bytes": 9161,
+      "range_extent": 199,
+      "analyzed_ranges": [
+        [
+          1,
+          199
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              199
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 199,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/content-schema/validate_materialized_game_tree.py",
+      "blob_sha": "e1da3d39619c1e0ceba6122b664a5b386ed863ac",
+      "sha256": "2fbbfefe50a4faaa0973054adb206aa47917624d3cf5d6bc8cb29842a79a2a1b",
+      "range_unit": "lines",
+      "file_lines": 148,
+      "file_bytes": 10093,
+      "range_extent": 148,
+      "analyzed_ranges": [
+        [
+          1,
+          148
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              148
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 148,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -317953,6 +320014,1821 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "tools/fnd02-retained-semantic-record-byte-bound-evidence/evidence.py",
+      "blob_sha": "97980e422632ae5995747489369b094ebf7f8c03",
+      "sha256": "0f5afa1833deaac0cdd4f6eca9d4395f5eb7006a25c2f8b422882dd2a7cabb6a",
+      "range_unit": "lines",
+      "file_lines": 303,
+      "file_bytes": 16382,
+      "range_extent": 303,
+      "analyzed_ranges": [
+        [
+          1,
+          303
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              303
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 303,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/fnd02-terminal-outcome-retention-evidence/README.md",
+      "blob_sha": "04195b5e1cbe39a029bcfbf678486cb3b4f70707",
+      "sha256": "b0525fa3778bd91bd1d6e40122175abc688394f4ae47d5fc760de031881c229a",
+      "range_unit": "lines",
+      "file_lines": 65,
+      "file_bytes": 3169,
+      "range_extent": 65,
+      "analyzed_ranges": [
+        [
+          1,
+          65
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              65
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 65,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/fnd02-terminal-outcome-retention-evidence/generate.py",
+      "blob_sha": "d7811c06f4f2735910f0b51dbb8da8a2c2b8989b",
+      "sha256": "20c69252609c3bd362c8ee2acc586f182550ea69e426395c7beb09976ca724d9",
+      "range_unit": "lines",
+      "file_lines": 324,
+      "file_bytes": 15808,
+      "range_extent": 324,
+      "analyzed_ranges": [
+        [
+          1,
+          324
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              324
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 324,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/fnd02-terminal-outcome-retention-evidence/model.py",
+      "blob_sha": "2a55a5a3298f9b5f3baafd79750bb8a20280a231",
+      "sha256": "acbb61c97d30ab92ae6b9ebc3c46977601f82175472ab6927db4ed5792e27dbb",
+      "range_unit": "lines",
+      "file_lines": 302,
+      "file_bytes": 10868,
+      "range_extent": 302,
+      "analyzed_ranges": [
+        [
+          1,
+          302
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              302
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 302,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/fnd02-terminal-outcome-retention-evidence/self_test.py",
+      "blob_sha": "7cc6bae163f07b64af527c31e1bf88a16c785636",
+      "sha256": "dfd9cea061e6d0c3f24d1d5bc449a488556f86bab22fb044c88d60a7523eaf9d",
+      "range_unit": "lines",
+      "file_lines": 267,
+      "file_bytes": 9588,
+      "range_extent": 267,
+      "analyzed_ranges": [
+        [
+          1,
+          267
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              267
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 267,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-appearances/README.md",
+      "blob_sha": "6f1c831cc7badcf56328e6e12e8c9ad3fc74fddb",
+      "sha256": "5c862e8d2d3b318ecb583a1189b4881f9355181645717d2764585a180d6461b5",
+      "range_unit": "lines",
+      "file_lines": 11,
+      "file_bytes": 815,
+      "range_extent": 11,
+      "analyzed_ranges": [
+        [
+          1,
+          11
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              11
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 11,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-appearances/export.py",
+      "blob_sha": "a08b44c2a34ca745a93f1c7bbd6bf28ead51e14d",
+      "sha256": "6b63350e37279d15e1ba09be021ec61be3977758b586217813606123998fca58",
+      "range_unit": "lines",
+      "file_lines": 662,
+      "file_bytes": 31003,
+      "range_extent": 662,
+      "analyzed_ranges": [
+        [
+          1,
+          662
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              662
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 662,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-appearances/self_test.py",
+      "blob_sha": "2ba65cf89f6faa0091fb6a3a2c1ec5839052888b",
+      "sha256": "4abf4f7816932e84cfc10bab6d3519e971cef0fd3c704263017f616364093095",
+      "range_unit": "lines",
+      "file_lines": 151,
+      "file_bytes": 7160,
+      "range_extent": 151,
+      "analyzed_ranges": [
+        [
+          1,
+          151
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              151
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 151,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-appearances/verify.py",
+      "blob_sha": "5122ea444c3e10674a8ecf8ee2b458c282af3789",
+      "sha256": "1187dcbdec61f730f29d3be376a63c2767ddfc1090c97d5f1403f298be4fa474",
+      "range_unit": "lines",
+      "file_lines": 91,
+      "file_bytes": 3986,
+      "range_extent": 91,
+      "analyzed_ranges": [
+        [
+          1,
+          91
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              91
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 91,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creature-gameplay/export.py",
+      "blob_sha": "8b8606bb6052dde3ce16ad3cfe0eb88290351b14",
+      "sha256": "e2cbd0c97fcc449c4ec1c2432e96446a0a5a1e57cd9dec7fccc5ed13711ff364",
+      "range_unit": "lines",
+      "file_lines": 1043,
+      "file_bytes": 49039,
+      "range_extent": 1043,
+      "analyzed_ranges": [
+        [
+          1,
+          1043
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              1043
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1043,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creature-gameplay/fixtures/complete-monster.lua",
+      "blob_sha": "c44da63ae2836f7fd41e5afd81fb457c3240294a",
+      "sha256": "de9654e56bf3d2b2e99a8463fc9e36cff426c05b293f9a2b270ea346107b0069",
+      "range_unit": "lines",
+      "file_lines": 21,
+      "file_bytes": 549,
+      "range_extent": 21,
+      "analyzed_ranges": [
+        [
+          1,
+          21
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              21
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 21,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creature-gameplay/fixtures/complete-npc.lua",
+      "blob_sha": "d0ae36431e51fe2d405b781bd6df9289915d49ee",
+      "sha256": "93b4ef82430de4ec556461010dee1d23328de83149c6803150cccebeb4306f63",
+      "range_unit": "lines",
+      "file_lines": 10,
+      "file_bytes": 547,
+      "range_extent": 10,
+      "analyzed_ranges": [
+        [
+          1,
+          10
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              10
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 10,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creature-gameplay/fixtures/partial-monster.lua",
+      "blob_sha": "1dc5b168cd2c422e7c723ba3d5cb3e1517788e3a",
+      "sha256": "361ebc68f258253d7e1afc10e551cc9a1981c9ae52b8cccab5cdbd330d607564",
+      "range_unit": "lines",
+      "file_lines": 12,
+      "file_bytes": 428,
+      "range_extent": 12,
+      "analyzed_ranges": [
+        [
+          1,
+          12
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              12
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 12,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creature-gameplay/fixtures/partial-npc.lua",
+      "blob_sha": "db96b06df4cb020fbbf640eb8ad0f136574da626",
+      "sha256": "0ca09754a6e5e9e83f12e1b555f2d4b0dc0dbd4fe428ab2f6ca271dcd2df2e89",
+      "range_unit": "lines",
+      "file_lines": 9,
+      "file_bytes": 462,
+      "range_extent": 9,
+      "analyzed_ranges": [
+        [
+          1,
+          9
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              9
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 9,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creature-gameplay/self_test.py",
+      "blob_sha": "b4cda247d80963dae44c73fdcee6ea4027f1d8ab",
+      "sha256": "e06a7eee87a956495c38110e49a0f4f79547de2178a5d3df370b455ddb3c1e33",
+      "range_unit": "lines",
+      "file_lines": 216,
+      "file_bytes": 12847,
+      "range_extent": 216,
+      "analyzed_ranges": [
+        [
+          1,
+          216
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              216
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 216,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creatures/README.md",
+      "blob_sha": "f9b28978b0c22d4a6867381d58cf0c51623cf823",
+      "sha256": "b6ec631057d9a364e0ffea75ab0037b0be0d62af96096bd05ee29b255f753fc9",
+      "range_unit": "lines",
+      "file_lines": 25,
+      "file_bytes": 1829,
+      "range_extent": 25,
+      "analyzed_ranges": [
+        [
+          1,
+          25
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              25
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 25,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creatures/animated.py",
+      "blob_sha": "41704bd40681b5853f7d7f96a6f5ea58a7a25d9c",
+      "sha256": "d3f912858a1fdd99e2f65c9f8cd82333da16fd5e7c5528f0eda1ca48921fbd05",
+      "range_unit": "lines",
+      "file_lines": 401,
+      "file_bytes": 20015,
+      "range_extent": 401,
+      "analyzed_ranges": [
+        [
+          1,
+          401
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              401
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 401,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creatures/animated_self_test.py",
+      "blob_sha": "a2af873fac530184e90a1c02bd746f0bada1b867",
+      "sha256": "91f5de7e7de1fe594357297898f8370c6dbaefc397251cbed3d06ae3cc20aaa9",
+      "range_unit": "lines",
+      "file_lines": 178,
+      "file_bytes": 11242,
+      "range_extent": 178,
+      "analyzed_ranges": [
+        [
+          1,
+          178
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              178
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 178,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creatures/export.py",
+      "blob_sha": "dcd4aa588ca9d93ada697b9135d64a82046fb079",
+      "sha256": "519b632921bf9058cb1eb982c71c67c65e4cea61ac68422e2cf0aefe28268325",
+      "range_unit": "lines",
+      "file_lines": 138,
+      "file_bytes": 9036,
+      "range_extent": 138,
+      "analyzed_ranges": [
+        [
+          1,
+          138
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              138
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 138,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creatures/identity.py",
+      "blob_sha": "ccebdcd2b88c147e20ed9be9e5dff524276591bd",
+      "sha256": "2f9bff2fed95038512a1d676dde274d9a66e9e2f95b9a3db7480c9245b2f75a5",
+      "range_unit": "lines",
+      "file_lines": 14,
+      "file_bytes": 592,
+      "range_extent": 14,
+      "analyzed_ranges": [
+        [
+          1,
+          14
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              14
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 14,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-creatures/self_test.py",
+      "blob_sha": "7a6a38d870e0421a139fb67a729abc68c7c39930",
+      "sha256": "047a0c6eeed4c7667fb283216525be4bf9b6e28954aa250be3adbbac846b1477",
+      "range_unit": "lines",
+      "file_lines": 56,
+      "file_bytes": 4338,
+      "range_extent": 56,
+      "analyzed_ranges": [
+        [
+          1,
+          56
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              56
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 56,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-farm-intelligence/README.md",
+      "blob_sha": "206db068440628cd337ea7214f14cb7ef7371fb9",
+      "sha256": "6997e099d165463dae3d16e832c007b0126e30363c20f6f8ee985e8253fee313",
+      "range_unit": "lines",
+      "file_lines": 23,
+      "file_bytes": 1127,
+      "range_extent": 23,
+      "analyzed_ranges": [
+        [
+          1,
+          23
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              23
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 23,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-farm-intelligence/export.py",
+      "blob_sha": "ab91bd3924144bd66d0f657354a5458bfc69a357",
+      "sha256": "ab3e68c16d716ad5d6e3eff0283f49a2aca78e73c9a3e754895c738614b45000",
+      "range_unit": "lines",
+      "file_lines": 258,
+      "file_bytes": 12176,
+      "range_extent": 258,
+      "analyzed_ranges": [
+        [
+          1,
+          258
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              258
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 258,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-farm-intelligence/test_export.py",
+      "blob_sha": "d410a554ff3337fef78825edc676b7982da1819b",
+      "sha256": "47b52a31e80a14660d33b127c279afebd703459a78f051cce7cd86350f30f9ea",
+      "range_unit": "lines",
+      "file_lines": 136,
+      "file_bytes": 7036,
+      "range_extent": 136,
+      "analyzed_ranges": [
+        [
+          1,
+          136
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              136
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 136,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-fullworld-source/README.md",
+      "blob_sha": "88984b12e594a362f93b742547dbc80383542088",
+      "sha256": "65138309b78cac8ad155602cd868a6d690022465ca56046849bc6f2ab5d4ca78",
+      "range_unit": "lines",
+      "file_lines": 73,
+      "file_bytes": 4552,
+      "range_extent": 73,
+      "analyzed_ranges": [
+        [
+          1,
+          73
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              73
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 73,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-fullworld-source/animated.py",
+      "blob_sha": "6bdd3965e3cf5b147da1420e440b5a4714b2551a",
+      "sha256": "c612ef0ad5f894c903dcbc37079b48b92cb3c45f0d68cd8c55406f3f6205f6f9",
+      "range_unit": "lines",
+      "file_lines": 120,
+      "file_bytes": 4890,
+      "range_extent": 120,
+      "analyzed_ranges": [
+        [
+          1,
+          120
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              120
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 120,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-fullworld-source/animated_self_test.py",
+      "blob_sha": "6b66f19450457671e04117a6551210d265c85860",
+      "sha256": "8afe4c39de9d9277b58f7bcf343b94381bf6bf47e745c50646b72a34f4973a5a",
+      "range_unit": "lines",
+      "file_lines": 38,
+      "file_bytes": 2041,
+      "range_extent": 38,
+      "analyzed_ranges": [
+        [
+          1,
+          38
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              38
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 38,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-fullworld-source/producer.py",
+      "blob_sha": "740a96fe1b1d97f32c56e278725ab9c2de6e724b",
+      "sha256": "8fe002df27655fae61f5111751e58ae9b3ca6b5cbfa6618a8b1eec87a216f000",
+      "range_unit": "lines",
+      "file_lines": 647,
+      "file_bytes": 25797,
+      "range_extent": 647,
+      "analyzed_ranges": [
+        [
+          1,
+          647
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              647
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 647,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-fullworld-source/self_test.py",
+      "blob_sha": "4dc0adc0b9a2e22ab1a5f420250e7908cfd440bd",
+      "sha256": "1dabfef9355166da166aeb18d991ae4144a0a542391ec8728764613f42e59925",
+      "range_unit": "lines",
+      "file_lines": 633,
+      "file_bytes": 25190,
+      "range_extent": 633,
+      "analyzed_ranges": [
+        [
+          1,
+          633
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              633
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 633,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-outfit-spatial/export.py",
+      "blob_sha": "b2745a1679b3513dc28d13a3a16b612fa030f9eb",
+      "sha256": "491b771922714037d1c529ab0f6b879de92c0e2ca00950e7694b512ef9f48b3e",
+      "range_unit": "lines",
+      "file_lines": 235,
+      "file_bytes": 9881,
+      "range_extent": 235,
+      "analyzed_ranges": [
+        [
+          1,
+          235
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              235
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 235,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-outfit-spatial/self_test.py",
+      "blob_sha": "f1a0545dfadd96635dc73136e985e3b075982e0a",
+      "sha256": "5ccade11d8321cec2a772559590267df9bc1a561d8c8ed296ff7b4c84b6f1809",
+      "range_unit": "lines",
+      "file_lines": 55,
+      "file_bytes": 2194,
+      "range_extent": 55,
+      "analyzed_ranges": [
+        [
+          1,
+          55
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              55
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 55,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-profile-spike/README.md",
+      "blob_sha": "18fa648593a69116cfe620a2389b0452a1332400",
+      "sha256": "f31dfcd011b84c9da778c918ff41ce9b5faa3ccbda81eded2c6f1a735cfa9276",
+      "range_unit": "lines",
+      "file_lines": 53,
+      "file_bytes": 3093,
+      "range_extent": 53,
+      "analyzed_ranges": [
+        [
+          1,
+          53
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              53
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 53,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-profile-spike/spike.py",
+      "blob_sha": "370091674b3dc5e20dbc22f5fd2af3f6e6a5a60a",
+      "sha256": "868432420576e4e3523b3a6cbc3857b54f53e45de8d6cbc5c7bc7e1d7c09573e",
+      "range_unit": "lines",
+      "file_lines": 567,
+      "file_bytes": 21125,
+      "range_extent": 567,
+      "analyzed_ranges": [
+        [
+          1,
+          567
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              567
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 567,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-semantic-search/README.md",
+      "blob_sha": "879e692027c92f36315e998f734eb87ab4342637",
+      "sha256": "f8a9e28e3d501ced604b75b97f5b03a5fd5fcce01ad43901a937a24dbff38757",
+      "range_unit": "lines",
+      "file_lines": 55,
+      "file_bytes": 2278,
+      "range_extent": 55,
+      "analyzed_ranges": [
+        [
+          1,
+          55
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              55
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 55,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-semantic-search/export.py",
+      "blob_sha": "af1a3ea6b3bb4d116333996fccd9dae5668536cf",
+      "sha256": "d6cf7e3cd13b6f57b1b006e985e05fe48d2d01135abb0993b3c0be3d6e5e249d",
+      "range_unit": "lines",
+      "file_lines": 307,
+      "file_bytes": 13664,
+      "range_extent": 307,
+      "analyzed_ranges": [
+        [
+          1,
+          307
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              307
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 307,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-semantic-search/fixtures/acceptance-source.json",
+      "blob_sha": "5df1e399398635f64cc3afcab29ad5afa648ba25",
+      "sha256": "a101cfaf07b83affd2896e480a51898d609a445216190621b54b002667e83a88",
+      "range_unit": "lines",
+      "file_lines": 92,
+      "file_bytes": 2577,
+      "range_extent": 92,
+      "analyzed_ranges": [
+        [
+          1,
+          92
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              92
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 92,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-semantic-search/self_test.py",
+      "blob_sha": "5ea0aba0c89be3302e176076e9afc791f32167ee",
+      "sha256": "0c7ec633bc6efa98fc64438e5961ba401f330db28f986d6a0bf6c85ddc4157d0",
+      "range_unit": "lines",
+      "file_lines": 132,
+      "file_bytes": 5722,
+      "range_extent": 132,
+      "analyzed_ranges": [
+        [
+          1,
+          132
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              132
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 132,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-thais-fixture/README.md",
+      "blob_sha": "364cf638d23c8f4839f3a47337d452c3d9fb6efe",
+      "sha256": "eb0ed2e8c191e175da6b3bea9252fcce4017a2f77674c892da12d174a617b724",
+      "range_unit": "lines",
+      "file_lines": 116,
+      "file_bytes": 5614,
+      "range_extent": 116,
+      "analyzed_ranges": [
+        [
+          1,
+          116
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              116
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 116,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-thais-fixture/export.py",
+      "blob_sha": "0e36ca9e43d78a919eb673f9dc423ed1c178c727",
+      "sha256": "38aac489adc5002aeb5efb8f233a5a4538eab9600f9bfc44218a606f2c67603d",
+      "range_unit": "lines",
+      "file_lines": 478,
+      "file_bytes": 18416,
+      "range_extent": 478,
+      "analyzed_ranges": [
+        [
+          1,
+          478
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              478
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 478,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-thais-fixture/public_policy.py",
+      "blob_sha": "07c183e053d76b113178b69fb60523e4b2a30e91",
+      "sha256": "af2c4866df63940ac119cda478c637951986a1ea41aeae16b5207280fc9712da",
+      "range_unit": "lines",
+      "file_lines": 177,
+      "file_bytes": 6447,
+      "range_extent": 177,
+      "analyzed_ranges": [
+        [
+          1,
+          177
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              177
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 177,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-thais-fixture/self_test.py",
+      "blob_sha": "75135a4cc8d87a3f14a2c0dab1de477336e716d7",
+      "sha256": "5b6153c63558c12ab6cae995a5a0fb49a250ee25ec2ec804fb555597aa899d05",
+      "range_unit": "lines",
+      "file_lines": 96,
+      "file_bytes": 4269,
+      "range_extent": 96,
+      "analyzed_ranges": [
+        [
+          1,
+          96
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              96
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 96,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-atlas-thais-fixture/verify.py",
+      "blob_sha": "ac67743e8f8b4395727188cb722018bff1fb2135",
+      "sha256": "ee9867065ba408742970e9029ee5f31e403b44a02a958ca79f94f9ec146cd682",
+      "range_unit": "lines",
+      "file_lines": 330,
+      "file_bytes": 15929,
+      "range_extent": 330,
+      "analyzed_ranges": [
+        [
+          1,
+          330
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              330
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 330,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/README.md",
+      "blob_sha": "8119bc36c68b355081f7f3cd7565daa609ed7540",
+      "sha256": "80ce4564872fd48a072e1a9777f32cb84f1cae7429672a9e50f420b6b9c70615",
+      "range_unit": "lines",
+      "file_lines": 53,
+      "file_bytes": 2773,
+      "range_extent": 53,
+      "analyzed_ranges": [
+        [
+          1,
+          53
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              53
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 53,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/build.py",
+      "blob_sha": "177695489d4c708cede1dac8ce1a86ab6c886ed0",
+      "sha256": "2922109ccd37253866bd47d340b04c8e8f7b237bbfce92255b28b444e44f349c",
+      "range_unit": "lines",
+      "file_lines": 63,
+      "file_bytes": 2490,
+      "range_extent": 63,
+      "analyzed_ranges": [
+        [
+          1,
+          63
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              63
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 63,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/fixtures/public-view-fields.json",
+      "blob_sha": "55f073b16ba2db2f1f94d789b2668cc094c494bd",
+      "sha256": "f83e04f0109c05cc5e6362faecc4192dcc254ed458a87f421407c8e380536ee2",
+      "range_unit": "lines",
+      "file_lines": 26,
+      "file_bytes": 2184,
+      "range_extent": 26,
+      "analyzed_ranges": [
+        [
+          1,
+          26
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              26
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 26,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/fixtures/unsupported-native-input.json",
+      "blob_sha": "1abe94ccd997d4a3e626789b1abe6a82ac0837a7",
+      "sha256": "d10b03dabe0041f9b8b09ab23ce0ef0be7725bffdb727e11a4e7083f4c58b860",
+      "range_unit": "lines",
+      "file_lines": 30,
+      "file_bytes": 1317,
+      "range_extent": 30,
+      "analyzed_ranges": [
+        [
+          1,
+          30
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              30
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 30,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/producer.py",
+      "blob_sha": "b00fa778940a92705dffb2769e3e7fa88fa01282",
+      "sha256": "865afe56516de5fe23d5420ca788a25e067033f748334aaa68afc8432b6ee9ae",
+      "range_unit": "lines",
+      "file_lines": 623,
+      "file_bytes": 23551,
+      "range_extent": 623,
+      "analyzed_ranges": [
+        [
+          1,
+          623
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              623
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 623,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/refresh_workflow_pin.py",
+      "blob_sha": "f831d0e43e7ce066e0d48f1f645db3320ffb6aa9",
+      "sha256": "bd678a992f71b90221d928f55b356f2b903d16eee3be2de921310406bdf4bbb4",
+      "range_unit": "lines",
+      "file_lines": 57,
+      "file_bytes": 2439,
+      "range_extent": 57,
+      "analyzed_ranges": [
+        [
+          1,
+          57
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              57
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 57,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/test_build.py",
+      "blob_sha": "5890fa8af3dd11081f9bfef7f33ed2b47bc83be1",
+      "sha256": "585c19d82bb7d386e754ff0eead9956f3939f248ab636f575804f3c0d9812adf",
+      "range_unit": "lines",
+      "file_lines": 45,
+      "file_bytes": 2088,
+      "range_extent": 45,
+      "analyzed_ranges": [
+        [
+          1,
+          45
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              45
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 45,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/test_io.py",
+      "blob_sha": "ebbe2e478246228a899d039dc256b6d005360b7f",
+      "sha256": "b00a26895cc3e5cec6ca161c9386c07c83293e5dba11fd593a93d1e2fc3bf4ff",
+      "range_unit": "lines",
+      "file_lines": 74,
+      "file_bytes": 2603,
+      "range_extent": 74,
+      "analyzed_ranges": [
+        [
+          1,
+          74
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              74
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 74,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/test_producer.py",
+      "blob_sha": "ac494412f3f20ddd4c81ee47806c6b605fbb5c04",
+      "sha256": "b0add2e00f2e8a90166b399d76fd0cb7ee07f4df17a76423520039f76de27e21",
+      "range_unit": "lines",
+      "file_lines": 211,
+      "file_bytes": 8674,
+      "range_extent": 211,
+      "analyzed_ranges": [
+        [
+          1,
+          211
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              211
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 211,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/test_provenance.py",
+      "blob_sha": "3cf90e254bb1d71c6faa3b0493f69b570fb90447",
+      "sha256": "2b73c2d7cfed9f2bfffad79bb6077c16ea75e6cacddac8ba39ba1d9169f644d0",
+      "range_unit": "lines",
+      "file_lines": 36,
+      "file_bytes": 1030,
+      "range_extent": 36,
+      "analyzed_ranges": [
+        [
+          1,
+          36
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              36
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 36,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/test_taxonomy.py",
+      "blob_sha": "3c265860f209f61390c79fbcd8e7503871041b99",
+      "sha256": "a9540b059357e3544c9028ddbef70c05fc5dea1472a1bcabdcb0e60e019e0533",
+      "range_unit": "lines",
+      "file_lines": 39,
+      "file_bytes": 1475,
+      "range_extent": 39,
+      "analyzed_ranges": [
+        [
+          1,
+          39
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              39
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 39,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/test_visibility_schemas.py",
+      "blob_sha": "8b0fd53cd08859f8230e1e53f43dfc4433d78efa",
+      "sha256": "8e2e4893e0ebeb581c387cba8f034ced6a4efb2a43bb51de0341ceaf17160a83",
+      "range_unit": "lines",
+      "file_lines": 29,
+      "file_bytes": 1394,
+      "range_extent": 29,
+      "analyzed_ranges": [
+        [
+          1,
+          29
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              29
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 29,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/game-platform-catalog/test_workflow_pin.py",
+      "blob_sha": "1e7aa24399cd2073b79274262cc046ba7da07bb9",
+      "sha256": "233d16658894e249978d077fb26e24c56827705297ea48f7557ab8e9d87ca50c",
+      "range_unit": "lines",
+      "file_lines": 21,
+      "file_bytes": 892,
+      "range_extent": 21,
+      "analyzed_ranges": [
+        [
+          1,
+          21
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              21
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 21,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "tools/merge-driver/install.sh",
       "blob_sha": "3bdf9e3b0f5f11aeb418f70283e48ab7e963dc01",
       "sha256": "2e2aca1ec7cc52da58ee975b92c22d82e222b69dee12fe7063c0e0c86763219e",
@@ -318114,6 +321990,534 @@
         }
       ],
       "analyzed_lines": 166,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/README.md",
+      "blob_sha": "6a2f3eb70731aaef6275756fa360e3272685bd21",
+      "sha256": "f6feefae1742dbf01aae9e975837cd95df955633bdf1beb02d760296d7ae95f3",
+      "range_unit": "lines",
+      "file_lines": 59,
+      "file_bytes": 5514,
+      "range_extent": 59,
+      "analyzed_ranges": [
+        [
+          1,
+          59
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              59
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 59,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/arena_map.py",
+      "blob_sha": "650fdce6f4027018587312f6a5ddf6a076a50e55",
+      "sha256": "5c6b4b9b24d92faa643a27d8b7426d2e467fa9b55c3baa5eeda9c3d4a92e2728",
+      "range_unit": "lines",
+      "file_lines": 119,
+      "file_bytes": 6094,
+      "range_extent": 119,
+      "analyzed_ranges": [
+        [
+          1,
+          119
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              119
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 119,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/config.example.json",
+      "blob_sha": "6d885335feb95614b9b3a1fe4c0eb9932e8a8e87",
+      "sha256": "48f4fee79ce9c04705d5222622708e1cf0d028f8be05711e6ea6fc907b151395",
+      "range_unit": "lines",
+      "file_lines": 13,
+      "file_bytes": 405,
+      "range_extent": 13,
+      "analyzed_ranges": [
+        [
+          1,
+          13
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              13
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 13,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/lab.py",
+      "blob_sha": "026faf01f654ba5d59c0010bd2ee0ef955ecd8d8",
+      "sha256": "6b19ac1ff469db76bc10e3ff38395a0a21108b1aefbfeae28c764d22ed637114",
+      "range_unit": "lines",
+      "file_lines": 165,
+      "file_bytes": 8795,
+      "range_extent": 165,
+      "analyzed_ranges": [
+        [
+          1,
+          165
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              165
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 165,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/run.py",
+      "blob_sha": "37a6fedec158c289d1eda8628a7dab4447052c41",
+      "sha256": "353bf88222c7474bba591e128d813d684114e4622d5290da8d34dbe8acb8c5ed",
+      "range_unit": "lines",
+      "file_lines": 244,
+      "file_bytes": 14035,
+      "range_extent": 244,
+      "analyzed_ranges": [
+        [
+          1,
+          244
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              244
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 244,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/test_arena_map.py",
+      "blob_sha": "c6dbf6e91cd0bc908838af4d40e3b4c10c9d9bbe",
+      "sha256": "22386027f7f30ebf3f2b8202fc2fd5dde61624344e0932e2c201645525eee4b1",
+      "range_unit": "lines",
+      "file_lines": 72,
+      "file_bytes": 3126,
+      "range_extent": 72,
+      "analyzed_ranges": [
+        [
+          1,
+          72
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              72
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 72,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/test_lab.py",
+      "blob_sha": "2472e0db113d0af3c9574631ac29a36a4ef006cc",
+      "sha256": "b8a1fcc5a2a9bbf5f1b6fe98db347a0b84ecb4ebefc8dbad9a55575e6a5919e9",
+      "range_unit": "lines",
+      "file_lines": 123,
+      "file_bytes": 5831,
+      "range_extent": 123,
+      "analyzed_ranges": [
+        [
+          1,
+          123
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              123
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 123,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/test_run.py",
+      "blob_sha": "c8f6aba54d1cb3f7d74b80270286dc0bcda281e4",
+      "sha256": "c75dd3966da51592d456a1e4dccdee154a8694e4fc22fd015b00d8faa66a95c1",
+      "range_unit": "lines",
+      "file_lines": 103,
+      "file_bytes": 4936,
+      "range_extent": 103,
+      "analyzed_ranges": [
+        [
+          1,
+          103
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              103
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 103,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/test_training_profiles.py",
+      "blob_sha": "7292c137d06bf6b66d52b7f0bf3522fa69b85d1d",
+      "sha256": "44367b1ac4f2cb65a51f1da16efffd2de9d3725949f7c3d96221f12b7059749e",
+      "range_unit": "lines",
+      "file_lines": 135,
+      "file_bytes": 7688,
+      "range_extent": 135,
+      "analyzed_ranges": [
+        [
+          1,
+          135
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              135
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 135,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/test_validate_full_population.py",
+      "blob_sha": "01fc849d0b1f1a0bc6f6c6b2d2ed11fbf67c24b8",
+      "sha256": "9e181f918d316a540ed9b5f7842de39d7274efa820617b1ae5a6183f74322567",
+      "range_unit": "lines",
+      "file_lines": 82,
+      "file_bytes": 4082,
+      "range_extent": 82,
+      "analyzed_ranges": [
+        [
+          1,
+          82
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              82
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 82,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/training_profiles.py",
+      "blob_sha": "6f5e07283fbb52c8e217c9110c441228f5025d45",
+      "sha256": "f6d5a0dab03618b8d243a2b33e05f4ef4dfdcef63e6682205e850fb4bd56d772",
+      "range_unit": "lines",
+      "file_lines": 329,
+      "file_bytes": 18681,
+      "range_extent": 329,
+      "analyzed_ranges": [
+        [
+          1,
+          329
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              329
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 329,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/validate_full_population.py",
+      "blob_sha": "1b42f5090d11d2a9dca43fd9d01cb546f5f6c582",
+      "sha256": "d690a33cea69920555d4185538fb2aef9b5a842988ba21ff0c74560ad58cdb27",
+      "range_unit": "lines",
+      "file_lines": 165,
+      "file_bytes": 9090,
+      "range_extent": 165,
+      "analyzed_ranges": [
+        [
+          1,
+          165
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              165
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 165,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/monster-lab/validate_optional_documents_native.py",
+      "blob_sha": "05050a9e3afe3bee4177cb7f318ea4cf5e3162c4",
+      "sha256": "91949cce2c8e709c92f82e67b42cfd58ac0706de87706bfe53ebdf76de1881a0",
+      "range_unit": "lines",
+      "file_lines": 75,
+      "file_bytes": 5720,
+      "range_extent": 75,
+      "analyzed_ranges": [
+        [
+          1,
+          75
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              75
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 75,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/next-wave-limit-evidence/README.md",
+      "blob_sha": "6ec9fca5fc52f3da259dbd1cc0f9959d94ed6777",
+      "sha256": "0b399607a19d253c43bf7f7b40a97c90c44c3f603eadec4c82afc2c193ddb54b",
+      "range_unit": "lines",
+      "file_lines": 16,
+      "file_bytes": 956,
+      "range_extent": 16,
+      "analyzed_ranges": [
+        [
+          1,
+          16
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              16
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 16,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/next-wave-limit-evidence/main.rs",
+      "blob_sha": "e95572b5d9961999741adedc081ab80fd429a0bb",
+      "sha256": "9b812b6692175e7427e1447df7ee88d3ed71b8f98e26991bdd05c09dcbcaa3ab",
+      "range_unit": "lines",
+      "file_lines": 1062,
+      "file_bytes": 39970,
+      "range_extent": 1062,
+      "analyzed_ranges": [
+        [
+          1,
+          1062
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              1062
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1062,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/official-capture/tibiacom_capture.py",
+      "blob_sha": "b8cdb84656e50d5c79bdf816b09db8abb9a8363a",
+      "sha256": "13ab8828891439b849a480fd1c3b8de84aeffe3686b965879a50cc9c78093801",
+      "range_unit": "lines",
+      "file_lines": 2170,
+      "file_bytes": 116963,
+      "range_extent": 2170,
+      "analyzed_ranges": [
+        [
+          1,
+          2170
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_client_resume",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              2170
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 2170,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -318481,6 +322885,237 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "tools/qualification/login_local/README.md",
+      "blob_sha": "f8a0f213e4a7ce374460bc54dd2065ec3e6df95f",
+      "sha256": "b601befb8391aba7695300e74672282f41a80cc16db869ac1490db15a12bf5e2",
+      "range_unit": "lines",
+      "file_lines": 222,
+      "file_bytes": 16858,
+      "range_extent": 222,
+      "analyzed_ranges": [
+        [
+          1,
+          222
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              222
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 222,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/login_local/compose.lan.yml",
+      "blob_sha": "87c3857fe80e20ff46c57103ac0fdf984bb79746",
+      "sha256": "a4dc4ecd3d088681ab6bf8043c23b5b47d80ad8819c6a2cb0cc909d931c62b20",
+      "range_unit": "lines",
+      "file_lines": 15,
+      "file_bytes": 872,
+      "range_extent": 15,
+      "analyzed_ranges": [
+        [
+          1,
+          15
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              15
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 15,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/login_local/compose.override.yml",
+      "blob_sha": "23fc26323a1c852983e04808d76b71fe12fe3b39",
+      "sha256": "88cd64ecf65d4afdedc1f975bb5a4714fb607dda7fa55b18b32f5d733b24f248",
+      "range_unit": "lines",
+      "file_lines": 74,
+      "file_bytes": 4358,
+      "range_extent": 74,
+      "analyzed_ranges": [
+        [
+          1,
+          74
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              74
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 74,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/login_local/compose.proxy.yml",
+      "blob_sha": "29414c1bcad5fdae8acd28fbbbc17826b05ca662",
+      "sha256": "0bbf1b8251b65dd3ad3ce3939a8778218010d8beefa38fcceadfaeb3dfa827c7",
+      "range_unit": "lines",
+      "file_lines": 10,
+      "file_bytes": 539,
+      "range_extent": 10,
+      "analyzed_ranges": [
+        [
+          1,
+          10
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              10
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 10,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/login_local/nginx.conf",
+      "blob_sha": "d93fc6242a7275818996cb5f963975c2d3054846",
+      "sha256": "a6591e4e93ff31b985f08e07e77c8b6b71e26a7a2332170e329f9eb4788ea382",
+      "range_unit": "lines",
+      "file_lines": 92,
+      "file_bytes": 3461,
+      "range_extent": 92,
+      "analyzed_ranges": [
+        [
+          1,
+          92
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              92
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 92,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/login_local/nginx.lan.conf",
+      "blob_sha": "7c7a6594e96504f8bea7caac51296eecbb7ab87d",
+      "sha256": "c01b1a7e4e8bce611094aa998b3cd6864dbc57b7585fc0d256dcc42d91bc7f4f",
+      "range_unit": "lines",
+      "file_lines": 45,
+      "file_bytes": 1627,
+      "range_extent": 45,
+      "analyzed_ranges": [
+        [
+          1,
+          45
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              45
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 45,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/login_local/run.sh",
+      "blob_sha": "4de77f35cfa2f55dd9475220e9d5b47704a33116",
+      "sha256": "3e5ca3dd84dd29bd913c40e669cf6ef2b8ce7fafcba38d4e3ebcc98a31ba9e65",
+      "range_unit": "lines",
+      "file_lines": 730,
+      "file_bytes": 42975,
+      "range_extent": 730,
+      "analyzed_ranges": [
+        [
+          1,
+          730
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              730
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 730,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "tools/qualification/native_entry_room/run.sh",
       "blob_sha": "d4c7342661afca657bd02850e77204e888ead149",
       "sha256": "3054ce7cd50e6fb4ad224a8e96f45feb5ff52242ff666e2b0fd11d2c59b30aa5",
@@ -318745,6 +323380,72 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "tools/qualification/qready1-s17-main-comparison.md",
+      "blob_sha": "be34dcae18af4ab76338d1ad80c62749f69c52d0",
+      "sha256": "c8304f4818a3b7b37244c29dfa9b487167bd8a3f71cf1f8783fd07de14fc85be",
+      "range_unit": "lines",
+      "file_lines": 30,
+      "file_bytes": 1639,
+      "range_extent": 30,
+      "analyzed_ranges": [
+        [
+          1,
+          30
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              30
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 30,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/qready1b-validation.md",
+      "blob_sha": "79e72818882eca3c7aa6760bc07beecc7c1be2b8",
+      "sha256": "9accf6cb41a9db9fddd746987e1e799cb1dd28d13542dfae9be86e89a72b5ec2",
+      "range_unit": "lines",
+      "file_lines": 113,
+      "file_bytes": 6271,
+      "range_extent": 113,
+      "analyzed_ranges": [
+        [
+          1,
+          113
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              113
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 113,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "tools/qualification/spells/README.md",
       "blob_sha": "431bfff1c77348edcb737be1ea587639cb47a35f",
       "sha256": "7eea3cf7938eccac468c297b04547719389f91f613bc9dc1383be40ae64f4727",
@@ -318972,6 +323673,369 @@
         }
       ],
       "analyzed_lines": 275,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/wp5_s3a/compose.yml",
+      "blob_sha": "9b4f0ac292838e4e4d3ddb5dde63227a50ecae49",
+      "sha256": "688ef0a5fefe657de45f6633640bba499a500b2d9b83fd76074c57fbfef2ba1c",
+      "range_unit": "lines",
+      "file_lines": 87,
+      "file_bytes": 3176,
+      "range_extent": 87,
+      "analyzed_ranges": [
+        [
+          1,
+          87
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              87
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 87,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/wp5_s3a/nginx.conf",
+      "blob_sha": "22b2cda99aff2c76c6b11511b2fd0ba23f59a6a0",
+      "sha256": "7f16f840bc916a6c7ca11c6d7a88ed0484eaed3d5248b22025d29f0d2883148a",
+      "range_unit": "lines",
+      "file_lines": 45,
+      "file_bytes": 1484,
+      "range_extent": 45,
+      "analyzed_ranges": [
+        [
+          1,
+          45
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              45
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 45,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/wp5_s3a/platform-fpm.Dockerfile",
+      "blob_sha": "f395a23bb13683c14bf88c22d34e6bdb00fcbb4c",
+      "sha256": "c82c6ce77688609aa454276124737394923effe989f65112c284756b10e3af5c",
+      "range_unit": "lines",
+      "file_lines": 47,
+      "file_bytes": 1914,
+      "range_extent": 47,
+      "analyzed_ranges": [
+        [
+          1,
+          47
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              47
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 47,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/wp5_s3a/run.sh",
+      "blob_sha": "08d2b7a6a8d7b4286ca54a0769c04541ad227fca",
+      "sha256": "e4fb84c175004eea27c30e969cc93123dbb1344070d4626bc9370e40408bdfd4",
+      "range_unit": "lines",
+      "file_lines": 630,
+      "file_bytes": 39639,
+      "range_extent": 630,
+      "analyzed_ranges": [
+        [
+          1,
+          630
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              630
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 630,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/wp5_s3b/README.md",
+      "blob_sha": "044d347e33e65fd0d3fa62824b71fea7d21e40f2",
+      "sha256": "2723b2bd10b71bc87468d6e1276278dcfd1a50ff256563d0c4629ffb42eff998",
+      "range_unit": "lines",
+      "file_lines": 37,
+      "file_bytes": 2241,
+      "range_extent": 37,
+      "analyzed_ranges": [
+        [
+          1,
+          37
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              37
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 37,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/wp5_s3b/compose.override.yml",
+      "blob_sha": "7269c07144fd0e1a4971e53789ce64fc91672437",
+      "sha256": "c2a2d12ffff863aaee67fc162e403c867691bb7053c1c9684895b22d674ea997",
+      "range_unit": "lines",
+      "file_lines": 12,
+      "file_bytes": 565,
+      "range_extent": 12,
+      "analyzed_ranges": [
+        [
+          1,
+          12
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              12
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 12,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/wp5_s3b/nginx.conf",
+      "blob_sha": "732bcf14214802700b3cd91ae1236438c663a5a4",
+      "sha256": "43f071f9605b31979c4bcc8c11bd1f3ba26b9bcfcfcc5a76a1749d29b9e247ce",
+      "range_unit": "lines",
+      "file_lines": 66,
+      "file_bytes": 2543,
+      "range_extent": 66,
+      "analyzed_ranges": [
+        [
+          1,
+          66
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              66
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 66,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/qualification/wp5_s3b/run.sh",
+      "blob_sha": "1aa00f4e890c385e9d2263a72845be81682204e6",
+      "sha256": "bbdb7688d44bc75cc50a14e431a592e675d72e685b21de84ef2c7aebb3a4bd1a",
+      "range_unit": "lines",
+      "file_lines": 198,
+      "file_bytes": 11544,
+      "range_extent": 198,
+      "analyzed_ranges": [
+        [
+          1,
+          198
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              198
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 198,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/reference-item-resource-profile/item_resource_profile.py",
+      "blob_sha": "ec8420c1fc69178778915ec0131339be3d8c4df1",
+      "sha256": "708080a8b8bffb278a460201666af21ccb30937a7f9da46e14bffa3ca04e0f15",
+      "range_unit": "lines",
+      "file_lines": 2140,
+      "file_bytes": 117295,
+      "range_extent": 2140,
+      "analyzed_ranges": [
+        [
+          1,
+          2140
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              2140
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 2140,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/reference-spatial-resource-profile/spatial_resource_profile.py",
+      "blob_sha": "375845ec9a4281444566f7abce55ccf27a7f1da6",
+      "sha256": "7d6c231cfdf5c4084e71ca949ff2f66b96bf626e27841368651a494684d9306d",
+      "range_unit": "lines",
+      "file_lines": 214,
+      "file_bytes": 10325,
+      "range_extent": 214,
+      "analyzed_ranges": [
+        [
+          1,
+          214
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              214
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 214,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/reference-spatial-resource-profile/spatial_resource_profile_self_test.py",
+      "blob_sha": "76187045bf4a18226341f774a77d4a330a7119cb",
+      "sha256": "937d747ff2d6eb41f0605c2fbd39b04eb879ed8d36aa6252e56821c74e6ed0e4",
+      "range_unit": "lines",
+      "file_lines": 120,
+      "file_bytes": 6188,
+      "range_extent": 120,
+      "analyzed_ranges": [
+        [
+          1,
+          120
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              120
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 120,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -319929,6 +324993,138 @@
         }
       ],
       "analyzed_lines": 806,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/runtime-actor-resource-evidence/README.md",
+      "blob_sha": "1c5388b10ed77bd5cc62686f4e967e3c94732c2b",
+      "sha256": "538b560b1b7f2d2094876972c9876f52b560f768e6326817ce72c692753a42ea",
+      "range_unit": "lines",
+      "file_lines": 65,
+      "file_bytes": 3727,
+      "range_extent": 65,
+      "analyzed_ranges": [
+        [
+          1,
+          65
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              65
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 65,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/runtime-actor-resource-evidence/generate.py",
+      "blob_sha": "530cbb8366fe3b826fc82d23dd935eae70b2b704",
+      "sha256": "f997c2fb43c45b3d75b4d49d002a02acc6cd8aaf51c44414c721fe7ced04647f",
+      "range_unit": "lines",
+      "file_lines": 158,
+      "file_bytes": 7607,
+      "range_extent": 158,
+      "analyzed_ranges": [
+        [
+          1,
+          158
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              158
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 158,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/runtime-actor-resource-evidence/model.py",
+      "blob_sha": "6d9c30783d710953aaf5a321c2cead90a9e2fd86",
+      "sha256": "412983a618296a135eb6c826bdae50d5afb9f1f65f52571406f963d2e135a494",
+      "range_unit": "lines",
+      "file_lines": 426,
+      "file_bytes": 14994,
+      "range_extent": 426,
+      "analyzed_ranges": [
+        [
+          1,
+          426
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              426
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 426,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/runtime-actor-resource-evidence/self_test.py",
+      "blob_sha": "5a909cdffc85d4eab815d0330548f952210fd409",
+      "sha256": "bc324ccc21506dd5406551cd9f0585cb4ce29368c047961ef94b70637e51737f",
+      "range_unit": "lines",
+      "file_lines": 209,
+      "file_bytes": 7133,
+      "range_extent": 209,
+      "analyzed_ranges": [
+        [
+          1,
+          209
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              209
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 209,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },
@@ -321345,6 +326541,204 @@
       "scope": "FULL_FILE"
     },
     {
+      "path": "tools/tibia-worldmap-reconstruction/README.md",
+      "blob_sha": "76b7beb1f575138b1aee82b0d487faf75048d1b9",
+      "sha256": "5349de0654d2680cc44157159637e475e2d9dce21a9ce502f88adc139c58f8de",
+      "range_unit": "lines",
+      "file_lines": 72,
+      "file_bytes": 3624,
+      "range_extent": 72,
+      "analyzed_ranges": [
+        [
+          1,
+          72
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              72
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 72,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/tibia-worldmap-reconstruction/examples/synthetic-capture.json",
+      "blob_sha": "80729b13db50ca6155c709873e93b8ccb84ede68",
+      "sha256": "523e1b982cff2dcbdb5463449ff88b7c9ff8a505f6901d0aed70a02d10f8ef43",
+      "range_unit": "lines",
+      "file_lines": 37,
+      "file_bytes": 829,
+      "range_extent": 37,
+      "analyzed_ranges": [
+        [
+          1,
+          37
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              37
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 37,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/tibia-worldmap-reconstruction/run.py",
+      "blob_sha": "63d55b5af5049e2a67d569e648b87cbd7fed3cf4",
+      "sha256": "770578e126573671e05d5dc87fd019d39f11031817d597eac2f63d2d6f416858",
+      "range_unit": "lines",
+      "file_lines": 74,
+      "file_bytes": 2473,
+      "range_extent": 74,
+      "analyzed_ranges": [
+        [
+          1,
+          74
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              74
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 74,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/tibia-worldmap-reconstruction/tests/test_core.py",
+      "blob_sha": "1e9eed9b2bd7da79bc9fed30d3c723eef9603b29",
+      "sha256": "34e763b5598b80fece8fa8a46903d9f2f17b3287989cb46a2fb782e88f899caa",
+      "range_unit": "lines",
+      "file_lines": 180,
+      "file_bytes": 7757,
+      "range_extent": 180,
+      "analyzed_ranges": [
+        [
+          1,
+          180
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              180
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 180,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/tibia-worldmap-reconstruction/tibia_worldmap_reconstruction/__init__.py",
+      "blob_sha": "396b868a89a0cd44619b0b85ed444e50a8e2fe06",
+      "sha256": "82205db2ee3d1c998120754059f17b870fa4b28c2947772f877bde51e381e9f5",
+      "range_unit": "lines",
+      "file_lines": 1,
+      "file_bytes": 82,
+      "range_extent": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 1,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/tibia-worldmap-reconstruction/tibia_worldmap_reconstruction/core.py",
+      "blob_sha": "c3ca820bf434795bd11436ee52fe6dc7b2d38142",
+      "sha256": "3f9f7c4b99e5a38dde385410f5d805d586111b73e634de15d9dc7ddb9cd8dd1f",
+      "range_unit": "lines",
+      "file_lines": 212,
+      "file_bytes": 8897,
+      "range_extent": 212,
+      "analyzed_ranges": [
+        [
+          1,
+          212
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              212
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 212,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
       "path": "tools/world-bundle-compiler/Cargo.toml",
       "blob_sha": "39b412541ade463680f6418f91602fc88320bc70",
       "sha256": "9cc89cb3e5292d6722d1e1471881134f95645249749639161e4f649d07131436",
@@ -322364,6 +327758,72 @@
         }
       ],
       "analyzed_lines": 102,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/world-project-v2-scale-measurement/Cargo.toml",
+      "blob_sha": "c07bd80c3bb0a7e15cd9e35d5070645e78f89ec0",
+      "sha256": "8d63ab5652779f67605dc133945638b5fd09ac928e1de4855d46028d0d9c92cf",
+      "range_unit": "lines",
+      "file_lines": 22,
+      "file_bytes": 879,
+      "range_extent": 22,
+      "analyzed_ranges": [
+        [
+          1,
+          22
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              22
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 22,
+      "analyzed_bytes": 0,
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "tools/world-project-v2-scale-measurement/src/main.rs",
+      "blob_sha": "c463e641c027cf1c5741d3778d765967b45ed30d",
+      "sha256": "9789cb4fd8690b96a6cd5e361f633506ce3d44bfafaff70e46428c0d2b564b6f",
+      "range_unit": "lines",
+      "file_lines": 624,
+      "file_bytes": 23445,
+      "range_extent": 624,
+      "analyzed_ranges": [
+        [
+          1,
+          624
+        ]
+      ],
+      "reviews": [
+        {
+          "auditor": "protocol-session",
+          "original_reviewer": "/root/r2_dispatch_items_resume2",
+          "review_method": "manual-semantic-full",
+          "ranges": [
+            [
+              1,
+              624
+            ]
+          ],
+          "range_unit": "lines",
+          "analysis_record": "Retained substantive lane ledger; module report below. Sensitive evidence is withheld from public records."
+        }
+      ],
+      "analyzed_lines": 624,
       "analyzed_bytes": 0,
       "scope": "FULL_FILE"
     },

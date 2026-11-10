@@ -1,0 +1,338 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T22:03:11.292433+00:00",
+  "captures": {
+    "durability": {
+      "path": "protocol-session/durability/captures/checkpoint-50-ledger.json",
+      "sha256": "4fdb43477aefdac4adbc679b8c1f91406769ead34deba052f7eb5f6f8599ddc4",
+      "full_files": 721,
+      "full_file_physical_lines": 216548,
+      "all_scope_text_lines_union": 216548,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "server": {
+      "path": "protocol-session/game-server-worker-captures/checkpoint-873-ledger.json",
+      "sha256": "0272f69956687e04b05e6a6461fa4dc5e8e3e40217335596abde763ea68e4e7b",
+      "full_files": 873,
+      "full_file_physical_lines": 489700,
+      "all_scope_text_lines_union": 489700,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 2703,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_client": {
+      "path": "client-support/dispatch-checkpoint79-ledger.json",
+      "sha256": "0a65152ddb0b67a9a1bb3cd4d9ca78c45622b426ce389ad324fab0e43979437c",
+      "full_files": 871,
+      "full_file_physical_lines": 255332,
+      "all_scope_text_lines_union": 258825,
+      "partial_reviewed_lines": 3493,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_social_world": {
+      "path": "protocol-session/dispatch-social-world/captures/checkpoint-26-ledger.json",
+      "sha256": "0fd3f2f9679cb7e58f83252b4009f6c3b5f74c93bf02ad296897775bbd019ffa",
+      "full_files": 226,
+      "full_file_physical_lines": 67091,
+      "all_scope_text_lines_union": 67091,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_items_economy": {
+      "path": "protocol-session/game-server-worker/dispatch-items-economy/captures/checkpoint-21-ledger.json",
+      "sha256": "2ef1eb9dc1c9cc36238592b5a0f528c4ef116a17b91126493d394c2d82007aaf",
+      "full_files": 207,
+      "full_file_physical_lines": 73025,
+      "all_scope_text_lines_union": 73025,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_root": {
+      "path": "lead/dispatch-quests-npc-encounters/checkpoint-158-ledger.json",
+      "sha256": "fd11085a9d81cb53d3834e02ce8a67a668619c419ad56cecea611786a02b4128",
+      "full_files": 158,
+      "full_file_physical_lines": 43986,
+      "all_scope_text_lines_union": 44058,
+      "partial_reviewed_lines": 72,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_quest_social": {
+      "path": "control/checkpoint26-inputs/quest-social-ledger.json",
+      "sha256": "1fe768d8fce3b16d381d0598ced329838901bfe2b2a67bc7e4f98cf80859d918",
+      "full_files": 99,
+      "full_file_physical_lines": 34122,
+      "all_scope_text_lines_union": 34122,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_quest_items": {
+      "path": "control/checkpoint26-inputs/quest-items-ledger.json",
+      "sha256": "d4913ca6f2ba35187b1c044805d7ca83e65d5defd7b32bdbb3e39984ddaa574f",
+      "full_files": 99,
+      "full_file_physical_lines": 41793,
+      "all_scope_text_lines_union": 41793,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "supplementary_core": {
+      "path": "control/checkpoint26-inputs/supplementary-core-ledger.json",
+      "sha256": "52581faf0b04ba52768d2563a9c90d61a64e05ea80cf952e6bb1fb8959d399a3",
+      "full_files": 44,
+      "full_file_physical_lines": 9938,
+      "all_scope_text_lines_union": 9938,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "supplementary_tools": {
+      "path": "control/checkpoint30-inputs/supplementary-tools-ledger.json",
+      "sha256": "d2b68b02d37189dda0ea5f9c0eca2af422914c0bfa778b774619f4ac65b675c6",
+      "full_files": 302,
+      "full_file_physical_lines": 72859,
+      "all_scope_text_lines_union": 72859,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "review_methods": {
+        "manual-semantic-full": 301,
+        "whole-corpus-semantic": 1
+      },
+      "attributed_manual_full_files": 24,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "supplementary_rulesets": {
+      "path": "control/checkpoint28-inputs/supplementary-rulesets-ledger.json",
+      "sha256": "bf3640cf14c547334e4296366c4e725268623e5e450d58a6ea378dc7ae2d1d46",
+      "full_files": 77,
+      "full_file_physical_lines": 124738,
+      "all_scope_text_lines_union": 124738,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "review_methods": {
+        "manual_full_semantic": 67,
+        "mixed_full_semantic": 10
+      },
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "supplementary_imports": {
+      "path": "control/checkpoint29-inputs/supplementary-imports-ledger.json",
+      "sha256": "98878915e880f22123658af7e7351c9b1c4571f01921a4ac0e17b20a59f08858",
+      "full_files": 163,
+      "full_file_physical_lines": 292492,
+      "all_scope_text_lines_union": 292492,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "review_methods": {
+        "manual-full": 26,
+        "whole-corpus-semantic": 115,
+        "mixed-full": 22
+      },
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    }
+  },
+  "server_method_maps": {
+    "game-server-appearance-capture-method-map.md": "90fb804da69c6658b0276f7c488d6862b2d09d3dc371795f3f51dbda51308aa8",
+    "game-server-spawn-fixture-method-map.md": "2219981460bf6bd58cf0e9ddf7306a90584b0bb9fe239b1ae4cdf8b087be9df3",
+    "game-server-seven-fixture-method-map.md": "348390d50ea1da0dd25ae206bd8c550cc9120851d94c0d0067e267359311480b",
+    "game-server-auto-attack-fixture-method-map.md": "d7593104034863d3328a3bef6c649fbcd83965e39db31e895e639f3cdb126ba5",
+    "game-server-callback-cast-fixture-method-map.md": "3fbba196681354508896b1f61c4cb865a8ec62b53118d75943b982b32e9c3538",
+    "game-server-tls-fixture-method-map.md": "51e1efbd633d88829848ddd3653328cbc985da328a24383dc47d1f9187d92836",
+    "game-server-transport-tls-method-map.md": "429224a77cf514e99c1b92d4872b99d6b9a5f52529c2bf3a7edf2f8a0cf9366f"
+  },
+  "dispatch_aggregate": {
+    "full_files": 1668,
+    "text_lines": 517542,
+    "remaining_files": 0,
+    "status": "REVIEWED"
+  },
+  "prior_qualification": "capture-validation-29.json retains all67 Cargo reviews, five completed supplementary domains and qualified import capture09 with explicit wording amendments.",
+  "supplementary_tools": {
+    "checkpoint": 16,
+    "full_files": 302,
+    "text_lines": 72859,
+    "remaining_files": 2492,
+    "new_full_files": 172,
+    "new_full_physical_lines": 47529,
+    "domains": {
+      "tools": 268,
+      "agent-configuration-and-retained-evidence": 34
+    },
+    "review_methods": {
+      "manual-semantic-full": 301,
+      "whole-corpus-semantic": 1
+    },
+    "manual_original_auditor": 277,
+    "manual_attributed_client": 24,
+    "assignment_sha256": "b025e7e216eddb2bf57dc6050bbbf3d66a1290dd676ea5b208d7fa4374dc6e60",
+    "ledger_sha256": "d2b68b02d37189dda0ea5f9c0eca2af422914c0bfa778b774619f4ac65b675c6",
+    "validation_sha256": "739d864ea84b4505384a3528ac2aa701b513137717396f3f837b2d90044be79d",
+    "report_sha256": "3e6d06de8afb2f72b967a70605c646cdb3704cbe3b42040bac1afb4a61f87819",
+    "primary_semantic_notes_read_by_root": 302,
+    "new_original_notes_read": 148,
+    "qualified_transfer_notes": 24,
+    "supporting_notes_read_by_root": 26,
+    "new_supporting_notes": 11,
+    "supporting_new_primary_credit": 0,
+    "reports_read_by_root": "Prior sections01–06 retained; all new sections07–16 read, with exact cumulative prior-report prefix verified.",
+    "whole_corpus_method": "Unchanged fully qualified PG estimate method; all423records and actual producer/two consumer relationships retained from checkpoint27.",
+    "method_provenance_sidecar_sha256": "fe4da2b9665c6d65c45d0fa29d9d9bec320e305279d71097988b173809399ec7",
+    "provenance_records_checked": 302,
+    "transfer_qualification_sha256": {
+      "client-support-tool-transfer-qualified.json": "456f1502bbb9e978ba9b32c0f6322c29812588cf4511df5d7cee08cb52c31a91",
+      "client-support-tool-transfer-through-checkpoint09-qualified.json": "db0e487777729903dd0046eebc4074e4b60bc12688b4203976f8f98a088ac344"
+    },
+    "historical_manifests": {
+      "checkpoint-01-manifest.json": {
+        "sha256": "837ede4dd7105f9340151500914e6b191bb5182a01598600170ddab3e2a2fb15",
+        "artifact_pins": 8,
+        "primary_files": 8
+      },
+      "checkpoint-02-manifest.json": {
+        "sha256": "9f0acb11e97f6f0e224ced4dff89879a7ae48c2bc85ecafc805a76218eaeb12d",
+        "artifact_pins": 8,
+        "primary_files": 22
+      },
+      "checkpoint-02-probe-manifest.json": {
+        "sha256": "bdff06aad6ffae478d9a6525ef5cce7255b9b451a498607554e96492013bc72f",
+        "artifact_pins": 2
+      },
+      "checkpoint-02-supplement-manifest.json": {
+        "sha256": "433271d90c5cc003d69a19f47aa4ba76c25f4215168bea7a01905b2c45f1ebf3",
+        "artifact_pins": 2
+      },
+      "checkpoint-03-manifest.json": {
+        "sha256": "f829b3312682a5351221e89afa36580acee801d1587bd1363de59ea84fc32578",
+        "artifact_pins": 8,
+        "primary_files": 47
+      },
+      "checkpoint-03-supplement-manifest.json": {
+        "sha256": "3b618363a3ad2fd3b4a35a48592c9c25f20f995cdeba7c49fa2ea9f7efbe9756",
+        "artifact_pins": 1
+      },
+      "checkpoint-04-corpus-manifest.json": {
+        "sha256": "a655f918214c253330f777873786a93b6b7ecc60262187b4c3c822d0cc18f47d",
+        "artifact_pins": 2
+      },
+      "checkpoint-04-manifest.json": {
+        "sha256": "3649cb5db1cb1585c1a29c98b777424ff714cb7c50f34f474cb292385232531c",
+        "artifact_pins": 8,
+        "primary_files": 67
+      },
+      "checkpoint-05-manifest.json": {
+        "sha256": "164dd874b09a2d1d0d54fc90e848f5da203053a4b2defc653d99597ae6193cbc",
+        "artifact_pins": 8,
+        "primary_files": 103
+      },
+      "checkpoint-06-manifest.json": {
+        "sha256": "dad5e7a3eb4453c4dda46b8d6d42d0aec5a7db83e46375083aaf472b088434c3",
+        "artifact_pins": 8,
+        "primary_files": 130
+      },
+      "checkpoint-07-manifest.json": {
+        "sha256": "54b70e006fe413634fda2f80b71f5e27bbcfb61daf99df401a25e11a83e45aa2",
+        "artifact_pins": 8,
+        "primary_files": 147
+      },
+      "checkpoint-07-probe-manifest.json": {
+        "sha256": "e591bb5a2aff194963f27699ba019718a894710f62b7b8aac8991e185a96f5d5",
+        "artifact_pins": 2
+      },
+      "checkpoint-08-manifest.json": {
+        "sha256": "f8880bd80e0b7774eaa24fd6c9742d9e54dc97c3b8d16a5d4c6b1e46afe4579a",
+        "artifact_pins": 8,
+        "primary_files": 173
+      },
+      "checkpoint-09-manifest.json": {
+        "sha256": "e215382df87038e866df13ffc693db8efbff86931fd238581096039fdade2eb9",
+        "artifact_pins": 8,
+        "primary_files": 197
+      },
+      "checkpoint-10-manifest.json": {
+        "sha256": "aaa399988b57adde6498bf66daacbc29e6a698bc4da72524895fec7ec83c2135",
+        "artifact_pins": 8,
+        "primary_files": 215
+      },
+      "checkpoint-11-manifest.json": {
+        "sha256": "24519334d0ce36b05b5c75318cf00d93fc91c6053dab7e212d8365da4bcd0452",
+        "artifact_pins": 8,
+        "primary_files": 234
+      },
+      "checkpoint-12-manifest.json": {
+        "sha256": "97bba7cb080a0d239bec290bd5fb32b01910cf6c2a9c22a86c602d5117ec97ca",
+        "artifact_pins": 8,
+        "primary_files": 244
+      },
+      "checkpoint-13-manifest.json": {
+        "sha256": "dc0e813a63d63ec2ede0663d047c246c7f32d9ee3f571813efe2c952015e0a63",
+        "artifact_pins": 9,
+        "primary_files": 257
+      },
+      "checkpoint-14-manifest.json": {
+        "sha256": "69b1f75769d7d12d4ee5c5824a3ac5d3e25524ac51b47e31c65f65a6ee4f0e6d",
+        "artifact_pins": 9,
+        "primary_files": 271
+      },
+      "checkpoint-15-manifest.json": {
+        "sha256": "6032d5ddee1bff5d908db8add004f952c42cd303a1c51d574450338bf7c3cec0",
+        "artifact_pins": 9,
+        "primary_files": 279
+      },
+      "checkpoint-16-manifest.json": {
+        "sha256": "097bdeb8054c797ea47170099a4f50a1584f0a86cf49c2cdf9110a311dd44a8e",
+        "artifact_pins": 11,
+        "primary_files": 302
+      }
+    },
+    "historical_artifact_pin_checks": 143
+  },
+  "independent_new_findings": [
+    {
+      "id": "R2-SUP-TOOLS-002",
+      "severity": "P2",
+      "status": "CONFIRMED conditional local qualification routing",
+      "witness_sha256": "86d9f46b4ff6b993b03f7b45862007e39d1a28a0af998b9ec3c728e2dcb6034b",
+      "actual_runtime_executed": false
+    },
+    {
+      "id": "R2-SUP-TOOLS-003",
+      "severity": "P2",
+      "status": "CONFIRMED conditional manual capture failure",
+      "witness_sha256": "5c2ac7f25fb2abe5952fea5af19ba64f11b2b9f6c1d3980e5ab15265969048cb",
+      "cases": 6,
+      "current_real_source_incidence": "UNKNOWN"
+    },
+    {
+      "id": "R2-SUP-TOOLS-004",
+      "severity": "P2",
+      "status": "CONFIRMED conditional donor capture failure",
+      "witness_sha256": "5c2ac7f25fb2abe5952fea5af19ba64f11b2b9f6c1d3980e5ab15265969048cb",
+      "cases": 6,
+      "current_real_source_incidence": "UNKNOWN"
+    }
+  ],
+  "new_source_identity_checks": 328,
+  "root_qualification_sha256": "ce36482fcc1bde0453f4399a56ff745ca937b466256a01d5989567a17e7b8ae6",
+  "scope": "Root qualifies attributed complete source review notes, concrete methods, immutable provenance and source identities; it is not a second complete reread of every delegated file. Root independently reread the complete1379-line capture owner and relevant route/guard sources for the new findings.",
+  "unresolved": "Real current external source incidence and complete local topology execution remain unknown. Later tools/content/import cuts and craft questions remain outside this capture.",
+  "runtime_limitations": "No game runtime, Nginx, Docker, Cargo, SQL, live API, deployment or source edits. Only a bounded static route interpretation and isolated actual-main Python fixtures were executed for the new findings."
+}
