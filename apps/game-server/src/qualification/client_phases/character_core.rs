@@ -57,10 +57,7 @@ async fn character_core(
         if outcome.status != CommandStatus::Accepted || outcome.disposition != ChatDisposition::Ok {
             return Err(format!("core speech {mode:?}: {outcome:?}").into());
         }
-        // The echo is published by the server's periodic chat refresh, not by the command
-        // result. Leave the same load-bearing observation window as the neighbouring combat
-        // journey while continuing to require the exact echo below.
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
         loop {
             if client.chat_log().is_some_and(|log| {
                 log.lines().any(|line| {
