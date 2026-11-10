@@ -9,6 +9,7 @@ use crate::gameplay_transport::capabilities::{
 };
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+#[path = "srx3_megalomania_callbacks/splinter.rs"]
 mod splinter;
 
 #[test]

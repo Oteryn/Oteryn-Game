@@ -213,8 +213,8 @@ async fn source_pair_refusals(h: &Harness) -> TestResult {
         "SELECT attname::text FROM pg_attribute WHERE attrelid='game_soul_war_source_use_proofs'::regclass \
          AND attnum>0 AND NOT attisdropped AND attgenerated='' ORDER BY attnum",
     ).fetch_all(&h.pool).await?;
-    let insert = format!(
-        "INSERT INTO game_soul_war_source_use_proofs ({}) SELECT {} FROM jsonb_populate_record(NULL::game_soul_war_source_use_proofs,$1::jsonb) p",
+    let insert_prefix = format!(
+        "INSERT INTO game_soul_war_source_use_proofs ({}) SELECT {} FROM jsonb_populate_record(NULL::game_soul_war_source_use_proofs,",
         columns.join(","),
         columns
             .iter()
@@ -265,8 +265,11 @@ async fn source_pair_refusals(h: &Harness) -> TestResult {
             proof[mutation] = different;
         }
         let mut tx = h.pool.begin().await?;
-        sqlx::query(&insert)
-            .bind(sqlx::types::Json(proof))
+        let mut insert = sqlx::QueryBuilder::<sqlx::Postgres>::new(insert_prefix.as_str());
+        insert
+            .push_bind(sqlx::types::Json(proof))
+            .push("::jsonb) p")
+            .build()
             .execute(&mut *tx)
             .await?;
         if mutation == "false-with-burn" {
