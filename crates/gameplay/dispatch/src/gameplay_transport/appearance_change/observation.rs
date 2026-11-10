@@ -1,5 +1,6 @@
 //! Current owner observations. Visibility supplies the exact player identities to read.
 use super::*;
+use crate::durability::DurabilityError;
 use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance;
 #[path = "observation/house.rs"]
 mod house;
@@ -10,51 +11,12 @@ pub struct Observation {
     pub bindings: Vec<wire::Binding>,
 }
 
-// [DBG-NODEBOOT]: closed labels only; never retain a storage error or its payload.
-struct ReadFailure {
-    class: &'static str,
-    subclass: &'static str,
-}
-
 pub(in crate::gameplay_transport) async fn observe(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     observer: ExactActorRef,
     session: GameSessionId,
     empty_outfit: bool,
-    entities: Vec<wire::EntityRef>,
-) -> Option<Observation> {
-    let mut stage = "inputs";
-    let mut read_failure = None;
-    let result = observe_at_stage(
-        admission,
-        observer,
-        session,
-        empty_outfit,
-        entities,
-        &mut stage,
-        &mut read_failure,
-    )
-    .await;
-    if result.is_none() {
-        let ReadFailure { class, subclass } = read_failure.unwrap_or(ReadFailure {
-            class: "none",
-            subclass: "none",
-        });
-        super::super::operator_event(&format!(
-            "[DBG-NODEBOOT] event=appearance_prepare_failed component=observation stage={stage} class={class} subclass={subclass}"
-        ));
-    }
-    result
-}
-
-async fn observe_at_stage(
-    admission: &ComposedFreshAdmission<'_, '_, '_>,
-    observer: ExactActorRef,
-    session: GameSessionId,
-    empty_outfit: bool,
     mut entities: Vec<wire::EntityRef>,
-    stage: &mut &'static str,
-    read_failure: &mut Option<ReadFailure>,
 ) -> Option<Observation> {
     if entities.len() > 256 {
         return None;
@@ -63,38 +25,67 @@ async fn observe_at_stage(
     if entities.windows(2).any(|p| p[0] == p[1]) {
         return None;
     }
-    *stage = "context";
+    // One existing holder retry window covers every read and target. A failed
+    // observation drops its runtime/spell guards before waiting and starts again
+    // with current fences; other refusals remain terminal.
+    let budget = super::super::AdmissionRetryBudget::for_command(&admission.root);
+    loop {
+        let mut unavailable = None;
+        let observation = observe_current(
+            admission,
+            observer,
+            session,
+            empty_outfit,
+            &entities,
+            &mut unavailable,
+        )
+        .await;
+        if !matches!(unavailable, Some(DurabilityError::RootUnavailable))
+            || !budget
+                .retries_unavailable(super::super::AdmissionRefusal::Unavailable)
+                .await
+        {
+            return observation;
+        }
+    }
+}
+
+async fn observe_current(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    observer: ExactActorRef,
+    session: GameSessionId,
+    empty_outfit: bool,
+    entities: &[wire::EntityRef],
+    unavailable: &mut Option<DurabilityError>,
+) -> Option<Observation> {
     let (context, content) = admission.appearance_context()?;
-    *stage = "own_fence";
     let own_fence =
-        super::super::character_gameplay_fence::current(admission, session, false).await?;
-    *stage = "own_read";
+        super::super::character_gameplay_fence::current_read(admission, session, false)
+            .await
+            .map_err(|error| *unavailable = Some(error))
+            .ok()??;
     let own = house::read_state(
         admission,
         own_fence,
         content.earned_grant_keys(),
-        read_failure,
+        unavailable,
     )
     .await?;
-    *stage = "catalogue";
     let catalogue = super::catalogue::catalogue(
         &content,
         &own,
         own_fence.expected_character_revision.get(),
         context,
     )?;
-    *stage = "current_runtime";
     let runtime = admission.runtime.lock().await;
     if !house::current_runtime_for_read(&runtime, observer, session, &own_fence, &content) {
         return None;
     }
     let states = admission.states.spell_states.lock().await;
-    *stage = "census";
     let (census, hirelings) = house::census(&runtime, observer, session)?;
     let mut bindings = Vec::new();
     let now = admission.owner_now().get();
-    for entity in entities {
-        *stage = "target_lookup";
+    for &entity in entities {
         if let Some(entry) = hirelings.iter().find(|entry| {
             entry.actor.placement_identity() == entity.identity
                 && entry.actor.actor_local_generation() == entity.generation
@@ -129,9 +120,7 @@ async fn observe_at_stage(
             continue;
         }
         let Some(target_session) = *target_session else {
-            *stage = "creature_state";
             let creature = runtime.companion_snapshot(*actor).ok()?;
-            *stage = "creature_appearance";
             let look = if let Some(look_type) = creature.state.policy.outfit_appearance() {
                 wire::Look::Outfit {
                     look_type,
@@ -164,24 +153,21 @@ async fn observe_at_stage(
             });
             continue;
         };
-        *stage = "target_fence";
         let fence =
-            super::super::character_gameplay_fence::current(admission, target_session, true)
-                .await?;
-        *stage = "own_fence_changed";
+            super::super::character_gameplay_fence::current_read(admission, target_session, true)
+                .await
+                .map_err(|error| *unavailable = Some(error))
+                .ok()??;
         if target_session == session && fence != own_fence {
             return None;
         }
-        *stage = "target_scope";
         if fence.runtime_scope != own_fence.runtime_scope
             || fence.scope_ownership_generation != own_fence.scope_ownership_generation
         {
             return None;
         }
-        *stage = "target_read";
         let current =
-            house::read_state(admission, fence, content.earned_grant_keys(), read_failure).await?;
-        *stage = "player_state";
+            house::read_state(admission, fence, content.earned_grant_keys(), unavailable).await?;
         let in_house = runtime.house_actor_state(*actor, target_session).is_ok();
         let player = if in_house {
             states
@@ -192,14 +178,12 @@ async fn observe_at_stage(
         } else {
             states.get(&runtime, *actor, target_session)?
         };
-        *stage = "base_appearance";
         let (base, selection_revision) = super::catalogue::base(&content, &current);
         let mut look = wire::Look::Outfit {
             look_type: content.look_type(&base.outfit_key, current.sex)?,
             colours: base.colours,
             addons: base.addons,
         };
-        *stage = "conditions";
         let owned = if in_house {
             runtime
                 .house_actor_conditions_at(*actor, target_session, now)
@@ -210,13 +194,11 @@ async fn observe_at_stage(
                 .ok()?
         };
         let spell = player.owned_conditions();
-        *stage = "owner_time";
         if !spell.accepts_time(now) || !owned.accepts_time(now) {
             return None;
         }
         let spell_value = spell.displayed_temporary_appearance_at(now);
         let owned_value = owned.displayed_temporary_appearance_at(now);
-        *stage = "temporary_condition";
         if (spell
             .active_at(crate::domain::condition::ConflictKey::Outfit, now)
             .is_some()
@@ -228,7 +210,6 @@ async fn observe_at_stage(
         {
             return None;
         }
-        *stage = "temporary_appearance";
         let spell_look = temporary(
             spell_value,
             spell.outfit_at(now),
@@ -241,7 +222,6 @@ async fn observe_at_stage(
             &content,
             admission.active_generation?,
         )?;
-        *stage = "temporary_conflict";
         if let (Some(a), Some(b)) = (&spell_look, &owned_look)
             && a != b
         {
@@ -263,13 +243,11 @@ async fn observe_at_stage(
         }
         // The selection and root are re-read after observer preparation. Runtime pin,
         // incarnation and condition state stay locked through this bounded DB read.
-        *stage = "selection_recheck";
-        if house::read_state(admission, fence, content.earned_grant_keys(), read_failure).await?
+        if house::read_state(admission, fence, content.earned_grant_keys(), unavailable).await?
             != current
         {
             return None;
         }
-        *stage = "final_binding";
         bindings.push(wire::Binding {
             context,
             appearance_ref: 1,

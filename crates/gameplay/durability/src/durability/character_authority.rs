@@ -31,51 +31,6 @@ const ACCOUNT_SECURITY_SCOPE: &str = "fresh_admission";
 /// declared clock uncertainty); see `fnd04_verifier::fresh_source_deadline`.
 const ACCOUNT_SECURITY_FRESH_SECONDS: i64 = 5;
 const MAX_AUDIT_BATCH: u16 = 64;
-// DBG-NODEBOOT: temporary stage-only diagnostics; remove after the retained-state cause is proven.
-#[derive(Clone, Copy)]
-enum AuthorityGate {
-    RecoveryFence,
-    OfflineTraining,
-    NpcPurchase,
-    Creation,
-    Bazaar,
-    RevisionChain,
-    Appearance,
-    BuildChain,
-    ProficiencyHistory,
-    FamiliarChain,
-    FamiliarGroup,
-    SpellItemChain,
-    BootstrapPayload,
-}
-
-fn authority_gate_failed(gate: AuthorityGate) {
-    let gate = match gate {
-        AuthorityGate::RecoveryFence => "recovery_fence",
-        AuthorityGate::OfflineTraining => "offline_training",
-        AuthorityGate::NpcPurchase => "npc_purchase",
-        AuthorityGate::Creation => "creation",
-        AuthorityGate::Bazaar => "bazaar",
-        AuthorityGate::RevisionChain => "revision_chain",
-        AuthorityGate::Appearance => "appearance",
-        AuthorityGate::BuildChain => "build_chain",
-        AuthorityGate::ProficiencyHistory => "proficiency_history",
-        AuthorityGate::FamiliarChain => "familiar_chain",
-        AuthorityGate::FamiliarGroup => "familiar_group",
-        AuthorityGate::SpellItemChain => "spell_item_chain",
-        AuthorityGate::BootstrapPayload => "bootstrap_payload",
-    };
-    oteryn_error_codes::emit(
-        "oteryn-game-server",
-        &oteryn_error_codes::Line::new(
-            oteryn_error_codes::Level::Warn,
-            "durability",
-            "character_authority_gate_failed",
-        )
-        .field("gate", oteryn_error_codes::FieldValue::Token(gate)),
-    );
-}
-
 /// Bounded identity of this server build, recorded with every audit event so a
 /// redelivery after an upgrade keeps the originating EventEnvelope value.
 pub const SERVER_BUILD_ID: &str = match option_env!("OTERYN_SERVER_BUILD_ID") {
@@ -321,9 +276,7 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &checked)
-                        .await
-                        .inspect_err(|_| authority_gate_failed(AuthorityGate::RecoveryFence))?;
+                    assert_recovery_fence(&mut tx, &checked).await?;
                     verify_character_integrity(&mut tx, definitions.as_deref()).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok::<(), CharacterAuthorityError>(()))
@@ -839,6 +792,13 @@ const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_character_xp_receipts",
 ];
 
+// Migration 0539 corrects declaration metadata without rewriting immutable receipts.
+// Accept only its exact historical-to-current pair; live writers still require equality.
+const DECLARATION_REVISION_MATCH_SQL: &str =
+    "(x.declaration_revision = s.declaration_revision \
+      OR (x.declaration_revision = 'character-progression-differences-v1-c6d0829911772c01b4a229a5bb0aa8f9' \
+          AND s.declaration_revision = 'character-progression-differences-v1-aa9d260834741d235ba9bd77e14888bf'))";
+
 static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
     let chain = RECEIPT_CHAIN_TABLES
         .iter()
@@ -891,7 +851,7 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
              OR x.content_revision <> s.content_revision \
              OR x.simulation_revision <> s.simulation_revision \
              OR x.evidence_revision <> s.evidence_revision \
-             OR x.declaration_revision <> s.declaration_revision \
+             OR NOT {DECLARATION_REVISION_MATCH_SQL} \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision) \
          UNION ALL \
@@ -904,7 +864,7 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
              OR x.content_revision <> s.content_revision \
              OR x.simulation_revision <> s.simulation_revision \
              OR x.evidence_revision <> s.evidence_revision \
-             OR x.declaration_revision <> s.declaration_revision \
+             OR NOT {DECLARATION_REVISION_MATCH_SQL} \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision \
          LIMIT 1"
@@ -922,18 +882,10 @@ async fn verify_character_integrity(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
 ) -> std::result::Result<(), DurabilityError> {
-    super::offline_training_state::verify(tx)
-        .await
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::OfflineTraining))?;
-    super::npc_purchase::verify_purchase_integrity(tx)
-        .await
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::NpcPurchase))?;
-    creation_integrity::verify(tx)
-        .await
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::Creation))?;
-    super::bazaar::recovery::verify(tx)
-        .await
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::Bazaar))?;
+    super::offline_training_state::verify(tx).await?;
+    super::npc_purchase::verify_purchase_integrity(tx).await?;
+    creation_integrity::verify(tx).await?;
+    super::bazaar::recovery::verify(tx).await?;
     // P03 progression is optional at revision one because initialization is a
     // separate owner.  Once a Character advances, typed state and a complete,
     // gap-free immutable receipt chain must explain the global revision and the
@@ -945,10 +897,8 @@ async fn verify_character_integrity(
     // receipt remains bound to initial revision 1.
     sqlx::query(CHARACTER_INTEGRITY_SQL.as_str())
         .fetch_optional(&mut **tx)
-        .await
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::RevisionChain))?
-        .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::RevisionChain))?;
+        .await?
+        .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
     super::character_appearance::verify_character_appearance_integrity(tx)
         .await
         .map_err(|error| match error {
@@ -956,34 +906,14 @@ async fn verify_character_integrity(
                 DurabilityError::InvalidStoredState
             }
             super::character_appearance::AppearanceReadError::Storage(error) => error.into(),
-        })
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::Appearance))?;
-    verify_character_build_chain(tx)
-        .await
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::BuildChain))?;
-    verify_all_character_proficiency_histories(tx, definitions)
-        .await
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::ProficiencyHistory))?;
-    super::character_familiar::verify_familiar_chain(tx)
-        .await
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::FamiliarChain))?;
-    super::spell_familiar_group::verify_familiar_group(tx)
-        .await
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::FamiliarGroup))?;
-    super::spell_item_transaction::verify_spell_item_chain(tx)
-        .await
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::SpellItemChain))?;
+        })?;
+    verify_character_build_chain(tx).await?;
+    verify_all_character_proficiency_histories(tx, definitions).await?;
+    super::character_familiar::verify_familiar_chain(tx).await?;
+    super::spell_familiar_group::verify_familiar_group(tx).await?;
+    super::spell_item_transaction::verify_spell_item_chain(tx).await?;
     // A self-consistent hash is not semantic evidence: every retained payload
     // must be exactly the registered encoding of its root's identities.
-    verify_bootstrap_payload_integrity(tx)
-        .await
-        .inspect_err(|_| authority_gate_failed(AuthorityGate::BootstrapPayload))
-}
-
-// DBG-NODEBOOT: keep the existing payload checks together under one stage marker.
-async fn verify_bootstrap_payload_integrity(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> std::result::Result<(), DurabilityError> {
     let mut after = String::from("00000000-0000-0000-0000-000000000000");
     loop {
         let rows = sqlx::query(

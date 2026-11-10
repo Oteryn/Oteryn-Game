@@ -491,10 +491,7 @@ signal.signal(signal.SIGINT, stop)
 signal.signal(signal.SIGTERM, stop)
 events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'join_prepare_failed', 'listener_poll_slow', 'listener_connection_poll_slow',
-          'pass_dropped', 'fresh_admission_refused', 'character_authority_gate_failed',
-          'appearance_prepare_failed'}
-terminal_events = {'fresh_admission_refused', 'character_authority_gate_failed',
-                   'appearance_prepare_failed'}
+          'pass_dropped'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
@@ -503,68 +500,13 @@ labels = {
     'path': {'server_message_timeout', 'liveness_missed', 'probe_write_timeout',
              'updates_timeout', 'activity_transfer', 'house_transfer'},
     'guard': {'house_transfer_input', 'activity_transfer_input'},
-    'gate': {'recovery_fence', 'offline_training', 'npc_purchase', 'creation', 'bazaar',
-             'revision_chain', 'appearance', 'build_chain', 'proficiency_history',
-             'familiar_chain', 'familiar_group', 'spell_item_chain', 'bootstrap_payload'},
     'phase': {'activity_scope', 'initial', 'items', 'sessions', 'world',
               'trade_open', 'trade_observation', 'inventory', 'visibility', 'appearances'},
     'deadline_exceeded': {'true', 'false'},
     'ready': {'true', 'false'},
 }
-# [DBG-NODEBOOT]: preserve only the producer's closed stage and source-error tokens.
-durability_causes = {
-    'ledger_exhausted', 'session_use_authorization', 'unavailable', 'database',
-    'migration', 'schema_incompatible', 'invalid_configuration', 'root_unavailable',
-    'pass_deadline', 'commit_rejected', 'commit_unknown', 'root_task_failed',
-    'invalid_stored_state',
-}
-fresh_labels = {
-    'stage': {
-        'input_gate', 'grant_shape', 'character_read', 'character_world', 'account_ban',
-        'owner_evidence_refresh', 'clock', 'source_publication', 'source_publication_stale',
-        'composition', 'grant_verification', 'commit_authorization', 'claim_transition',
-        'premium_entry', 'capability_binding', 'capability_support', 'cyclopedia_initialization',
-        'prepare_request', 'premium_revalidation', 'runtime_reservation', 'durable_commit',
-        'runtime_rollback_premium', 'premium_commit_revalidation', 'runtime_rollback_stale',
-        'runtime_rollback_rejected', 'durable_rejection', 'durable_reconcile',
-        'runtime_rollback_noncommit', 'reconciled_noncommit', 'reconciled_not_owned',
-        'reconcile_unknown', 'runtime_rollback_unexpected', 'unexpected_durable_outcome',
-        'runtime_actor_commit', 'house_restoration', 'house_source_recovery', 'cast_facts',
-        'automatic_spells',
-    },
-    'class': {'rejected', 'premium_required', 'unavailable', 'classified', 'queued',
-              'recovery_capability_required'},
-    'step': {'encode', 'exchange', 'response', 'binding', 'publication', 'reserve',
-             'lane', 'activate', 'clock', 'checkpoint', 'accept', 'pending'},
-    'cause': durability_causes | {
-        'invalid_descriptor', 'capacity_exceeded', 'invalid_input', 'unauthorized',
-        'oversized_ok', 'io_timeout', 'io', 'tls', 'observed', 'not_found', 'unsupported',
-        'request', 'undecodable', 'encode', 'not_held', 'slots_retained', 'queue_wait',
-        'queue_full', 'no_active_slot', 'task_failed', 'observation',
-    },
-    'replay': durability_causes | {'binding_unreadable'},
-}
-appearance_labels = {
-    'component': {'initial', 'observation'},
-    'stage': {
-        'visibility_snapshot', 'observation', 'upserts', 'attach', 'appearance_encoding',
-        'visibility_encoding', 'inputs', 'context', 'own_fence', 'own_read', 'catalogue',
-        'current_runtime', 'census', 'target_lookup', 'creature_state', 'creature_appearance',
-        'target_fence', 'own_fence_changed', 'target_scope', 'target_read', 'player_state',
-        'base_appearance', 'conditions', 'owner_time', 'temporary_condition',
-        'temporary_appearance', 'temporary_conflict', 'selection_recheck', 'final_binding',
-    },
-    'class': {'none', 'invalid_input', 'state_mismatch', 'rejected', 'fence',
-              'fence_unavailable', 'unavailable'},
-    'subclass': durability_causes | {
-        'none', 'invalid_input', 'authority_rejected', 'missing_progression_state',
-        'character_revision_mismatch', 'progression_context_mismatch', 'conflicting_occurrence',
-        'respawn_pending', 'held_blessings_mismatch', 'build_state_mismatch',
-        'stance_state_mismatch', 'familiar_state_mismatch', 'calculation',
-    },
-}
 numbers = {'ts', 'next_command_id', 'server_sequence', 'command_type', 'command_id',
-           'ms', 'connections', 'lifecycles', 'held_ms', 'admission_ms'}
+           'ms', 'connections', 'lifecycles', 'held_ms'}
 counts = collections.Counter()
 event_counts = collections.Counter()
 emitted = 0
@@ -585,14 +527,6 @@ def report(line):
             return
         event = 'runtime_failure'
     safe = [('event', event)]
-    if event == 'fresh_admission_refused':
-        for key, allowed in fresh_labels.items():
-            if fields.get(key) in allowed:
-                safe.append(('admission_stage' if key == 'stage' else key, fields[key]))
-    if event == 'appearance_prepare_failed':
-        for key, allowed in appearance_labels.items():
-            if fields.get(key) in allowed:
-                safe.append(('appearance_stage' if key == 'stage' else key, fields[key]))
     for key, allowed in labels.items():
         if fields.get(key) in allowed:
             safe.append((key, fields[key]))
@@ -607,11 +541,8 @@ def report(line):
     if counts[identity] >= 2:
         return
     # Reserve room for terminal failures even if many different slow callers recur.
-    limit = {'serve_end': 32, 'durability_pass_slow': 16,
-             'appearance_prepare_failed': 16}.get(event, 8)
-    ordinary_records = emitted - sum(event_counts[name] for name in terminal_events)
-    if (event_counts[event] >= limit or emitted >= 128
-            or (event not in terminal_events and ordinary_records >= 96)):
+    limit = {'serve_end': 32, 'durability_pass_slow': 16}.get(event, 8)
+    if event_counts[event] >= limit or emitted >= 128:
         if event not in limited:
             print(f'NODE_BOOT_RUNTIME_LIMIT stage={stage} world_bundle={world} '
                   f'event={event} records={event_counts[event]}')

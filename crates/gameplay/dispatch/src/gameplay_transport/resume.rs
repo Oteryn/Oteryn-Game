@@ -144,24 +144,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         attempt: ResumeAttempt<'_>,
         wrote: &mut bool,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
-        let mut stage = "retained_loss";
-        self.resume_lost_at_stage(retry, attempt, wrote, &mut stage)
-            .await
-            .inspect_err(|refusal| {
-                // Busy-holder attempts retain their existing retry without a log per retry.
-                if *refusal != AdmissionRefusal::Unavailable {
-                    super::connection::report_resume_refusal(stage, *refusal);
-                }
-            })
-    }
-
-    async fn resume_lost_at_stage(
-        &self,
-        retry: &AdmissionRetryBudget<'_>,
-        attempt: ResumeAttempt<'_>,
-        wrote: &mut bool,
-        stage: &mut &'static str,
-    ) -> Result<AdmittedSession, AdmissionRefusal> {
         use AdmissionRefusal::{Rejected, Unavailable};
         if self
             .states
@@ -197,7 +179,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
             }
         };
-        *stage = "retained_controller";
         let (Some(actor), Some(controller)) = (lost.runtime_actor, lost.controller) else {
             return Err(Rejected);
         };
@@ -215,7 +196,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !super::hireling::recover_pending_lamp_ingress(self, &lost).await {
             return Err(Unavailable);
         }
-        *stage = "command_continuity";
         self.states
             .command_ingress
             .recover_trade_continuity(&mut lost)
@@ -224,16 +204,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(Rejected);
         }
         // The client can only resume from what the server already sent.
-        *stage = "server_sequence";
         if attempt.last_applied_server_sequence > lost.continuity.server_sequence {
             return Err(Rejected);
         }
-        *stage = "credential_shape";
         let token = std::str::from_utf8(attempt.recovery_material).map_err(|_| Rejected)?;
         let key_id = fresh_grant_signing_key_id(token).ok_or(Rejected)?;
         let account =
             crate::domain::AccountId::from_bytes(controller.account_id).map_err(|_| Rejected)?;
-        *stage = "account_ban";
         if self
             .root
             .staff_account_banned(self.character, account)
@@ -249,12 +226,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .current_session_at(session_id)
             .await
             .map_err(|_| Unavailable)?;
-        *stage = "current_loss_epoch";
         let epoch = session.current_control_loss_epoch().ok_or(Rejected)?;
         if session.session_state() != GameSessionState::Reconnectable {
             return Err(Rejected);
         }
-        *stage = "current_session_fence";
         let fence = super::item_fence_of(session).ok_or(Rejected)?;
         if fence.connection_generation.get() != lost.continuity.connection_generation
             || self
@@ -271,7 +246,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| Unavailable)?;
 
-        *stage = "owning_loss";
         let (loss, loss_decided_at) = store
             .owning_loss(session_id, epoch)
             .await
@@ -279,7 +253,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(Rejected)?;
         let scope = session.current_runtime_scope();
         let character = session.commit().character_id();
-        *stage = "authority_claims";
         let rows = AdmissionGuardStore::from_root(self.root.clone())
             .load(&[
                 AdmissionAuthorityGuardKeyV1::Account {
@@ -292,7 +265,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .into_iter()
             .collect::<Option<Vec<_>>>()
             .ok_or(Rejected)?;
-        *stage = "runtime_publication";
         let runtime_publication = store
             .recovery_runtime_publication(session_id)
             .await
@@ -322,7 +294,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map_revision: map_revision.clone(),
             world_policy_revision: world_policy_revision.clone(),
         };
-        *stage = "recovery_subject";
         let subject = RecoveryEvidenceSubject::new(account_id.clone(), key_id.clone())
             .map_err(|_| Rejected)?;
         let verify = || async {
@@ -330,10 +301,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .verify_registered_recovery(self.holder, &subject, token, &recovery)
                 .await
                 .map_err(|_| Unavailable)?
-                .inspect_err(|error| report_recovery_verification_error(*error))
                 .map_err(|_| Rejected)
         };
-        *stage = "credential_verification";
         let verified: VerifiedRecoveryDurabilityFactsV2 = verify().await?;
         // PREPARE is decided at a durable time sampled after verification, as COMMIT does with
         // `final_now`: the verifier stamps `verified_at` from its own later clock sample and
@@ -375,11 +344,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .house_actor_state(actor, session_id)
             .is_ok();
-        *stage = "house_authority";
         if house_resume && !self.validate_house_resume(actor, session_id).await {
             return Err(Rejected);
         }
-        *stage = "runtime_control";
         let (facts, source_revision) = {
             let runtime = self.runtime.lock().await;
             let facts = if house_resume {
@@ -399,12 +366,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| Rejected)?;
             (facts, runtime.binding().source_revision())
         };
-        *stage = "runtime_loss_epoch";
         if facts.control_loss.map(|mark| mark.epoch) != Some(epoch.get()) {
             return Err(Rejected);
         }
         let attempt_ref = attempt_ref(&attempt).ok_or(Unavailable)?;
-        *stage = "reconnect_identity";
         let identity = ReconnectIdentityV1::new(
             session_id,
             attempt_ref,
@@ -416,7 +381,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .map_err(|_| Rejected)?;
         let predecessor = session.current_connection_generation();
         let successor = predecessor.get().checked_add(1).ok_or(Unavailable)?;
-        *stage = "candidate_binding";
         let candidate = ReconnectCandidateBindingV1::new(
             session_id,
             attempt_ref,
@@ -540,26 +504,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             signing: audit.signing.clone(),
             security: audit.security.clone(),
         });
-        *stage = "prepare_authorization";
         let authorization = CompleteReconnectAuthorizationV1::authorize(
             source.as_ref(),
             identity.clone(),
             CompleteReconnectProofV1::V2(Box::new(verified)),
             now,
         )
-        .inspect_err(|error| report_reconnect_error("prepare_authorization", *error))
         .map_err(|_| Rejected)?;
-        *stage = "prepare_flow";
-        let mut flow = CompleteReconnectFlowV1::begin(authorization, None)
-            .inspect_err(|error| report_reconnect_error("prepare_flow", *error))
-            .map_err(|_| Rejected)?;
+        let mut flow = CompleteReconnectFlowV1::begin(authorization, None).map_err(|_| Rejected)?;
         // ADMIT0/D1084: only the authenticated and safely classified owner path may
         // reveal a missing requirement. This precedes both PREPARE and the legacy
         // capability-mismatch release: ADMIT0 refusal preserves all current claims.
         // A retained House selection still uses its genuine origin policy
         // publication. Current House ownership/ACL are proved independently;
         // the origin generation is never installed as House session authority.
-        *stage = "capability_policy";
         if !self.required_capabilities.matches_current(
             policy_scope,
             *policy_generation,
@@ -567,7 +525,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return Err(Rejected);
         }
-        *stage = "capability_support";
         let capabilities = self
             .required_capabilities
             .authenticate_resume_support(
@@ -580,7 +537,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 _ => Unavailable,
             })?;
-        *stage = "capability_revalidation";
         capabilities
             .revalidate(
                 policy_scope,
@@ -605,7 +561,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // candidate, attempt budget and current claims) ends the lost session in a terminal
         // release with no successor, so that fresh admission finds the character free. Any
         // other refused resume, an exhausted attempt budget included, releases nothing.
-        *stage = "capability_continuity";
         if !lost
             .continuity
             .selected_capabilities
@@ -618,10 +573,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let release = self.release_capability_mismatch(lost, epoch).await;
             return Err(capability_mismatch_refusal(release));
         }
-        *stage = "prepare_request";
         let prepare = Arc::new(
             flow.take_request(CompleteReconnectRequestKindV1::Prepare)
-                .inspect_err(|error| report_reconnect_error("prepare_request", *error))
                 .map_err(|_| Rejected)?,
         );
         // The resumed session as the candidate connection would serve it.
@@ -637,7 +590,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // from the committed resume, never carried over.
         resumed.item_fence = None;
         *wrote = true;
-        *stage = "prepare_decision";
         let prepared = match self
             .decide(
                 retry,
@@ -657,7 +609,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let committed = async {
-            *stage = "commit_budget";
             let budget = retry
                 .retry_unavailable(async || recovery_budget_of(&store, session_id, epoch).await)
                 .await?;
@@ -673,7 +624,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| Unavailable)?;
             // COMMIT is reauthorized from a fresh verification at a fresh durable time,
             // never from PREPARE's capability.
-            *stage = "commit_verification";
             let fresh = retry.retry_unavailable(async || verify().await).await?;
             let (_, final_now) = retry
                 .retry_unavailable(async || {
@@ -683,28 +633,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .map_err(|_| Unavailable)
                 })
                 .await?;
-            *stage = "commit_authorization";
             let authorization = CompleteReconnectAuthorizationV1::reauthorize_history(
                 flow.operation().recovery.clone(),
                 CompleteReconnectProofV1::V2(Box::new(fresh)),
                 source.as_ref(),
                 final_now,
             )
-            .inspect_err(|error| report_reconnect_error("commit_authorization", *error))
             .map_err(|_| Rejected)?;
             // The deciding store will independently resolve and check the locked
             // current runtime again; this immutable support never supplies authority.
-            *stage = "commit_flow";
             flow.resume_prepared(authorization, source.as_ref(), final_now)
-                .inspect_err(|error| report_reconnect_error("commit_flow", *error))
                 .map_err(|_| Rejected)?;
-            *stage = "commit_request";
             let commit = Arc::new(
                 flow.take_request(CompleteReconnectRequestKindV1::Commit)
-                    .inspect_err(|error| report_reconnect_error("commit_request", *error))
                     .map_err(|_| Rejected)?,
             );
-            *stage = "commit_decision";
             self.decide(
                 retry,
                 &store,
@@ -734,7 +677,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The durable session is ACTIVE on the candidate connection: the still-present actor
         // is controlled again, from the lost connection's FND-02 continuity. The durable
         // switch stands even if the runtime mark could not be cleared.
-        *stage = "committed_house_authority";
         if house_resume && !self.validate_house_resume(actor, session_id).await {
             // Current ACL or cell facts may have changed while PREPARE/COMMIT
             // ran. Retain the native loss/fence until the ordinary terminal
@@ -832,16 +774,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     capabilities.current_check(),
                 )
                 .await
-                .inspect_err(|error| {
-                    if !matches!(error, crate::durability::DurabilityError::RootUnavailable) {
-                        let stage = match request.kind() {
-                            CompleteReconnectRequestKindV1::Prepare => "prepare_store",
-                            CompleteReconnectRequestKindV1::Commit => "commit_store",
-                            CompleteReconnectRequestKindV1::Reconcile => "reconcile_store",
-                        };
-                        report_reconnect_store_error(stage, error);
-                    }
-                }) {
+            {
                 Ok(CompleteReconnectOutcomeV1::Ambiguous) => false,
                 Err(error) => matches!(error, crate::durability::DurabilityError::RootUnavailable),
                 Ok(outcome) => return Ok(outcome),
@@ -868,79 +801,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
     }
-}
-
-// [DBG-NODEBOOT]: every class below is an exhaustive, data-free label. Never format the
-// source error: its nested fields may gain private data independently of this diagnostic.
-fn report_reconnect_error(stage: &'static str, error: ReconnectDurabilityErrorV1) {
-    let class = match error {
-        ReconnectDurabilityErrorV1::InvalidRecord => "invalid_record",
-        ReconnectDurabilityErrorV1::IdempotencyConflict => "idempotency_conflict",
-        ReconnectDurabilityErrorV1::AttemptCapacityExceeded => "attempt_capacity_exceeded",
-        ReconnectDurabilityErrorV1::ConcurrentPrepared => "concurrent_prepared",
-        ReconnectDurabilityErrorV1::CompletionMismatch => "completion_mismatch",
-        ReconnectDurabilityErrorV1::InvalidPhase => "invalid_phase",
-        ReconnectDurabilityErrorV1::StaleAuthority => "stale_authority",
-        ReconnectDurabilityErrorV1::DeadlineExpired => "deadline_expired",
-        ReconnectDurabilityErrorV1::ReconciliationMismatch => "reconciliation_mismatch",
-    };
-    super::operator_event(&format!(
-        "[DBG-NODEBOOT] event=resume_refused stage={stage} class={class}"
-    ));
-}
-
-fn report_reconnect_store_error(stage: &'static str, error: &crate::durability::DurabilityError) {
-    use crate::durability::DurabilityError as E;
-    let class = match error {
-        E::AdmissionGameSessionLedgerExhausted => "session_ledger_exhausted",
-        E::SessionUseAuthorization(_) => "session_use_authorization",
-        E::Unavailable => "durability_unavailable",
-        E::Database(_) => "database",
-        E::Migration(_) => "migration",
-        E::SchemaIncompatible(_) => "schema_incompatible",
-        E::InvalidConfiguration => "invalid_configuration",
-        E::RootUnavailable => "root_unavailable",
-        E::RootPassDeadlineExceeded => "root_pass_deadline_exceeded",
-        E::CommitRejected => "commit_rejected",
-        E::CommitOutcomeUnknown => "commit_outcome_unknown",
-        E::RootTaskFailed => "root_task_failed",
-        E::InvalidStoredState => "invalid_stored_state",
-    };
-    super::operator_event(&format!(
-        "[DBG-NODEBOOT] event=resume_refused stage={stage} class={class}"
-    ));
-}
-
-fn report_recovery_verification_error(
-    error: crate::foundation::fnd04_verifier::Fnd04ConsumerError,
-) {
-    use crate::foundation::fnd04_verifier::Fnd04ConsumerError as E;
-    let class = match error {
-        E::RecoveryMalformed => "recovery_malformed",
-        E::RecoveryAuthenticationFailed => "recovery_authentication_failed",
-        E::RecoveryBindingMismatch => "recovery_binding_mismatch",
-        E::RecoveryRevisionUnsupported => "recovery_revision_unsupported",
-        E::RecoveryNotYetValid => "recovery_not_yet_valid",
-        E::RecoveryExpired => "recovery_expired",
-        E::RecoverySecurityEvidenceStale => "recovery_security_evidence_stale",
-        E::RecoverySecurityStateRevoked => "recovery_security_state_revoked",
-        E::RecoveryWorldStale => "recovery_world_stale",
-        E::FreshMalformed
-        | E::FreshAuthenticationFailed
-        | E::FreshBindingMismatch
-        | E::FreshRevisionUnsupported
-        | E::FreshNotYetValid
-        | E::FreshExpired
-        | E::FreshSecurityEvidenceStale
-        | E::FreshSecurityStateRevoked
-        | E::FreshAccountCharacterConflict
-        | E::FreshWorldStale
-        | E::FreshRouteStale
-        | E::FreshRuntimeStale => "unexpected_fresh_verification",
-    };
-    super::operator_event(&format!(
-        "[DBG-NODEBOOT] event=resume_refused stage=credential_verification class={class}"
-    ));
 }
 
 /// D449: the refusal of a resume refused for the capability mismatch alone. Only a release that

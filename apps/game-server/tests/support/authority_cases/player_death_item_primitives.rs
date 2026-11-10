@@ -1530,6 +1530,220 @@ fn player_death_nested_reset_requires_terminal_root_bounds() -> TestResult {
         .map_err(Into::into)
 }
 
+async fn run_nested_reset_late_drain_refusal(admin: String) -> TestResult {
+    use crate::durability::DurabilityError;
+    use crate::durability::item_decay_retire::DecayRetireError;
+    use crate::item_transfer_postgres_cases::uuid_text;
+
+    let h = Harness::create(admin, "death_nested_late_drain").await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let items = carried_chain(&h, &authority, 2).await?;
+    let selected = items[0];
+    drop_unselected_death_root(&h, &authority, selected, false).await?;
+    let reset = prepare_nested_reset(&h, &h.root).await?;
+    let before = nested_reset_terminal_snapshot(&h).await?;
+    let guards_before: Vec<String> = sqlx::query_scalar(
+        "SELECT to_jsonb(g)::text FROM game_durability_admission_runtime_guards g \
+         ORDER BY scope_key LIMIT 16",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert!(!guards_before.is_empty() && guards_before.len() < 16);
+    let audits_before = h.count("game_item_audit_outbox").await?;
+    assert_eq!(h.count("game_item_decay_retire_reservations").await?, 0);
+
+    // Fire every receipt and custody proof while the whole tree and live drain
+    // are valid, then remove that drain before the remaining Item callbacks run.
+    // No receipt, edge or authority guard is disabled. Nontransactional markers
+    // prove both the early validation and a later real SQLSTATE 23514 refusal.
+    let (definition, body): (String, String) = sqlx::query_as(
+        "SELECT pg_get_functiondef(p.oid),p.prosrc FROM pg_proc p \
+         WHERE p.oid='game_world_reset_item_proven(uuid)'::regprocedure",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(definition.matches(body.as_str()).count(), 1);
+    let injected_body = format!(
+        "DECLARE failure_context TEXT; BEGIN {};\
+         EXCEPTION WHEN SQLSTATE '23514' THEN \
+          GET STACKED DIAGNOSTICS failure_context=PG_EXCEPTION_CONTEXT; \
+          IF EXISTS(SELECT 1 FROM game_item_decay_retire_receipts r \
+            WHERE r.item_instance_id=p_item AND r.ground_root_item_instance_id='{}'::uuid \
+             AND r.cause_kind='WORLD_RESET' AND r.created_xact_id=pg_current_xact_id()) \
+           AND (SELECT is_called FROM test_nested_drain_removed_seq) \
+           AND position('game_item_instance_change_proven()' IN failure_context)>0 THEN \
+           PERFORM nextval('test_nested_drain_rejected_seq'::regclass); \
+          END IF; \
+          RAISE; \
+         END",
+        body.trim().trim_end_matches(';'),
+        uuid_text(selected),
+    );
+    let injected_definition = definition.replacen(body.as_str(), &injected_body, 1);
+    let injection = format!(
+        "CREATE SEQUENCE test_nested_drain_removed_seq; \
+         CREATE SEQUENCE test_nested_drain_rejected_seq; \
+         GRANT USAGE,SELECT ON SEQUENCE test_nested_drain_removed_seq,test_nested_drain_rejected_seq \
+          TO oteryn_game_runtime; \
+         CREATE FUNCTION test_nested_remove_drain_after_receipts() RETURNS trigger LANGUAGE plpgsql AS $$ \
+         DECLARE removed BIGINT; \
+         BEGIN \
+          IF NEW.item_instance_id<>TG_ARGV[0]::uuid THEN RETURN NEW; END IF; \
+          IF (SELECT count(*) FROM game_item_decay_retire_receipts r \
+              JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id \
+               AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id \
+               AND a.envelope_sha256=r.envelope_sha256 AND a.created_xact_id=r.created_xact_id \
+              JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id \
+               AND i.quantity=0 AND i.lifecycle=2 AND i.last_transaction_id=r.transaction_id \
+              WHERE r.cause_kind='WORLD_RESET' AND r.ground_root_item_instance_id=NEW.item_instance_id \
+               AND r.created_xact_id=pg_current_xact_id()) <> TG_ARGV[1]::bigint THEN \
+           RAISE EXCEPTION 'late drain fixture requires the whole retired tree' USING ERRCODE='23514'; \
+          END IF; \
+          SET CONSTRAINTS game_item_decay_retire_consistent,game_item_nested_entry_proven, \
+           game_item_container_entry_removal_proven,game_item_ground_removal_proven IMMEDIATE; \
+          DELETE FROM game_durability_admission_runtime_guards g \
+           USING game_runtime_scope_assignments a,game_item_decay_retire_receipts r \
+           WHERE g.scope_key=a.scope_key AND a.world_id=r.world_id AND a.channel_id=r.channel_id \
+            AND a.scope_kind=1 AND r.item_instance_id=NEW.item_instance_id \
+            AND r.created_xact_id=pg_current_xact_id(); \
+          GET DIAGNOSTICS removed=ROW_COUNT; \
+          IF removed<>1 THEN \
+           RAISE EXCEPTION 'late drain fixture requires one current guard' USING ERRCODE='23514'; \
+          END IF; \
+          PERFORM nextval('test_nested_drain_removed_seq'::regclass); \
+          RETURN NEW; \
+         END $$; \
+         CREATE TRIGGER test_nested_remove_drain_after_receipts AFTER INSERT ON game_item_audit_outbox \
+          FOR EACH ROW EXECUTE FUNCTION test_nested_remove_drain_after_receipts('{}','{}');",
+        uuid_text(selected),
+        items.len(),
+    );
+    // Only captured server code and canonical fixture UUID/count enter these
+    // disposable-schema scripts; the SQLx dynamic-script boundary is explicit.
+    sqlx::raw_sql(sqlx::AssertSqlSafe(injection))
+        .execute(&h.pool)
+        .await?;
+    sqlx::raw_sql(sqlx::AssertSqlSafe(injected_definition))
+        .execute(&h.pool)
+        .await?;
+    let rejected = h
+        .root
+        .retire_world_reset_ground(&authority, &h.node, &reset)
+        .await;
+    sqlx::raw_sql(sqlx::AssertSqlSafe(definition))
+        .execute(&h.pool)
+        .await?;
+    sqlx::raw_sql(
+        "DROP TRIGGER test_nested_remove_drain_after_receipts ON game_item_audit_outbox; \
+         DROP FUNCTION test_nested_remove_drain_after_receipts();",
+    )
+    .execute(&h.pool)
+    .await?;
+    assert!(matches!(
+        rejected,
+        Err(DecayRetireError::Unavailable(
+            DurabilityError::CommitRejected
+        ))
+    ));
+    let removed: (i64, bool) =
+        sqlx::query_as("SELECT last_value,is_called FROM test_nested_drain_removed_seq")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(
+        removed,
+        (1, true),
+        "all receipt and custody proofs passed before drain removal"
+    );
+    let rejected: (i64, bool) =
+        sqlx::query_as("SELECT last_value,is_called FROM test_nested_drain_rejected_seq")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(
+        rejected,
+        (1, true),
+        "the remaining Item proof must reject the lost drain with SQLSTATE 23514"
+    );
+    assert_eq!(nested_reset_terminal_snapshot(&h).await?, before);
+    let guards_after: Vec<String> = sqlx::query_scalar(
+        "SELECT to_jsonb(g)::text FROM game_durability_admission_runtime_guards g \
+         ORDER BY scope_key LIMIT 16",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(guards_after, guards_before);
+    assert_eq!(h.count("game_item_decay_retire_reservations").await?, 1);
+    let frozen: (String, String, String) = sqlx::query_as(
+        "SELECT item_instance_id::text,transaction_id::text,event_id::text \
+         FROM game_item_decay_retire_reservations",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(frozen.0, uuid_text(selected));
+    assert!(
+        h.root
+            .retire_world_reset_ground(&authority, &h.node, &reset)
+            .await
+            .map_err(debug)?
+    );
+    let committed: (String, String, String) = sqlx::query_as(
+        "SELECT item_instance_id::text,transaction_id::text,event_id::text \
+         FROM game_item_decay_retire_receipts WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(selected.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(committed, frozen, "retry retains the frozen root identity");
+    let expected = i64::try_from(items.len())?;
+    assert_eq!(h.count("game_item_decay_retire_receipts").await?, expected);
+    assert_eq!(
+        h.count("game_player_death_retirement_edges").await?,
+        expected - 1
+    );
+    assert_eq!(
+        h.count("game_item_audit_outbox").await?,
+        audits_before + expected
+    );
+    let edges: Vec<_> = items.windows(2).map(|pair| (pair[1], pair[0])).collect();
+    assert_nested_retirement_audits(&h, selected, &edges).await?;
+    for item in &items {
+        assert_eq!(h.item_state(*item).await?, (0, 2));
+    }
+    let retired = nested_reset_terminal_snapshot(&h).await?;
+    assert!(
+        h.root
+            .retire_world_reset_ground(&authority, &h.node, &reset)
+            .await
+            .map_err(debug)?
+    );
+    assert_eq!(nested_reset_terminal_snapshot(&h).await?, retired);
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}
+
+#[test]
+fn player_death_nested_reset_rechecks_drain_after_early_receipt_proofs() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_nested_reset_late_drain_refusal(admin))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "nested late drain test thread panicked")?
+        .map_err(Into::into)
+}
+
 struct MaximumDeathTree {
     items: Vec<[u8; 16]>,
     edges: Vec<([u8; 16], [u8; 16])>,

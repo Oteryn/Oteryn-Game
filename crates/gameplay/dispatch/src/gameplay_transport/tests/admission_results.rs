@@ -198,37 +198,6 @@ fn silent_admission_refusals_name_their_kind_alone() {
     }
 }
 
-#[test]
-fn resume_diagnostics_distinguish_refusal_variants_without_payloads() {
-    use connection::resume_refusal_event;
-    let cases = [
-        (AdmissionRefusal::Rejected, "rejected"),
-        (AdmissionRefusal::PremiumRequired, "premium_required"),
-        (AdmissionRefusal::Unavailable, "unavailable"),
-        (
-            AdmissionRefusal::Classified(FoundationProtocolError::AdmissionGrantReplayed),
-            "classified",
-        ),
-        (
-            AdmissionRefusal::Queued(oteryn_protocol_oteryn::admission_queue::AdmissionQueue {
-                position: 127,
-                retry_after_ms: 29_999,
-            }),
-            "queued",
-        ),
-        (
-            AdmissionRefusal::RecoveryCapabilityRequired,
-            "recovery_capability_required",
-        ),
-    ];
-    for (refusal, class) in cases {
-        assert_eq!(
-            resume_refusal_event("authority", refusal),
-            format!("[DBG-NODEBOOT] event=resume_refused stage=authority class={class}")
-        );
-    }
-}
-
 /// N8 (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2): each fresh verifier refusal carries its FND-04A
 /// row; a recovery error stays frameless.
 #[test]

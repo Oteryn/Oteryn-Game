@@ -6,44 +6,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: FreshAdmissionAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
-        let started = std::time::Instant::now();
-        let mut stage = "input_gate";
-        let mut evidence_failure = None;
-        self.admit_fresh_session_at_stage(attempt, &mut stage, &mut evidence_failure)
-            .await
-            .inspect_err(|refusal| {
-                // [DBG-NODEBOOT]: terminal labels only; no grant, identity or error payload.
-                let class = match refusal {
-                    AdmissionRefusal::Rejected => "rejected",
-                    AdmissionRefusal::PremiumRequired => "premium_required",
-                    AdmissionRefusal::Unavailable => "unavailable",
-                    AdmissionRefusal::Classified(_) => "classified",
-                    AdmissionRefusal::Queued(_) => "queued",
-                    AdmissionRefusal::RecoveryCapabilityRequired => "recovery_capability_required",
-                };
-                let evidence = evidence_failure
-                    .map(|error| format!(" {error}"))
-                    .unwrap_or_default();
-                super::super::operator_event(&format!(
-                    "[DBG-NODEBOOT] event=fresh_admission_refused stage={stage} class={class}{evidence} admission_ms={}",
-                    started.elapsed().as_millis(),
-                ));
-            })
-    }
-
-    async fn admit_fresh_session_at_stage(
-        &self,
-        attempt: FreshAdmissionAttempt<'_>,
-        stage: &mut &'static str,
-        evidence_failure: &mut Option<EvidenceUnavailable>,
-    ) -> Result<AdmittedSession, AdmissionRefusal> {
         use AdmissionRefusal::{Classified, Rejected, Unavailable};
         use FoundationProtocolError as N8;
         // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
         let Some(_permit) = self.states.input_gate.enter().await else {
             return Err(Unavailable);
         };
-        *stage = "grant_shape";
         let malformed = Classified(N8::AdmissionGrantMalformed);
         let token = std::str::from_utf8(attempt.admission_material).map_err(|_| malformed)?;
         // Untrusted selector only; verification below checks the same token.
@@ -56,7 +24,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // root recovery window, with a per-attempt backoff so concurrent attempts do not
         // stay in lockstep.
         let mut budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
-        *stage = "character_read";
         let record = loop {
             match self
                 .root
@@ -74,14 +41,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // The grant is not authenticated yet: a classified answer here would reveal another
         // world's character, so only 1100/1101 may precede authentication (N8 precedence).
-        *stage = "character_world";
         if record.world_id.as_bytes() != self.world_id.as_bytes() {
             return Err(Rejected);
         }
         // This read follows another durable pass, which may retire the holder.
         // Resolve the ban from current truth within the same admission budget;
         // transient holder absence is not an authenticated grant verdict.
-        *stage = "account_ban";
         if budget
             .retry_unavailable(async || {
                 self.root.await_ready().await.map_err(|_| Unavailable)?;
@@ -109,8 +74,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (request, reservation) = loop {
             // D4: the five-second source-age bound requires evidence fetched for
             // this attempt; S2 custody retains it and the composition decides.
-            *stage = "owner_evidence_refresh";
-            if let Err(error) = self
+            if self
                 .evidence
                 .refresh_fresh_admission(
                     self.root,
@@ -119,16 +83,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &subject.signing_key_id,
                 )
                 .await
+                .is_err()
             {
                 if !budget.retries_unavailable(Unavailable).await {
-                    *evidence_failure = Some(error);
                     return Err(Unavailable);
                 }
                 continue;
             }
-            *stage = "clock";
             let now = unix_seconds().ok_or(Unavailable)?;
-            *stage = "source_publication";
             match self
                 .root
                 .publish_fresh_admission_sources(self.character, self.holder, &subject, now)
@@ -138,7 +100,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     GuardPublicationDisposition::Applied | GuardPublicationDisposition::Existing,
                 ) => {}
                 Ok(GuardPublicationDisposition::Stale | GuardPublicationDisposition::Conflict) => {
-                    *stage = "source_publication_stale";
                     if !budget.retries_stale().await {
                         return Err(Unavailable);
                     }
@@ -151,7 +112,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
             }
-            *stage = "composition";
             let Ok(composition) = self
                 .root
                 .compose_fresh_admission(self.character, self.holder, &subject)
@@ -162,7 +122,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 continue;
             };
-            *stage = "grant_verification";
             let facts = verify_fresh_grant_durability_v1(
                 token,
                 now,
@@ -170,7 +129,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &FreshDurabilityCurrentAuthorityV1::from_owning_source(&composition),
             )
             .map_err(fresh_grant_refusal)?;
-            *stage = "commit_authorization";
             let authorization = FreshAdmissionCommitAuthorizationV1::new(
                 &facts,
                 attempt.game_session_id,
@@ -179,7 +137,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now,
             )
             .map_err(|_| Rejected)?;
-            *stage = "claim_transition";
             let transition =
                 FreshAdmissionClaimTransitionV1::prepare(&composition, &authorization, now)
                     .map_err(|_| Rejected)?;
@@ -187,7 +144,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // transfer enters through this same fresh-admission boundary (GAME-CHANNEL-01 §7).
             // Refuse before any player reservation, nonce consumption or session/lease write.
             if self.premium_only && premium_entry.is_none() {
-                *stage = "premium_entry";
                 premium_entry = self
                     .begin_premium_channel_entry(
                         *record.account_id.as_bytes(),
@@ -200,7 +156,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // The binding is this composition's independently resolved observation; the
             // commit below rechecks it under the deciding transaction's locks. Refusing here
             // precedes capacity reservation and the durable commit: no nonce is consumed.
-            *stage = "capability_binding";
             let (scope, generation, policy) = composition.runtime_capability_binding();
             if !self
                 .required_capabilities
@@ -208,7 +163,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(Rejected);
             }
-            *stage = "capability_support";
             let capabilities = self
                 .required_capabilities
                 .authenticate_support(attempt.supported_capabilities)
@@ -220,7 +174,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })?;
             // LOOP-MAP-1: initialize selection and home-spawn factors before a player is admitted.
             // Its epoch pass takes the shared holder too, so a busy holder is retried (DEFLAKE-3).
-            *stage = "cyclopedia_initialization";
             budget
                 .retry_unavailable(async || {
                     self.initialize_cyclopedia_respawn()
@@ -228,7 +181,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .map_err(|()| Unavailable)
                 })
                 .await?;
-            *stage = "prepare_request";
             let mut flow = FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
                 .map_err(|_| Rejected)?;
             let mut prepared = PreparedRequest(None);
@@ -236,7 +188,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let request = prepared.0.ok_or(Unavailable)?;
             // The warm-up and other owner reads may have crossed expiry. Read PREM-1 again
             // at the entry decision; a retry must never reuse a previous open gate.
-            *stage = "premium_revalidation";
             if self.premium_only
                 && self
                     .premium_gate(*record.account_id.as_bytes())
@@ -250,7 +201,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // but before the durable GameSession mutation. M+1 therefore rejects
             // without creating a playable/committed session.
             // A busy holder on the assignment read reserves nothing: retry the round.
-            *stage = "runtime_reservation";
             let reservation = match self
                 .reserve_runtime_player(
                     attempt.game_session_id,
@@ -266,7 +216,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(refusal);
                 }
             };
-            *stage = "durable_commit";
             let outcome = self
                 .root
                 .commit_composed_fresh_admission(
@@ -290,9 +239,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .require()
                     .is_err()
             {
-                *stage = "runtime_rollback_premium";
                 self.rollback_runtime_player(reservation).await?;
-                *stage = "premium_commit_revalidation";
                 return Err(AdmissionRefusal::PremiumRequired);
             }
             match outcome {
@@ -304,7 +251,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority)
                     if budget.stale_rounds < FRESH_ADMISSION_ROUNDS =>
                 {
-                    *stage = "runtime_rollback_stale";
                     self.rollback_runtime_player(reservation).await?;
                     budget.retries_stale().await;
                     continue;
@@ -315,9 +261,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | FreshAdmissionDurableOutcomeV1::RejectedIncumbent
                     | FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority),
                 ) => {
-                    *stage = "runtime_rollback_rejected";
                     self.rollback_runtime_player(reservation).await?;
-                    *stage = "durable_rejection";
                     return Err(Classified(match outcome {
                         FreshAdmissionDurableOutcomeV1::RejectedReplayConflict => {
                             N8::AdmissionGrantReplayed
@@ -331,19 +275,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // The commit may have landed with its acknowledgement lost: keep
                 // the exact operation and reconcile it until the outcome is proven.
                 Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable) | Err(_) => {
-                    *stage = "durable_reconcile";
                     match self
                         .reconcile(&request, attempt.game_session_id, attempt.transport)
                         .await
                     {
                         ReconciliationDisposition::Committed => {}
                         ReconciliationDisposition::DefinitelyNotCurrent(refusal) => {
-                            *stage = "runtime_rollback_noncommit";
                             self.rollback_runtime_player(reservation).await?;
                             // No receipt under the admission locks proves noncommit (for
                             // example a commit refused on a busy holder): retry the round;
                             // the grant replay key still admits at most one GameSession.
-                            *stage = "reconciled_noncommit";
                             if budget.retries_unavailable(refusal).await {
                                 continue;
                             }
@@ -353,32 +294,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             // The GameSession is durable but no longer owned by
                             // this socket; that does not prove it terminal. Keep
                             // its slot reserved rather than free durable capacity.
-                            *stage = "reconciled_not_owned";
                             return Err(Rejected);
                         }
                         ReconciliationDisposition::Unknown => {
                             // Fail closed. Do not fabricate actor authority and do not
                             // free a slot whose GameSession may already be durable.
-                            *stage = "reconcile_unknown";
                             return Err(Unavailable);
                         }
                     }
                 }
                 Ok(_) => {
-                    *stage = "runtime_rollback_unexpected";
                     self.rollback_runtime_player(reservation).await?;
-                    *stage = "unexpected_durable_outcome";
                     return Err(Rejected);
                 }
             }
             break (request, reservation);
         };
-        *stage = "runtime_actor_commit";
         let actor = self.commit_runtime_player(reservation).await?;
         // Q16: a recorded House is restored through a genuine native admission
         // handoff before any Channel first-entry participant can replace its cell.
         // Unknown completion stays fail-closed and recovers through that receipt.
-        *stage = "house_restoration";
         let restored_house = match self
             .restore_fresh_house(attempt, actor, *record.account_id.as_bytes(), &request)
             .await
@@ -389,7 +324,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // source slot. Keep that admitted identity on the existing
                 // refused-first-entry / disconnect-release path. A terminal
                 // source or unknown read belongs to destination recovery instead.
-                *stage = "house_source_recovery";
                 Some(
                     self.refused_fresh_house_source(attempt, actor, *record.account_id.as_bytes())
                         .await
@@ -552,7 +486,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Both are reads or an idempotent fenced write through the shared holder, so a busy
         // holder is retried within the attempt's window rather than refusing it (DEFLAKE-3).
         if writes_after_progression(positioned, admitted.first_entry) {
-            *stage = "cast_facts";
             let loaded = budget
                 .retry_unavailable(async || {
                     match load_character_cast_facts(self.root, self.character, character_id).await {
@@ -568,7 +501,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some((facts, character_revision)) = loaded else {
                 return Ok(admitted);
             };
-            *stage = "automatic_spells";
             budget
                 .retry_unavailable(async || {
                     if self

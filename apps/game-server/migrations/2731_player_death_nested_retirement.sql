@@ -223,6 +223,84 @@ $root_gate$;
   END IF;
   EXECUTE replace(amended,receipt_lookup,receipt_lookup||root_gate);
  END LOOP;
+ -- The UPDATE callback otherwise walks every later operation-family arm
+ -- before reaching the existing retirement proof. Recognize only this exact
+ -- terminal UPDATE, then run that same full proof now. Earlier UPDATE events
+ -- retain their own transaction binding and fall through to the installed body.
+ -- A current operation-family collision must keep its original ordering even
+ -- if its constraint was already checked IMMEDIATE. These indexed lookups are
+ -- a conservative superset of the earlier effectful arms, without their JSON
+ -- expansion or repeated completion calls. MAIL is bound by item, not by tx.
+ body:=pg_get_functiondef('game_item_instance_change_proven()'::regprocedure);
+ IF position('game_world_reset_item_proven(NEW.item_instance_id)' IN body)=0
+  OR position('game_activity_retirement_item_proven(NEW.item_instance_id)' IN body)=0 THEN
+  RAISE EXCEPTION 'missing installed retirement Item proof';
+ END IF;
+ at_begin:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+ IF at_begin=0 THEN RAISE EXCEPTION 'missing retirement Item guard entry'; END IF;
+ amended:=overlay(body placing E'BEGIN\n'||$arm$
+ IF TG_OP='UPDATE' AND OLD.lifecycle=1 AND OLD.quantity>0
+  AND NEW.lifecycle=2 AND NEW.quantity=0
+  AND NEW.last_transaction_id IS DISTINCT FROM OLD.last_transaction_id
+  AND NEW.state_revision=OLD.state_revision+1
+  AND (to_jsonb(NEW)-ARRAY['quantity','lifecycle','last_transaction_id','state_revision'])
+      =(to_jsonb(OLD)-ARRAY['quantity','lifecycle','last_transaction_id','state_revision']) THEN
+  IF EXISTS(SELECT 1 FROM game_item_decay_retire_receipts r
+   WHERE r.item_instance_id=NEW.item_instance_id AND r.world_id=NEW.world_id
+    AND r.transaction_id=NEW.last_transaction_id AND r.quantity_before=OLD.quantity
+    AND r.cause_kind IN('WORLD_RESET','ACTIVITY_RETIREMENT')
+    AND r.created_xact_id=pg_current_xact_id()) THEN
+   IF NOT EXISTS(
+    SELECT 1 FROM game_mail_operations r
+     WHERE r.root_item_instance_id=NEW.item_instance_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_atelier_item_records r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_bazaar_item_transitions r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_carried_step_receipts r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_character_stash_item_lines r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_coin_exchange_receipts r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_floor_assembly_receipts r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_floor_transform_expiry_receipts r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_floor_transform_receipts r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_forge_operations r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_house_disposition_wrap_records r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_house_furniture_destroy_receipts r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_house_furniture_wrap_receipts r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_house_timed_decoration_expiries r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_item_consume_transform_records r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_item_craft_records r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_item_imbuement_records r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_item_marriage_records r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_item_write_once_transforms r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_market_item_lines r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_player_death_item_records r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+   ) THEN
+    IF game_world_reset_item_proven(NEW.item_instance_id)
+     OR game_activity_retirement_item_proven(NEW.item_instance_id) THEN RETURN NULL; END IF;
+   END IF;
+  END IF;
+ END IF;
+$arm$ from at_begin for 5);
+ EXECUTE amended;
  FOREACH f IN ARRAY ARRAY['game_item_container_entry_removal_proven','game_item_nested_entry_proven'] LOOP
   body:=pg_get_functiondef(to_regprocedure(f||'()'));
   at_begin:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
@@ -241,6 +319,7 @@ $arm$ from at_begin for 5);
  FOREACH f IN ARRAY ARRAY['game_player_death_reset_entry_capture()','game_player_death_retirement_entry_proven(uuid)',
   'game_player_death_retirement_root_bounds_proven(uuid)',
   'game_world_reset_item_proven(uuid)','game_activity_retirement_item_proven(uuid)',
+  'game_item_instance_change_proven()',
   'game_item_container_entry_removal_proven()','game_item_nested_entry_proven()'] LOOP
   EXECUTE format('ALTER FUNCTION %s SECURITY DEFINER SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);

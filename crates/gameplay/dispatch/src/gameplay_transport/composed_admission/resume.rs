@@ -6,13 +6,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
-        if let Some(admitted) = self
-            .recover_activity_session(&budget, &attempt)
-            .await
-            .inspect_err(|refusal| {
-                connection::report_resume_refusal("activity_recovery", *refusal);
-            })?
-        {
+        if let Some(admitted) = self.recover_activity_session(&budget, &attempt).await? {
             return Ok(admitted);
         }
         // Directory lookup selects an owner only. The original recovery owner
@@ -27,10 +21,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None
             };
         let owner = scoped.as_ref().unwrap_or(self);
-        let admitted = owner
-            .resume_session_for_scope(attempt)
-            .await
-            .inspect_err(|refusal| connection::report_resume_refusal("scope_recovery", *refusal))?;
+        let admitted = owner.resume_session_for_scope(attempt).await?;
         self.activity_runtimes
             .remember(admitted)
             .map_err(|_| AdmissionRefusal::Unavailable)?;
@@ -59,8 +50,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     supported_capabilities: attempt.supported_capabilities,
                 },
             )
-            .await
-            .inspect_err(|refusal| connection::report_resume_refusal("house_recovery", *refusal))?;
+            .await?;
         let recovered_transfer = transferred.is_some();
         let admitted = if let Some(admitted) = transferred {
             admitted

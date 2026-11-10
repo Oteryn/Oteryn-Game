@@ -103,42 +103,9 @@ stage seam_stages -- blocked
                     log.write('oteryn-game-server ts=1 level=error module=test event=admission_refused '
                               'error="permission denied for table secret-table" '
                               'database_url=postgres://fixture:do-not-print-this-secret@db/fixture\n')
-                    # Other event families cannot consume the terminal admission slots.
-                    for event in ['serve_end', 'serve_command_end', 'command_guard_failed',
-                                  'join_prepare_failed', 'listener_poll_slow',
-                                  'listener_connection_poll_slow', 'pass_dropped',
-                                  'DURABILITY_PASS_RETIRED', 'DURABILITY_HOLDER_STUCK',
-                                  'DURABILITY_ROOT_REESTABLISHED']:
-                        prefix = event if event.startswith('DURABILITY_') else f'oteryn-game-server event={event}'
-                        for reason in ['transferred', 'disconnected', 'control_lost', 'logged_out',
-                                       'protocol_error', 'commit_outcome_unknown', 'closed', 'no_evidence']:
-                            for path in ['server_message_timeout', 'liveness_missed',
-                                         'probe_write_timeout', 'updates_timeout']:
-                                log.write(f'{prefix} reason={reason} path={path}\n')
-                    for _ in range(20):
-                        log.write('oteryn-game-server [DBG-NODEBOOT] event=fresh_admission_refused '
-                                  'stage=owner_evidence_refresh class=unavailable admission_ms=4991 '
-                                  'step=reserve cause=slots_retained replay=commit_unknown '
-                                  'account_id=do-not-print-this-secret\n')
-                    log.write('oteryn-game-server [DBG-NODEBOOT] event=fresh_admission_refused '
-                              'stage=secret-stage class=secret-class step=secret-step '
-                              'cause=secret-cause replay=secret-replay admission_ms=secret-time\n')
-                    log.write('oteryn-game-server ts=1794328196231 level=warn module=durability '
-                              'event=character_authority_gate_failed gate=npc_purchase '
-                              'payload=do-not-print-this-secret\n')
-                    log.write('oteryn-game-server event=character_authority_gate_failed gate=secret-gate\n')
-                    for _ in range(20):
-                        log.write('oteryn-game-server [DBG-NODEBOOT] event=appearance_prepare_failed '
-                                  'component=observation stage=target_read class=unavailable '
-                                  'subclass=root_unavailable character_id=do-not-print-this-secret\n')
-                        log.write('oteryn-game-server [DBG-NODEBOOT] event=appearance_prepare_failed '
-                                  'component=initial stage=observation class=none subclass=none\n')
-                    log.write('oteryn-game-server event=appearance_prepare_failed '
-                              'component=secret-component stage=secret-stage class=secret-class '
-                              'subclass=secret-subclass\n')
                 # Deliver INT/TERM to the fixture group while its stage waits on tee.
                 # GitHub entry-shell cancellation is a separate signal boundary.
-                until(b'event=fresh_admission_refused', 3)
+                until(b'NODE_BOOT_RUNTIME_LIMIT', 3)
                 os.killpg(process.pid, signum)
                 remainder, _ = process.communicate(timeout=5)
                 output.extend(remainder)
@@ -154,17 +121,6 @@ stage seam_stages -- blocked
             self.assertIn('event=durability_pass_retired', text)
             self.assertIn('event=listener_connection_poll_slow ready=false ms=5650', text)
             self.assertIn('signature=permission_denied', text)
-            self.assertIn('event=fresh_admission_refused admission_stage=owner_evidence_refresh '
-                          'class=unavailable step=reserve cause=slots_retained replay=commit_unknown '
-                          'admission_ms=4991', text)
-            self.assertRegex(text, r'event=fresh_admission_refused[^\n]+ observed_ms=[0-9]+')
-            self.assertIn('event=character_authority_gate_failed gate=npc_purchase ts=1794328196231', text)
-            self.assertIn('event=appearance_prepare_failed component=observation '
-                          'appearance_stage=target_read class=unavailable subclass=root_unavailable', text)
-            self.assertIn('event=appearance_prepare_failed component=initial '
-                          'appearance_stage=observation class=none subclass=none', text)
-            for field in ['stage', 'class', 'step', 'cause', 'replay', 'time', 'gate', 'component', 'subclass']:
-                self.assertNotIn(f'secret-{field}', text)
             self.assertNotIn('do-not-print-this-secret', text)
             self.assertNotIn('secret-table', text)
             self.assertLess(text.index('event=serve_end'), text.index('cleanup=complete'))
@@ -172,9 +128,6 @@ stage seam_stages -- blocked
             self.assertEqual(results, ['NODE_BOOT_PASS', 'NODE_BOOT_FAIL'], text)
             records = [line for line in text.splitlines() if line.startswith('NODE_BOOT_RUNTIME ')]
             self.assertLessEqual(len(records), 128, text)
-            self.assertLessEqual(sum('event=fresh_admission_refused' in line for line in records), 8, text)
-            self.assertLessEqual(sum('event=character_authority_gate_failed' in line for line in records), 8, text)
-            self.assertLessEqual(sum('event=appearance_prepare_failed' in line for line in records), 16, text)
             self.assertIn('NODE_BOOT_RUNTIME_LIMIT', text)
             self.assertIn('world_bundle=1', text)
             self.assertFalse(work.exists(), text)
