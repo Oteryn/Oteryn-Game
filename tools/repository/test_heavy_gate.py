@@ -154,8 +154,14 @@ class HeavyGateTests(unittest.TestCase):
             "exact merge-group SHA", "exact PR head SHA").replace(
             "github.event.merge_group.head_sha || github.sha", "github.event.pull_request.head.sha").replace(
             "${{ github.sha }}", "${{ github.event.pull_request.head.sha }}")
-        self.assertEqual(node_boot.split("    steps:\n", 1)[1].split("\n  #", 1)[0].rstrip(),
-                         expected_steps.rstrip())
+        # Protected-main may add failure-only diagnostics after the qualification
+        # without making those artifacts part of the pull-request heavy lane.
+        actual_steps = node_boot.split("    steps:\n", 1)[1].split("\n  #", 1)[0]
+        protected_prefix = expected_steps.split("      - name: Run node boot qualification\n", 1)[0]
+        actual_prefix = actual_steps.split("      - name: Run node boot qualification\n", 1)[0]
+        self.assertEqual(actual_prefix.rstrip(), protected_prefix.rstrip())
+        self.assertIn("bash tools/qualification/node_boot/run.sh", actual_steps)
+        self.assertIn("bash tools/qualification/node_boot/run.sh", expected_steps)
         self.assertIn("          NODE_BOOT_RESULT: ${{ needs.node_boot.result }}\n", self.job)
 
     def test_node_boot_job_outlives_serial_natural_clock_and_light_observations(self):
