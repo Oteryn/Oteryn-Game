@@ -12,6 +12,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(_permit) = self.states.input_gate.enter().await else {
             return Err(Unavailable);
         };
+        // A player waiting to enter keeps the scheduled monster passes from retaking the
+        // returned holder ahead of it, as logout does.
+        let Ok(_foreground) = self.root.foreground_demand() else {
+            return Err(Unavailable);
+        };
         let malformed = Classified(N8::AdmissionGrantMalformed);
         let token = std::str::from_utf8(attempt.admission_material).map_err(|_| malformed)?;
         // Untrusted selector only; verification below checks the same token.
