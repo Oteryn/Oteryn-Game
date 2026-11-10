@@ -22,6 +22,13 @@ pub struct RowLayout {
     #[serde(default = "default_count")]
     pub count: u8,
 }
+impl RowLayout {
+    pub fn visible_slots(&self, capacity: usize) -> std::ops::Range<usize> {
+        let count = capacity.min(usize::from(self.count));
+        let offset = usize::from(self.offset).min(usize::from(self.count) - count);
+        offset..offset + count
+    }
+}
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BarLayout {

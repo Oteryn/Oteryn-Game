@@ -1,6 +1,25 @@
 use crate::play::{BarAction, BarDock, BarGesture, SettingsState, play_channel};
 
 #[test]
+fn docked_row_viewport_stays_within_configured_buttons_at_every_offset() {
+    let mut layout = crate::play::BarLayout::default();
+    for row in &mut layout.rows {
+        for count in 1..=50 {
+            row.count = count;
+            for offset in 0..count {
+                row.offset = offset;
+                for capacity in [1, 5, 12] {
+                    let visible = row.visible_slots(capacity);
+                    assert_eq!(visible.len(), capacity.min(usize::from(count)));
+                    assert!(visible.end <= usize::from(count));
+                    assert!(visible.contains(&usize::from(offset)));
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn docked_bars_lock_swaps_scroll_and_persist_all_rows() -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, _) = play_channel();
     assert!(link.assign_bar_action(

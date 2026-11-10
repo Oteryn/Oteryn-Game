@@ -86,13 +86,14 @@ impl SpellRow {
             GetClientRect(self.parent, &mut rect);
             for (bar, row) in layout.rows.iter().enumerate() {
                 let horizontal = row.dock == BarDock::Bottom;
-                let count = if horizontal {
+                let capacity = if horizontal {
                     ((rect.right - 180) / 62).clamp(1, 12)
                 } else {
                     ((rect.bottom - 180) / 54).clamp(1, 12)
                 } as usize;
-                let count = count.min(usize::from(row.count));
-                let offset = usize::from(row.offset).min(ROW_SLOTS - count);
+                let slots = row.visible_slots(capacity);
+                let count = slots.len();
+                let offset = slots.start;
                 let width = if horizontal {
                     (rect.right - 180).max(62) / count as i32
                 } else {
@@ -103,7 +104,7 @@ impl SpellRow {
                     let handle = self.buttons[slot];
                     let label = labels
                         .and_then(|labels| labels.get(slot))
-                        .filter(|_| row.enabled && (offset..offset + count).contains(&local));
+                        .filter(|_| row.enabled && slots.contains(&local));
                     visible[slot] = label.is_some();
                     ShowWindow(handle, if label.is_some() { SW_SHOWNA } else { SW_HIDE });
                     let display = local.saturating_sub(offset) as i32;

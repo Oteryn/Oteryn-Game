@@ -363,6 +363,75 @@ fn spell_aim_modes_and_diagonal_cursor_use_real_play_queue()
 }
 
 #[test]
+fn native_battle_keys_cast_catalogue_bindings_and_obey_death_gate()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{Modifier, Modifiers};
+    use oteryn_session::spell_catalog::*;
+    let (link, mut commands, outbox) = play_channel();
+    assert!(link.bind_action_key(0, "SUPER+ALT+F12"));
+    let keys = [
+        (0x31, Modifiers::NONE),
+        (0x7b, Modifiers::one(Modifier::Super).with(Modifier::Alt)),
+    ];
+    for cast_index in [71, 97] {
+        let entry = SpellCatalogEntry {
+            cast_index,
+            name: "Light".into(),
+            words: "utevo lux".into(),
+            level: 1,
+            mana: 1,
+            mana_percent: false,
+            soul: 0,
+            learned: true,
+            available: true,
+            cooldown_groups: vec![],
+            rune_item: None,
+        };
+        outbox.spell_catalog_initialize(
+            true,
+            Some(encode_catalog(&[entry]).map_err(|e| format!("{e:?}"))?),
+        )?;
+        if cast_index == 71 {
+            assert!(link.assign_spell_slot(0, Some(cast_index)));
+        }
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        assert!(mailbox.bar_actions.saved.0.is_empty());
+        for (key, modifiers) in keys {
+            assert!(
+                crate::play::feature_local_spell_action_bar::view::native_key(
+                    &mut mailbox,
+                    &link.commands,
+                    key,
+                    modifiers
+                )
+            );
+            assert!(
+                matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == cast_index)
+            );
+            assert!(commands.try_recv().is_err());
+        }
+    }
+    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+    mailbox.apply_death_vitals(oteryn_session::ActorVitals {
+        health: 0,
+        max_health: 100,
+        ..Default::default()
+    });
+    for (key, modifiers) in keys {
+        assert!(
+            crate::play::feature_local_spell_action_bar::view::native_key(
+                &mut mailbox,
+                &link.commands,
+                key,
+                modifiers
+            )
+        );
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+
+#[test]
 fn native_battle_key_uses_hovered_entity_generation_without_crosshair()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{BarAction, ItemUseMode};

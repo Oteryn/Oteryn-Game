@@ -220,5 +220,6 @@ pub(in crate::play) fn native_key(
     else {
         return false;
     };
-    super::assignments::activate_shared(mailbox, commands, slot)
+    super::super::input::submit(mailbox, commands, slot.get() as usize, &[]);
+    true
 }
