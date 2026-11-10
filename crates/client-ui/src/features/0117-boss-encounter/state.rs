@@ -1,6 +1,8 @@
 use oteryn_client_runtime::boss_encounter::Snapshot;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct BossEncounterPanel {
+    pub difficulty_windows:
+        std::collections::BTreeMap<String, oteryn_client_runtime::boss_difficulty::Reply>,
     pub boss_names: std::collections::BTreeMap<String, String>,
     pub catalogue: Option<oteryn_client_runtime::boss_encounter::catalogue::Page>,
     pub catalogue_query: Option<oteryn_client_runtime::boss_encounter::catalogue::Query>,

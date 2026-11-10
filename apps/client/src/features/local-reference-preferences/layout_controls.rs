@@ -4,9 +4,13 @@ use oteryn_client::play::ReferencePreferences;
 #[path = "status_order_controls.rs"]
 mod status_order_controls;
 use status_order_controls::OrderControls;
+#[path = "condition_matrix_controls.rs"]
+mod condition_matrix_controls;
+use condition_matrix_controls::ConditionMatrix;
 
 pub(crate) struct LayoutControls {
     order: OrderControls,
+    matrix: ConditionMatrix,
     visible: HWND,
     label: HWND,
     bounds: [HWND; 4],
@@ -16,6 +20,7 @@ impl LayoutControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
             let order = OrderControls::new(hwnd)?;
+            let matrix = ConditionMatrix::new(hwnd)?;
             let visible = control(
                 hwnd,
                 "BUTTON",
@@ -56,6 +61,7 @@ impl LayoutControls {
                 .any(|handle| handle.is_null()))
             .then_some(Self {
                 order,
+                matrix,
                 visible,
                 label,
                 bounds,
@@ -66,6 +72,7 @@ impl LayoutControls {
     pub(crate) unsafe fn show(&self, visible: bool) {
         unsafe {
             self.order.show(visible);
+            self.matrix.show(visible);
             for handle in [self.label, self.compact, self.visible]
                 .into_iter()
                 .chain(self.bounds)
@@ -101,11 +108,12 @@ impl LayoutControls {
         action: usize,
         preferences: &mut ReferencePreferences,
     ) -> bool {
-        unsafe { self.order.reorder(action, preferences) }
+        unsafe { self.matrix.apply(action, preferences) || self.order.reorder(action, preferences) }
     }
     pub(crate) unsafe fn refresh(&self, preferences: &ReferencePreferences) {
         unsafe {
             self.order.refresh(preferences);
+            self.matrix.refresh(preferences);
             SendMessageW(
                 self.visible,
                 BM_SETCHECK,

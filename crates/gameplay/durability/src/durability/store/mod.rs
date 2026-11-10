@@ -1,6 +1,7 @@
 //! Store purchase retry evidence and Platform-owned delivery receipts.
 //!
 //! These journals are not a purchase or coin ledger. Platform owns both.
+mod cosmetic_tokens;
 mod codec;
 mod charm_expansion;
 mod hireling_capacity;

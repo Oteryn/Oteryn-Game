@@ -71,9 +71,20 @@ fn scenario_with_state(project_state: bool) -> TestResult {
         let map = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
             .map_err(debug)?;
         let cells = map.movement_cells(room.movement_cells()).map_err(debug)?;
-        let frame_digest = pin.frame_binding().digest();
+        // Pair bundle-backed cells with that bundle's frame and map identity.
+        // A production-room map pin is foreign to this teleport-map fixture.
+        let frame_digest = map.frame_binding_digest(world);
+        let pin = crate::foundation::ChannelContentPin::from_activation(
+            world,
+            pin.activation_sequence(),
+            pin.identity().server_artifact_digest(),
+            pin.identity().client_artifact_digest(),
+            frame_digest,
+            map.map_revision_digest(),
+            (5, 1, 8),
+        );
         let deps = Dependencies::with_content(
-            pin.into_channel_pin(),
+            pin,
             room,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;

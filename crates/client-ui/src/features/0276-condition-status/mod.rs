@@ -7,4 +7,4 @@ mod view;
 pub use input::open_key;
 pub use protocol::request;
 pub use state::ConditionStatusPanel;
-pub use view::{icon_label, panel_text, status_text};
+pub use view::{icon_key, icon_label, panel_text, status_text};

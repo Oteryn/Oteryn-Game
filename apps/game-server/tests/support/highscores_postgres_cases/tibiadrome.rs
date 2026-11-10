@@ -229,12 +229,17 @@ async fn drome_status(
 
 #[test]
 fn srvenc_tibiadrome_postgres_auction_excludes_standing_and_expired_rewards() -> TestResult {
-    tibiadrome_native_profile_withdrawal_keeps_public_highscore_retries_identical()
+    native_profile_withdrawal("hsdromenative")
 }
 
 #[test]
 fn tibiadrome_native_profile_withdrawal_keeps_public_highscore_retries_identical() -> TestResult {
-    run("hsdromeprofile", async |h| {
+    native_profile_withdrawal("hsdromeprofile")
+}
+
+fn native_profile_withdrawal(tag: &'static str) -> TestResult {
+    // Both tests run this scenario concurrently under cargo test; isolate their recovery files.
+    run(tag, async |h| {
         // The registered authority target owns the real bootstrap producer;
         // create a distinct offline Character through that existing API.
         let (artifact, _) = crate::bazaar_items::artifact()?;
@@ -312,7 +317,7 @@ fn tibiadrome_native_profile_withdrawal_keeps_public_highscore_retries_identical
         let mut public_captured = Vec::new();
         for category in [14, 17] {
             let held: Vec<_> = (1..=12)
-                .chain([14, 17])
+                .chain([14, 16, 17])
                 .filter(|c| *c != category)
                 .map(|c| format!("{world_text}:{c}"))
                 .collect();

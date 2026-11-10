@@ -51,6 +51,17 @@ pub(in crate::play) fn apply(
     command: &FeatureCommand,
     result: &GatedCommandResult,
 ) {
+    if command.kind == wire::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY {
+        panel.speed_pending = false;
+        panel.speed_bonus = if accepted(result) {
+            <[u8; 2]>::try_from(result.payload.as_slice())
+                .map(u16::from_le_bytes)
+                .unwrap_or(0)
+        } else {
+            0
+        };
+        return;
+    }
     if super::input::atlas::apply(panel, command, result) {
         return;
     }
@@ -80,6 +91,14 @@ pub(in crate::play) fn apply(
                     return;
                 }
 
+                let completed = atlas
+                    .progress
+                    .as_ref()
+                    .is_some_and(|progress| progress.discovered && progress.found == 7)
+                    && panel
+                        .map
+                        .as_ref()
+                        .is_some_and(|previous| previous.found < 7);
                 panel.floor = atlas.query.floor;
                 panel.map = atlas.progress.clone();
                 panel.summary = if let Some(progress) = &atlas.progress {
@@ -95,7 +114,11 @@ pub(in crate::play) fn apply(
                 };
                 panel.atlas_query = atlas.query;
                 panel.atlas = Some(atlas);
-                panel.feedback = "Atlas updated".into();
+                panel.feedback = if completed {
+                    tr!("Subarea discovered! All seven points of interest found.").into()
+                } else {
+                    "Atlas updated".into()
+                };
             }
             Err(_) => panel.feedback = "Invalid atlas reply".into(),
         }
@@ -154,9 +177,12 @@ pub(in crate::play) fn apply(
         6 => tr!("Insufficient funds"),
         7 => tr!("Area currently improved"),
         _ => {
+            let completed = state.discovered && state.found == 7
+                && panel.map.as_ref().is_some_and(|previous| previous.found < 7);
             panel.summary = format!("Current exploration area | Revision {} | Discovered: {}\r\nFound {}/7 | Area {}% | Pool {} | Epoch {} | Improved: {}\r\nVisible points: {:?}", state.revision, state.discovered, state.found, state.area_percent, state.pool, state.epoch, state.improved, state.visible);
             panel.map = Some(state);
-            tr!("Cyclopedia map updated")
+            if completed { tr!("Subarea discovered! All seven points of interest found.") }
+            else { tr!("Cyclopedia map updated") }
         }
     }.into();
 }

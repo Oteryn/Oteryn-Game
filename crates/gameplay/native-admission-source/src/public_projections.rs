@@ -117,9 +117,9 @@ pub const HIGHSCORE_FILTERS: [(&str, u8); FILTERS] = [
 /// Platform consumer's `CommunityDataPolicy` ids 1..9 (its `level` page reads
 /// category 1). Game also owns 14 (lifetime Drome Score) and 17 (current
 /// rotation Drome levels): docs/reference/tibia-manual/combat.md:262.
-/// Reserved 13 (Platform Loyalty), 15 (Taint) and 16 (Phosphorus) are not
+/// Reserved 13 (Platform Loyalty), 15 (Taint) are not
 /// published by this Game source. A category does not create a Platform page.
-pub const HIGHSCORE_CATEGORIES: [(&str, u8); 14] = [
+pub const HIGHSCORE_CATEGORIES: [(&str, u8); 15] = [
     ("experience", 1),
     ("magic", 2),
     ("fist", 3),
@@ -133,6 +133,7 @@ pub const HIGHSCORE_CATEGORIES: [(&str, u8); 14] = [
     ("charm", 11),
     ("boss", 12),
     ("drome", 14),
+    ("phosphorus", 16),
     ("drome_current", 17),
 ];
 /// Compiled namespace of the public-projection descriptor; never a
@@ -439,7 +440,7 @@ pub fn encode_highscores(
         snapshot.projection_revision,
         snapshot.source_observed_at,
     ) && canonical_uuid(&snapshot.world_id, Some(b'7'))
-        && matches!(snapshot.category, 1..=12 | 14 | 17)
+        && matches!(snapshot.category, 1..=12 | 14 | 16 | 17)
         && usize::from(snapshot.filter) < FILTERS
         && snapshot.computed_at > 0
         && rows.len() <= MAX_HIGHSCORE_ROWS

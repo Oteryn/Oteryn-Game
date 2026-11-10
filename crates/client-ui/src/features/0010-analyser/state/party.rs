@@ -4,6 +4,64 @@ use oteryn_client_runtime::{
     analyser::party::{self, Member, Price},
     raw_feature::{FeatureCommand, GatedCommandResult},
 };
+use std::collections::BTreeMap;
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Adjustment {
+    pub extra_cost: u64,
+    pub excluded: bool,
+}
+pub type Adjustments = BTreeMap<String, Adjustment>;
+/// Advisory edits belong to the displayed session, never to server measurements.
+pub fn edit(panel: &mut Panel, name: &str, cost: Option<&str>, excluded: Option<bool>) -> bool {
+    let name = name.trim();
+    let (rows, adjustments) = if let Some(imported) = &mut panel.party_import {
+        (&imported.rows, &mut imported.adjustments)
+    } else {
+        (&panel.party, &mut panel.party_adjustments)
+    };
+    let Some(row) = rows.iter().find(|row| row.name.eq_ignore_ascii_case(name)) else {
+        panel.feedback = Some(tr!("Enter a member name from the displayed party session"));
+        return false;
+    };
+    let extra_cost = match cost.map(|value| value.trim().parse::<u64>()) {
+        Some(Ok(value)) => Some(value),
+        Some(Err(_)) => {
+            panel.feedback = Some(tr!("Extra costs must be whole nonnegative gold amounts"));
+            return false;
+        }
+        None => None,
+    };
+    let adjustment = adjustments.entry(row.name.clone()).or_default();
+    if let Some(value) = extra_cost {
+        adjustment.extra_cost = value;
+    }
+    if let Some(value) = excluded {
+        adjustment.excluded = value;
+    }
+    panel.price_input = [row.name.clone(), adjustment.extra_cost.to_string()];
+    panel.tool = super::Tool::Party;
+    panel.feedback = None;
+    true
+}
+pub(super) fn adjustment_text(rows: &[Member], adjustments: &Adjustments) -> String {
+    use std::fmt::Write;
+    let mut text = String::new();
+    for row in rows {
+        let adjustment = adjustments.get(&row.name).copied().unwrap_or_default();
+        let _ = lwrite!(
+            text,
+            "{} | extra cost {} | {}\r\n",
+            row.name,
+            adjustment.extra_cost,
+            if adjustment.excluded {
+                tr!("excluded")
+            } else {
+                tr!("included")
+            }
+        );
+    }
+    text
+}
 pub fn request(panel: &mut Panel) -> Option<FeatureCommand> {
     if !panel.selected || panel.party_pending {
         return None;
@@ -52,6 +110,9 @@ pub fn result(panel: &mut Panel, reply: &GatedCommandResult) {
     }
     match party::decode_reply(&reply.payload) {
         Ok(rows) => {
+            panel
+                .party_adjustments
+                .retain(|name, _| rows.iter().any(|row| &row.name == name));
             panel.party = rows;
             panel.party_feedback = None;
         }
@@ -70,6 +131,13 @@ pub struct Transfer {
 }
 /// Every member keeps an equal integer share; remainders go in character-name order.
 pub fn split(rows: &[Member]) -> Option<Vec<Transfer>> {
+    split_adjusted(rows, &Adjustments::new())
+}
+pub fn split_adjusted(rows: &[Member], adjustments: &Adjustments) -> Option<Vec<Transfer>> {
+    let mut rows: Vec<_> = rows
+        .iter()
+        .filter(|row| !adjustments.get(&row.name).is_some_and(|a| a.excluded))
+        .collect();
     if rows.is_empty()
         || rows.iter().any(|r| {
             !r.available || r.incomplete || r.unpriced_loot != 0 || r.unpriced_supplies != 0
@@ -77,12 +145,13 @@ pub fn split(rows: &[Member]) -> Option<Vec<Transfer>> {
     {
         return None;
     }
-    let mut rows: Vec<_> = rows.iter().collect();
     rows.sort_by(|a, b| a.name.cmp(&b.name).then(a.handle.cmp(&b.handle)));
-    let total: i128 = rows
-        .iter()
-        .map(|r| i128::from(r.loot_value) - i128::from(r.supply_cost))
-        .sum();
+    let balance = |row: &Member| {
+        i128::from(row.loot_value)
+            - i128::from(row.supply_cost)
+            - i128::from(adjustments.get(&row.name).map_or(0, |a| a.extra_cost))
+    };
+    let total: i128 = rows.iter().map(|r| balance(r)).sum();
     let count = rows.len() as i128;
     let base = total.div_euclid(count);
     let extra = total.rem_euclid(count) as usize;
@@ -90,7 +159,7 @@ pub fn split(rows: &[Member]) -> Option<Vec<Transfer>> {
     let mut receivers = Vec::new();
     for (i, row) in rows.iter().enumerate() {
         let share = base + i128::from(i < extra);
-        let excess = i128::from(row.loot_value) - i128::from(row.supply_cost) - share;
+        let excess = balance(row) - share;
         if excess > 0 {
             payers.push((row.handle, excess.unsigned_abs()));
         } else if excess < 0 {
@@ -171,10 +240,11 @@ pub fn text(panel: &Panel) -> String {
             "No party accounting received. Refresh to read the server.\r\n"
         ));
     }
+    text.push_str(&adjustment_text(&panel.party, &panel.party_adjustments));
     let transfers = if panel.party_pending || panel.party_feedback.is_some() {
         None
     } else {
-        split(&panel.party)
+        split_adjusted(&panel.party, &panel.party_adjustments)
     };
     if let Some(transfers) = transfers {
         text.push_str(tr!(

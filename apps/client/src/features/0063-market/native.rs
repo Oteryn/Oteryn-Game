@@ -197,6 +197,10 @@ fn run(
             [490, 415, 190, 28],
             WS_TABSTOP,
         );
+        let stashback = control(
+            hwnd, "BUTTON", tr!("Stashback"), 6191,
+            [440, 45, 230, 28], WS_TABSTOP,
+        );
         let status = control(
             hwnd,
             "EDIT",
@@ -221,9 +225,11 @@ fn run(
                 break;
             };
             let mut m = lock(&shared);
-            if m.market_shutdown {
+            if m.market_shutdown || !m.market.open {
                 break;
             }
+            ShowWindow(stashback, if m.stash.return_from_market { SW_SHOW } else { SW_HIDE });
+            let mut return_to_stash = false;
             let mut browse_catalogue = false;
             for id in std::mem::take(&mut actions.0) {
                 if (20..=22).contains(&id) && read(item).trim().is_empty() {
@@ -242,6 +248,10 @@ fn run(
                     continue;
                 }
                 let intent = match id {
+                    6191 => {
+                        return_to_stash = true;
+                        None
+                    }
                     2 => Some(Intent::Browse),
                     3 => Some(Intent::OwnOffers),
                     4 => Some(Intent::History),
@@ -296,6 +306,12 @@ fn run(
                 held = Some(m.market.clone());
             }
             drop(m);
+            if return_to_stash {
+                DestroyWindow(hwnd);
+                close(&weak);
+                super::super::input::stashback(&shared, &commands);
+                return;
+            }
             if browse_catalogue {
                 catalogue::open(hwnd, item, &weak, &commands);
             }

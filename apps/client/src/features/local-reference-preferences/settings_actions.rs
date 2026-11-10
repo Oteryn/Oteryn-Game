@@ -44,10 +44,22 @@ impl SettingsState {
             .skill_progress
             .order
             .clone_from(&self.preferences.skill_order);
-        mailbox
-            .condition_status
-            .order
-            .clone_from(&self.preferences.condition_order);
+        mailbox.condition_status.order = self
+            .preferences
+            .ordered_condition_keys()
+            .iter()
+            .filter_map(|key| {
+                (1..=27).find(|icon| oteryn_client_ui::condition_status::icon_key(*icon) == key)
+            })
+            .collect();
+        mailbox.condition_status.hidden = (1..=27)
+            .filter(|icon| {
+                self.preferences
+                    .condition_status_hidden
+                    .iter()
+                    .any(|key| key == oteryn_client_ui::condition_status::icon_key(*icon))
+            })
+            .collect();
         if mailbox.local_preferences.console_font_px != self.preferences.console_font_px {
             mailbox.chat.console.display.font_px = self.preferences.console_font_px;
         }
@@ -125,6 +137,7 @@ impl SettingsState {
         self.minimap_edit = self.battle_edit;
         self.hud_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
+        self.stash_sort_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
         Ok(())
     }
@@ -169,6 +182,7 @@ impl SettingsState {
             minimap_edit: 0,
             hud_edit: 0,
             spellbook_edit: 0,
+            stash_sort_edit: 0,
             archive_edit: 0,
             battle_edit: 0,
             store,
@@ -296,6 +310,9 @@ impl SettingsState {
         }
         if self.preferences.archive_bindings != preferences.archive_bindings {
             self.archive_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
+        if self.preferences.stash_stock_order != preferences.stash_stock_order {
+            self.stash_sort_edit = crate::play::feature_0017_attack::view::next_edit();
         }
         if self.preferences.spellbook_filter != preferences.spellbook_filter {
             self.spellbook_edit = crate::play::feature_0017_attack::view::next_edit();

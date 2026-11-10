@@ -21,7 +21,9 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             if !actions.is_null()
                 && (*actions).0.len() < 32
                 && (action_clicked(id, note)
-                    || (matches!(id, 201..=204 | 206) && note == CBN_SELCHANGE as usize))
+                    || (id == 207 && note == EN_CHANGE as usize)
+                    || (matches!(id, 201..=204 | 206 | 208..=209 | 211)
+                        && note == CBN_SELCHANGE as usize))
             {
                 (*actions).0.push(id);
             }
@@ -64,8 +66,8 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            740,
-            685,
+            1100,
+            850,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -82,6 +84,66 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
+        control(
+            hwnd,
+            "STATIC",
+            tr!("All weapons — filter by name"),
+            307,
+            [10, 10, 320, 25],
+            0,
+        );
+        let search = control(
+            hwnd,
+            "EDIT",
+            "",
+            207,
+            [10, 40, 320, 25],
+            WS_BORDER | WS_TABSTOP,
+        );
+        let filter = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            208,
+            [10, 75, 180, 200],
+            CBS_DROPDOWNLIST as u32 | WS_TABSTOP,
+        );
+        fill(
+            filter,
+            &[
+                tr!("All weapons"),
+                tr!("In progress"),
+                tr!("Mastered"),
+                tr!("Untrained"),
+            ]
+            .map(str::to_owned),
+            0,
+        );
+        let sort = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            209,
+            [200, 75, 130, 160],
+            CBS_DROPDOWNLIST as u32 | WS_TABSTOP,
+        );
+        fill(sort, &[tr!("Name"), tr!("Progress")].map(str::to_owned), 0);
+        let tree = control(
+            hwnd,
+            "LISTBOX",
+            "",
+            211,
+            [350, 410, 690, 190],
+            WS_BORDER | WS_VSCROLL | WS_TABSTOP | LBS_NOTIFY as u32,
+        );
+        let slot_frame = control(
+            hwnd,
+            "BUTTON",
+            tr!("Modification slot"),
+            308,
+            [340, 70, 710, 46],
+            BS_GROUPBOX as u32,
+        );
         let fields = [
             (tr!("Weapon"), ""),
             (tr!("Perk group"), ""),
@@ -92,14 +154,25 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         ];
         let mut edits = [null_mut(); 6];
         for (i, (label, value)) in fields.iter().enumerate() {
-            let y = 10 + i as i32 * 32;
-            control(hwnd, "STATIC", label, 301 + i, [10, y, 235, 25], 0);
+            if i == 0 {
+                edits[i] = control(
+                    hwnd,
+                    "LISTBOX",
+                    "",
+                    201,
+                    [10, 115, 320, 480],
+                    WS_BORDER | WS_VSCROLL | WS_TABSTOP | LBS_NOTIFY as u32,
+                );
+                continue;
+            }
+            let y = 10 + (i - 1) as i32 * 36;
+            control(hwnd, "STATIC", label, 301 + i, [350, y, 235, 25], 0);
             edits[i] = control(
                 hwnd,
                 if i == 4 { "STATIC" } else { "COMBOBOX" },
                 value,
                 201 + i,
-                [250, y, 440, if i == 4 { 25 } else { 240 }],
+                [590, y, 440, if i == 4 { 25 } else { 240 }],
                 WS_BORDER
                     | WS_TABSTOP
                     | if i == 4 {
@@ -114,7 +187,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             "BUTTON",
             tr!("Clear selected perk"),
             210,
-            [10, 205, 250, 25],
+            [350, 205, 250, 25],
             BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
         );
         for (i, label) in [
@@ -132,6 +205,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         ]
         .iter()
         .enumerate()
+        .take(9)
         {
             control(
                 hwnd,
@@ -139,7 +213,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 label,
                 101 + i,
                 [
-                    10 + (i % 4) as i32 * 175,
+                    350 + (i % 4) as i32 * 175,
                     240 + (i / 4) as i32 * 35,
                     165,
                     28,
@@ -159,7 +233,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 label,
                 id,
                 [
-                    10 + (if id == 116 { 3 } else { id as i32 - 112 }) * 175,
+                    350 + (if id == 116 { 3 } else { id as i32 - 112 }) * 175,
                     345,
                     165,
                     28,
@@ -167,12 +241,18 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 WS_TABSTOP,
             );
         }
+        for (id, label, x) in [
+            (117, tr!("Confirm Clear"), 350),
+            (118, tr!("Cancel Clear"), 525),
+        ] {
+            control(hwnd, "BUTTON", label, id, [x, 380, 165, 28], WS_TABSTOP);
+        }
         let output = control(
             hwnd,
             "EDIT",
             "",
             400,
-            [10, 390, 690, 240],
+            [10, 615, 1040, 185],
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
         let mut message: MSG = std::mem::zeroed();
@@ -194,10 +274,44 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 break;
             }
             for action in std::mem::take(&mut actions.0) {
+                if action == 207 {
+                    let mut text = vec![0u16; (GetWindowTextLengthW(search) + 1).max(1) as usize];
+                    GetWindowTextW(search, text.as_mut_ptr(), text.len() as i32);
+                    panel.search = String::from_utf16_lossy(&text[..text.len() - 1]);
+                    continue;
+                }
+                if matches!(action, 208..=209) {
+                    let row = SendMessageW(
+                        if action == 208 { filter } else { sort },
+                        CB_GETCURSEL,
+                        0,
+                        0,
+                    );
+                    if action == 208 {
+                        panel.progress_filter = row as u8;
+                    } else {
+                        panel.sort_progress = row == 1;
+                    }
+                    continue;
+                }
+                if action == 211 {
+                    if let Ok(row) = usize::try_from(SendMessageW(tree, LB_GETCURSEL, 0, 0)) {
+                        choose(panel, 6, row);
+                    }
+                    continue;
+                }
                 if matches!(action, 201..=204 | 206) {
                     let field = action - 201;
-                    if let Ok(row) = usize::try_from(SendMessageW(edits[field], CB_GETCURSEL, 0, 0))
-                    {
+                    if let Ok(row) = usize::try_from(SendMessageW(
+                        edits[field],
+                        if field == 0 {
+                            LB_GETCURSEL
+                        } else {
+                            CB_GETCURSEL
+                        },
+                        0,
+                        0,
+                    )) {
                         choose(panel, field, row);
                     }
                     continue;
@@ -219,35 +333,72 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             {
                 panel.select_weapon(0);
             }
-            if !panel.pending
-                && panel.state_refresh_needed
-                && let Some(command) = request(panel, Intent::State)
+            if let Some(command) =
+                oteryn_client_ui::weapon_proficiency::tick(panel, std::time::Instant::now())
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
                 panel.pending = false;
                 panel.feedback = Some(tr!("The session has ended"));
             }
             if held.as_ref() != Some(panel) {
-                let weapons = panel
-                    .catalogue
-                    .as_ref()
-                    .map(|page| {
-                        page.entries
-                            .iter()
-                            .map(|entry| lfmt!("{} — {} XP", entry.name, entry.experience))
-                            .collect::<Vec<_>>()
+                let rows = panel.visible_weapons();
+                let weapons = rows
+                    .iter()
+                    .filter_map(|row| panel.catalogue.as_ref()?.entries.get(*row))
+                    .map(|entry| {
+                        lfmt!(
+                            "{} — {}% — {} XP",
+                            entry.name,
+                            oteryn_client_ui::weapon_proficiency::progress_percent(entry),
+                            entry.experience
+                        )
                     })
-                    .unwrap_or_default();
-                let selected_weapon = panel
-                    .catalogue
+                    .collect::<Vec<_>>();
+                let selected_weapon = rows.iter().position(|row| {
+                    panel
+                        .catalogue
+                        .as_ref()
+                        .is_some_and(|page| page.entries[*row].definition == panel.weapon)
+                });
+                fill_list(edits[0], &weapons, selected_weapon);
+                let tree_rows = panel.perk_tree_rows();
+                let tree_selection = tree_rows.iter().position(|(_, choice)| {
+                    *choice == Some((usize::from(panel.level), usize::from(panel.perk)))
+                });
+                fill_list(
+                    tree,
+                    &tree_rows
+                        .into_iter()
+                        .map(|(text, _)| text)
+                        .collect::<Vec<_>>(),
+                    tree_selection,
+                );
+                let slot_title = panel
+                    .shaping
                     .as_ref()
-                    .and_then(|page| {
-                        page.entries
-                            .iter()
-                            .position(|entry| entry.definition == panel.weapon)
-                    })
-                    .unwrap_or(0);
-                fill(edits[0], &weapons, selected_weapon);
+                    .and_then(|state| state.slots.get(usize::from(panel.slot).wrapping_sub(1)))
+                    .and_then(Option::as_ref)
+                    .map_or_else(
+                        || lfmt!("Slot {} — empty", panel.slot),
+                        |slot| lfmt!("Modified slot {} — rank {}", panel.slot, slot.rank),
+                    );
+                SetWindowTextW(slot_frame, wide(&slot_title).as_ptr());
+                let modified = panel
+                    .shaping
+                    .as_ref()
+                    .and_then(|state| state.slots.get(usize::from(panel.slot).wrapping_sub(1)))
+                    .is_some_and(Option::is_some);
+                ShowWindow(slot_frame, if modified { SW_SHOW } else { SW_HIDE });
+                for id in [117, 118] {
+                    ShowWindow(
+                        GetDlgItem(hwnd, id),
+                        if panel.clear_confirmation.is_some() {
+                            SW_SHOW
+                        } else {
+                            SW_HIDE
+                        },
+                    );
+                }
                 let groups = panel
                     .weapon_entry()
                     .map(|entry| {
@@ -344,6 +495,18 @@ fn fill(hwnd: HWND, values: &[String], selected: usize) {
         }
         if !values.is_empty() {
             SendMessageW(hwnd, CB_SETCURSEL, selected.min(values.len() - 1), 0);
+        }
+    }
+}
+
+fn fill_list(hwnd: HWND, values: &[String], selected: Option<usize>) {
+    unsafe {
+        SendMessageW(hwnd, LB_RESETCONTENT, 0, 0);
+        for value in values {
+            SendMessageW(hwnd, LB_ADDSTRING, 0, wide(value).as_ptr() as isize);
+        }
+        if let Some(row) = selected {
+            SendMessageW(hwnd, LB_SETCURSEL, row, 0);
         }
     }
 }

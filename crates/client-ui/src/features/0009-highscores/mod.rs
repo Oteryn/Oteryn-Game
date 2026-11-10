@@ -7,9 +7,9 @@ pub use input::open_key;
 pub use protocol::{apply_result, request};
 pub use state::{Action, HighscoresPanel};
 pub use view::{panel_text, parse_world, world_text};
-// Categories 13 (Loyalty), 15 (Taint), and 16 (Phosphorus) are reserved; Game filters preserve explicit wire IDs.
-pub const CATEGORY_IDS: [u32; 14] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17];
-pub const CATEGORIES: [&str; 14] = [
+// Categories 13 (Loyalty) and 15 (Taint) are reserved; Game filters preserve explicit wire IDs.
+pub const CATEGORY_IDS: [u32; 15] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 17];
+pub const CATEGORIES: [&str; 15] = [
     "Experience",
     "Magic level",
     "Fist",
@@ -24,6 +24,7 @@ pub const CATEGORIES: [&str; 14] = [
     "Boss points",
     // docs/reference/tibia-manual/combat.md:262; both lists use the existing native Highscores controls.
     "Tibiadrome lifetime",
+    "Phosphorus Record",
     "Tibiadrome current rotation",
 ];
 pub const VOCATIONS: [&str; 6] = ["All", "Knight", "Paladin", "Sorcerer", "Druid", "Monk"];

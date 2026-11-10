@@ -31,10 +31,11 @@ impl Driver {
     pub(in crate::play) async fn poll<T: Stepper>(
         &mut self,
         session: &mut T,
-    ) -> Result<(), SessionError> {
+    ) -> Result<Option<Answer>, SessionError> {
         if !self.panel.selected {
-            return Ok(());
+            return Ok(None);
         }
+        let mut completed = None;
         if let Ok((answer, acknowledged)) = self.answers.try_recv() {
             let accepted = if let Some(command) = ui::answer(&mut self.panel, answer) {
                 let result = session.feature(&command).await?;
@@ -42,6 +43,7 @@ impl Driver {
             } else {
                 false
             };
+            completed = accepted.then_some(answer);
             let _ = acknowledged.send(accepted);
         } else if Instant::now() >= self.next_query {
             self.next_query = Instant::now() + Duration::from_secs(5);
@@ -58,7 +60,7 @@ impl Driver {
         } else {
             self.shown = None;
         }
-        Ok(())
+        Ok(completed)
     }
 }
 #[cfg(test)]

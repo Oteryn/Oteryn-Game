@@ -204,7 +204,11 @@ fn imbuement_clear_needs_an_occupied_slot_inside_the_item_then_access() {
     assert_eq!(clear(2, &[row(0, 0)]), ImbuementResult::NotAllowed);
     assert_eq!(clear(1, &[row(0, 0)]), ImbuementResult::NotAllowed);
     assert_eq!(
-        decide(ImbuementAction::Clear { slot: 0 }, Some(&allowance), &[row(0, 0)]),
+        decide(
+            ImbuementAction::Clear { slot: 0 },
+            Some(&allowance),
+            &[row(0, 0)]
+        ),
         Decision::Clear { slot: 0 }
     );
     assert_eq!(
@@ -216,7 +220,11 @@ fn imbuement_clear_needs_an_occupied_slot_inside_the_item_then_access() {
 #[test]
 fn imbuement_shrine_keys_are_sorted_for_binary_search() {
     assert!(SHRINE_KEYS.windows(2).all(|pair| pair[0] < pair[1]));
-    assert!(SHRINE_KEYS.binary_search(&"oteryn:item.tibia.i25060").is_ok());
+    assert!(
+        SHRINE_KEYS
+            .binary_search(&"oteryn:item.tibia.i25060")
+            .is_ok()
+    );
 }
 
 #[test]
@@ -229,11 +237,19 @@ fn filled_scroll_bypasses_access_but_keeps_target_slot_and_category_rules() {
     .expect("allowance");
     assert_eq!(
         decide_imbuement_item_use(51_462, Some(&allowance), &[]),
-        ImbuementItemDecision::ApplyScroll { slot: 0, family: 1, tier: 3 }
+        ImbuementItemDecision::ApplyScroll {
+            slot: 0,
+            family: 1,
+            tier: 3
+        }
     );
     assert_eq!(
         decide_imbuement_item_use(51_462, Some(&allowance), &[row(0, 9)]),
-        ImbuementItemDecision::ApplyScroll { slot: 1, family: 1, tier: 3 }
+        ImbuementItemDecision::ApplyScroll {
+            slot: 1,
+            family: 1,
+            tier: 3
+        }
     );
     assert_eq!(
         decide_imbuement_item_use(51_462, Some(&allowance), &[row(0, 0)]),
@@ -247,7 +263,10 @@ fn filled_scroll_bypasses_access_but_keeps_target_slot_and_category_rules() {
 
 #[test]
 fn etcher_clears_every_occupied_slot_once_and_is_not_extraction() {
-    let allowance = Allowance { slot_count: 3, offers: vec![] };
+    let allowance = Allowance {
+        slot_count: 3,
+        offers: vec![],
+    };
     assert_eq!(
         decide_imbuement_item_use(51_443, Some(&allowance), &[row(2, 3), row(0, 7)]),
         ImbuementItemDecision::Etch { slots: vec![0, 2] }
@@ -267,10 +286,22 @@ fn blank_scroll_window_contains_only_intricate_and_powerful_scroll_recipes() {
     let allowance = blank_scroll_allowance();
     assert_eq!(allowance.slot_count, 1);
     assert_eq!(allowance.offers.len(), IMBUEMENT_SCROLLS.len());
-    assert!(allowance.offers.iter().all(|offer| matches!(offer.tier, 2 | 3)));
+    assert!(
+        allowance
+            .offers
+            .iter()
+            .all(|offer| matches!(offer.tier, 2 | 3))
+    );
     assert!(allowance.offers.iter().all(|offer| offer.requires_premium));
     assert!(matches!(
-        decide(ImbuementAction::Apply { slot: 0, imbuement: 0 }, Some(&allowance), &[]),
+        decide(
+            ImbuementAction::Apply {
+                slot: 0,
+                imbuement: 0
+            },
+            Some(&allowance),
+            &[]
+        ),
         Decision::Apply { .. }
     ));
 }
@@ -300,7 +331,13 @@ fn imbuement_allowance_of_activated_native_content_follows_generated_slots() {
     let sword = policy("oteryn:item.tibia.i3264").expect("sword slots");
     assert_eq!(sword.slot_count, 2);
     let families: Vec<_> = sword.offers.iter().map(|offer| offer.family).collect();
-    assert_eq!(families, [1, 1, 1, 2, 2, 2, 11, 11, 11, 12, 12, 12, 20, 20, 20]);
+    assert_eq!(
+        families,
+        [1, 11, 12, 20, 21, 22, 23, 24, 25]
+            .into_iter()
+            .flat_map(|family| [family; 3])
+            .collect::<Vec<_>>()
+    );
     let backpack = policy("oteryn:item.tibia.i2854").expect("backpack slot");
     assert_eq!(backpack.slot_count, 1);
     // A wooden shield and gold coins have no slot: every action is the same NOT_ALLOWED.
@@ -314,6 +351,48 @@ fn imbuement_allowance_of_activated_native_content_follows_generated_slots() {
                 window: None,
             }),
             "{key}"
+        );
+    }
+}
+
+#[test]
+fn t174_elemental_scrolls_share_a_category_and_vibrancy_uses_boot_slots() {
+    let sword = allowance(&content(
+        ReferenceItemField::Known(2),
+        allowed(&[ReferenceImbuementFamily::ElementalDamage]),
+        ReferenceItemField::NotApplicable,
+    ))
+    .expect("sword");
+    assert_eq!(sword.offers.len(), 15);
+    for scroll in IMBUEMENT_SCROLLS
+        .iter()
+        .filter(|scroll| (21..=25).contains(&scroll.family))
+    {
+        assert!(matches!(
+            decide_imbuement_item_use(scroll.item_id, Some(&sword), &[]),
+            ImbuementItemDecision::ApplyScroll { .. }
+        ));
+        for category in [1, 20, 21, 22, 23, 24] {
+            assert_eq!(
+                decide_imbuement_item_use(scroll.item_id, Some(&sword), &[row(0, category)]),
+                ImbuementItemDecision::Refused(ImbuementResult::NotAllowed)
+            );
+        }
+    }
+    let boots = allowance(&content(
+        ReferenceItemField::Known(1),
+        allowed(&[ReferenceImbuementFamily::ParalysisRemoval]),
+        ReferenceItemField::NotApplicable,
+    ))
+    .expect("boots");
+    for item in [51_466, 51_746] {
+        assert!(matches!(
+            decide_imbuement_item_use(item, Some(&boots), &[]),
+            ImbuementItemDecision::ApplyScroll { family: 26, .. }
+        ));
+        assert_eq!(
+            decide_imbuement_item_use(item, Some(&sword), &[]),
+            ImbuementItemDecision::Refused(ImbuementResult::NotAllowed)
         );
     }
 }

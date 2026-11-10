@@ -10,7 +10,7 @@ mod state;
 mod view;
 pub use input::open_key;
 pub use state::{Intent, Panel, Section};
-pub use view::{MapPoint, map_page, map_points, map_text, panel_text};
+pub use view::{MapPoint, discovery_speed_tooltip, map_page, map_points, map_text, panel_text};
 mod protocol;
 pub use protocol::request;
 

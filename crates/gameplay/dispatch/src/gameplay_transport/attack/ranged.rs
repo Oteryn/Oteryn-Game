@@ -294,7 +294,13 @@ impl RangedLoadout {
         }
     }
     pub(super) fn split(&self, damage: i64) -> Option<(i64, i64, Element)> {
-        match self.damage {
+        self.damage.split(damage)
+    }
+}
+
+impl RangedDamage {
+    fn split(self, damage: i64) -> Option<(i64, i64, Element)> {
+        match self {
             RangedDamage::Magic { element, .. } => Some((0, damage, element)),
             RangedDamage::Distance {
                 attack,
@@ -793,8 +799,12 @@ pub(super) fn train_distance(
 pub(super) fn immune(
     ranged: &RangedLoadout,
     policy: &crate::content::creature_policy::CompiledCreaturePolicy,
+    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
 ) -> bool {
-    let (physical, elemental, element) = ranged.split(100).unwrap_or((0, 0, Element::Physical));
+    let (physical, elemental, element) = ranged
+        .split(100)
+        .and_then(|(p, s, e)| offence.convert_physical(p, s, e))
+        .unwrap_or((0, 0, Element::Physical));
     (physical == 0 || policy.damage_immunities.iter().any(|key| key == "physical"))
         && (elemental == 0
             || policy
@@ -814,10 +824,20 @@ fn element_key(element: Element) -> &'static str {
     }
 }
 
+fn resolved_damage(
+    damage: RangedDamage,
+    magnitude: i64,
+    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+) -> Option<(i64, i64, Element)> {
+    let (primary, secondary, element) = damage.split(magnitude)?;
+    offence.convert_physical(primary, secondary, element)
+}
+
 pub(super) fn creature_damage(
     ranged: &RangedLoadout,
     policy: &crate::content::creature_policy::CompiledCreaturePolicy,
     damage: i64,
+    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
     (root, constants, actor, lineage, ordinal): (
         &GameplayDecisionRoot,
         &AttackConstants,
@@ -826,7 +846,7 @@ pub(super) fn creature_damage(
         u16,
     ),
     wheel: Option<(&crate::spell::cast::PlayerSpellState, u64, u64, u64, bool)>,
-) -> Option<[i64; 2]> {
+) -> Option<([i64; 2], Element)> {
     use oteryn_gameplay_combat_rules::resolution::{
         creature_damage_response_with_reduction, swing_mitigated,
     };
@@ -837,7 +857,7 @@ pub(super) fn creature_damage(
             && state.wheel_equipment().and_then(|hands| hands.ammunition())
                 == Some(crate::content::ReferenceAmmoType::Arrow)
     });
-    let (physical, elemental, element) = ranged.split(damage)?;
+    let (physical, elemental, element) = resolved_damage(ranged.damage, damage, offence)?;
     let physical = if physical > 0 {
         let physical = swing_mitigated(
             root,
@@ -861,7 +881,7 @@ pub(super) fn creature_damage(
     } else {
         0
     };
-    let element = match element {
+    let element_key = match element {
         Element::Physical => "physical",
         Element::Death => "death",
         Element::Earth => "earth",
@@ -872,8 +892,12 @@ pub(super) fn creature_damage(
     let elemental = creature_damage_response_with_reduction(
         policy,
         elemental,
-        element,
-        if bow && element == "physical" { 2 } else { 0 },
+        element_key,
+        if bow && element_key == "physical" {
+            2
+        } else {
+            0
+        },
     )?;
     let (physical, elemental) = if let Some((state, now, health, maximum, adjacent)) = wheel {
         if matches!(ranged.damage, RangedDamage::Magic { .. }) {
@@ -888,7 +912,7 @@ pub(super) fn creature_damage(
     } else {
         (physical, elemental)
     };
-    Some([physical, elemental])
+    Some(([physical, elemental], element))
 }
 
 #[cfg(test)]
@@ -973,6 +997,30 @@ pub(super) fn analyser_element(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn t174_converted_arrow_analyser_keeps_resolved_fire_element() -> Result<(), &'static str> {
+        let offence = oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence {
+            elemental_conversion: Some((Element::Fire, 50)),
+            ..Default::default()
+        };
+        let arrow = RangedDamage::Distance {
+            attack: 40,
+            elemental_attack: 0,
+            element: Element::Physical,
+            chance: 0,
+            cap: 100,
+            launcher_bonus: 0,
+        };
+        let (physical, elemental, element) =
+            resolved_damage(arrow, 100, &offence).ok_or("damage")?;
+        assert_eq!((physical, elemental), (50, 50));
+        assert_eq!(
+            analyser_element(element),
+            oteryn_protocol_oteryn::damage_element::DamageElement::Fire
+        );
+        Ok(())
+    }
+
     #[test]
     fn ranged_range_los_ammunition_and_mana_gates() {
         assert_eq!(

@@ -2,6 +2,7 @@
 
 mod catalogue;
 mod coin_history;
+pub mod cosmetic_tokens;
 mod hireling_purchase;
 mod history;
 mod inbox_claim;

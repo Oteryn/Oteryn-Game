@@ -117,7 +117,9 @@ impl Stepper for Fake {
     async fn combat(&mut self, command: CombatCommand) -> Result<CombatReport, SessionError> {
         lock_combats(&self.combats).push(command);
         Ok(match command {
-            CombatCommand::Cast(_) | CombatCommand::CastAt { .. } => {
+            CombatCommand::Cast(_)
+            | CombatCommand::CastAt { .. }
+            | CombatCommand::CastFacing { .. } => {
                 CombatReport::Cast(SpellCastDisposition::NotEnoughMana)
             }
             CombatCommand::Stop => CombatReport::Stop(AttackIntentDisposition::Ok),

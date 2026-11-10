@@ -9,6 +9,9 @@ impl PlayLink {
     pub fn chat_console_tab(&self, tab: ConsoleTab) {
         select(&mut lock(&self.mailbox), tab);
     }
+    pub fn chat_console_drop(&self, tab: ConsoleTab, x: i32, width: i32) -> bool {
+        drop_tab(&mut lock(&self.mailbox), tab, x, width)
+    }
     pub fn chat_console_filter(&self) {
         toggle_filter(&mut lock(&self.mailbox));
     }
@@ -29,6 +32,14 @@ impl PlayLink {
 }
 pub(in crate::play) fn select(mailbox: &mut Mailbox, tab: ConsoleTab) {
     mailbox.chat.console.select(tab);
+}
+pub(super) fn drop_tab(mailbox: &mut Mailbox, tab: ConsoleTab, x: i32, width: i32) -> bool {
+    mailbox.chat.open && mailbox.chat.console.drop_tab(tab, x, width)
+}
+#[cfg(windows)]
+pub(super) fn close(mailbox: &mut Mailbox) {
+    mailbox.chat.open = false;
+    mailbox.chat.console.close();
 }
 pub(in crate::play) fn toggle_filter(mailbox: &mut Mailbox) {
     mailbox.chat.console.show_messages = !mailbox.chat.console.show_messages;

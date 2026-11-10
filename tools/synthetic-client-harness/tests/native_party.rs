@@ -45,11 +45,13 @@ impl Stepper for Peer {
                         .clone();
                     self.view.invitations.clear();
                     self.view.members.push(party::PartyEntry {
+                        list: Vec::new(),
                         expires_at: 0,
                         party_spell_remaining_ms: None,
                         ..invitation
                     });
                     self.view.members.push(party::PartyEntry {
+                        list: Vec::new(),
                         handle: 9,
                         name: "Own".into(),
                         leader: true,
@@ -57,6 +59,7 @@ impl Stepper for Peer {
                         party_spell_remaining_ms: None,
                     });
                     self.view.members.push(party::PartyEntry {
+                        list: Vec::new(),
                         handle: 10,
                         name: "Other".into(),
                         leader: false,
@@ -167,6 +170,7 @@ fn party_controls_use_real_codec_requests_and_apply_server_views() -> Result<(),
                         shared_xp_enabled: true,
                         members: vec![],
                         invitations: vec![party::PartyEntry {
+                            list: Vec::new(),
                             handle: 8,
                             name: "Aster".into(),
                             leader: false,

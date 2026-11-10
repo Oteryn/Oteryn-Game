@@ -180,3 +180,7 @@ fn slot_labels_after(
         })
         .collect()
 }
+
+#[path = "view/cooldown.rs"]
+mod cooldown;
+pub use cooldown::{CooldownIcon, cooldown_icons};

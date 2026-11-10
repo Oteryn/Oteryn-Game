@@ -15,12 +15,16 @@ use sha2::{Digest, Sha256};
 
 #[path = "cyclopedia/atlas.rs"]
 mod atlas;
-#[path = "cyclopedia/overview.rs"]
-mod overview;
 #[path = "cyclopedia/content.rs"]
 mod content;
+#[path = "cyclopedia/overview.rs"]
+mod overview;
 #[path = "cyclopedia/respawn.rs"]
 mod respawn;
+#[path = "cyclopedia/speed.rs"]
+mod speed;
+#[path = "cyclopedia/step.rs"]
+mod step;
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     let mut offers: Vec<_> = base
@@ -67,6 +71,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         kind: u32,
         payload: &[u8],
     ) -> GuildReply {
+        if kind == wire::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY {
+            return self.cyclopedia_speed_wire(admitted, id, payload).await;
+        }
         if kind == wire::COMMAND_TYPE_CYCLOPEDIA_QUERY && payload.first() == Some(&128) {
             return self.cyclopedia_atlas_wire(admitted, id, payload).await;
         }
@@ -128,23 +135,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        // Settle delivery before borrowing the Character transaction. The in-transaction
-        // gate still rechecks the real root Account's current entitlement; no nested DB read.
-        let account = admitted.controller.map(|c| c.account_id).or_else(|| {
-            self.states
-                .premium_sessions
-                .lock()
-                .ok()
-                .and_then(|s| s.account_of(admitted.game_session_id))
-        });
-        let premium_ready = if matches!(intent.operation, 1 | 2) {
-            match (self.premium_coordinator, account) {
-                (Some(gate), Some(account)) => gate.premium_gate(account).await.premium_current(),
-                _ => false,
-            }
-        } else {
-            false
-        };
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let mut runtime = self.runtime.lock().await;
         let binding = runtime.binding();
@@ -297,7 +287,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 current,
                 request,
-                &Premium(self.premium_coordinator.filter(|_| premium_ready)),
+                &Premium(self.premium_coordinator),
             )
             .await
         {
@@ -305,6 +295,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 drop(slot);
                 // The donation is complete; respawn initialization acquires its own lane.
                 drop(trade_permit);
+                self.refresh_cyclopedia_speed(actor, admitted.game_session_id)
+                    .await;
                 if self.initialize_cyclopedia_respawn().await.is_err() {
                     return GuildReply::Unavailable;
                 }

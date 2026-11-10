@@ -1,4 +1,12 @@
 [
+ "Level {} — {} ({} XP)",
+ "\nSummary: {} weapons, {} mastered\n",
+ "Advancement: {} — level {}\n",
+ "Mastery: {} — {}% ({} / {} XP)\nPerk tree\n",
+ "{} — {}% — {} XP",
+ "Modified slot {} — rank {}",
+ "{} — {}%",
+ "↑\n{}",
  "\n  Candidates: {}", "\nBalance: {} Oteryn Coins", "\nBalance: {} coins; available {}; transferable {}.{}",
  "\nBonus: {}", "\nBoss details: {key}", "\nBosstiary browser — {:?}\n",
  "\nBuild details: {}; OS: {}; architecture: {}", "\nChange sex of Hireling: {}", "\nCurrent dust: {dust} / {limit}",
@@ -161,5 +169,12 @@
  "{}: unavailable", "{}: {:?}; fee: {} gold", "{}: {} (tier {})\r\n",
  "{}: {} ({})\r\nOutfit {}; colors {:?}; services {}\r\n{}", "{}: {} kills ({} / {} / {}){}", "{}: {} {} | Server cooldown: {} ms\r\n",
  "{}: {} | {} | Level {} | Mana {}{} | Soul {} | Learned {} | Available {} | Groups {:?} | Rune {:?}\r\n", "{}: {}s{}\r\n", "{}Charm {} — {:?}, stage {}\r\nNext stage: {} {currency} | Assign to Bestiary stage {stage} or higher\r\nAssigned race: {} | {}\r\n",
- "{}Race {}: {} kills\r\n"
+ "{}Race {}: {} kills\r\n",
+ "{} | extra cost {} | {}\r\n",
+ "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?",
+ "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.",
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}",
+ "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}",
+ "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n",
+ "Weapon proficiency XP: {}% chance to gain double XP\n"
 ]

@@ -137,6 +137,43 @@ pub(super) fn open(link: &PlayLink) {
                 [10, 585, 1030, 150],
                 ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL,
             );
+            // The tooltip owns a borrow of this buffer until the parent is destroyed.
+            let mut speed_tip = wide(&oteryn_client_ui::cyclopedia_map::discovery_speed_tooltip(
+                &Panel::default(),
+            ));
+            let tooltip = {
+                use windows_sys::Win32::UI::Controls::*;
+                let common = INITCOMMONCONTROLSEX {
+                    dwSize: std::mem::size_of::<INITCOMMONCONTROLSEX>() as u32,
+                    dwICC: ICC_WIN95_CLASSES,
+                };
+                InitCommonControlsEx(&common);
+                let tooltip = CreateWindowExW(
+                    WS_EX_TOPMOST,
+                    TOOLTIPS_CLASSW,
+                    null(),
+                    WS_POPUP | TTS_ALWAYSTIP | TTS_NOPREFIX,
+                    CW_USEDEFAULT,
+                    CW_USEDEFAULT,
+                    CW_USEDEFAULT,
+                    CW_USEDEFAULT,
+                    hwnd,
+                    null_mut(),
+                    null_mut(),
+                    null(),
+                );
+                if !tooltip.is_null() {
+                    let mut info: TTTOOLINFOW = std::mem::zeroed();
+                    info.cbSize = std::mem::size_of::<TTTOOLINFOW>() as u32;
+                    info.hwnd = hwnd;
+                    info.uId = detail as usize;
+                    info.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+                    info.lpszText = speed_tip.as_mut_ptr();
+                    SendMessageW(tooltip, TTM_ADDTOOLW, 0, &info as *const _ as isize);
+                    SendMessageW(tooltip, TTM_SETMAXTIPWIDTH, 0, 400);
+                }
+                tooltip
+            };
             let mut held: Option<Panel> = None;
             let mut msg: MSG = std::mem::zeroed();
             if let Some(shared) = weak.upgrade() {
@@ -167,6 +204,23 @@ pub(super) fn open(link: &PlayLink) {
                 }
                 let p = &m.properties.cyclopedia_map;
                 if events.dirty || held.as_ref() != Some(p) {
+                    if !tooltip.is_null() {
+                        use windows_sys::Win32::UI::Controls::*;
+                        let old = std::mem::replace(
+                            &mut speed_tip,
+                            wide(&oteryn_client_ui::cyclopedia_map::discovery_speed_tooltip(
+                                p,
+                            )),
+                        );
+                        let mut info: TTTOOLINFOW = std::mem::zeroed();
+                        info.cbSize = std::mem::size_of::<TTTOOLINFOW>() as u32;
+                        info.hwnd = hwnd;
+                        info.uId = detail as usize;
+                        info.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+                        info.lpszText = speed_tip.as_mut_ptr();
+                        SendMessageW(tooltip, TTM_UPDATETIPTEXTW, 0, &info as *const _ as isize);
+                        drop(old);
+                    }
                     paint::draw(hwnd, p);
                     SetWindowTextW(legend, wide(&paint::legend(p)).as_ptr());
                     SetWindowTextW(detail, wide(&atlas_detail(p)).as_ptr());

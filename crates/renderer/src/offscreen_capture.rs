@@ -59,9 +59,9 @@ where
             .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         {
             let attachments = [Some(wgpu::RenderPassColorAttachment {
-                view: &view,
+                view: self.multisample_view.as_ref().unwrap_or(&view),
                 depth_slice: None,
-                resolve_target: None,
+                resolve_target: self.multisample_view.as_ref().map(|_| &view),
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
                         r: 0.035,
