@@ -1,0 +1,27 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "source_checkout_clean": true,
+  "source_hash_and_range_validation": "PASS",
+  "complete_module_file_scope_validation": "PASS",
+  "inventory_partition_validation": "PASS",
+  "carried_files": 192,
+  "changed_previous_files": 4,
+  "counts": {
+    "workspace_packages": 67,
+    "supplementary_domains": 11,
+    "tracked_files": 27900,
+    "unique_substantively_analyzed_files": 343,
+    "fully_analyzed_files": 232,
+    "selected_range_files": 111,
+    "analyzed_lines_union": 62726,
+    "workspace_statuses": {
+      "IN PROGRESS": 25,
+      "REVIEWED": 25,
+      "NOT STARTED": 17
+    },
+    "supplementary_statuses": {
+      "IN PROGRESS": 2,
+      "NOT STARTED": 9
+    }
+  }
+}

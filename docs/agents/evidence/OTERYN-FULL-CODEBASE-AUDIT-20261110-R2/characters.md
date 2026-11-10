@@ -1,0 +1,11 @@
+# Characters — REVIEWED
+
+Base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. All ten package files (1,506 lines) reviewed.
+
+Entrypoints: fixed bootstrap audit encoding; hunting XP, offline stamina and session-local hunting clocks; soul cap/window proposals; vocation maxima and step-speed calculations. Arithmetic uses bounded inputs and widened/checked intermediates; valid values cannot wrap to a larger award. XP truncates only after the accepted combined modifiers. The stamina formula consumes the 600-second delay before fast/slow recovery periods. Hunting/prey clocks return successors without mutating on a failed caller transaction. Soul policy distinguishes zero XP (leave hook unchanged), positive sublevel XP (close), and qualifying XP (replace with four minutes), rather than extending replayed windows.
+
+The speed table checks exact SHA256, shape, range and every nonzero entry. Missing ground/table data rejects movement; effective speed saturates before narrowing. Vocation maxima preserve level-8 boundaries, checked arithmetic and adapter bounds. Pure policy results do not establish session authority.
+
+Cross-module evidence: `durability/party_kill_xp.rs:354-385` reads modifiers in the transaction and caps stored stamina by current live stamina before applying XP; `dispatch/.../soul_kill_live.rs:58-102` emits hooks only for newly Committed awards and waits for pending spell commits. `durability/loop_training.rs:180-285` ties offline recovery to retained predecessor/clock state in its transaction. `dispatch/.../actor_movement.rs:107-142` refuses unavailable step duration before movement. The bootstrap writer encodes fixed account/character/world facts in its durable operation.
+
+Verification: compiled the unchanged `stamina.rs` directly with `rustc --edition=2024 --test`: 13 passed, 0 failed. Compiled unchanged `hunting_experience.rs` likewise: 6 passed, 0 failed. Logs retained beside this report. These 19 tests exercise actual source and existing assertions, including an independent period oracle, without a workspace build. They do not validate SQL transactions, native movement scheduling, premium refresh, or all package dependencies. The remainder of package tests were inspected, not run. No new confirmed finding. No package files remain.

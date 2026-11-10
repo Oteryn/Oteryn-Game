@@ -1,0 +1,56 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "observed_at_utc": "2026-11-10T10:23:46.300089+00:00",
+  "lifecycle": "AUTHORING",
+  "branch": "audit/full-codebase-20261110-4f0b6c62",
+  "sole_writer": "lead /root",
+  "owned_prefix": "docs/agents/evidence/OTERYN-FULL-CODEBASE-AUDIT-20261110-R2",
+  "lanes": [
+    {
+      "lane": "lead",
+      "ledger_rows": 20,
+      "reported_completed_modules": [
+        "oteryn-admin-contracts",
+        "oteryn-admin-agent"
+      ]
+    },
+    {
+      "lane": "protocol-session",
+      "ledger_rows": 41,
+      "reported_completed_modules": [
+        "oteryn-identity",
+        "oteryn-platform-contracts",
+        "oteryn-session-tcp",
+        "oteryn-error-codes",
+        "oteryn-platform-client"
+      ]
+    },
+    {
+      "lane": "gameplay-rules",
+      "ledger_rows": 30,
+      "reported_completed_modules": [
+        "oteryn-gameplay-source-critical-baseline",
+        "oteryn-gameplay-node-files",
+        "oteryn-gameplay-weather",
+        "oteryn-gameplay-characters"
+      ]
+    },
+    {
+      "lane": "client-support",
+      "ledger_rows": 70,
+      "reported_completed_modules": [
+        "oteryn-client-domain",
+        "oteryn-synthetic-assets",
+        "oteryn-synthetic-asset-compiler",
+        "oteryn-pre-native-client-tests",
+        "oteryn-security-auth-tests",
+        "oteryn-diagnostics",
+        "oteryn-test-support",
+        "oteryn-client-simulation",
+        "oteryn-client-assets",
+        "oteryn-input-actions",
+        "oteryn-input-platform"
+      ]
+    }
+  ]
+}

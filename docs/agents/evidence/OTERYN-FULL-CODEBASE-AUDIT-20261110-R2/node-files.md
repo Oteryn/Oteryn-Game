@@ -1,0 +1,9 @@
+# Node files — REVIEWED
+
+Base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. All four package files (736 lines) reviewed.
+
+`operator_files` supplies strict bounded serialization; `secure_file` owns descriptor-based reads, checked state directories, durable exclusive creation, and removal. Reads check the opened file's owner, mode and regular-file type before consuming data; NONBLOCK avoids waiting on a named pipe before rejecting its type. The final entry cannot be a symbolic link. `open_state_directory` validates each ancestor without following symlinks, allowing only the specified root-owned sticky ancestor exception. Creation rejects existing entries, writes through the created descriptor, syncs file then directory, and removes a partial file on a returned failure.
+
+Actual integration: `apps/game-server/src/node/mod.rs:43-75` uses small explicit credential bounds and redacts content from errors; `node/serve.rs:861-877` uses the 16-KiB operator bound. The operator's `read_state_optional` checks root/service-user ownership before decoding; issuance creates retained state before a database mutation and reconciliation reuses the same bytes (`bin/oteryn-game-ops.rs:198-223,233-264,435-454`).
+
+Counterguards: filename traversal rejected, DTO unknown members rejected, short/nonlowercase hex rejected, no accidental overwrite, hard/short read failures surfaced. The generic `read_bounded` max+1 edge is unreachable through the observed bounded callers; no overflow finding claimed. General `read_checked` checks the immediate parent, while the retained operator state uses the stronger ancestor walk; these are different APIs. No trusted-user replacement/hostile filesystem runtime test was run, and no vulnerability is inferred from a pathname alone. Native tests were fully inspected but not executed. No new confirmed finding. No package files remain.

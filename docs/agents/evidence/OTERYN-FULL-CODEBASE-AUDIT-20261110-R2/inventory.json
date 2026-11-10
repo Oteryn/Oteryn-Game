@@ -1,0 +1,4628 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "observed_at_utc": "2026-11-10T10:23:46.300089+00:00",
+  "packages": [
+    {
+      "name": "oteryn-client",
+      "path": "apps/client",
+      "tracked_files": 1180,
+      "rust_files": 1056,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_client",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "oteryn-client",
+          "kind": [
+            "bin"
+          ]
+        },
+        {
+          "name": "oteryn-launcher",
+          "kind": [
+            "bin"
+          ]
+        },
+        {
+          "name": "about_survey",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "ambient_b24",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "ambient_sound_mix",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "audio",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "audio_device",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "audio_mixer",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "battle_filters",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "battle_sound_mix",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "bulletin_browser",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "connection_preference",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "crash_report",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "effect_opacity",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "frame_pacing",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "gap_house",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "inventory",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "login_retry",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_login",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "package_integrity",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "play_features",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "screenshots",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "settings_transfer_limit",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "sidebar_layout",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "staff_nx1",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "support_delivery",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "tutorial_overlay",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "ui_sound_filters",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "update_fixtures",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "window_layout",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "build-script-build",
+          "kind": [
+            "custom-build"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-client-assets",
+          "path": "crates/client-assets",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-client-domain",
+          "path": "crates/client-domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-client-runtime",
+          "path": "crates/client-runtime",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-client-simulation",
+          "path": "crates/client-simulation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-client-ui",
+          "path": "crates/client-ui",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-diagnostics",
+          "path": "crates/diagnostics",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-identity",
+          "path": "crates/identity",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-input-actions",
+          "path": "crates/input-actions",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-input-platform",
+          "path": "crates/input-platform",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-platform-client",
+          "path": "crates/platform-client",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-platform-contracts",
+          "path": "crates/platform-contracts",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-renderer",
+          "path": "crates/renderer",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-session",
+          "path": "crates/session",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-session-tcp",
+          "path": "crates/session-tcp",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-game-server",
+      "path": "apps/game-server",
+      "tracked_files": 873,
+      "rust_files": 427,
+      "sql_files": 420,
+      "targets": [
+        {
+          "name": "oteryn_game_server",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "oteryn-game-import-proficiencies",
+          "kind": [
+            "bin"
+          ]
+        },
+        {
+          "name": "oteryn-game-migrate",
+          "kind": [
+            "bin"
+          ]
+        },
+        {
+          "name": "oteryn-game-ops",
+          "kind": [
+            "bin"
+          ]
+        },
+        {
+          "name": "oteryn-game-server",
+          "kind": [
+            "bin"
+          ]
+        },
+        {
+          "name": "dur03_native_one_item_audit",
+          "kind": [
+            "example"
+          ]
+        },
+        {
+          "name": "dur03_reference_one_item_resource_prototype",
+          "kind": [
+            "example"
+          ]
+        },
+        {
+          "name": "export_reference_item_identity_map",
+          "kind": [
+            "example"
+          ]
+        },
+        {
+          "name": "materialize_content_world_project_v2",
+          "kind": [
+            "example"
+          ]
+        },
+        {
+          "name": "runtime_actor_carrier_prototype",
+          "kind": [
+            "example"
+          ]
+        },
+        {
+          "name": "ability_engine",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "account_achievement_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "ai_bootstrap",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "bank_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "bestiary_progress_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "character_authority_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "character_death_receipts_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "character_forge_dust_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "character_inbox_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "character_proficiency_modification_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "character_progression_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "character_stance_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "charm_state_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "check_function_privileges_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "chest_use_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "combat_bestiary_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "combat_death_reward_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "combat_pickup_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_full_manifest_boot",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_item_identity",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_native_entry_room",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_npc_catalogue",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_npc_service_model",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_reference_artifact",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_world_cw2_b1_import",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_world_cw2_b1_promotion_lowering",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_world_project_publication",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_world_project_repository",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_world_project_v2",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_world_project_v2_craft",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "content_world_project_v2_creature_admission",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "corpse_decay_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "corpse_transfer_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "current_spell_sources",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "durability_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "house_custody_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "house_interior_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "integration_rest",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "interaction_workflow",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "item_fee_burn_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "item_loop_capacity",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "item_mint_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "item_ref_production",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "item_timed_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "item_timed_state_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "item_transfer_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "item_use_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "loop_vitals_stamina",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "map_item_mint_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "map_load_base",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_admission_source_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_admission_source_real_interop",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_admission_source_transport",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "npc_econ_bank_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "npc_econ_policy",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "premium_platform_fixtures",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "premium_snapshot_client",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "reward_claim_mint_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "runtime_scope_assignment_postgres",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "sealed_impl_allowlist",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "world_bundle_artifact_boot",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "wp5_s3b_composition",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "build-script-build",
+          "kind": [
+            "custom-build"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-error-codes",
+          "path": "crates/error-codes",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-admission-evidence",
+          "path": "crates/gameplay/admission-evidence",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-character-recovery-fence",
+          "path": "crates/gameplay/character-recovery-fence",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-characters",
+          "path": "crates/gameplay/characters",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat",
+          "path": "crates/gameplay/combat",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat-rules",
+          "path": "crates/gameplay/combat-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-dispatch",
+          "path": "crates/gameplay/dispatch",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-economy",
+          "path": "crates/gameplay/economy",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-encounter-rules",
+          "path": "crates/gameplay/encounter-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-encounters",
+          "path": "crates/gameplay/encounters",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-housing",
+          "path": "crates/gameplay/housing",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-items",
+          "path": "crates/gameplay/items",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-monster-ai",
+          "path": "crates/gameplay/monster-ai",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-native-admission-source",
+          "path": "crates/gameplay/native-admission-source",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-node-files",
+          "path": "crates/gameplay/node-files",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-npc",
+          "path": "crates/gameplay/npc",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-progression",
+          "path": "crates/gameplay/progression",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-quests",
+          "path": "crates/gameplay/quests",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-social",
+          "path": "crates/gameplay/social",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-social-rules",
+          "path": "crates/gameplay/social-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-source-critical-baseline",
+          "path": "crates/gameplay/source-critical-baseline",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-spell",
+          "path": "crates/gameplay/spell",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-spell-rules",
+          "path": "crates/gameplay/spell-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-weather",
+          "path": "crates/gameplay/weather",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world-change",
+          "path": "crates/gameplay/world-change",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-ntp-clock",
+          "path": "crates/ntp-clock",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-world-bundle",
+          "path": "crates/world-bundle",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-dev-client",
+          "path": "tools/dev-client",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat",
+          "path": "crates/gameplay/combat",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content-promotion",
+          "path": "crates/gameplay/content-promotion",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-dispatch",
+          "path": "crates/gameplay/dispatch",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-monster-ai",
+          "path": "crates/gameplay/monster-ai",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-social",
+          "path": "crates/gameplay/social",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-spell",
+          "path": "crates/gameplay/spell",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-world-bundle-compiler",
+          "path": "tools/world-bundle-compiler",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-admin-agent",
+      "path": "crates/admin/agent",
+      "tracked_files": 12,
+      "rust_files": 11,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_admin_agent",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "oteryn-admin-agent",
+          "kind": [
+            "bin"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-admin-contracts",
+          "path": "crates/admin/contracts",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-admin-contracts",
+      "path": "crates/admin/contracts",
+      "tracked_files": 7,
+      "rust_files": 6,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_admin_contracts",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "contract",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-client-assets",
+      "path": "crates/client-assets",
+      "tracked_files": 19,
+      "rust_files": 18,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_client_assets",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "boss_area_metadata",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "real_assets",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-client-domain",
+          "path": "crates/client-domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-world-bundle",
+          "path": "crates/world-bundle",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-client-domain",
+      "path": "crates/client-domain",
+      "tracked_files": 4,
+      "rust_files": 3,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_client_domain",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-client-runtime",
+      "path": "crates/client-runtime",
+      "tracked_files": 91,
+      "rust_files": 90,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_client_runtime",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "admission_progress",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "gap_house",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "queued_retries",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-diagnostics",
+          "path": "crates/diagnostics",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-session",
+          "path": "crates/session",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-client-simulation",
+      "path": "crates/client-simulation",
+      "tracked_files": 7,
+      "rust_files": 6,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_client_simulation",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-client-domain",
+          "path": "crates/client-domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-client-ui",
+      "path": "crates/client-ui",
+      "tracked_files": 1334,
+      "rust_files": 758,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_client_ui",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "bulletin",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "chat_lists",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "chat_log",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "container_tree",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "depot_search_results",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "friends",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "gap_house",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "highscores",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "highscores_world",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "house_furniture_confirmation",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "login_queue",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "managed_loot",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "player_guide",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "registrations",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "shop_filters",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "shortcut_coexistence",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "skill_widget",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "social_badges",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "spellbook",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "store_browse",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "store_history_details",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "store_history_filters",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "team_filters",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "violation_reasons",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "build-script-build",
+          "kind": [
+            "custom-build"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-client-domain",
+          "path": "crates/client-domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-client-runtime",
+          "path": "crates/client-runtime",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-input-actions",
+          "path": "crates/input-actions",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-renderer",
+          "path": "crates/renderer",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-diagnostics",
+      "path": "crates/diagnostics",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_diagnostics",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-error-codes",
+      "path": "crates/error-codes",
+      "tracked_files": 12,
+      "rust_files": 11,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_error_codes",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "panic_hook",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "build-script-build",
+          "kind": [
+            "custom-build"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-foundation",
+      "path": "crates/foundation",
+      "tracked_files": 3,
+      "rust_files": 2,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_foundation",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-gameplay-admission-evidence",
+      "path": "crates/gameplay/admission-evidence",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_admission_evidence",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-gameplay-character-recovery-fence",
+      "path": "crates/gameplay/character-recovery-fence",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_character_recovery_fence",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-gameplay-characters",
+      "path": "crates/gameplay/characters",
+      "tracked_files": 10,
+      "rust_files": 9,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_characters",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-combat",
+      "path": "crates/gameplay/combat",
+      "tracked_files": 29,
+      "rust_files": 28,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_combat",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-error-codes",
+          "path": "crates/error-codes",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat-rules",
+          "path": "crates/gameplay/combat-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-encounter-rules",
+          "path": "crates/gameplay/encounter-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-items",
+          "path": "crates/gameplay/items",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-source-critical-baseline",
+          "path": "crates/gameplay/source-critical-baseline",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-combat-rules",
+      "path": "crates/gameplay/combat-rules",
+      "tracked_files": 29,
+      "rust_files": 28,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_combat_rules",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-progression",
+          "path": "crates/gameplay/progression",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-test-support",
+          "path": "crates/test-support",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-content",
+      "path": "crates/gameplay/content",
+      "tracked_files": 139,
+      "rust_files": 133,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_content",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "oteryn-game-platform-catalog",
+          "kind": [
+            "bin"
+          ]
+        },
+        {
+          "name": "public_visibility",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "quest_item_keys",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "build-script-build",
+          "kind": [
+            "custom-build"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-world-bundle",
+          "path": "crates/world-bundle",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-world-bundle-compiler",
+          "path": "tools/world-bundle-compiler",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-content-promotion",
+      "path": "crates/gameplay/content-promotion",
+      "tracked_files": 36,
+      "rust_files": 35,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_content_promotion",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "build-script-build",
+          "kind": [
+            "custom-build"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-dispatch",
+      "path": "crates/gameplay/dispatch",
+      "tracked_files": 1668,
+      "rust_files": 1553,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_dispatch",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "prey_time_sim",
+          "kind": [
+            "example"
+          ]
+        },
+        {
+          "name": "build-script-build",
+          "kind": [
+            "custom-build"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-error-codes",
+          "path": "crates/error-codes",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-admission-evidence",
+          "path": "crates/gameplay/admission-evidence",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-character-recovery-fence",
+          "path": "crates/gameplay/character-recovery-fence",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-characters",
+          "path": "crates/gameplay/characters",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat",
+          "path": "crates/gameplay/combat",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat-rules",
+          "path": "crates/gameplay/combat-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-economy",
+          "path": "crates/gameplay/economy",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-encounter-rules",
+          "path": "crates/gameplay/encounter-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-encounters",
+          "path": "crates/gameplay/encounters",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-housing",
+          "path": "crates/gameplay/housing",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-items",
+          "path": "crates/gameplay/items",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-monster-ai",
+          "path": "crates/gameplay/monster-ai",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-native-admission-source",
+          "path": "crates/gameplay/native-admission-source",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-node-files",
+          "path": "crates/gameplay/node-files",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-npc",
+          "path": "crates/gameplay/npc",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-progression",
+          "path": "crates/gameplay/progression",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-quests",
+          "path": "crates/gameplay/quests",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-social",
+          "path": "crates/gameplay/social",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-social-rules",
+          "path": "crates/gameplay/social-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-spell",
+          "path": "crates/gameplay/spell",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-spell-rules",
+          "path": "crates/gameplay/spell-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-weather",
+          "path": "crates/gameplay/weather",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world-change",
+          "path": "crates/gameplay/world-change",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-world-bundle",
+          "path": "crates/world-bundle",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-dev-client",
+          "path": "tools/dev-client",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat",
+          "path": "crates/gameplay/combat",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-encounters",
+          "path": "crates/gameplay/encounters",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-monster-ai",
+          "path": "crates/gameplay/monster-ai",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-social",
+          "path": "crates/gameplay/social",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-spell",
+          "path": "crates/gameplay/spell",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-world-bundle-compiler",
+          "path": "tools/world-bundle-compiler",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-domain",
+      "path": "crates/gameplay/domain",
+      "tracked_files": 67,
+      "rust_files": 66,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_domain",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-test-support",
+          "path": "crates/test-support",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-durability",
+      "path": "crates/gameplay/durability",
+      "tracked_files": 721,
+      "rust_files": 717,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_durability",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-error-codes",
+          "path": "crates/error-codes",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-admission-evidence",
+          "path": "crates/gameplay/admission-evidence",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-character-recovery-fence",
+          "path": "crates/gameplay/character-recovery-fence",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-characters",
+          "path": "crates/gameplay/characters",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat-rules",
+          "path": "crates/gameplay/combat-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-economy",
+          "path": "crates/gameplay/economy",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-encounter-rules",
+          "path": "crates/gameplay/encounter-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-housing",
+          "path": "crates/gameplay/housing",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-items",
+          "path": "crates/gameplay/items",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-native-admission-source",
+          "path": "crates/gameplay/native-admission-source",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-progression",
+          "path": "crates/gameplay/progression",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-quests",
+          "path": "crates/gameplay/quests",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-social-rules",
+          "path": "crates/gameplay/social-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world-change",
+          "path": "crates/gameplay/world-change",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-world-bundle",
+          "path": "crates/world-bundle",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-economy",
+      "path": "crates/gameplay/economy",
+      "tracked_files": 28,
+      "rust_files": 27,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_economy",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-test-support",
+          "path": "crates/test-support",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-encounter-rules",
+      "path": "crates/gameplay/encounter-rules",
+      "tracked_files": 21,
+      "rust_files": 20,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_encounter_rules",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-encounters",
+      "path": "crates/gameplay/encounters",
+      "tracked_files": 93,
+      "rust_files": 92,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_encounters",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-combat",
+          "path": "crates/gameplay/combat",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-encounter-rules",
+          "path": "crates/gameplay/encounter-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-monster-ai",
+          "path": "crates/gameplay/monster-ai",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-quests",
+          "path": "crates/gameplay/quests",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-source-critical-baseline",
+          "path": "crates/gameplay/source-critical-baseline",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-spell",
+          "path": "crates/gameplay/spell",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-monster-ai",
+          "path": "crates/gameplay/monster-ai",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-entities",
+      "path": "crates/gameplay/entities",
+      "tracked_files": 86,
+      "rust_files": 85,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_entities",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-foundation",
+      "path": "crates/gameplay/foundation",
+      "tracked_files": 55,
+      "rust_files": 54,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_foundation",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-housing",
+      "path": "crates/gameplay/housing",
+      "tracked_files": 24,
+      "rust_files": 23,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_housing",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-items",
+      "path": "crates/gameplay/items",
+      "tracked_files": 59,
+      "rust_files": 58,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_items",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "reaudit_starting_progression",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-test-support",
+          "path": "crates/test-support",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-monster-ai",
+      "path": "crates/gameplay/monster-ai",
+      "tracked_files": 64,
+      "rust_files": 63,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_monster_ai",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-error-codes",
+          "path": "crates/error-codes",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat",
+          "path": "crates/gameplay/combat",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-spell",
+          "path": "crates/gameplay/spell",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat",
+          "path": "crates/gameplay/combat",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-spell",
+          "path": "crates/gameplay/spell",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-native-admission-source",
+      "path": "crates/gameplay/native-admission-source",
+      "tracked_files": 81,
+      "rust_files": 36,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_native_admission_source",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-error-codes",
+          "path": "crates/error-codes",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-admission-evidence",
+          "path": "crates/gameplay/admission-evidence",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-node-files",
+      "path": "crates/gameplay/node-files",
+      "tracked_files": 4,
+      "rust_files": 3,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_node_files",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-gameplay-npc",
+      "path": "crates/gameplay/npc",
+      "tracked_files": 17,
+      "rust_files": 16,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_npc",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-economy",
+          "path": "crates/gameplay/economy",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-progression",
+      "path": "crates/gameplay/progression",
+      "tracked_files": 43,
+      "rust_files": 42,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_progression",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-test-support",
+          "path": "crates/test-support",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-quests",
+      "path": "crates/gameplay/quests",
+      "tracked_files": 103,
+      "rust_files": 100,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_quests",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "quest_definition_hashes",
+          "kind": [
+            "example"
+          ]
+        },
+        {
+          "name": "quests5_alawars_vault",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "quests5_ancient_tombs",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "quests5_between_the_lines",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "quests5_blood_brothers_castle_access",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "quests5_children_battle_access",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "quests5_deeplings",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "quests5_demon_oak",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "quests5_room_raise",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "worldchg_hive_access",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "build-script-build",
+          "kind": [
+            "custom-build"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-gameplay-social",
+      "path": "crates/gameplay/social",
+      "tracked_files": 56,
+      "rust_files": 55,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_social",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-combat",
+          "path": "crates/gameplay/combat",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-progression",
+          "path": "crates/gameplay/progression",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-social-rules",
+          "path": "crates/gameplay/social-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-ntp-clock",
+          "path": "crates/ntp-clock",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-social-rules",
+      "path": "crates/gameplay/social-rules",
+      "tracked_files": 22,
+      "rust_files": 21,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_social_rules",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-source-critical-baseline",
+      "path": "crates/gameplay/source-critical-baseline",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_source_critical_baseline",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-spell",
+      "path": "crates/gameplay/spell",
+      "tracked_files": 83,
+      "rust_files": 82,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_spell",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-combat",
+          "path": "crates/gameplay/combat",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat-rules",
+          "path": "crates/gameplay/combat-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-progression",
+          "path": "crates/gameplay/progression",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-source-critical-baseline",
+          "path": "crates/gameplay/source-critical-baseline",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-spell-rules",
+          "path": "crates/gameplay/spell-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-combat",
+          "path": "crates/gameplay/combat",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-world",
+          "path": "crates/gameplay/world",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-test-support",
+          "path": "crates/test-support",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-spell-rules",
+      "path": "crates/gameplay/spell-rules",
+      "tracked_files": 24,
+      "rust_files": 23,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_spell_rules",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-gameplay-combat-rules",
+          "path": "crates/gameplay/combat-rules",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-test-support",
+          "path": "crates/test-support",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-weather",
+      "path": "crates/gameplay/weather",
+      "tracked_files": 3,
+      "rust_files": 2,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_weather",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-world",
+      "path": "crates/gameplay/world",
+      "tracked_files": 73,
+      "rust_files": 72,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_world",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-error-codes",
+          "path": "crates/error-codes",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-characters",
+          "path": "crates/gameplay/characters",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-domain",
+          "path": "crates/gameplay/domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-housing",
+          "path": "crates/gameplay/housing",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-items",
+          "path": "crates/gameplay/items",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-node-files",
+          "path": "crates/gameplay/node-files",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-world-bundle",
+          "path": "crates/world-bundle",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content",
+          "path": "crates/gameplay/content",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-content-promotion",
+          "path": "crates/gameplay/content-promotion",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-durability",
+          "path": "crates/gameplay/durability",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-entities",
+          "path": "crates/gameplay/entities",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-gameplay-foundation",
+          "path": "crates/gameplay/foundation",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-world-bundle",
+          "path": "crates/world-bundle",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-gameplay-world-change",
+      "path": "crates/gameplay/world-change",
+      "tracked_files": 14,
+      "rust_files": 13,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_gameplay_world_change",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "world_counter",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "world_counter_phases",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "world_counter_voice",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "worldchg_owner",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-simulation-determinism",
+          "path": "crates/simulation-determinism",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-identity",
+      "path": "crates/identity",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_identity",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-diagnostics",
+          "path": "crates/diagnostics",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-platform-contracts",
+          "path": "crates/platform-contracts",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-input-actions",
+      "path": "crates/input-actions",
+      "tracked_files": 7,
+      "rust_files": 6,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_input_actions",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-input-platform",
+      "path": "crates/input-platform",
+      "tracked_files": 7,
+      "rust_files": 6,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_input_platform",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-input-actions",
+          "path": "crates/input-actions",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-ntp-clock",
+      "path": "crates/ntp-clock",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_ntp_clock",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-platform-client",
+      "path": "crates/platform-client",
+      "tracked_files": 21,
+      "rust_files": 20,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_platform_client",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "device_sessions",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "updater",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-diagnostics",
+          "path": "crates/diagnostics",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-error-codes",
+          "path": "crates/error-codes",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-platform-contracts",
+          "path": "crates/platform-contracts",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-platform-contracts",
+      "path": "crates/platform-contracts",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_platform_contracts",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-protocol-oteryn",
+      "path": "crates/protocol-oteryn",
+      "tracked_files": 596,
+      "rust_files": 318,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_protocol_oteryn",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "nx4_npc_voice_recording",
+          "kind": [
+            "example"
+          ]
+        },
+        {
+          "name": "admission_queue",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "bulletin",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "s17_cast_contract",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "build-script-build",
+          "kind": [
+            "custom-build"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-test-support",
+          "path": "crates/test-support",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-renderer",
+      "path": "crates/renderer",
+      "tracked_files": 18,
+      "rust_files": 17,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_renderer",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-client-domain",
+          "path": "crates/client-domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-session",
+      "path": "crates/session",
+      "tracked_files": 115,
+      "rust_files": 114,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_session",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "admission_queue",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-session-tcp",
+      "path": "crates/session-tcp",
+      "tracked_files": 4,
+      "rust_files": 3,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_session_tcp",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-session",
+          "path": "crates/session",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-simulation-determinism",
+      "path": "crates/simulation-determinism",
+      "tracked_files": 3,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_simulation_determinism",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-synthetic-assets",
+      "path": "crates/synthetic-assets",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_synthetic_assets",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-task-supervisor",
+      "path": "crates/task-supervisor",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_task_supervisor",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-error-codes",
+          "path": "crates/error-codes",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-test-support",
+      "path": "crates/test-support",
+      "tracked_files": 6,
+      "rust_files": 5,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_test_support",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-diagnostics",
+          "path": "crates/diagnostics",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-world-bundle",
+      "path": "crates/world-bundle",
+      "tracked_files": 11,
+      "rust_files": 10,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_world_bundle",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "npc",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-pre-native-client-tests",
+      "path": "tests/pre-native-client",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_pre_native_client_tests",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-client",
+          "path": "apps/client",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-platform-contracts",
+          "path": "crates/platform-contracts",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-security-auth-tests",
+      "path": "tests/security/auth",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_security_auth_tests",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-client-runtime",
+          "path": "crates/client-runtime",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-diagnostics",
+          "path": "crates/diagnostics",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-identity",
+          "path": "crates/identity",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-platform-client",
+          "path": "crates/platform-client",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-architecture-check",
+      "path": "tools/architecture-check",
+      "tracked_files": 29,
+      "rust_files": 15,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_architecture_check",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "oteryn-architecture-check",
+          "kind": [
+            "bin"
+          ]
+        },
+        {
+          "name": "client_layering",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "client_structure",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "gameplay_workspace",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-dev-client",
+      "path": "tools/dev-client",
+      "tracked_files": 11,
+      "rust_files": 10,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_dev_client",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "gap_cl2_spell_targeting",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-client-runtime",
+          "path": "crates/client-runtime",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-client-ui",
+          "path": "crates/client-ui",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-session",
+          "path": "crates/session",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-session-tcp",
+          "path": "crates/session-tcp",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-game-ops-top",
+      "path": "tools/oteryn-game-ops-top",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn-game-ops-top",
+          "kind": [
+            "bin"
+          ]
+        }
+      ],
+      "local_dependencies": []
+    },
+    {
+      "name": "oteryn-player-bots",
+      "path": "tools/player-bots",
+      "tracked_files": 3,
+      "rust_files": 2,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_player_bots",
+          "kind": [
+            "lib"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-dev-client",
+          "path": "tools/dev-client",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-synthetic-asset-compiler",
+      "path": "tools/synthetic-asset-compiler",
+      "tracked_files": 2,
+      "rust_files": 1,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn-synthetic-asset-compiler",
+          "kind": [
+            "bin"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-synthetic-assets",
+          "path": "crates/synthetic-assets",
+          "kind": null,
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-synthetic-client-harness",
+      "path": "tools/synthetic-client-harness",
+      "tracked_files": 40,
+      "rust_files": 39,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn-synthetic-client-harness",
+          "kind": [
+            "bin"
+          ]
+        },
+        {
+          "name": "native_battle",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_combat_presentation",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_containers",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_context_results",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_death_respawn",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_equipment",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_inventory",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_item_movement",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_login",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_npc_dialogue",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_npc_shop",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_party",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_private_channels",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_public_channels",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_settings",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_target_move",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "native_vitals",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "qualification_player_trade",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-client-domain",
+          "path": "crates/client-domain",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-client-simulation",
+          "path": "crates/client-simulation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-dev-client",
+          "path": "tools/dev-client",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-foundation",
+          "path": "crates/foundation",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-input-actions",
+          "path": "crates/input-actions",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-protocol-oteryn",
+          "path": "crates/protocol-oteryn",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-renderer",
+          "path": "crates/renderer",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-synthetic-assets",
+          "path": "crates/synthetic-assets",
+          "kind": null,
+          "target": null
+        },
+        {
+          "name": "oteryn-client",
+          "path": "apps/client",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-client-runtime",
+          "path": "crates/client-runtime",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-client-ui",
+          "path": "crates/client-ui",
+          "kind": "dev",
+          "target": null
+        },
+        {
+          "name": "oteryn-session",
+          "path": "crates/session",
+          "kind": "dev",
+          "target": null
+        }
+      ]
+    },
+    {
+      "name": "oteryn-world-bundle-compiler",
+      "path": "tools/world-bundle-compiler",
+      "tracked_files": 31,
+      "rust_files": 24,
+      "sql_files": 0,
+      "targets": [
+        {
+          "name": "oteryn_world_bundle_compiler",
+          "kind": [
+            "lib"
+          ]
+        },
+        {
+          "name": "oteryn-world-bundle-compiler",
+          "kind": [
+            "bin"
+          ]
+        },
+        {
+          "name": "bundle",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "families",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "npcs",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "pin_check",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "resolve",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "spawns",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "subarea",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "summer_population",
+          "kind": [
+            "test"
+          ]
+        },
+        {
+          "name": "terrain",
+          "kind": [
+            "test"
+          ]
+        }
+      ],
+      "local_dependencies": [
+        {
+          "name": "oteryn-world-bundle",
+          "path": "crates/world-bundle",
+          "kind": null,
+          "target": null
+        }
+      ]
+    }
+  ],
+  "support_domains": [
+    {
+      "name": ".github",
+      "path": ".github",
+      "scope": [
+        ".github"
+      ],
+      "tracked_files": 75,
+      "rust_files": 0,
+      "sql_files": 0
+    },
+    {
+      "name": "agent-configuration-and-retained-evidence",
+      "path": "agent-configuration-and-retained-evidence",
+      "scope": [
+        ".agents",
+        ".claude",
+        ".codex-report",
+        "qlane-meta"
+      ],
+      "tracked_files": 113,
+      "rust_files": 0,
+      "sql_files": 0
+    },
+    {
+      "name": "content",
+      "path": "content",
+      "scope": [
+        "content"
+      ],
+      "tracked_files": 8032,
+      "rust_files": 0,
+      "sql_files": 0
+    },
+    {
+      "name": "deploy",
+      "path": "deploy",
+      "scope": [
+        "deploy"
+      ],
+      "tracked_files": 16,
+      "rust_files": 0,
+      "sql_files": 0
+    },
+    {
+      "name": "docs",
+      "path": "docs",
+      "scope": [
+        "docs"
+      ],
+      "tracked_files": 7398,
+      "rust_files": 2,
+      "sql_files": 9
+    },
+    {
+      "name": "imports",
+      "path": "imports",
+      "scope": [
+        "imports"
+      ],
+      "tracked_files": 565,
+      "rust_files": 0,
+      "sql_files": 0
+    },
+    {
+      "name": "repository-root",
+      "path": "repository-root",
+      "scope": [
+        ".editorconfig",
+        ".gitattributes",
+        ".gitignore",
+        "AGENTS.md",
+        "CONTRIBUTING.md",
+        "Cargo.lock",
+        "Cargo.toml",
+        "LICENSE",
+        "LICENSE-ASSETS.md",
+        "README.md",
+        "SECURITY.md",
+        "TRADEMARKS.md",
+        "deny.toml",
+        "rust-toolchain.toml",
+        "rustfmt.toml",
+        "workspace-boundaries.toml"
+      ],
+      "tracked_files": 16,
+      "rust_files": 0,
+      "sql_files": 0
+    },
+    {
+      "name": "rulesets",
+      "path": "rulesets",
+      "scope": [
+        "rulesets"
+      ],
+      "tracked_files": 77,
+      "rust_files": 0,
+      "sql_files": 0
+    },
+    {
+      "name": "tests",
+      "path": "tests",
+      "scope": [
+        "tests"
+      ],
+      "tracked_files": 12,
+      "rust_files": 0,
+      "sql_files": 0
+    },
+    {
+      "name": "tools",
+      "path": "tools",
+      "scope": [
+        "tools"
+      ],
+      "tracked_files": 2681,
+      "rust_files": 3,
+      "sql_files": 1
+    },
+    {
+      "name": "vendor",
+      "path": "vendor",
+      "scope": [
+        "vendor"
+      ],
+      "tracked_files": 793,
+      "rust_files": 768,
+      "sql_files": 0
+    }
+  ]
+}

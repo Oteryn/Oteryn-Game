@@ -1,0 +1,261 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "reports": [
+    {
+      "module": "oteryn-admin-contracts",
+      "path": "crates/admin/contracts",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "report": "admin-review.md",
+      "remaining_files": [],
+      "verification": "Completed source review; native crypto/HTTP/PostgreSQL tests inspected, not run.",
+      "auditor": "lead"
+    },
+    {
+      "module": "oteryn-admin-agent",
+      "path": "crates/admin/agent",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "report": "admin-review.md",
+      "remaining_files": [],
+      "verification": "Completed source review; native crypto/HTTP/PostgreSQL tests inspected, not run.",
+      "auditor": "lead"
+    },
+    {
+      "module": "oteryn-identity",
+      "status": "REVIEWED",
+      "report": "protocol-session.md",
+      "verification": "Exact source error-codes rustc unit tests: 25 passed; panic integration tests: 3 passed. Other packages native tests not run.",
+      "auditor": "protocol-session"
+    },
+    {
+      "module": "oteryn-platform-contracts",
+      "status": "REVIEWED",
+      "report": "protocol-session.md",
+      "verification": "Exact source error-codes rustc unit tests: 25 passed; panic integration tests: 3 passed. Other packages native tests not run.",
+      "auditor": "protocol-session"
+    },
+    {
+      "module": "oteryn-session-tcp",
+      "status": "REVIEWED",
+      "report": "protocol-session.md",
+      "verification": "Exact source error-codes rustc unit tests: 25 passed; panic integration tests: 3 passed. Other packages native tests not run.",
+      "auditor": "protocol-session"
+    },
+    {
+      "module": "oteryn-error-codes",
+      "status": "REVIEWED",
+      "report": "protocol-session.md",
+      "verification": "Exact source error-codes rustc unit tests: 25 passed; panic integration tests: 3 passed. Other packages native tests not run.",
+      "auditor": "protocol-session"
+    },
+    {
+      "module": "oteryn-platform-client",
+      "status": "REVIEWED",
+      "report": "platform-client.md",
+      "verification": "Exact source error-codes rustc unit tests: 25 passed; panic integration tests: 3 passed. Other packages native tests not run.",
+      "auditor": "protocol-session"
+    },
+    {
+      "name": "oteryn-gameplay-source-critical-baseline",
+      "path": "crates/gameplay/source-critical-baseline",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 2,
+      "remaining_files": [],
+      "report": "source-critical-baseline.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-source-critical-baseline",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-node-files",
+      "path": "crates/gameplay/node-files",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 4,
+      "remaining_files": [],
+      "report": "node-files.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-node-files",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-weather",
+      "path": "crates/gameplay/weather",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 3,
+      "remaining_files": [],
+      "report": "weather.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-weather",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-characters",
+      "path": "crates/gameplay/characters",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 10,
+      "remaining_files": [],
+      "report": "characters.md",
+      "runtime_tests_run": 19,
+      "module": "oteryn-gameplay-characters",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "module": "oteryn-client-domain",
+      "path": "crates/client-domain",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 4,
+      "entrypoints_and_invariants": "Pure non-authoritative value types, constructor ownership, map layering vocabulary and saturating direction coordinates reviewed; no external I/O or authoritative mutation. Extreme coordinates saturate intentionally; no unbounded arithmetic in the direction helper.",
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static substantive review; native package tests not run. No P0/P1 requiring a second auditor identified in this package.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-synthetic-assets",
+      "path": "crates/synthetic-assets",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 2,
+      "entrypoints_and_invariants": "Manifest schema, u32 conversion, dimension bounds, checked RGBA multiplication, 16 MiB limit, exact byte count, bounded ID, digest serialization and generation equality checked. Synthetic-only metadata; callers supply local fixtures/CLI inputs. Public fields can bypass constructor but no untrusted production caller established; no reported defect.",
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static substantive review; native package tests not run. No P0/P1 requiring a second auditor identified in this package.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-synthetic-asset-compiler",
+      "path": "tools/synthetic-asset-compiler",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 2,
+      "entrypoints_and_invariants": "Local CLI argument cardinality, read/parse/hash/write error propagation and output metadata reviewed. Caller chooses output path; no remote input or production activation. Full input reads are local tool behavior, not a demonstrated remotely reachable allocation defect.",
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static substantive review; native package tests not run. No P0/P1 requiring a second auditor identified in this package.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-pre-native-client-tests",
+      "path": "tests/pre-native-client",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 2,
+      "entrypoints_and_invariants": "Acceptance fixture reviewed against ClientBootstrap::request_gameplay_entry: native_login None fails before native_entry call, and availability/status remain explicitly pre-native. Fixture assertions checked; test not executed.",
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static substantive review; native package tests not run. No P0/P1 requiring a second auditor identified in this package.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-security-auth-tests",
+      "path": "tests/security/auth",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 2,
+      "entrypoints_and_invariants": "Three security regressions inspected: duplicate callback keys, pre-cancelled identity flow plus diagnostics redaction, and recursive directory route rejection. These are test-only callers, not evidence of complete identity/transport security or execution. Implementation ownership belongs protocol/session auditor.",
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static substantive review; native package tests not run. No P0/P1 requiring a second auditor identified in this package.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-diagnostics",
+      "path": "crates/diagnostics",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 2,
+      "entrypoints_and_invariants": "Complete static value/formatting review: runtime sensitive text is discarded at construction, both Debug/Display expose only enum kind. SafeText is static and bounded to 160 bytes with ASCII-control rejection; field keys are static validated lowercase identifiers. Fields cap at 16 and duplicates reject before insertion. Context and duration formatting have no external I/O. A trusted-static caller could deliberately mislabel a secret, but repository search found no untrusted data route into this type; not a demonstrated defect.",
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static substantive review. Existing tests analyzed but not executed; no critical finding identified.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-test-support",
+      "path": "crates/test-support",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 6,
+      "entrypoints_and_invariants": "Timeline delegates to shared ManualClock; diagnostic fixture preserves checked fields/redaction. Property runner bounds cases to 1,000,000, reports reproducible base/case seeds, catches error/panic, supports intentional zero cases. SplitMix64 uses unbiased rejection sampling and i128 for full signed ranges. Mutator handles empty/short input, checked selection preconditions and <=64-byte growth; fuzz round-trip rejects semantic change. Reviewed every existing test assertion; RNG is explicitly test-only and not a gameplay entropy source. No new finding.",
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static substantive review. Existing tests analyzed but not executed; no critical finding identified.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-client-simulation",
+      "path": "crates/client-simulation",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 7,
+      "entrypoints_and_invariants": "Projection revision increments with checked_add before mutation. Movement direction subtraction widens to i64, coordinates saturate, one pending step gates click-walk and refusals clear the goal. Embedded speed table values/digest verified by read-only Python; pacing formula agrees with authoritative characters speed.rs. Scene scans bounded dimensions, checked positions, explicit wrapping map anchors; stack elevation enters via clamped item_height and appearance displacement capped at 1024. Actual live-map caller supplies those bounded resolved cells. Scene failure propagates. Existing tests reviewed for painter order, wrap boundary, draw filtering and elevation; no new demonstrated defect.",
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static substantive complete package read and validation.json read-only pin/table checks. Existing Rust tests analyzed but not executed.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-client-assets",
+      "path": "crates/client-assets",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 19,
+      "entrypoints_and_invariants": "Reviewed all production loaders/resolvers and existing tests. Actual app loaders use hard-pinned manifests; path separators and missing entries reject before file reads; reads/decompression are bounded, per-sheet LRU is 64. Catalog sorting/nonoverlap/capacity, protobuf grid multiplication and byte-list length, nonzero pattern factors, displacement/effect phase caps, sprite/BMP offsets and exact pixel lengths were checked. World region table validates header/identity/order/contiguous offsets before payload slicing, bounds zstd sectors and shared tile/item budgets, rejects bad palette indices, and verifies placement digest. Offline/live callers bound per-tile draws and fall back to builtin visuals on failure. Raw public helpers accept values outside production preconditions, but pinned production artifacts and caller guards prevent the considered malformed catalog/offset hypotheses. Python verified actual manifest/index pins, catalog SHA, 6249 unique safe manifest names, 5084 nonoverlapping sprite ranges. No new demonstrated finding; this does not qualify the native LZMA/BMP decoder at runtime.",
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static substantive complete package read and validation.json read-only pin/table checks. Existing Rust tests analyzed but not executed.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-input-actions",
+      "path": "crates/input-actions",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 7,
+      "entrypoints_and_invariants": "Complete physical bounds, UTF-8 size/redaction, identifier/chord normalization, deterministic map conflict handling and routing state review. Modifier keys are separated from nonmodifier held atoms; modifier change cancels old actions; repeat cannot arm a missing held action; focus/device reset cancels and clears, capture loss clears mouse chords. Context modal/text suppression and strict-subset cancellation reviewed. Actual MouseActions and SpellHotkeys callers use bounded static maps; discarded cancellation outputs are harmless there because consumers act only on Started. Existing exact-source Linux rustc tests: 11 passed, 0 failed.",
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static complete source read plus focused existing Linux native tests in validation.json. No independent second-pass module verification yet; Windows runtime is not claimed.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-input-platform",
+      "path": "crates/input-platform",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 7,
+      "entrypoints_and_invariants": "Complete adapter, Windows mapping and existing regression source review. Platform snapshots are overridden by observed left/right modifier groups; stale snapshot order, synthetic/background rejection, pointer bounds/rebase, capture baseline, finite wheel conversion, bounded/redacted IME text, focus/capture/device cleanup inspected. Actual winit mapping accepts named physical keys rather than localized logical keys and resets unknown controls. Native OS event ordering/IME activation and Windows adapter compilation remain unqualified here; no demonstrated production defect. Exact-source Linux adapter/router tests executed; Windows cfg mapping tests not executed.",
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static complete source read plus focused existing Linux native tests in validation.json. No independent second-pass module verification yet; Windows runtime is not claimed.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-foundation",
+      "status": "REVIEWED",
+      "auditor": "prior independently reviewed checkpoint",
+      "verification": "All package paths and Git blobs identical; prior full source review and independent review retained.",
+      "report": "Previous checkpoint foundation-independent.md"
+    },
+    {
+      "module": "oteryn-ntp-clock",
+      "status": "REVIEWED",
+      "auditor": "prior independently reviewed checkpoint",
+      "verification": "All package paths and Git blobs identical; prior full source review and independent review retained.",
+      "report": "Previous checkpoint foundation-independent.md"
+    },
+    {
+      "module": "oteryn-task-supervisor",
+      "status": "REVIEWED",
+      "auditor": "prior independently reviewed checkpoint",
+      "verification": "All package paths and Git blobs identical; prior full source review and independent review retained.",
+      "report": "Previous checkpoint foundation-independent.md"
+    }
+  ]
+}
