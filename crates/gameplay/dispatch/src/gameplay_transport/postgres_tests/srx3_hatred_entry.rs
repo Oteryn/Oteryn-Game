@@ -18,8 +18,20 @@ fn srx3_hatred_real_source_pad_resets_torment_before_native_handoff_postgres() -
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-hatred-entry", || {
-        run(async |admin| {
+    run_hatred_entry(false)
+}
+
+#[test]
+fn srx3_hatred_instance_sorrow_survives_later_source_channel_activation_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    run_hatred_entry(true)
+}
+
+fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("srx3-hatred-entry", move || {
+        run(async move |admin| {
             super::reset();
             let source = PinnedActivitySourceRoom::GoshnarsHatred;
             let scene = SourceScene::new(
@@ -177,6 +189,52 @@ fn srx3_hatred_real_source_pad_resets_torment_before_native_handoff_postgres() -
                 "the reset belongs to the transferred Player, not a fabricated destination state"
             );
             drop(view);
+            if advance_source_activation {
+                let crate::foundation::RuntimeScopeRefV1::Channel {
+                    world_id,
+                    channel_id,
+                } = current.runtime_scope
+                else {
+                    return Err("actual source Channel".into());
+                };
+                let original = scene.pin.activation_sequence();
+                let next = original.checked_add(1).ok_or("next source activation")?;
+                assert!(
+                    h.root
+                        .record_content_activation(
+                            &crate::durability::content_activation::ContentActivationRequest {
+                                world_id,
+                                channel_id,
+                                activation_sequence: next,
+                                previous_sequence: Some(original),
+                                server_artifact_digest: scene.pin.server_artifact_digest(),
+                                client_artifact_digest: scene.pin.client_artifact_digest(),
+                                frame_binding_digest: scene.pin.frame_binding_digest(),
+                            },
+                        )
+                        .await?,
+                    "the existing Control owner advances the real source Channel issuance"
+                );
+                assert_eq!(
+                    h.root
+                        .read_current_content_activation(world_id, channel_id)
+                        .await?
+                        .ok_or("advanced source activation")?
+                        .activation_sequence,
+                    next
+                );
+                assert_eq!(
+                    owner
+                        .runtime_view(&registered)
+                        .runtime
+                        .lock()
+                        .await
+                        .content_pin()
+                        .activation_sequence(),
+                    original,
+                    "the accepted Instance retains its own original entry pins"
+                );
+            }
             // Reach the actual Burning child through ordinary source-map STEP;
             // no runtime teleport or administrative boss catalogue seeds the USE.
             for _ in 0..4 {
