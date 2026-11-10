@@ -4117,7 +4117,9 @@ async fn imbuement_journey(
     let client = connection.as_mut().ok_or("imbuement admission absent")?;
     provisioning::control_fixture(client, "imbuement").await?;
     fresh_player(client, clients, 0).await?;
-    evidence("P21 fixture-stock setup=fixture items=i3264,i11444x40,i10311x25,i3043x8,i3035x100");
+    evidence(
+        "P21 fixture-stock setup=fixture items=i3264,i11444x40,i10311x25,i3043x8,i3035x100 premium=platform-ledger-grant",
+    );
     let definitions = provisioning::item_index()?;
     let input = native_input()?;
     let profiles: crate::content::native_gameplay::ItemProfilesDocument = serde_json::from_slice(

@@ -82,3 +82,14 @@ old 60-second wait. The bound covers that measured path; assignment's 120-second
 wait, readiness's 60-second wait, and all grant/replay/stale-predecessor assertions
 are unchanged. `content_full_manifest_boot` exercises those real content APIs,
 checks the exact issued pins and sequence, and uses the runner's same wait profile.
+
+World mode also qualifies Premium through the production path. The Platform
+topology enables the Premium snapshot read behind its own mTLS identity
+(`CN=oteryn-game-premium-snapshot`; Platform refuses an identity another
+internal route uses), and the node pulls snapshots with the
+`OTERYN_PREMIUM_*` client environment. As a recorded fixture, the first
+synthetic account receives a 30-day grant through the Platform operator
+ledger, and `node.toml` carries a `[premium_activation]` record whose
+switch-over lies one minute before the run. The gate also needs a
+kernel-synchronized clock (NTP); on an unsynchronized host Premium stays
+closed and the Premium-only steps report it.

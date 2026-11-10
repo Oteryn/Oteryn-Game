@@ -6,3 +6,11 @@ services:
     environment:
       GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_TTL_SECONDS: "300"
       GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_MTLS_CLIENT_IDENTITY: CN=oteryn-game-native-evidence
+      # Premium snapshot producer (PREM-P §4) with its dedicated mTLS identity.
+      PRODUCTS_ENTITLEMENTS_PREMIUM_SNAPSHOT_ENABLED: "true"
+      PRODUCTS_ENTITLEMENTS_PREMIUM_SNAPSHOT_MTLS_CLIENT_IDENTITY: CN=oteryn-game-premium-snapshot
+      PLATFORM_BUILD_REVISION: ${WP5_PLATFORM_REVISION:?set WP5_PLATFORM_REVISION}
+  nginx:
+    volumes:
+      - ${GAME_SOURCE}/tools/qualification/node_boot/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${WP5_PKI}:/run/pki:ro
