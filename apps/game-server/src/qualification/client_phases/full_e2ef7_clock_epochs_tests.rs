@@ -376,7 +376,10 @@ fn clock_deadline_discards_an_in_flight_logout_without_another_command() -> Test
             &mut connection,
         );
         assert_eq!(
-            completed.unwrap_err().to_string(),
+            completed
+                .err()
+                .ok_or("completed assertion failure unexpectedly succeeded")?
+                .to_string(),
             "completed assertion failure"
         );
         assert!(
@@ -404,7 +407,10 @@ fn clock_deadline_discards_an_in_flight_logout_without_another_command() -> Test
             let _ = logout(client).await;
         }
         assert_eq!(
-            result.unwrap_err().to_string(),
+            result
+                .err()
+                .ok_or("cancelled logout unexpectedly succeeded")?
+                .to_string(),
             "world-clock deadline: full cycle not observed within wall-time budget"
         );
         assert!(connection.is_none());
