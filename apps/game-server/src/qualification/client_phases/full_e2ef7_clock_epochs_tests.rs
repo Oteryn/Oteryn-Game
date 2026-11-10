@@ -376,8 +376,8 @@ fn clock_deadline_discards_an_in_flight_logout_without_another_command() -> Test
             &mut connection,
         );
         assert_eq!(
-            completed.unwrap_err().to_string(),
-            "completed assertion failure"
+            completed.map_err(|error| error.to_string()),
+            Err("completed assertion failure".to_owned())
         );
         assert!(
             connection.is_some(),
@@ -404,8 +404,8 @@ fn clock_deadline_discards_an_in_flight_logout_without_another_command() -> Test
             let _ = logout(client).await;
         }
         assert_eq!(
-            result.unwrap_err().to_string(),
-            "world-clock deadline: full cycle not observed within wall-time budget"
+            result.map_err(|error| error.to_string()),
+            Err("world-clock deadline: full cycle not observed within wall-time budget".to_owned())
         );
         assert!(connection.is_none());
         peer.await??;
