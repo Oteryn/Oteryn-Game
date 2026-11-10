@@ -1,5 +1,14 @@
 {
   "module": "platform",
   "owner": "crates",
-  "events": []
+  "events": [
+    {
+      "event": "platform_call",
+      "level": "info",
+      "span": true,
+      "fields": ["endpoint", "outcome", "status", "ms", "attempts", "slow"],
+      "codes": ["E5005", "E5006", "E5007"],
+      "note": "Bounded Platform request lifecycle; contains no identity, token or grant fields."
+    }
+  ]
 }

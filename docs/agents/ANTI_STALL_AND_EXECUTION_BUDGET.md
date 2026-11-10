@@ -79,7 +79,7 @@ After the freeze:
 - place exact-head review/audit and CI evidence in the PR review, workflow run, artifact or external task tracker without moving the head;
 - do not amend, force-push, rewind, close/reopen or replace the PR merely to create another event;
 - move the head only for a material content repair based on an explicit finding or failed validation;
-- every moved head invalidates the prior exact-head self-review, any required independent review and exact-head CI generation and requires a new freeze.
+- every moved head invalidates the prior exact-head self-review, any required independent review and exact-head CI generation and requires a new freeze; the per-PR Codex review is the exception and is repeated only under the owner's second-review condition (`OWNER_FUNDED_AI_POLICY.md`).
 
 A commit cannot contain its own SHA. Do not create a self-referential follow-up commit merely to fill `final_head_sha` inside the repository task file.
 

@@ -90,14 +90,7 @@ Parallelize only read-only preparation/analysis or proven path-disjoint allocate
 
 Current protected-main root `AGENTS.md` and the organization AI review policy it adopts by reference are the current AI-review routing authority. Older local review-tier, standing-authorization or controller prose in `docs/agents/**` is subordinate historical/procedural evidence when it conflicts.
 
-Current defaults:
-
-```text
-default change                           -> no external AI review
-ordinary code + clear review value       -> prefer Codex Spark when available
-material high-risk / control-plane       -> one Codex deep review on a stable material candidate
-material risk-bearing repair after review -> re-review only if prior review is no longer representative
-```
+Current default (owner 2026-11-09): every Game PR gets one Codex review, a second only after a substantial logic change, never a third; see `OWNER_FUNDED_AI_POLICY.md`, *Owner review rule for every PR*.
 
 External AI review is advisory. It is never a required GitHub status or merge authority and never replaces `game-gate`, repository protection or Merge Queue.
 

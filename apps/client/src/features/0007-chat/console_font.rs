@@ -29,7 +29,7 @@ impl ConsoleFont {
             SetPropW(
                 transcript,
                 wide(crate::play::FIXED_PIXEL_FONT_PROPERTY).as_ptr(),
-                1usize as *mut _,
+                std::ptr::dangling_mut::<core::ffi::c_void>(),
             );
             if !self.handle.is_null() {
                 DeleteObject(self.handle);

@@ -452,6 +452,11 @@ impl CreatureAiTable {
             if report.idle {
                 entry.due_us = None;
             }
+            crate::observability::record_ai_evaluation(
+                report.units,
+                CREATUREAI0_EVALUATION_UNITS_PER_THINK,
+                report.over_budget,
+            );
         }
         if let Ok(report) = &report {
             self.run_think_hook(actor, facts.position, facts.now_us, report);

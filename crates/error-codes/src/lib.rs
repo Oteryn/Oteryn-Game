@@ -15,7 +15,7 @@ mod line;
 pub mod metrics;
 mod span;
 
-pub use emit::{capture, emit};
+pub use emit::{capture, emit, install_observer};
 pub use filter::{Filter, LogSpecError, filter, init_filter};
 pub use flight::{DEFAULT_CAPACITY, FlightRecorder, MAX_CAPACITY};
 pub use hook::{PANIC, PanicKind, install_panic_hook, panic_line};

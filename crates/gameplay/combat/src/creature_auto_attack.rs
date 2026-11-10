@@ -286,7 +286,12 @@ impl MeleeSource {
         }
         let record=records.iter().find(|r| matches!(r,ProjectReferenceRecord::Creature{identity,..} if identity.key==creature.key && identity.revision==creature.revision)).ok_or(AttackError::InvalidSource)?;
         let ProjectReferenceRecord::Creature { behavior, .. } = record else {
-            unreachable!()
+            let error = AttackError::InvalidSource;
+            crate::invariant_violation(
+                crate::record_variant_invariant_code(),
+                "resolved creature record changed variant",
+            );
+            return Err(error);
         };
         let bref = Ref {
             family: ProjectV2Family::Behavior,
@@ -367,7 +372,12 @@ impl MeleeSource {
         }
         let ar=records.iter().find(|r|matches!(r,ProjectReferenceRecord::Ability{identity,..} if identity.key==e.ability.key && identity.revision==e.ability.revision && identity.family=="Ability")).ok_or(AttackError::InvalidSource)?;
         let ProjectReferenceRecord::Ability { effects, .. } = ar else {
-            unreachable!()
+            let error = AttackError::InvalidSource;
+            crate::invariant_violation(
+                crate::record_variant_invariant_code(),
+                "resolved ability record changed variant",
+            );
+            return Err(error);
         };
         if !effects
             .iter()

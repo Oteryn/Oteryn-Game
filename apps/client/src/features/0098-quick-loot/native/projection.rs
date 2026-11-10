@@ -70,7 +70,7 @@ pub(super) fn project(
                 }
                 text
             } else if store.page == oteryn_client_ui::store::StorePage::Catalogue {
-                oteryn_client_ui::store::panel_text(&store)
+                oteryn_client_ui::store::panel_text(store)
             } else {
                 oteryn_client_ui::purchase_history::panel_text(&state.history)
             },
