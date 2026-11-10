@@ -101,7 +101,7 @@ fn owner(
     loyalty: u32,
     proficiency: u32,
 ) -> Result<(PlayerSpellState, OwnedCastFacts), String> {
-    let (vocation, key) = if spell.name == "Heal Friend" {
+    let (vocation, key) = if matches!(spell.name.as_str(), "Food" | "Heal Friend") {
         (Vocation::Druid, "druid")
     } else {
         (Vocation::Paladin, "paladin")

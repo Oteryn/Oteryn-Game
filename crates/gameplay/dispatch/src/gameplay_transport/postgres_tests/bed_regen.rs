@@ -41,9 +41,9 @@ fn gr_soul_001_bed_admission_uses_current_account_premium_postgres() -> TestResu
                 )
                 .await?;
                 let request = prepare_current_session(&h).await?;
-                seed(&h, false).await?;
-                sqlx::query("UPDATE game_character_last_positions SET rest[1]=150 WHERE character_id=encode($1,'hex')::uuid")
-                    .bind(id(41).as_slice()).execute(&h.pool).await?;
+                // Historical input belongs to the previous sleeper's lease; this
+                // case qualifies native admission, not that previous session's writer.
+                seed(&h, false, 150).await?;
                 if slept == 899 {
                     sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=slept_at+899000,freed_cause='owner_wake' WHERE character_id=encode($1,'hex')::uuid")
                         .bind(id(41).as_slice()).execute(&h.pool).await?;
@@ -110,7 +110,7 @@ fn gr_soul_001_bed_admission_uses_current_account_premium_postgres() -> TestResu
     })
 }
 
-async fn seed(h: &Harness, freed: bool) -> TestResult {
+async fn seed(h: &Harness, freed: bool, initial_soul: i32) -> TestResult {
     let wake: i64 = sqlx::query_scalar("SELECT admitted_at FROM game_bed_admission_times WHERE game_session_id=encode($1,'hex')::uuid")
         .bind(id(50).as_slice()).fetch_one(&h.pool).await?;
     let slept = wake - 900_000;
@@ -132,8 +132,8 @@ async fn seed(h: &Harness, freed: bool) -> TestResult {
         sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=$1,freed_cause='owner_wake' WHERE character_id=encode($2,'hex')::uuid")
             .bind(slept+29_999).bind(id(41).as_slice()).execute(&h.pool).await?;
     }
-    sqlx::query("INSERT INTO game_character_last_positions(character_id,world_id,tile_x,tile_y,tile_floor,coordinate_frame_digest,map_revision_digest,server_artifact_digest,character_lease_generation,write_sequence,health,mana,rest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,100,200,7,$3,$3,$3,1,1,27,9,ARRAY[5,31567,1234,567])")
-        .bind(id(41).as_slice()).bind(id(42).as_slice()).bind([0u8;32].as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_character_last_positions(character_id,world_id,tile_x,tile_y,tile_floor,coordinate_frame_digest,map_revision_digest,server_artifact_digest,character_lease_generation,write_sequence,health,mana,rest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,100,200,7,$3,$3,$3,1,1,27,9,ARRAY[$4,31567,1234,567])")
+        .bind(id(41).as_slice()).bind(id(42).as_slice()).bind([0u8;32].as_slice()).bind(initial_soul).execute(&h.pool).await?;
     Ok(())
 }
 
@@ -150,7 +150,7 @@ fn scenario(freed: bool) -> TestResult {
         let request = prepare_current_session(&h)
             .await
             .map_err(|e| format!("prepare: {e}"))?;
-        seed(&h, freed).await.map_err(|e| format!("seed: {e}"))?;
+        seed(&h, freed, 5).await.map_err(|e| format!("seed: {e}"))?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root

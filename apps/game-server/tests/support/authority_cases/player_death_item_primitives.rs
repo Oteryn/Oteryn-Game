@@ -1476,7 +1476,6 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     assert_eq!(h.count("game_item_container_entries").await?, 0);
     assert_eq!(h.count("game_item_nested_entries").await?, 500);
     let reset = prepare_nested_reset(&h, &h.root).await?;
-    observe_nested_retirement_order(&h).await?;
     let audits_before = h.count("game_item_audit_outbox").await?;
     // The production owner retains its existing two-second semantic-pass
     // deadline and retry ceiling. A timeout is a test failure, never a skip or
@@ -1492,25 +1491,31 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
         "DUR-003-MAX-RESET: 501 items completed in {:?}",
         started.elapsed()
     );
-    let order: Vec<String> = sqlx::query_scalar(
-        "SELECT item::text FROM test_nested_retire_order ORDER BY position LIMIT 502",
+    // These immutable receipts are inserted by separate commands after each
+    // item's mutation. Within one physical transaction, cmin orders those
+    // INSERTs without adding observer writes to the measured production pass.
+    let order: Vec<(String, i64, String)> = sqlx::query_as(
+        "SELECT r.item_instance_id::text,r.cmin::text::bigint,r.created_xact_id::text FROM game_item_decay_retire_receipts r WHERE r.cause_kind='WORLD_RESET' AND r.ground_root_item_instance_id=encode($1,'hex')::uuid ORDER BY r.cmin::text::bigint,r.item_instance_id LIMIT 502",
     )
+    .bind(selected.as_slice())
     .fetch_all(&h.pool)
     .await?;
     assert_eq!(order.len(), 501);
-    assert_eq!(order.last(), Some(&uuid_text(selected)));
-    let positions: std::collections::BTreeMap<_, _> = order
+    let physical_transactions: std::collections::BTreeSet<_> =
+        order.iter().map(|(_, _, transaction)| transaction).collect();
+    assert_eq!(physical_transactions.len(), 1);
+    assert_eq!(order.last().map(|(item, _, _)| item), Some(&uuid_text(selected)));
+    let commands: std::collections::BTreeMap<_, _> = order
         .iter()
-        .enumerate()
-        .map(|(position, item)| (item.clone(), position))
+        .map(|(item, command, _)| (item.clone(), *command))
         .collect();
-    assert_eq!(positions.len(), 501);
+    assert_eq!(commands.len(), 501);
     for (child, parent) in &tree.edges {
-        let child_position = positions.get(&uuid_text(*child)).ok_or("retired child")?;
-        let parent_position = positions.get(&uuid_text(*parent)).ok_or("retired parent")?;
+        let child_command = commands.get(&uuid_text(*child)).ok_or("retired child")?;
+        let parent_command = commands.get(&uuid_text(*parent)).ok_or("retired parent")?;
         assert!(
-            child_position < parent_position,
-            "each child must retire before its own parent"
+            child_command < parent_command,
+            "each child receipt must precede its own parent receipt"
         );
     }
     let (transactions, audited): (i64, i64) = sqlx::query_as("SELECT count(DISTINCT r.created_xact_id),count(a.event_id) FROM game_item_decay_retire_receipts r JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id AND a.envelope_sha256=r.envelope_sha256 AND a.created_xact_id=r.created_xact_id WHERE r.cause_kind='WORLD_RESET' AND r.ground_root_item_instance_id=encode($1,'hex')::uuid")
@@ -1547,9 +1552,10 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
         h.count("game_item_audit_outbox").await?,
         audits_before + 501
     );
-    let replay_order: Vec<String> = sqlx::query_scalar(
-        "SELECT item::text FROM test_nested_retire_order ORDER BY position LIMIT 502",
+    let replay_order: Vec<(String, i64, String)> = sqlx::query_as(
+        "SELECT r.item_instance_id::text,r.cmin::text::bigint,r.created_xact_id::text FROM game_item_decay_retire_receipts r WHERE r.cause_kind='WORLD_RESET' AND r.ground_root_item_instance_id=encode($1,'hex')::uuid ORDER BY r.cmin::text::bigint,r.item_instance_id LIMIT 502",
     )
+    .bind(selected.as_slice())
     .fetch_all(&h.pool)
     .await?;
     assert_eq!(replay_order, order);
@@ -1914,6 +1920,7 @@ async fn run_nested_death_pickup(
     let before_pickup = nested_death_snapshot(&h, selected).await?;
     let audits_before = h.count("game_item_audit_outbox").await?;
     let receipts_before = h.count("game_item_loop_move_receipts").await?;
+    let lines_before = h.count("game_item_loop_move_lines").await?;
     let pickup = h
         .root
         .commit_item_loop_move(
@@ -1937,7 +1944,17 @@ async fn run_nested_death_pickup(
         h.count("game_item_loop_move_receipts").await?,
         receipts_before + 1
     );
-    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 1);
+    // Ordinary loop moves preserve the Type2 outbox and write their own receipt/line.
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before);
+    assert_eq!(h.count("game_item_loop_move_lines").await?, lines_before + 1);
+    let pickup_rows: Vec<(String, String)> = sqlx::query_as("SELECT to_jsonb(r)::text,to_jsonb(l)::text FROM game_item_loop_move_receipts r JOIN game_item_loop_move_lines l USING(transaction_id) WHERE r.transaction_id=encode($1,'hex')::uuid AND r.event_id=encode($2,'hex')::uuid AND r.character_id=encode($3,'hex')::uuid AND r.operation=5 AND r.line_count=1 AND l.line_ordinal=1 AND l.item_instance_id=encode($4,'hex')::uuid AND l.from_kind=3 AND l.to_kind=1 AND l.to_parent_item_instance_id=encode($5,'hex')::uuid AND l.quantity_before=1 AND l.quantity_after=1 AND l.created_xact_id=r.created_xact_id")
+        .bind(pickup.transaction_id.as_slice())
+        .bind(pickup.event_id.as_slice())
+        .bind(id(receiver).as_slice())
+        .bind(selected.as_slice())
+        .bind(destination.as_slice())
+        .fetch_all(&h.pool).await?;
+    assert_eq!(pickup_rows.len(), 1, "one exact Ground-to-main root line");
     for (index, item) in items.iter().enumerate() {
         let actual: (Option<String>, Option<i32>) = sqlx::query_as(
             "SELECT owner_character::text,depth FROM game_item_loop_owner(encode($1,'hex')::uuid)",
@@ -2005,7 +2022,11 @@ async fn run_nested_death_pickup(
         h.count("game_item_loop_move_receipts").await?,
         receipts_before + 1
     );
-    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 1);
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before);
+    assert_eq!(h.count("game_item_loop_move_lines").await?, lines_before + 1);
+    let replay_rows: Vec<(String, String)> = sqlx::query_as("SELECT to_jsonb(r)::text,to_jsonb(l)::text FROM game_item_loop_move_receipts r JOIN game_item_loop_move_lines l USING(transaction_id) WHERE r.transaction_id=encode($1,'hex')::uuid ORDER BY l.line_ordinal")
+        .bind(pickup.transaction_id.as_slice()).fetch_all(&h.pool).await?;
+    assert_eq!(replay_rows, pickup_rows);
     drop(permit);
     reject_unproven_custody_change(&h, items[1], false).await?;
     drop(authority);

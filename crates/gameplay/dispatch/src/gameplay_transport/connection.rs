@@ -435,6 +435,23 @@ fn report_admission_refusal(refusal: AdmissionRefusal) {
     }
 }
 
+/// Temporary Node boot diagnostics: closed labels only, without refusal payloads.
+pub(super) fn resume_refusal_event(stage: &'static str, refusal: AdmissionRefusal) -> String {
+    let class = match refusal {
+        AdmissionRefusal::Rejected => "rejected",
+        AdmissionRefusal::PremiumRequired => "premium_required",
+        AdmissionRefusal::Unavailable => "unavailable",
+        AdmissionRefusal::Classified(_) => "classified",
+        AdmissionRefusal::Queued(_) => "queued",
+        AdmissionRefusal::RecoveryCapabilityRequired => "recovery_capability_required",
+    };
+    format!("[DBG-NODEBOOT] event=resume_refused stage={stage} class={class}")
+}
+
+pub(super) fn report_resume_refusal(stage: &'static str, refusal: AdmissionRefusal) {
+    super::operator_event(&resume_refusal_event(stage, refusal));
+}
+
 /// The terminal outcome of one `ACCOUNT_ACHIEVEMENTS_QUERY` (display contract §3.3, §4).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AccountAchievementsReply {
@@ -680,6 +697,7 @@ where
                 Err(error) => return Err(reject(stream, error, 0).await),
             };
             let Some(transport) = identifiers.transport_ref() else {
+                report_resume_refusal("transport_reference", AdmissionRefusal::Unavailable);
                 return Err(ConnectionEnd::ResumeUnavailable);
             };
             let resumed = authority
@@ -690,7 +708,8 @@ where
                     last_applied_server_sequence: resume.last_applied_server_sequence,
                     supported_capabilities: resume.supported_capabilities,
                 })
-                .await;
+                .await
+                .inspect_err(|refusal| report_resume_refusal("authority", *refusal));
             let resumed = match resumed {
                 Ok(resumed) => resumed,
                 // ADMIT0 §4: the owner reached this only after authenticating the recovery
