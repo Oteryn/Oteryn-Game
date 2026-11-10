@@ -1,5 +1,16 @@
 {
   "module": "combat",
   "owner": "crates",
-  "events": []
+  "events": [
+    {
+      "event": "invariant_violation",
+      "level": "error",
+      "span": false,
+      "fields": [],
+      "codes": [
+        "E4080"
+      ],
+      "note": "Combat rule resolution reached a state excluded by its preceding discriminator check."
+    }
+  ]
 }

@@ -1,5 +1,14 @@
 {
   "module": "channel",
   "owner": "crates",
-  "events": []
+  "events": [
+    {
+      "event": "work_item_overrun",
+      "level": "warn",
+      "span": false,
+      "fields": ["kind", "ms", "threshold_ms"],
+      "codes": [],
+      "note": "Channel-owner work item exceeding its configured slow threshold."
+    }
+  ]
 }
