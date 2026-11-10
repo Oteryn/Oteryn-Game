@@ -266,6 +266,33 @@ async fn scenario(admin: String) -> TestResult {
         "progression binding follows the real handoff"
     );
     eprintln!("M26_SPITE_STAGE source_entry_committed");
+    {
+        let runtime = destination.runtime.lock().await;
+        let points = runtime.spawn_point_creatures();
+        assert_eq!(
+            points.len(),
+            3,
+            "actual committed Spite handoff activates its three source XML points"
+        );
+        assert!(
+            points
+                .iter()
+                .all(|(point, _, actor)| actor.is_none()
+                    && runtime.pending_respawn(*point).is_some()),
+            "entry clears the XML points and retains their real respawn deadlines, without startup actors"
+        );
+        assert!(
+            destination
+                .states
+                .spell_states
+                .lock()
+                .await
+                .spite_global
+                .next_due_us()
+                .is_some(),
+            "the same real destination retains its independently registered Global event"
+        );
+    }
     let actor = admitted.runtime_actor.ok_or("Instance player")?;
     let boss = {
         let runtime = destination.runtime.lock().await;

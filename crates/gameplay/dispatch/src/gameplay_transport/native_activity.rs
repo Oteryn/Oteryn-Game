@@ -1167,14 +1167,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .elapsed_ms
                 .checked_add(now_us.checked_sub(observed_owner_us).ok_or(())? / 1_000)
                 .ok_or(())?;
-            let runtime = destination_view.runtime.lock().await;
+            let mut runtime = destination_view.runtime.lock().await;
             runtime.owner_fence().map_err(|_| ())?;
             let mut spells = destination_view.states.spell_states.lock().await;
             // A retained physical owner claims this once, including retries
             // after the durable handoff and later participants in the roster.
             spells
                 .soul_war_callbacks
-                .committed_entry(now_us, elapsed_ms);
+                .committed_entry(&mut runtime, now_us, elapsed_ms)?;
         }
         let result = NativeActivityOutcome::Committed(NativeActivityCommit {
             handoff_id: attempt.request.handoff_id,

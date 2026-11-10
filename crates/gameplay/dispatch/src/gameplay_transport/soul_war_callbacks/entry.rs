@@ -4,6 +4,33 @@ use crate::durability::quest_state::soul_war::CurrentSoulWarEntryClock;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::GameSessionId;
 
+impl SoulWarCallbacks {
+    /// Retain only Content's exact XML plan while the fresh source Instance is
+    /// empty. The committed handoff below remains the physical activation owner.
+    pub(in crate::gameplay_transport) fn prepare_ambient_entry(
+        &mut self,
+        active: &crate::content::ActiveGeneration,
+        room: &QualifiedNativeEntryRoom,
+    ) -> Result<(), ()> {
+        use crate::content::bosses::activity_template::PinnedActivitySourceRoom as Room;
+        if !matches!(
+            room.pinned_activity_source_room(),
+            Some(
+                Room::GoshnarsSpite
+                    | Room::GoshnarsHatred
+                    | Room::GoshnarsCruelty
+                    | Room::GoshnarsMegalomania
+            )
+        ) {
+            return Ok(());
+        }
+        let policy = active
+            .qualify_ambient_xml_spawn_policy(room)
+            .map_err(|_| ())?;
+        self.entry_state.prepare_ambient(policy)
+    }
+}
+
 impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     /// The native handoff already owns this lane. Reacquiring it here would
     /// deadlock and would discard the canonical transfer's ordering evidence.

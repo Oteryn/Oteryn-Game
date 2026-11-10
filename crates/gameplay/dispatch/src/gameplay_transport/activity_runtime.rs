@@ -1119,6 +1119,24 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if let Some(callbacks) = source_callbacks {
             states.spell_states.get_mut().soul_war_callbacks = callbacks;
         }
+        if let Some(source) = source_room.as_deref() {
+            let spells = states.spell_states.get_mut();
+            spells
+                .soul_war_callbacks
+                .prepare_ambient_entry(active, source)
+                .map_err(|_| ActivityRuntimeRegistrationError)?;
+            spells
+                .spite_global
+                .register_source_instance(
+                    &runtime,
+                    active
+                        .native_gameplay()
+                        .ok_or(ActivityRuntimeRegistrationError)?,
+                    source,
+                    self.owner_now().get(),
+                )
+                .map_err(|_| ActivityRuntimeRegistrationError)?;
+        }
         states
             .spell_states
             .lock()

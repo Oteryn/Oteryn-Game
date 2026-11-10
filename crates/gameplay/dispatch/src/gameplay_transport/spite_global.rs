@@ -187,6 +187,35 @@ impl SpiteGlobalState {
     pub(super) fn next_due_us(&self) -> Option<u64> {
         self.registration.as_ref().map(Registration::next_due_us)
     }
+    /// A source Instance owns the same registered event in its independent
+    /// physical scope. Unlike XML clearing, this clock does not wait for a lever.
+    pub(super) fn register_source_instance(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        native: &NativeGameplayState,
+        room: &QualifiedNativeEntryRoom,
+        registered_us: u64,
+    ) -> Result<(), ()> {
+        use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
+        if room.pinned_activity_source_room() != Some(PinnedActivitySourceRoom::GoshnarsSpite) {
+            return Ok(());
+        }
+        let pin = runtime.content_pin();
+        if !matches!(
+            runtime.binding().runtime_scope(),
+            RuntimeScopeRefV1::Instance { .. }
+        ) || runtime.owner_fence().is_err()
+            || pin.server_artifact_digest() != native.source_digest()
+            || room.compiled().server_digest() != pin.server_artifact_digest()
+            || room.compiled().client_digest() != pin.client_artifact_digest()
+            || room.frame_binding().digest() != pin.frame_binding_digest()
+            || room.map_revision_digest() != runtime.map_revision_digest()
+        {
+            return Err(());
+        }
+        let proof = native.qualify_spite_global_event(room).ok_or(())?;
+        self.register(runtime, proof, registered_us)
+    }
     fn register(
         &mut self,
         runtime: &ChannelRuntimeV1,

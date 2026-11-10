@@ -7,6 +7,172 @@ use crate::durability::creature_source_items::SpiteGlobalFireCallback;
 use crate::foundation::MovementLocalPosition;
 
 #[test]
+fn srx3_spite_private_registration_uses_actual_ready_scope_before_entry_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e::scenario_thread::run("srx3-spite-private-global", || {
+        run(async |admin| {
+            use crate::foundation::RuntimeScopeRefV1;
+            use oteryn_simulation_determinism::SemanticTimeMicros;
+            reset();
+            let h = Harness::create_with_admission_seed(
+                admin,
+                "srx3_spite_private_global",
+                false,
+                false,
+            )
+            .await?;
+            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
+            super::house_transfer::prepare_owned_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let scene = SourceScene::new(
+                PinnedActivitySourceRoom::GoshnarsSpite,
+                MovementLocalPosition {
+                    x: 33774,
+                    y: 31634,
+                    floor: 14,
+                },
+            )?;
+            let deps = scene.dependencies()?;
+            let mut owner = deps.owner(&h, &authority);
+            owner.evidence = &evidence.evidence;
+            install_scene(&mut owner, &scene, PinnedActivitySourceRoom::GoshnarsSpite)?;
+            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            let mut admitted = deps.admitted;
+            prepare_player(&h, &owner, &mut admitted, 500).await?;
+            let scope = super::activity_runtime::allocate_ready_instance(&h, 218).await?;
+            let started = owner.owner_now().get();
+            // Exercise the actual ready-runtime registration owner without
+            // manufacturing a callback, accepting a lever or opening the gate.
+            let ready = owner
+                .ensure_pinned_source_runtime(
+                    PinnedActivitySourceRoom::GoshnarsSpite,
+                    Some((
+                        "oteryn:creature.goshnar_s_spite",
+                        MovementLocalPosition {
+                            x: 33743,
+                            y: 31632,
+                            floor: 14,
+                        },
+                    )),
+                    1024,
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(ready.scope, scope);
+            assert!(matches!(scope, RuntimeScopeRefV1::Instance { .. }));
+            let view = owner.runtime_view(&ready);
+            let first_due = {
+                let runtime = view.runtime.lock().await;
+                assert!(
+                    runtime
+                        .activity_participant_sessions()
+                        .map_err(debug)?
+                        .is_empty()
+                );
+                assert!(
+                    runtime.spawn_point_creatures().is_empty(),
+                    "prewarming cannot start the lever's XML respawn clock"
+                );
+                let states = view.states.spell_states.lock().await;
+                assert!(
+                    states.soul_war_callbacks.requires_committed_entry(),
+                    "Spite's exact XML plan waits for the actual handoff even without a boss-specific Think owner"
+                );
+                states
+                    .spite_global
+                    .next_due_us()
+                    .ok_or("production private Global registration")?
+            };
+            assert!(first_due >= started + 14_000_000);
+            assert!(first_due <= owner.owner_now().get() + 14_000_000);
+            let again = owner
+                .ensure_pinned_source_runtime(
+                    PinnedActivitySourceRoom::GoshnarsSpite,
+                    Some((
+                        "oteryn:creature.goshnar_s_spite",
+                        MovementLocalPosition {
+                            x: 33743,
+                            y: 31632,
+                            floor: 14,
+                        },
+                    )),
+                    1024,
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(again.scope, ready.scope);
+            assert_eq!(
+                again
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .spite_global
+                    .next_due_us(),
+                Some(first_due),
+                "rediscovering the same ready owner cannot restart its independent Global clock"
+            );
+
+            // The existing test port supplies exact semantic owner turns; every
+            // Item write below is still the real fenced native/SQL producer.
+            view.drain_monster_melee_at(SemanticTimeMicros::from_micros(first_due - 1))
+                .await;
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>(
+                    "SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=4"
+                )
+                .fetch_one(&h.pool)
+                .await?,
+                0,
+                "no Global MINT before its original14s"
+            );
+            view.drain_monster_melee_at(SemanticTimeMicros::from_micros(first_due))
+                .await;
+            assert_eq!(sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=4 AND creature_occurrence LIKE '%:create' AND operation_count=1"
+            ).fetch_one(&h.pool).await?, 1, "one real private-scope MINT at the registered deadline");
+            let expiry_due = view
+                .states
+                .spell_states
+                .lock()
+                .await
+                .spite_global
+                .next_due_us()
+                .ok_or("original private expiry")?;
+            assert_eq!(expiry_due, first_due + 5_000_000);
+            view.drain_monster_melee_at(SemanticTimeMicros::from_micros(first_due))
+                .await;
+            assert_eq!(
+                view.states
+                    .spell_states
+                    .lock()
+                    .await
+                    .spite_global
+                    .next_due_us(),
+                Some(expiry_due)
+            );
+            view.drain_monster_melee_at(SemanticTimeMicros::from_micros(expiry_due))
+                .await;
+            assert_eq!(sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=4 AND creature_occurrence LIKE '%:expire' AND operation_count=1"
+            ).fetch_one(&h.pool).await?, 1, "existing private owner expires the same current field once");
+            assert!(
+                view.runtime.lock().await.spawn_point_creatures().is_empty(),
+                "Global ticks never substitute for committed XML activation"
+            );
+            Ok(())
+        })
+    })
+}
+
+#[test]
 fn srx3_spite_actual_player_step_consumes_once_with_fifty_six_second_clock_postgres() -> TestResult
 {
     spite_source_step_case(false)
