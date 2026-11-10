@@ -1,7 +1,7 @@
 //! SRVGAP-B22: the admitted arena route must also accept a distinct Drome lifecycle.
 use super::TestResult;
 use super::arena_match::fixture;
-use super::fixture::Harness;
+use super::fixture::{Harness, debug, id};
 
 #[path = "reaudit_arena_lifecycle/source.rs"]
 mod source_map;
@@ -481,6 +481,52 @@ pub(super) fn physical_hazards() -> TestResult {
     physical_context(0, true, true, Physical::Standard)
 }
 
+async fn persisted_drome_record(
+    harness: &Harness,
+) -> TestResult<crate::durability::tibiadrome::Record> {
+    let body: serde_json::Value = sqlx::query_scalar(
+        "SELECT body FROM game_character_tibiadrome WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&harness.pool)
+    .await?;
+    Ok(serde_json::from_value(body)?)
+}
+
+async fn replay_observed_drome_update(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+    observed: &crate::durability::tibiadrome::Record,
+) -> TestResult {
+    let mut fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "current Drome replay fence")?
+        .ok_or("current Drome replay fence")?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    fence.expected_character_revision = slot
+        .cursor(owner.root, owner.character)
+        .await
+        .map_err(debug)?;
+    owner
+        .root
+        .settle_tibiadrome(
+            owner.character,
+            owner.holder,
+            fence,
+            crate::durability::tibiadrome::RunUpdate {
+                run: observed.run,
+                completed: observed.completed,
+                level: observed.progress.level,
+                ended: !observed.active,
+                wave: observed.wave,
+            },
+        )
+        .await
+        .map_err(debug)?;
+    Ok(())
+}
+
 fn physical_context(
     starting_wave: u32,
     mechanics_test_context: bool,
@@ -766,6 +812,14 @@ fn physical_context(
             0,
             "no client-authored kills"
         );
+        let before_clears = if matches!(case, Physical::ThreeWaveCommandCatchup) {
+            let observed = persisted_drome_record(&harness).await?;
+            assert!(observed.active);
+            assert_eq!((observed.completed, observed.progress.level), (0, 0));
+            Some(observed)
+        } else {
+            None
+        };
         {
             let mut runtime = deps.runtime.lock().await;
             crate::gameplay_transport::tibiadrome::tick_at(
@@ -1217,6 +1271,20 @@ fn physical_context(
                 (3, 3),
                 "each native clear contributes once to rotation and lifetime"
             );
+            let latest = persisted_drome_record(&harness).await?;
+            let earlier = before_clears
+                .as_ref()
+                .ok_or("actual pre-clear Drome snapshot")?;
+            assert!(latest.active);
+            assert_eq!(earlier.run, latest.run);
+            assert!(earlier.completed < latest.completed);
+            assert!(earlier.wave < latest.wave);
+            replay_observed_drome_update(&owner, session, earlier).await?;
+            assert_eq!(
+                persisted_drome_record(&harness).await?,
+                latest,
+                "an older nonterminal cadence observation cannot rewind the actual wave or duplicate credit"
+            );
         }
         if matches!(case, Physical::PendingCorpseEffects) {
             // Manual combat.md:255,264: native defeat earns the wave even
@@ -1265,6 +1333,18 @@ fn physical_context(
                 (300, 295, 300, 0)
             );
             assert!(status.cooldown > 0);
+            let terminal = persisted_drome_record(&harness).await?;
+            assert!(!terminal.active);
+            assert_eq!(
+                (terminal.wave, terminal.progress.level),
+                (status.wave, status.level)
+            );
+            replay_observed_drome_update(&owner, session, &terminal).await?;
+            assert_eq!(
+                persisted_drome_record(&harness).await?,
+                terminal,
+                "replaying the observed terminal wave cannot extend cooldown or award credit again"
+            );
             let runtime = deps.runtime.lock().await;
             assert!(
                 !runtime

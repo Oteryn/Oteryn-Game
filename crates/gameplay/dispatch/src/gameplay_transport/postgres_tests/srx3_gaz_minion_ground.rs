@@ -13,6 +13,129 @@ async fn assert_ground_history(h: &Harness) -> TestResult {
     Ok(())
 }
 
+async fn assert_corrupted_history_rejects_tampering(
+    h: &Harness,
+    item: &str,
+    expired: bool,
+) -> TestResult {
+    #[derive(Clone, Copy, Debug)]
+    enum Tamper {
+        Predecessor,
+        SkippedSuccessor,
+        ForeignChannel,
+        ExpiryRule,
+    }
+    let operation = if expired { 2_i16 } else { 7_i16 };
+    let (transaction, bytes): (String, Vec<u8>) = sqlx::query_as(
+        "SELECT r.transaction_id::text,r.intent FROM game_spell_item_lines l \
+         JOIN game_spell_item_receipts r USING(transaction_id) \
+         WHERE l.item_instance_id=$1::uuid AND l.operation_kind=$2 \
+         ORDER BY l.state_revision_before LIMIT 1",
+    )
+    .bind(item)
+    .bind(operation)
+    .fetch_one(&h.pool)
+    .await?;
+    let original: serde_json::Value = serde_json::from_slice(&bytes)?;
+    assert_eq!(
+        original["source_event"]["rule"],
+        if expired {
+            "w01.corrupted-soul.expire"
+        } else {
+            "w01.corrupted-soul.transform"
+        }
+    );
+    if !expired {
+        assert_eq!(
+            original["operations"][0]["before"]["key"],
+            "oteryn:item.tibia.i23726"
+        );
+        assert_eq!(
+            original["operations"][0]["definition"]["key"],
+            "oteryn:item.tibia.i23727"
+        );
+    }
+    let cases = if expired {
+        vec![Tamper::ExpiryRule]
+    } else {
+        vec![
+            Tamper::Predecessor,
+            Tamper::SkippedSuccessor,
+            Tamper::ForeignChannel,
+        ]
+    };
+    for tamper in cases {
+        assert_ground_history(h).await?;
+        let mut tx = h.pool.begin().await?;
+        // Fault injection changes existing history only inside this rolled-back
+        // admin transaction. Never ask a production writer to forge a receipt.
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        let mut intent = original.clone();
+        let mut foreign_channel = None;
+        match tamper {
+            Tamper::Predecessor => {
+                intent["operations"][0]["before"]["key"] =
+                    serde_json::json!("oteryn:item.tibia.i23728");
+            }
+            Tamper::SkippedSuccessor => {
+                intent["operations"][0]["definition"]["key"] =
+                    serde_json::json!("oteryn:item.tibia.i23728");
+                assert_eq!(sqlx::query("UPDATE game_spell_item_lines SET definition_production_key='oteryn:item.tibia.i23728' WHERE transaction_id=$1::uuid AND item_instance_id=$2::uuid AND operation_kind=7")
+                    .bind(&transaction).bind(item).execute(&mut *tx).await?.rows_affected(), 1);
+                assert_eq!(sqlx::query("UPDATE game_item_instances SET definition_production_key='oteryn:item.tibia.i23728' WHERE item_instance_id=$1::uuid AND definition_production_key='oteryn:item.tibia.i23727'")
+                    .bind(item).execute(&mut *tx).await?.rows_affected(), 1);
+            }
+            Tamper::ForeignChannel => {
+                let foreign = super::fixture::id(250);
+                let channel = foreign
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                assert_ne!(intent["channel"], channel);
+                intent["channel"] = serde_json::json!(channel);
+                foreign_channel = Some(foreign);
+                assert_eq!(sqlx::query("UPDATE game_spell_item_lines SET channel_id=encode($2,'hex')::uuid WHERE transaction_id=$1::uuid AND runtime_scope_kind=1")
+                    .bind(&transaction).bind(foreign.as_slice()).execute(&mut *tx).await?.rows_affected(), 1);
+            }
+            Tamper::ExpiryRule => {
+                // This is a valid typed CorruptedSoul rule, but cannot justify
+                // the actual terminal burn in this closed historical chain.
+                intent["source_event"]["rule"] = serde_json::json!("w01.corrupted-soul.transform");
+            }
+        }
+        // Keep the ordinary checksum/audit checks satisfied. The closed source
+        // predecessor, successor, scope or expiry proof must reject this history.
+        let bytes = serde_json::to_vec(&intent)?;
+        // The typed-cause CHECK compares channel_id with intent.channel even
+        // under replica mode, so change these two representations atomically.
+        assert_eq!(sqlx::query("UPDATE game_spell_item_receipts SET intent=$2,binding=sha256($2),channel_id=COALESCE(encode($3,'hex')::uuid,channel_id) WHERE transaction_id=$1::uuid")
+            .bind(&transaction).bind(&bytes).bind(foreign_channel.as_ref().map(|channel| channel.as_slice()))
+            .execute(&mut *tx).await?.rows_affected(), 1);
+        assert_eq!(sqlx::query("UPDATE game_spell_item_audit_outbox SET envelope=$2,envelope_sha256=sha256($2) WHERE transaction_id=$1::uuid")
+            .bind(&transaction).bind(&bytes).execute(&mut *tx).await?.rows_affected(), 1);
+        let coherent: bool = sqlx::query_scalar("SELECT game_w01_death_ground_shape(r) AND r.binding=sha256(r.intent) AND a.envelope=r.intent AND a.envelope_sha256=r.binding FROM game_spell_item_receipts r JOIN game_spell_item_audit_outbox a USING(transaction_id) WHERE r.transaction_id=$1::uuid")
+            .bind(&transaction).fetch_one(&mut *tx).await?;
+        assert!(
+            coherent,
+            "fault keeps typed source shape and ordinary audit binding intact: {tamper:?}"
+        );
+        let result =
+            crate::durability::spell_item_transaction::verify_spell_item_chain(&mut tx).await;
+        tx.rollback().await?;
+        assert!(
+            matches!(
+                result,
+                Err(crate::durability::DurabilityError::InvalidStoredState)
+            ),
+            "recovery must reject the substituted W01 history: {tamper:?}: {result:?}"
+        );
+        assert_ground_history(h).await?;
+    }
+    Ok(())
+}
+
 fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -266,6 +389,14 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
                 // Recovery must accept each committed physical successor, including
                 // the retained existing23728 no-op and its unchanged Item history.
                 assert_ground_history(&h).await?;
+                if corrupted && followup && death_index == 1 {
+                    assert_corrupted_history_rejects_tampering(
+                        &h,
+                        item_ids.first().ok_or("actual transformed vortex")?,
+                        false,
+                    )
+                    .await?;
+                }
             }
             if followup {
                 let first_due = if corrupted {
@@ -295,6 +426,14 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
                     );
                 }
                 assert_ground_history(&h).await?;
+                if corrupted {
+                    assert_corrupted_history_rejects_tampering(
+                        &h,
+                        item_ids.first().ok_or("actual expired vortex")?,
+                        true,
+                    )
+                    .await?;
+                }
                 let last_due = death_times
                     .last()
                     .copied()

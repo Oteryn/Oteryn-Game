@@ -4,6 +4,7 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[path = "srx3_native_source_cast/uncredited_capacity.rs"]
 mod uncredited_capacity;
 
 /// One current death: at most one detached turn per copied event, its completion,
