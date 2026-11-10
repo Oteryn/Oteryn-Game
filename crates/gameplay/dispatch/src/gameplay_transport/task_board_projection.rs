@@ -206,7 +206,8 @@ pub(super) fn full(commit: &TaskBoardCommit, include_results: bool) -> Option<fu
             selected: active.map_or(Some(0), |task| task.slot.checked_add(1))?,
             current: active.map_or(0, |task| task.current),
             rerolls: view.reroll_tokens,
-            daily_reroll_at: u64::try_from(bounty.next_free_reroll_unix).ok()?,
+            // Retained wire field; bounty offers always consume a Reroll Token.
+            daily_reroll_at: 0,
             offers: bounty
                 .offers
                 .iter()

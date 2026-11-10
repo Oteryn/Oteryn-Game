@@ -1,5 +1,48 @@
 //! Window-thread control and bitmap construction.
 use super::*;
+use windows_sys::Win32::UI::Controls::{
+    ICC_PROGRESS_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx, PBM_SETPOS, PBM_SETRANGE32,
+};
+
+pub(super) struct EchoProgress {
+    label: HWND,
+    bar: HWND,
+}
+
+impl EchoProgress {
+    pub(super) unsafe fn new(parent: HWND) -> Self {
+        // SAFETY: common controls and both child handles are created on the window thread.
+        unsafe {
+            let common = INITCOMMONCONTROLSEX {
+                dwSize: std::mem::size_of::<INITCOMMONCONTROLSEX>() as u32,
+                dwICC: ICC_PROGRESS_CLASS,
+            };
+            InitCommonControlsEx(&common);
+            Self {
+                label: control(parent, "STATIC", "", 97, [340, 105, 330, 24], 0),
+                bar: control(parent, "msctls_progress32", "", 98, [340, 135, 330, 20], 0),
+            }
+        }
+    }
+
+    pub(super) unsafe fn refresh(&self, progress: Option<(u8, u8)>) {
+        // SAFETY: these child controls remain owned by the same live catalogue window.
+        unsafe {
+            let visible = if progress.is_some() { SW_SHOW } else { SW_HIDE };
+            ShowWindow(self.label, visible);
+            ShowWindow(self.bar, visible);
+            if let Some((current, goal)) = progress {
+                SetWindowTextW(
+                    self.label,
+                    wide(&format!("Echo Warden: {current}/{goal} first defeat")).as_ptr(),
+                );
+                SendMessageW(self.bar, PBM_SETRANGE32, 0, isize::from(goal));
+                SendMessageW(self.bar, PBM_SETPOS, usize::from(current), 0);
+            }
+        }
+    }
+}
+
 pub(super) unsafe fn control(
     h: HWND,
     class: &str,

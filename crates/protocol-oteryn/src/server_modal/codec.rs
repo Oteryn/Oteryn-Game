@@ -9,8 +9,12 @@ pub(super) fn encode(reply: &Reply) -> WireResult<Vec<u8>> {
     let mut out = Vec::new();
     match reply {
         Reply::None => out.push(0),
-        Reply::Answered(answer) => {
-            out.push(2);
+        Reply::Answered(answer) | Reply::AnsweredAndLoggedOut(answer) => {
+            out.push(if matches!(reply, Reply::AnsweredAndLoggedOut(_)) {
+                3
+            } else {
+                2
+            });
             out.extend(answer.encode()?);
         }
         Reply::Dialog(dialog) => {
@@ -91,10 +95,14 @@ pub(super) fn decode(bytes: &[u8]) -> WireResult<Reply> {
     let mut reader = Reader(bytes);
     let reply = match reader.byte()? {
         0 => Reply::None,
-        2 => {
+        tag @ (2 | 3) => {
             let answer = Answer::decode(reader.0)?;
             reader.0 = &[];
-            Reply::Answered(answer)
+            if tag == 3 {
+                Reply::AnsweredAndLoggedOut(answer)
+            } else {
+                Reply::Answered(answer)
+            }
         }
         1 => {
             let id = u32::from_le_bytes(reader.take(4)?.try_into().map_err(|_| "modal id")?);
