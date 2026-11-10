@@ -91,6 +91,14 @@
       "note": "Node boot diagnostics (NBDIAG, #3057)."
     },
     {
+      "event": "release_deferred",
+      "level": "warn",
+      "span": false,
+      "fields": ["reason", "waited_ms", "attempts", "control_loss_epoch", "connection_generation", "suppressed"],
+      "codes": [],
+      "note": "An expired grace release was put off on this attempt (LOGDBG-C): closed reason set, ms since the grace deadline, generation numbers only; rate-limited per reason."
+    },
+    {
       "event": "serve_command_end",
       "level": "info",
       "span": false,
