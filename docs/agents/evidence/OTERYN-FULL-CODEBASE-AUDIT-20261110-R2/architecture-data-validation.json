@@ -1,0 +1,12 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "size_entries": 15,
+  "size_entries_shrunk_or_removed": 10,
+  "unsupported_mechanics": 26,
+  "unsupported_baseline_exact": true,
+  "purity_exceptions": 1,
+  "logging_owners": 11,
+  "logging_sites": 61,
+  "checks": "Actual referenced sizes within recorded ratchets; exact unsupported handler/baseline set; bounded purity exception; logging owner/path structure. No Rust AST or full architecture binary execution.",
+  "errors": []
+}

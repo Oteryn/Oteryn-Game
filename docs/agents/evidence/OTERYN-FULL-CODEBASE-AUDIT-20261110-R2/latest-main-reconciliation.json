@@ -1,0 +1,16 @@
+{
+  "input_base": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "observed_main": "af33fd3baeac15d9991bd24c91bcacc8733492e2",
+  "observed_at_utc": "2026-11-10T11:06:34.794768+00:00",
+  "changed_paths": [
+    "apps/client/installer/ci-installer.ps1",
+    "apps/client/src/bin/oteryn-launcher.rs",
+    "apps/client/src/crash_report.rs",
+    "apps/client/src/main.rs"
+  ],
+  "changed_paths_with_any_old_coverage": [],
+  "all_other_input_blobs": "Identical by complete Git tree diff",
+  "delta_review_status": "ALLOCATED; no automatic transferred coverage for four changed files",
+  "delta_owner": "client-support, separate latest-main-delta packet after main client package review",
+  "scope": "Full audit and counts remain bound to input_base. The changed paths add client startup diagnostic writes and installer output. This delta comparison is not full source review of those changed files."
+}

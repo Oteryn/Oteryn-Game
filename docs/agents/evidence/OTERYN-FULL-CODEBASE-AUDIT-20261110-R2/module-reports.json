@@ -62,6 +62,46 @@
       "auditor": "lead"
     },
     {
+      "module": "oteryn-world-bundle",
+      "path": "crates/world-bundle",
+      "report": "world-bundle-review.md",
+      "verification": "Full source/tests inspected; native Rust/zstd/world boot not run.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
+      "module": "oteryn-dev-client",
+      "path": "tools/dev-client",
+      "report": "dev-client-bots-review.md",
+      "verification": "All11 files3166lines substantively inspected; Cargo/TLS/real server tests not run.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
+      "module": "oteryn-player-bots",
+      "path": "tools/player-bots",
+      "report": "dev-client-bots-review.md",
+      "verification": "All3 files1329lines substantively inspected; mock/TLS/native tests not run.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
+      "module": "oteryn-architecture-check",
+      "path": "tools/architecture-check",
+      "report": "architecture-review.md",
+      "verification": "All29tracked files fully reviewed; bounded baseline semantic validation PASS; Rust architecture checker/tests inspected, not executed.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
       "module": "oteryn-identity",
       "status": "REVIEWED",
       "report": "protocol-session.md",
@@ -197,6 +237,54 @@
       "report": "encounter-rules.md",
       "runtime_tests_run": 0,
       "module": "oteryn-gameplay-encounter-rules",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-social-rules",
+      "path": "crates/gameplay/social-rules",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 22,
+      "remaining_files": [],
+      "report": "social-rules.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-social-rules",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-spell-rules",
+      "path": "crates/gameplay/spell-rules",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 24,
+      "remaining_files": [],
+      "report": "spell-rules.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-spell-rules",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-world-change",
+      "path": "crates/gameplay/world-change",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 14,
+      "remaining_files": [],
+      "report": "world-change.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-world-change",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-npc",
+      "path": "crates/gameplay/npc",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 17,
+      "remaining_files": [],
+      "report": "npc.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-npc",
       "auditor": "gameplay-rules"
     },
     {

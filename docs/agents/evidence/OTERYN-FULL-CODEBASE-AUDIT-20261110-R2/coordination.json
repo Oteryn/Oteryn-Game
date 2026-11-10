@@ -1,6 +1,6 @@
 {
   "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
-  "observed_at_utc": "2026-11-10T10:41:07.854856+00:00",
+  "observed_at_utc": "2026-11-10T11:03:41.895202+00:00",
   "lifecycle": "MATERIAL_FREEZE",
   "branch": "audit/full-codebase-20261110-4f0b6c62",
   "sole_writer": "lead /root",
@@ -8,19 +8,23 @@
   "lanes": [
     {
       "lane": "lead",
-      "ledger_rows": 47,
+      "ledger_rows": 135,
       "reported_completed_modules": [
         "oteryn-admin-contracts",
         "oteryn-admin-agent",
         "oteryn-gameplay-admission-evidence",
         "oteryn-gameplay-character-recovery-fence",
         "oteryn-simulation-determinism",
-        "oteryn-game-ops-top"
+        "oteryn-game-ops-top",
+        "oteryn-world-bundle",
+        "oteryn-dev-client",
+        "oteryn-player-bots",
+        "oteryn-architecture-check"
       ]
     },
     {
       "lane": "protocol-session",
-      "ledger_rows": 156,
+      "ledger_rows": 501,
       "reported_completed_modules": [
         "oteryn-identity",
         "oteryn-platform-contracts",
@@ -32,7 +36,7 @@
     },
     {
       "lane": "gameplay-rules",
-      "ledger_rows": 179,
+      "ledger_rows": 309,
       "reported_completed_modules": [
         "oteryn-gameplay-source-critical-baseline",
         "oteryn-gameplay-node-files",
@@ -41,12 +45,16 @@
         "oteryn-gameplay-housing",
         "oteryn-gameplay-economy",
         "oteryn-gameplay-combat-rules",
-        "oteryn-gameplay-encounter-rules"
+        "oteryn-gameplay-encounter-rules",
+        "oteryn-gameplay-social-rules",
+        "oteryn-gameplay-spell-rules",
+        "oteryn-gameplay-world-change",
+        "oteryn-gameplay-npc"
       ]
     },
     {
       "lane": "client-support",
-      "ledger_rows": 787,
+      "ledger_rows": 1138,
       "reported_completed_modules": [
         "oteryn-client-domain",
         "oteryn-synthetic-assets",
@@ -64,7 +72,8 @@
       ]
     }
   ],
-  "publication_predecessor": "0bcd059c8b354c422e128f9fa6803bdf8aaad1e5",
+  "publication_predecessor": "765f34f18f56dd95d06359b1c15e27b5a7e5e243",
   "publication_route": "API-native new candidate; sole parent, expected-SHA non-force ref update, actual remote-head requalification",
-  "checkpoint": 2
+  "checkpoint": 3,
+  "allocation_issue_comment": 6765699424
 }

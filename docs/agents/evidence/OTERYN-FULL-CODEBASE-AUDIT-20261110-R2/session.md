@@ -1,7 +1,7 @@
 # Session audit — REVIEWED
 
 Base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`.
-Scope: all 115 tracked files under `crates/session`, 18,698 lines, including Cargo manifest, production code, embedded tests and all separate test modules. Exact full-file ranges, SHA-256 and substantive per-file notes are in `ledger.json`; `ledger-validation.json` checks every entry against the immutable Git blob and working copy. No remaining package files. REVIEWED means static source analysis completed; it does not mean tests passed or runtime was verified.
+Scope: all 115 tracked files under `crates/session`, 18,698 lines, including Cargo manifest, production code, embedded tests and all separate test modules. Exact full-file ranges and SHA-256 are in `coverage-ledger.json`; substantive lane notes are retained separately. The checkpoint builder checks every range and hash against the immutable checkout. No remaining package files. REVIEWED means static source analysis completed; it does not mean tests passed or runtime was verified.
 
 ## Entry points and responsibilities
 
@@ -27,13 +27,13 @@ Command APIs share one command-id/sequence owner. The next command id is consume
 
 The recovery catalogue revision hypothesis is refuted for the inspected producer path: `crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs`148–225 routes admitted connections through `setup::prepare`; `serve/setup.rs`13–202 calls `snapshot::initial` and transmits a complete committed snapshot; `serve/snapshot.rs`115–195 invokes `SessionCatalog::initial`; `serve/spell_catalog.rs`1–88 constructs domain100 at revision1 for each new connection. The inspected house snapshot also invokes that initializer (`serve/house_hireling/snapshot.rs`150–202). Thus the client fresh-admission requirement of catalogue revision1 is consistent with these producers. These are partial cross-reference reads, not completion credit for gameplay/dispatch.
 
-House handoff retains unspecified old domains through the ordinary replacement mechanism after receipt handling, unlike activity handoff. The difference alone is not a confirmed defect: the actual house producer's snapshot completeness and downstream invalidation must establish stale state survival with an effect. A targeted cross-check was requested from the client auditor; no house finding is claimed here. This is an integration follow-up, not an unreviewed session file.
+House handoff retains unspecified old domains through the ordinary replacement mechanism after receipt handling, unlike activity handoff. The difference alone is not a confirmed defect: the actual house producer's snapshot completeness and downstream invalidation must establish stale state survival with an effect. A targeted cross-check was requested from the client auditor; this stale-domain hypothesis is not itself confirmed. This is an integration follow-up, not an unreviewed session file.
 
 Other hypotheses refuted by inspected guards include unbounded event accumulation, stale-generation typed consumption, replay of old audio via snapshots, premature depot local mutation, command-result acceptance for an unsent id, and treating chat rooms as gameplay World/Channel identity. External cancellation during an active command is not claimed as a production defect without a caller; subsequent correlation failure is fail-closed.
 
 ## Findings and test evidence
 
-No new confirmed P0/P1 finding in this package. The separately confirmed P2 device-ticket integration issue belongs to platform-client; its evidence and independent verification are in the private candidate packet and the lead report.
+No new confirmed P0/P1 finding in this package. The separate handoff-order defect PS-R2-003 is now independently CONFIRMED P2; see `verify-house-handoff.md` for the actual producer/consumer proof and limits. The separately confirmed P2 device-ticket integration issue belongs to platform-client; its evidence and independent verification are in the private candidate packet and the lead report.
 
 All 115 session files were statically reviewed, including all test source. Session tests were **not executed**. Fixtures use in-memory duplex peers and do not establish deployment, real TLS, SQL durability or production incident frequency. No full workspace/SQL tests, source fixes or repository mutations were performed.
 
@@ -41,4 +41,4 @@ The reviewed tests cover admission/refusal, selected dependency routes, strict s
 
 ## Remaining scope
 
-Package files remaining: none (`session-remaining.json`). Wider assignment continues with all tracked files in `crates/protocol-oteryn`. Cross-module house invalidation and native runtime execution remain explicit limits; neither is silently marked VERIFIED.
+Package files remaining: none (independently checked in the coverage ledger). Wider assignment continues with all tracked files in `crates/protocol-oteryn`. Cross-module house invalidation and native runtime execution remain explicit limits; neither is silently marked VERIFIED.

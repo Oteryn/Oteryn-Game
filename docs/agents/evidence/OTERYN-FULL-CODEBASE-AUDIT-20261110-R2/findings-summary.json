@@ -1,0 +1,63 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "findings": [
+    {
+      "id": "GR-SOUL-001",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent static caller/state proof; native SQL/server tests not run",
+      "report": "verify-soul-cap.md",
+      "public_safe": true
+    },
+    {
+      "id": "PS-R2-001",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent Game caller plus exact pinned Platform producer; native HTTPS/SQL tests not run",
+      "report": "Restricted independent evidence retained privately under SECURITY.md",
+      "public_safe": false
+    },
+    {
+      "id": "CL-001",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent actual caller, separate Session stores, rejecting runtime guard and server acceptance proof; native Session test not run",
+      "report": "verify-client-item-actions.md",
+      "public_safe": true
+    },
+    {
+      "id": "CL-002",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent actual caller, separate Session stores, rejecting runtime guard and server acceptance proof; native Session test not run",
+      "report": "verify-client-item-actions.md",
+      "public_safe": true
+    },
+    {
+      "id": "CL-003",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent Polish locale, actual native enqueue/Session/server recognizer and canonical content proof; native E2E not run",
+      "report": "verify-localized-movement.md",
+      "public_safe": true
+    },
+    {
+      "id": "PS-R2-003",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent real native support/caller, durable producer, frame order and Session poison proof; native async/TLS/database tests not run",
+      "report": "verify-house-handoff.md",
+      "public_safe": true
+    }
+  ],
+  "prior_checkpoint": "1c39ebc3347319fe08eaf58299a8a9e9339b0367",
+  "cumulative_confirmed_counts": {
+    "P0": 0,
+    "P1": 3,
+    "P2": 9,
+    "P3": 0
+  },
+  "prior_likely": 2,
+  "prior_false_positive": 4,
+  "scope": "No runtime/deployed incident implied; hardening candidates are not confirmed counts."
+}
