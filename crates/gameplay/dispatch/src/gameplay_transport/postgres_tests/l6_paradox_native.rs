@@ -762,7 +762,7 @@ async fn third(
     set_clock(owner, spawn_at - 100_000)?;
     owner.drain_quest_encounter_deadlines().await;
     assert!(
-        puzzle_creatures(&owner.runtime.lock().await)?.is_empty(),
+        puzzle_creatures(&*owner.runtime.lock().await)?.is_empty(),
         "no early native ghoul"
     );
     assert!(ladder(owner, stairs)?.is_none());
@@ -888,7 +888,7 @@ async fn third(
     );
     owner.drain_quest_encounter_deadlines().await;
     assert_eq!(
-        puzzle_creatures(&owner.runtime.lock().await)?,
+        puzzle_creatures(&*owner.runtime.lock().await)?,
         vec![outside]
     );
     assert_eq!(
