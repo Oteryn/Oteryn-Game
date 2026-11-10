@@ -101,25 +101,6 @@ impl StepIngressRead<'_, '_> {
         {
             return Err(MovementError::NotQualified);
         }
-        let tile = if let Some(prepared) = prepared {
-            std::borrow::Cow::Borrowed(
-                prepared
-                    .tile(self.destination)
-                    .ok_or(MovementError::NotQualified)?,
-            )
-        } else {
-            room.movement_cells()
-                .spell_tiles()
-                .lookup(
-                    room.movement_cells().scope(),
-                    crate::content::LogicalCell {
-                        x: self.destination.x,
-                        y: self.destination.y,
-                        z: i32::from(self.destination.floor),
-                    },
-                )
-                .map_err(|_| MovementError::NotQualified)?
-        };
         // SQL rows are the actual ordered destination items. An expired row is
         // not silently erased here: only the durable expiry writer may remove it.
         let mut first_magic_field = true;
@@ -145,6 +126,27 @@ impl StepIngressRead<'_, '_> {
                         continue;
                     }
                     first_magic_field = false;
+                    // Mutable door/item stacks need spell tile facts only when
+                    // an actual field consumes their protection-zone metadata.
+                    let tile = if let Some(prepared) = prepared {
+                        std::borrow::Cow::Borrowed(
+                            prepared
+                                .tile(self.destination)
+                                .ok_or(MovementError::NotQualified)?,
+                        )
+                    } else {
+                        room.movement_cells()
+                            .spell_tiles()
+                            .lookup(
+                                room.movement_cells().scope(),
+                                crate::content::LogicalCell {
+                                    x: self.destination.x,
+                                    y: self.destination.y,
+                                    z: i32::from(self.destination.floor),
+                                },
+                            )
+                            .map_err(|_| MovementError::NotQualified)?
+                    };
                     let recipe = record
                         .attributes
                         .field_condition

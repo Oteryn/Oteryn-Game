@@ -37,8 +37,8 @@ pub(super) async fn exercise(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
-    // Advance the Character through an existing quest receipt before seeding
-    // revision-2 measurement history; preserve the real progression receipt chain.
+    // Accept Gnomus's actual measurement task before supplying its completed
+    // field observations; preserve the real quest and progression receipt chain.
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -47,10 +47,19 @@ pub(super) async fn exercise(
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let setup = slot.commit_quest_transition(owner.root, authority, owner.holder, fence,
         crate::durability::quest_state::QuestTransitionRequest {
-            transition_key: "oteryn:quest-transition/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission/npc_3".into(),
+            transition_key: "oteryn:quest-transition/quest/u11_50/dangerous_depths/gnomes/measurements/npc_2".into(),
             cause: crate::durability::quest_state::QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(9499).map_err(debug)?)),
         }, owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone()).await.map_err(debug)?;
-    assert!(matches!(setup, QuestTransitionOutcome::Committed(_)));
+    let QuestTransitionOutcome::Committed(setup) = setup else {
+        return Err("measurement task was not accepted".into());
+    };
+    assert_eq!(
+        setup.committed_character_revision.get(),
+        fence.expected_character_revision.get() + 1
+    );
+    assert_eq!(setup.changes.len(), 1);
+    assert_eq!(setup.changes[0].track, format!("{PREFIX}measurements"));
+    assert_eq!(setup.changes[0].after, 1);
     drop(slot);
     // Only the completed measurement prerequisites use fixture privileges. All
     // dialogue and reward mutations below run with production triggers enabled.
@@ -58,12 +67,8 @@ pub(super) async fn exercise(
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    for (track, value) in [
-        ("measurements", 1_i64),
-        ("location_count", 5),
-        ("points", 7),
-    ] {
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,2 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+    for (track, value) in [("location_count", 5_i64), ("points", 7)] {
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
             .bind(id(41).as_slice()).bind(format!("{PREFIX}{track}")).bind(QUEST).bind(value).execute(&mut *tx).await?;
     }
     tx.commit().await?;

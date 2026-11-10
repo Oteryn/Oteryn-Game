@@ -364,19 +364,9 @@ impl ActiveGeneration {
             .into_iter()
             .find(|candidate| candidate.path == PATH && candidate.sha256 == SOURCE)
             .ok_or(R::InvalidSourceCapture)?;
-        if candidate.creature_key.as_deref() != Some(CREATURE)
-            || candidate.blockers != ["config.disableCooldown"]
-            || candidate.minimum_players != Some(1)
-            || candidate.minimum_level != Some(500)
-            || candidate.cooldown_seconds != Some(72_000)
-            || candidate.time_limit_seconds != Some(1_200)
-            || candidate.after_kill_seconds != Some(60)
-            || !candidate.complete_literal_layout
-        {
-            return Err(R::InvalidSourceCapture);
-        }
-        // The captured generic diagnostic treats any disableCooldown token as
-        // unresolved. The pinned source's literal false (:18) preserves cooldown.
+        qualify_primal_source_layout(&candidate)?;
+        // The captured source resolves literal disableCooldown=false (:18),
+        // preserving its cooldown without an unresolved blocker.
         let native = self
             .native_gameplay()
             .ok_or(R::CreatureClosureUnavailable)?;
@@ -832,6 +822,24 @@ struct SourceFrame {
     origin_y: i32,
     floor_transform: String,
 }
+fn qualify_primal_source_layout(
+    candidate: &BossLeverCandidate,
+) -> Result<(), ActivityTemplateRefusal> {
+    if candidate.creature_key.as_deref() != Some("oteryn:creature.the_primal_menace")
+        || !candidate.blockers.is_empty()
+        || !candidate.callbacks_known
+        || candidate.minimum_players != Some(1)
+        || candidate.minimum_level != Some(500)
+        || candidate.cooldown_seconds != Some(72_000)
+        || candidate.time_limit_seconds != Some(1_200)
+        || candidate.after_kill_seconds != Some(60)
+        || !candidate.complete_literal_layout
+    {
+        return Err(ActivityTemplateRefusal::InvalidSourceCapture);
+    }
+    Ok(())
+}
+
 /// Crystal creature.cpp:711-721,777-782 still creates the physical corpse for
 /// reward bosses. A private reward entitlement does not implement that descendant.
 /// The scoped DUR-03 MINT bridge preserves that physical descendant in the
@@ -1043,6 +1051,34 @@ mod tests {
             ),
             Err(ActivityTemplateRefusal::InvalidSourceCapture)
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn primal_literal_capture_qualifies_and_unknown_layouts_remain_closed() -> Result<(), String> {
+        let candidates = captured_boss_levers().map_err(debug)?;
+        let primal = candidates
+            .iter()
+            .find(|candidate| {
+                candidate.path == "data-global/scripts/actions/bosses_levers/the_primal_manace.lua"
+                    && candidate.sha256
+                        == "59768c964e9e6319810e3c0619a1e322b8a8a2c3f03232b021667ae595927703"
+            })
+            .ok_or("pinned Primal capture")?;
+        qualify_primal_source_layout(primal).map_err(debug)?;
+
+        let mut changed = primal.clone();
+        changed.blockers.push("config.disableCooldown".into());
+        assert!(qualify_primal_source_layout(&changed).is_err());
+        let mut changed = primal.clone();
+        changed.callbacks_known = false;
+        assert!(qualify_primal_source_layout(&changed).is_err());
+        let mut changed = primal.clone();
+        changed.complete_literal_layout = false;
+        assert!(qualify_primal_source_layout(&changed).is_err());
+        let mut changed = primal.clone();
+        changed.cooldown_seconds = Some(0);
+        assert!(qualify_primal_source_layout(&changed).is_err());
         Ok(())
     }
 

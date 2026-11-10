@@ -176,7 +176,8 @@ fn srx3_heal_malice_native_defense_heals_named_boss_and_dispels_nearby_player_po
                 ],
             )
             .ok_or("actual native boss capabilities")?;
-            prepare_player(&h, &owner, &mut admitted, 3999).await?;
+            // Use the same supported native level as the other Malice scenarios.
+            prepare_player(&h, &owner, &mut admitted, 1999).await?;
             let instance = pg::activity_runtime::allocate_ready_instance(&h, 215).await?;
             let mut frames = Vec::new();
             let (_, reply, barrier) = pg::boss_activity::exchange_capture(

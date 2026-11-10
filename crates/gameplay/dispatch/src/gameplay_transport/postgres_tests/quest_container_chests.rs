@@ -225,6 +225,12 @@ fn scenario(case: Case) -> TestResult {
             report.served.iter().any(|row| row.key.as_str() == claim),
             "source claim did not bind"
         );
+        let catalogue = std::sync::Arc::new(
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                .map_err(debug)?
+                .catalogue()
+                .clone(),
+        );
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
@@ -322,7 +328,9 @@ fn scenario(case: Case) -> TestResult {
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
+            owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
             owner.admit_progression_session(&mut admitted).await;
+            owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
             let mut stale = admitted;
             let mut stale_fence = fence;
@@ -413,7 +421,7 @@ fn scenario(case: Case) -> TestResult {
             };
             for (index, (item, quantity)) in burdens.into_iter().enumerate() {
                 let request = RewardClaimMintRequest {
-            additional_items: Vec::new(),
+                    additional_items: Vec::new(),
                     command: CommandRef::new(
                         admitted.game_session_id,
                         CommandId::new(100 + u64::try_from(index)?).map_err(debug)?,
@@ -451,7 +459,9 @@ fn scenario(case: Case) -> TestResult {
                 let mut owner = deps.owner(&harness, &authority);
                 owner.active_generation = Some(generation);
                 owner.movement_cells = (&cells).into();
+                owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
                 owner.admit_progression_session(&mut admitted).await;
+                owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
                 assert_eq!(
                     wire_use_targets(
@@ -492,7 +502,9 @@ fn scenario(case: Case) -> TestResult {
                 let mut owner = deps.owner(&harness, &authority);
                 owner.active_generation = Some(generation);
                 owner.movement_cells = (&cells).into();
+                owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
                 owner.admit_progression_session(&mut admitted).await;
+                owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
                 if cold_replay {
                     assert_eq!(

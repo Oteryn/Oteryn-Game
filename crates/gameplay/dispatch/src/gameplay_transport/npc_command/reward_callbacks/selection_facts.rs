@@ -18,7 +18,10 @@ pub(in crate::gameplay_transport::npc_command) fn needs_facts(
         return false;
     };
     let text = intent.text.trim().to_ascii_lowercase();
-    let callbacks = reward_callbacks::load().unwrap_or_default();
+    let Some(catalogue) = admission.quest_catalogue.as_deref() else {
+        return false;
+    };
+    let callbacks = reward_callbacks::offered_for(catalogue).unwrap_or_default();
     #[cfg(test)]
     let callbacks = admission
         .states

@@ -2,13 +2,10 @@
 use super::classic_quests::{install, progress, talk};
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
-use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
-use crate::foundation::{CommandId, CommandRef, WorldId};
+use crate::durability::character_progression::ExperienceCommitOutcome;
+use crate::foundation::WorldId;
 use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
-};
-use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
 };
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use std::sync::Arc;
@@ -28,7 +25,7 @@ fn srv6_hero_title_real_npc_final_report_atomic_and_replay() -> TestResult {
     std::thread::Builder::new().stack_size(256<<20).spawn(|| {
         run(async |admin| {
             let began=std::time::Instant::now();
-            let h=Harness::create_with_admission_seed(admin,"srv6_hero_title",true,false).await?;
+            let h=Harness::create_appearance(admin,"srv6_hero_title").await?;
             prepare_current_session(&h).await?;
             let seal=h.recovery.seal_current().map_err(debug)?;
             let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
@@ -42,10 +39,7 @@ fn srv6_hero_title_real_npc_final_report_atomic_and_replay() -> TestResult {
             let mut owner=deps.owner(&h,&authority);
             owner.active_generation=Some(active);
             let canonical=oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?.catalogue().clone();
-            let mut transitions=canonical.transition("oteryn:quest-transition/hero-of-bounac/final-report").cloned().into_iter().collect::<Vec<_>>();
-            transitions.push(QuestTransition {
-            world_change: None,key:"oteryn:quest-transition/srv6-hero-ready".into(),quest:QUEST.into(),effects:vec![QuestEffect{track:MISSION.into(),from:QuestComparison::Any,effect:QuestEffectKind::Set(5)}],completes:false,experience:None});
-            owner.quest_catalogue=Some(Arc::new(QuestStateCatalogue::new("content-1",[MISSION,DOOR].into_iter().map(|key|canonical.track(key).cloned().ok_or("source track")).collect::<Result<Vec<_>,_>>()?,transitions).map_err(debug)?));
+            owner.quest_catalogue=Some(Arc::new(canonical));
             deps.initialize(&owner).await;
             let mut admitted=deps.admitted;
             admitted.first_entry=FirstEntryOutcome::Positioned;
@@ -58,10 +52,21 @@ fn srv6_hero_title_real_npc_final_report_atomic_and_replay() -> TestResult {
             let _=talk(&mut owner,&admitted,kesar,1001,"siege").await?;
             let count:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND title=90").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(count,0);
-            let mut slot=owner.revision_sequencer.acquire(fence.character_id).await;
-            let result=slot.commit_quest_transition(owner.root,owner.character,owner.holder,fence,QuestTransitionRequest{transition_key:"oteryn:quest-transition/srv6-hero-ready".into(),cause:QuestCause::Command(CommandRef::new(admitted.game_session_id,CommandId::new(2000).map_err(debug)?))},Arc::clone(owner.quest_catalogue.as_ref().ok_or("catalogue")?)).await.map_err(debug)?;
-            assert!(matches!(result,QuestTransitionOutcome::Committed(_)));drop(slot);
+            // Advance real Character history through the fixture's existing XP owner.
+            // Only the completed siege prerequisite is seeded administratively; a
+            // generic quest command cannot write Fugue's protected mission track.
+            let before=owner.current_quest_fence(admitted.game_session_id).await.map_err(|_|"XP fence")?.ok_or("XP fence")?;
+            let award=h.root.commit_character_experience(&authority,&h.node,before,super::fixture::xp_request(91)?).await.map_err(debug)?;
+            let ExperienceCommitOutcome::Committed(award)=award else {return Err("fixture XP history was not committed".into());};
+            assert_eq!(award.committed_character_revision.get(),before.expected_character_revision.get()+1);
+            assert_eq!(award.level_after,award.level_before);
+            let mut tx=h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,5,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).bind(MISSION).bind(QUEST).execute(&mut *tx).await?;
+            tx.commit().await?;
             owner.refresh_quest_session(admitted.game_session_id,false).await;
+            assert_eq!(progress(&owner,&admitted,&authority,MISSION).await?,5);
             assert_eq!(progress(&owner,&admitted,&authority,DOOR).await?,0);
             // A title insert failure occurs after the achievement has been staged:
             // all three source writes must roll back together.

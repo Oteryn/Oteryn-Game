@@ -61,12 +61,14 @@ impl DurabilityRoot {
             sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:content-activation:' || encode($1::bytea,'hex')::uuid::text || ':' || encode($2::bytea,'hex')::uuid::text,0))")
                 .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&mut **tx).await?;
             let current: Option<bool> = sqlx::query_scalar(
-                "SELECT server_artifact_digest=$3 AND frame_binding_digest=$4 \
+                "SELECT server_artifact_digest=$3 AND game_elemental_placement_frame_matches( \
+                   world_id,'sha256:'||encode($6,'hex'),$4,frame_binding_digest) \
                    AND game_world_reset_map_epoch_current(world_id,$5::text::numeric) \
                  FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid \
                    AND channel_id=encode($2,'hex')::uuid ORDER BY activation_sequence DESC LIMIT 1"
             ).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
                 .bind(projection.content.as_slice()).bind(projection.frame.as_slice()).bind(reset.to_string())
+                .bind(projection.scope.map.as_slice())
                 .fetch_optional(&mut **tx).await?;
             if current != Some(true) { return Err(DurabilityError::InvalidStoredState); }
             // Do not filter away mismatched active records: that would turn a

@@ -71,6 +71,21 @@ pub(super) fn scenario_with_bindings(prove_bindings: bool) -> TestResult {
             x: TRIGGER.x - 1,
             ..TRIGGER
         });
+        deps.combat_room = Some(
+            activated
+                .qualified_room()
+                .bundle_view(
+                    cells.clone(),
+                    activated.frame_binding().digest(),
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: origin.x,
+                        y: origin.y,
+                        floor: origin.floor,
+                    },
+                )
+                .ok_or("qualified Grimvale bundle room")?,
+        );
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,

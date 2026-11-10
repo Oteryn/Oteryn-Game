@@ -490,6 +490,8 @@ fn sole_return_deadline_survives_real_reservation_refused_commit_and_foreign_sco
         OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
     };
     let (mut r, player, session) = runtime_with_player(0x72);
+    r.initialize_first_entry_position(player)
+        .expect("qualified player position");
     let d = draft(&r);
     r.install_companion_policies(policies(&r))
         .expect("qualified fixture");

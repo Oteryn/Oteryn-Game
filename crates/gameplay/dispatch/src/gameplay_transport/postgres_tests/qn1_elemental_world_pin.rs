@@ -137,6 +137,76 @@ pub(super) async fn exercise(
     );
     let map = owner.bundle_map().ok_or("fire-area map")?;
     let pin = owner.runtime.lock().await.content_pin().clone();
+    let activation_frame: Vec<u8> = sqlx::query_scalar(
+        "SELECT frame_binding_digest FROM game_content_activations \
+         WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid \
+         ORDER BY activation_sequence DESC LIMIT 1",
+    )
+    .bind(owner.world_id.as_bytes().as_slice())
+    .bind(owner.channel_id.as_bytes().as_slice())
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_ne!(
+        pin.frame_binding_digest().as_slice(),
+        activation_frame.as_slice(),
+        "the real node keeps entry activation and bundle placement frames distinct"
+    );
+    if name == "qn1-elemental-world-pin" {
+        let revision = crate::map::overlay::map_revision(map.overlay.base());
+        let sql_frame: Vec<u8> =
+            sqlx::query_scalar("SELECT game_elemental_bundle_frame(encode($1,'hex')::uuid,$2)")
+                .bind(owner.world_id.as_bytes().as_slice())
+                .bind(&revision)
+                .fetch_one(&harness.pool)
+                .await?;
+        assert_eq!(sql_frame.as_slice(), pin.frame_binding_digest().as_slice());
+        let mut other_world = *owner.world_id.as_bytes();
+        other_world[15] ^= 1;
+        for (world, map, frame, expected) in [
+            (
+                *owner.world_id.as_bytes(),
+                revision.clone(),
+                sql_frame.clone(),
+                true,
+            ),
+            (
+                *owner.world_id.as_bytes(),
+                revision.clone(),
+                activation_frame.clone(),
+                true,
+            ),
+            (other_world, revision.clone(), sql_frame.clone(), false),
+            (
+                *owner.world_id.as_bytes(),
+                format!("sha256:{}", "00".repeat(32)),
+                sql_frame.clone(),
+                false,
+            ),
+            (
+                *owner.world_id.as_bytes(),
+                revision.clone(),
+                vec![4; 32],
+                false,
+            ),
+            (
+                *owner.world_id.as_bytes(),
+                "map:unqualified".into(),
+                sql_frame,
+                false,
+            ),
+        ] {
+            let matches: bool = sqlx::query_scalar(
+                "SELECT game_elemental_placement_frame_matches(encode($1,'hex')::uuid,$2,$3,$4)",
+            )
+            .bind(world.as_slice())
+            .bind(map)
+            .bind(frame)
+            .bind(activation_frame.as_slice())
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(matches, expected, "exact world/map/frame compatibility");
+        }
+    }
     use sha2::{Digest, Sha256};
     let digest: [u8; 32] =
         Sha256::digest(crate::map::overlay::map_revision(map.overlay.base()).as_bytes()).into();

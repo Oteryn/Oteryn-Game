@@ -124,7 +124,7 @@ impl DurabilityRoot {
                            AND game_world_reset_map_epoch_current(l.world_id,$3::text::numeric) \
                            AND b.map_revision='sha256:'||encode($4,'hex') \
                            AND b.content_revision='sha256:'||encode(a.server_artifact_digest,'hex') \
-                           AND b.placement_context=a.frame_binding_digest \
+                           AND game_elemental_placement_frame_matches(l.world_id,b.map_revision,b.placement_context,a.frame_binding_digest) \
                          ORDER BY l.altar_id LIMIT 4"
                     ).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(reset)
                         .bind(current.map.as_slice()).fetch_all(&mut **tx).await?;
