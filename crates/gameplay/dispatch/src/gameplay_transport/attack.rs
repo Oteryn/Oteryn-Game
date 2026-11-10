@@ -1171,7 +1171,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 none = std::collections::BTreeSet::<LogicalCell>::new();
                 &none
             } else if let Some(map) = self.bundle_map() {
-                bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
+                bundle_doors = crate::map::floor::BundleDoors(&map.facts);
                 &bundle_doors
             } else {
                 legacy = self.door.lock().await.blocking_cells().clone();
@@ -1195,6 +1195,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             CardinalStep::East => super::StepDirection::East,
             CardinalStep::South => super::StepDirection::South,
             CardinalStep::West => super::StepDirection::West,
+            CardinalStep::NorthEast => super::StepDirection::NorthEast,
+            CardinalStep::SouthEast => super::StepDirection::SouthEast,
+            CardinalStep::SouthWest => super::StepDirection::SouthWest,
+            CardinalStep::NorthWest => super::StepDirection::NorthWest,
         };
         let (outcome, duration) = self.paced_step(actor, session, direction).await;
         if outcome.moved_to.is_none() {

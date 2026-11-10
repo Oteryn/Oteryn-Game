@@ -64,31 +64,38 @@ pub(super) fn validate(
             return Err("one handler fragment per command".into());
         }
         if status == "supported" && commands.is_empty() {
-            let pushes = entry["push_messages"]
-                .as_array()
-                .ok_or("commandless supported handler needs pushed messages")?;
-            if pushes.is_empty() {
-                return Err("commandless supported handler needs pushed messages".into());
-            }
-            symbol(
-                feature,
-                entry["reducer"].as_str().ok_or("push handler reducer")?,
-            )?;
-            symbol(feature, entry["test"].as_str().ok_or("push handler test")?)?;
-            for command in entry["shared_commands"].as_array().into_iter().flatten() {
-                let id = command.as_u64().ok_or("shared command id")?;
-                let dir = root.join("docs/contracts/protocol-oteryn/v1/registry/command_types");
-                let mut owner = None;
-                for path in super::listing(&dir)? {
-                    if path.extension().is_some_and(|e| e == "json") {
-                        let descriptor = read(&path)?;
-                        if descriptor["id"] == *command {
-                            owner = descriptor["capability"].as_u64();
+            if entry["direction"] == "client_to_server" {
+                validate_core_extension(root, feature, entry, fact)?;
+            } else {
+                if entry["direction"] != "server_to_client" {
+                    return Err("invalid commandless handler direction".into());
+                }
+                let pushes = entry["push_messages"]
+                    .as_array()
+                    .ok_or("commandless supported handler needs pushed messages")?;
+                if pushes.is_empty() {
+                    return Err("commandless supported handler needs pushed messages".into());
+                }
+                symbol(
+                    feature,
+                    entry["reducer"].as_str().ok_or("push handler reducer")?,
+                )?;
+                symbol(feature, entry["test"].as_str().ok_or("push handler test")?)?;
+                for command in entry["shared_commands"].as_array().into_iter().flatten() {
+                    let id = command.as_u64().ok_or("shared command id")?;
+                    let dir = root.join("docs/contracts/protocol-oteryn/v1/registry/command_types");
+                    let mut owner = None;
+                    for path in super::listing(&dir)? {
+                        if path.extension().is_some_and(|e| e == "json") {
+                            let descriptor = read(&path)?;
+                            if descriptor["id"] == *command {
+                                owner = descriptor["capability"].as_u64();
+                            }
                         }
                     }
-                }
-                if owner.is_none() || owner == fact["id"].as_u64() {
-                    return Err(format!("shared command {id} has no other capability owner"));
+                    if owner.is_none() || owner == fact["id"].as_u64() {
+                        return Err(format!("shared command {id} has no other capability owner"));
+                    }
                 }
             }
         }
@@ -283,4 +290,138 @@ pub(super) fn parents(entries: &[Value]) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+/// A negotiated grammar extension does not acquire ownership of the core
+/// command. Its contract must explicitly name every extended core command.
+fn validate_core_extension(
+    root: &Path,
+    feature: &Path,
+    entry: &Value,
+    fact: &Value,
+) -> Result<(), String> {
+    if entry["capability"] != fact["id"] {
+        return Err("core extension capability mismatch".into());
+    }
+    let commands = entry["shared_commands"]
+        .as_array()
+        .filter(|v| !v.is_empty())
+        .ok_or("core extension needs commands")?;
+    let contracts = root.join("docs/contracts/protocol-oteryn/v1/registry/capabilities");
+    let mut contract = None;
+    for path in super::listing(&contracts)? {
+        if path.extension().is_some_and(|e| e == "json") {
+            let candidate = read(&path)?;
+            if candidate["id"] == fact["id"] {
+                if contract.is_some() {
+                    return Err("duplicate core extension contract".into());
+                }
+                contract = Some(candidate);
+            }
+        }
+    }
+    let contract = contract.ok_or("core extension contract missing")?;
+    if contract["extends_core_commands"].as_array() != Some(commands)
+        || commands
+            .windows(2)
+            .any(|p| p[0].as_u64().is_none() || p[0].as_u64() >= p[1].as_u64())
+    {
+        return Err("core extension differs from contract".into());
+    }
+    for command in commands {
+        let id = command
+            .as_u64()
+            .filter(|id| *id != 0)
+            .ok_or("core extension command id")?;
+        let mut found = false;
+        for path in
+            super::listing(&root.join("docs/contracts/protocol-oteryn/v1/registry/command_types"))?
+        {
+            if path.extension().is_some_and(|e| e == "json") {
+                let descriptor = read(&path)?;
+                if descriptor["id"] == id {
+                    if !descriptor["capability"].is_null() {
+                        return Err("extension target is not a core command".into());
+                    }
+                    found = true;
+                }
+            }
+        }
+        if !found {
+            return Err("core extension command missing".into());
+        }
+    }
+    symbol(
+        feature,
+        entry["test"].as_str().ok_or("core extension test")?,
+    )?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod core_extension_tests {
+    use super::*;
+    use serde_json::json;
+    struct Fixture(PathBuf);
+    use std::path::PathBuf;
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+    fn write(path: &Path, value: &Value) -> Result<(), String> {
+        fs::create_dir_all(path.parent().ok_or("parent")?).map_err(|e| e.to_string())?;
+        fs::write(path, serde_json::to_vec(value).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())
+    }
+    #[test]
+    fn core_extension_requires_exact_contract_command_binding_and_test() -> Result<(), String> {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|e| e.to_string())?
+            .as_nanos();
+        let fixture = Fixture(
+            std::env::temp_dir().join(format!("core-extension-{}-{nonce}", std::process::id())),
+        );
+        let root = &fixture.0;
+        let feature = root.join("feature");
+        fs::create_dir_all(&feature).map_err(|e| e.to_string())?;
+        fs::write(
+            feature.join("tests.rs"),
+            "fn proves_profile() {}
+",
+        )
+        .map_err(|e| e.to_string())?;
+        let contract=root.join("docs/contracts/protocol-oteryn/v1/registry/capabilities/0371-diagonal-movement-v1.json");
+        let descriptor=root.join("docs/contracts/protocol-oteryn/v1/registry/command_types/0001-world-actor-step-intent.json");
+        let fact = json!({"id":371});
+        let entry =
+            json!({"capability":371,"shared_commands":[1],"test":"tests.rs::proves_profile"});
+        let valid = json!({"id":371,"extends_core_commands":[1]});
+        write(&contract, &valid)?;
+        write(&descriptor, &json!({"id":1}))?;
+        validate_core_extension(root, &feature, &entry, &fact)?;
+        for mutation in 0..6 {
+            write(&contract, &valid)?;
+            write(&descriptor, &json!({"id":1}))?;
+            let mut changed = entry.clone();
+            match mutation {
+                0 => changed["capability"] = json!(370),
+                1 => write(&contract, &json!({"id":371}))?,
+                2 => changed["shared_commands"] = json!([2]),
+                3 => write(&descriptor, &json!({"id":1,"capability":13}))?,
+                4 => changed["test"] = json!("tests.rs::missing"),
+                5 => {
+                    changed["shared_commands"] = json!([1, 1]);
+                    write(&contract, &json!({"id":371,"extends_core_commands":[1,1]}))?;
+                }
+                _ => return Err("mutation".into()),
+            }
+            assert!(
+                validate_core_extension(root, &feature, &changed, &fact).is_err(),
+                "invalid extension {mutation}"
+            );
+        }
+        Ok(())
+    }
 }

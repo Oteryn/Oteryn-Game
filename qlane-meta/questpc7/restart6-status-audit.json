@@ -1,0 +1,72 @@
+{
+  "task_id": "questpc",
+  "head": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+  "all_final": true,
+  "titles": 178,
+  "counts": {
+    "BLOCKED": 156,
+    "QUALIFIED": 22
+  },
+  "unchanged_product_paths": 174,
+  "verified_reward_cohorts": 9,
+  "verified_positive_native_markers": 82,
+  "retained_pg_evidence": ".questpc/restart5-reward-pg.qualified.json",
+  "fresh_dispatch_check": {
+    "exit": 0,
+    "command": "CARGO_BUILD_JOBS=4 /home/mole/oteryn-cache/codex-bin/cargo check --locked -p oteryn-gameplay-dispatch --quiet",
+    "log": ".questpc/restart6-initial-check.log"
+  },
+  "all_input_hashes_and_blocker_references_valid": true,
+  "new_product_changes": [],
+  "fresh_checks": {
+    "fmt": {
+      "command": "CARGO_BUILD_JOBS=4 /home/mole/oteryn-cache/codex-bin/cargo fmt --all -- --check",
+      "exit": 0,
+      "log": ".questpc/restart6-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "clippy": {
+      "command": "CARGO_BUILD_JOBS=4 /home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-dispatch -p oteryn-gameplay-quests --all-targets --all-features --quiet -- -D warnings",
+      "exit": 0,
+      "log": ".questpc/restart6-clippy.log",
+      "log_sha256": "a9ed126e9a18b79e4a8203101728a841c53d4147cd4256d3e0223c8518ea068e"
+    },
+    "storage-units": {
+      "command": "CARGO_BUILD_JOBS=4 /home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-quests --lib storage_owner_ -- --nocapture",
+      "exit": 0,
+      "log": ".questpc/restart6-storage-units.log",
+      "log_sha256": "e0f9c513a2eb4e9172e663bcc05fe07869601c83ee50ff974a2202576086375a"
+    }
+  },
+  "mounted_rustfmt": {
+    "exit": 0,
+    "command": "rustup run 1.99.1 rustfmt --edition 2024 --check --config skip_children=true crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs"
+  },
+  "retained_pg_exact_filters": [
+    "quest_catalogue_chests_phase_a_01_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_02_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_03_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_04_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_05_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_06_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_08_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_09_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_11_use_replay_and_refusal"
+  ],
+  "pg_rerun_this_continuation": false,
+  "reason_pg_retained": "All 174 product paths and qualification input/test/log hashes match the completed prior run; no unchanged heavy rerun.",
+  "unfinished": [
+    "155 nonexcluded complete quest paths remain BLOCKED at per-title obligations in QUEST-STATUS.json; one Dawnport title is owner-excluded.",
+    "Hot Cuisine retained failing test catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic: command2603 hi Rejected!=Ok at classic_quests.rs:168; no completion marker.",
+    "Inherited pin refresh, migration allocation, independent candidate review, CI and integration remain outside this local status reconciliation."
+  ],
+  "review": "Both checklists re-read; prior status producer/real-dispatch source and retained review inspected. No production declaration or API added, no new match/constructor/impl sites. No new whole-product independent review or full-quest completion claim.",
+  "changed_files": [
+    ".questpc/RESUME.md",
+    ".questpc/restart6-status-audit.json",
+    ".questpc/restart6-initial-check.log",
+    ".questpc/restart6-fmt.log",
+    ".questpc/restart6-clippy.log",
+    ".questpc/restart6-storage-units.log"
+  ]
+}

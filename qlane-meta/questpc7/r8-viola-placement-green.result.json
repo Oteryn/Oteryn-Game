@@ -1,0 +1,5 @@
+{
+  "command": "python3 -m unittest discover -s tools/content-schema/npc-authoring -p test_convert_placements.py -v",
+  "exit": 0,
+  "duration_seconds": 0.258
+}

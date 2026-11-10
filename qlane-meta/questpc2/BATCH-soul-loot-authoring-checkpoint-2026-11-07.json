@@ -1,0 +1,27 @@
+{
+  "batch": "soul-loot-authoring-checkpoint-2026-11-07",
+  "state": "COMPILING_WIP_GENERATION_INCOMPLETE",
+  "base_sha": "c8b42aba3cd95ecb5d2997f95ec047bc76fcdcf0",
+  "scope": "Soul War source Item admission subset; no whole-quest qualification.",
+  "selected_source_items": 44,
+  "selected_admission_items": 43,
+  "new_admissions_planned": 30,
+  "protected_source_item": 49271,
+  "local_adapter_lines": 33,
+  "validation": {
+    "workspace_all_targets": "PASS21.16s /tmp/questpc2-soul-loot-checkpoint-check.log",
+    "fmt": "PASS /tmp/questpc2-soul-loot-checkpoint-fmt.log",
+    "focused_source_test": "RED4 assertions; /tmp/questpc2-soul-loot-checkpoint-focused.log",
+    "red_points": [
+      "Native/canonical physical weights differ: item33921 229vs230, item33952 101vs110, item34109 1500vs150. Existing admitted native physical facts must not be retuned.",
+      "Frozen14-record fingerprint differs after source regeneration; diagnose exact field differences before declaring completion.",
+      "Prey/native generation interrupted by disk exhaustion; cleared5.6GB of inactive lane caches. Resume repository stages from Prey, do not repeat unchanged World materialization."
+    ]
+  },
+  "source_guards": "Grizzly and condition-potion selected-record equality checks remain intact; receipt refresh uses exact published pre-batch c8 baseline. Item49271 remains canonical false/native true.",
+  "generation_logs": [
+    "/tmp/questpc2-soul-loot-generation-complete.log"
+  ],
+  "owner_policy": "Hard push rule: publish compiling current state, no full suites required. This is an explicit WIP checkpoint; source test remains red and no test is skipped or ignored.",
+  "next": "Finish source/native generation, resolve all four source-test failures without retuning frozen source facts, focused PG item custody, then compiling push."
+}

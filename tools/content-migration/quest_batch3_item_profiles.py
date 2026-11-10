@@ -7,6 +7,7 @@ not inferred. The retained client bank supplies flags, Crystal 201189f the XML.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import re
@@ -272,6 +273,59 @@ def main():
     counts = {kind: sum(row['classification'] == kind for row in result['classification'])
               for kind in ('QUALIFIED_PLAIN_PORTABLE', 'EXISTING_NATIVE', 'HELD')}
     print(json.dumps(counts, sort_keys=True))
+
+
+def admit_recipes(root, generated, profile_path, manifest_path, order, canonical):
+    """Admit source-qualified plain cooking operands, preserving all state holds.
+
+    The quest owner authorizes native custody for these recipe operands. The
+    captured packet remains qualification evidence, not blanket admission of
+    other batch-three quests, timed corpses or fluid/charge semantics.
+    """
+    packet = json.loads((root / PATH).read_bytes())
+    recipe_bytes = (root / 'content/quests/hot-cuisine-batch3.json').read_bytes()
+    recipe_source = 'tools/content-schema/quest-authoring/batch3_a/native/hot_cuisine.json'
+    recipe_pin = next(row for row in packet['authoring_inputs'] if row['path'] == recipe_source)
+    if (recipe_bytes != (root / recipe_source).read_bytes()
+            or hashlib.sha256(recipe_bytes).hexdigest() != recipe_pin['sha256']):
+        raise ValueError('NPC_RECIPE_SOURCE_DRIFT')
+    recipes = json.loads(recipe_bytes)
+    selected_keys = {
+        effect['item'] for recipe in recipes['recipes']
+        for effect in [*recipe['ingredients'], recipe['reward']]
+    }
+    classifications = {row['key']: row for row in packet['classification']}
+    profiles = {row['production_definition']['production_key']: row for row in packet['records']}
+    if packet['schema'] != SCHEMA or packet['source_revision'] != REVISION:
+        raise ValueError('NPC_RECIPE_PROFILE_SOURCE')
+    for descriptor in [*packet['canonical_inputs'], packet['binding_input']]:
+        if hashlib.sha256((root / descriptor['path']).read_bytes()).hexdigest() != descriptor['sha256']:
+            raise ValueError('NPC_RECIPE_CANONICAL_DRIFT')
+    document = json.loads(generated[profile_path])
+    present = {row['production_definition']['production_key']: row for row in document['records']}
+    for key in sorted(selected_keys):
+        classification = classifications.get(key)
+        if classification is None:
+            raise ValueError('NPC_RECIPE_UNQUALIFIED_ITEM:' + key)
+        if classification['classification'] == 'HELD':
+            continue  # State-dependent Items require their own exact native owner.
+        record = profiles.get(key)
+        if record is None or classification['holds']:
+            raise ValueError('NPC_RECIPE_PROFILE_CUSTODY:' + key)
+        existing = present.get(key)
+        if existing is None:
+            document['records'].append(copy.deepcopy(record))
+        elif (any(existing[field] != record[field] for field in
+                  ('production_definition', 'production_binding', 'admission'))
+              or any(grizzly.known_conflict(existing['semantics'][field], record['semantics'][field])
+                     for field in ('physical', 'stack', 'container'))):
+            raise ValueError('NPC_RECIPE_EXISTING_PROFILE_CONFLICT:' + key)
+    document['records'].sort(key=order)
+    data = grizzly.encode(document)
+    generated[profile_path] = data
+    manifest = json.loads(generated[manifest_path])
+    manifest['item_profiles']['sha256'] = hashlib.sha256(data).hexdigest()
+    generated[manifest_path] = canonical(manifest)
 
 
 if __name__ == '__main__':

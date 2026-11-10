@@ -81,6 +81,22 @@ macro_rules! composed_methods {
 }
 pub(super) use composed_methods;
 
+fn action_now(owner: &ComposedFreshAdmission<'_, '_, '_>) -> std::time::Duration {
+    // Keep the owner cooldown aligned with a paused transport clock in database
+    // tests. Production retains the same monotonic clock and full precision.
+    #[cfg(test)]
+    {
+        let fixed = owner
+            .states
+            .test_owner_time
+            .load(std::sync::atomic::Ordering::Relaxed);
+        if fixed != 0 {
+            return std::time::Duration::from_micros(fixed - 1);
+        }
+    }
+    owner.clock_origin.elapsed()
+}
+
 /// This observation grants no custody or input authority. The normal executor rechecks
 /// session, conditions, timing and item custody after the transport's bounded wait.
 pub(super) async fn ordinary_delay(
@@ -122,11 +138,7 @@ pub(super) async fn ordinary_delay(
                 .world_gate
                 .lock()
                 .ok()?
-                .equip_delay(
-                    actor,
-                    6,
-                    owner.clock_origin.elapsed().saturating_sub(queued_for),
-                )
+                .equip_delay(actor, 6, action_now(owner).saturating_sub(queued_for))
                 .unwrap_or_default(),
         );
     }
@@ -144,11 +156,7 @@ pub(super) async fn ordinary_delay(
             .world_gate
             .lock()
             .ok()?
-            .equip_delay(
-                actor,
-                *slot,
-                owner.clock_origin.elapsed().saturating_sub(queued_for),
-            )
+            .equip_delay(actor, *slot, action_now(owner).saturating_sub(queued_for))
             .unwrap_or_default(),
     )
 }
@@ -392,11 +400,12 @@ fn finish(
 ) -> Option<ItemMoveOutcome> {
     match outcome {
         EquipmentMoveResult::Committed => {
-            owner.states.world_gate.lock().ok()?.equip_committed(
-                actor,
-                slot,
-                owner.clock_origin.elapsed(),
-            );
+            owner
+                .states
+                .world_gate
+                .lock()
+                .ok()?
+                .equip_committed(actor, slot, action_now(owner));
             Some(ItemMoveOutcome::Moved)
         }
         EquipmentMoveResult::Refused(refusal) => Some(super::item_move::equipment_outcome(refusal)),
@@ -453,11 +462,12 @@ async fn action_ready(
             {
                 return Some(false);
             }
-            owner.states.world_gate.lock().ok()?.equip_delay(
-                actor,
-                slot,
-                owner.clock_origin.elapsed(),
-            )
+            owner
+                .states
+                .world_gate
+                .lock()
+                .ok()?
+                .equip_delay(actor, slot, action_now(owner))
         };
         if !wait_action(slot, delay).await {
             return Some(false);

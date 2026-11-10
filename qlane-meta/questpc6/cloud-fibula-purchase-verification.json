@@ -1,0 +1,85 @@
+{
+  "scope": "Source Dermot placement and repeatable atomic paid Key3940 acquisition; whole authored supplement remains IN_PROGRESS",
+  "source_commit": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+  "source": [
+    "data-global/npc/dermot.lua:66-81 sha256 efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec",
+    "data-global/world/world-npc.xml:1953-1954 sha256 3cc9a769cda450a0e5e0c60bcc65973031efe8b94e5ea6a4256473d3e45fd306"
+  ],
+  "engine_reuse": "qengine2 33b640335 fee owner reused; source migration1000 renamed1096 because local1000 is occupied; main1095/open PR numbers checked",
+  "postgres": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "red": {
+      "cases": 3,
+      "duration_seconds": 142.02,
+      "failure": "Source Dermot callback absent"
+    },
+    "green": {
+      "cases": 3,
+      "duration_seconds": 295.1,
+      "markers_seconds": {
+        "bank": 48.186383488,
+        "coins": 35.319207536,
+        "full_backpack": 35.377808311
+      },
+      "evidence": "Actual framed hi/key/yes, exact key2968/3940, two paid purchases, command replay, no funds refusal and full backpack rollback. Bank variants use existing game_type2_audit_activation V2; cash case covers V1."
+    },
+    "discarded_intermediate_runs": "Bank fixture initially lacked V2 then used wrong activation table; neither failing run is counted as final proof."
+  },
+  "checks": {
+    "clippy": "quests/durability/dispatch all-targets all-features -D warnings passed",
+    "check": "quests/durability/dispatch all-target check passed",
+    "rust_units": "reward_callbacks 2 passed; ordinary once-only guards and paid repeat/key invalid cases preserved",
+    "python": "12 passed,20.112s",
+    "content": "123 passed,10.42s",
+    "world_repository": "5 passed,105.70s",
+    "pin_check": "Passed; World77d515155be0a03af5dc4fb6abfbfaec9795660aa15e512efdad033f2908c5b0",
+    "format": "three packages and three mounted files passed",
+    "space_recovery": "Initial content/world runs failed ENOSPC; superseded inactive incremental sessions removed and exact checks rerun."
+  },
+  "logs": {
+    "red": {
+      "path": "/tmp/questpc6-root-fibula-purchase-red.log",
+      "sha256": "25dba46cec4939ab24023289e0c417ed4ad69320d0fd2fd124db35fba18b4a90"
+    },
+    "v2-final": {
+      "path": "/tmp/questpc6-root-fibula-purchase-v2-final.log",
+      "sha256": "8ab0e4897370fdf19787f39f230ae635ea13ea75f6e967e26b561465bce769d8"
+    },
+    "clippy": {
+      "path": "/tmp/questpc6-root-fibula-purchase-clippy.log",
+      "sha256": "a0a063701906adbc74573593d706e329817810f88c708f2b134bbcc048c2e296"
+    },
+    "check": {
+      "path": "/tmp/questpc6-root-fibula-purchase-check.log",
+      "sha256": "23d1a35549df5b5d92a7a37fa59d986d6329a5b162ab03fddaef640271e88e8e"
+    },
+    "units": {
+      "path": "/tmp/questpc6-root-fibula-purchase-units.log",
+      "sha256": "c11d556b13e97711727c2efb73f94ced5533345e7a1bc6e238f0e6fdf4694eb7"
+    },
+    "content-retry": {
+      "path": "/tmp/questpc6-root-fibula-purchase-content-retry.log",
+      "sha256": "e820f3b2c35cf926f7e4c4da1ea7e894f1786352fee2cd46a6aea72716ef7bd1"
+    },
+    "world-retry": {
+      "path": "/tmp/questpc6-root-fibula-purchase-world-retry.log",
+      "sha256": "5c299b26671b754d4ffffca9a879804525bf06b30e445d67ddfc131895758f08"
+    },
+    "python": {
+      "path": "/tmp/questpc6-root-fibula-purchase-python.log",
+      "sha256": "d30b20360e741d1dab68fa14231ebfead309eaf637c2551ce8f55febd93e40f1"
+    },
+    "pin-refresh": {
+      "path": "/tmp/questpc6-root-fibula-purchase-pin-refresh.log",
+      "sha256": "e2671eb6e8c5284524bb96578fbbb3e6f97196d998176d081a69818a6fbb2b69"
+    },
+    "pin-check": {
+      "path": "/tmp/questpc6-root-fibula-purchase-pin-check.log",
+      "sha256": "5923291d55bebbea29b89ccbfedf60acd0d09aca425ef49e53230807761bf72e"
+    },
+    "numbers": {
+      "path": "/tmp/questpc6-root-fibula-purchase-numbers.log",
+      "sha256": "c901af834fdac70289652fdacd3e59914f021a28b5ff35e96e55608fcc62727c"
+    }
+  }
+}

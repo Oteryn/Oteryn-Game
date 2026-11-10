@@ -33,7 +33,7 @@ pub(super) async fn move_map_item(
                 return refused(LoopMoveRefusal::Rejected);
             };
             let runtime = admission.runtime.lock().await;
-            let spatial_position = match drop_cell(
+            let spatial_position = match source_drop_cell(
                 map.overlay.base(),
                 (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
                 to,
@@ -177,8 +177,8 @@ pub(super) async fn move_map_item(
         (Ok(x), Ok(y), Ok(floor)) => TilePos { x, y, floor },
         _ => return LoopMoveResult::TooFar,
     };
-    // An automatic step-out consequence reaches from its proven departed tile,
-    // including a step whose landing teleported the player farther away.
+    // A qualified source consequence reaches from its proven scripted origin,
+    // including authored scene cells and a step-out followed by teleport.
     if !pickup::within_reach(door_origin.unwrap_or(player), pos) {
         return LoopMoveResult::TooFar;
     }

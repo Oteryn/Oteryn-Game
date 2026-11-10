@@ -151,6 +151,355 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/annihilator-reward-door",
+      "quest": "oteryn:quest.the_annihilator",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 10102,
+        "appearance": 5113
+      },
+      "lever": [
+        5113,
+        5114
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The door seems to be sealed against unwanted intruders.",
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null,
+        "reward_door": {
+          "claim": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward"
+        }
+      },
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/scripts/quests/the_annihilator/door.lua:4-25#sha256:03c6833cf9c9e4c335e2d33716b1180159696eb45cf1772d9e09e6036ef50ca1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/desert-dungeon-party-rite",
+      "quest": "oteryn:quest.desert_dungeon_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32673,
+          "y": 32086,
+          "floor": -8
+        },
+        "unique": 30030,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/world-action/desert-dungeon-rite",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32679,
+            "y": 32089,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3059",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32667,
+            "y": 32089,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3585",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32673,
+            "y": 32083,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3349",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32673,
+            "y": 32094,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3264",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null,
+        "party_transfer": {
+          "activation_appearance": 2772,
+          "stations": [
+            {
+              "to": {
+                "x": 32671,
+                "y": 32071,
+                "floor": -8
+              },
+              "offering": {
+                "x": 32679,
+                "y": 32089,
+                "floor": -8
+              },
+              "vocation": "sorcerer",
+              "from": {
+                "x": 32677,
+                "y": 32089,
+                "floor": -8
+              }
+            },
+            {
+              "to": {
+                "x": 32673,
+                "y": 32071,
+                "floor": -8
+              },
+              "offering": {
+                "x": 32667,
+                "y": 32089,
+                "floor": -8
+              },
+              "vocation": "druid",
+              "from": {
+                "x": 32669,
+                "y": 32089,
+                "floor": -8
+              }
+            },
+            {
+              "to": {
+                "x": 32670,
+                "y": 32071,
+                "floor": -8
+              },
+              "offering": {
+                "x": 32673,
+                "y": 32083,
+                "floor": -8
+              },
+              "vocation": "paladin",
+              "from": {
+                "x": 32673,
+                "y": 32085,
+                "floor": -8
+              }
+            },
+            {
+              "to": {
+                "x": 32672,
+                "y": 32071,
+                "floor": -8
+              },
+              "offering": {
+                "x": 32673,
+                "y": 32094,
+                "floor": -8
+              },
+              "vocation": "knight",
+              "from": {
+                "x": 32673,
+                "y": 32093,
+                "floor": -8
+              }
+            }
+          ]
+        }
+      },
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:1-84#sha256:72e3bcedf70a9dd7ffe81bb5f71aaa831acdd66110b91bc44aae11ab43acf1ad"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/elvenbane-basement-entry",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32598,
+          "y": 31641,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "position_aliases": [
+          {
+            "x": 32598,
+            "y": 31653,
+            "floor": -8
+          }
+        ]
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2551-2580#sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "owner:questpc2:authored68-elvenbane-personal-defender-route:2026-11-07",
+        "https://tibia.fandom.com/index.php?curid=8007&oldid=265159"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/elvenbane-return-after-defenders",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32597,
+          "y": 31642,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/elf-arcanist",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/demon-skeleton-east",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/demon-skeleton-west",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/minotaur-mage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/orc-shaman",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/phase",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null,
+        "quest_completion": {
+          "claimed_rewards": [
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star"
+          ]
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2551-2580#sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "owner:questpc2:authored68-elvenbane-personal-defender-route:2026-11-07",
+        "https://tibia.fandom.com/index.php?curid=8007&oldid=265159"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/thais-lighthouse-plate",
       "quest": "oteryn:quest.thais_lighthouse_quest",
       "trigger": "step_in",

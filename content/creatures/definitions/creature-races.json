@@ -4,7 +4,7 @@
     "race": "blood",
     "source": "opentibiabr/canary src/creatures/monsters/monsters.hpp MonsterInfo::race = RACE_BLOOD"
   },
-  "record_count": 1864,
+  "record_count": 1865,
   "records": [
     {
       "creature": {
@@ -21940,6 +21940,16 @@
         "repository": "opentibiabr/canary",
         "sha256": "ae6ee49f72cd1b7027328da1b188d460155c0ea4e9f13b7ffafe98f6a727ddbc"
       }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.thaian",
+        "revision": "definition-r1"
+      },
+      "disposition": "no_monster_file",
+      "race": "blood",
+      "source": null
     },
     {
       "creature": {

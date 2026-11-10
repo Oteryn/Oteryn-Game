@@ -1,0 +1,29 @@
+{
+  "batch_id": "group-owner-reuse-2026-11-07",
+  "base_sha": "8d57515a197f2f07a91b3597fba47675b08777c1",
+  "scope": "Source verification tool only; reuse the published shared encounter engine. No runtime or active callback data changes.",
+  "changes": [
+    "Fast-forward to fetched lane head8d57515a1, preserving all source corpse and qengine reuse commits.",
+    "Replace the inert parallel group callback producer with a read-only exact check of shared-access-callbacks.json effects.encounter. Preserve raw file bytes and refuse altered active bindings.",
+    "Retain corpus/manifest/Git-blob SHA verification and exact4-player/6-monster layout checks. qengine_access.py remains the regeneration owner."
+  ],
+  "validation": {
+    "source_python_cases_passed": 3,
+    "source_duration_seconds": 0.653,
+    "source_log": "/tmp/questpc2-group-reuse-authoring.log",
+    "shared_effect_python_cases_passed": 4,
+    "shared_effect_log": "/tmp/questpc2-group-reuse-effects.log",
+    "active_shared_generator_check": "PASS",
+    "postgres_applicable": false,
+    "reason": "Read-only tooling and metadata only. Existing runtime entry proof is already committed by the reused engine."
+  },
+  "unpublished_prototype": {
+    "retained": "Local Git stash: questpc2 unpublished parallel group prototype retained for regression extraction",
+    "postgres_observed": 180006,
+    "postgres_duration_seconds": 38.39,
+    "accepted_as_published_proof": false,
+    "reason": "Prototype duplicated the concurrently published effects.encounter owner; not applied or published. Interrupted superseded final checks are not GREEN evidence."
+  },
+  "whole_quest_qualifications": 0,
+  "next": "Continue source Annihilator door and shared earned-reward composition using existing encounter/reward owners; do not repeat entry or reward cohorts as whole qualification."
+}

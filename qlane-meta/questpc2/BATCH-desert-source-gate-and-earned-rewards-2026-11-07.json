@@ -1,0 +1,615 @@
+{
+  "batch": "desert-source-gate-and-earned-rewards-2026-11-07",
+  "state": "GREEN",
+  "base_green_sha": "907bdacd9",
+  "whole_quest_qualifications": 1,
+  "red": {
+    "server_version_num": 180006,
+    "runtime_seconds": 52.75,
+    "command_seconds": 215.803,
+    "failure": "source level20 gate requires native profile oteryn:item.tibia.i5102",
+    "log": "/tmp/questpc2-desert-earned-red-route.log"
+  },
+  "reuse": {
+    "questpc4": "ab8ccdf0b8ea650e2be08d188804fdb751e210e8",
+    "questpc5": "3f79d826aa1296ad8545deb52a3999c22af8dcae",
+    "gate_profiles": "Both5102/5103 normalized profile records exactly equal published questpc4 records. Existing generator/overlay ID union preserves1631/6264/6265 and all other lane data. Existing native level_door_of registry reused.",
+    "charge_projection": "Reuse native_charge_item and claim_items from questpc4 container_native.py, author admission only for owned desert2; canonical Item remains unchanged and other charged claims remain outside this admission."
+  },
+  "source": {
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "chest": "data-global/startup/tables/chest.lua:1806-1820",
+    "chest_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+    "chest_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
+    "level_gate": "data-global/startup/tables/door_level.lua:9-15",
+    "level_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+    "native_revision": "99902524e052f37574194466c2949c576e4ab269",
+    "native_xml_lines": {
+      "5102": 14508,
+      "5103": 14513,
+      "1947_stairs_north": 3915
+    },
+    "raw_sources_committed": false,
+    "diagonal": {
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "eight_deltas": {
+        "path": "src/utils/tools.cpp:581-620",
+        "blob": "932a9ad778c7524c0c78e813a639c5dac2668529",
+        "sha256": "28dc881ffb1fa38d63f3cf1c02e2329cab8051117936b055f78000d6f0a5cc19"
+      },
+      "duration": {
+        "path": "creature.cpp:1607-1626",
+        "blob": "89a4af117d4de4e9373ddcb96c2513006c22c6ab",
+        "sha256": "f77f2c811f0d05a315ddd316a5d61f309814bc477ca290281a2b09e80c403683"
+      },
+      "multiplier": {
+        "path": "creature.hpp:45",
+        "blob": "0daf29f4cce526952d1a1e1fd4d5fb3fedcd3dd1",
+        "sha256": "0a405bbf7e92606e37d407266e809a39323218727b79b2deb275bd309b2c5fad"
+      }
+    }
+  },
+  "source_map_delta": [
+    {
+      "position": [
+        32668,
+        32069,
+        8
+      ],
+      "before": null,
+      "after": {
+        "unique": 6157
+      }
+    },
+    {
+      "position": [
+        32675,
+        32069,
+        8
+      ],
+      "before": null,
+      "after": {
+        "unique": 6158
+      }
+    },
+    {
+      "position": [
+        32673,
+        32100,
+        8
+      ],
+      "before": null,
+      "after": {
+        "action": 1020
+      }
+    }
+  ],
+  "world_pin": "4990f60ce3fbb5a9d8d7f20e4f660fb3b5b12b7b1a6e1adf77b1e23865504ae4",
+  "reward_definition_delta": [
+    "oteryn:reward-claim.kv.desert2"
+  ],
+  "pure_checks": [
+    {
+      "test": "exact native/source charged admission",
+      "passed": 4,
+      "seconds": 1.57
+    },
+    {
+      "test": "key/level-door native profiles",
+      "passed": 2,
+      "seconds": 0.122
+    },
+    {
+      "test": "all existing container native recipes including newly complete Desert2",
+      "passed": 13,
+      "seconds": 4.072
+    },
+    {
+      "test": "existing source chest binding guards",
+      "passed": 11,
+      "seconds": 0.041
+    }
+  ],
+  "source_binding_apply": "30 startup attributes verified; this batch adds only two chest UIDs and action1020.",
+  "qualification_limit": "Whole Desert Dungeon source gate/rite/rewards/exit qualified; other quests retain their individual scope.",
+  "diagonal_prerequisite": {
+    "capability": 371,
+    "source": "Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b src/utils/tools.cpp:581-620; src/creatures/creature.cpp:1607-1626; creature.hpp:45",
+    "rule": "One same-floor destination proof and owner CAS; three rounded source step durations; optional negotiated STEP grammar, existing cardinal/facing grammar stays closed. Horizontal sprite facing on diagonal is the conservative visual rule.",
+    "reuse_checked": {
+      "qengine2": "82278cf6c",
+      "questpc3": "684382738",
+      "questpc4": "5ea9e52be",
+      "questpc5": "f3f6a43fb",
+      "questpc6": "53d5648b8",
+      "questpc7": "cc44f84dd",
+      "questpc8": "805a06141"
+    },
+    "red_pg_seconds": 101.97,
+    "red_error": "no source walk from32673,32087 to32673,32085: cardinal-only geometry enclosed by solid source lever/pillars/altar",
+    "pure_checks": {
+      "world_movement": 15,
+      "client_input_profile": 1,
+      "core_extension_registration_with_negative_proofs": 1,
+      "protocol_grammar_and_pacing": 2
+    },
+    "green_pg": true
+  },
+  "postgres_green": {
+    "server_version_num": 180006,
+    "cases": 1,
+    "runtime_seconds": 129.181,
+    "command_seconds": 358.657,
+    "marker": "DESERT_EARNED_ROUTE POSTGRES_CASE_COMPLETED",
+    "log": "/tmp/questpc2-desert-earned-route-route.log",
+    "proof": "Native level20 gate; literal cardinal and diagonal STEP with nonzero three-beat receipts and one revision per step; real four-member rite/refusals/lost-ack reconciliation; both once-only chest USE and immutable replay; 100 platinum plus bag+four children in native custody, exact250charges, one transaction per bag; native stairs to floor7."
+  },
+  "integrated_remote": "66caf4fd0",
+  "integrated_postgres_green": {
+    "server_version_num": 180006,
+    "cases": 1,
+    "runtime_seconds": 126.049,
+    "command_seconds": 333.475,
+    "log": "/tmp/questpc2-desert-earned-final-earned-integrated.log",
+    "marker": "DESERT_EARNED_ROUTE POSTGRES_CASE_COMPLETED"
+  },
+  "rite_regression_green": {
+    "server_version_num": 180006,
+    "cases": 1,
+    "runtime_seconds": 62.372,
+    "command_seconds": 62.685,
+    "log": "/tmp/questpc2-desert-earned-final-rite-regression.log",
+    "marker": "DESERT_PARTY_RITE POSTGRES_CASE_COMPLETED"
+  },
+  "integrated_native_delta": {
+    "added": [
+      "oteryn:item.tibia.i5102",
+      "oteryn:item.tibia.i5103"
+    ],
+    "removed": [],
+    "modified": [],
+    "root_fields_changed": [],
+    "basis": "key-by-key comparison with66caf4fd0 after repo native regeneration"
+  },
+  "validation_progress": {
+    "check_seconds": 108.678,
+    "session_no_bytes_test": true,
+    "duration_test": true,
+    "protocol_tests": 2,
+    "merged_charge_and_container_tests": 17,
+    "merged_charge_tests_seconds": 6.127,
+    "generation_files_checked": 42,
+    "fmt_seconds": 14.439,
+    "clippy": "PASS all-targets/all-features11changed crates -D warnings,204.838seconds",
+    "content": "PASS123",
+    "world_project": "PASS5",
+    "pin": "PASS4990f60c"
+  },
+  "final_checks": [
+    {
+      "name": "earned-integrated",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "desert_dungeon_native_gate_rite_earned_rewards_and_exit",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 333.475,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "DESERT_EARNED_ROUTE POSTGRES_CASE_COMPLETED",
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-earned-integrated.log"
+    },
+    {
+      "name": "duration",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "diagonal_player_duration_uses_three_rounded_source_steps",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.34,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-duration.log"
+    },
+    {
+      "name": "rite-regression",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "desert_dungeon_four_station_rite_uses_real_fenced_players",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 62.685,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "DESERT_PARTY_RITE POSTGRES_CASE_COMPLETED",
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-rite-regression.log"
+    },
+    {
+      "name": "session-profile",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-session",
+        "--lib",
+        "unselected_diagonal_step_and_pending_recovery_send_no_bytes",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 18.696,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-session-profile.log"
+    },
+    {
+      "name": "protocol-profile",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib",
+        "diagonal_",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 13.394,
+      "counts": [
+        [
+          "2",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-protocol-profile.log"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 14.091,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-fmt.log"
+    },
+    {
+      "name": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-monster-ai",
+        "-p",
+        "oteryn-gameplay-encounters",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "-p",
+        "oteryn-session",
+        "-p",
+        "oteryn-client-domain",
+        "-p",
+        "oteryn-client-ui",
+        "-p",
+        "oteryn-client",
+        "-p",
+        "oteryn-architecture-check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 108.678,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-check.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-monster-ai",
+        "-p",
+        "oteryn-gameplay-encounters",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "-p",
+        "oteryn-session",
+        "-p",
+        "oteryn-client-domain",
+        "-p",
+        "oteryn-client-ui",
+        "-p",
+        "oteryn-client",
+        "-p",
+        "oteryn-architecture-check",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 204.838,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-clippy.log"
+    },
+    {
+      "name": "client-input",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-client-ui",
+        "--lib",
+        "negotiated_profile_exposes_only_native_keypad_diagonals",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 11.166,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-client-input.log"
+    },
+    {
+      "name": "fmt-after-lint",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 14.439,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-fmt-after-lint.log"
+    },
+    {
+      "name": "architecture",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-architecture-check",
+        "--",
+        "workspace",
+        "."
+      ],
+      "exit_code": 0,
+      "duration_seconds": 5.057,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-architecture.log"
+    },
+    {
+      "name": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 172.425,
+      "counts": [
+        [
+          "123",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-content.log"
+    },
+    {
+      "name": "world-project",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 56.358,
+      "counts": [
+        [
+          "5",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-world-project.log"
+    },
+    {
+      "name": "pin",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "run",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/questpc2-desert-earned-final-pin-check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 27.062,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-earned-final-pin.log"
+    }
+  ],
+  "repaired_check_failures": [
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-monster-ai",
+        "-p",
+        "oteryn-gameplay-encounters",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "-p",
+        "oteryn-session",
+        "-p",
+        "oteryn-client-domain",
+        "-p",
+        "oteryn-client-ui",
+        "-p",
+        "oteryn-client",
+        "-p",
+        "oteryn-architecture-check",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 101,
+      "duration_seconds": 22.842,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": false,
+      "log": "/tmp/questpc2-desert-earned-final-clippy.log"
+    }
+  ],
+  "review": {
+    "kind": "authoring self-review",
+    "scope": "Source selectors/whole250 charge proof, negotiated codec bounds and cardinal-facing preservation, destination collision/owner CAS, three-rounded-step pacing, client no-send gates, source-region fidelity, both source reward once-only receipts, lost-ack all-member reconciliation, native bag atomicity, combined generated native content equality.",
+    "known_blocking_findings": [],
+    "independent_review": "No freeze/PR/readiness claim; authoring publication only."
+  }
+}

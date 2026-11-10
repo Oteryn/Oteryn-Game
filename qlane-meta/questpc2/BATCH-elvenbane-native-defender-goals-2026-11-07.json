@@ -1,0 +1,446 @@
+{
+  "batch": "elvenbane-native-defender-goals-2026-11-07",
+  "state": "GREEN_OWNER_STOP_CHECKPOINT",
+  "base_green_sha": "5d7d8a330",
+  "whole_quest_qualifications": 0,
+  "red": {
+    "test": "elvenbane_source_defender_goal_catalogue_is_closed",
+    "server_version_num": 180006,
+    "runtime_seconds": 4.69,
+    "build_seconds": 153,
+    "marker": "ELVENBANE_NATIVE_GOALS POSTGRES_CASE_OBSERVED server_version_num=180006",
+    "failure": "Elvenbane requires a bounded native defender goal, not a client-written completion flag",
+    "log": "/tmp/questpc2-elvenbane-native-goals-red.log"
+  },
+  "reuse": {
+    "source_commit": "390e024503a7c02b9e15d67e680cec0ac711fd5b",
+    "lane_head": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+    "components": "Native source-origin retained death proof, exact death-time principal snapshot, capped one-shot quest goals, fenced writer and same kill retry queue. Reuse generic code; own Elvenbane configurations only.",
+    "new_need": "Six separately capped exact-origin goals; five upper defenders require completed Dragon goal. No repeated skeleton can substitute for another defender."
+  },
+  "fresh_lane_heads": {
+    "qengine2": "32f18b86b2ed86d0a37ef1e1ca38b8e3822754b6",
+    "questpc3": "aefdf542da3c4bdbba7ec528a1383dd4d690391b",
+    "questpc4": "bd8716ce21a5f51abd45377dfa82cfe26c50ae1b",
+    "questpc5": "b3b5630cdc6e00fd20238d10f730cf507d60c78e",
+    "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+    "questpc7": "2913baf910c50edcca2f6fb1c4592bace894a904",
+    "questpc8": "12f47bbb74a36997c6514f215248ac3f3a0d2936"
+  },
+  "source_origins": [
+    {
+      "path": "content/world/spawns/spawns-00000-01999.json",
+      "sha256": "624bdaf1c5b8ebbcf7e98c2410ffbf8c8a25a81fc851e3952d48c5573d962d66",
+      "pointer": "/records/1175/declaration/points/0",
+      "cell": {
+        "floor": 3,
+        "x": 32590,
+        "y": 31643
+      },
+      "creature": "oteryn:creature.elf_arcanist",
+      "direction": "north",
+      "respawn_ms": 90000
+    },
+    {
+      "path": "content/world/spawns/spawns-00000-01999.json",
+      "sha256": "624bdaf1c5b8ebbcf7e98c2410ffbf8c8a25a81fc851e3952d48c5573d962d66",
+      "pointer": "/records/1175/declaration/points/1",
+      "cell": {
+        "floor": 3,
+        "x": 32592,
+        "y": 31644
+      },
+      "creature": "oteryn:creature.demon_skeleton",
+      "direction": "north",
+      "respawn_ms": 90000
+    },
+    {
+      "path": "content/world/spawns/spawns-00000-01999.json",
+      "sha256": "624bdaf1c5b8ebbcf7e98c2410ffbf8c8a25a81fc851e3952d48c5573d962d66",
+      "pointer": "/records/1175/declaration/points/2",
+      "cell": {
+        "floor": 3,
+        "x": 32589,
+        "y": 31646
+      },
+      "creature": "oteryn:creature.demon_skeleton",
+      "direction": "north",
+      "respawn_ms": 90000
+    },
+    {
+      "path": "content/world/spawns/spawns-02000-03999.json",
+      "sha256": "00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a",
+      "pointer": "/records/26/declaration/points/0",
+      "cell": {
+        "floor": 4,
+        "x": 32592,
+        "y": 31643
+      },
+      "creature": "oteryn:creature.minotaur_mage",
+      "direction": "north",
+      "respawn_ms": 90000
+    },
+    {
+      "path": "content/world/spawns/spawns-02000-03999.json",
+      "sha256": "00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a",
+      "pointer": "/records/28/declaration/points/0",
+      "cell": {
+        "floor": 4,
+        "x": 32590,
+        "y": 31647
+      },
+      "creature": "oteryn:creature.orc_shaman",
+      "direction": "north",
+      "respawn_ms": 90000
+    },
+    {
+      "path": "content/world/spawns/spawns-02000-03999.json",
+      "sha256": "00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a",
+      "pointer": "/records/1440/declaration/points/0",
+      "cell": {
+        "floor": 5,
+        "x": 32590,
+        "y": 31645
+      },
+      "creature": "oteryn:creature.dragon",
+      "direction": "north",
+      "respawn_ms": 90000
+    }
+  ],
+  "scope": "Reusable mechanism slice first; Elvenbane whole path remains active until physical approach, poison floor, six native defenders, treasure and exit have actual PG proof.",
+  "assumptions": [
+    "Retain chosen personal, once-only route from authored68 recipe; each native defender origin contributes at most once. Upper defender credit starts after the mandatory Dragon. Activation is a chosen native basement-route StepIn, never a donor storage assertion."
+  ],
+  "ported": true,
+  "mechanism_changes": [
+    "Reuse pc6 retained-native-death source origin and frozen principal into existing Grizzly death queue; exact native cause-only durable writer guard.",
+    "Bounded prerequisite DAG validates complete same-quest predecessor counters, frozen capture and durable Add0/Eq predicate recheck.",
+    "Native-goal tracks loaded before read-only world guards so zero-based counters retain their owner.",
+    "Two explicitly chosen native route StepIn callbacks activate once and close only after all six goals; no source geometry/UID/monster stats changed."
+  ],
+  "source_validation": {
+    "python_tests": 10,
+    "runtime_unit_tests": {
+      "passed": 2,
+      "runtime_seconds": 1.27
+    },
+    "check": "4changedcrates PASS111seconds before final PG fixture additions",
+    "generator": "native_kill_goals.py --check and qengine_access.py --check PASS",
+    "native_spawn_source": {
+      "evidence": "OtsHypothesisOnly",
+      "files": [
+        {
+          "path": "data-global/world/world-monster.xml",
+          "sha256": "a3188bc1275fbf5bac1ff5c06cc26b1d2999e51c088a7ffa464c40a1aff81570"
+        }
+      ],
+      "ref": "summer-update",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_key": "oteryn:source.crystalserver"
+    },
+    "final_check": "4changedcrates PASS112seconds",
+    "final_clippy": "4changedcrates all-targets/all-features -Dwarnings PASS225seconds",
+    "native_generator": "PASS42 generation and PASS42 independent check after final exact-charge guard",
+    "grizzly_pure_regressions": {
+      "passed": 9,
+      "executable": "same dispatch b07c00d46acdf173 as actual PostgreSQL GREEN",
+      "log": "/tmp/questpc2-elvenbane-grizzly-binary-units.log"
+    },
+    "raid_registration_preserved": "World-tree generator dropped prior Encounter.Raid registration; existing raid_catalogue.py content and content --check restore exact existing239/135 registration; no raid data changes.",
+    "required_content": {
+      "passed": 123,
+      "runtime_seconds": 2.57
+    },
+    "required_world": {
+      "passed": 5,
+      "runtime_seconds": 56.97
+    },
+    "fmt": "cargo fmt --all -- --check PASS",
+    "world_pin": {
+      "tool": "oteryn-world-bundle-compiler pin-refresh and pin-check",
+      "digest": "650dc1e4627e3f0e785067d68a6302555ca6ff20a5adfec67fc047f2c856a420",
+      "map_placement_changes": 0,
+      "pin_check": "PASS",
+      "reason": "53 newly admitted Item core definitions participate in compiled World projection."
+    }
+  },
+  "activation": {
+    "position": [
+      32598,
+      31641,
+      8
+    ],
+    "appearance": 355,
+    "basis": "Chosen Oteryn basement route activation on existing dirt cell; adjacent438 stairs retained. Native geometric approach must be qualified in full-route batch."
+  },
+  "active_pg": {
+    "green": true,
+    "server_version_num": 180006,
+    "cases": 2,
+    "passed": 2,
+    "failed": 0,
+    "runtime_seconds": 100.92,
+    "command_seconds": 282.536,
+    "case_seconds": [
+      96.016,
+      4.905
+    ],
+    "marker": "ELVENBANE_NATIVE_GOALS POSTGRES_CASE_COMPLETED",
+    "ordinary_settlement": "All five selected creature reward rows admitted; 17 persisted physical corpse instances across 20 legitimate decay definitions; duplicate death observations do not duplicate settlement.",
+    "log": "/tmp/questpc2-elvenbane-native-goals-pg.log",
+    "candidate_commit": "9cb12b820"
+  },
+  "second_pg_red": {
+    "server_version_num": 180006,
+    "cases": 2,
+    "passed": 1,
+    "failed": 1,
+    "total_runtime_seconds": 95.86,
+    "catalogue_case_seconds": 5.962,
+    "log": "/tmp/questpc2-elvenbane-native-goals-queue-red.log",
+    "cause": "Wrong-species fixture selected untracked Dragon Lord, whose refused ordinary corpse creates no quest-only queue entry. Changed to tracked Elf Arcanist at wrong Dragon origin, retaining the queue assertion.",
+    "native_admission_finding": "Ordinary corpse_item_inadmissible for Dragon and Dragon Lord; selected actual defender corpse closure now authored."
+  },
+  "native_corpse_closure": {
+    "roots": [
+      5963,
+      5973,
+      5978,
+      5981,
+      6011
+    ],
+    "decay_stages": 20,
+    "xml": "imports/canary/items-xml/items.xml",
+    "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "reuse": "Existing Primal corpse definition builder and encounter XML lifecycle proof, optional explicit source weights; existing callers retain strict default. Native overlay merges after gathering/owner overlays with exact known-fact guards.",
+    "policy": "Ground-only non-pickupable source corpses. Explicit XML weights retained; unspecified weight reuses conservative Game0 policy. Exact WorldObject movement/player-corpse/identity proof and atomic no-partial admission.",
+    "python_tests_passed": 7,
+    "python_seconds": 23.89,
+    "native_registration_files_checked": 42,
+    "native_provider_bytes": 7888967,
+    "world_digest_unchanged": "4990f60ce3fbb5a9d8d7f20e4f660fb3b5b12b7b1a6e1adf77b1e23865504ae4"
+  },
+  "pin_repairs": {
+    "item_overlay": "Repo Git/source-bound refresh; selected shop/task/quest3 definitions unchanged. Quest3 original baseline8f1d71547f2b2fd694487326497efacc2679a838 verified existing immutable captures.",
+    "imbuement": "Pre-existing Annihilator Item admissions made one material and three equipment canonical definition hashes stale. Existing producers replayed unchanged bindings/eligibility; new strict Git-bound refresh tool permits only canonical definition digest differences. Identity/name/client/wiki/rule/count changes refuse. Existing ruleset builders restored registration.",
+    "binding_tests": 8
+  },
+  "native_loot_closure": {
+    "selected_unique_items": 71,
+    "changed_canonical_definitions": 53,
+    "corpse_stages": 20,
+    "portable_pending": 33,
+    "source_charge_policy": "Known canonical/native/source charges must match exactly; 3081=5, 3082=50. No charged subtype rewrite.",
+    "fallback_source": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml",
+    "fallback_sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+    "fallback_line": 77054,
+    "fallback_scope": "44158 only; source identity verified, empty XML attributes use explicit conservative Game core rules.",
+    "python_tests": 8,
+    "python_seconds": 36.76,
+    "prey_simulation": "15 cases, 776 creatures; repo source simulation completed and 4 outputs generated.",
+    "existing_owner_rule": "Preserve already-admitted native physical facts; this quest loot closure cannot retune existing Item weights."
+  },
+  "incoming_branch": {
+    "sha": "55a76f4f76809a8605a79e2b4c75f5beb525e14a",
+    "qualified_annihilator": "5c7d32296",
+    "objective_writer": "7fe700fb6",
+    "integration_need": "Existing in-flight Elvenbane phase schema differs; reconcile before integrated qualification or push, preserve native source proof and qualified Annihilator."
+  },
+  "build_resource_failure": {
+    "command": "additional cargo grizzly_kills::tests rebuild",
+    "error": "could not create temp dir: No space left on device (os error 28)",
+    "accepted_as_test_evidence": false,
+    "recovery": "Unlocked inactive query caches and superseded completed incremental sessions only; existing actual PostgreSQL executable retained and ran 9 regressions."
+  },
+  "integration_native_owner_fix": {
+    "defect": "Native loot closure overrode already-admitted physical weights of3031(10 to1) and11473(229 to230). Existing admitted physical owner must retain known facts.",
+    "red": {
+      "tests": 5,
+      "failed": 1,
+      "runtime_seconds": 17.142,
+      "log": "/tmp/questpc2-elvenbane-native-owner-preservation-red.log"
+    },
+    "fix": "Existing admitted native physical facts take precedence; canonical facts fill only unknowns there. New admissions retain canonical-first core policy. Exact three-way charge guard unchanged.",
+    "green_pending": false,
+    "requires_native_regeneration": false,
+    "green": {
+      "tests": 5,
+      "runtime_seconds": 16.509,
+      "log": "/tmp/questpc2-elvenbane-native-owner-preservation-green.log"
+    },
+    "regeneration": "PASS43 generation and PASS43 independent freshness check"
+  },
+  "integration_roundtrip_fix": {
+    "failure": "ITEM_DEFINITION_ROUNDTRIP",
+    "diagnostic_log": "/tmp/questpc2-elvenbane-roundtrip-diagnostic.log",
+    "before": {
+      "mismatched": 11,
+      "items": [
+        3060,
+        3063,
+        3284,
+        3306,
+        3364,
+        3366,
+        3414,
+        5954,
+        7368,
+        7382,
+        7393
+      ]
+    },
+    "after_existing_demon_loot_replay": {
+      "mismatched": 0
+    },
+    "fix": "Validator now replays existing source-pinned encounter_loot_item_admissions used by producer. Full34111 exact equality and count assertion retained.",
+    "strict_validator_green": {
+      "runtime_seconds": 191.382,
+      "item_count": 34111,
+      "log": "/tmp/questpc2-elvenbane-final-repo-checks.log"
+    }
+  },
+  "integration_profile_preservation": {
+    "incoming_profiles": 3596,
+    "merged_profiles": 3623,
+    "missing_profiles": 0,
+    "changed_existing_incoming": [
+      2824
+    ],
+    "changes_explanation": "2824 previously-unadmitted custody closure; all already-admitted known physical facts retained.",
+    "placement_differences_from_incoming": 0
+  },
+  "integration_stack_promotion": {
+    "red": "Strict validator passed34111 exact roundtrip, then rejected BLOCKED_FIELD_PROMOTED:stack.stack_max.",
+    "red_log": "/tmp/questpc2-elvenbane-stack-promotion-validator-red.log",
+    "scope": "Only digest-verified portable Demon/selected-native-goal loot source profiles with exactly typed stackable=true and native maximum100. Unrelated keys/unknown/nonstackable facts cannot promote; other blocked fields unchanged.",
+    "tests": 3,
+    "runtime_seconds": 29.24,
+    "log": "/tmp/questpc2-elvenbane-stack-promotion-tests.log"
+  },
+  "integration_registration_count_fix": {
+    "red": {
+      "passed": 11,
+      "failed": 1,
+      "runtime_seconds": 124.262,
+      "failure": "Expected42 registered native outputs; incoming source-gate proof adds43rd."
+    },
+    "fix": "Expect43 and additionally require exact source-gate-item-profiles.json output. Existing byte replay over every output and all previous required keys retained.",
+    "log": "/tmp/questpc2-elvenbane-final-repo-checks.log",
+    "green": {
+      "passed": 12,
+      "runtime_seconds": 124.41,
+      "log": "/tmp/questpc2-elvenbane-reward-importer-validator-red.log"
+    }
+  },
+  "integration_known_absence_fix": {
+    "affected_items": [
+      3082,
+      3284
+    ],
+    "defect": "Old reward importer replaced proven NOT_APPLICABLE stack maximum with UNKNOWN.",
+    "red": {
+      "cases": 30,
+      "failed": 1,
+      "runtime_seconds": 0.185,
+      "log": "/tmp/questpc2-elvenbane-known-absence-red.log"
+    },
+    "green": {
+      "passed": 30,
+      "runtime_seconds": 0.197,
+      "log": "/tmp/questpc2-elvenbane-known-absence-green.log"
+    },
+    "source_check": {
+      "admissions": 525,
+      "changed_shards": []
+    },
+    "guard": "Only NOT_APPLICABLE versus incoming UNKNOWN preserves absence. Existing KNOWN conflict rejection unchanged and explicitly tested."
+  },
+  "integration_variant_boundary": {
+    "red": {
+      "passed": 12,
+      "failed": 1,
+      "runtime_seconds": 16.669,
+      "failure": "Expected67 native container variants; actual69.",
+      "log": "/tmp/questpc2-elvenbane-variant-boundary-red.log"
+    },
+    "source_baseline": "dfc7fb7bd9 closed67 variant recipes; none removed. Already-qualified Desert2(6158) and newly materializable Draconia1(6023) are the exact two additions.",
+    "green": {
+      "passed": 13,
+      "runtime_seconds": 16.743,
+      "log": "/tmp/questpc2-elvenbane-variant-boundary-green.log"
+    },
+    "strengthening": "Expect69 admitted/36closed and explicitly verify both additions sourceSHA, UID, root, capacity, exact children/counts. All105 immutable dispositions remain covered."
+  },
+  "integrated_repository_checks": {
+    "full_world_project_regressions_seconds": 590.597,
+    "all_remaining_checks": "PASS including materialized tree, item references, raids/craft/imbuements/charms/proficiencies/reward-claims/starter-kit, engine599checks, proficiency/bindings andWorld5",
+    "world_cases": 5,
+    "world_runtime_seconds": 53.39,
+    "fmt": "cargo fmt --all -- --check PASS",
+    "log": "/tmp/questpc2-elvenbane-post-count-checks.log",
+    "validation": "/tmp/questpc2-elvenbane-post-count-checks-validation.json"
+  },
+  "ownership_skips": {
+    "other_lane_qualified": 4,
+    "owner_excluded_world_titles": 2,
+    "record": "WORLD-OWNERSHIP-SKIPS.json",
+    "remaining_owned": 29,
+    "owned_qualified": 2,
+    "owned_unfinished": 27
+  },
+  "integrated_world_pin": {
+    "digest": "5c9a2f175f6ad7c325bc94bf4922dab1ac3b1e4bfc0ef92093bacc29a720d67d",
+    "bytes": 31101204,
+    "refresh": "PASS",
+    "check": "PASS",
+    "log": "/tmp/questpc2-elvenbane-merged-pin-check.log"
+  },
+  "integrated_runtime": {
+    "postgres_version": 180006,
+    "native_goals": {
+      "passed": 2,
+      "runtime_seconds": 101.87,
+      "case_seconds": [
+        96.782,
+        5.092
+      ],
+      "command_seconds": 445.454
+    },
+    "objective_guard": {
+      "passed": 1,
+      "runtime_seconds": 5.44,
+      "command_seconds": 5.816
+    },
+    "complete_annihilator": {
+      "passed": 1,
+      "runtime_seconds": 127.97,
+      "command_seconds": 128.278
+    },
+    "check_seconds": 107.184,
+    "clippy_all_targets_all_features_seconds": 217.36,
+    "content": {
+      "passed": 123,
+      "runtime_seconds": 2.53
+    },
+    "world": {
+      "passed": 5,
+      "runtime_seconds": 53.39
+    },
+    "pin": "5c9a2f175f6ad7c325bc94bf4922dab1ac3b1e4bfc0ef92093bacc29a720d67d"
+  },
+  "owner_stop": "Replacement r2 owns further work. Commit/push checkpoint and stop; latest86c4c6be7 integration may remain unvalidated.",
+  "final_green_checks": {
+    "content_command_seconds": 10.08,
+    "content_runtime_seconds": 2.53,
+    "content_passed": 123,
+    "pin_check_seconds": 26.343,
+    "pin_check": "PASS"
+  },
+  "owner_stop_final_merge": {
+    "incoming": "86c4c6be71cf4d24aa6ca0ae7525479d5b5feddf",
+    "verified_checkpoint": "4c94f2cb6",
+    "combined_validation": "PENDING_R2_OWNER_STOP",
+    "resolution": "Incoming atomic runtime preserved. Ours verified artifact superset retained for conflicts; every incoming changed canonical definition already covered. Client-only compatibility helper retained; stricter explicit XML proof unchanged."
+  }
+}

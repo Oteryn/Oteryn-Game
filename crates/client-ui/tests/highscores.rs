@@ -258,8 +258,9 @@ fn native_combo_selection_preserves_reserved_category_gaps() {
         assert_eq!(highscores::category_selection(category), Some(index));
     }
     assert_eq!(highscores::category_for_selection(12), Some(14));
-    assert_eq!(highscores::category_for_selection(13), Some(17));
-    assert_eq!(highscores::category_for_selection(14), None);
+    assert_eq!(highscores::category_for_selection(13), Some(16));
+    assert_eq!(highscores::category_for_selection(14), Some(17));
+    assert_eq!(highscores::category_for_selection(15), None);
     assert_eq!(highscores::category_for_selection(usize::MAX), None);
     for category in [0, 13, 15, 18, u32::MAX] {
         assert_eq!(highscores::category_selection(category), None);

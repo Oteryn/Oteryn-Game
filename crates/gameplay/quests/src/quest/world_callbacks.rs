@@ -4,12 +4,19 @@ use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use sha2::{Digest, Sha256};
+use std::collections::{BTreeMap, BTreeSet};
+
+mod published_markers;
+mod selector_partitions;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
-// Static quest batches and the code-built source callbacks share this bound.
+// Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
+// The merged source cohorts and native callbacks share a separate boot bound.
+const MAX_RUNTIME_CALLBACKS: usize = 1024;
 pub const MAX_EFFECTS: usize = 8;
+pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
@@ -29,10 +36,16 @@ pub enum Trigger {
 
 mod counterparts;
 mod effects;
+mod questpc7_compat;
+mod state_operations;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
-    EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal, PortalPair,
+    EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, PartyStation, PartyTransfer,
+    Portal, PortalPair, QuestCompletion, RewardDoor,
 };
+
+mod scene;
+pub use scene::{SceneEdit, SceneEdits, SceneEvacuation, SceneRelocation};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -46,12 +59,31 @@ pub struct NativeSelector {
 #[serde(deny_unknown_fields)]
 pub struct Selector {
     pub position: Option<Position>,
+    /// Alternate step tiles share one canonical callback/activation identity.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub position_aliases: Vec<Position>,
+    /// Exact native top-level stack ordinal; never a fabricated source UID.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ordinal: Option<u16>,
     pub unique: Option<u16>,
     pub action: Option<u16>,
     pub appearance: Option<u16>,
     /// Exact plain-base counterpart; legacy selectors remain an alternative.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub native: Option<NativeSelector>,
+}
+
+impl Selector {
+    #[must_use]
+    pub fn matches_position(&self, position: Position) -> bool {
+        if self.position_aliases.len() >= MAX_SELECTOR_POSITIONS {
+            return false;
+        }
+        match self.position {
+            Some(primary) => primary == position || self.position_aliases.contains(&position),
+            None => self.position_aliases.is_empty(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -64,6 +96,10 @@ pub struct Passage {
     /// Source-asymmetric lever: remove `appearance`, then create this different wall.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub create_on_close: Option<u16>,
+    /// Toggle only when this removable passage is present for opening, or absent
+    /// for closing. Discordant source states leave the whole callback unchanged.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub require_state: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -81,7 +117,13 @@ pub struct Storage {
     pub minimum: i64,
     pub maximum: i64,
     pub set: i64,
-    /// A read-only gate: validate the locked value without resetting later progress.
+    /// Replace only this exact locked value; other values are retained.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set_if: Option<i64>,
+    /// Explicit bounded repetition: `set` is the terminal cap, not the per-use value.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub add: Option<i64>,
+    /// Preserve the track value within a receipt-bearing quest transition.
     #[serde(default, skip_serializing_if = "is_false")]
     pub preserve: bool,
     /// Add `set` to the locked value instead of replacing it.
@@ -90,14 +132,87 @@ pub struct Storage {
     /// Preserve higher progress while raising lower values to `set`.
     #[serde(default, skip_serializing_if = "is_false")]
     pub at_least: bool,
+    /// Validate quest progress without writing tracks, state, receipts or revisions.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub read_only: bool,
 }
 
 fn is_false(value: &bool) -> bool {
     !*value
 }
 
+mod bindings;
 mod native;
 use native::valid_native_callback;
+
+/// Creature appearance projected only while this committed Quest track is in range.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Disguise {
+    pub track: String,
+    pub minimum: i64,
+    pub maximum: i64,
+    pub creature: String,
+}
+
+impl Disguise {
+    fn valid_for(&self, callback: &Callback) -> bool {
+        self.minimum > 0
+            && self.maximum >= self.minimum
+            && self.maximum <= i64::from(u16::MAX)
+            && self
+                .creature
+                .strip_prefix("oteryn:creature.")
+                .is_some_and(|tail| {
+                    !tail.is_empty()
+                        && tail
+                            .bytes()
+                            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_')
+                })
+            && callback.trigger == Trigger::Use
+            && callback.selector.position.is_some()
+            && !callback.is_read_only()
+            && callback.storage.iter().any(|s| {
+                s.track == self.track
+                    && !s.preserve
+                    && !s.read_only
+                    && s.maximum < self.minimum
+                    && s.set == self.minimum
+            })
+    }
+
+    pub fn active(&self, tracks: &std::collections::BTreeMap<String, i64>) -> bool {
+        tracks
+            .get(&self.track)
+            .is_some_and(|value| (self.minimum..=self.maximum).contains(value))
+    }
+}
+
+/// Ambiguous concurrent disguises fail closed; a registry order never chooses authority.
+pub fn active_disguise(
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Result<Option<&'static Disguise>, String> {
+    static RULES: std::sync::OnceLock<Result<Vec<Disguise>, String>> = std::sync::OnceLock::new();
+    let rules = RULES
+        .get_or_init(|| {
+            let rules = load()?
+                .into_iter()
+                .filter_map(|callback| callback.disguise)
+                .collect::<Vec<_>>();
+            if rules.len() > 32 {
+                return Err("quest disguise bounds".into());
+            }
+            Ok(rules)
+        })
+        .as_ref()
+        .map_err(Clone::clone)?;
+    let mut active = rules.iter().filter(|rule| rule.active(tracks));
+    let first = active.next();
+    if active.next().is_some() {
+        return Err("ambiguous quest disguise".into());
+    }
+    Ok(first)
+}
 
 /// One carried item applied to the selected world object.  This deliberately is not a
 /// recipe language: the receipt owner locks the source and consumes, changes or retains it.
@@ -122,6 +237,25 @@ pub struct MonkReward {
     pub learn_spell: Option<String>,
     #[serde(default)]
     pub final_shrine: bool,
+}
+
+/// Choose the alternate destination when a live base object has this appearance.
+/// The ordinary teleport is the destination when that object is absent.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RemoteTeleport {
+    pub position: Position,
+    pub appearance: u16,
+    pub destination: Position,
+}
+
+/// A native paid transport receipt, optionally later than a named earned milestone.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TravelRequirement {
+    pub route: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub after_transition: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -162,6 +296,14 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "ActorKind::is_player")]
     pub actor_kind: ActorKind,
     pub selector: Selector,
+    /// Bounded same-floor tool reach for large authored world targets.
+    #[serde(
+        default = "default_use_range",
+        skip_serializing_if = "is_default_use_range"
+    )]
+    pub use_range: u8,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub disguise: Option<Disguise>,
     /// Both lever appearances. None for a step tile. One-way levers refuse their second use.
     pub lever: Option<[u16; 2]>,
     pub reversible: bool,
@@ -178,7 +320,12 @@ pub struct Callback {
     pub facing: Option<u8>,
     #[serde(default, skip_serializing_if = "CallbackEffectSet::is_empty")]
     pub effects: CallbackEffectSet,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remote_teleport: Option<RemoteTeleport>,
     pub storage: Vec<Storage>,
+    /// Transaction-clock operations use the same bounded evaluator as NPC rewards.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub state_operations: Vec<super::reward_callbacks::StateOperation>,
     /// Opening predicates for value-free map puzzles, evaluated under the Channel turn.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub world_requirements: Vec<WorldRequirement>,
@@ -189,18 +336,85 @@ pub struct Callback {
     pub world_change: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<i64>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub premium_required: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub monk_reward: Option<MonkReward>,
     pub offerings: Vec<Offering>,
+    /// Carried prerequisites retained under the same Character/custody locks.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub present: Vec<super::reward_callbacks::ItemAmount>,
+    /// Completed native transport receipts; no caller can substitute a location for payment.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_travel: Vec<TravelRequirement>,
     #[serde(default)]
     pub item_on_target: Option<ItemOnTarget>,
     pub return_on_failure: bool,
+    /// Explicit recovery landing for a refused STEP; absent preserves its origin.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure_teleport: Option<Position>,
     pub failure_message: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub success_message: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub native_rule: Option<NativeRule>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_reward: Option<super::reward_callbacks::ItemReward>,
+    /// Explicit atomic item/outfit combination; legacy mixed fields remain invalid.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub reward_bundle: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub achievements: Vec<String>,
+    /// Route this overlay only during its declared phase; durable storage guards still authorize it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub activation: Option<super::reward_callbacks::TrackRequirement>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requirements: Option<super::reward_callbacks::RewardRequirements>,
     pub sources: Vec<String>,
+}
+
+impl Callback {
+    pub fn has_state(&self) -> bool {
+        !self.storage.is_empty() || !self.state_operations.is_empty()
+    }
+    pub fn has_state_writes(&self) -> bool {
+        self.storage
+            .iter()
+            .any(|state| !state.preserve && !state.read_only)
+            || self.state_operations.iter().any(state_operations::mutates)
+    }
+    /// Each accepted use has its own ordinary MINT occurrence, guarded by an
+    /// elapsed-time predicate and timestamp write in that same transaction.
+    pub fn has_repeating_clock(&self) -> bool {
+        state_operations::refreshes_clock(self)
+    }
+}
+
+fn default_use_range() -> u8 {
+    1
+}
+fn is_default_use_range(value: &u8) -> bool {
+    *value == 1
+}
+
+impl Callback {
+    /// Uses the same-floor Chebyshev rule; legacy callbacks retain one-cell reach.
+    #[must_use]
+    pub fn reaches(&self, actor: Position, target: Position) -> bool {
+        actor.floor == target.floor
+            && actor.x.abs_diff(target.x) <= u16::from(self.use_range)
+            && actor.y.abs_diff(target.y) <= u16::from(self.use_range)
+    }
+
+    /// A pure quest-state predicate, with no Quest mutation or receipt.
+    #[must_use]
+    pub fn is_read_only(&self) -> bool {
+        !self.storage.is_empty()
+            && self.state_operations.is_empty()
+            && self.storage.iter().all(|storage| storage.read_only)
+    }
 }
 
 #[derive(Deserialize)]
@@ -235,6 +449,14 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 }
 
 /// Read the same closed content shape at boot and at the durable mutation boundary.
+/// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
+pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
+    match catalogue.authored_world_callbacks() {
+        Some(callbacks) => Ok(callbacks.to_vec()),
+        None => load(),
+    }
+}
+
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
@@ -256,25 +478,47 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/shared-access-callbacks.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/native-scene-callbacks.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/questpc7-world-callbacks.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
-    if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
+    callbacks.extend(parse_with_provenance(
+        include_str!("../../../../../content/quests/authored-world-callbacks.json"),
+        true,
+    )?);
+    callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
+    bindings::apply(&mut callbacks)?;
+    let mut native_callbacks = vec![
+        super::rotten_blood::altar_callback(),
+        super::schrodinger_island::callback(),
+    ];
+    native_callbacks.extend(super::elvenbane::callbacks());
+    native_callbacks.extend(super::fire_feathered_native::callbacks());
+    native_callbacks.extend(super::shared_world_progress::callbacks());
+    native_callbacks.extend(super::hive_access::callbacks());
+    if callbacks.len() > MAX_RUNTIME_CALLBACKS.saturating_sub(native_callbacks.len()) {
         return Err("callback bounds including native source callbacks".into());
     }
-    callbacks.extend(super::fire_feathered_native::callbacks());
-    callbacks.extend(super::shared_world_progress::callbacks());
-    callbacks.extend(super::hive_access::callbacks());
-    callbacks.push(super::rotten_blood::altar_callback());
-    callbacks.push(super::schrodinger_island::callback());
+    callbacks.extend(native_callbacks);
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
         return Err("duplicate callback across registries".into());
     }
     callbacks.extend(super::deepling_boss_access::callbacks(&callbacks)?);
-    if callbacks.len() > MAX_CALLBACKS {
+    if callbacks.len() > MAX_RUNTIME_CALLBACKS {
         return Err("callback bounds including native access".into());
+    }
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/questl2-djinn-world.json"
+    ))?);
+    if callbacks.len() > MAX_RUNTIME_CALLBACKS {
+        return Err("callback bounds including djinn access".into());
     }
     counterparts::apply(&mut callbacks)?;
     validate_registry(&callbacks)?;
@@ -282,23 +526,44 @@ pub fn load() -> Result<Vec<Callback>, String> {
     Ok(callbacks)
 }
 
+mod selector_gates;
+
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
+    if callbacks.len() > MAX_RUNTIME_CALLBACKS {
+        return Err("callback runtime registry bounds".into());
+    }
     let mut keys = BTreeSet::new();
-    let mut selectors = BTreeSet::new();
+    let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
+        if callback.item_reward.is_some() && callback.effects.item_reward.is_some() {
+            return Err("duplicate item reward participant".into());
+        }
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
         }
         let selector = serde_json::to_vec(&(callback.trigger, &callback.selector))
             .map_err(|error| error.to_string())?;
-        if !selectors.insert(selector) {
+        let same_selector = selectors.entry(selector).or_default();
+        if same_selector.iter().any(|other| {
+            !selector_gates::disjoint(other, callback)
+                || !selector_partitions::disjoint(other, callback)
+        }) {
             return Err("duplicate callback selector across registries".into());
         }
+        same_selector.push(callback);
     }
     Ok(())
 }
 
+pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
+    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
+}
+
 fn parse(text: &str) -> Result<Vec<Callback>, String> {
+    parse_with_provenance(text, false)
+}
+
+fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     if document.schema != 1 || document.callbacks.len() > MAX_CALLBACKS {
         return Err("callback bounds".into());
@@ -309,10 +574,23 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let valid_pos = |p: Position| (-15..=0).contains(&p.floor);
         let unique_offerings: BTreeSet<_> = callback.offerings.iter().map(|o| o.position).collect();
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
-        let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
+        let unique_storage: BTreeSet<_> = callback
+            .storage
+            .iter()
+            .map(|s| &s.track)
+            .chain(callback.state_operations.iter().map(|s| &s.track))
+            .collect();
+        let alias_positions: BTreeSet<_> = selector.position_aliases.iter().copied().collect();
         if !super::valid_quest_key(&callback.key)
             || !super::valid_quest_key(&callback.quest)
             || !keys.insert(&callback.key)
+            || !(1..=2).contains(&callback.use_range)
+            || (callback.use_range > 1
+                && (callback.trigger != Trigger::Use
+                    || selector.position.is_none()
+                    || callback.item_on_target.is_none()
+                    || callback.storage.is_empty()
+                    || callback.is_read_only()))
             || (selector.position.is_none()
                 && selector.unique.is_none()
                 && selector.action.is_none()
@@ -322,8 +600,25 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .native
                 .as_ref()
                 .is_some_and(|n| !valid_pos(n.position) || n.appearance == 0)
+            || selector.position_aliases.len() >= MAX_SELECTOR_POSITIONS
+            || alias_positions.len() != selector.position_aliases.len()
+            || selector
+                .position_aliases
+                .iter()
+                .any(|p| !valid_pos(*p) || Some(*p) == selector.position)
+            || (!selector.position_aliases.is_empty()
+                && (selector.position.is_none()
+                    || callback.trigger == Trigger::Use
+                    || callback.native_rule.is_some()))
+            || (selector.ordinal.is_some() && selector.position.is_none())
+            || (callback.trigger != Trigger::Use
+                && selector.ordinal.is_some_and(|ordinal| ordinal != 0))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || callback.failure_teleport.is_some_and(|p| {
+                !valid_pos(p) || callback.trigger != Trigger::StepIn || !callback.return_on_failure
+            })
             || !effects::valid(callback)
+            || !state_operations::valid(callback)
             || callback
                 .effects
                 .teleport_effect
@@ -331,7 +626,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || (callback.actor_kind == ActorKind::Monster
                 && (callback.selector.position.is_none()
                     || callback.trigger == Trigger::Use
-                    || !callback.storage.is_empty()
+                    || callback.has_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.teleport.is_some()
@@ -339,26 +634,25 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
-                    || callback.effects.item_reward.is_some()
+                    || callback.item_reward().is_some()
                     || callback.effects.outfit_reward.is_some()
                     || callback.effects.encounter.is_some()
                     || callback.effects.portals.is_some()
                     || callback.effects.item_cycle.is_some()
                     || !callback.passages.is_empty()))
             || ((callback.requires_world_admission || callback.opening_only)
-                && (callback.storage.iter().all(|state| state.preserve)
-                    || callback.native_rule.is_some()))
+                && (!callback.has_state_writes() || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use
                     || callback.lever.is_none()
                     || !callback.reversible
-                    || callback.storage.is_empty()
+                    || !callback.has_state()
                     || callback.offerings.is_empty()
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.item_on_target.is_some()
                     || callback.native_rule.is_some()
-                    || callback.effects.item_reward.is_some()
+                    || callback.item_reward().is_some()
                     || callback.effects.outfit_reward.is_some()
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
@@ -368,16 +662,15 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .iter()
                 .any(|r| !valid_pos(r.position) || r.appearance == 0)
             || (!callback.world_requirements.is_empty()
-                && (!callback.storage.is_empty()
+                && (callback.has_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
-                    || callback.effects.item_reward.is_some()
+                    || callback.item_reward().is_some()
                     || callback.effects.outfit_reward.is_some()))
-            || !effects::valid(callback)
             || callback
                 .facing
                 .is_some_and(|facing| facing > 3 || callback.teleport.is_none())
@@ -386,9 +679,109 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .effects
                 .iter()
                 .any(|e| !valid_pos(e.position) || e.effect == 0)
+            || callback
+                .disguise
+                .as_ref()
+                .is_some_and(|rule| !rule.valid_for(callback))
+            || callback.remote_teleport.as_ref().is_some_and(|remote| {
+                !callback.is_read_only()
+                    || callback.trigger != Trigger::StepIn
+                    || remote.appearance == 0
+                    || !valid_pos(remote.position)
+                    || !valid_pos(remote.destination)
+            })
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
-            || unique_storage.len() != callback.storage.len()
+            || unique_storage.len() != callback.storage.len() + callback.state_operations.len()
+            || callback.storage.iter().filter(|s| s.add.is_some()).count() > 1
+            || callback.storage.iter().any(|s| {
+                s.add.is_some_and(|add| {
+                    add != 1
+                        || s.minimum < 0
+                        || s.maximum >= 10_000
+                        || s.maximum.checked_add(add) != Some(s.set)
+                        || s.preserve
+                        || s.read_only
+                        || callback.native_rule.is_some()
+                        || callback.trigger != Trigger::Use
+                        || callback.reversible
+                        || !callback.activation.as_ref().is_some_and(|a| {
+                            a.track == s.track && a.minimum == s.minimum && a.maximum == s.maximum
+                        })
+                })
+            })
+            || (callback.storage.iter().any(|storage| storage.read_only)
+                && (!callback.is_read_only()
+                    || callback.teleport.is_none()
+                    || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
+                    || callback.lever.is_some()
+                    || !callback.passages.is_empty()
+                    || !callback.offerings.is_empty()
+                    || callback.item_on_target.is_some()
+                    || callback.minimum_level.is_some()
+                    || callback.premium_required
+                    || callback.experience.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.native_rule.is_some()
+                    || callback.effects.outfit_reward.is_some()
+                    || callback.item_reward.is_some()
+                    || callback.requirements.is_some()
+                    || callback.completes
+                    || callback.storage.iter().any(|storage| storage.preserve || storage.increment || storage.at_least)))
+            || (callback.completes
+                && (!callback.has_state() || callback.is_read_only()
+                    || (callback.state_operations.is_empty() && callback.storage.iter().all(|s| {
+                        s.preserve || s.read_only || (s.minimum..=s.maximum).contains(&s.set)
+                    }))))
+            || callback.activation.as_ref().is_some_and(|a| {
+                callback.trigger != Trigger::Use
+                    || callback.is_read_only()
+                    || a.minimum > a.maximum
+                    || !callback.storage.iter().any(|s| {
+                        s.track == a.track
+                            && s.minimum == a.minimum
+                            && s.maximum == a.maximum
+                            && !s.preserve
+                            && !s.read_only
+                    })
+            })
+            || callback.requirements.as_ref().is_some_and(|r| !r.valid())
+            || !rewards::valid(callback)
+            || callback.item_reward.as_ref().is_some_and(|reward| {
+                !reward.valid()
+                    || callback.trigger != Trigger::Use
+                    || callback.storage.is_empty()
+                    || callback.native_rule.is_some()
+                    || callback.monk_reward.is_some()
+                    || (callback.effects.outfit_reward.is_some() && !callback.reward_bundle)
+                    || callback.reversible
+                    || callback.storage.iter().all(|s| {
+                        s.preserve || s.read_only || (s.minimum..=s.maximum).contains(&s.set)
+                    })
+            })
+            || callback
+                .effects
+                .outfit_reward
+                .as_ref()
+                .is_some_and(|reward| {
+                    callback.trigger != Trigger::Use
+                        || callback.storage.is_empty()
+                        || callback
+                            .storage
+                            .iter()
+                            .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                        || reward.addons > 3
+                        || !reward
+                            .outfit
+                            .strip_prefix("oteryn:outfit.")
+                            .is_some_and(|tail| {
+                                !tail.is_empty()
+                                    && tail.len() <= 146
+                                    && tail.bytes().all(|b| {
+                                        b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_'
+                                    })
+                            })
+                })
             || callback.passages.len() > MAX_EFFECTS
             || callback.passages.iter().any(|p| {
                 p.create_on_close.is_some_and(|id| {
@@ -398,7 +791,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         || callback.passages.len() != 1
                         || callback.lever.is_none()
                         || !callback.reversible
-                        || !callback.storage.is_empty()
+                        || callback.has_state()
                         || callback.teleport.is_some()
                         || callback.item_on_target.is_some()
                         || !callback.offerings.is_empty()
@@ -408,10 +801,43 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         || callback.success_message.is_some()
                 })
             })
-            || callback.storage.len() > MAX_EFFECTS
+            || callback.storage.len() + callback.state_operations.len() > MAX_EFFECTS
             || callback
                 .minimum_level
-                .is_some_and(|level| level == 0 || callback.storage.is_empty())
+                .is_some_and(|level| level == 0 || !callback.has_state())
+            || callback.present.len() > MAX_EFFECTS
+            || callback
+                .present
+                .iter()
+                .map(|item| &item.item)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != callback.present.len()
+            || callback.present.iter().any(|item| {
+                !item.item.starts_with("oteryn:item.")
+                    || !super::valid_quest_key(&item.item)
+                    || !(1..=100).contains(&item.count)
+            })
+            || callback.required_travel.len() > 4
+            || callback
+                .required_travel
+                .iter()
+                .map(|requirement| &requirement.route)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != callback.required_travel.len()
+            || callback.required_travel.iter().any(|requirement| {
+                let route = &requirement.route;
+                !route.starts_with("oteryn:service.travel.")
+                    || !super::valid_quest_key(route)
+                    || !route.contains('/')
+                    || route.len() > 192
+                    || requirement.after_transition.as_ref().is_some_and(|key| {
+                        !key.starts_with("oteryn:quest-callback/") || !super::valid_quest_key(key)
+                    })
+            })
+            || ((!callback.present.is_empty() || !callback.required_travel.is_empty())
+                && (!callback.has_state() || callback.is_read_only()))
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience
@@ -419,7 +845,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.monk_reward.as_ref().is_some_and(|reward| {
                 callback.quest != super::monk_shrines::QUEST
                     || callback.trigger != Trigger::Use
-                    || callback.storage.is_empty()
+                    || !callback.has_state()
                     || reward.item_source_id.is_some_and(|id| {
                         ![50267, 50271, 50269, 50273, 50274, 50272, 50268].contains(&id)
                     })
@@ -432,15 +858,36 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         .contains(&key)
                     })
             })
-            || (!callback.offerings.is_empty() && callback.storage.is_empty())
+            || (!callback.offerings.is_empty() && !callback.has_state())
             || callback.sources.is_empty()
+            || (authored
+                && (!callback.key.starts_with("oteryn:quest-callback/authored-")
+                    || !callback
+                        .sources
+                        .iter()
+                        .any(|source| source.starts_with("oteryn-authored:"))))
             || !callback.sources.iter().any(|source| {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
-                source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                (authored && source.starts_with("oteryn-authored:")) ||
+                (source.starts_with("canonical:content/quests/definitions/")
+                    && source.rsplit_once(":sha256:").is_some_and(|(_, hash)| {
+                        hash.len() == 64
+                            && hash
+                                .bytes()
+                                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                    }))
+                    || source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                    || (callback.effects.outfit_reward.is_some()
+                        && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
+                    || source.starts_with("canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:")
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
                     || (callback.effects.outfit_reward.is_some()
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
+
                     || source.starts_with("crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:")
+                    || (callback.quest == super::kill_objectives::QUEST
+                        && source == "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2551-2580#sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca")
+
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 let accepted: BTreeSet<_> = std::iter::once(item.item.as_str())
@@ -448,7 +895,8 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     .collect();
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
-                    || callback.storage.is_empty()
+                    || (item.reusable && (item.count != 1 || item.replacement.is_some()))
+                    || !callback.has_state()
                     || callback.trigger != Trigger::Use
                     || item.count == 0
                     || item.count > 100
@@ -479,7 +927,14 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback
                 .lever
                 .is_some_and(|p| p[0] == p[1] || callback.trigger != Trigger::Use)
-            || callback.passages.iter().any(|p| !valid_pos(p.position))
+            || callback.passages.iter().any(|p| {
+                !valid_pos(p.position)
+                    || (p.require_state
+                        && (callback.trigger != Trigger::Use
+                            || callback.lever.is_none()
+                            || !callback.reversible
+                            || p.replacement.is_some()))
+            })
             || callback.offerings.iter().any(|o| {
                 !valid_pos(o.position)
                     || o.count == 0
@@ -489,6 +944,11 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.storage.iter().any(|s| {
                 !super::valid_quest_key(&s.track)
                     || s.minimum > s.maximum
+                    || s.set_if.is_some_and(|value| {
+                        !(s.minimum..=s.maximum).contains(&value)
+                            || s.preserve || s.read_only || s.at_least || s.increment || s.add.is_some()
+                            || callback.native_rule.is_some() || callback.requires_world_admission || callback.opening_only
+                    })
                     || (s.at_least && (s.preserve || s.increment || callback.native_rule.is_some()))
                     || (s.increment
                         && (s.preserve
@@ -514,7 +974,8 @@ fn extend_callbacks(
 ) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    for callback in callbacks.iter().filter(|c| !c.storage.is_empty()) {
+    let published = published_markers::keys()?;
+    for callback in callbacks.iter().filter(|c| c.has_state()) {
         for storage in &callback.storage {
             let maximum = if storage.increment {
                 storage
@@ -525,8 +986,8 @@ fn extend_callbacks(
                 storage.set.max(storage.maximum)
             };
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
-                if callback.native_rule.is_none() && !storage.preserve {
-                    track.max = track.max.max(maximum);
+                if callback.native_rule.is_none() && !storage.preserve && !storage.read_only {
+                    track.max = track.max.max(maximum).max(storage.set).max(storage.maximum);
                 }
             } else {
                 if callback.native_rule.is_some() {
@@ -540,13 +1001,44 @@ fn extend_callbacks(
                     quest: callback.quest.clone(),
                     initial: -1,
                     min: -1,
-                    max: if storage.preserve {
+                    max: if storage.preserve || storage.read_only {
                         storage.maximum
                     } else {
                         maximum
                     },
                 });
             }
+        }
+        state_operations::extend_tracks(callback, &mut tracks)?;
+        // Pure gates must not acquire a generic transition: even ADD(0)
+        // creates a Character revision, quest state and receipt.
+        if callback.is_read_only() {
+            continue;
+        }
+        if published_markers::needs_marker(callback, &published) {
+            let digest: String =
+                Sha256::digest(serde_json::to_vec(&callback).map_err(|e| e.to_string())?)
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect();
+            transitions.push(QuestTransition {
+                world_change: None,
+                key: format!("oteryn:quest-world-plan/{digest}"),
+                quest: callback.quest.clone(),
+                effects: vec![QuestEffect {
+                    track: callback
+                        .storage
+                        .first()
+                        .map(|s| &s.track)
+                        .or_else(|| callback.state_operations.first().map(|s| &s.track))
+                        .ok_or("missing value guard")?
+                        .clone(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Computed,
+                }],
+                completes: false,
+                experience: None,
+            });
         }
         transitions.push(primary_transition(callback)?);
     }
@@ -558,48 +1050,56 @@ fn extend_callbacks(
 pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
     let bound_index = callback.storage.iter().position(|state| !state.preserve);
+    let mut effects: Vec<_> = callback
+        .storage
+        .iter()
+        .enumerate()
+        .map(|(index, state)| QuestEffect {
+            track: state.track.clone(),
+            from: QuestComparison::Between(state.minimum, state.maximum),
+            effect: match callback.native_rule {
+                Some(rule) => QuestEffectKind::Native(rule),
+                None if state.set_if.is_some() => QuestEffectKind::SetIf {
+                    equals: state.set_if.unwrap_or(state.minimum),
+                    value: state.set,
+                },
+                None if state.add.is_some() => QuestEffectKind::Add(state.add.unwrap_or(0)),
+                None if state.preserve => QuestEffectKind::Add(0),
+                None if state.at_least => match binding.filter(|_| Some(index) == bound_index) {
+                    Some(binding) => QuestEffectKind::RaiseToWithBinding {
+                        value: state.set,
+                        binding,
+                    },
+                    None => QuestEffectKind::RaiseTo(state.set),
+                },
+                None if state.increment => match binding.filter(|_| Some(index) == bound_index) {
+                    Some(binding) => QuestEffectKind::AddWithBinding {
+                        delta: state.set,
+                        binding,
+                    },
+                    None => QuestEffectKind::Add(state.set),
+                },
+                None => match binding.filter(|_| Some(index) == bound_index) {
+                    Some(binding) => QuestEffectKind::SetWithBinding {
+                        value: state.set,
+                        binding,
+                    },
+                    None => QuestEffectKind::Set(state.set),
+                },
+            },
+        })
+        .collect();
+    state_operations::append_effects(
+        callback,
+        binding.filter(|_| bound_index.is_none()),
+        &mut effects,
+    );
     Ok(QuestTransition {
         world_change: callback.world_change.clone(),
         key: callback.key.clone(),
         quest: callback.quest.clone(),
-        effects: callback
-            .storage
-            .iter()
-            .enumerate()
-            .map(|(index, state)| QuestEffect {
-                track: state.track.clone(),
-                from: QuestComparison::Between(state.minimum, state.maximum),
-                effect: match callback.native_rule {
-                    Some(rule) => QuestEffectKind::Native(rule),
-                    None if state.preserve => QuestEffectKind::Add(0),
-                    None if state.at_least => {
-                        match binding.filter(|_| Some(index) == bound_index) {
-                            Some(binding) => QuestEffectKind::RaiseToWithBinding {
-                                value: state.set,
-                                binding,
-                            },
-                            None => QuestEffectKind::RaiseTo(state.set),
-                        }
-                    }
-                    None if state.increment => match binding.filter(|_| Some(index) == bound_index)
-                    {
-                        Some(binding) => QuestEffectKind::AddWithBinding {
-                            delta: state.set,
-                            binding,
-                        },
-                        None => QuestEffectKind::Add(state.set),
-                    },
-                    None => match binding.filter(|_| Some(index) == bound_index) {
-                        Some(binding) => QuestEffectKind::SetWithBinding {
-                            value: state.set,
-                            binding,
-                        },
-                        None => QuestEffectKind::Set(state.set),
-                    },
-                },
-            })
-            .collect(),
-        completes: false,
+        effects,
+        completes: callback.completes || callback.effects.quest_completion.is_some(),
         experience: callback.experience,
     })
 }
@@ -622,11 +1122,139 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
 #[cfg(test)]
 mod timed_tests;
 
+mod rewards;
+
 #[cfg(test)]
 mod batch4_tests;
+#[cfg(test)]
+mod bounded_tests;
+#[cfg(test)]
+mod outfit_tests;
+
+#[cfg(test)]
+mod scene_tests;
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn completion_is_bounded_terminal_and_requires_unique_claim_identities() -> Result<(), String> {
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-access-callbacks.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let callback = document["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .find(|row| row["key"] == "oteryn:quest-callback/elvenbane-return-after-defenders")
+            .ok_or("completion")?
+            .clone();
+        let input = serde_json::json!({"schema":1,"callbacks":[callback]});
+        let parsed = super::parse(&input.to_string())?;
+        assert!(super::primary_transition(&parsed[0])?.completes);
+        assert_eq!(
+            parsed[0]
+                .effects
+                .quest_completion
+                .as_ref()
+                .ok_or("completion gate")?
+                .claimed_rewards
+                .len(),
+            4
+        );
+        assert_eq!(
+            parsed[0].storage.len(),
+            8,
+            "one atomic terminal phase and source counter write"
+        );
+        for bad in [
+            serde_json::json!(["invalid"]),
+            serde_json::json!(["oteryn:reward-claim.x", "oteryn:reward-claim.x"]),
+            serde_json::json!(
+                (0..9)
+                    .map(|i| format!("oteryn:reward-claim.x{i}"))
+                    .collect::<Vec<_>>()
+            ),
+        ] {
+            let mut changed = input.clone();
+            changed["callbacks"][0]["effects"]["quest_completion"]["claimed_rewards"] = bad;
+            assert!(super::parse(&changed.to_string()).is_err());
+        }
+        let mut changed_source = input.clone();
+        changed_source["callbacks"][0]["sources"][0] = serde_json::json!(
+            "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2551-2580#sha256:changed"
+        );
+        assert!(
+            super::parse(&changed_source.to_string()).is_err(),
+            "current donor citation remains exact"
+        );
+        let mut changed = input;
+        for storage in changed["callbacks"][0]["storage"]
+            .as_array_mut()
+            .ok_or("storage")?
+        {
+            storage["preserve"] = serde_json::json!(true);
+        }
+        assert!(
+            super::parse(&changed.to_string()).is_err(),
+            "read-only storage cannot finish a quest"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn bounded_position_aliases_share_one_step_callback() -> Result<(), String> {
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-access-callbacks.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let callback = document["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .find(|c| c["key"] == "oteryn:quest-callback/elvenbane-basement-entry")
+            .ok_or("activation")?
+            .clone();
+        let mut input = serde_json::json!({"schema":1,"callbacks":[callback]});
+        let alias = serde_json::json!({"x":32598,"y":31653,"floor":-8});
+        input["callbacks"][0]["selector"]["position_aliases"] = serde_json::json!([alias.clone()]);
+        assert!(
+            parse(&input.to_string()).is_ok(),
+            "bounded alternate source position must retain one callback identity"
+        );
+        for bad in 0..6 {
+            let mut value = input.clone();
+            match bad {
+                0 => {
+                    value["callbacks"][0]["selector"]["position_aliases"] =
+                        serde_json::json!([alias.clone(), alias.clone()])
+                }
+                1 => {
+                    value["callbacks"][0]["selector"]["position_aliases"] =
+                        serde_json::json!([{"x":1,"y":1,"floor":1}])
+                }
+                2 => value["callbacks"][0]["selector"]["position"] = serde_json::Value::Null,
+                3 => value["callbacks"][0]["trigger"] = "use".into(),
+                4 => {
+                    value["callbacks"][0]["selector"]["position_aliases"] = serde_json::Value::Array(
+                        (0..MAX_SELECTOR_POSITIONS)
+                            .map(|x| serde_json::json!({"x":x,"y":1,"floor":-8}))
+                            .collect(),
+                    )
+                }
+                _ => {
+                    value["callbacks"][0]["selector"]["position_aliases"] =
+                        serde_json::json!([value["callbacks"][0]["selector"]["position"].clone()])
+                }
+            }
+            assert!(
+                parse(&value.to_string()).is_err(),
+                "invalid alias case{bad}"
+            );
+        }
+        Ok(())
+    }
+
     use super::*;
 
     #[test]
@@ -676,6 +1304,84 @@ mod tests {
                 parse(&bad.to_string()).is_err(),
                 "invalid effect case {case}"
             );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn conditional_storage_compiles_exact_value_effect_and_rejects_guard_overloading()
+    -> Result<(), String> {
+        let callback = serde_json::json!({
+            "key":"oteryn:quest-callback/conditional-reset", "quest":"oteryn:quest/conditional-reset",
+            "trigger":"use", "selector":{"position":{"x":1,"y":2,"floor":-7}},
+            "reversible":false, "passages":[], "offerings":[], "return_on_failure":false,
+            "storage":[{"track":"oteryn:quest-progress/conditional-reset/flag", "minimum":-1,"maximum":2,"set":0,"set_if":1}],
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:fixture.lua:1"]
+        });
+        let encoded = |callback: serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()
+        };
+        let callbacks = parse(&encoded(callback.clone()))?;
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("catalogue")?,
+            &callbacks,
+        )?;
+        let effect = catalogue
+            .transition("oteryn:quest-callback/conditional-reset")
+            .ok_or("transition")?
+            .effects[0]
+            .effect;
+        assert_eq!(
+            effect,
+            QuestEffectKind::SetIf {
+                equals: 1,
+                value: 0
+            }
+        );
+        for (field, value) in [
+            ("set_if", serde_json::json!(3)),
+            ("read_only", serde_json::json!(true)),
+            ("preserve", serde_json::json!(true)),
+        ] {
+            let mut invalid = callback.clone();
+            invalid["storage"][0][field] = value;
+            assert!(parse(&encoded(invalid)).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn conditional_failure_destination_requires_returning_step_and_native_floor()
+    -> Result<(), String> {
+        let document: serde_json::Value =
+            serde_json::from_str(EMBEDDED).map_err(|e| e.to_string())?;
+        let mut callback = document["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .find(|c| {
+                c["key"]
+                    .as_str()
+                    .is_some_and(|k| k.ends_with("liquid-black-shortcut"))
+            })
+            .cloned()
+            .ok_or("returning step")?;
+        callback["failure_teleport"] = serde_json::json!({"x":32818,"y":31599,"floor":-9});
+        let encoded = |callback: serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()
+        };
+        assert!(parse(&encoded(callback.clone())).is_ok());
+        for (field, value) in [
+            ("trigger", serde_json::json!("use")),
+            ("return_on_failure", serde_json::json!(false)),
+            (
+                "failure_teleport",
+                serde_json::json!({"x":1,"y":2,"floor":-16}),
+            ),
+        ] {
+            let mut invalid = callback.clone();
+            invalid[field] = value;
+            assert!(parse(&encoded(invalid)).is_err());
         }
         Ok(())
     }
@@ -808,6 +1514,47 @@ mod tests {
         parse(&wire(&callback))?;
         callback.experience = Some(1);
         assert!(parse(&wire(&callback)).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn registry_accepts_only_disjoint_phases_of_one_quest() -> Result<(), String> {
+        let mut phase_zero = load()?.into_iter().next().ok_or("callback")?;
+        phase_zero.storage = vec![Storage {
+            track: "oteryn:quest-progress/fixture/phase".into(),
+            minimum: 0,
+            maximum: 0,
+            set: 1,
+            preserve: false,
+            increment: false,
+            at_least: false,
+            read_only: false,
+            set_if: None,
+            add: None,
+        }];
+        let mut phase_one = phase_zero.clone();
+        phase_one.key.push_str("-phase-one");
+        phase_one.storage[0].minimum = 1;
+        phase_one.storage[0].maximum = 1;
+        validate_registry(&[phase_zero.clone(), phase_one.clone()])?;
+        let mut repeated_zero = phase_zero.clone();
+        repeated_zero.key.push_str("-repeated-zero");
+        assert!(
+            validate_registry(&[phase_zero.clone(), phase_one.clone(), repeated_zero,]).is_err()
+        );
+        for case in 0..5 {
+            let mut invalid = phase_one.clone();
+            match case {
+                0 => invalid.storage[0].minimum = 0,
+                1 => invalid.quest.push_str("-other"),
+                2 => invalid.storage[0].at_least = true,
+                3 => invalid.storage.clear(),
+                _ => invalid.actor_kind = ActorKind::Monster,
+            }
+            assert!(validate_registry(&[phase_zero.clone(), invalid]).is_err());
+        }
+        phase_zero.storage[0].at_least = true;
+        assert!(validate_registry(&[phase_zero, phase_one]).is_err());
         Ok(())
     }
 
@@ -963,6 +1710,183 @@ mod tests {
     }
 
     #[test]
+    fn authored_world_provenance_cannot_enter_the_pinned_source_registry() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/authored-world-callbacks.json");
+        assert!(parse(source).is_err());
+        parse_with_provenance(source, true)?;
+        let mut value: serde_json::Value =
+            serde_json::from_str(source).map_err(|e| e.to_string())?;
+        value["callbacks"][0]["key"] = "oteryn:quest-callback/source-masquerade".into();
+        assert!(parse_with_provenance(&value.to_string(), true).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn lane_qengine_shared_access_rejects_ambiguous_or_unbounded_effects() -> Result<(), String> {
+        let source: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-access-callbacks.json"
+        ))
+        .map_err(|e| e.to_string())?;
+        parse(&source.to_string())?;
+        let callbacks = source["callbacks"].as_array().ok_or("callbacks")?;
+        let index = |name: &str| {
+            callbacks
+                .iter()
+                .position(|c| c["key"].as_str().is_some_and(|k| k.ends_with(name)))
+                .ok_or(name.to_owned())
+        };
+        let portals = index("thais-lighthouse-portals")?;
+        let encounter = index("annihilator-entry")?;
+        let cycle = index("triangle-tower-lever")?;
+        for case in 0..8 {
+            let mut bad = source.clone();
+            match case {
+                0 => {
+                    bad["callbacks"][portals]["effects"]["portals"]["portals"][1]["position"] = bad
+                        ["callbacks"][portals]["effects"]["portals"]["portals"][0]["position"]
+                        .clone()
+                }
+                1 => bad["callbacks"][portals]["effects"]["portals"]["lifetime_us"] = 0.into(),
+                2 => {
+                    bad["callbacks"][encounter]["effects"]["encounter"]["players"] =
+                        serde_json::json!([])
+                }
+                3 => {
+                    bad["callbacks"][encounter]["effects"]["encounter"]["players"][1]["to"] =
+                        bad["callbacks"][encounter]["effects"]["encounter"]["players"][0]["to"]
+                            .clone()
+                }
+                4 => {
+                    bad["callbacks"][encounter]["effects"]["encounter"]["monsters"][0]["position"]
+                        ["floor"] = 1.into()
+                }
+                5 => bad["callbacks"][cycle]["effects"]["item_cycle"]["create"] = 0.into(),
+                6 => bad["callbacks"][cycle]["effects"]["facing"] = "north".into(),
+                _ => bad["callbacks"][cycle]["effects"]["unknown"] = true.into(),
+            }
+            assert!(
+                parse(&bad.to_string()).is_err(),
+                "invalid effect case {case}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn passage_state_guard_requires_a_reversible_removal_lever() -> Result<(), String> {
+        let callback = parse(EMBEDDED)?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/giant-smithhammer")
+            .ok_or("giant callback")?;
+        assert!(callback.passages[0].require_state);
+        let row = serde_json::to_value(&callback).map_err(|e| e.to_string())?;
+        for case in 0..5 {
+            let mut bad = row.clone();
+            match case {
+                0 => bad["passages"][0]["require_state"] = 1.into(),
+                1 => bad["passages"][0]["replacement"] = 390.into(),
+                2 => bad["reversible"] = false.into(),
+                3 => bad["lever"] = serde_json::Value::Null,
+                _ => {
+                    bad["trigger"] = "step_in".into();
+                    bad["lever"] = serde_json::Value::Null;
+                }
+            }
+            assert!(
+                parse(&serde_json::json!({"schema": 1, "callbacks": [bad]}).to_string()).is_err()
+            );
+        }
+        let mut legacy = row;
+        legacy["passages"][0]
+            .as_object_mut()
+            .ok_or("passage")?
+            .remove("require_state");
+        let parsed = parse(&serde_json::json!({"schema": 1, "callbacks": [legacy]}).to_string())?;
+        assert!(!parsed[0].passages[0].require_state);
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_world_callback_has_no_quest_write_transition() -> Result<(), String> {
+        let held: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json")).map_err(|e| e.to_string())?;
+        let callbacks = parse(&serde_json::json!({"schema": 1, "callbacks": [held["callbacks"][1].clone(), held["callbacks"][3].clone()]}).to_string())?;
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("catalogue")?,
+            &callbacks,
+        )?;
+        for callback in callbacks {
+            assert!(
+                catalogue.transition(&callback.key).is_none(),
+                "read-only USE acquired a write transition"
+            );
+            assert!(catalogue.track(&callback.storage[0].track).is_some());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_world_callbacks_reject_mixed_mutations() -> Result<(), String> {
+        let held: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json")).map_err(|e| e.to_string())?;
+        for case in 0..4 {
+            let mut callback = held["callbacks"][1].clone();
+            match case {
+                0 => callback["experience"] = 1.into(),
+                1 => callback["storage"][0]["preserve"] = true.into(),
+                2 => callback["lever"] = serde_json::json!([2772, 2773]),
+                _ => callback["teleport"] = serde_json::Value::Null,
+            }
+            assert!(
+                parse(&serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string())
+                    .is_err()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_step_world_callback_has_no_quest_write_transition() -> Result<(), String> {
+        let mut row: serde_json::Value = serde_json::from_str::<serde_json::Value>(EMBEDDED)
+            .map_err(|e| e.to_string())?["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .find(|row| row["key"] == "oteryn:quest-callback/formogar-hoist-3059")
+            .ok_or("hoist")?
+            .clone();
+        for storage in row["storage"].as_array_mut().ok_or("storage")? {
+            storage.as_object_mut().ok_or("storage")?.remove("preserve");
+            storage["read_only"] = true.into();
+        }
+        let callbacks = parse(&serde_json::json!({"schema": 1, "callbacks": [row]}).to_string())?;
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("catalogue")?,
+            &callbacks,
+        )?;
+        assert!(catalogue.transition(&callbacks[0].key).is_none());
+        let mut row = serde_json::to_value(&callbacks[0]).map_err(|e| e.to_string())?;
+        row["remote_teleport"] = serde_json::json!({
+            "position": {"x": 32156, "y": 31125, "floor": -10},
+            "appearance": 2772,
+            "destination": {"x": 32157, "y": 31125, "floor": -11},
+        });
+        parse(&serde_json::json!({"schema": 1, "callbacks": [row.clone()]}).to_string())?;
+        for case in 0..5 {
+            let mut bad = row.clone();
+            match case {
+                0 => bad["remote_teleport"]["appearance"] = 0.into(),
+                1 => bad["remote_teleport"]["position"]["floor"] = 1.into(),
+                2 => bad["remote_teleport"]["destination"]["floor"] = 1.into(),
+                3 => bad["storage"] = serde_json::json!([]),
+                _ => bad["teleport"] = serde_json::Value::Null,
+            }
+            assert!(
+                parse(&serde_json::json!({"schema": 1, "callbacks": [bad]}).to_string()).is_err()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn dryad_garden_uses_source_unique_ids_in_both_directions() -> Result<(), String> {
         let callbacks = load()?;
         for (suffix, unique, destination) in [
@@ -990,7 +1914,7 @@ mod tests {
             assert_eq!(callback.trigger, Trigger::Use);
             assert_eq!(callback.selector.unique, Some(unique));
             assert_eq!(callback.teleport, Some(destination));
-            assert!(callback.storage.is_empty());
+            assert!(!callback.has_state());
             assert!(callback.sources.iter().all(|source| {
                 source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
             }));
@@ -1161,11 +2085,25 @@ mod tests {
                 || c.key.ends_with("travelling-trader-delivery")
         }) {
             for storage in &callback.storage {
-                assert!(
-                    lowered.source_track(&storage.track).is_some(),
-                    "{}",
-                    storage.track
-                );
+                if callback.key.starts_with("oteryn:quest-callback/authored-") {
+                    assert!(storage.track.starts_with("oteryn:quest-progress/chosen/"));
+                    assert!(
+                        callback
+                            .sources
+                            .iter()
+                            .any(|s| s.starts_with("oteryn-authored:"))
+                    );
+                    assert!(
+                        lowered.source_track(&storage.track).is_none(),
+                        "authored state cannot invent a donor source"
+                    );
+                } else {
+                    assert!(
+                        lowered.source_track(&storage.track).is_some(),
+                        "{}",
+                        storage.track
+                    );
+                }
                 assert_eq!(
                     lowered
                         .catalogue()
@@ -1326,6 +2264,125 @@ mod tests {
         }
         Ok(())
     }
+    #[test]
+    fn lane_qengine_l1_world_outfit_sources_are_narrowly_admitted() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/shared-outfit-callbacks.json");
+        assert_eq!(parse(source)?.len(), 2);
+        for edit in 0..3 {
+            let mut value: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            match edit {
+                0 => value["callbacks"][0]["effects"]["outfit_reward"] = serde_json::Value::Null,
+                1 => value["callbacks"][0]["effects"]["outfit_reward"]["addons"] = 4.into(),
+                _ => {
+                    for state in value["callbacks"][0]["storage"]
+                        .as_array_mut()
+                        .ok_or("storage")?
+                    {
+                        state["set"] = state["minimum"].clone();
+                    }
+                }
+            }
+            assert!(
+                parse(&value.to_string()).is_err(),
+                "invalid wardrobe edit {edit}"
+            );
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod reusable_tool_tests {
+    use super::*;
+
+    #[test]
+    fn reusable_tools_require_one_item_and_forbid_inventory_replacement() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/authored-world-callbacks.json");
+        let valid: serde_json::Value = serde_json::from_str(source).map_err(|e| e.to_string())?;
+        let callbacks = parse_with_provenance(source, true)?;
+        let index = callbacks
+            .iter()
+            .position(|callback| callback.key == "oteryn:quest-callback/authored-life-ring-pick")
+            .ok_or("pick")?;
+        assert!(
+            callbacks[index]
+                .item_on_target
+                .as_ref()
+                .ok_or("tool")?
+                .reusable
+        );
+        for case in 0..3 {
+            let mut invalid = valid.clone();
+            let tool = &mut invalid["callbacks"][index]["item_on_target"];
+            match case {
+                0 => tool["count"] = 0.into(),
+                1 => tool["count"] = 2.into(),
+                _ => tool["replacement"] = "oteryn:item.tibia.i3031".into(),
+            }
+            assert!(
+                parse_with_provenance(&invalid.to_string(), true).is_err(),
+                "invalid reusable tool case {case}"
+            );
+        }
+        // The absent default remains absent in old callback receipt hashes.
+        let mut legacy = valid;
+        legacy["callbacks"][index]["item_on_target"]["reusable"] = false.into();
+        let parsed = parse_with_provenance(&legacy.to_string(), true)?;
+        let encoded = serde_json::to_value(parsed[index].item_on_target.as_ref().ok_or("tool")?)
+            .map_err(|e| e.to_string())?;
+        assert!(encoded.get("reusable").is_none());
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tool_tests;
+
+#[cfg(test)]
+mod disguise_tests {
+    use super::*;
+    #[test]
+    fn quest_disguise_requires_an_exact_earning_transition_and_bounded_native_identity()
+    -> Result<(), String> {
+        let mut callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/authored-venore-machine-9")
+            .ok_or("fixture callback")?;
+        let rule = Disguise {
+            track: callback.storage[0].track.clone(),
+            minimum: 10,
+            maximum: 12,
+            creature: "oteryn:creature.percht".into(),
+        };
+        assert!(rule.valid_for(&callback));
+        let legacy = serde_json::to_vec(&callback).map_err(|e| e.to_string())?;
+        callback.disguise = None;
+        assert_eq!(
+            serde_json::to_vec(&callback).map_err(|e| e.to_string())?,
+            legacy
+        );
+        for mut bad in [rule.clone(), rule.clone(), rule.clone(), rule.clone()]
+            .into_iter()
+            .enumerate()
+        {
+            match bad.0 {
+                0 => bad.1.minimum = 0,
+                1 => bad.1.maximum = 9,
+                2 => bad.1.maximum = 65536,
+                _ => bad.1.creature = "client:creature/percht".into(),
+            }
+            assert!(!bad.1.valid_for(&callback));
+        }
+        callback.storage[0].preserve = true;
+        assert!(!rule.valid_for(&callback));
+        let mut tracks = std::collections::BTreeMap::new();
+        for value in [9, 10, 12, 13] {
+            tracks.insert(rule.track.clone(), value);
+            assert_eq!(rule.active(&tracks), (10..=12).contains(&value));
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -1444,8 +2501,10 @@ mod worldchg_grimvale_tests {
             })
             .collect::<Vec<_>>();
         assert_eq!(ordinary.len(), 9);
-        assert!(ordinary.iter().all(|callback| callback.storage.is_empty()
-            && world_change_requirement(&callback.key).is_none()));
+        assert!(
+            ordinary.iter().all(|callback| !callback.has_state()
+                && world_change_requirement(&callback.key).is_none())
+        );
         Ok(())
     }
 }

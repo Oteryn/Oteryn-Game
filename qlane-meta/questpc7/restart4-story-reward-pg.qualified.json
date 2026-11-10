@@ -1,0 +1,218 @@
+{
+  "log": ".questpc/restart4-story-reward-pg.log",
+  "log_sha256": "4431b9c07038335f0c1f81fe8fba0c7d89a9f67e360676bfbf84d0e2118a7ab0",
+  "test_source_sha256": "eb90983db0b5c1ce087ecf5648df72ff05c7547cb7661fbcd4e383e356cf2c8e",
+  "manifest_sha256": "99ac50344b3119217d9581bb60d2a00e52607318c1acf504b0c2a8e05de90ec6",
+  "qualified": {
+    "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/an_interest_in_botany_quest",
+        "canary:quest/barbarian_arena_quest",
+        "canary:quest/beggar_outfits_quest",
+        "canary:quest/children_of_the_revolution_quest",
+        "canary:quest/cults_of_tibia_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach": [
+          {
+            "position": [
+              33004,
+              31530,
+              10
+            ],
+            "duration": "4.055683297s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp": [
+          {
+            "position": [
+              32231,
+              31068,
+              7
+            ],
+            "duration": "3.874763717s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present": [
+          {
+            "position": [
+              32231,
+              31065,
+              7
+            ],
+            "duration": "4.116590755s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons": [
+          {
+            "position": [
+              32235,
+              31064,
+              7
+            ],
+            "duration": "3.994683992s"
+          },
+          {
+            "position": [
+              32235,
+              31066,
+              7
+            ],
+            "duration": "3.818412149s"
+          },
+          {
+            "position": [
+              32235,
+              31068,
+              7
+            ],
+            "duration": "3.853568832s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp": [
+          {
+            "position": [
+              32231,
+              31061,
+              7
+            ],
+            "duration": "3.871784801s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present": [
+          {
+            "position": [
+              32231,
+              31058,
+              7
+            ],
+            "duration": "3.923448603s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons": [
+          {
+            "position": [
+              32235,
+              31057,
+              7
+            ],
+            "duration": "3.790538127s"
+          },
+          {
+            "position": [
+              32235,
+              31059,
+              7
+            ],
+            "duration": "3.807739327s"
+          },
+          {
+            "position": [
+              32235,
+              31061,
+              7
+            ],
+            "duration": "3.914685597s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp": [
+          {
+            "position": [
+              32231,
+              31054,
+              7
+            ],
+            "duration": "3.783358679s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present": [
+          {
+            "position": [
+              32231,
+              31051,
+              7
+            ],
+            "duration": "3.906769762s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons": [
+          {
+            "position": [
+              32235,
+              31050,
+              7
+            ],
+            "duration": "3.88994677s"
+          },
+          {
+            "position": [
+              32235,
+              31052,
+              7
+            ],
+            "duration": "3.886570043s"
+          },
+          {
+            "position": [
+              32235,
+              31054,
+              7
+            ],
+            "duration": "3.883878606s"
+          }
+        ],
+        "oteryn:reward-claim.kv.simon_the_beggars_favorite_staff": [
+          {
+            "position": [
+              33167,
+              31600,
+              15
+            ],
+            "duration": "3.896661256s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge1": [
+          {
+            "position": [
+              33247,
+              31161,
+              6
+            ],
+            "duration": "3.801769344s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge2": [
+          {
+            "position": [
+              33264,
+              31130,
+              7
+            ],
+            "duration": "3.930787861s"
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.flask_of_extra_greasy_oil": [
+          {
+            "position": [
+              33327,
+              31410,
+              8
+            ],
+            "duration": "3.840788324s"
+          }
+        ],
+        "oteryn:reward-claim.kv.petrified_scream_quest": [
+          {
+            "position": [
+              32739,
+              31426,
+              8
+            ],
+            "duration": "4.432079268s"
+          }
+        ]
+      }
+    }
+  },
+  "retention_note": "Cargo summary PASS1/0 with all21native-source positive-duration markers. Original runner exited1 because single-thread libtest prints a test-name prefix and a later standalone ok; log retained unchanged; parser repaired for subsequent runs."
+}

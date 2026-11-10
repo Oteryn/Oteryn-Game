@@ -209,9 +209,8 @@ async fn plan_group(
         .map(|d| u128::from(d.total))
         .sum();
     let base = entry
-        .experience()
-        .ok_or(SpellItemError::Rejected("no admitted XP row"))?
-        .get();
+        .base_experience()
+        .ok_or(SpellItemError::Rejected("no admitted XP source"))?;
     let contributions = entry
         .damage_shares
         .iter()

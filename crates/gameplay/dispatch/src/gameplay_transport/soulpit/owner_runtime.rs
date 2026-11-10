@@ -155,7 +155,7 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
             local: doors.blocking_cells(),
             bundle: match self.admission.movement_cells().index() {
                 crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
-                    Some(crate::map::floor::BundleDoors(index.map().facts.doors()))
+                    Some(crate::map::floor::BundleDoors(&index.map().facts))
                 }
                 _ => None,
             },

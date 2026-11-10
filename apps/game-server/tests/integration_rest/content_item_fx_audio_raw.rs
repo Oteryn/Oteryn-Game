@@ -84,7 +84,7 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     // #2673 adds the drown-protection item batch without reimport states.
     // E06 adds the client market mint and the Crystal market parity batches, without states.
     // This count is refreshed by the normal repin_rust_inventory source tool.
-    assert_eq!(batches.len(), 35);
+    assert_eq!(batches.len(), 36);
     let cake = batches
         .iter()
         .filter(|batch| batch.batch_id == "seasonal-cake-creature-crystal-201189f-r1")

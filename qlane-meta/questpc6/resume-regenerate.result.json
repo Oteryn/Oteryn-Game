@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/venv-ci312/bin/python -c import subprocess,sys; from pathlib import Path; commands=Path(\".questpc/generation-order.txt\").read_text().splitlines(); commands=[[sys.executable]+c.split()[1:] for c in commands]; [subprocess.run(c,check=True) for c in commands]",
+  "exit": 1,
+  "duration_seconds": 153.614
+}

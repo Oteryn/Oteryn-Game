@@ -1,0 +1,61 @@
+{
+  "quest": "oteryn:quest.fire_fighter_outfits_quest",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "test": "questpc7_fire_full_training_native_tokens_and_friendly_fire",
+    "seconds": 74.926979658,
+    "log": "/tmp/questpc7-fire-red.log",
+    "marker": "QUESTPC7_FIRE POSTGRES_STARTED",
+    "failure": "Portable Flame granted before axe item USE; actualquantity1 expected0."
+  },
+  "status": "Full and expanded PG GREEN; focused source checks pending",
+  "scope": [
+    "fresh subject quest state",
+    "level250/CurrentPremium",
+    "native Gnomprona entry",
+    "ten actual native fiery kills with duplicate suppression",
+    "Gnomadness report/base",
+    "physical axe MINT and nativeUSE addon1",
+    "physical flame MINT and nativeUSE addon2",
+    "source FriendlyFire achievement",
+    "final completion and ordinary appearance selection"
+  ],
+  "assumptions": [
+    "Existing Gnomadness has an explicit authored quartermaster role; original hazard services are untouched.",
+    "Existing Fire Elemental is the chosen fiery training species.",
+    "No parent quest; no duplicate physical qualifier or cosmetic mechanism."
+  ],
+  "source": "CONTRACT-NOTES.md: Fire-Fighter selected Gnomprona training",
+  "green": {
+    "seconds": 75.131615904,
+    "log": "/tmp/questpc7-fire-green.log",
+    "postgres": "18.6",
+    "marker": "QUESTPC7_FIRE POSTGRES_CASE_COMPLETED"
+  },
+  "expanded_green": {
+    "seconds": 75.787056326,
+    "log": "/tmp/questpc7-fire-expanded-green.log",
+    "scope": [
+      "fresh CurrentPremium denial leaves base/progress untouched",
+      "actual10native kills",
+      "both physical token MINT/use/addons",
+      "FriendlyFire",
+      "completion",
+      "duplicate completion revision unchanged",
+      "ordinary appearance selection"
+    ]
+  },
+  "level_gate_green": {
+    "seconds": 41.538976105,
+    "log": "/tmp/questpc7-fire-expanded-green.log",
+    "marker": "QUESTPC7_FIRE_LEVEL_GATE POSTGRES_CASE_COMPLETED",
+    "scope": "Actual native249/Premium cannot start training or initialise its kill counter."
+  },
+  "disposition": "Independent prototype discarded before commit because external qengine2 qualified this canonical entry; no local product implementation shipped.",
+  "authoritative_external_qualification": {
+    "commit": "6738c1da7",
+    "test": "qengine_l12_fire_fighter_native_trial_story",
+    "green_seconds": 95.848776751,
+    "boundary": "Native hunt and NPC outfit exchanges; local prototype actual consumptive-item USE proof is separate and not a peer claim."
+  }
+}

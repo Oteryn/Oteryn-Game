@@ -364,13 +364,25 @@ pub fn build(
         )
         .collect();
     let records = records.as_slice();
-    let grizzly = super::grizzly_shop::declarations(records);
+    let mut grizzly = super::grizzly_shop::declarations(records);
+    grizzly.extend(super::quest_access::declarations(records));
     let records: Vec<_> = records
         .iter()
         .copied()
         .filter(|(reference, _)| !grizzly.iter().any(|(added, _)| added == *reference))
         .chain(
             grizzly
+                .iter()
+                .map(|(reference, declaration)| (reference, declaration)),
+        )
+        .collect();
+    let quest_shops = super::quest_shops::declarations(&records);
+    let records: Vec<_> = records
+        .iter()
+        .copied()
+        .filter(|(reference, _)| !quest_shops.iter().any(|(added, _)| added == *reference))
+        .chain(
+            quest_shops
                 .iter()
                 .map(|(reference, declaration)| (reference, declaration)),
         )

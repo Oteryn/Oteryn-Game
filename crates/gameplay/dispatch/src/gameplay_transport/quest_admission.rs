@@ -101,6 +101,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         self.refresh_grizzly_kill_snapshot(session).await;
         let _ = self.bounty_talisman_for_session(session).await;
+        self.refresh_native_objective_snapshot(session).await;
+        let disguise_retry = self.refresh_quest_disguise(session).await;
+        if (self.refresh_quest_guardians(session).await || disguise_retry)
+            && let Ok(mut sessions) = self.states.quest_sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            let retry = std::time::Instant::now() + std::time::Duration::from_secs(5);
+            entry.retry_at = Some(entry.retry_at.map_or(retry, |existing| existing.min(retry)));
+        }
     }
 
     /// [`Self::current_quest_fence`] for an admission step: a failed read (such as a busy

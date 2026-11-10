@@ -8,6 +8,8 @@ import hashlib
 import json
 import sys
 
+from native_profile_composition import encode_native_profile, merge_fact
+
 IDS = {3571, 3572, 7773, 7774, 7991, 7992, 8095, 50171}
 INPUT = 'tools/content-schema/native-gameplay/starting-loadout-appearance-facts.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -46,16 +48,49 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     bound = native.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
                                  bindings, set(index))['records']
     document = json.loads(generated[profile_path])
-    if {row['production_definition']['production_key'] for row in document['records']} & {
-            f'oteryn:item.tibia.i{number}' for number in IDS}:
+    existing = {row['production_definition']['production_key']: row
+                for row in document['records']}
+    if len(existing) != len(document['records']):
         raise ValueError('STARTING_LOADOUT_PROFILE_DUPLICATE')
-    # A separate pinned provider keeps the existing multi-megabyte profile file byte-identical.
-    records = sorted(bound, key=order)
+    additions = []
+    for record in bound:
+        key = record['production_definition']['production_key']
+        previous = existing.get(key)
+        if previous is None:
+            additions.append(record)
+            continue
+        # Another owner may already admit a starter reward. Keep its equipment
+        # policy, but require the same identity, binding and portable physics.
+        if any(previous[field] != record[field] for field in (
+                'production_definition', 'production_binding', 'admission')):
+            raise ValueError(f'STARTING_LOADOUT_PROFILE_CONFLICT:{key}')
+        if previous['semantics']['physical'] != record['semantics']['physical']:
+            raise ValueError(f'STARTING_LOADOUT_PROFILE_CONFLICT:{key}')
+        protection = record['semantics']['protection']
+        old_protection = previous['semantics'].get('protection', {'state': 'UNKNOWN'})
+        if old_protection.get('state') == 'KNOWN' and old_protection != protection:
+            raise ValueError(f'STARTING_LOADOUT_PROTECTION_CONFLICT:{key}')
+        if protection.get('state') == 'KNOWN':
+            previous['semantics']['protection'] = protection
+        for group, fact in record['semantics'].items():
+            old = previous['semantics'].get(group, {'state': 'UNKNOWN'})
+            if group == 'presentation' and old.get('state') != 'UNKNOWN':
+                continue
+            previous['semantics'][group] = merge_fact(old, fact, f'{key}/{group}')
+    # Separate providers must never repeat an identity. The legacy provider
+    # retains existing owners; only missing source-derived records enter this one.
+    records = sorted(additions, key=order)
     raw = ('{\n  "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",\n  "records": [\n'
            + ',\n'.join('    ' + json.dumps(row, sort_keys=True, separators=(',', ':')) for row in records)
            + '\n  ]\n}\n').encode()
+    # Publish only after every overlap has passed identity and known-fact checks.
     generated[FRAGMENT] = raw
+    profile_raw = encode_native_profile(document)
+    if additions != bound:
+        generated[profile_path] = profile_raw
     manifest = json.loads(generated[manifest_path])
+    if additions != bound:
+        manifest['item_profiles']['sha256'] = hashlib.sha256(profile_raw).hexdigest()
     manifest['starting_loadout_item_profiles'] = {
         'path': 'items/definitions/starting-loadout-profiles.json',
         'sha256': hashlib.sha256(raw).hexdigest(),
