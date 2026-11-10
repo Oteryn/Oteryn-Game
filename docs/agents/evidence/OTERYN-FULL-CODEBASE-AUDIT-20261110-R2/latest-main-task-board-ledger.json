@@ -1,0 +1,173 @@
+{
+  "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+  "status": "REVIEWED",
+  "at_utc": "2026-11-10T17:35:24.441613+00:00",
+  "audit_input_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "separate_successor_review": true,
+  "full_files": 10,
+  "full_lines": 5495,
+  "new_confirmed_findings": [],
+  "tests_run": [],
+  "entries": [
+    {
+      "path": "apps/client/src/features/0072-task-board/native.rs",
+      "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+      "sha256": "ce4595654d9b566ec909ade80e48cd767cd7776dea5513252689ab4d976b450c",
+      "ranges": [
+        [
+          1,
+          384
+        ]
+      ],
+      "range_unit": "lines",
+      "source_lines": 384,
+      "status": "FULL",
+      "method": "manual_full_source_review",
+      "review_notes": "Full native window read. Reroll is explicitly priced at one token; server result is display authority. Weak mailbox ownership, queue bound 16, capability-dependent intents, checked row-to-slot conversion and failed-send/pending handling were checked. No native UI execution."
+    },
+    {
+      "path": "apps/client/src/features/0072-task-board/tests/play.rs",
+      "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+      "sha256": "72f054a30b7c8b554e88d9d6127e93fce8a2839e96cd663e883748d197efd662",
+      "ranges": [
+        [
+          1,
+          288
+        ]
+      ],
+      "range_unit": "lines",
+      "source_lines": 288,
+      "status": "FULL",
+      "method": "manual_full_source_review",
+      "review_notes": "Full codec/mock-transport play tests read. UI label, command selection, pending result handling and capability-dependent actions are covered in source. This is neither a running Windows UI nor PostgreSQL qualification; tests not executed."
+    },
+    {
+      "path": "crates/client-ui/src/features/0072-task-board/view.rs",
+      "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+      "sha256": "f323907da46b90c3773b35d23f88c4380633f45a862f37c45ff5fd2acbb58939",
+      "ranges": [
+        [
+          1,
+          210
+        ]
+      ],
+      "range_unit": "lines",
+      "source_lines": 210,
+      "status": "FULL",
+      "method": "manual_full_source_review",
+      "review_notes": "Full presentation model read. Current token balance and one-token reroll text are consistent with the new contract. Offers, selected bounty, weekly results, availability and frozen rewards are rendered from server data; no authority is inferred from presentation. No execution."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/task_board.rs",
+      "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+      "sha256": "fc5e2268dacc0cb0fdf9cb808e63d1c3c9d342ee26f162a30cd723c1a19ce7c9",
+      "ranges": [
+        [
+          1,
+          1123
+        ]
+      ],
+      "range_unit": "lines",
+      "source_lines": 1123,
+      "status": "FULL",
+      "method": "manual_full_source_review",
+      "review_notes": "Full 1123-line composed PostgreSQL test source read. Runtime fixtures, current capability/pin/fence setup, real kill and duplicate-death paths, original command receipts, paid reroll, unchanged value snapshot on zero-token refusal, weekly reset/results and talisman/currency paths were traced. Privileged fixture SQL and direct funding are explicitly not legal-player producer proof. PostgreSQL tests not executed."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/task_board/elite_case.rs",
+      "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+      "sha256": "7709a9d5009dbde98c21f72c1518a868df5851bc7f65d30882756d96305e16d2",
+      "ranges": [
+        [
+          1,
+          350
+        ]
+      ],
+      "range_unit": "lines",
+      "source_lines": 350,
+      "status": "FULL",
+      "method": "manual_full_source_review",
+      "review_notes": "Full 350-line Elite integration test source read. A completed fixture is claimed through the actual owner to obtain the now-required reroll token. Explicit rare-draw/board/premium fixture inputs, serial/replay dust guards, active Elite state and real vitals/XP owner calls were distinguished from production acquisition proof. No SQL execution."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/task_board_projection.rs",
+      "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+      "sha256": "1a957c25e5b5b1903e4e6d71c55ea01a9e01d8277b5f6ed059ea073c75bb9db8",
+      "ranges": [
+        [
+          1,
+          230
+        ]
+      ],
+      "range_unit": "lines",
+      "source_lines": 230,
+      "status": "FULL",
+      "method": "manual_full_source_review",
+      "review_notes": "Full immutable receipt projection read. Historical daily_reroll_at is always zero; current token balance is preserved from the committed view. Exact refusal mapping, bounded board/list/shop projection, delivery counts and capability-dependent Elite/weekly representation were checked. No claim of unchanged wire bytes across the retired-field upgrade."
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_full.rs",
+      "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+      "sha256": "3ae6a433e2e8a816863e8bd138e447612dcc38aebd611c34456284352f97f66c",
+      "ranges": [
+        [
+          1,
+          983
+        ]
+      ],
+      "range_unit": "lines",
+      "source_lines": 983,
+      "status": "FULL",
+      "method": "manual_full_source_review",
+      "review_notes": "Full 983-line rules owner read. Clone/apply/publish refuses atomically; reroll requires one current token and emits one spent effect without a time exception. Removed historical timer is compatible with serde unknown fields. Completed-token grant limits, committed weekly settlement, vocation/difficulty, three eligible unique offers, preferred/unwanted policy, checked frozen rewards, selection serial, bounded rarity, list/shop/promotion/talisman behavior were examined with actual durable caller. No runtime execution."
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_full_tests.rs",
+      "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+      "sha256": "da859888eccf12095deb5529183eee3a35a31f8101076f010f3ee01f8bc2291d",
+      "ranges": [
+        [
+          1,
+          1609
+        ]
+      ],
+      "range_unit": "lines",
+      "source_lines": 1609,
+      "status": "FULL",
+      "method": "manual_full_source_review",
+      "review_notes": "All 1609 lines read. Timestamp-independent zero-token refusal and a funded reroll, removed timer JSON compatibility, gates and level loss, XP/reward limits, clone preservation, period settlement, expansion, preferred/unwanted, shop/cosmetics/talisman and Elite rarity/frozen rewards were examined. Synthetic catalogue and supplied draws are test inputs. Tests not executed."
+    },
+    {
+      "path": "docs/contracts/protocol-oteryn/v1/task_board_v1.md",
+      "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+      "sha256": "ca29050682144c7fae41fb9b31d7f36279cb932b13b76da68566ef2ef6da3964",
+      "ranges": [
+        [
+          1,
+          205
+        ]
+      ],
+      "range_unit": "lines",
+      "source_lines": 205,
+      "status": "FULL",
+      "method": "manual_full_source_review",
+      "review_notes": "Full current contract read and related to native UI, pure rules, unchanged SQL owner and reply projection. Every reroll costs one durable token; the historical timer is zero and action 12 remains retired. Capability, action, limits, receipts, committed-calendar and provisional Elite constraints were checked. This contract is current design authority, not observed deployment behavior."
+    },
+    {
+      "path": "docs/contracts/protocol-oteryn/v1/task_board_v1.proto",
+      "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+      "sha256": "fce1040db73369114ca65f7bbe58a299f223bab3e02449f48b9bed360cf0cdfd",
+      "ranges": [
+        [
+          1,
+          113
+        ]
+      ],
+      "range_unit": "lines",
+      "source_lines": 113,
+      "status": "FULL",
+      "method": "manual_full_source_review",
+      "review_notes": "Full wire declaration read. Historical scalar retained with zero meaning, action/result fields, token and reward widths and bounded nested structures were checked against the prose contract and actual projection. No protocol regeneration or end-to-end run."
+    }
+  ]
+}

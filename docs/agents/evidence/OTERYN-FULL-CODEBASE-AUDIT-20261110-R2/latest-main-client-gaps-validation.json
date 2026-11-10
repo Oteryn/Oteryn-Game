@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "review_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+  "input_head": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_files": 54,
+  "full_source_or_document_files": 47,
+  "semantic_locale_files": 7,
+  "full_source_or_document_lines": 12147,
+  "semantic_locale_lines": 2233,
+  "total_lines": 14380,
+  "exact_git_bytes": true,
+  "sha256": true,
+  "range_bounds": true,
+  "ownership_exact": true,
+  "base_ledger_untouched": true,
+  "ledger_sha256": "e958a65178aac2dc90d56edcae235ce2001fecfb63e20c46e7be377dbfd974cc",
+  "metadata_sha256": "a4654b8ef3b08f8e812c4df9166923517f9d836d1357a52ff3b5bd7eb08ddf54",
+  "report_sha256": "dcd419cd1a21faf53639073c968de932d281c57581389d19b84253219429e2d9"
+}

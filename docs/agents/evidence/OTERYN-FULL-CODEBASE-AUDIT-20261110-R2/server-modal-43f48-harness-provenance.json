@@ -1,0 +1,12 @@
+{
+  "review_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+  "harness": "/workspace/scratch/9868b8ed6bb7/audit-r2/client-support/test-bin/server_modal_43f48.rs",
+  "harness_sha256": "36a40767593eb170a529fa64f980a19f6372641e711287704a01d3bde8d7dc7b",
+  "adapter": "One exact public command-result constant copied from final lib.rs line533; modules are unchanged final Git copies via #[path]. No replacement codec or tests.",
+  "constant_source_sha256": "0873cda0e4d3594c6a72311f156ca7d3356e24911974a0d266f0ab16102e82a9",
+  "source_files": [
+    "crates/protocol-oteryn/src/server_modal.rs",
+    "crates/protocol-oteryn/src/server_modal/codec.rs"
+  ],
+  "public_output_normalization": "Only redundant trailing blank lines removed for git diff --check; original raw test output is retained in the private capture."
+}

@@ -1,0 +1,33 @@
+# Successor audit: client gaps at 43f48
+
+Status: REVIEWED for all 54 owned files / 14,380 lines; root Task Board and separate #3090 evidence remain separate. Immutable review SHA `43f48d1f3bf932bfaef6ca47334aa72117db6c81`, compared with parent `1d9976d190c623cc95aeed0f2db37bbc8809e883`. The main audit ledger remains at `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Exactly 64 files changed in this commit; 54 files / 14,380 lines belong to this worker, while root owns the explicit 10-file Task Board vertical / 5,495 lines listed in `latest-main-client-gaps-root-task-board-paths.json`. The separate 53-file #3090 delta is outside this worker scope.
+
+## Group 1 — modal protocol, hub, Bed rule and client integration
+
+Full protocol and contract review establishes a distinct terminal acknowledgement, negotiated by canonical query byte01 and accepted only for an exact outstanding noncancel answer. Legacy fallback follows explicit rejection; unknown transport or malformed data cannot establish opt-in. The server hub retains one exact typed rule and submitted answer per registered physical connection. Current Bed callbacks repeat the original item fence, decorated map revision, reciprocal bed pair, native House and durable release checks. Unknown durable completion closes the connection instead of returning a false result. Current Store selection continues to use its retained purchase request and existing Store owner.
+
+The actual client driver and session loop return clean LoggedOut before another command or idle read. The House route admits the modal independently of Hireling capabilities, and typed House reply encoding preserves terminal outcome. Complete source/tests read so far are listed with exact hashes/ranges in the JSON and separate successor ledger. This is not a whole-repository review at43f.
+
+At the historical Group 1 checkpoint, test sources had been read but no tests had yet been executed, and the remaining source/reconciliation was still open. That checkpoint is superseded by the completed scope and validation below: all 54 owned files are now reviewed and three isolated protocol tests passed. Historical task/PR/CI claims in the changed documents are not adopted as our test results. Native Windows, actual async transport, TLS and PostgreSQL tests were not run.
+
+## Group 2 — actual terminal transport, discovery and first-defeat presentation
+
+The final House and ordinary outbound loops stop after committed terminal Bed sleep, including a failed terminal write, because the durable session is already released. Unknown completion closes the transport without inventing success. Existing initial House handoff still places ambient sound before the new snapshot; PS-R2-003 is not fixed by this change. Runtime item interaction only adds Bed feedback text, leaving CL-001 and CL-002 behavior unchanged.
+
+Cyclopedia discovery consumes ordered event deltas before snapshot coalescing and uses an explicit reset baseline for a lower-sequence replacement snapshot. It never infers discovery from a query result. The server only publishes a manual seventh-discovery notice for a new committed revision, and the shell notification owner applies the existing expiry and deduplication. Bestiary first-defeat presentation comes from the selected confirmed server card; absent data hides the indicator. Full test sources cover the intended reducer and play queue behaviors; PostgreSQL and native Windows integration tests have not been run.
+
+## Completed scope and validation
+
+All 54 owned files / 14,380 lines are complete at the exact final commit. This consists of 47 source/test/contract files / 12,147 lines and seven localization data files / 2,233 lines. Source, test and contract files were read in full. Localization coverage is explicitly semantic: the complete schema, key set, references and format argument closure were validated, every added translation was read, and the full format registry was read. This is not a claim of individually translating every unchanged phrase. Exact final Git bytes, line ranges and hashes pass; the immutable input checkout remains at 4f0b6c62. Root separately owns the ten Task Board files / 5,495 lines.
+
+The two final integration test files were read completely. The BedRest fixture authenticates the same offered capabilities across actual House transfer, excludes Hireling support, and invokes the production sleep owner with current native content, progression and Premium. Its world remains a bounded fixture. Cyclopedia tests traverse admitted manual Find, real STEP, durable receipt replay, current equipment and native map state; seventh discovery emits once, queries and reset do not emit completion, and native receipt replay does not repeat it. These PostgreSQL tests were not executed.
+
+One isolated test execution did run: the unchanged final server-modal protocol and codec modules, included directly through Rust path attributes, passed all three existing tests (0 failed, 0 ignored). The harness supplies only the exact command-result size constant from final protocol lib.rs. It covers canonical terminal/query bytes, descriptor/image bounds, round trips and maximum envelope size. Output and provenance are retained separately. This is not Cargo, Windows, actual network transport or PostgreSQL execution.
+
+All six locale catalogues contain the same 3,282 keys. Exactly two translations were added per language, with no prior values removed or changed against parent 1d9976. The full 503-format registry resolves across all catalogues; all 3,018 placeholder comparisons pass. The added bounty count text has three positional arguments, and both new messages consistently describe a one-token reroll. Parent root independently reviews the Task Board token owner and contract.
+
+## Findings and limits
+
+No new finding is qualified from this 54-file delta. CL-001 and CL-002 remain in the item action flow; the runtime change adds Bed feedback only. CL-003 remains: all three problematic Polish movement command values match the original base exactly. PS-R2-003 remains in the initial House transfer frame order; the terminal Bed improvement does not alter it. Other finding families are outside the changed behavior of this owned scope; their whole-main reconciliation belongs with root's separate #3090 and Task Board evidence, not an assumed closure here.
+
+The record distinguishes final code reviewed from historical authoring/CI claims. Native Windows display and input, SQL execution, actual async socket behavior and deployed capability/content activation remain untested or unknown. REVIEWED is a coverage statement; independent VERIFIED status is not asserted.

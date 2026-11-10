@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "at_utc": "2026-11-10T17:35:24.441613+00:00",
+  "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+  "method": "Exact Git/captured bytes, SHA-256, complete manual ranges and declared scope verified; this validation is not itself source-review credit.",
+  "full_files": 10,
+  "full_lines": 5495,
+  "owner_equality_files": 18,
+  "errors": [],
+  "ledger_sha256": "03cb45b659ea68d1fa2f611e4fe8e694c9b597d75d49f3b509c2c72ee44bd888",
+  "report_sha256": "435c1a8b0de037ba1a523c9921d141390420239b868b525f1269a0f50666acd7",
+  "source_worktree_clean": true,
+  "runtime_tests_run": [],
+  "remaining_assigned_paths": []
+}

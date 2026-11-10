@@ -1,0 +1,146 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "status": "PASS",
+  "at_utc": "2026-11-10T17:41:57.691177+00:00",
+  "package_status": "IN PROGRESS",
+  "inventory_files": 40,
+  "full_files": 10,
+  "full_lines": 4055,
+  "remaining_files": [
+    "tools/synthetic-client-harness/src/native_context.rs",
+    "tools/synthetic-client-harness/src/native_depot.rs",
+    "tools/synthetic-client-harness/src/native_floor_transition.rs",
+    "tools/synthetic-client-harness/src/native_light.rs",
+    "tools/synthetic-client-harness/src/native_map.rs",
+    "tools/synthetic-client-harness/src/native_market.rs",
+    "tools/synthetic-client-harness/src/native_minimap.rs",
+    "tools/synthetic-client-harness/src/native_stash.rs",
+    "tools/synthetic-client-harness/src/native_trade.rs",
+    "tools/synthetic-client-harness/src/native_typing.rs",
+    "tools/synthetic-client-harness/src/native_weather.rs",
+    "tools/synthetic-client-harness/tests/native_battle.rs",
+    "tools/synthetic-client-harness/tests/native_combat_presentation.rs",
+    "tools/synthetic-client-harness/tests/native_containers.rs",
+    "tools/synthetic-client-harness/tests/native_context_results.rs",
+    "tools/synthetic-client-harness/tests/native_death_respawn.rs",
+    "tools/synthetic-client-harness/tests/native_equipment.rs",
+    "tools/synthetic-client-harness/tests/native_inventory.rs",
+    "tools/synthetic-client-harness/tests/native_item_movement.rs",
+    "tools/synthetic-client-harness/tests/native_login.rs",
+    "tools/synthetic-client-harness/tests/native_npc_dialogue.rs",
+    "tools/synthetic-client-harness/tests/native_npc_shop.rs",
+    "tools/synthetic-client-harness/tests/native_npc_shop/peer.rs",
+    "tools/synthetic-client-harness/tests/native_party.rs",
+    "tools/synthetic-client-harness/tests/native_private_channels.rs",
+    "tools/synthetic-client-harness/tests/native_public_channels.rs",
+    "tools/synthetic-client-harness/tests/native_settings.rs",
+    "tools/synthetic-client-harness/tests/native_target_move.rs",
+    "tools/synthetic-client-harness/tests/native_vitals.rs",
+    "tools/synthetic-client-harness/tests/qualification_player_trade.rs"
+  ],
+  "remaining_lines": 6399,
+  "method": "Complete manual source reading, exact Git/worktree hashes and full ranges. Supporting includes and test names receive no automatic credit.",
+  "runtime_tests_run": [],
+  "files": [
+    {
+      "path": "tools/synthetic-client-harness/Cargo.toml",
+      "sha256": "22e334e042a0d362339648709826569996e97ae7ecf4a2569dd1b463c959326e",
+      "ranges": [
+        [
+          1,
+          35
+        ]
+      ]
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/cli.rs",
+      "sha256": "8350032ae207db25db2b62806595c448b172b357c06e42217b2bf34565d7ae14",
+      "ranges": [
+        [
+          1,
+          603
+        ]
+      ]
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/controller.rs",
+      "sha256": "4784d1459c3d1727a46069e6c48118c78bd06f4b749b39f9f49a293bece5684a",
+      "ranges": [
+        [
+          1,
+          193
+        ]
+      ]
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/guild_chat.rs",
+      "sha256": "947e0937e87df38df7dd346715465ac8ed4de20a441905014f867a520572d42a",
+      "ranges": [
+        [
+          1,
+          26
+        ]
+      ]
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/guild_chat_tests.rs",
+      "sha256": "484c77a853c31f2b63cc5ec1257adcb38d9fb3edf6ca0598093f047a40b4b97d",
+      "ranges": [
+        [
+          1,
+          42
+        ]
+      ]
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/input.rs",
+      "sha256": "2b6777789e870ec9be7b3a0b4c54d89354aec5440562b550a9c4444f7e6018b2",
+      "ranges": [
+        [
+          1,
+          97
+        ]
+      ]
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/mod.rs",
+      "sha256": "47c76ea5c352a601d79717f37907c5c7640b4fe31da51a5ff532380410bfd7a2",
+      "ranges": [
+        [
+          1,
+          17
+        ]
+      ]
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/model.rs",
+      "sha256": "db8bdad397c0bb1a0568519d984b7156991a5b8c2e159b295be2759d96487bab",
+      "ranges": [
+        [
+          1,
+          882
+        ]
+      ]
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/tests.rs",
+      "sha256": "be96e321871dff85d6a4cd05292231c20be917e7ce8e476b31572884e5dce05a",
+      "ranges": [
+        [
+          1,
+          2039
+        ]
+      ]
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/main.rs",
+      "sha256": "e1c7f38a0ff37ddaa1802cfef93028f0e0338302668326d3f12e73d2733c6290",
+      "ranges": [
+        [
+          1,
+          121
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+
+running 3 tests
+test server_modal::tests::server_modal_terminal_reply_and_query_opt_in_are_exact ... ok
+test server_modal::tests::server_modal_wire_round_trip_validates_choices_buttons_and_image_bounds ... ok
+test server_modal::tests::largest_server_modal_fits_the_existing_command_result_budget ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

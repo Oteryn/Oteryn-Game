@@ -1,0 +1,115 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "current_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+  "files": [
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board.rs",
+      "unchanged": true,
+      "sha256": "98a4bef7db51e672e98596dd25cde9c0d2011b9fb427720276e1c176931ef5c4",
+      "lines": 112
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/availability.rs",
+      "unchanged": true,
+      "sha256": "867fa4558ae6fcbbe4f8add7fb200b7d0c98aec65a0ef7c8c833300c486c3b43",
+      "lines": 73
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/catalogue.rs",
+      "unchanged": true,
+      "sha256": "d2bdb0306ffc494325897927df7ca9c32d7bcbe2ab4ecc14f575a461755e1565",
+      "lines": 136
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/custody.rs",
+      "unchanged": true,
+      "sha256": "c7e6b4e22376ed4a8fbbd205d4963c64a057bdcc4b27ed9e2ac2c956f517cdd7",
+      "lines": 167
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/entitlements.rs",
+      "unchanged": true,
+      "sha256": "860bd1e98fb03d57bde51e9634c26f0a280d368bc334c9813b6c4afa254e1364",
+      "lines": 211
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/expansion.rs",
+      "unchanged": true,
+      "sha256": "12229240c6d34da82aa0a24da1a798797425e296e12d68ac7dc7cae386e28868",
+      "lines": 109
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/fee.rs",
+      "unchanged": true,
+      "sha256": "b747bbc54f772e80636275c7d8a049a63172dcc9eb777cfd6b04e2d431cedc80",
+      "lines": 111
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/mint.rs",
+      "unchanged": true,
+      "sha256": "0d61c2e56d3aae648c9158c07facf4fe6d87491cd184c8060fa77749872f1eff",
+      "lines": 249
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/progression.rs",
+      "unchanged": true,
+      "sha256": "7e0c3abd21409578e22bc2f47a8680685be0939ef561d61f4a6dfd7379b68541",
+      "lines": 253
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/soulseal_catalogue.rs",
+      "unchanged": true,
+      "sha256": "e4032a00d257190aa3f6184854aded2d13fb68d4b0e5e0acbe8c9db41c9c08a2",
+      "lines": 46
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/soulseal_debit.rs",
+      "unchanged": true,
+      "sha256": "39492254e2738eb54d63ca21c6e3eb82d13cf8726403f4e26977e58d5b689224",
+      "lines": 75
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/state.rs",
+      "unchanged": true,
+      "sha256": "13eab1f565c805a4cf3bfc9ab3abb1f37724d2c29e46abf9d423d75660c2242d",
+      "lines": 390
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/talisman.rs",
+      "unchanged": true,
+      "sha256": "83563e204d9ded0ed8e62e423ecb6a173ad1aaf48a8f166888f9519c9c13eb2e",
+      "lines": 255
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/writer.rs",
+      "unchanged": true,
+      "sha256": "dab9d17bee22a99adf52cf254caf15751e0449f05b3afab0bbdaa3dd3c18d85d",
+      "lines": 232
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/task_board.rs",
+      "unchanged": true,
+      "sha256": "fac1692b0e284cdfed243675362c74111b48d93bf3794bc5c1241ead2c377749",
+      "lines": 380
+    },
+    {
+      "path": "apps/game-server/migrations/0620_task_board_weekly.sql",
+      "unchanged": true,
+      "sha256": "73acc2b1d511955bf512e167f8c7851400801b793c01e69f1a8a073778e9529a",
+      "lines": 179
+    },
+    {
+      "path": "apps/game-server/migrations/0621_task_board_custody.sql",
+      "unchanged": true,
+      "sha256": "86aad16881c8f48a2a8396efe2fa3d55b5a559d9e2ce6d381f1baa4253a6420a",
+      "lines": 653
+    },
+    {
+      "path": "apps/game-server/migrations/2724_bounty_elite_rarity.sql",
+      "unchanged": true,
+      "sha256": "f9e9e9e5119e0c3d93ed279b8a67e8758465049a672132c8295c762e72f97967",
+      "lines": 15
+    }
+  ]
+}

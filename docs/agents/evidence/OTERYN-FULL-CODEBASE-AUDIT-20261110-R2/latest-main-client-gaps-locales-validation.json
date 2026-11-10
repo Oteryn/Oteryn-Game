@@ -1,0 +1,102 @@
+{
+  "review_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+  "comparison_sha": "1d9976d190c623cc95aeed0f2db37bbc8809e883",
+  "method": "Full catalogue duplicate-key/type/NUL/nonempty/key-parity validation and complete registered format argument closure; all changed translations read semantically. Unchanged translations are not claimed individually manually translated or Windows-rendered. fields scanner reviewed against unchanged final build.rs semantics.",
+  "status": "PASS",
+  "catalogues": [
+    {
+      "path": "crates/client-ui/src/components/localization/locales/en.json",
+      "sha256": "c5629f9308a267ea6210bf0b8c3cd558c1c49821fd582747038ad464898ecb6d",
+      "line_count": 342,
+      "key_count": 3282,
+      "added": {
+        "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token": "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token",
+        "Reroll bounty (1 token)": "Reroll bounty (1 token)"
+      },
+      "removed": {},
+      "changed": {}
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/de.json",
+      "sha256": "85ccdeda0ac3051e9a30e24d4507627ca41e598f93c2bb7dbbbc19ed7b76a568",
+      "line_count": 342,
+      "key_count": 3282,
+      "added": {
+        "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token": "Kopfgeld: Status {}, Schwierigkeit {}, Neuauswahlmarken {} — jede Neuauswahl kostet 1 Marke",
+        "Reroll bounty (1 token)": "Kopfgeld neu auswählen (1 Marke)"
+      },
+      "removed": {},
+      "changed": {}
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/es.json",
+      "sha256": "cf6fc68b834a06e248a065cea7928db9ea9b05d9f57fa5e74ba052907bf65883",
+      "line_count": 342,
+      "key_count": 3282,
+      "added": {
+        "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token": "Recompensa: estado {}, dificultad {}, fichas de cambio {} — cada cambio cuesta 1 ficha",
+        "Reroll bounty (1 token)": "Cambiar recompensa (1 ficha)"
+      },
+      "removed": {},
+      "changed": {}
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/pl.json",
+      "sha256": "06a6a465b9f489575bc1b90631f02343bc66556ca08d533567ecc474ca77ecd7",
+      "line_count": 342,
+      "key_count": 3282,
+      "added": {
+        "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token": "Zlecenie: stan {}, trudność {}, żetony losowania {} — każde losowanie kosztuje 1 żeton",
+        "Reroll bounty (1 token)": "Losuj zlecenie (1 żeton)"
+      },
+      "removed": {},
+      "changed": {}
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/pt.json",
+      "sha256": "3d7b529affdd3cb8ddb81354882d547521d0f1e7d84790bd5598d32b97c837a4",
+      "line_count": 342,
+      "key_count": 3282,
+      "added": {
+        "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token": "Recompensa: estado {}, dificuldade {}, fichas de troca {} — cada troca custa 1 ficha",
+        "Reroll bounty (1 token)": "Trocar recompensa (1 ficha)"
+      },
+      "removed": {},
+      "changed": {}
+    },
+    {
+      "path": "crates/client-ui/src/components/localization/locales/sv.json",
+      "sha256": "67c93306abd28227343c7868d223d4cba8f27435caee69a7e97fba7be0b79e74",
+      "line_count": 342,
+      "key_count": 3282,
+      "added": {
+        "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token": "Prisjakt: status {}, svårighet {}, omlottningspolletter {} — varje omlottning kostar 1 pollett",
+        "Reroll bounty (1 token)": "Lotta om prisjakt (1 pollett)"
+      },
+      "removed": {},
+      "changed": {}
+    }
+  ],
+  "formats": {
+    "path": "crates/client-ui/src/components/localization/locales/formats.json",
+    "sha256": "b91a502c516d66323a55cdfb86b332c060aa4591e58ff4c28edaed68b01b7f13",
+    "line_count": 181,
+    "entry_count": 503,
+    "added": [
+      "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token"
+    ],
+    "removed": [],
+    "locale_format_comparisons": 3018,
+    "placeholder_sequence": [
+      "{}",
+      "{}",
+      "{}"
+    ]
+  },
+  "CL_003_polish_values_unchanged_from_base": {
+    "exani hur \"up": "„Wydaje mi się” up",
+    "exani hur \"down": "Wygląda na to, że „down”",
+    "exani tera": "Wędrówka tera"
+  },
+  "native_runtime_executed": false
+}

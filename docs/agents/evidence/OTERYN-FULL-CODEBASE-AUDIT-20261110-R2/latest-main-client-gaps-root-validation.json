@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "at_utc": "2026-11-10T17:40:14.361367+00:00",
+  "base_sha": "43f48d1f3bf932bfaef6ca47334aa72117db6c81",
+  "comparison_sha": "1d9976d190c623cc95aeed0f2db37bbc8809e883",
+  "full_owned_files": 54,
+  "full_owned_lines": 14380,
+  "modes": {
+    "full_source_or_document_read": 47,
+    "full_catalogue_schema_reference_and_format_semantic_validation": 6,
+    "full_format_registry_read_and_semantic_validation": 1
+  },
+  "root_disjoint_files": 10,
+  "complete_commit_changed_files": 64,
+  "complete_commit_reviewed_lines": 19875,
+  "source_packet_sha256": {
+    "latest-main-client-gaps-ledger.json": "e958a65178aac2dc90d56edcae235ce2001fecfb63e20c46e7be377dbfd974cc",
+    "latest-main-client-gaps-delta.md": "dcd419cd1a21faf53639073c968de932d281c57581389d19b84253219429e2d9",
+    "latest-main-client-gaps-validation.json": "8abe515437ccc8620fd7ff932928c14149333e3aa80045036f1c9430cf92d19e"
+  },
+  "method": "Root read the complete delegated report, all54 review notes, locale method/results and isolated test harness/output; independently checked exact Git/captured bytes, SHA-256, full ranges, unique ownership and full64-file last-commit partition. This is evidence review, not a second manual read of all54 files.",
+  "runtime_qualification": "Only three delegated original unchanged-codec tests ran; no Windows/PostgreSQL/full-Cargo qualification.",
+  "errors": []
+}

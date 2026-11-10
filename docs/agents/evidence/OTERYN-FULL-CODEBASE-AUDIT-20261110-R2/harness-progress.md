@@ -1,0 +1,11 @@
+# Synthetic client harness — partial source review
+
+Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. Ten of forty package files have been read completely, totaling **4,055 lines**. The remaining thirty files contain **6,399 lines**. No harness tests have been executed.
+
+The manifest explicitly identifies a synthetic-only tool. Default execution creates an in-process synthetic projection, image, input mapping and renderer surface. Explicit live mode uses the existing authenticated dev-client session. The CLI reads the grant from a file or environment, validates an entire bounded script before admission, and preserves TLS root/name and join deadline inputs. Script limits, typed spell targets, strict commands, chat bounds, pointer coordinates and Character identity parsing were examined. Interactive stdin is a local trusted-input boundary; no remote producer is inferred for its unbounded line queue.
+
+The complete live controller and render model were reviewed. Position, vitals, door, inventory and chat display follow observed snapshots and events; an accepted command result does not manufacture later deltas. Capability-dependent panes gate item/chat intent submission. Geometry uses checked wide intermediates and exact floor matching. Fixed door coordinates are qualification-room data, not a generic production map assumption. The model's handling of replacement chat snapshots requires further producer tracing and is not a confirmed finding.
+
+All 2,039 lines of the main live test source and all 42 lines of the Guild/Party render test source were read. They cover pure mapping, strict parsing, geometry, refused commands, bounded chat history, corpse handles and a scripted loopback TLS peer. The peer supplies fixed outcomes and a fixture grant; it does not exercise real server admission, spell damage or PostgreSQL. The two TLS controller tests and pure tests were **not run**. Included `native_typing.rs` and other native test modules receive no review credit from the include statements.
+
+Remaining: all native feature/qualification test files listed in the independent coverage ledger. No source changes, live credentials, network sessions, native windows or full Cargo build were used for this review.

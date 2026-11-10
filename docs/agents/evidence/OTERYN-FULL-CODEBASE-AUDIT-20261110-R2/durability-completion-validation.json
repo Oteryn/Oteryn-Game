@@ -1,0 +1,16 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "status": "PASS",
+  "at_utc": "2026-11-10T17:37:04.734268+00:00",
+  "full_files": 721,
+  "full_lines": 216548,
+  "remaining_files": 0,
+  "errors": [],
+  "source_packet_sha256": {
+    "checkpoint-50-ledger.json": "4fdb43477aefdac4adbc679b8c1f91406769ead34deba052f7eb5f6f8599ddc4",
+    "checkpoint-50-validation.json": "010a72a71dcdac811bcf028dcaf750650c7ae15f019f20314857ccf4fce85c9a",
+    "checkpoint-50-report.md": "e5881ca89d4eebc38689c55902f45c38dec6ad52fe0c75d03cafcb666449f80a"
+  },
+  "method": "Independent root validation of complete unique inventory, Git/worktree SHA-256, exact full ranges, notes and final status. Root read final completion sections and all 45 newly recorded review notes since checkpoint 46; the remaining manual source review is attributed to the delegated auditor, not claimed as a second root reread.",
+  "runtime_tests_run": []
+}
