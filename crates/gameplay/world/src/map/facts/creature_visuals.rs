@@ -39,9 +39,20 @@ impl CreatureVisualCue {
         actor: ExactActorRef,
         kind: CreatureVisualKind,
     ) -> Option<Self> {
+        if !runtime.contains_live_creature(actor) {
+            return None;
+        }
+        Self::capture_binding(runtime, stamp, actor, kind)
+    }
+    fn capture_binding(
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        actor: ExactActorRef,
+        kind: CreatureVisualKind,
+    ) -> Option<Self> {
         let binding = runtime.binding();
         let fence = runtime.owner_fence().ok()?;
-        if !fence.accepts_stamp(stamp) || !runtime.contains_live_creature(actor) {
+        if !fence.accepts_stamp(stamp) {
             return None;
         }
         let position = runtime.read_actor_position(actor).ok()?;
@@ -74,6 +85,28 @@ impl CreatureVisualCue {
             return None;
         }
         Self::capture(
+            runtime,
+            stamp,
+            actor,
+            CreatureVisualKind::Effect { position, effect },
+        )
+    }
+    /// A source callback can observe its current named Creature at HP0 until
+    /// canonical onDeath unregisters it. This grants only a bound visual cue.
+    pub fn effect_from_registered_source(
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        actor: ExactActorRef,
+        position: TilePos,
+        effect: u16,
+    ) -> Option<Self> {
+        if effect == 0
+            || crate::movement::interest::tibia_floor(i16::from(position.floor)).is_none()
+            || !runtime.source_creature_is_registered(actor).ok()?
+        {
+            return None;
+        }
+        Self::capture_binding(
             runtime,
             stamp,
             actor,

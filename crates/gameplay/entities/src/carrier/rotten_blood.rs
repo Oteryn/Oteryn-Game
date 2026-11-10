@@ -8,7 +8,7 @@ const CHAGORZ: &str = "oteryn:creature.chagorz";
 const BAKRAGORE: &str = "oteryn:creature.bakragore";
 
 /// A source continuation retained by the Instance callback owner. Constructed
-/// from a live source parent; it is not an actor reference or a placement grant.
+/// from a registered source parent; it is not an actor reference or a placement grant.
 #[derive(Debug)]
 pub struct RottenBloodSpawnSource {
     stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
@@ -65,7 +65,10 @@ impl ChannelRuntimeV1 {
         if !native.qualifies_rotten_blood_callbacks(self.content_pin().server_artifact_digest()) {
             return Err(CarrierError::CreatureTargetMismatch);
         }
-        let snapshot = self.companion_snapshot(parent)?;
+        if !self.source_creature_is_registered(parent)? {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        let snapshot = self.companion_snapshot_including_dead(parent)?;
         let family = match snapshot.state.policy.definition_key.as_str() {
             MURCION => MURCION,
             ICHGAHAL => ICHGAHAL,

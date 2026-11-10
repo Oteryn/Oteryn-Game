@@ -349,6 +349,38 @@ mod tests {
     }
 
     #[test]
+    fn source_reflection_retry_keeps_sequence_and_original_attribution_time() {
+        let (mut runtime, player, session, creature) = fixture();
+        let stream = b"native-source:retained-reflection";
+        let first = runtime
+            .commit_source_damage_at_us(creature, player, session, stream, 17, 10, 5_000_123)
+            .expect("first source reflection");
+        assert!(first.applied);
+        assert_eq!(runtime.live_creature_health(creature), Some(9990));
+        let replay = runtime
+            .commit_source_damage_at_us(creature, player, session, stream, 17, 10, 9_000_999)
+            .expect("same source occurrence at a later actual execution time");
+        assert!(!replay.applied);
+        assert_eq!(replay.health_before, first.health_before);
+        assert_eq!(replay.health_after, first.health_after);
+        assert_eq!(runtime.live_creature_health(creature), Some(9990));
+        let shares = runtime
+            .borrow_combat_death()
+            .reward_damage_shares(creature)
+            .expect("actual damage attribution");
+        assert_eq!(shares.len(), 1);
+        assert_eq!(shares[0].total, 10);
+        assert_eq!(shares[0].session, Some(session));
+        assert_eq!(shares[0].last_damage_at_ms, Some(5_000));
+        assert!(matches!(
+            runtime
+                .commit_source_damage_at_us(creature, player, session, stream, 17, 11, 10_000_001,),
+            Err(CarrierError::PlanConflict)
+        ));
+        assert_eq!(runtime.live_creature_health(creature), Some(9990));
+    }
+
+    #[test]
     fn eqmod2_reflection_stream_boundary_and_stale_session_refuse_before_hp() {
         let (mut runtime, player, session, creature) = fixture();
         for stream in 0..REFLECTION_STREAMS_MAX {

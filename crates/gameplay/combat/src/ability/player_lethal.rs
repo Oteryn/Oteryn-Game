@@ -231,6 +231,17 @@ pub trait PlayerLethalVitals {
         None
     }
 
+    /// A registered HP0 Player can still be a native callback target. This read
+    /// grants no hit: the source owner must publish a known no-hit for that state.
+    fn source_player_health_including_dead(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u32, u32, u64)> {
+        self.source_player_health(runtime, target, session)
+    }
+
     /// Private source-qualified caller seam. Unsupported owners refuse, never synthesize HP.
     fn apply_source_player_heal(
         &mut self,

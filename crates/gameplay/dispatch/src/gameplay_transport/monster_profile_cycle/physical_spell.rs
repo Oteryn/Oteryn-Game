@@ -982,6 +982,46 @@ fn current_player_combat_facts(
     SpellCombatFacts,
     crate::gameplay_transport::soul_war_callbacks::QualifiedThirdTaintPolicy,
 )> {
+    if states.get(runtime, target, session)?.vitals().health == 0 {
+        return None;
+    }
+    current_registered_player_combat_facts(
+        runtime,
+        states,
+        attack,
+        room,
+        issuer,
+        target,
+        session,
+        now,
+        element,
+        visible,
+        party_lowest,
+    )
+}
+
+/// Direct source Combat also reaches a registered HP0 target before its removal.
+/// This reads current identity and protection; it does not authorize a new hit.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "actual source/target, current owners, selection and reference-party facts remain independent"
+)]
+fn current_registered_player_combat_facts(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    issuer: ExactActorRef,
+    target: ExactActorRef,
+    session: GameSessionId,
+    now: u64,
+    element: Option<&str>,
+    visible: bool,
+    party_lowest: Option<u32>,
+) -> Option<(
+    SpellCombatFacts,
+    crate::gameplay_transport::soul_war_callbacks::QualifiedThirdTaintPolicy,
+)> {
     let from = runtime.read_actor_position(issuer).ok()?.position();
     let to = runtime.read_actor_position(target).ok()?.position();
     let tile = |position: MovementLocalPosition| {
@@ -997,9 +1037,6 @@ fn current_player_combat_facts(
     let issuer_tile = tile(from).ok()?;
     let target_tile = tile(to).ok()?;
     let state = states.get(runtime, target, session)?;
-    if state.vitals().health == 0 {
-        return None;
-    }
     let protected = attack.creature_target_protection(
         runtime,
         target,
@@ -1130,6 +1167,75 @@ pub(in crate::gameplay_transport) async fn prepare_mushroom_reader<'native>(
         facts,
         tiles,
         source_damage,
+    })
+}
+
+/// Reads the callback's actual AI target. The caller validates this same map
+/// transaction after source preparation and before the synchronous HP commit.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the source callback retains its actual boss, target, room and physical map owner"
+)]
+pub(in crate::gameplay_transport) async fn prepare_rotten_massive_reader<'native>(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &'native NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    source: &crate::creature_damage_spell::native_event::rotten_massive::RottenMassiveSource,
+    target: ExactActorRef,
+    session: GameSessionId,
+    now: u64,
+    stamp: RuntimeWorkStamp,
+) -> Option<CurrentTarget<'native>> {
+    use crate::player_lethal::PlayerLethalVitals;
+    let (health, _, _) = states.source_player_health_including_dead(runtime, target, session)?;
+    if !source.current(runtime)
+        || (health > 0
+            && (states.has_pending_spell_commit(target, session)
+                || runtime.assert_actor_spell_unreserved(target).is_err()))
+    {
+        return None;
+    }
+    let issuer = source.actor();
+    let from = runtime.read_actor_position(issuer).ok()?.position();
+    let to = runtime.read_actor_position(target).ok()?.position();
+    map.read(runtime, from).await?;
+    map.read(runtime, to).await?;
+    // Agony uses these actual protection/identity facts, but skips elemental
+    // equipment blocking in its source-qualified damage preparation. HP0 still
+    // needs the same canCombat facts for the source visual and continuation.
+    let fact_element = if source.kind().element() == "agony" {
+        "undefined"
+    } else {
+        "energy"
+    };
+    let (current, policy) = current_registered_player_combat_facts(
+        runtime,
+        states,
+        attack,
+        room,
+        issuer,
+        target,
+        session,
+        now,
+        Some(fact_element),
+        true,
+        None,
+    )?;
+    Some(CurrentTarget {
+        native,
+        source_draw: None,
+        retained_caster: None,
+        stamp,
+        players: vec![(target, session)],
+        issuer,
+        element: Some(source.kind().element().into()),
+        facing: Facing::North,
+        facts: vec![current],
+        tiles: BTreeMap::from([((to.x, to.y, to.floor), Some(true))]),
+        source_damage: vec![(target, policy)],
     })
 }
 

@@ -164,12 +164,14 @@ pub(super) async fn exercise(
         route.len() < 10,
         "source portal must be approached within its real15s lifetime"
     );
+    let mut step_window = None;
     for direction in route {
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(1))
             .ok_or("source ingress clock")?;
         let view = owner.runtime_view(&registered);
+        let started = view.owner_now().get();
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -178,13 +180,45 @@ pub(super) async fn exercise(
             StepDisposition::Moved,
             "real committed STEP into source action50001"
         );
+        step_window = Some((started, view.owner_now().get()));
     }
+    let (step_started, step_finished) = step_window.ok_or("actual portal ingress interval")?;
     let consumed:i64=sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts r JOIN game_spell_item_lines l USING(transaction_id) WHERE r.cause_kind=3 AND r.instance_id=encode($1,'hex')::uuid AND convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'rule'='rotten-blood.portal.step' AND l.operation_kind=2 AND l.definition_production_key='oteryn:item.tibia.i37000'")
         .bind(instance_id.as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
         consumed, 1,
         "real portal StepIn consumes the actual current action50001 Item through its canonical owner"
     );
+    let deadlines = {
+        let view = owner.runtime_view(&registered);
+        let states = view.states.spell_states.lock().await;
+        let state = states
+            .rotten_blood_callbacks
+            .massive_state_for_test(centre, player);
+        assert!(
+            state.paused,
+            "the committed source STEP pauses both boss systems"
+        );
+        assert_eq!(state.commits, 0);
+        assert_eq!(
+            state.deadlines.len(),
+            2,
+            "both source callbacks are retained"
+        );
+        for ((phase, due), (expected_phase, delay)) in state
+            .deadlines
+            .iter()
+            .zip([(1, 5_000_000), (2, 15_000_000)])
+        {
+            assert_eq!(*phase, expected_phase);
+            assert!(
+                *due >= step_started + delay && *due <= step_finished + delay,
+                "the deadline belongs to the original committed STEP, not the portal MINT or a later retry"
+            );
+        }
+        assert_eq!(state.deadlines[1].1 - state.deadlines[0].1, 10_000_000);
+        state.deadlines
+    };
     for (phase, seconds, percent) in [(1, 5, 15_u64), (2, 10, 25)] {
         for _ in 0..seconds {
             owner.clock_origin = owner
@@ -193,6 +227,17 @@ pub(super) async fn exercise(
                 .ok_or("massive attack clock")?;
             let view = owner.runtime_view(&registered);
             view.drain_monster_melee().await;
+            let states = view.states.spell_states.lock().await;
+            let due = deadlines[usize::from(phase - 1)].1;
+            if view.owner_now().get() < due {
+                assert!(
+                    states
+                        .rotten_blood_callbacks
+                        .actual_massive_commit_for_test(player, phase)
+                        .is_none(),
+                    "a source callback cannot commit HP before its original deadline"
+                );
+            }
         }
         let view = owner.runtime_view(&registered);
         let runtime = view.runtime.lock().await;
@@ -213,6 +258,66 @@ pub(super) async fn exercise(
         assert!(
             after < before,
             "source Energy massive attack commits actual current target HP"
+        );
+    }
+    let elders = {
+        let view = owner.runtime_view(&registered);
+        let runtime = view.runtime.lock().await;
+        let states = view.states.spell_states.lock().await;
+        let state = states
+            .rotten_blood_callbacks
+            .massive_state_for_test(centre, player);
+        assert!(
+            state.deadlines.is_empty(),
+            "both original callbacks completed"
+        );
+        assert!(
+            !state.paused,
+            "the second callback resumes both boss systems"
+        );
+        assert_eq!(state.commits, 2, "one physical hit per original callback");
+        let elders: Vec<_> = runtime
+            .source_registered_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter_map(|(actor, at)| {
+                (at.position().floor == centre.floor
+                    && at.position().x.abs_diff(centre.x) <= 15
+                    && at.position().y.abs_diff(centre.y) <= 15
+                    && runtime.companion_snapshot(actor).is_ok_and(|snapshot| {
+                        snapshot.health > 0
+                            && snapshot.state.policy.definition_key
+                                == "oteryn:creature.elder_bloodjaw"
+                    }))
+                .then_some(actor)
+            })
+            .collect();
+        assert_eq!(
+            elders.len(),
+            2,
+            "the fresh zero-taint room respawns two actual Elders"
+        );
+        elders
+    };
+    {
+        let view = owner.runtime_view(&registered);
+        view.drain_monster_melee().await;
+        view.drain_rotten_portal_callbacks().await;
+        let runtime = view.runtime.lock().await;
+        let states = view.states.spell_states.lock().await;
+        let state = states
+            .rotten_blood_callbacks
+            .massive_state_for_test(centre, player);
+        assert_eq!(
+            state.commits, 2,
+            "a repeated owner turn cannot replay either HP hit"
+        );
+        assert!(state.deadlines.is_empty());
+        assert!(!state.paused);
+        assert!(
+            elders
+                .iter()
+                .all(|actor| runtime.contains_live_creature(*actor))
         );
     }
     Ok(())

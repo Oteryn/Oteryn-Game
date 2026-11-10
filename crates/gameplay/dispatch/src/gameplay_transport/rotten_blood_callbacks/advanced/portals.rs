@@ -116,7 +116,7 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
             };
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
-            if step::committed(&mut runtime, &mut states, &pending).is_err() {
+            if step::committed(self, &mut runtime, &mut states, &pending).is_err() {
                 return;
             }
             let advanced = &mut states.rotten_blood_callbacks.advanced;
