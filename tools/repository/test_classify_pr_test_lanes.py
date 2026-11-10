@@ -721,6 +721,44 @@ def test_metadata_events():
     print("Metadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate")
 
 
+def test_scope_policy_contract():
+    """The real policy accepts reviewed scope recovery and rejects altered guards."""
+    core_path = ROOT / "tools/repository/validate_repository_policy_core.py"
+    spec = importlib.util.spec_from_file_location("scope_policy_core", core_path)
+    core = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(core)
+    gate_path = ROOT / ".github/workflows/merge-gate.yml"
+    gate = gate_path.read_text(encoding="utf-8")
+    scope = core.indented_yaml_mapping_block(gate, "scope", 2)
+    assert scope is not None
+    read_text = Path.read_text
+
+    def validate(candidate):
+        def candidate_text(path, *args, **kwargs):
+            return candidate if path == gate_path else read_text(path, *args, **kwargs)
+
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with patch.object(Path, "read_text", candidate_text), \
+                contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            status = core.main()
+        return status, stdout.getvalue() + stderr.getvalue()
+
+    status, diagnostic = validate(gate)
+    assert status == 0, diagnostic
+    for guard in (
+        "if pull_after_files.get('head', {}).get('sha', '').lower() != expected_head:",
+        "if type(changed_files) is not int or changed_files < 0:",
+        "elif changed_files_after != changed_files:",
+    ):
+        assert scope.count(guard) == 1, guard
+        replacement = "elif False:" if guard.startswith("elif ") else "if False:"
+        changed_scope = scope.replace(guard, replacement, 1)
+        status, diagnostic = validate(gate.replace(scope, changed_scope, 1))
+        assert status == 1, (guard, diagnostic)
+        assert "merge gate scope job must exactly match the canonical" in diagnostic, diagnostic
+    print("Scope policy PASS: reviewed scope accepted, identity/count/recovery mutations rejected")
+
+
 def test_aggregate():
     gate = (ROOT / ".github/workflows/merge-gate.yml").read_text(encoding="utf-8")
     block = gate.split("  validate:\n", 1)[1].split("  game_gate:\n", 1)[0]
@@ -960,6 +998,7 @@ def main() -> int:
     test_candidate_modes(module)
     test_large_pr_fallback(module)
     test_scope_file_count_drift(module)
+    test_scope_policy_contract()
     test_aggregate()
     test_server_qualification(module)
     test_world_bundle(module)
