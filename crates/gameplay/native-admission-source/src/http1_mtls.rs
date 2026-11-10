@@ -119,8 +119,8 @@ pub(crate) async fn exchange_store(
 const REQUEST_HEAD_BYTES: usize = 512;
 /// Request envelope (head and body) for every other operation.
 const REQUEST_ENVELOPE_BYTES: usize = 10_240;
-/// Per-operation envelope cap: the projection snapshot (`LCA-REQUEST-BYTES`)
-/// gets its own head allowance; every other operation keeps the shared cap.
+/// Large operation bodies get their own bounded head allowance; other
+/// operations keep the shared envelope cap.
 const fn request_envelope_max(operation: Operation) -> usize {
     match operation {
         Operation::PublishAccountCharactersV1 => {
@@ -132,6 +132,9 @@ const fn request_envelope_max(operation: Operation) -> usize {
         }
         Operation::PublishWorldOnlineV1 => {
             super::public_projections::ONLINE_BYTES + REQUEST_HEAD_BYTES
+        }
+        Operation::PublishCharacterDeathsV2 | Operation::PublishGuildV2 => {
+            operation.request_bytes_max() + REQUEST_HEAD_BYTES
         }
         Operation::PublishBazaarTransferabilityV1
         | Operation::PublishBazaarCharacterCommandReceiptV2 => {
@@ -733,7 +736,7 @@ mod tests {
 #[cfg(test)]
 mod envelope_tests {
     use super::*;
-    const OPERATIONS: [Operation; 19] = [
+    const OPERATIONS: [Operation; 21] = [
         Operation::ReadAccountSecurityV1,
         Operation::ReadFreshSigningTrustV1,
         Operation::ReadRecoveryAccountSecurityV2,
@@ -753,12 +756,16 @@ mod envelope_tests {
         Operation::PublishCharacterProfileV1,
         Operation::PublishWorldOnlineV1,
         Operation::PublishPublicProjectionWatermarkV1,
+        Operation::PublishCharacterDeathsV2,
+        Operation::PublishGuildV2,
     ];
     /// The operations whose snapshot bound exceeds the shared envelope.
-    const WIDENED: [Operation; 3] = [
+    const WIDENED: [Operation; 5] = [
         Operation::PublishAccountCharactersV1,
         Operation::PublishWorldHighscoresV1,
         Operation::PublishWorldOnlineV1,
+        Operation::PublishCharacterDeathsV2,
+        Operation::PublishGuildV2,
     ];
     #[test]
     fn every_maximum_body_fits_its_envelope_and_only_the_snapshots_widen_it() {
@@ -790,6 +797,14 @@ mod envelope_tests {
         assert_eq!(
             request_envelope_max(Operation::PublishWorldOnlineV1),
             524_288 + REQUEST_HEAD_BYTES
+        );
+        assert_eq!(
+            request_envelope_max(Operation::PublishCharacterDeathsV2),
+            32_768 + REQUEST_HEAD_BYTES
+        );
+        assert_eq!(
+            request_envelope_max(Operation::PublishGuildV2),
+            393_216 + REQUEST_HEAD_BYTES
         );
     }
 }

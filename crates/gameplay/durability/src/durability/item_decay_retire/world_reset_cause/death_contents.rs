@@ -1,4 +1,4 @@
-//! Death-dropped direct contents share the Ground root's atomic reset commit.
+//! Every retained death-tree edge shares the Ground root's atomic retirement.
 use super::*;
 
 pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
@@ -21,19 +21,39 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
     {
         return Ok(());
     }
-    let rows = sqlx::query("SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.lifecycle,e.placement_ordinal::text,(SELECT coalesce(max(key_number),0)::bigint FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AS key_number FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid ORDER BY i.item_instance_id LIMIT $2 FOR UPDATE OF i,e")
-        .bind(step.item_instance_id.as_slice())
-        .bind(i64::from(crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX) + 1)
+    let tree =
+        crate::durability::world_reset::ground_step::death_tree(tx, step.item_instance_id).await?;
+    let ids: Vec<_> = tree
+        .iter()
+        .map(|entry| sqlx::types::Uuid::from_bytes(entry.item))
+        .collect();
+    // The root is already locked by admission. Lock every descendant before
+    // re-reading the edges, then mutate only the exact revalidated graph.
+    let rows = sqlx::query("SELECT i.item_instance_id::text,i.world_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.lifecycle,(SELECT coalesce(max(key_number),0)::bigint FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AS key_number,game_character_uuid_v7()::text AS transaction_id,game_character_uuid_v7()::text AS event_id FROM game_item_instances i WHERE i.item_instance_id=ANY($1) ORDER BY i.item_instance_id FOR UPDATE OF i")
+        .bind(ids)
         .fetch_all(&mut ***tx).await?;
-    if rows.len() > crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX as usize {
+    if rows.len() != tree.len()
+        || crate::durability::world_reset::ground_step::death_tree(tx, step.item_instance_id)
+            .await?
+            != tree
+    {
         return Err(DurabilityError::InvalidStoredState);
     }
+    let mut locked = std::collections::BTreeMap::new();
     for row in rows {
-        if row.try_get::<i16, _>("lifecycle")? != 1 {
+        locked.insert(uuid_text(row.try_get("item_instance_id")?)?, row);
+    }
+    for entry in tree {
+        let row = locked
+            .remove(&entry.item)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if row.try_get::<i16, _>("lifecycle")? != 1
+            || uuid_text(row.try_get("world_id")?)? != parent.world_id
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
         let child = DecayRetireStep {
-            item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
+            item_instance_id: entry.item,
             ..step
         };
         let admitted = Admitted {
@@ -48,19 +68,14 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
             key_number: u32::try_from(row.try_get::<i64, _>("key_number")?)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
-            placement_ordinal: Some(
-                row.try_get::<String, _>("placement_ordinal")?
-                    .parse()
-                    .map_err(|_| DurabilityError::InvalidStoredState)?,
-            ),
+            placement_ordinal: Some(entry.ordinal),
+            death_entry: Some(entry),
             corpse_ground: parent.corpse_ground.clone(),
             deadline_unix_ms: 0,
             database_now_unix_ms: parent.database_now_unix_ms,
         };
-        let identity = sqlx::query("SELECT game_character_uuid_v7()::text AS transaction_id,game_character_uuid_v7()::text AS event_id")
-            .fetch_one(&mut ***tx).await?;
-        let transaction_id = uuid_text(identity.try_get("transaction_id")?)?;
-        let event_id = uuid_text(identity.try_get("event_id")?)?;
+        let transaction_id = uuid_text(row.try_get("transaction_id")?)?;
+        let event_id = uuid_text(row.try_get("event_id")?)?;
         let tuple = tx.tuple();
         let envelope = audit::encode_decay_retire_event(
             DecayRetireEventIdentity {

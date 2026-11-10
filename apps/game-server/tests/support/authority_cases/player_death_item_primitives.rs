@@ -32,6 +32,15 @@ const DIGEST: [u8; 32] = [1; 32];
 async fn initialize(h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_>) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).bind(DIGEST.as_slice()).bind([2_u8;32].as_slice()).bind([3_u8;32].as_slice()).execute(&h.pool).await?;
+    initialize_for(h, authority, &fence()?, command(90)?).await
+}
+
+async fn initialize_for(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    current_fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
+    current_command: crate::foundation::CommandRef,
+) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
         .execute(&mut *tx)
@@ -41,8 +50,8 @@ async fn initialize(h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_
         &h.root,
         authority,
         &h.node,
-        &fence()?,
-        command(90)?,
+        current_fence,
+        current_command,
         DIGEST,
     )
     .await
@@ -279,7 +288,8 @@ async fn run(admin: String) -> TestResult {
             .await?,
         PlayerDeathItemOutcome::Replay
     );
-    let after:Vec<(String,String)>=sqlx::query_as("SELECT item_instance_id::text,placement_ordinal::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal").bind(backpack.as_slice()).fetch_all(&h.pool).await?;
+    let after:Vec<(String,String)>=sqlx::query_as("SELECT item_instance_id::text,placement_ordinal::text FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal").bind(backpack.as_slice()).fetch_all(&h.pool).await?;
+    assert_eq!(h.count("game_item_container_entries").await?, 0);
     assert_eq!(children, after);
     let owner: Option<String> = sqlx::query_scalar(
         "SELECT owner_character::text FROM game_item_loop_owner(encode($1,'hex')::uuid)",
@@ -470,20 +480,29 @@ async fn nested_carried_tree(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult<Vec<[u8; 16]>> {
+    let depth = crate::durability::item_loop_move::ITEM_LOOP_DEPTH_MAX;
+    assert_eq!(depth, 8);
+    carried_chain(h, authority, depth).await
+}
+
+async fn carried_chain(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    depth_limit: i32,
+) -> TestResult<Vec<[u8; 16]>> {
     use crate::durability::item_loop_move::{
         ITEM_LOOP_DEPTH_MAX, LoopDestination, LoopMoveRequest,
     };
 
-    assert_eq!(ITEM_LOOP_DEPTH_MAX, 8);
+    assert!((2..=ITEM_LOOP_DEPTH_MAX).contains(&depth_limit));
     let backpack = h.mint(authority, BACKPACK, 1).await?;
     h.committed(authority, to_slot(command(1)?, backpack, backpack_facts()))
         .await?;
     initialize(h, authority).await?;
     let mut items = vec![backpack];
-    // Main backpack -> seven bags -> stone: every edge is admitted by its
-    // normal pickup or loop-move owner, including the deepest legal placement.
-    for depth in 1..=ITEM_LOOP_DEPTH_MAX {
-        let leaf = depth == ITEM_LOOP_DEPTH_MAX;
+    // Every edge is admitted by its normal pickup or loop-move owner.
+    for depth in 1..=depth_limit {
+        let leaf = depth == depth_limit;
         let item = h
             .mint(
                 authority,
@@ -549,7 +568,7 @@ async fn nested_carried_tree(
         );
         items.push(item);
     }
-    assert_eq!(items.len(), 9);
+    assert_eq!(items.len(), usize::try_from(depth_limit)? + 1);
     Ok(items)
 }
 
@@ -559,20 +578,19 @@ struct NestedDeathSnapshot {
     placements: Vec<(String, String)>,
 }
 
-/// Compare complete surviving rows, including revision, transaction and ordinal
-/// columns. Only the selected root and its source placement may change.
+/// ItemInstance rows stay byte-identical. Custody compares the complete logical
+/// edge: child, world, parent, ordinal and placement transaction. Death may move
+/// a main backpack's direct entries into the owner-independent nested table;
+/// the former Character projection is not part of that logical edge.
 async fn nested_death_snapshot(h: &Harness, selected: [u8; 16]) -> TestResult<NestedDeathSnapshot> {
-    let items = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id<>encode($1,'hex')::uuid ORDER BY item_instance_id LIMIT 10")
+    let items = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id<>encode($1,'hex')::uuid ORDER BY item_instance_id LIMIT 502")
         .bind(selected.as_slice()).fetch_all(&h.pool).await?;
-    let placements = sqlx::query_as("SELECT 'slot'::text AS kind,to_jsonb(s)::text AS data FROM game_item_container_slots s WHERE item_instance_id<>encode($1,'hex')::uuid UNION ALL SELECT 'main',to_jsonb(e)::text FROM game_item_container_entries e WHERE item_instance_id<>encode($1,'hex')::uuid UNION ALL SELECT 'nested',to_jsonb(n)::text FROM game_item_nested_entries n WHERE item_instance_id<>encode($1,'hex')::uuid ORDER BY 1,2 LIMIT 10")
+    let placements = sqlx::query_as("SELECT 'slot'::text AS kind,to_jsonb(s)::text AS data FROM game_item_container_slots s WHERE item_instance_id<>encode($1,'hex')::uuid UNION ALL SELECT 'entry',(to_jsonb(e)-'character_id')::text FROM game_item_container_entries e WHERE item_instance_id<>encode($1,'hex')::uuid UNION ALL SELECT 'entry',to_jsonb(n)::text FROM game_item_nested_entries n WHERE item_instance_id<>encode($1,'hex')::uuid ORDER BY 1,2 LIMIT 502")
         .bind(selected.as_slice()).fetch_all(&h.pool).await?;
-    let snapshot = NestedDeathSnapshot { items, placements };
-    assert_eq!(snapshot.items.len(), 8);
-    assert_eq!(snapshot.placements.len(), 8);
-    Ok(snapshot)
+    Ok(NestedDeathSnapshot { items, placements })
 }
 
-async fn run_nested_death_regression(admin: String, direct_bag: bool) -> TestResult {
+async fn run_nested_death_regression(admin: String, direct_bag: bool, reset: bool) -> TestResult {
     use crate::durability::character_build::{
         BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
     };
@@ -583,7 +601,11 @@ async fn run_nested_death_regression(admin: String, direct_bag: bool) -> TestRes
 
     let h = Harness::create(
         admin,
-        if direct_bag {
+        if reset && direct_bag {
+            "death_nested_bag_reset"
+        } else if reset {
+            "death_nested_selected_reset"
+        } else if direct_bag {
             "death_nested_bag"
         } else {
             "death_nested_selected"
@@ -599,6 +621,8 @@ async fn run_nested_death_regression(admin: String, direct_bag: bool) -> TestRes
     let items = nested_carried_tree(&h, &authority).await?;
     let selected = items[usize::from(direct_bag)];
     let before = nested_death_snapshot(&h, selected).await?;
+    assert_eq!(before.items.len(), 8);
+    assert_eq!(before.placements.len(), 8);
     let f = fence()?;
     let mut gameplay = CurrentCharacterGameplayFence {
         character_id: f.character_id,
@@ -728,6 +752,11 @@ async fn run_nested_death_regression(admin: String, direct_bag: bool) -> TestRes
         PlayerDeathItemOutcome::Written
     );
     assert_eq!(nested_death_snapshot(&h, selected).await?, before);
+    assert_eq!(h.count("game_item_container_entries").await?, 0);
+    assert_eq!(
+        h.count("game_item_nested_entries").await?,
+        if direct_bag { 7 } else { 8 }
+    );
     assert!(h.on_ground(selected).await?);
     let written: String = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(selected.as_slice()).fetch_one(&h.pool).await?;
@@ -777,18 +806,21 @@ async fn run_nested_death_regression(admin: String, direct_bag: bool) -> TestRes
             .map_err(debug)?
             .is_none()
     );
+    drop(permit);
+    if reset {
+        retire_nested_death_ground(&h, &reopened, &authority, &items, direct_bag).await?;
+    }
     assert_eq!(
         h.character_revision().await?,
         retained.committed_character_revision.get().to_string()
     );
-    drop(permit);
     drop(authority);
     drop(seal);
     drop(reopened);
     h.cleanup().await
 }
 
-fn nested_death_case(direct_bag: bool) -> TestResult {
+fn nested_death_case(direct_bag: bool, reset: bool) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
@@ -797,7 +829,7 @@ fn nested_death_case(direct_bag: bool) -> TestResult {
         .spawn(move || -> Result<(), String> {
             runtime()
                 .map_err(debug)?
-                .block_on(run_nested_death_regression(admin, direct_bag))
+                .block_on(run_nested_death_regression(admin, direct_bag, reset))
                 .map_err(debug)
         })?
         .join()
@@ -807,12 +839,992 @@ fn nested_death_case(direct_bag: bool) -> TestResult {
 
 #[test]
 fn player_death_nested_selected_backpack_depth_eight_survives_restart() -> TestResult {
-    nested_death_case(false)
+    nested_death_case(false, false)
 }
 
 #[test]
 fn player_death_nested_direct_bag_preserves_descendants() -> TestResult {
-    nested_death_case(true)
+    nested_death_case(true, false)
+}
+
+#[test]
+fn player_death_nested_selected_backpack_reset_is_atomic_and_postordered() -> TestResult {
+    nested_death_case(false, true)
+}
+
+#[test]
+fn player_death_nested_direct_bag_reset_preserves_main_backpack() -> TestResult {
+    nested_death_case(true, true)
+}
+
+async fn prepare_nested_reset(
+    h: &Harness,
+    root: &crate::durability::DurabilityRoot,
+) -> TestResult<crate::durability::world_reset::RetiringWorldReset> {
+    use crate::durability::runtime_scope_assignment::{
+        AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
+        RuntimeScopeAssignmentWriter,
+    };
+    use crate::item_transfer_postgres_cases::scope;
+    use oteryn_gameplay_durability::durability::world_reset::test_support as retiring_fixture;
+
+    let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+    retiring_fixture::seed_retiring(&h.pool, world).await?;
+    let reset = root
+        .retiring_world_reset(world)
+        .await?
+        .ok_or("nested reset")?;
+    sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3")
+        .execute(&h.pool)
+        .await?;
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2)")
+        .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
+    let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "item-transfer-writer")
+        .await
+        .map_err(debug)?;
+    let predecessor = root
+        .read_runtime_scope_predecessor(scope()?)
+        .await
+        .map_err(debug)?
+        .ok_or("reset predecessor")?;
+    assert!(matches!(
+        writer
+            .submit(&AssignmentRequest {
+                operation_key: OperationKey::from_bytes([9; 32]),
+                actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+                command: AssignmentCommand::Replace {
+                    scope: scope()?,
+                    predecessor,
+                    target: h.node.fact()
+                },
+            })
+            .await
+            .map_err(debug)?,
+        AssignmentOutcome::Committed(_)
+    ));
+    Ok(reset)
+}
+
+async fn observe_nested_retirement_order(h: &Harness) -> TestResult {
+    sqlx::raw_sql("CREATE TABLE test_nested_retire_order(position BIGSERIAL PRIMARY KEY,item UUID NOT NULL);
+        GRANT INSERT ON test_nested_retire_order TO oteryn_game_runtime;
+        GRANT USAGE ON SEQUENCE test_nested_retire_order_position_seq TO oteryn_game_runtime;
+        CREATE FUNCTION test_log_nested_retire() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+          INSERT INTO test_nested_retire_order(item) VALUES(NEW.item_instance_id); RETURN NEW; END $$;
+        CREATE TRIGGER a_test_nested_retire_order AFTER INSERT ON game_item_decay_retire_receipts
+          FOR EACH ROW WHEN(NEW.cause_kind='WORLD_RESET') EXECUTE FUNCTION test_log_nested_retire();")
+        .execute(&h.pool).await?;
+    Ok(())
+}
+
+async fn retire_nested_death_ground(
+    h: &Harness,
+    root: &crate::durability::DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    items: &[[u8; 16]],
+    direct_bag: bool,
+) -> TestResult {
+    use crate::durability::item_decay_retire::DecayRetireError;
+    use crate::durability::{DurabilityError, SqlxFailureClass};
+    use crate::item_transfer_postgres_cases::uuid_text;
+
+    let selected = items[usize::from(direct_bag)];
+    let reset = prepare_nested_reset(h, root).await?;
+    let before = nested_death_snapshot(h, selected).await?;
+    let root_before: String = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    let ground_before: String = sqlx::query_scalar("SELECT to_jsonb(g)::text FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    let audits_before = h.count("game_item_audit_outbox").await?;
+    // Observe the actual receipt insertion order. Reject the final root receipt
+    // once, after all descendants were processed, without corrupting the graph.
+    observe_nested_retirement_order(h).await?;
+    sqlx::raw_sql("CREATE SEQUENCE test_nested_retire_root_reached_seq;
+        GRANT USAGE ON SEQUENCE test_nested_retire_root_reached_seq TO oteryn_game_runtime;
+        CREATE FUNCTION test_fail_nested_retire_root() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+          PERFORM nextval('test_nested_retire_root_reached_seq');
+          RAISE EXCEPTION 'injected failure after nested descendants' USING ERRCODE='23514'; END $$;
+        CREATE TRIGGER z_test_nested_retire_root AFTER INSERT ON game_item_decay_retire_receipts
+          FOR EACH ROW WHEN(NEW.cause_kind='WORLD_RESET' AND NEW.item_instance_id=NEW.ground_root_item_instance_id)
+          EXECUTE FUNCTION test_fail_nested_retire_root();")
+        .execute(&h.pool).await?;
+    assert!(matches!(
+        root.retire_world_reset_ground(authority, &h.node, &reset)
+            .await,
+        Err(DecayRetireError::Unavailable(DurabilityError::Database(
+            SqlxFailureClass::Database(None)
+        )))
+    ));
+    // The owner keeps only registered OT* SQLSTATEs; 23514 maps to None.
+    // Sequence increments survive rollback and prove this exact failure
+    // trigger ran once, after every descendant and the root receipt insert.
+    let reached: (i64, bool) =
+        sqlx::query_as("SELECT last_value,is_called FROM test_nested_retire_root_reached_seq")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(reached, (1, true));
+    let inserted: (i64, bool) =
+        sqlx::query_as("SELECT last_value,is_called FROM test_nested_retire_order_position_seq")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(
+        inserted,
+        (i64::try_from(items.len() - usize::from(direct_bag))?, true)
+    );
+    assert_eq!(nested_death_snapshot(h, selected).await?, before);
+    let root_after: String = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    let ground_after: String = sqlx::query_scalar("SELECT to_jsonb(g)::text FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(root_after, root_before);
+    assert_eq!(ground_after, ground_before);
+    assert_eq!(h.count("game_item_decay_retire_receipts").await?, 0);
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before);
+    assert_eq!(h.count("test_nested_retire_order").await?, 0);
+    // Rolled-back retirement proofs cannot authorize a separate raw mutation
+    // of the still-live tree before the genuine owner retries the reset.
+    reject_unproven_custody_change(h, *items.last().ok_or("deepest child")?, false).await?;
+    sqlx::raw_sql(
+        "DROP TRIGGER z_test_nested_retire_root ON game_item_decay_retire_receipts;
+        DROP FUNCTION test_fail_nested_retire_root();",
+    )
+    .execute(&h.pool)
+    .await?;
+    assert!(
+        root.retire_world_reset_ground(authority, &h.node, &reset)
+            .await
+            .map_err(debug)?
+    );
+    let retired = &items[usize::from(direct_bag)..];
+    let expected_order: Vec<_> = retired.iter().rev().map(|item| uuid_text(*item)).collect();
+    let order: Vec<String> = sqlx::query_scalar(
+        "SELECT item::text FROM test_nested_retire_order ORDER BY position LIMIT 10",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(
+        order, expected_order,
+        "deepest descendants precede their parent root"
+    );
+    let expected_count = i64::try_from(retired.len())?;
+    let (transactions, audited): (i64, i64) = sqlx::query_as("SELECT count(DISTINCT r.created_xact_id),count(a.event_id) FROM game_item_decay_retire_receipts r JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id AND a.envelope_sha256=r.envelope_sha256 AND a.created_xact_id=r.created_xact_id WHERE r.cause_kind='WORLD_RESET' AND r.ground_root_item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!((transactions, audited), (1, expected_count));
+    let edges: Vec<_> = retired.windows(2).map(|pair| (pair[1], pair[0])).collect();
+    assert_nested_retirement_audits(h, selected, &edges).await?;
+    assert_eq!(
+        h.count("game_item_decay_retire_receipts").await?,
+        expected_count
+    );
+    assert_eq!(
+        h.count("game_item_audit_outbox").await?,
+        audits_before + expected_count
+    );
+    assert_eq!(h.count("game_item_ground_locations").await?, 0);
+    assert_eq!(h.count("game_item_nested_entries").await?, 0);
+    assert_eq!(h.count("game_item_container_entries").await?, 0);
+    assert_eq!(
+        h.count("game_item_container_slots").await?,
+        i64::from(direct_bag)
+    );
+    for item in retired {
+        assert_eq!(h.item_state(*item).await?, (0, 2));
+    }
+    if direct_bag {
+        assert_eq!(h.item_state(items[0]).await?, (1, 1));
+        let main: String = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(items[0].as_slice()).fetch_one(&h.pool).await?;
+        assert!(
+            before.items.contains(&main),
+            "carried main backpack remains byte-identical"
+        );
+        let slot: String = sqlx::query_scalar("SELECT to_jsonb(s)::text FROM game_item_container_slots s WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(items[0].as_slice()).fetch_one(&h.pool).await?;
+        assert!(before.placements.contains(&("slot".into(), slot)));
+    }
+    assert!(
+        root.retire_world_reset_ground(authority, &h.node, &reset)
+            .await
+            .map_err(debug)?
+    );
+    assert_eq!(
+        h.count("game_item_decay_retire_receipts").await?,
+        expected_count
+    );
+    assert_eq!(
+        h.count("game_item_audit_outbox").await?,
+        audits_before + expected_count
+    );
+    let replay_order: Vec<String> = sqlx::query_scalar(
+        "SELECT item::text FROM test_nested_retire_order ORDER BY position LIMIT 10",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(replay_order, order);
+    Ok(())
+}
+
+async fn assert_nested_retirement_audits(
+    h: &Harness,
+    root: [u8; 16],
+    edges: &[([u8; 16], [u8; 16])],
+) -> TestResult {
+    let parents: std::collections::BTreeMap<_, _> = edges.iter().copied().collect();
+    assert_eq!(parents.len(), edges.len());
+    let rows = sqlx::query("SELECT uuid_send(r.item_instance_id) AS item,a.envelope,e.placement_ordinal::text AS edge_ordinal FROM game_item_decay_retire_receipts r JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id LEFT JOIN game_player_death_retirement_edges e ON e.item_instance_id=r.item_instance_id WHERE r.ground_root_item_instance_id=encode($1,'hex')::uuid AND r.cause_kind='WORLD_RESET' ORDER BY r.item_instance_id LIMIT 502")
+        .bind(root.as_slice()).fetch_all(&h.pool).await?;
+    assert_eq!(rows.len(), edges.len() + 1);
+    for row in rows {
+        let item: [u8; 16] = row
+            .try_get::<Vec<u8>, _>("item")?
+            .try_into()
+            .map_err(|_| "audit item UUID")?;
+        let wire: Vec<u8> = row.try_get("envelope")?;
+        let (_, event) =
+            crate::durability::item_decay_retire_audit::decode_decay_retire_envelope(&wire)
+                .map_err(debug)?;
+        assert_eq!(
+            event
+                .before
+                .as_ref()
+                .ok_or("retirement before")?
+                .item_instance_id,
+            item
+        );
+        assert_eq!(
+            event
+                .after
+                .as_ref()
+                .ok_or("retirement after")?
+                .item_instance_id,
+            item
+        );
+        assert_eq!(
+            event
+                .world_reset
+                .as_ref()
+                .ok_or("reset cause")?
+                .item_instance_id,
+            item
+        );
+        assert!(event.activity_retirement.is_none());
+        let ground = if item == root {
+            assert!(event.ground_container_entry.is_none());
+            assert_eq!(row.try_get::<Option<String>, _>("edge_ordinal")?, None);
+            event.ground.as_ref().ok_or("retirement root Ground")?
+        } else {
+            assert!(event.ground.is_none());
+            let entry = event
+                .ground_container_entry
+                .as_ref()
+                .ok_or("retired edge")?;
+            assert_eq!(
+                entry.parent_item_instance_id,
+                *parents.get(&item).ok_or("audit parent")?
+            );
+            assert_eq!(entry.tree_root_item_instance_id, Some(root.to_vec()));
+            let ordinal: String = row.try_get("edge_ordinal")?;
+            assert_eq!(entry.placement_ordinal, ordinal.parse::<u64>()?);
+            entry
+                .parent_ground
+                .as_ref()
+                .ok_or("retired edge root Ground")?
+        };
+        assert_eq!(ground.world_id, id(WORLD));
+        assert_eq!(ground.channel_id, id(CHANNEL));
+        assert_eq!(ground.instance_id, None);
+    }
+    Ok(())
+}
+
+struct MaximumDeathTree {
+    items: Vec<[u8; 16]>,
+    edges: Vec<([u8; 16], [u8; 16])>,
+}
+
+async fn append_maximum_tree_item(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    tree: &mut MaximumDeathTree,
+    parent: Option<[u8; 16]>,
+    key: &str,
+) -> TestResult<[u8; 16]> {
+    use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
+
+    let item = h.mint(authority, key, 1).await?;
+    let ordinal = u64::try_from(tree.items.len())?;
+    let definition = if key == BACKPACK {
+        backpack_facts()
+    } else {
+        facts(key, ItemStackClass::NonStackable)
+    };
+    h.committed(
+        authority,
+        to_backpack(command(1_000 + ordinal * 2)?, item, definition),
+    )
+    .await?;
+    if let Some(parent) = parent {
+        let f = fence()?;
+        let permit = SpellLanePermit::of_fresh_scope(f.runtime_scope).await?;
+        let moved = h
+            .root
+            .commit_item_loop_move(
+                &permit,
+                authority,
+                &h.node,
+                &f,
+                command(1_001 + ordinal * 2)?,
+                &PickupContent,
+                LoopMoveRequest {
+                    item,
+                    count: None,
+                    pickup_cell: None,
+                    destination: LoopDestination::Container(parent),
+                },
+            )
+            .await?
+            .map_err(debug)?;
+        assert_eq!(moved.operation, 1);
+        assert!(!moved.replayed);
+    }
+    tree.edges.push((item, parent.unwrap_or(tree.items[0])));
+    tree.items.push(item);
+    Ok(item)
+}
+
+async fn maximum_carried_death_tree(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult<MaximumDeathTree> {
+    use crate::durability::item_loop_move::ITEM_LOOP_TREE_ITEMS_MAX;
+    use crate::item_transfer_postgres_cases::{CHARACTER, STONE};
+
+    assert_eq!(ITEM_LOOP_TREE_ITEMS_MAX, 500);
+    let main = h.mint(authority, BACKPACK, 1).await?;
+    h.committed(authority, to_slot(command(1)?, main, backpack_facts()))
+        .await?;
+    initialize(h, authority).await?;
+    let mut tree = MaximumDeathTree {
+        items: vec![main],
+        edges: Vec::new(),
+    };
+    let mut parents = Vec::new();
+    for _ in 0..2 {
+        parents.push(append_maximum_tree_item(h, authority, &mut tree, None, BACKPACK).await?);
+    }
+    let mut leaf_bags = Vec::new();
+    for index in 0..24 {
+        leaf_bags.push(
+            append_maximum_tree_item(h, authority, &mut tree, Some(parents[index / 20]), BACKPACK)
+                .await?,
+        );
+    }
+    // Two direct bags + twenty-four inner bags + 474 stones = 500 descendants.
+    // Each parent has at most twenty entries; the main keeps a free staging
+    // slot for every normal MINT -> pickup -> loop-move sequence.
+    for index in 0..474 {
+        append_maximum_tree_item(h, authority, &mut tree, Some(leaf_bags[index / 20]), STONE)
+            .await?;
+    }
+    assert_eq!((tree.items.len(), tree.edges.len()), (501, 500));
+    let size: i64 = sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
+        .bind(id(CHARACTER).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(size, ITEM_LOOP_TREE_ITEMS_MAX);
+    let (owned, deepest): (i64, Option<i32>) = sqlx::query_as("SELECT count(*),max(o.depth) FROM game_item_instances i CROSS JOIN LATERAL game_item_loop_owner(i.item_instance_id) o WHERE o.owner_character=encode($1,'hex')::uuid")
+        .bind(id(CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!((owned, deepest), (501, Some(3)));
+    assert_eq!(h.count("game_item_container_entries").await?, 2);
+    assert_eq!(h.count("game_item_nested_entries").await?, 498);
+    Ok(tree)
+}
+
+async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
+    use crate::item_transfer_postgres_cases::uuid_text;
+
+    let h = Harness::create(admin, "death_nested_maximum_reset").await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let tree = maximum_carried_death_tree(&h, &authority).await?;
+    let selected = tree.items[0];
+    let before_drop = nested_death_snapshot(&h, selected).await?;
+    assert_eq!(
+        (before_drop.items.len(), before_drop.placements.len()),
+        (500, 500)
+    );
+    drop_unselected_death_root(&h, &authority, selected, false).await?;
+    assert_eq!(nested_death_snapshot(&h, selected).await?, before_drop);
+    assert_eq!(h.count("game_item_container_entries").await?, 0);
+    assert_eq!(h.count("game_item_nested_entries").await?, 500);
+    let reset = prepare_nested_reset(&h, &h.root).await?;
+    observe_nested_retirement_order(&h).await?;
+    let audits_before = h.count("game_item_audit_outbox").await?;
+    // The production owner retains its existing two-second semantic-pass
+    // deadline and retry ceiling. A timeout is a test failure, never a skip or
+    // permission to widen those limits for the largest source-legal graph.
+    let started = std::time::Instant::now();
+    assert!(
+        h.root
+            .retire_world_reset_ground(&authority, &h.node, &reset)
+            .await
+            .map_err(debug)?
+    );
+    eprintln!(
+        "DUR-003-MAX-RESET: 501 items completed in {:?}",
+        started.elapsed()
+    );
+    let order: Vec<String> = sqlx::query_scalar(
+        "SELECT item::text FROM test_nested_retire_order ORDER BY position LIMIT 502",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(order.len(), 501);
+    assert_eq!(order.last(), Some(&uuid_text(selected)));
+    let positions: std::collections::BTreeMap<_, _> = order
+        .iter()
+        .enumerate()
+        .map(|(position, item)| (item.clone(), position))
+        .collect();
+    assert_eq!(positions.len(), 501);
+    for (child, parent) in &tree.edges {
+        let child_position = positions.get(&uuid_text(*child)).ok_or("retired child")?;
+        let parent_position = positions.get(&uuid_text(*parent)).ok_or("retired parent")?;
+        assert!(
+            child_position < parent_position,
+            "each child must retire before its own parent"
+        );
+    }
+    let (transactions, audited): (i64, i64) = sqlx::query_as("SELECT count(DISTINCT r.created_xact_id),count(a.event_id) FROM game_item_decay_retire_receipts r JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id AND a.envelope_sha256=r.envelope_sha256 AND a.created_xact_id=r.created_xact_id WHERE r.cause_kind='WORLD_RESET' AND r.ground_root_item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!((transactions, audited), (1, 501));
+    assert_nested_retirement_audits(&h, selected, &tree.edges).await?;
+    assert_eq!(h.count("game_item_decay_retire_receipts").await?, 501);
+    assert_eq!(
+        h.count("game_item_audit_outbox").await?,
+        audits_before + 501
+    );
+    let (retired, other): (i64, i64) = sqlx::query_as("SELECT count(*) FILTER(WHERE quantity=0 AND lifecycle=2),count(*) FILTER(WHERE quantity<>0 OR lifecycle<>2) FROM game_item_instances")
+        .fetch_one(&h.pool).await?;
+    assert_eq!((retired, other), (501, 0));
+    for relation in [
+        "game_item_ground_locations",
+        "game_item_container_slots",
+        "game_item_container_entries",
+        "game_item_nested_entries",
+    ] {
+        assert_eq!(h.count(relation).await?, 0);
+    }
+    let retired_rows = nested_death_snapshot(&h, [0; 16]).await?;
+    assert_eq!(retired_rows.items.len(), 501);
+    assert!(
+        h.root
+            .retire_world_reset_ground(&authority, &h.node, &reset)
+            .await
+            .map_err(debug)?
+    );
+    assert_eq!(nested_death_snapshot(&h, [0; 16]).await?, retired_rows);
+    assert_eq!(h.count("game_item_decay_retire_receipts").await?, 501);
+    assert_eq!(
+        h.count("game_item_audit_outbox").await?,
+        audits_before + 501
+    );
+    let replay_order: Vec<String> = sqlx::query_scalar(
+        "SELECT item::text FROM test_nested_retire_order ORDER BY position LIMIT 502",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(replay_order, order);
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}
+
+#[test]
+fn player_death_nested_maximum_501_item_reset_makes_bounded_atomic_progress() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_maximum_nested_death_reset(admin))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "maximum nested death reset thread panicked")?
+        .map_err(Into::into)
+}
+
+/// Qualified test Content keeps the same weights for the whole scenario. One
+/// additional carried bag makes the complete incoming tree exactly one unit
+/// overweight; dropping that bag admits the same tree at the exact capacity.
+struct WeightedDeathPickup {
+    stone_weight: u32,
+}
+
+impl crate::durability::item_transfer::ItemWeightLookup for WeightedDeathPickup {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0xd1; 32]
+    }
+
+    fn weight_of(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        use crate::durability::item_transfer::ItemWeightLookup;
+        let ordinary = ItemWeightLookup::weight_of(&PickupContent, definition)?;
+        Ok(
+            if definition.production_key == crate::item_transfer_postgres_cases::STONE {
+                self.stone_weight
+            } else {
+                ordinary
+            },
+        )
+    }
+}
+
+impl crate::durability::item_loop_move::ItemLoopContent for WeightedDeathPickup {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        DIGEST
+    }
+
+    fn loop_facts(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Option<ItemDefinitionFacts> {
+        use crate::durability::item_loop_move::ItemLoopContent;
+        let mut value = ItemLoopContent::loop_facts(&PickupContent, definition)?;
+        if definition.production_key == crate::item_transfer_postgres_cases::STONE {
+            value.weight = Some(self.stone_weight);
+        }
+        Some(value)
+    }
+}
+
+fn nested_death_cell() -> Vec<u8> {
+    vec![0, 0, 0, 12, 0, 0, 0, 13, 0, 7]
+}
+
+async fn drop_unselected_death_root(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    selected: [u8; 16],
+    historical: bool,
+) -> TestResult {
+    let f = fence()?;
+    let mut gameplay = CurrentCharacterGameplayFence {
+        character_id: f.character_id,
+        game_session_id: f.game_session_id,
+        connection_generation: f.connection_generation,
+        character_lease_generation: f.character_lease_generation,
+        runtime_scope: f.runtime_scope,
+        scope_ownership_generation: f.scope_ownership_generation,
+        expected_character_revision: CharacterRevision::new(h.character_revision().await?.parse()?)
+            .map_err(debug)?,
+    };
+    let mut intent = death()?;
+    intent.death_cell.spatial_position = nested_death_cell();
+    h.root
+        .commit_character_death(authority, &h.node, gameplay, intent)
+        .await
+        .map_err(debug)?;
+    if historical {
+        // A disposable database models the previously valid writer version.
+        // Only the new representation-conversion trigger is absent while the
+        // real death writer runs; every existing custody/fence guard remains on.
+        sqlx::query("ALTER TABLE game_player_death_item_records DISABLE TRIGGER game_player_death_container_normalize")
+            .execute(&h.pool).await?;
+    }
+    let permit = SpellLanePermit::of_fresh_scope(f.runtime_scope).await?;
+    let dropped = h
+        .root
+        .commit_player_death_drop(
+            &permit,
+            authority,
+            &h.node,
+            f,
+            PlayerDeathDropCause {
+                death_occurrence: id(170),
+                item_instance: selected,
+            },
+            request(180),
+        )
+        .await;
+    if historical {
+        sqlx::query("ALTER TABLE game_player_death_item_records ENABLE TRIGGER game_player_death_container_normalize")
+            .execute(&h.pool).await?;
+    }
+    assert_eq!(dropped?, PlayerDeathItemOutcome::Written);
+    drop(permit);
+    gameplay.expected_character_revision =
+        CharacterRevision::new(h.character_revision().await?.parse()?).map_err(debug)?;
+    assert!(
+        h.root
+            .consume_pending_respawn(
+                authority,
+                &h.node,
+                gameplay,
+                Some(PlayerDeathOccurrence::from_bytes(id(170)).map_err(debug)?)
+            )
+            .await
+            .map_err(debug)?
+            .is_some()
+    );
+    Ok(())
+}
+
+async fn reject_unproven_custody_change(
+    h: &Harness,
+    child: [u8; 16],
+    normalization: bool,
+) -> TestResult {
+    let before = nested_death_snapshot(h, [0; 16]).await?;
+    let footprint = h.footprint().await?;
+    let direct = h.count("game_item_container_entries").await?;
+    let nested = h.count("game_item_nested_entries").await?;
+    let ground: Vec<String> = sqlx::query_scalar("SELECT to_jsonb(g)::text FROM game_item_ground_locations g ORDER BY item_instance_id LIMIT 10")
+        .fetch_all(&h.pool).await?;
+    let receipts = h.count("game_item_loop_move_receipts").await?;
+    let lines = h.count("game_item_loop_move_lines").await?;
+    let mutations: &[&str] = if normalization {
+        &[
+            "WITH moved AS (DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid RETURNING item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id FROM moved",
+        ]
+    } else {
+        &[
+            "DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid",
+            "UPDATE game_item_nested_entries SET placement_ordinal=placement_ordinal+1 WHERE item_instance_id=encode($1,'hex')::uuid",
+        ]
+    };
+    for statement in mutations {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let write = sqlx::query(sqlx::AssertSqlSafe(*statement))
+            .bind(child.as_slice())
+            .execute(&mut *tx)
+            .await;
+        let result = match write {
+            Ok(_) => tx.commit().await,
+            Err(error) => {
+                tx.rollback().await?;
+                Err(error)
+            }
+        };
+        assert!(
+            result.is_err(),
+            "private conversion evidence must not authorize an unproven custody write"
+        );
+        assert_eq!(nested_death_snapshot(h, [0; 16]).await?, before);
+        assert_eq!(h.footprint().await?, footprint);
+        assert_eq!(h.count("game_item_container_entries").await?, direct);
+        assert_eq!(h.count("game_item_nested_entries").await?, nested);
+        assert_eq!(h.count("game_item_loop_move_receipts").await?, receipts);
+        assert_eq!(h.count("game_item_loop_move_lines").await?, lines);
+        let after: Vec<String> = sqlx::query_scalar("SELECT to_jsonb(g)::text FROM game_item_ground_locations g ORDER BY item_instance_id LIMIT 10")
+            .fetch_all(&h.pool).await?;
+        assert_eq!(after, ground);
+    }
+    Ok(())
+}
+
+async fn run_nested_death_pickup(
+    admin: String,
+    other_character: bool,
+    historical: bool,
+) -> TestResult {
+    use crate::corpse_transfer_postgres_cases::{
+        SECOND_CHARACTER, SECOND_SESSION, command_of, fence_of, seed_second_character,
+    };
+    use crate::durability::item_loop_move::{
+        LoopDestination, LoopGround, LoopMoveRefusal, LoopMoveRequest,
+    };
+    use crate::durability::item_transfer::ItemTransferOutcome;
+    use crate::item_transfer_postgres_cases::{CHARACTER, SESSION, uuid_text};
+
+    // Each routed test owns a distinct retained recovery directory, including
+    // when the test harness runs all four scenarios concurrently in one PID.
+    let tag = match (other_character, historical) {
+        (false, false) => "death_nested_pickup_same",
+        (true, false) => "death_nested_pickup_other",
+        (false, true) => "death_nested_pickup_historical_same",
+        (true, true) => "death_nested_pickup_historical_other",
+    };
+    let h = Harness::create(admin, tag).await?;
+    if other_character {
+        seed_second_character(&h.pool).await?;
+    }
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    // A main root of height two can legally become an entry at depth one.
+    // The depth-eight death/reset cases intentionally cannot use that target.
+    let items = carried_chain(&h, &authority, 2).await?;
+    let selected = items[0];
+    let before_drop = nested_death_snapshot(&h, selected).await?;
+    assert_eq!(
+        (before_drop.items.len(), before_drop.placements.len()),
+        (2, 2)
+    );
+    reject_unproven_custody_change(&h, items[1], true).await?;
+    drop_unselected_death_root(&h, &authority, selected, historical).await?;
+    assert_eq!(nested_death_snapshot(&h, selected).await?, before_drop);
+    assert_eq!(
+        h.count("game_item_container_entries").await?,
+        i64::from(historical)
+    );
+    assert_eq!(
+        h.count("game_item_nested_entries").await?,
+        if historical { 1 } else { 2 }
+    );
+    if !historical {
+        reject_unproven_custody_change(&h, items[1], false).await?;
+    }
+    let (receiver, session) = if other_character {
+        (SECOND_CHARACTER, SECOND_SESSION)
+    } else {
+        (CHARACTER, SESSION)
+    };
+    let f = fence_of(receiver, session)?;
+    let destination = h.mint(&authority, BACKPACK, 1).await?;
+    assert!(matches!(
+        h.transfer(
+            &authority,
+            f,
+            to_slot(command_of(session, 200)?, destination, backpack_facts())
+        )
+        .await
+        .map_err(debug)?,
+        ItemTransferOutcome::Committed(_)
+    ));
+    initialize_for(&h, &authority, &f, command_of(session, 202)?).await?;
+    let ballast = h.mint(&authority, BACKPACK, 1).await?;
+    assert!(matches!(
+        h.transfer(
+            &authority,
+            f,
+            to_backpack(command_of(session, 201)?, ballast, backpack_facts())
+        )
+        .await
+        .map_err(debug)?,
+        ItemTransferOutcome::Committed(_)
+    ));
+    let (level, vocation): (i64, Option<String>) = sqlx::query_as("SELECT p.level,b.vocation FROM game_character_progression_state p LEFT JOIN game_character_build_state b USING(character_id) WHERE p.character_id=encode($1,'hex')::uuid")
+        .bind(id(receiver).as_slice()).fetch_one(&h.pool).await?;
+    let capacity = oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(
+        u32::try_from(level)?,
+        vocation.as_deref().unwrap_or("none"),
+    )
+    .map_err(debug)?;
+    // Destination main, incoming main and its inner bag weigh one each.
+    let content = WeightedDeathPickup {
+        stone_weight: u32::try_from(capacity.checked_sub(3).ok_or("capacity")?)?,
+    };
+    let movement = LoopMoveRequest {
+        item: selected,
+        count: None,
+        pickup_cell: Some(nested_death_cell()),
+        destination: LoopDestination::MainBackpack,
+    };
+    let permit = SpellLanePermit::of_fresh_scope(f.runtime_scope).await?;
+    let before_refusal = nested_death_snapshot(&h, [0; 16]).await?;
+    let footprint = h.footprint().await?;
+    let receipts = h.count("game_item_loop_move_receipts").await?;
+    let ground_before: String = sqlx::query_scalar("SELECT to_jsonb(g)::text FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        h.root
+            .commit_item_loop_move(
+                &permit,
+                &authority,
+                &h.node,
+                &f,
+                command_of(session, 210)?,
+                &content,
+                movement.clone()
+            )
+            .await?,
+        Err(LoopMoveRefusal::Overweight)
+    );
+    assert_eq!(nested_death_snapshot(&h, [0; 16]).await?, before_refusal);
+    assert_eq!(h.footprint().await?, footprint);
+    assert_eq!(h.count("game_item_loop_move_receipts").await?, receipts);
+    let ground_after: String = sqlx::query_scalar("SELECT to_jsonb(g)::text FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(ground_after, ground_before);
+    let moved = h
+        .root
+        .commit_item_loop_move(
+            &permit,
+            &authority,
+            &h.node,
+            &f,
+            command_of(session, 211)?,
+            &content,
+            LoopMoveRequest {
+                item: ballast,
+                count: None,
+                pickup_cell: None,
+                destination: LoopDestination::Ground(LoopGround {
+                    spatial_position: nested_death_cell(),
+                    map_revision: "death-map-1".into(),
+                    content_revision: "content-1".into(),
+                    placement_context: id(175).to_vec(),
+                }),
+            },
+        )
+        .await?
+        .map_err(debug)?;
+    assert_eq!(moved.operation, 4);
+    assert!(!moved.replayed);
+    let before_pickup = nested_death_snapshot(&h, selected).await?;
+    let audits_before = h.count("game_item_audit_outbox").await?;
+    let receipts_before = h.count("game_item_loop_move_receipts").await?;
+    let pickup = h
+        .root
+        .commit_item_loop_move(
+            &permit,
+            &authority,
+            &h.node,
+            &f,
+            command_of(session, 212)?,
+            &content,
+            movement.clone(),
+        )
+        .await?
+        .map_err(debug)?;
+    assert_eq!(pickup.operation, 5);
+    assert!(!pickup.replayed);
+    assert!(!h.on_ground(selected).await?);
+    assert_eq!(nested_death_snapshot(&h, selected).await?, before_pickup);
+    assert_eq!(h.count("game_item_container_entries").await?, 1);
+    assert_eq!(h.count("game_item_nested_entries").await?, 2);
+    assert_eq!(
+        h.count("game_item_loop_move_receipts").await?,
+        receipts_before + 1
+    );
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 1);
+    for (index, item) in items.iter().enumerate() {
+        let actual: (Option<String>, Option<i32>) = sqlx::query_as(
+            "SELECT owner_character::text,depth FROM game_item_loop_owner(encode($1,'hex')::uuid)",
+        )
+        .bind(item.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            actual,
+            (
+                Some(uuid_text(id(receiver))),
+                Some(i32::try_from(index)? + 1)
+            )
+        );
+    }
+    for (container, parent, child) in [
+        (destination, None, selected),
+        (selected, Some(destination), items[1]),
+        (items[1], Some(selected), items[2]),
+    ] {
+        let view = h
+            .root
+            .read_item_loop_container(&authority, f.character_id, container)
+            .await?
+            .ok_or("carried death container view")?;
+        assert_eq!(view.container.item_instance_id, container);
+        assert_eq!(view.parent, parent);
+        assert_eq!(view.entries.len(), 1);
+        assert_eq!(view.entries[0].item.item_instance_id, child);
+        assert_eq!(view.entries[0].item.quantity, 1);
+        let ordinal: String = sqlx::query_scalar("SELECT placement_ordinal::text FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid UNION ALL SELECT placement_ordinal::text FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(child.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(view.entries[0].placement_ordinal, ordinal.parse::<u64>()?);
+        if other_character {
+            assert!(
+                h.root
+                    .read_item_loop_container(&authority, fence()?.character_id, container)
+                    .await?
+                    .is_none()
+            );
+        }
+    }
+    let written = nested_death_snapshot(&h, [0; 16]).await?;
+    let replay = h
+        .root
+        .commit_item_loop_move(
+            &permit,
+            &authority,
+            &h.node,
+            &f,
+            command_of(session, 212)?,
+            &content,
+            movement,
+        )
+        .await?
+        .map_err(debug)?;
+    assert!(replay.replayed);
+    assert_eq!(
+        (replay.transaction_id, replay.event_id, replay.operation),
+        (pickup.transaction_id, pickup.event_id, pickup.operation)
+    );
+    assert_eq!(replay.floor_effect, None);
+    assert_eq!(nested_death_snapshot(&h, [0; 16]).await?, written);
+    assert_eq!(
+        h.count("game_item_loop_move_receipts").await?,
+        receipts_before + 1
+    );
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 1);
+    drop(permit);
+    reject_unproven_custody_change(&h, items[1], false).await?;
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}
+
+fn nested_death_pickup_case(other_character: bool, historical: bool) -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_nested_death_pickup(admin, other_character, historical))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "nested death pickup thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn player_death_nested_backpack_pickup_same_owner_honors_complete_weight() -> TestResult {
+    nested_death_pickup_case(false, false)
+}
+
+#[test]
+fn player_death_nested_backpack_pickup_changes_every_descendant_owner() -> TestResult {
+    nested_death_pickup_case(true, false)
+}
+
+#[test]
+fn player_death_nested_historical_backpack_pickup_same_owner_is_atomic() -> TestResult {
+    nested_death_pickup_case(false, true)
+}
+
+#[test]
+fn player_death_nested_historical_backpack_pickup_changes_every_descendant_owner() -> TestResult {
+    nested_death_pickup_case(true, true)
 }
 
 async fn run_death_ground_regression(admin: String, reset: bool) -> TestResult {

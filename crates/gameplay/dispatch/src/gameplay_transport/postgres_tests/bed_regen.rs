@@ -4,6 +4,9 @@ use super::tutorial_vitals_fixture::admit;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use crate::gameplay_transport::spell_premium_coordinator::{
+    SpellPremiumCoordinator, purchase_fixture,
+};
 use oteryn_protocol_oteryn::actor_spell::{STATE_DOMAIN_ACTOR_VITALS, decode_actor_vitals};
 
 #[test]
@@ -14,6 +17,96 @@ fn bed_regen_admission_wire_replay_and_restart_postgres() -> TestResult {
 #[test]
 fn bed_regen_freed_bed_limits_only_sleep_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("bed-regen-freed", || scenario(true))
+}
+
+#[test]
+fn gr_soul_001_bed_admission_uses_current_account_premium_postgres() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("bed-regen-soul", || {
+        run(async |admin| {
+            for (index, (promoted, account, delivered, slept, expected)) in [
+                (true, 40, true, 899, 150),
+                (true, 40, true, 900, 151),
+                (true, 41, true, 900, 100),
+                (false, 40, true, 900, 100),
+                (true, 40, false, 900, 100),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let h = Harness::create_with_admission_seed(
+                    admin.clone(),
+                    &format!("gr_soul_001_{index}"),
+                    false,
+                    false,
+                )
+                .await?;
+                let request = prepare_current_session(&h).await?;
+                seed(&h, false).await?;
+                sqlx::query("UPDATE game_character_last_positions SET rest[1]=150 WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).execute(&h.pool).await?;
+                if slept == 899 {
+                    sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=slept_at+899000,freed_cause='owner_wake' WHERE character_id=encode($1,'hex')::uuid")
+                        .bind(id(41).as_slice()).execute(&h.pool).await?;
+                }
+                if promoted {
+                    // Historical promotion is fixture input; settlement itself
+                    // still runs through the restricted runtime role and fences.
+                    let mut tx = h.pool.begin().await?;
+                    sqlx::query("SET LOCAL session_replication_role=replica")
+                        .execute(&mut *tx)
+                        .await?;
+                    sqlx::query("INSERT INTO game_character_promotions(character_id,purchase_occurrence_id) VALUES(encode($1,'hex')::uuid,game_character_uuid_v7())")
+                        .bind(id(41).as_slice()).execute(&mut *tx).await?;
+                    tx.commit().await?;
+                }
+                let (consumer, clock, activation, proof) = purchase_fixture::current(id(account));
+                h.root.accept_premium_evidence(&proof).await?;
+                let coordinator = SpellPremiumCoordinator::new(
+                    consumer,
+                    Some(clock),
+                    delivered.then_some(activation),
+                    Some(h.root.clone()),
+                );
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let deps = Dependencies::new()?;
+                let mut owner = deps.owner(&h, &authority);
+                owner.premium_coordinator = Some(&coordinator);
+                // Ordinary first entry precedes the session's Premium registration.
+                assert_eq!(owner.session_account(deps.admitted.game_session_id), None);
+                admit(&owner, &deps, &request).await?;
+                {
+                    let runtime = owner.runtime.lock().await;
+                    let states = owner.states.spell_states.lock().await;
+                    let state = states
+                        .get(&runtime, deps.actor, deps.admitted.game_session_id)
+                        .ok_or("Soul actor")?;
+                    assert_eq!(state.vitals().soul, expected, "case {index}");
+                    assert_eq!(
+                        state.facts.max_soul, 100,
+                        "promotion projects after creation"
+                    );
+                }
+                admit(&owner, &deps, &request).await?;
+                let settled: (i32, i64) = sqlx::query_as("SELECT rest[1],(SELECT count(*) FROM game_bed_regen_receipts) FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(
+                    settled,
+                    (expected as i32, 1),
+                    "case {index} is consumed once"
+                );
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                h.cleanup().await?;
+            }
+            Ok(())
+        })
+    })
 }
 
 async fn seed(h: &Harness, freed: bool) -> TestResult {
@@ -75,7 +168,7 @@ fn scenario(freed: bool) -> TestResult {
         stale.character_lease_generation += 1;
         assert!(
             h.root
-                .settle_bed_regen(&authority, &h.node, stale)
+                .settle_bed_regen(&authority, &h.node, stale, None)
                 .await
                 .is_err()
         );
@@ -92,7 +185,7 @@ fn scenario(freed: bool) -> TestResult {
             .await?;
         assert!(
             h.root
-                .settle_bed_regen(&authority, &h.node, fence)
+                .settle_bed_regen(&authority, &h.node, fence, None)
                 .await
                 .is_err()
         );

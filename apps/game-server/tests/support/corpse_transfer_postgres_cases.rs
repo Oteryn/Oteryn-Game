@@ -40,8 +40,8 @@ use std::time::Duration;
 /// A top-damage identity that is not any fenced Character of these cases.
 pub(crate) const OTHER_TOP: u8 = 150;
 const SECOND_ACCOUNT: u8 = 60;
-const SECOND_CHARACTER: u8 = 61;
-const SECOND_SESSION: u8 = 62;
+pub(crate) const SECOND_CHARACTER: u8 = 61;
+pub(crate) const SECOND_SESSION: u8 = 62;
 /// The death's runtime-scope ownership generation of every corpse below.
 pub(crate) const GENERATION: u64 = 1;
 
@@ -81,7 +81,7 @@ pub(crate) fn command_of(session: u8, value: u64) -> TestResult<CommandRef> {
     ))
 }
 
-fn fence_of(character: u8, session: u8) -> TestResult<CurrentCharacterItemFence> {
+pub(crate) fn fence_of(character: u8, session: u8) -> TestResult<CurrentCharacterItemFence> {
     Ok(CurrentCharacterItemFence {
         character_id: CharacterId::from_bytes(id(character)).map_err(debug)?,
         game_session_id: GameSessionId::decode(&id(session)).map_err(debug)?,
@@ -115,7 +115,7 @@ fn second_bootstrap_binding() -> Vec<u8> {
 /// A second player in the same World and Channel: Character 61 (account 60)
 /// with progression state, an active GameSession 62 and its admission guards; the
 /// runtime-scope assignment and readiness are the harness's, shared.
-async fn seed_second_character(pool: &sqlx::PgPool) -> TestResult {
+pub(crate) async fn seed_second_character(pool: &sqlx::PgPool) -> TestResult {
     sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")
         .bind(id(SECOND_ACCOUNT).as_slice())
         .execute(pool)

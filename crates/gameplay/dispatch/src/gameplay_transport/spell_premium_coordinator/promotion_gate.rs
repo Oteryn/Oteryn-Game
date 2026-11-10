@@ -73,6 +73,16 @@ impl crate::durability::daily_reward_delivery::DailyRewardPremiumGate for DailyR
     }
 }
 
+impl crate::durability::bed_regen::BedPremiumGate for SpellPremiumCoordinator {
+    fn current<'a>(
+        &'a self,
+        tx: &'a mut PremiumGateTx<'_>,
+        account: [u8; 16],
+    ) -> Pin<Box<dyn Future<Output = Result<bool, DurabilityError>> + Send + 'a>> {
+        Box::pin(self.transaction_permission(tx, account, |status| status.gate().premium_current()))
+    }
+}
+
 impl SpellPremiumCoordinator {
     pub(in crate::gameplay_transport) async fn transaction_permission(
         &self,

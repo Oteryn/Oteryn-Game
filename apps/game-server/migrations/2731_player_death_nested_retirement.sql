@@ -1,0 +1,213 @@
+-- Retire the bounded tree retained by a death Ground transfer, deepest first,
+-- in the existing root transaction. Each item keeps its own frozen retirement
+-- reservation, terminal receipt and immutable audit. Ordinary decay is unchanged.
+-- Historical main entries and normalized nested edges retain their actual parent
+-- and ordinal; no retirement flattens the graph or invents custody.
+CREATE TABLE game_player_death_retirement_edges (
+ item_instance_id UUID PRIMARY KEY REFERENCES game_item_instances(item_instance_id),
+ parent_item_instance_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id),
+ ground_root_item_instance_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id),
+ death_transaction_id UUID NOT NULL REFERENCES game_player_death_item_records(transaction_id),
+ world_id UUID NOT NULL,
+ scope_kind SMALLINT NOT NULL,
+ channel_id UUID,
+ instance_id UUID,
+ placement_ordinal NUMERIC(20,0) NOT NULL CHECK(placement_ordinal BETWEEN 1 AND 18446744073709551615),
+ entry_kind SMALLINT NOT NULL CHECK(entry_kind IN(1,2)),
+ depth SMALLINT NOT NULL CHECK(depth BETWEEN 1 AND 8),
+ created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
+ CHECK(item_instance_id<>parent_item_instance_id AND item_instance_id<>ground_root_item_instance_id),
+ CHECK((parent_item_instance_id=ground_root_item_instance_id)=(depth=1)),
+ CHECK((scope_kind=1 AND channel_id IS NOT NULL AND instance_id IS NULL)
+    OR (scope_kind=2 AND channel_id IS NULL AND instance_id IS NOT NULL)),
+ UNIQUE(ground_root_item_instance_id,parent_item_instance_id,placement_ordinal)
+);
+CREATE INDEX game_player_death_retirement_edges_parent
+ ON game_player_death_retirement_edges(parent_item_instance_id);
+CREATE INDEX game_player_death_retirement_edges_death
+ ON game_player_death_retirement_edges(death_transaction_id);
+REVOKE ALL ON game_player_death_retirement_edges FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+GRANT SELECT ON game_player_death_retirement_edges TO oteryn_game_runtime,oteryn_game_control;
+CREATE TRIGGER game_player_death_retirement_edges_stamp BEFORE INSERT ON game_player_death_retirement_edges
+ FOR EACH ROW EXECUTE FUNCTION game_item_stamp_created_xact_id();
+CREATE TRIGGER game_player_death_retirement_edges_immutable BEFORE UPDATE OR DELETE ON game_player_death_retirement_edges
+ FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_player_death_retirement_edges_no_truncate BEFORE TRUNCATE ON game_player_death_retirement_edges
+ FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
+
+-- BAGS placement ordinals are monotonic u64 identities, not container counts.
+-- The legacy corpse-decay ordinal ceiling remains exactly sixteen.
+DO $migration$
+DECLARE t TEXT; c RECORD; n INT;
+BEGIN
+ FOREACH t IN ARRAY ARRAY['game_item_decay_retire_reservations','game_item_decay_retire_receipts'] LOOP
+  n:=0;
+  FOR c IN SELECT conname FROM pg_constraint
+   WHERE conrelid=to_regclass(t) AND contype='c'
+    AND conkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=to_regclass(t) AND attname='placement_ordinal')]::smallint[]
+  LOOP
+   EXECUTE format('ALTER TABLE %I DROP CONSTRAINT %I',t,c.conname);
+   n:=n+1;
+  END LOOP;
+  IF n<>1 THEN RAISE EXCEPTION 'unexpected retirement ordinal constraint on %',t; END IF;
+  EXECUTE format('ALTER TABLE %I ADD CONSTRAINT game_retire_placement_ordinal CHECK (
+   placement_ordinal BETWEEN 1 AND 18446744073709551615
+   AND (cause_kind<>''CORPSE_DECAY'' OR placement_ordinal<=16))',t);
+ END LOOP;
+END $migration$;
+
+-- Capture only a current retirement reservation's actual edge. All ancestors
+-- must still be live in the same World, with one parent and a bounded acyclic
+-- path to the receipt-proven death Ground root. A raw DELETE gets no proof.
+CREATE OR REPLACE FUNCTION game_player_death_reset_entry_capture() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER AS $capture$
+DECLARE v game_item_decay_retire_reservations%ROWTYPE;
+ g game_item_ground_locations%ROWTYPE; d game_player_death_item_records%ROWTYPE;
+ current_item UUID; parents UUID[]; visited UUID[]; level INT; kind SMALLINT;
+BEGIN
+ SELECT * INTO v FROM game_item_decay_retire_reservations
+  WHERE item_instance_id=OLD.item_instance_id
+   AND cause_kind IN('WORLD_RESET','ACTIVITY_RETIREMENT')
+   AND ground_root_item_instance_id<>item_instance_id
+   AND placement_ordinal=OLD.placement_ordinal AND world_id=OLD.world_id
+  ORDER BY fence_scope_ownership_generation DESC LIMIT 1;
+ IF NOT FOUND THEN RETURN OLD; END IF;
+ kind:=CASE TG_TABLE_NAME WHEN 'game_item_container_entries' THEN 1
+                         WHEN 'game_item_nested_entries' THEN 2 ELSE 0 END;
+ IF kind=0 THEN RAISE EXCEPTION 'unexpected death retirement source' USING ERRCODE='23514'; END IF;
+ current_item:=OLD.parent_item_instance_id;
+ visited:=ARRAY[OLD.item_instance_id];
+ FOR level IN 1..8 LOOP
+  IF current_item=ANY(visited) OR NOT EXISTS(SELECT 1 FROM game_item_instances
+   WHERE item_instance_id=current_item AND world_id=OLD.world_id AND lifecycle=1 AND quantity>0) THEN
+   RETURN OLD;
+  END IF;
+  visited:=visited||current_item;
+  SELECT * INTO g FROM game_item_ground_locations WHERE item_instance_id=current_item;
+  IF FOUND THEN
+   SELECT * INTO d FROM game_player_death_item_records
+    WHERE item_instance_id=current_item AND operation=1 AND source_slot IN(0,9)
+     AND world_id=g.world_id
+     AND (scope_kind,channel_id,instance_id) IS NOT DISTINCT FROM (g.scope_kind,g.channel_id,g.instance_id)
+     AND g.corpse_ref=convert_to('OTERYN_ITEM_LOOP_DROP/v1:','UTF8')||uuid_send(transaction_id);
+   IF NOT FOUND OR current_item<>v.ground_root_item_instance_id OR g.world_id<>OLD.world_id
+    OR (g.scope_kind,g.channel_id,g.instance_id) IS DISTINCT FROM (v.scope_kind,v.channel_id,v.instance_id)
+    OR (d.source_slot=0 AND level>7)
+    OR NOT EXISTS(SELECT 1 FROM game_item_decay_retire_reservations root
+     WHERE root.item_instance_id=current_item AND root.ground_root_item_instance_id=current_item
+      AND root.fence_scope_ownership_generation=v.fence_scope_ownership_generation
+      AND (root.world_id,root.scope_kind,root.channel_id,root.instance_id,root.cause_kind,
+           root.reset_epoch,root.retirement_binding,root.target_digest,root.activity_handoff_id,root.activity_ownership_generation)
+       IS NOT DISTINCT FROM
+          (v.world_id,v.scope_kind,v.channel_id,v.instance_id,v.cause_kind,
+           v.reset_epoch,v.retirement_binding,v.target_digest,v.activity_handoff_id,v.activity_ownership_generation)) THEN
+    RETURN OLD;
+   END IF;
+   INSERT INTO game_player_death_retirement_edges
+    (item_instance_id,parent_item_instance_id,ground_root_item_instance_id,death_transaction_id,
+     world_id,scope_kind,channel_id,instance_id,placement_ordinal,entry_kind,depth)
+    VALUES(OLD.item_instance_id,OLD.parent_item_instance_id,current_item,d.transaction_id,
+     OLD.world_id,g.scope_kind,g.channel_id,g.instance_id,OLD.placement_ordinal,kind,level);
+   RETURN OLD;
+  END IF;
+  SELECT array_agg(parent_item_instance_id) INTO parents FROM (
+   SELECT parent_item_instance_id FROM game_item_container_entries
+    WHERE item_instance_id=current_item AND world_id=OLD.world_id
+   UNION ALL SELECT parent_item_instance_id FROM game_item_nested_entries
+    WHERE item_instance_id=current_item AND world_id=OLD.world_id
+  ) edges;
+  IF cardinality(parents) IS DISTINCT FROM 1 THEN RETURN OLD; END IF;
+  current_item:=parents[1];
+ END LOOP;
+ RETURN OLD;
+END $capture$;
+CREATE TRIGGER game_player_death_reset_nested_capture BEFORE DELETE ON game_item_nested_entries
+ FOR EACH ROW EXECUTE FUNCTION game_player_death_reset_entry_capture();
+
+-- This is only the location alternative. The installed World/Instance proofs
+-- still check their live authority, drain/epoch or completed activity, exact
+-- reservation/event, conserved item, absence of all custody and immutable audit.
+-- Requiring the immediate parent's and root's same-transaction terminal receipt
+-- makes partial subtree removal insufficient.
+CREATE FUNCTION game_player_death_retirement_entry_proven(p_item UUID) RETURNS BOOLEAN
+LANGUAGE sql VOLATILE SECURITY DEFINER AS $proof$
+ SELECT EXISTS(
+  SELECT 1 FROM game_player_death_retirement_edges e
+  JOIN game_item_decay_retire_receipts r ON r.item_instance_id=e.item_instance_id
+  JOIN game_item_decay_retire_receipts parent ON parent.item_instance_id=e.parent_item_instance_id
+  JOIN game_item_decay_retire_receipts root ON root.item_instance_id=e.ground_root_item_instance_id
+  JOIN game_item_ground_removal_evidence g ON g.item_instance_id=root.item_instance_id
+  JOIN game_player_death_item_records d ON d.transaction_id=e.death_transaction_id
+  WHERE e.item_instance_id=p_item AND e.created_xact_id=pg_current_xact_id()
+   AND r.created_xact_id=pg_current_xact_id() AND parent.created_xact_id=pg_current_xact_id()
+   AND root.created_xact_id=pg_current_xact_id() AND g.created_xact_id=pg_current_xact_id()
+   AND r.cause_kind IN('WORLD_RESET','ACTIVITY_RETIREMENT')
+   AND e.ground_root_item_instance_id=r.ground_root_item_instance_id
+   AND e.placement_ordinal=r.placement_ordinal AND e.world_id=r.world_id
+   AND (e.scope_kind,e.channel_id,e.instance_id) IS NOT DISTINCT FROM (r.scope_kind,r.channel_id,r.instance_id)
+   AND (g.world_id,g.scope_kind,g.channel_id,g.instance_id) IS NOT DISTINCT FROM (r.world_id,r.scope_kind,r.channel_id,r.instance_id)
+   AND d.item_instance_id=root.item_instance_id AND d.operation=1 AND d.source_slot IN(0,9)
+   AND (d.world_id,d.scope_kind,d.channel_id,d.instance_id) IS NOT DISTINCT FROM (r.world_id,r.scope_kind,r.channel_id,r.instance_id)
+   AND e.depth<=CASE WHEN d.source_slot=9 THEN 8 ELSE 7 END
+   AND root.ground_root_item_instance_id=root.item_instance_id AND root.placement_ordinal IS NULL
+   AND parent.ground_root_item_instance_id=root.item_instance_id
+   AND (root.world_id,root.scope_kind,root.channel_id,root.instance_id,root.cause_kind,
+        root.reset_epoch,root.retirement_binding,root.target_digest,root.activity_handoff_id,root.activity_ownership_generation,
+        root.fence_scope_ownership_generation)
+    IS NOT DISTINCT FROM
+       (r.world_id,r.scope_kind,r.channel_id,r.instance_id,r.cause_kind,
+        r.reset_epoch,r.retirement_binding,r.target_digest,r.activity_handoff_id,r.activity_ownership_generation,
+        r.fence_scope_ownership_generation)
+   AND (parent.world_id,parent.scope_kind,parent.channel_id,parent.instance_id,parent.cause_kind,
+        parent.reset_epoch,parent.retirement_binding,parent.target_digest,parent.activity_handoff_id,parent.activity_ownership_generation,
+        parent.fence_scope_ownership_generation)
+    IS NOT DISTINCT FROM
+       (r.world_id,r.scope_kind,r.channel_id,r.instance_id,r.cause_kind,
+        r.reset_epoch,r.retirement_binding,r.target_digest,r.activity_handoff_id,r.activity_ownership_generation,
+        r.fence_scope_ownership_generation)
+   AND (SELECT count(*) FROM game_player_death_retirement_edges all_edges
+        WHERE all_edges.ground_root_item_instance_id=root.item_instance_id
+         AND all_edges.created_xact_id=pg_current_xact_id())<=CASE WHEN d.source_slot=9 THEN 500 ELSE 499 END
+   AND NOT EXISTS(SELECT 1 FROM game_player_death_retirement_edges all_edges
+        WHERE all_edges.ground_root_item_instance_id=root.item_instance_id
+         AND all_edges.created_xact_id=pg_current_xact_id()
+        GROUP BY all_edges.parent_item_instance_id HAVING count(*)>20)
+ )
+$proof$;
+
+-- Insert the new location alternative into the latest installed proof bodies;
+-- every conservation, authority and terminal predicate outside it is retained.
+DO $migration$
+DECLARE f TEXT; body TEXT; amended TEXT; at_begin INT; old_arm TEXT; new_arm TEXT;
+BEGIN
+ old_arm:='OR (r.placement_ordinal IS NOT NULL AND (';
+ new_arm:='OR (r.placement_ordinal IS NOT NULL AND NOT game_player_death_retirement_entry_proven(p_item) AND (';
+ FOREACH f IN ARRAY ARRAY['game_world_reset_item_proven(uuid)','game_activity_retirement_item_proven(uuid)'] LOOP
+  body:=pg_get_functiondef(to_regprocedure(f));
+  IF (length(body)-length(replace(body,old_arm,'')))/length(old_arm)<>1 THEN
+   RAISE EXCEPTION 'missing exact retirement entry proof in %',f;
+  END IF;
+  EXECUTE replace(body,old_arm,new_arm);
+ END LOOP;
+ FOREACH f IN ARRAY ARRAY['game_item_container_entry_removal_proven','game_item_nested_entry_proven'] LOOP
+  body:=pg_get_functiondef(to_regprocedure(f||'()'));
+  at_begin:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+  IF at_begin=0 THEN RAISE EXCEPTION 'missing retirement custody guard %',f; END IF;
+  amended:=overlay(body placing E'BEGIN\n'||$arm$
+ IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_player_death_retirement_edges e
+  WHERE e.item_instance_id=OLD.item_instance_id AND e.parent_item_instance_id=OLD.parent_item_instance_id
+   AND e.world_id=OLD.world_id AND e.placement_ordinal=OLD.placement_ordinal
+   AND e.entry_kind=CASE TG_TABLE_NAME WHEN 'game_item_container_entries' THEN 1 ELSE 2 END
+   AND e.created_xact_id=pg_current_xact_id())
+  AND (game_world_reset_item_proven(OLD.item_instance_id)
+       OR game_activity_retirement_item_proven(OLD.item_instance_id)) THEN RETURN NULL; END IF;
+$arm$ from at_begin for 5);
+  EXECUTE amended;
+ END LOOP;
+ FOREACH f IN ARRAY ARRAY['game_player_death_reset_entry_capture()','game_player_death_retirement_entry_proven(uuid)',
+  'game_world_reset_item_proven(uuid)','game_activity_retirement_item_proven(uuid)',
+  'game_item_container_entry_removal_proven()','game_item_nested_entry_proven()'] LOOP
+  EXECUTE format('ALTER FUNCTION %s SECURITY DEFINER SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
+  EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
+ END LOOP;
+END $migration$;

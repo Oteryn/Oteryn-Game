@@ -2,7 +2,7 @@
 //! The persisted receipt supplies the death cell. DEATH-3 owns selection and workflow ordering;
 //! these primitives neither select items nor change CharacterRevision or receipt constraints.
 //! The caller holds its exact scope spell lane from before begin through commit (key-33 Ground).
-//! Contents retain their parent identity: no child is written or expanded into audit lines.
+//! Contents retain their parent identity: no child ItemInstance is rewritten or expanded into audit lines.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{assert_item_only_fence, numeric_u64, uuid_text};
 use super::db::{begin_type2_transaction, lock_admission_relations};
@@ -368,7 +368,7 @@ async fn write(
     // Corpse custody is still outside this carried-item primitive.
     let (direct_contents, nested_contents, corpse_contents): (bool, bool, bool) = sqlx::query_as("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid), EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid), EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
         .bind(cause.item_instance.as_slice()).fetch_one(&mut *connection).await?;
-    if corpse_contents || (direct_contents && slot != 9) {
+    if corpse_contents || (direct_contents && !matches!(slot, 0 | 9)) {
         return Err(PlayerDeathItemError::InvalidInput);
     }
     let quantity = u32::try_from(item.try_get::<i64, _>("quantity")?)
