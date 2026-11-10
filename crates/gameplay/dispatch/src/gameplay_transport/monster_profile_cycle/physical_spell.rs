@@ -650,8 +650,8 @@ async fn prepare_reader<'native>(
     stamp: RuntimeWorkStamp,
     chain_candidates: bool,
     chain_origin: Option<MovementLocalPosition>,
-) -> Option<CurrentTarget<'native>> {
-    prepare_source_reader(
+) -> Result<CurrentTarget<'native>, PreparationError> {
+    prepare_source_reader_checked(
         runtime,
         states,
         attack,
@@ -1375,11 +1375,29 @@ pub(super) async fn prepare_callback_reader<'native>(
     .await
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "existing ordinary spell timer owner shares one physical scope read"
-)]
-pub(super) async fn drain_due(
+/// Original pending deadlines from the actual current windup and chain owners.
+pub(in crate::gameplay_transport) fn next_source_due_time(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+) -> Result<Option<u64>, ()> {
+    let windup = states
+        .monster_spells
+        .next_windup_due_time_current(runtime)
+        .map_err(|_| ())?;
+    let chain = states
+        .monster_chains
+        .as_ref()
+        .map(|owner| owner.next_due_time_current(runtime))
+        .transpose()
+        .map_err(|_| ())?
+        .flatten();
+    Ok(windup.into_iter().chain(chain).map(|due| due.get()).min())
+}
+
+/// The arbiter limits original deadlines; fresh Map/combat facts and committed
+/// effects use the independent actual execution time.
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) async fn drain_due_through(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     attack: &mut ChannelAttackStates,
@@ -1387,13 +1405,24 @@ pub(super) async fn drain_due(
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
     parties: &ReferenceParties,
-    now: u64,
+    through: u64,
+    execution_now: u64,
     charms: &crate::content::charm_source::CanonicalCharmCatalogue,
-) {
-    timers::drain(
-        runtime, states, attack, room, native, map, parties, now, charms,
+) -> Result<(), ()> {
+    let _ = next_source_due_time(runtime, states)?;
+    timers::drain_through(
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        map,
+        parties,
+        through,
+        execution_now,
+        charms,
     )
-    .await;
+    .await
 }
 
 #[cfg(test)]

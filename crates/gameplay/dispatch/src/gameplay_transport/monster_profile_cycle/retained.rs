@@ -471,14 +471,14 @@ pub(in crate::gameplay_transport) async fn resume_one_due(
                 map,
                 current,
                 parties,
-                due,
+                execution_now,
                 owner.imported_charms,
                 native_health_names,
             )
             .await?;
         }
         Cursor::Drain => {
-            physical_spell::drain_due(
+            physical_spell::drain_due_through(
                 runtime,
                 states,
                 attack,
@@ -487,9 +487,10 @@ pub(in crate::gameplay_transport) async fn resume_one_due(
                 map,
                 parties,
                 due,
+                execution_now,
                 owner.imported_charms,
             )
-            .await;
+            .await?;
         }
         Cursor::Items => return Ok(false),
     }

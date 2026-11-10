@@ -117,6 +117,7 @@ fn source_prefix(
         .native_callbacks
         .next_source_due_time()?
         .into_iter()
+        .chain(super::monster_profile_cycle::physical_spell::next_source_due_time(runtime, states)?)
         .chain(states.soul_war_callbacks.next_native_due())
         .chain(
             states

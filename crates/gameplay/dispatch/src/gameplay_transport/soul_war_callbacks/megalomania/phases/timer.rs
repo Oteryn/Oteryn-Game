@@ -80,6 +80,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .chain(states.spite_global.next_due_us())
                         .chain(states.primal_callbacks.next_source_due_time()?)
+                        .chain(crate::gameplay_transport::monster_profile_cycle::physical_spell::next_source_due_time(&runtime, &states)?)
                         .chain(
                             states
                                 .rotten_blood_callbacks

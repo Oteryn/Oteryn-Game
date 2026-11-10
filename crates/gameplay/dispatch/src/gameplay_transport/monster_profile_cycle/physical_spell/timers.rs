@@ -206,7 +206,7 @@ impl FactsKey {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(super) async fn drain(
+pub(super) async fn drain_through(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     attack: &mut ChannelAttackStates,
@@ -214,36 +214,39 @@ pub(super) async fn drain(
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
     parties: &ReferenceParties,
+    through: u64,
     now: u64,
     charms: &crate::content::charm_source::CanonicalCharmCatalogue,
-) {
+) -> Result<(), ()> {
+    let through = through.min(now);
     let clock = TurnClock(SemanticTimeMicros::from_micros(now));
-    let Ok(stamp) = runtime.issue_owner_work() else {
-        return;
-    };
+    let stamp = runtime.issue_owner_work().map_err(|_| ())?;
     let mut windups = Vec::new();
     let mut players = Vec::new();
     for (source, proposal, session, due) in states.monster_spells.pending_windups() {
-        if due.get() > now {
+        if due.get() > through {
             continue;
         }
-        if let Some(reader) = prepare_reader(
+        let reader = prepare_reader(
             runtime, states, attack, room, native, map, &source, &proposal, parties, now, stamp,
             false, None,
         )
-        .await
-        {
-            players.extend(reader.players.iter().copied());
-            windups.push((FactsKey::new(&source, &proposal, session), reader));
-        }
+        .await;
+        let reader = match reader {
+            Ok(reader) => reader,
+            Err(PreparationError::Unavailable) => return Err(()),
+            Err(PreparationError::Refused) => continue,
+        };
+        players.extend(reader.players.iter().copied());
+        windups.push((FactsKey::new(&source, &proposal, session), reader));
     }
     // A later awaited read can invalidate the transaction behind an earlier
     // reader. Revalidate the complete bank before consuming any one-use pulse.
     if !map.validate_transaction(runtime).await {
-        return;
+        return Err(());
     }
     let mut spells = std::mem::take(&mut states.monster_spells);
-    let outcomes = spells.run_windup_due_current_with(
+    let outcomes = spells.run_windup_due_current_through_with(
         runtime,
         stamp,
         &mut super::super::super::attack::charm_combat::source_vitals::CharmSourceVitals {
@@ -253,6 +256,7 @@ pub(super) async fn drain(
             root: GameplayDecisionRoot::from_bytes(native.source_digest()),
         },
         &clock,
+        SemanticTimeMicros::from_micros(through),
         |source, proposal, session, pulse_stamp| {
             if pulse_stamp != stamp {
                 return None;
@@ -266,77 +270,80 @@ pub(super) async fn drain(
     // The completed windup owner must be back in the channel before the first
     // awaited chain read. Cancellation retains both its receipts and successors.
     states.monster_spells = spells;
-    if let Ok(outcomes) = outcomes {
-        for (_, outcome) in outcomes {
-            if let Ok(outcome) = outcome {
-                record_hits(runtime, attack, None, &players, outcome, now);
-            }
+    for (_, outcome) in outcomes.map_err(|_| ())? {
+        if let Ok(outcome) = outcome {
+            record_hits(runtime, attack, None, &players, outcome, now);
         }
     }
     let Some(chains) = states.monster_chains.as_ref() else {
-        return;
+        return Ok(());
     };
-    let pending = chains.pending_sources();
+    let pending = chains.pending_sources().map_err(|_| ())?;
     let mut bank = Vec::new();
     players.clear();
-    if let Ok(pending) = pending {
-        for pending in pending {
-            if pending.due.get() > now {
-                continue;
-            }
-            let Some(reader) = prepare_reader(
-                runtime,
-                states,
-                attack,
-                room,
-                native,
-                map,
-                &pending.source,
-                &pending.proposal,
-                parties,
-                now,
-                stamp,
-                false,
-                Some(position(pending.from)),
-            )
-            .await
-            else {
-                continue;
-            };
-            let Ok(to) = runtime.read_actor_position(pending.proposal.target) else {
-                continue;
-            };
-            let to = to.position();
-            let Some(sight) = read_sight(runtime, map, position(pending.from), to).await else {
-                continue;
-            };
-            if !map.validate_transaction(runtime).await {
-                continue;
-            }
-            let facts = CurrentChainMap {
-                stamp,
-                sights: BTreeMap::from([((pending.from, tile(to)), sight)]),
-                paths: BTreeMap::new(),
-            };
-            players.extend(reader.players.iter().copied());
-            bank.push((
-                FactsKey::new(&pending.source, &pending.proposal, pending.session),
-                pending.from,
-                reader,
-                facts,
-            ));
+    for pending in pending {
+        if pending.due.get() > through {
+            continue;
         }
+        let reader = prepare_reader(
+            runtime,
+            states,
+            attack,
+            room,
+            native,
+            map,
+            &pending.source,
+            &pending.proposal,
+            parties,
+            now,
+            stamp,
+            false,
+            Some(position(pending.from)),
+        )
+        .await;
+        let reader = match reader {
+            Ok(reader) => reader,
+            Err(PreparationError::Unavailable) => return Err(()),
+            Err(PreparationError::Refused) => continue,
+        };
+        let Ok(to) = runtime.read_actor_position(pending.proposal.target) else {
+            continue;
+        };
+        let to = to.position();
+        if crate::durability::native_world_read::source_sight_steps(position(pending.from), to)
+            .is_err()
+        {
+            continue;
+        }
+        let sight = read_sight(runtime, map, position(pending.from), to)
+            .await
+            .ok_or(())?;
+        if !map.validate_transaction(runtime).await {
+            return Err(());
+        }
+        let facts = CurrentChainMap {
+            stamp,
+            sights: BTreeMap::from([((pending.from, tile(to)), sight)]),
+            paths: BTreeMap::new(),
+        };
+        players.extend(reader.players.iter().copied());
+        bank.push((
+            FactsKey::new(&pending.source, &pending.proposal, pending.session),
+            pending.from,
+            reader,
+            facts,
+        ));
     }
     if !map.validate_transaction(runtime).await {
-        return;
+        return Err(());
     }
     // Descriptors above are read-only DATA. Take the actual owners only for the
     // synchronous commit; no await separates this section from their restore.
     let Some(mut chains) = states.monster_chains.take() else {
-        return;
+        return Ok(());
     };
     let spells = std::mem::take(&mut states.monster_spells);
-    let outcomes = chains.run_due_current_with(
+    let outcomes = chains.run_due_current_through_with(
         runtime,
         stamp,
         &mut super::super::super::attack::charm_combat::source_vitals::CharmSourceVitals {
@@ -347,6 +354,7 @@ pub(super) async fn drain(
         },
         &spells,
         &clock,
+        SemanticTimeMicros::from_micros(through),
         |source, proposal, session, from, pulse_stamp| {
             if pulse_stamp != stamp {
                 return None;
@@ -363,11 +371,10 @@ pub(super) async fn drain(
     );
     states.monster_chains = Some(chains);
     states.monster_spells = spells;
-    if let Ok(outcomes) = outcomes {
-        for (_, _, outcome) in outcomes {
-            if let Ok(outcome) = outcome {
-                record_hits(runtime, attack, None, &players, outcome, now);
-            }
+    for (_, _, outcome) in outcomes.map_err(|_| ())? {
+        if let Ok(outcome) = outcome {
+            record_hits(runtime, attack, None, &players, outcome, now);
         }
     }
+    Ok(())
 }

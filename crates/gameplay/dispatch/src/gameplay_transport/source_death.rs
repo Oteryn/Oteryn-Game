@@ -19,6 +19,7 @@ pub(super) enum SourceWorkFamily {
     Native,
     TaintOne,
     SoulWarAttack,
+    Physical,
     RottenBlood,
     Detached,
     Profile,
@@ -55,6 +56,10 @@ pub(super) fn next_source_work(
         (
             SourceWorkFamily::SoulWarAttack,
             states.soul_war_callbacks.next_attack_due(),
+        ),
+        (
+            SourceWorkFamily::Physical,
+            super::monster_profile_cycle::physical_spell::next_source_due_time(runtime, states)?,
         ),
         (
             SourceWorkFamily::RottenBlood,
@@ -212,6 +217,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .next_splinter_due(&runtime, native)?,
                 )
                 .chain(states.primal_callbacks.next_source_due_time()?)
+                .chain(
+                    super::monster_profile_cycle::physical_spell::next_source_due_time(
+                        &runtime, &states,
+                    )?,
+                )
                 .chain(states.spite_global.next_due_us())
                 .chain(
                     states
@@ -624,6 +634,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some((SourceWorkFamily::SoulWarAttack, due)) => {
                 super::soul_war_callbacks::drive_attack_due_through(
                     runtime, states, room, native, map, due, now,
+                )
+                .await?;
+            }
+            Some((SourceWorkFamily::Physical, due)) => {
+                super::monster_profile_cycle::physical_spell::drain_due_through(
+                    runtime,
+                    states,
+                    attack,
+                    room,
+                    native,
+                    map,
+                    parties,
+                    due,
+                    now,
+                    self.imported_charms,
                 )
                 .await?;
             }

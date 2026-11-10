@@ -1855,6 +1855,17 @@ impl DamageSpellOwner {
             .as_ref()
             .and_then(delayed::DelayedOwner::next_due_time)
     }
+    /// Original deadline metadata, refusing a retired runtime owner.
+    pub fn next_windup_due_time_current(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<SemanticTimeMicros>, AttackError> {
+        self.delayed
+            .as_ref()
+            .map(|owner| owner.next_due_time_current(runtime))
+            .transpose()
+            .map(Option::flatten)
+    }
     /// Source/session snapshots for independently resolving facts at the next owner turn.
     pub fn pending_windups(
         &self,
@@ -1881,6 +1892,7 @@ impl DamageSpellOwner {
             Some(fence),
             None,
             clock,
+            clock.now(),
             |owner, runtime, fence, pulse, now| {
                 owner.commit_windup_pulse(runtime, fence, vitals, reader, pulse, now)
             },
@@ -1901,6 +1913,7 @@ impl DamageSpellOwner {
             None,
             Some(stamp),
             clock,
+            clock.now(),
             |owner, runtime, fence, pulse, now| {
                 owner.commit_windup_pulse(runtime, fence, vitals, reader, pulse, now)
             },
@@ -1913,6 +1926,34 @@ impl DamageSpellOwner {
         stamp: RuntimeWorkStamp,
         vitals: &mut dyn PlayerLethalVitals,
         clock: &impl crate::foundation::owner_timer::OwnerClock,
+        reader_for: F,
+    ) -> WindupCastResults
+    where
+        F: FnMut(
+            &SpellSource,
+            &ProfileAbilityProposal,
+            GameSessionId,
+            RuntimeWorkStamp,
+        ) -> Option<Box<dyn SpellWorldReader + 'a>>,
+    {
+        self.run_windup_due_current_through_with(
+            runtime,
+            stamp,
+            vitals,
+            clock,
+            clock.now(),
+            reader_for,
+        )
+    }
+    /// Select only original deadlines through the cutoff, while current facts
+    /// and committed effects observe the actual execution clock.
+    pub fn run_windup_due_current_through_with<'a, F>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        clock: &impl crate::foundation::owner_timer::OwnerClock,
+        through: SemanticTimeMicros,
         mut reader_for: F,
     ) -> WindupCastResults
     where
@@ -1928,6 +1969,7 @@ impl DamageSpellOwner {
             None,
             Some(stamp),
             clock,
+            through,
             |owner, runtime, fence, pulse, now| {
                 let (source, proposal, session, stamp) = pulse.context();
                 let mut reader = reader_for(source, proposal, session, stamp)
@@ -1942,6 +1984,7 @@ impl DamageSpellOwner {
         mut fence: Option<&mut ScopeRuntimeFence>,
         supplied_stamp: Option<RuntimeWorkStamp>,
         clock: &impl crate::foundation::owner_timer::OwnerClock,
+        through: SemanticTimeMicros,
         mut apply: F,
     ) -> WindupCastResults
     where
@@ -1959,11 +2002,12 @@ impl DamageSpellOwner {
             return Ok(out);
         };
         let (pulses, cancellations) = match fence.as_deref_mut() {
-            Some(fence) => owner.drain(runtime, fence, clock)?,
+            Some(fence) => owner.drain(runtime, fence, clock, through)?,
             None => owner.drain_current(
                 runtime,
                 supplied_stamp.ok_or(AttackError::StaleOwner)?,
                 clock,
+                through,
             )?,
         };
         for (ability, error) in cancellations {
