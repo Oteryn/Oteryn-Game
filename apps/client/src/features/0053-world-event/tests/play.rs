@@ -65,6 +65,17 @@ fn world_event_shell_query_crosses_the_session_loop()
                             ..result(command.capability)
                         });
                     }
+                    // The selected marker capability is queried before queued shell commands.
+                    if command.capability == 451 {
+                        assert_eq!(command.kind, 741);
+                        assert!(command.payload.is_empty());
+                        return Ok(GatedCommandResult {
+                            payload: oteryn_client_runtime::personal_map_marks::PersonalMapMarks::default()
+                                .encode()
+                                .ok_or(SessionError::SessionUnusable)?,
+                            ..result(command.capability)
+                        });
+                    }
                     assert_eq!((command.capability, command.kind), (53, 64));
                     assert!(command.payload.is_empty());
                     Ok(result(command.capability))
