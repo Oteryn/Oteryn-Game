@@ -32,6 +32,7 @@ impl PlayView {
             }
         }
         link.cyclopedia_atlas_pump();
+        self.present_cyclopedia_discovery(link);
         self.apply_target_turn(link).map_err(|_error| UNAVAILABLE)?;
         self.advance_presentation(std::time::Instant::now())
             .map_err(|_error| UNAVAILABLE)?;

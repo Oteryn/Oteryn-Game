@@ -164,7 +164,7 @@ fn run(
             (SELECT_BOUNTY, tr!("Select bounty row")),
             (CLAIM, tr!("Claim bounty")),
             (DIFFICULTY, tr!("Set bounty difficulty")),
-            (REROLL, tr!("Reroll bounty")),
+            (REROLL, tr!("Reroll bounty (1 token)")),
             (ELITE, tr!("Elite")),
             (PREFERRED, tr!("Set preferred")),
             (UNWANTED, tr!("Set unwanted")),
