@@ -55,6 +55,7 @@ class RuntimeEvidenceTests(unittest.TestCase):
             ('logout_busy', 'release_fence'),
             ('logout_busy', 'release_not_applicable'),
             ('logout_busy', 'release_retry_lifted'),
+            ('control_loss_reconcile_pending', 'familiar_logout'),
             ('control_loss_reconcile_pending', 'item_effects'),
             ('control_loss_reconcile_pending', 'gourmet_checkpoint'),
             ('control_loss_reconcile_pending', 'native_cast'),
@@ -96,6 +97,32 @@ class RuntimeEvidenceTests(unittest.TestCase):
                                 capture_output=True, text=True, check=True)
         for event, stage in expected:
             self.assertIn(f'event={event} failure_stage={stage}', result.stdout)
+        self.assertNotIn('secret', result.stdout)
+
+    def test_blocked_waits_keep_closed_awaited_name_wait_and_attempts(self):
+        monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
+        prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
+        lines = [
+            'oteryn-game-server event=control_loss_reconcile_pending stage=pending_spell_commit '
+            'awaiting=pending_native waited_ms=5000 attempts=11 account=secret',
+            'oteryn-game-server event=logout_busy stage=spell_reconcile '
+            'awaiting=pending_native waited_ms=0 attempts=1 session=secret',
+            'oteryn-game-server event=step_rejected_holder_busy awaiting=semantic_pass '
+            'waited_ms=1500 attempts=4',
+            'oteryn-game-server event=logout_busy stage=foreground_demand '
+            'awaiting=secret waited_ms=secret attempts=secret',
+        ]
+        script = prefix + '\n' + '\n'.join(f'report({line!r})' for line in lines)
+        result = subprocess.run([sys.executable, '-c', script, 'unused', 'test', '1', '0'],
+                                capture_output=True, text=True, check=True)
+        self.assertIn('event=control_loss_reconcile_pending failure_stage=pending_spell_commit '
+                      'awaiting=pending_native attempts=11 waited_ms=5000', result.stdout)
+        self.assertIn('event=logout_busy failure_stage=spell_reconcile '
+                      'awaiting=pending_native attempts=1 waited_ms=0', result.stdout)
+        self.assertIn('event=step_rejected_holder_busy awaiting=semantic_pass '
+                      'attempts=4 waited_ms=1500', result.stdout)
+        self.assertIn('event=logout_busy failure_stage=foreground_demand observed_ms=',
+                      result.stdout)
         self.assertNotIn('secret', result.stdout)
 
     def test_startup_integrity_failure_reports_only_closed_check_once(self):

@@ -4,6 +4,7 @@
 use oteryn_protocol_oteryn::logout::{LogoutResult, MAX_LOGOUT_RETRY_AFTER_MS};
 
 use super::connection::{AdmittedSession, ControllerBinding, GraceExpiryResult};
+use super::wait_reason::logout_busy;
 use super::{
     AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, FenceHold, ReleaseAttempt,
     TerminalRelease, UnendedSettle, operator_event,
@@ -98,7 +99,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// ended.
     pub(super) async fn logout_session(&self, admitted: AdmittedSession) -> LogoutReply {
         let Ok(_foreground) = self.root.foreground_demand() else {
-            operator_event("event=logout_busy stage=foreground_demand");
+            logout_busy(admitted.game_session_id, "foreground_demand");
             return LogoutReply::Result(LogoutResult::Busy);
         };
         let (actor, controller) = match self.logout_preflight(admitted).await {
@@ -111,7 +112,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             actor.runtime_scope(),
             crate::foundation::RuntimeScopeRefV1::Instance { .. }
         ) {
-            operator_event("event=logout_busy stage=activity_scope");
+            logout_busy(admitted.game_session_id, "activity_scope");
             return LogoutReply::Result(LogoutResult::Busy);
         }
         self.release_logout(admitted, actor, controller).await
@@ -122,26 +123,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
     ) -> Result<(ExactActorRef, ControllerBinding), LogoutReply> {
         let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
-            operator_event("event=logout_busy stage=admitted_binding");
+            logout_busy(admitted.game_session_id, "admitted_binding");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         };
         let session = admitted.game_session_id;
         let Some(zones) = self.logout_zones(actor).await else {
-            operator_event("event=logout_busy stage=zones_before_reconcile");
+            logout_busy(session, "zones_before_reconcile");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         };
         if zones.no_logout {
             return Err(LogoutReply::NoLogout);
         }
         if self.states.newhaven_travel.held(session) {
-            operator_event("event=logout_busy stage=newhaven_travel");
+            logout_busy(session, "newhaven_travel");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         }
         if !self
             .reconcile_spells_before_control_loss(actor, session)
             .await
         {
-            operator_event("event=logout_busy stage=spell_reconcile");
+            logout_busy(session, "spell_reconcile");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         }
         if !self.refresh_pvp_locks(actor, session).await {
@@ -153,7 +154,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Reconciliation can finish a retained spell relocation. Use its current cell
         // for both zone checks instead of carrying a pre-reconciliation PZ exception.
         let Some(zones) = self.logout_zones(actor).await else {
-            operator_event("event=logout_busy stage=zones_after_reconcile");
+            logout_busy(session, "zones_after_reconcile");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         };
         if zones.no_logout {
@@ -290,7 +291,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let release = TerminalRelease::Logout(controller.transport);
         // Nothing is fenced yet when no transition id can be minted.
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
-            operator_event("event=logout_busy stage=release_fence");
+            logout_busy(session, "release_fence");
             return LogoutReply::Result(LogoutResult::Busy);
         };
         let mut hold = FenceHold::new(session, token);
@@ -312,7 +313,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // The session is not this logout's to end, and its fence is lifted.
             ReleaseAttempt::Done(GraceExpiryResult::NotApplicable) => {
-                operator_event("event=logout_busy stage=release_not_applicable");
+                logout_busy(session, "release_not_applicable");
                 LogoutReply::Result(LogoutResult::Busy)
             }
             // A refused fence, or a committed release whose actor could not be removed: the
@@ -323,7 +324,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             ReleaseAttempt::Retry => match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Lifted => {
-                    operator_event("event=logout_busy stage=release_retry_lifted");
+                    logout_busy(session, "release_retry_lifted");
                     LogoutReply::Result(LogoutResult::Busy)
                 }
                 UnendedSettle::Terminal => {

@@ -3,12 +3,15 @@
 // control-loss detection and grace; qualification never edits session state.
 async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
     // Existing loss qualification allows 60s for detection and 100s for release.
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(160);
+    let started = tokio::time::Instant::now();
+    let deadline = started + Duration::from_secs(160);
     let mut connection =
         tokio::time::timeout_at(deadline, sqlx::PgConnection::connect(clients.url))
             .await
             .map_err(|_| "character release database connect deadline")??;
+    let mut attempts = 0_u64;
     let released = wait_release(deadline, async || {
+        attempts += 1;
         Ok(!sqlx::query_scalar::<_, bool>(
             "SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions \
              WHERE world_id=encode($1,'hex')::uuid AND session_state<>3 \
@@ -23,7 +26,8 @@ async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> Tes
     .await;
     if let Err(error) = released {
         if tokio::time::Instant::now() >= deadline {
-            report_unreleased_character(clients, index, &mut connection).await;
+            let wait = (started.elapsed(), attempts);
+            report_unreleased_character(clients, index, &mut connection, wait).await;
         }
         return Err(error);
     }
@@ -35,11 +39,14 @@ async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> Tes
 
 // This bounded read runs only after the release wait has already failed. Its
 // outcome is diagnostic: even a now-absent session cannot make the wait pass.
+// `wait` is how long the release was awaited and how many reads it took (LOG-17).
 async fn report_unreleased_character(
     clients: &SeamClients<'_>,
     index: usize,
     connection: &mut sqlx::PgConnection,
+    (waited, attempts): (Duration, u64),
 ) {
+    let waited_ms = waited.as_millis();
     let snapshot = tokio::time::timeout(
         Duration::from_secs(2),
         sqlx::query_scalar::<_, serde_json::Value>(
@@ -65,17 +72,36 @@ async fn report_unreleased_character(
     .await;
     match snapshot {
         Ok(Ok(Some(fields))) => eprintln!(
-            "SEAM_EVIDENCE character_release_timeout fixture_index={index} diagnostic=snapshot fields={fields}"
+            "SEAM_EVIDENCE character_release_timeout fixture_index={index} diagnostic=snapshot \
+             awaiting={} waited_ms={waited_ms} attempts={attempts} fields={fields}",
+            release_awaiting(&fields)
         ),
         Ok(Ok(None)) => eprintln!(
-            "SEAM_EVIDENCE character_release_timeout fixture_index={index} diagnostic=absent"
+            "SEAM_EVIDENCE character_release_timeout fixture_index={index} diagnostic=absent \
+             waited_ms={waited_ms} attempts={attempts}"
         ),
         Ok(Err(_)) => eprintln!(
-            "SEAM_EVIDENCE character_release_timeout fixture_index={index} diagnostic=unavailable"
+            "SEAM_EVIDENCE character_release_timeout fixture_index={index} diagnostic=unavailable \
+             waited_ms={waited_ms} attempts={attempts}"
         ),
         Err(_) => eprintln!(
-            "SEAM_EVIDENCE character_release_timeout fixture_index={index} diagnostic=timeout"
+            "SEAM_EVIDENCE character_release_timeout fixture_index={index} diagnostic=timeout \
+             waited_ms={waited_ms} attempts={attempts}"
         ),
+    }
+}
+
+/// The closed name of what the unreleased session row still waits for (LOG-17): its transport
+/// to detach, its grace to expire, or the terminal release after the grace.
+fn release_awaiting(fields: &serde_json::Value) -> &'static str {
+    match (
+        fields.get("transport_present").and_then(serde_json::Value::as_bool),
+        fields.get("grace_expired").and_then(serde_json::Value::as_bool),
+    ) {
+        (Some(true), _) => "transport_detach",
+        (Some(false), Some(false)) => "grace_expiry",
+        (Some(false), Some(true)) => "terminal_release",
+        _ => "unknown",
     }
 }
 
@@ -98,6 +124,18 @@ async fn wait_release(
 #[cfg(test)]
 mod character_release_tests {
     use super::*;
+
+    #[test]
+    fn release_timeout_names_what_the_row_awaits() {
+        let row = |transport: bool, expired: Option<bool>| {
+            serde_json::json!({"state": 1, "transport_present": transport, "grace_expired": expired})
+        };
+        assert_eq!(release_awaiting(&row(true, Some(false))), "transport_detach");
+        assert_eq!(release_awaiting(&row(false, Some(false))), "grace_expiry");
+        assert_eq!(release_awaiting(&row(false, Some(true))), "terminal_release");
+        assert_eq!(release_awaiting(&row(false, None)), "unknown");
+        assert_eq!(release_awaiting(&serde_json::json!(null)), "unknown");
+    }
 
     #[test]
     fn character_release_waits_through_active_loss_and_grace() -> TestResult {

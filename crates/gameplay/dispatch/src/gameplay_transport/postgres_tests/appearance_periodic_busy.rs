@@ -298,6 +298,11 @@ fn scenario(case: Case) -> TestResult {
                     let held_at = tokio::time::Instant::now();
                     install_temporary(owner, actor, session).await?;
                     projection.clock_ms.set(150_000);
+                    // The armed refresh already observed the item at offset 1; that staged
+                    // position must be discarded. Move it now, before any later refresh
+                    // observes the channel: one that observed during the busy window would
+                    // still be inside its holder retry when the holder is released.
+                    projection.item_offset.set(2);
                     projection.resume.notify_one();
                     let mut sequence = 0;
                     // A due independent clock frame must be emitted while the real
@@ -330,8 +335,6 @@ fn scenario(case: Case) -> TestResult {
                     assert!(held_at.elapsed() > COMMAND_HOLDER_WINDOW);
                     assert!(owner.runtime.try_lock().is_ok());
                     assert!(owner.states.spell_states.try_lock().is_ok());
-                    // The previously staged position must also be discarded.
-                    projection.item_offset.set(2);
                     drop(held);
                     let mut mapped = false;
                     let mut spatial = false;

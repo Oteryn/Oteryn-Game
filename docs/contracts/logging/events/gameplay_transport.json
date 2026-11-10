@@ -71,10 +71,13 @@
       "level": "info",
       "span": false,
       "fields": [
-        "stage"
+        "stage",
+        "awaiting",
+        "waited_ms",
+        "attempts"
       ],
       "codes": [],
-      "note": "NBFIX: closed retained-work stage blocking logout or loss reconciliation."
+      "note": "NBFIX: closed retained-work stage blocking logout or loss reconciliation; LOG-17: closed awaited name, wait and attempts, rate-limited per wait."
     },
     {
       "event": "join_prepare_failed",
@@ -105,10 +108,13 @@
       "level": "info",
       "span": false,
       "fields": [
-        "stage"
+        "stage",
+        "awaiting",
+        "waited_ms",
+        "attempts"
       ],
       "codes": [],
-      "note": "NBFIX: closed logout refusal stage; no account, session or authentication material."
+      "note": "NBFIX: closed logout refusal stage; no account, session or authentication material. LOG-17: closed awaited name, wait and attempts, rate-limited per wait."
     },
     {
       "event": "logout_unknown",
@@ -184,9 +190,13 @@
       "event": "step_rejected_holder_busy",
       "level": "info",
       "span": false,
-      "fields": [],
+      "fields": [
+        "awaiting",
+        "waited_ms",
+        "attempts"
+      ],
       "codes": [],
-      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+      "note": "Node boot step rejection evidence (NBROUTE, #3076); LOG-17: closed holder state, wait and attempts, rate-limited per wait."
     },
     {
       "event": "step_rejected_lane",

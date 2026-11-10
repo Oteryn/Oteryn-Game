@@ -1296,6 +1296,22 @@ impl DurabilityRoot {
         self.pool.num_idle() > 0
     }
 
+    /// The closed name of the single holder's state, for wait-reason diagnostics (LOG-17):
+    /// `idle`, `absent` (not established), `semantic_pass` (checked out by a pass) or
+    /// `maintenance` (checked out by the readiness window or an unguarded caller).
+    #[must_use]
+    pub fn holder_state(&self) -> &'static str {
+        if self.pool.num_idle() > 0 {
+            "idle"
+        } else if self.pool.size() == 0 {
+            "absent"
+        } else if self.holder_owner.lock().is_ok_and(|owner| owner.is_some()) {
+            "semantic_pass"
+        } else {
+            "maintenance"
+        }
+    }
+
     /// Waits for the retry of a step that found the holder busy (NODEBOOT-1). The retry starts
     /// as soon as the holder is returned to idle, but not before `earliest`, and no later than
     /// `latest`. A holder idle already means the step failed for another reason: the retry then
