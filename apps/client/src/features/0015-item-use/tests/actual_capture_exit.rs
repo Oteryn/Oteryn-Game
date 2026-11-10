@@ -61,9 +61,15 @@ async fn gesture(capture: &Capture, key: &str, leaving: bool) -> Result<(), Scop
         assert!(view.use_with_click(TileCoord::new(32375, 31157), &link));
     }
     let (destination, label) = if leaving {
-        (TileCoord::new(32373, 31158), "Returned to channel")
+        (
+            TileCoord::new(32373, 31158),
+            tr!("Returned to the channel."),
+        )
     } else {
-        (TileCoord::new(32373, 31151), "Entered boss instance")
+        (
+            TileCoord::new(32373, 31151),
+            tr!("Entered activity instance. Use the exit to return."),
+        )
     };
     render_until(&mut view, &link, destination, label).await?;
     assert_eq!(view.floor, -8);

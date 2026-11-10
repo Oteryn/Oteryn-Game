@@ -355,9 +355,9 @@ async fn handoff(capture: &Capture, entry: bool) -> Result<(), Error> {
         at,
         floor,
         if entry {
-            "Entered boss instance"
+            tr!("Entered activity instance. Use the exit to return.")
         } else {
-            "Returned to channel"
+            tr!("Returned to the channel.")
         },
     )
     .await;
