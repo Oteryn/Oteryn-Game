@@ -2046,6 +2046,23 @@ impl ChannelSpellStates {
     }
 }
 impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
+    fn reflect_equipment_damage_at_occurrence(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        element: Option<&str>,
+        magnitude: u32,
+        stream: &[u8],
+        sequence: u64,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> bool {
+        self.reflect_equipment_for_source_occurrence(
+            runtime, source, target, session, element, magnitude, stream, sequence, now,
+        )
+    }
+
     fn reflect_equipment_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,

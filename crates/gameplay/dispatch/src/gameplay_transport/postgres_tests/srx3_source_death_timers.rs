@@ -10,11 +10,21 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 #[test]
 fn srx3_source_death_actual_malice_notice_runs_older_cage_timer_at_real_now_postgres() -> TestResult
 {
+    run_malice_source_death_timers(false)
+}
+
+#[test]
+fn srx3_source_death_runs_original_taint_check_before_later_malice_callback_postgres() -> TestResult
+{
+    run_malice_source_death_timers(true)
+}
+
+fn run_malice_source_death_timers(require_taint_prefix: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-source-death-timers", || {
+    super::kill_reward_e2e::scenario_thread::run("srx3-source-death-timers", move || {
         run(async |admin| {
             reset();
             // Crystal201189f lib/quests/soul_war.lua:332-354: literal first
@@ -121,7 +131,9 @@ fn srx3_source_death_actual_malice_notice_runs_older_cage_timer_at_real_now_post
                 .active()
                 .and_then(|active| active.native_gameplay())
                 .ok_or("actual full native gameplay")?;
-            owner.runtime_view(&registered).drain_monster_melee().await;
+            if !require_taint_prefix {
+                owner.runtime_view(&registered).drain_monster_melee().await;
+            }
             // The real lever owns a 23s Cage timer. Let it become due without
             // draining it, then publish a genuine later canonical HP death.
             owner.clock_origin = owner
@@ -145,6 +157,14 @@ fn srx3_source_death_actual_malice_notice_runs_older_cage_timer_at_real_now_post
                 .next_due_ms()
                 .ok_or("actual original 23s timer")?;
             assert!(original_due.checked_mul(1000).ok_or("timer arithmetic")? <= cutoff);
+            if require_taint_prefix {
+                let taint_due = states
+                    .soul_war_callbacks
+                    .next_taint_one_due()
+                    .ok_or("the real source birth retained its first two-second taint check")?;
+                assert!(taint_due < original_due.checked_mul(1000).ok_or("timer arithmetic")?);
+                assert!(taint_due <= cutoff);
+            }
             assert!(
                 !runtime
                     .visible_entities()
@@ -201,6 +221,47 @@ fn srx3_source_death_actual_malice_notice_runs_older_cage_timer_at_real_now_post
                 .ok_or("owner clock")?;
             let view = owner.runtime_view(&registered);
             let before_execution = view.owner_now().get();
+            if require_taint_prefix {
+                view.drain_monster_melee().await;
+                let runtime = view.runtime.lock().await;
+                let states = view.states.spell_states.try_lock().map_err(debug)?;
+                assert!(
+                    states
+                        .soul_war_callbacks
+                        .next_taint_one_due()
+                        .is_none_or(|due| due > cutoff),
+                    "the real current Quest read completes only the original two-second check"
+                );
+                assert_eq!(
+                    states
+                        .soul_war_callbacks
+                        .malice
+                        .as_ref()
+                        .ok_or("actual retained Malice owner")?
+                        .next_due_ms(),
+                    Some(original_due),
+                    "the later Cage callback must retain its original deadline"
+                );
+                assert_eq!(
+                    runtime
+                        .next_source_creature_death()
+                        .map_err(debug)?
+                        .ok_or("the same copied death remains behind the older Cage")?
+                        .death_key(),
+                    notice.death_key()
+                );
+                assert!(
+                    !runtime
+                        .visible_entities()
+                        .creatures
+                        .iter()
+                        .any(|row| runtime.matches_live_creature_identity(
+                            row.actor,
+                            b"oteryn:creature.soul_cage"
+                        )),
+                    "draining TaintOne must not execute a fresh Think or the later Cage timer"
+                );
+            }
             view.drain_monster_melee().await;
             let after_execution = view.owner_now().get();
             let runtime = view.runtime.lock().await;

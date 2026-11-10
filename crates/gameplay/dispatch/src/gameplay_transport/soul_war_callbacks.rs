@@ -28,6 +28,14 @@ pub(super) mod torment;
 pub(super) mod white;
 pub(super) use attacks::drive as drive_attacks;
 pub(super) use player_source::publish_command_source;
+pub(super) use taint_one::drive_due_through as drive_taint_one_due_through;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum OmittedTimer {
+    Malice,
+    Megalomania,
+    TaintOne,
+}
 pub(super) use taint_five::QualifiedFifthTaint;
 pub(super) use taints::refresh as refresh_taints;
 #[cfg(test)]
@@ -109,19 +117,21 @@ impl SoulWarCallbacks {
     }
     /// Real source scheduler work, including lethal notices not consumed yet.
     pub(super) fn next_native_due(&self) -> Option<u64> {
-        self.next_native_due_with_sources(true, true)
+        self.next_native_due_except(None)
     }
     pub(super) fn next_native_due_without_malice(&self) -> Option<u64> {
-        self.next_native_due_with_sources(false, true)
+        self.next_native_due_except(Some(OmittedTimer::Malice))
     }
     pub(super) fn next_native_due_without_megalomania(&self) -> Option<u64> {
-        self.next_native_due_with_sources(true, false)
+        self.next_native_due_except(Some(OmittedTimer::Megalomania))
     }
-    fn next_native_due_with_sources(
-        &self,
-        include_malice: bool,
-        include_megalomania: bool,
-    ) -> Option<u64> {
+    pub(super) fn next_native_due_without_taint_one(&self) -> Option<u64> {
+        self.next_native_due_except(Some(OmittedTimer::TaintOne))
+    }
+    pub(super) fn next_taint_one_due(&self) -> Option<u64> {
+        self.taint_one.next_due()
+    }
+    fn next_native_due_except(&self, omitted: Option<OmittedTimer>) -> Option<u64> {
         self.greed
             .next_due_ms()
             .into_iter()
@@ -137,18 +147,22 @@ impl SoulWarCallbacks {
             .chain(
                 self.malice
                     .as_ref()
-                    .filter(|_| include_malice)
+                    .filter(|_| omitted != Some(OmittedTimer::Malice))
                     .and_then(|owner| owner.next_due_ms()),
             )
             .chain(
                 self.megalomania
                     .as_ref()
-                    .filter(|_| include_megalomania)
+                    .filter(|_| omitted != Some(OmittedTimer::Megalomania))
                     .and_then(|owner| owner.next_due_ms()),
             )
             .filter_map(|ms| ms.checked_mul(1_000))
             .chain(self.attacks.next_due())
-            .chain(self.taint_one.next_due())
+            .chain(
+                self.taint_one
+                    .next_due()
+                    .filter(|_| omitted != Some(OmittedTimer::TaintOne)),
+            )
             .min()
     }
     pub(super) fn has_native_work(&self) -> bool {

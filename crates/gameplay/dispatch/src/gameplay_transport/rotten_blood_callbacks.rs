@@ -30,6 +30,15 @@ pub(super) struct MassiveStateForTest {
     pub(super) commits: usize,
 }
 
+#[cfg(test)]
+pub(super) struct MushroomProgressForTest {
+    pub(super) actor: ExactActorRef,
+    pub(super) original_due: u64,
+    pub(super) cursor: usize,
+    pub(super) total: usize,
+    pub(super) players: Vec<(ExactActorRef, GameSessionId)>,
+}
+
 #[derive(Debug)]
 struct Boss {
     actor: ExactActorRef,
@@ -91,6 +100,14 @@ fn context(runtime: &ChannelRuntimeV1) -> ReadContext {
     )
 }
 impl RottenBloodCallbacks {
+    #[cfg(test)]
+    pub(super) fn pause_mushroom_after_player_commit_for_test(&mut self) {
+        self.mushrooms.pause_after_player_commit_for_test();
+    }
+    #[cfg(test)]
+    pub(super) fn mushroom_progress_for_test(&self) -> Option<MushroomProgressForTest> {
+        self.mushrooms.progress_for_test()
+    }
     pub(super) fn critical_scope_pending(&self) -> bool {
         self.advanced.critical_scope_pending()
     }

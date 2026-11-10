@@ -193,6 +193,27 @@ pub trait PlayerLethalVitals {
         true
     }
 
+    /// A retained native callback keeps its exact replay sequence independently
+    /// of the real attribution clock. Owners without that receipt port refuse.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source occurrence identity and actual execution time are independent"
+    )]
+    fn reflect_equipment_damage_at_occurrence(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _element: Option<&str>,
+        _magnitude: u32,
+        _stream: &[u8],
+        _sequence: u64,
+        _now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> bool {
+        false
+    }
+
     /// Source cast owns occurrence/replay and independently current tile/Combat admission.
     /// The actual Player and physical Creature stores are staged together or all refuse.
     fn apply_source_appearance_batch(

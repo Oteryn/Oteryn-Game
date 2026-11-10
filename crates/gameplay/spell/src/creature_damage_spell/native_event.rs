@@ -60,6 +60,17 @@ impl MushroomThinkSource {
         self.actor
     }
     pub fn current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.binding_current(runtime)
+            && runtime.source_creature_is_registered(self.actor).ok() == Some(true)
+            && runtime
+                .companion_snapshot_including_dead(self.actor)
+                .is_ok_and(|snapshot| {
+                    snapshot.state.policy.definition_key == MUSHROOM
+                        && snapshot.state.master.is_none()
+                })
+            && runtime.native_summon_master(self.actor).is_none()
+    }
+    fn binding_current(&self, runtime: &ChannelRuntimeV1) -> bool {
         let pin = runtime.content_pin();
         runtime
             .owner_fence()
@@ -72,13 +83,6 @@ impl MushroomThinkSource {
                     runtime.map_revision_digest(),
                     pin.activation_sequence(),
                 )
-            && runtime
-                .companion_snapshot_including_dead(self.actor)
-                .is_ok_and(|snapshot| {
-                    snapshot.state.policy.definition_key == MUSHROOM
-                        && snapshot.state.master.is_none()
-                })
-            && runtime.native_summon_master(self.actor).is_none()
     }
     fn occurrence(&self, target: ExactActorRef) -> String {
         format!(
@@ -116,7 +120,6 @@ impl MushroomThinkSource {
         now: SemanticTimeMicros,
     ) -> Result<NativeCreatureEventDamagePlan, AttackError> {
         if !self.current(runtime)
-            || !runtime.contains_live_creature(self.actor)
             || !runtime
                 .owner_fence()
                 .is_ok_and(|fence| fence.accepts_stamp(stamp))
@@ -213,12 +216,17 @@ impl MushroomThinkSource {
             revision: facts.attack.revision,
             hit,
             occurrence: child,
+            reflection_committed: false,
+            completed: None,
+            critical_at: None,
+            retained: false,
         })
     }
 }
 
 /// A current, source-qualified normal hit. Its fields cannot be manufactured by
 /// a caller; the normal preparation above and canonical HP owner remain joined.
+#[derive(Debug)]
 pub struct NativeCreatureEventDamagePlan {
     source: MushroomThinkSource,
     target: ExactActorRef,
@@ -227,18 +235,23 @@ pub struct NativeCreatureEventDamagePlan {
     revision: u64,
     hit: PreparedNativeCreaturePlayerHit,
     occurrence: String,
+    reflection_committed: bool,
+    completed: Option<Option<PlayerDamageReceipt>>,
+    critical_at: Option<u64>,
+    retained: bool,
 }
 impl NativeCreatureEventDamagePlan {
     pub fn target(&self) -> (ExactActorRef, GameSessionId) {
         (self.target, self.session)
     }
 
-    pub fn commit(
-        self,
-        runtime: &mut ChannelRuntimeV1,
-        vitals: &mut dyn PlayerLethalVitals,
-        now: SemanticTimeMicros,
-    ) -> Result<Option<PlayerDamageReceipt>, AttackError> {
+    /// Accept the complete source callback under its unchanged current facts,
+    /// before publishing any member of its captured spectator cohort.
+    pub fn retain(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        vitals: &dyn PlayerLethalVitals,
+    ) -> Result<(), AttackError> {
         if !self.source.current(runtime)
             || !runtime
                 .owner_fence()
@@ -247,24 +260,108 @@ impl NativeCreatureEventDamagePlan {
             return Err(AttackError::StaleIssuer);
         }
         if vitals
-            .source_player_health(runtime, self.target, self.session)
+            .source_player_health_including_dead(runtime, self.target, self.session)
             .is_none_or(|(_, _, revision)| revision != self.revision)
         {
             return Err(AttackError::StaleTarget);
         }
-        if !vitals.reflect_equipment_damage(
-            runtime,
-            self.source.actor,
-            self.target,
-            self.session,
-            Some("life_drain"),
-            self.hit.hazard.amount,
-            self.occurrence.as_bytes(),
-            now,
-        ) {
-            return Err(AttackError::MissingVitals);
+        self.retained = true;
+        Ok(())
+    }
+
+    pub fn commit(
+        mut self,
+        runtime: &mut ChannelRuntimeV1,
+        vitals: &mut dyn PlayerLethalVitals,
+        now: SemanticTimeMicros,
+    ) -> Result<Option<PlayerDamageReceipt>, AttackError> {
+        self.commit_inner(runtime, vitals, now, false)
+    }
+
+    /// The source callback owns this plan until every synchronous leaf has a
+    /// known result. Its reflection receipt uses the original Think sequence.
+    pub fn commit_retained(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        vitals: &mut dyn PlayerLethalVitals,
+        now: SemanticTimeMicros,
+    ) -> Result<Option<PlayerDamageReceipt>, AttackError> {
+        if !self.retained {
+            return Err(AttackError::InvalidPlan);
+        }
+        self.commit_inner(runtime, vitals, now, true)
+    }
+
+    fn commit_inner(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        vitals: &mut dyn PlayerLethalVitals,
+        now: SemanticTimeMicros,
+        retained: bool,
+    ) -> Result<Option<PlayerDamageReceipt>, AttackError> {
+        if !self.source.binding_current(runtime)
+            || !runtime
+                .owner_fence()
+                .is_ok_and(|fence| fence.accepts_stamp(self.stamp))
+        {
+            return Err(AttackError::StaleIssuer);
+        }
+        if self.completed.is_some() {
+            return self.finish_receipt(runtime);
+        }
+        if !self.source.current(runtime) {
+            return Err(AttackError::StaleIssuer);
+        }
+        let (health, _, revision) = if retained {
+            vitals.source_player_health_including_dead(runtime, self.target, self.session)
+        } else {
+            vitals.source_player_health(runtime, self.target, self.session)
+        }
+        .ok_or(AttackError::StaleTarget)?;
+        if health == 0 {
+            self.completed = Some(None);
+            return Ok(None);
+        }
+        if !self.reflection_committed {
+            // The retained callback already validated every target before its
+            // first published effect. It cannot recapture a later revision or
+            // recompute modifiers after another member has committed.
+            if !retained && revision != self.revision {
+                return Err(AttackError::StaleTarget);
+            }
+            if !retained || runtime.contains_live_creature(self.source.actor) {
+                let reflected = if retained {
+                    vitals.reflect_equipment_damage_at_occurrence(
+                        runtime,
+                        self.source.actor,
+                        self.target,
+                        self.session,
+                        Some("life_drain"),
+                        self.hit.hazard.amount,
+                        self.occurrence.as_bytes(),
+                        self.source.sequence,
+                        now,
+                    )
+                } else {
+                    vitals.reflect_equipment_damage(
+                        runtime,
+                        self.source.actor,
+                        self.target,
+                        self.session,
+                        Some("life_drain"),
+                        self.hit.hazard.amount,
+                        self.occurrence.as_bytes(),
+                        now,
+                    )
+                };
+                if !reflected {
+                    return Err(AttackError::MissingVitals);
+                }
+            }
+            self.reflection_committed = true;
         }
         if self.hit.blocked || self.hit.hazard.amount == 0 {
+            self.completed = Some(None);
             return Ok(None);
         }
         let receipt = vitals
@@ -279,12 +376,24 @@ impl NativeCreatureEventDamagePlan {
                 now,
             )
             .ok_or(AttackError::MissingVitals)?;
+        self.completed = Some(Some(receipt));
         if self.hit.hazard.critical {
-            runtime
-                .record_hazard_critical(self.target, self.session, now.get())
-                .map_err(|_| AttackError::StaleTarget)?;
+            self.critical_at = Some(now.get());
         }
-        Ok(Some(receipt))
+        self.finish_receipt(runtime)
+    }
+
+    fn finish_receipt(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+    ) -> Result<Option<PlayerDamageReceipt>, AttackError> {
+        if let Some(at) = self.critical_at {
+            runtime
+                .record_hazard_critical(self.target, self.session, at)
+                .map_err(|_| AttackError::StaleTarget)?;
+            self.critical_at = None;
+        }
+        self.completed.ok_or(AttackError::InvalidPlan)
     }
 }
 

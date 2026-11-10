@@ -720,6 +720,11 @@ impl NativeCallbacks {
             .try_lock()
             .map_or(Some(0), |owner| owner.next_due_time())
     }
+    /// Source-death ordering needs a known original deadline. The ordinary
+    /// scheduler's zero wake on a busy owner is not a historical callback.
+    pub(in crate::gameplay_transport) fn next_source_due_time(&self) -> Result<Option<u64>, ()> {
+        Ok(self.owner.try_lock().map_err(|_| ())?.next_due_time())
+    }
     #[cfg(test)]
     pub(in crate::gameplay_transport) async fn enable_omrafir_declared_think_review_for_test(
         &self,

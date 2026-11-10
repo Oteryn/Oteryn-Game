@@ -106,6 +106,16 @@ impl SpellWorldReader for CurrentTarget<'_> {
             (Some(caster), Some(SourceDraw::Callback(stage))) => {
                 policy.apply_retained(runtime, issuer, target, now, magnitude, caster, stage)
             }
+            (None, None)
+                if self.element.as_deref() == Some("life_drain")
+                    && runtime
+                        .companion_snapshot_including_dead(issuer)
+                        .is_ok_and(|source| {
+                            source.state.policy.definition_key == "oteryn:creature.mushroom"
+                        }) =>
+            {
+                policy.apply_registered_mushroom(runtime, issuer, target, now, magnitude)
+            }
             _ => policy.apply(runtime, issuer, target, now, magnitude),
         };
         #[cfg(test)]

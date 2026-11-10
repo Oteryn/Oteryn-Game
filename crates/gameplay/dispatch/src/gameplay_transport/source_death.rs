@@ -471,40 +471,75 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let cutoff = notice.enqueued_at_us().ok_or(())?;
         #[cfg(test)]
         eprintln!("[DBG-W11-DEATH] source-head cutoff={cutoff} now={now}");
-        // Each existing timer owner must select individual original deadlines.
-        // A synthetic wake value or an unclocked legacy hit cannot establish
-        // task ordering. Keep the head until that owner supplies its cutoff port.
-        if states
+        // Compare original deadlines across owners before selecting a callback.
+        // A later non-W01 timer must not block earlier W01 work, and draining
+        // W01 through the whole death cutoff could overtake another family.
+        let other_due = states
             .soul_war_callbacks
-            .next_native_due()
+            .next_native_due_without_taint_one()
             .into_iter()
+            .chain(states.spite_global.next_due_us())
             .chain(states.primal_callbacks.next_due_us())
             .chain(states.rotten_blood_callbacks.next_due_time())
-            .any(|due| due <= cutoff && due <= now)
-        {
-            #[cfg(test)]
-            eprintln!("[DBG-W11-DEATH] source-head waits for older non-W01 timer");
-            return Ok(false);
-        }
+            .min();
+        let selected = [
+            states.native_callbacks.next_source_due_time()?,
+            states.soul_war_callbacks.next_taint_one_due(),
+            other_due,
+        ]
+        .into_iter()
+        .enumerate()
+        .filter_map(|(family, due)| due.map(|due| (family, due)))
+        .filter(|(_, due)| *due <= cutoff && *due <= now)
+        .min_by_key(|(_, due)| *due);
         let active = self.active_generation.ok_or(())?;
-        let callbacks = states.native_callbacks.clone();
-        callbacks
-            .drain_due_through(
-                active,
-                runtime,
-                states,
-                attack,
-                room,
-                native,
-                map,
-                parties,
-                cutoff,
-                now,
-                native_health_names,
-            )
-            .await?;
+        match selected {
+            Some((0, due)) => {
+                let callbacks = states.native_callbacks.clone();
+                callbacks
+                    .drain_due_through(
+                        active,
+                        runtime,
+                        states,
+                        attack,
+                        room,
+                        native,
+                        map,
+                        parties,
+                        due,
+                        now,
+                        native_health_names,
+                    )
+                    .await?;
+            }
+            Some((1, due)) => {
+                let published = active.qualify_published_world_context(room, runtime.content_pin());
+                super::soul_war_callbacks::refresh_taints(
+                    self.root,
+                    runtime,
+                    states,
+                    room,
+                    native,
+                    map,
+                    now,
+                    published.as_ref(),
+                )
+                .await?;
+                super::soul_war_callbacks::drive_taint_one_due_through(
+                    runtime, states, room, native, map, due, now,
+                )
+                .await?;
+            }
+            // Detached source owners keep their exact head and reservation;
+            // their qualified consumer must run before beginning this death.
+            Some(_) => return Ok(false),
+            None => {}
+        }
         if !map.validate_transaction(runtime).await {
             return Err(());
+        }
+        if !self.source_death_can_begin_without_timer_read(runtime, states, now)? {
+            return Ok(false);
         }
         self.prepare_source_death_head(runtime, states, attack, room, native, now)
     }
