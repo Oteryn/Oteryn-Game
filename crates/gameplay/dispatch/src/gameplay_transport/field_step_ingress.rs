@@ -503,6 +503,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     let proof=if let Some(prepared)=prepared {Some(crate::movement::source_floor_change::bind_current_source_step(&mut tx,runtime,prepared).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)} else {None};
                     *outcome=Some(states.step_with_non_player_field_contact(runtime,owner.movement_cells(),actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
+                    if let Some(Ok((committed,_)))=outcome.as_ref() {
+                        // Retain the actual translation and its actor reservation
+                        // before COMMIT, rollback or pool-return can be cancelled.
+                        // PlayerField installs only PlayerSpellState; its lane
+                        // receipt and this fixed-slot reservation can coexist.
+                        super::super::spite_step::stage(owner,runtime,states,actor,session,*committed)
+                            .map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                        #[cfg(test)]
+                        super::super::spite_step::pause_captured_step_for_test().await;
+                    }
                     if blood && let Some(Ok((committed,_)))=outcome.as_ref() {
                         super::super::soul_war_cloak_blood::step::stage(runtime,states,room,source,&read,actor,session,*committed,now_us)?;
                     }

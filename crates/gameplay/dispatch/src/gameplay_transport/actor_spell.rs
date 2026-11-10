@@ -180,6 +180,7 @@ pub struct ChannelSpellStates {
     /// Routing hint only; SQL re-proves the actual pool and its source at entry.
     pub(super) cloak_blood_cells: std::collections::BTreeSet<(i32,i32,i16)>,
     pub(super) spite_global: super::spite_global::SpiteGlobalState,
+    pub(super) spite_steps: super::spite_step::SpiteStepState,
     pub(super) primal_callbacks: super::primal_callbacks::PrimalCallbacks,
     pub(super) rotten_blood_callbacks: super::rotten_blood_callbacks::RottenBloodCallbacks,
     pub(super) rotten_area: super::monster_profile_cycle::rotten_area::AreaState,
@@ -359,6 +360,7 @@ impl Default for ChannelSpellStates {
             cloak_blood_steps: Vec::new(),
             cloak_blood_cells: Default::default(),
             spite_global: Default::default(),
+            spite_steps: Default::default(),
             primal_callbacks: Default::default(),
             rotten_blood_callbacks: Default::default(),
             rotten_area: Default::default(),

@@ -299,8 +299,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         underwater_drown::underwater(map, snapshot.position()),
                     );
                 }
+                let spite_staged = super::spite_step::stage(
+                    self,
+                    &mut runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    snapshot,
+                )
+                .is_ok();
                 drop(states);
                 drop(runtime);
+                if !spite_staged || !self.resolve_spite_steps(&permit).await {
+                    let runtime = self.runtime.lock().await;
+                    return (
+                        StepOutcome {
+                            disposition: StepDisposition::Moved,
+                            moved_to: self.wire_observation(&runtime, snapshot.position()),
+                        },
+                        Some(duration),
+                    );
+                }
                 let _ = self.resolve_cloak_blood_steps(&permit).await;
                 self.resolve_rotten_movement_callbacks(&permit).await;
                 super::soul_war_world::committed_step(self, actor, session, origin, snapshot, now)

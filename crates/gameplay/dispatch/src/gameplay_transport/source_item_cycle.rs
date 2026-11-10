@@ -42,6 +42,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map(|due| due.get())
                     .into_iter()
                     .chain(states.primal_callbacks.next_due_us())
+                    .chain(states.spite_steps.next_due_us())
                     .chain(states.rotten_blood_callbacks.next_due_time())
                     .chain(
                         self.bundle_map()
@@ -108,6 +109,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             self.drain_source_item_deadlines().await;
+            self.drain_spite_recovery_notices().await;
             self.drain_quest_encounter_deadlines().await;
             self.drain_elemental_altar_bosses().await;
             self.drain_source_party_deadlines_bounded().await;

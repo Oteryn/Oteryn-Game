@@ -1,10 +1,405 @@
-//! Actual actor-free GlobalEvent through the existing physical Item transaction.
+//! Actual GlobalEvent and Player STEP through the existing physical Item/Quest owners.
 use super::fixture::{Harness, debug, run};
 use super::srx3_activity_source_fixture::{SourceScene, install_scene, prepare_player};
 use super::{TestResult, reset};
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::durability::creature_source_items::SpiteGlobalFireCallback;
 use crate::foundation::MovementLocalPosition;
+
+#[test]
+fn srx3_spite_actual_player_step_consumes_once_with_fifty_six_second_clock_postgres() -> TestResult
+{
+    spite_source_step_case(false)
+}
+
+#[test]
+fn srx3_spite_cancelled_field_cleanup_retains_original_translation_postgres() -> TestResult {
+    spite_source_step_case(true)
+}
+
+fn spite_source_step_case(cancel_during_cleanup: bool) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e::scenario_thread::run("srx3-spite-source-step", move || {
+        run(async move |admin| {
+            use crate::durability::character_progression::CharacterProgressionError;
+            use crate::durability::quest_state::{
+                QuestTransitionOutcome, soul_war_source::SoulWarSourceAction,
+            };
+            use oteryn_gameplay_quests::quest::soul_war::source_items as rule;
+            use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+            reset();
+            let h =
+                Harness::create_with_admission_seed(admin, "srx3_spite_step", false, false).await?;
+            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
+            super::house_transfer::prepare_owned_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let scene = SourceScene::new(
+                PinnedActivitySourceRoom::GoshnarsSpite,
+                MovementLocalPosition {
+                    x: 33743,
+                    y: 31629,
+                    floor: 14,
+                },
+            )?;
+            let deps = scene.dependencies()?;
+            let mut owner = deps.owner(&h, &authority);
+            owner.evidence = &evidence.evidence;
+            install_scene(&mut owner, &scene, PinnedActivitySourceRoom::GoshnarsSpite)?;
+            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            let mut admitted = deps.admitted;
+            prepare_player(&h, &owner, &mut admitted, 500).await?;
+            h.root.set_test_quest_clock(1_800_000_000).map_err(debug)?;
+            let actor = admitted.runtime_actor.ok_or("actual source Player")?;
+            let native = scene
+                .controller
+                .active()
+                .and_then(|active| active.native_gameplay())
+                .ok_or("actual source generation")?;
+            let registration = native
+                .qualify_spite_global_event(&scene.room)
+                .ok_or("real registered Spite source")?;
+            let permit = owner
+                .spell_lane_permit()
+                .await
+                .ok_or("physical Item lane")?;
+            let (callback, prepared) = {
+                let mut runtime = owner.runtime.lock().await;
+                let callback = SpiteGlobalFireCallback::from_current_registration(
+                    &mut runtime,
+                    &scene.room,
+                    native,
+                    &registration,
+                    1,
+                    0,
+                    owner.owner_now().get(),
+                )
+                .map_err(debug)?;
+                let prepared = callback.prepare_current_write(&runtime).map_err(debug)?;
+                (callback, prepared)
+            };
+            let created = owner
+                .root
+                .commit_spite_global_fire(
+                    &permit,
+                    owner.character,
+                    owner.holder,
+                    &callback,
+                    &prepared,
+                )
+                .await
+                .map_err(debug)?;
+            let first:String=sqlx::query_scalar("SELECT item_instance_id::text FROM game_spell_item_lines WHERE transaction_id=encode($1,'hex')::uuid AND operation_kind=1")
+                .bind(created.receipt.transaction_id.as_slice()).fetch_one(&h.pool).await?;
+            drop(permit);
+
+            // A known unavailable precondition parks the real committed movement
+            // before its Quest call. Resuming must use that retained selection,
+            // without deriving a fresh event from a later standing observation.
+            assert!(owner.quest_catalogue.is_none());
+            if cancel_during_cleanup {
+                use crate::gameplay_transport::spite_step::SPITE_STEP_CAPTURED_TEST_BARRIER;
+                use std::future::{Future, poll_fn};
+                use std::task::Poll;
+                let captured = std::sync::Arc::new(tokio::sync::Notify::new());
+                {
+                    let mut movement = std::pin::pin!(SPITE_STEP_CAPTURED_TEST_BARRIER.scope(
+                        std::sync::Arc::clone(&captured),
+                        owner.ordinary_paced_step(
+                            actor,
+                            admitted.game_session_id,
+                            StepDirection::North,
+                            None,
+                            None,
+                        ),
+                    ));
+                    let mut entered = std::pin::pin!(captured.notified());
+                    tokio::time::timeout(
+                        std::time::Duration::from_secs(10),
+                        poll_fn(|cx| {
+                            if entered.as_mut().poll(cx).is_ready() {
+                                return Poll::Ready(Ok(()));
+                            }
+                            if let Poll::Ready(result) = movement.as_mut().poll(cx) {
+                                return Poll::Ready(Err(format!(
+                                    "movement ended before retained cleanup barrier: {result:?}"
+                                )));
+                            }
+                            Poll::Pending
+                        }),
+                    )
+                    .await??;
+                    // Dropping the real future cancels field transaction cleanup,
+                    // after movement but before any Source STEP SQL/read began.
+                }
+                let original = owner
+                    .retained_spite_movement_for_test()
+                    .await
+                    .ok_or("physical movement retained before field cleanup")?;
+                assert_eq!(
+                    original.position(),
+                    MovementLocalPosition {
+                        x: 33743,
+                        y: 31628,
+                        floor: 14
+                    }
+                );
+                assert_eq!(original.revision(), original.last_translation_revision());
+                {
+                    let runtime = owner.runtime.lock().await;
+                    assert_eq!(runtime.read_actor_position(actor).map_err(debug)?, original);
+                    assert!(runtime.assert_actor_spell_unreserved(actor).is_err());
+                }
+                assert!(owner.retained_spite_step_for_test().await.is_none());
+                // Observe the cancelled SQL holder's real return; no fixed sleep
+                // or synthetic receipt substitutes for the retained source read.
+                tokio::time::timeout(std::time::Duration::from_secs(10), async {
+                    loop {
+                        assert!(owner.spell_lane_permit().await.is_none());
+                        if owner.retained_spite_step_for_test().await.is_some() {
+                            break;
+                        }
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await?;
+                let (input, _) = owner
+                    .retained_spite_step_for_test()
+                    .await
+                    .ok_or("same source after cancelled field cleanup")?;
+                assert_eq!(input.context().movement_revision, original.revision());
+            } else {
+                let (moved, _) = owner
+                    .ordinary_paced_step(
+                        actor,
+                        admitted.game_session_id,
+                        StepDirection::North,
+                        None,
+                        None,
+                    )
+                    .await;
+                assert_eq!(moved.disposition, StepDisposition::Moved);
+            }
+            let (input, fence) = owner
+                .retained_spite_step_for_test()
+                .await
+                .ok_or("actual retained Source STEP")?;
+            assert_eq!(
+                input.item_instance_id(),
+                sqlx::types::Uuid::parse_str(&first)?.into_bytes()
+            );
+            assert!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .assert_actor_spell_unreserved(actor)
+                    .is_err()
+            );
+            let live:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=$1::uuid)").bind(&first).fetch_one(&h.pool).await?;
+            assert!(live, "retention alone never removes the field");
+            let lowered =
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?;
+            let catalogue = std::sync::Arc::new(lowered.catalogue().clone());
+            // Change one context invariant while retaining the actual source,
+            // session, Item, catalogue and movement. None is a fresh authority.
+            let direct_permit = owner
+                .spell_lane
+                .acquire()
+                .await
+                .map_err(|_| "unresolved physical lane")?;
+            for mutation in 0..4 {
+                let mut wrong = input.context();
+                match mutation {
+                    0 => {
+                        wrong.reset_epoch = wrong.reset_epoch.checked_add(1).ok_or("reset epoch")?
+                    }
+                    1 => {
+                        wrong.movement_revision = wrong
+                            .movement_revision
+                            .checked_add(1)
+                            .ok_or("movement revision")?
+                    }
+                    2 => wrong.actor_placement[0] ^= 1,
+                    _ => {
+                        *wrong
+                            .placement_context
+                            .first_mut()
+                            .ok_or("native frame context")? ^= 1
+                    }
+                }
+                let result = owner
+                    .root
+                    .commit_soul_war_source_action(
+                        owner.character,
+                        owner.holder,
+                        fence,
+                        SoulWarSourceAction::Step(input.clone()),
+                        std::sync::Arc::clone(&catalogue),
+                        Some((&direct_permit, wrong)),
+                    )
+                    .await;
+                assert!(
+                    matches!(result, Err(CharacterProgressionError::InvalidInput)),
+                    "a changed source context cannot consume its current Item"
+                );
+            }
+            drop(direct_permit);
+            owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
+            let permit = owner
+                .spell_lane_permit()
+                .await
+                .ok_or("retained Source STEP resolves through sole writer")?;
+            assert!(owner.retained_spite_step_for_test().await.is_none());
+            owner
+                .runtime
+                .lock()
+                .await
+                .assert_actor_spell_unreserved(actor)
+                .map_err(debug)?;
+            let row:(i64,i64)=sqlx::query_as("SELECT (SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),(SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND cause_kind='source_step')")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(rule::SPITE_FIRE).fetch_one(&h.pool).await?;
+            assert_eq!(row, (1_800_000_000, 1));
+            let retired:(i16,i64,bool)=sqlx::query_as("SELECT lifecycle,quantity,EXISTS(SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=$1::uuid")
+                .bind(&first).fetch_one(&h.pool).await?;
+            assert_eq!(retired, (2, 0, false));
+
+            let (later, later_write) = {
+                let mut runtime = owner.runtime.lock().await;
+                let later = SpiteGlobalFireCallback::from_current_registration(
+                    &mut runtime,
+                    &scene.room,
+                    native,
+                    &registration,
+                    2,
+                    0,
+                    owner.owner_now().get(),
+                )
+                .map_err(debug)?;
+                let write = later.prepare_current_write(&runtime).map_err(debug)?;
+                (later, write)
+            };
+            let later_receipt = owner
+                .root
+                .commit_spite_global_fire(
+                    &permit,
+                    owner.character,
+                    owner.holder,
+                    &later,
+                    &later_write,
+                )
+                .await
+                .map_err(debug)?;
+            let later_item:String=sqlx::query_scalar("SELECT item_instance_id::text FROM game_spell_item_lines WHERE transaction_id=encode($1,'hex')::uuid AND operation_kind=1")
+                .bind(later_receipt.receipt.transaction_id.as_slice()).fetch_one(&h.pool).await?;
+            let replay = owner
+                .root
+                .commit_soul_war_source_action(
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    SoulWarSourceAction::Step(input.clone()),
+                    std::sync::Arc::clone(&catalogue),
+                    Some((&permit, input.context())),
+                )
+                .await
+                .map_err(debug)?;
+            assert!(matches!(
+                replay,
+                QuestTransitionOutcome::AlreadyCommitted(_)
+            ));
+            let later_live:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=$1::uuid)").bind(&later_item).fetch_one(&h.pool).await?;
+            assert!(
+                later_live,
+                "immutable replay never selects a later current field"
+            );
+            let bare = owner
+                .root
+                .commit_character_quest_transition(
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    SoulWarSourceAction::Step(input.clone())
+                        .request(&fence)
+                        .map_err(debug)?,
+                    std::sync::Arc::clone(&catalogue),
+                )
+                .await;
+            assert!(
+                matches!(bare, Err(CharacterProgressionError::InvalidInput)),
+                "a bare source cause is not the sealed Item participant"
+            );
+
+            let shape:bool=sqlx::query_scalar("SELECT game_spite_source_step_receipt_shape(r) FROM game_character_quest_receipts r WHERE character_id=encode($1,'hex')::uuid AND cause_kind='source_step'")
+                .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+            assert!(shape);
+            for patch in [
+                serde_json::json!({"cause_ordinal":1}),
+                serde_json::json!({"cause_id":sqlx::types::Uuid::from_bytes(*fence.game_session_id.as_bytes()).to_string()}),
+                serde_json::json!({"completes":true}),
+                serde_json::json!({"track_keys":[rule::MAW]}),
+                serde_json::json!({"values_before":[1_799_999_945]}),
+                serde_json::json!({"committed_at":1_800_000_001}),
+            ] {
+                let accepted:bool=sqlx::query_scalar("SELECT game_spite_source_step_receipt_shape(jsonb_populate_record(NULL::game_character_quest_receipts,to_jsonb(r)||$2::jsonb)) FROM game_character_quest_receipts r WHERE character_id=encode($1,'hex')::uuid AND cause_kind='source_step'")
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(patch.clone()).fetch_one(&h.pool).await?;
+                assert!(!accepted, "one invalid source receipt invariant: {patch}");
+            }
+            drop(permit);
+            for (seconds, expected) in [(55, 1_i64), (1, 2_i64)] {
+                for direction in [StepDirection::South, StepDirection::North] {
+                    if direction == StepDirection::North {
+                        h.root.advance_test_quest_clock(seconds).map_err(debug)?;
+                    }
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_millis(500))
+                        .ok_or("monotonic step pace")?;
+                    let (moved, _) = owner
+                        .ordinary_paced_step(actor, admitted.game_session_id, direction, None, None)
+                        .await;
+                    assert_eq!(moved.disposition, StepDisposition::Moved);
+                }
+                let count:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND cause_kind='source_step'")
+                    .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(count, expected);
+                let consumed:i64=sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-transition/soul-war/source-items/spite-fire'")
+                    .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(
+                    consumed, expected,
+                    "a cooldown refusal leaves no consumption row"
+                );
+                let clock:i64=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(rule::SPITE_FIRE).fetch_one(&h.pool).await?;
+                assert_eq!(
+                    clock,
+                    if seconds == 55 {
+                        1_800_000_000
+                    } else {
+                        1_800_000_056
+                    }
+                );
+                let live:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=$1::uuid)").bind(&later_item).fetch_one(&h.pool).await?;
+                assert_eq!(
+                    live,
+                    seconds == 55,
+                    "cooldown refusal preserves the same field; exactly 56 seconds admits it"
+                );
+            }
+            let last:i64=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(rule::SPITE_FIRE).fetch_one(&h.pool).await?;
+            assert_eq!(last, 1_800_000_056);
+            Ok(())
+        })
+    })
+}
 
 #[test]
 fn srx3_spite_registered_global_fire_uses_real_scope_without_creature_postgres() -> TestResult {

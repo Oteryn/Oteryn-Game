@@ -9,6 +9,7 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
     for source in [
         include_str!("../../../../../../../content/quests/shared-reward-offers.json"),
         include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/m16-targuna-marker.json"),
     ] {
         let document: Offers = serde_json::from_str(source).ok()?;
         if document.schema != 1 {
