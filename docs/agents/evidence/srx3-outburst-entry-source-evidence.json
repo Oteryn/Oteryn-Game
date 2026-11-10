@@ -1,0 +1,112 @@
+{
+  "source_repository": "zimbadev/crystalserver",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "path": "data-global/scripts/quests/heart_of_destruction/actions_outburst_lever.lua",
+      "sha256": "89acba0c46b779140af5fcff854f9e9c37bec19af05937c8112de219fcc454f7",
+      "git_blob": "1f6a4eadd8a8d72f4739029280088ef11f8fb29a"
+    },
+    {
+      "path": "data/libs/functions/boss_lever.lua",
+      "sha256": "0a91d34c17c8fb2a20cdfddd3bb57df23d52ddafbc2053b03c938ee9162edd03",
+      "git_blob": "1a2412551d425e671a19af2ea5ea676e957bbe35"
+    },
+    {
+      "path": "config.lua.dist",
+      "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544",
+      "git_blob": "f215fa6e4612bd8f500e859c504935ef649e3e00"
+    },
+    {
+      "path": "src/config/configmanager.cpp",
+      "sha256": "1c8e7d973475fb2cd0292054c454f86c43980d4dfdcc7c8dce2095e135f7b09b",
+      "git_blob": "358d5de1c895649732e433a4236c4b08e3e4adc8"
+    }
+  ],
+  "literal_lever": [
+    32207,
+    31283,
+    14
+  ],
+  "waiting": [
+    [
+      32207,
+      31284,
+      14
+    ],
+    [
+      32207,
+      31285,
+      14
+    ],
+    [
+      32207,
+      31286,
+      14
+    ],
+    [
+      32207,
+      31287,
+      14
+    ],
+    [
+      32207,
+      31288,
+      14
+    ]
+  ],
+  "entry": [
+    32234,
+    31292,
+    14
+  ],
+  "boss": [
+    32234,
+    31284,
+    14
+  ],
+  "sparks": [
+    [
+      32229,
+      31282,
+      14
+    ],
+    [
+      32230,
+      31287,
+      14
+    ],
+    [
+      32237,
+      31287,
+      14
+    ],
+    [
+      32238,
+      31282,
+      14
+    ]
+  ],
+  "exit": [
+    32218,
+    31375,
+    14
+  ],
+  "minimum_players": 1,
+  "donor_minimum_level": 0,
+  "canonical_minimum_level": 1,
+  "level_representation": "Every canonical Character level is >=1; min1 represents source absence of a level gate.",
+  "cooldown_seconds": 72000,
+  "time_limit_seconds": 1200,
+  "after_kill_seconds": 60,
+  "entry_effect_order": "Per-qualified-pad onUseExtra runs before later pad rejection; initial4 Sparks/boss only after all conditions pass.",
+  "initial_vortex": 23483,
+  "onUseExtra_vortex_query": 23482,
+  "initial_vortex_effect": "actual pinned map has no23482 at literal point, so first onUseExtra takes Lua nil branch.",
+  "initial_vortex_builtin_destination": [
+    32208,
+    31372,
+    14
+  ],
+  "return_routes": "Literal BossLever timeout/afterkill exit32218/31375 stays distinct from initial23483 voluntary builtin teleport32208/31372."
+}

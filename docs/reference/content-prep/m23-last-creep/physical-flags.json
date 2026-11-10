@@ -1,0 +1,291 @@
+{
+  "basis": "EXACT_PINNED_SOURCE_PHYSICAL_FACTS_NOT_AUTHORED_FLAGS",
+  "records": [
+    {
+      "server_item_id": 231,
+      "ground": true,
+      "ground_speed": 160,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "natural tiles"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 409,
+      "ground": true,
+      "ground_speed": 100,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "artificial tiles"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 1949,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": true,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": "teleport",
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "teleporters"
+        },
+        {
+          "key": "type",
+          "value": "teleport"
+        },
+        {
+          "key": "description",
+          "value": "You can see the other side through it."
+        },
+        {
+          "key": "effect",
+          "value": "teleport"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 12047,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": true,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "statues"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 12048,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": true,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "statues"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 12049,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": true,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "statues"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 12050,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": true,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "statues"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 12051,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": true,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "statues"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 12052,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": true,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "statues"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 12053,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": true,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "statues"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 12056,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": true,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "statues"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 12251,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": true,
+      "pickupable": true,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "quest items"
+        },
+        {
+          "key": "description",
+          "value": "It might do some funny things to you"
+        },
+        {
+          "key": "weight",
+          "value": "200"
+        }
+      ],
+      "magic_field": false
+    }
+  ],
+  "canary_appearance_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+  "comparison": "EQUAL_TO_NATIVE_CAPTURE_CANARY_CLIENT_FLAGS_WITH_PINNED_CRYSTAL_XML"
+}
