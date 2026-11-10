@@ -188,9 +188,14 @@ fn main() -> std::process::ExitCode {
         oteryn_client_ui::localization::set_default(store.preferences().language());
     }
     match launch() {
-        Ok(()) => std::process::ExitCode::SUCCESS,
+        Ok(()) => {
+            oteryn_client::crash_report::record_launcher_exit_code(0);
+            std::process::ExitCode::SUCCESS
+        }
         Err(error) => {
             let message = lfmt!("{error}. Reinstall Oteryn to repair it.", error = error);
+            oteryn_client::crash_report::record_startup_failure("launcher", &message);
+            oteryn_client::crash_report::record_launcher_exit_code(2);
             leprintln!("Oteryn: {message}", message = message);
             // The launcher has no console, so the user sees the error only in a dialog. A
             // `--smoke` run is unattended and must not block on one.
