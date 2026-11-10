@@ -137,9 +137,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         pending.movement.session(),
                     )
                     .ok_or(())?;
-                if input.is_none() || has_outfit(player, self.owner_now().get()) {
-                    // Literal early return for every remaining33876 callback:
-                    // no named lookup, Item write, heal, message or new outfit.
+                if input.is_none() {
+                    return finish(&mut runtime, &mut states, &pending);
+                }
+                if has_outfit(player, self.owner_now().get()) {
+                    // Lua returns nil. The original MoveEvents dispatcher
+                    // stops this movement's callback vector, including later
+                    //33949/33984 originals; no Item or effect is published.
                     return finish(&mut runtime, &mut states, &pending);
                 }
                 self.prepare_source_names(&runtime, &["Goshnar's Spite"])?
@@ -242,6 +246,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(());
         }
         if !outcome.removed {
+            let target = effect.boss.as_ref().map(|(boss, _)| boss.actor);
+            runtime
+                .release_source_actor_targets_after_observed_outcome(
+                    &mut pending.reservation,
+                    &pending.movement,
+                    target.as_slice(),
+                )
+                .map_err(|_| ())?;
             pending
                 .completed_items
                 .push(effect.input.item_instance_id());
@@ -272,9 +284,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(());
             }
         }
-        // Every remaining corpse sees the new CONDITION_OUTFIT and early-returns.
-        // All fallible work precedes releasing the same original reservation.
-        finish(&mut runtime, &mut states, &pending)?;
+        // Release only the independently added Spite target after its Item ACK.
+        // The same original Player reservation protects every remaining Item
+        // callback, including33949/33984 interleaved with other33876 originals.
+        let target = effect.boss.as_ref().map(|(boss, _)| boss.actor);
+        runtime
+            .release_source_actor_targets_after_observed_outcome(
+                &mut pending.reservation,
+                &pending.movement,
+                target.as_slice(),
+            )
+            .map_err(|_| ())?;
         if effect.heal {
             let (boss, defense) = effect.boss.as_ref().expect("prepared positive Spite heal");
             runtime
@@ -295,6 +315,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             pending.movement.session(),
             ServerMessage::Advance("You are soaked by tears of the weeping soul!".into()),
         );
+        pending
+            .completed_items
+            .push(effect.input.item_instance_id());
+        pending.weeping = None;
+        states.spite_steps.pending[index] = pending;
         Ok(())
     }
 }

@@ -81,6 +81,7 @@ impl ReadPreparedMonsterMap {
             frame: runtime.content_pin().frame_binding_digest(),
             map: runtime.content_pin().map_revision_digest(),
             tiles: BTreeMap::new(),
+            source_steps: Default::default(),
         };
         for cell in self.cells {
             if !cell.prepared().current_for(room, runtime, objects) {

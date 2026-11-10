@@ -57,10 +57,19 @@ BEGIN
   AND p->>'activation_sequence' ~ '^[1-9][0-9]{0,19}$'
   AND step ?& ARRAY['actor_kind','actor','actor_generation','character','session','connection','lease','movement_revision','translation_revision','movement_binding','previous_revision',
    'node','node_registration_revision','assignment_revision','item','definition','epoch','position','map_revision','content_revision','placement_context']
-  AND step->>'actor_kind'='player' AND step->>'actor' ~ '^[0-9a-f]{32}$' AND step->>'actor'<>repeat('0',32)
+  AND step->>'actor_kind' IN('player','creature') AND step->>'actor' ~ '^[0-9a-f]{32}$' AND step->>'actor'<>repeat('0',32)
   AND step->>'actor_generation' ~ '^[1-9][0-9]{0,19}$'
-  AND step->>'character' ~ '^[0-9a-f]{32}$' AND step->>'session' ~ '^[0-9a-f]{32}$'
-  AND step->>'connection' ~ '^[1-9][0-9]{0,19}$' AND step->>'lease' ~ '^[1-9][0-9]{0,19}$'
+  AND ((step->>'actor_kind'='player'
+    AND step->>'character' ~ '^[0-9a-f]{32}$' AND step->>'session' ~ '^[0-9a-f]{32}$'
+    AND step->>'connection' ~ '^[1-9][0-9]{0,19}$' AND step->>'lease' ~ '^[1-9][0-9]{0,19}$'
+    AND coalesce(step->'creature_subject','null'::jsonb)='null'::jsonb)
+   OR (step->>'actor_kind'='creature'
+    AND step->'character'='null'::jsonb AND step->'session'='null'::jsonb
+    AND step->'connection'='null'::jsonb AND step->'lease'='null'::jsonb
+    AND step->'definition'->>'key'='oteryn:item.tibia.i33949'
+    AND step->'creature_subject'->>'family'='Creature'
+    AND step->'creature_subject'->>'key' ~ '^oteryn:creature\.[a-z0-9_]+$'
+    AND step->'creature_subject'->>'revision'='definition-r1'))
   AND step->>'movement_revision' ~ '^[1-9][0-9]{0,19}$' AND step->>'translation_revision'=step->>'movement_revision'
   AND step->>'movement_binding' ~ '^[0-9a-f]{64}$' AND step->>'movement_binding'<>repeat('0',64)
   AND step->>'previous_revision' ~ '^(0|[1-9][0-9]{0,19})$'
@@ -75,14 +84,17 @@ BEGIN
   AND jsonb_typeof(step->'position')='array' AND jsonb_array_length(step->'position')=10
   AND jsonb_typeof(p->'operations')='array' AND jsonb_array_length(p->'operations')=NEW.operation_count
  ) IS NOT TRUE THEN RAISE EXCEPTION 'source Ground STEP requires its exact original movement and Item proof' USING ERRCODE='23514'; END IF;
- IF NOT game_character_is_uuid_v7((step->>'item')::uuid) OR NOT game_character_is_uuid_v7((step->>'session')::uuid)
-  OR NOT game_character_is_uuid_v7((step->>'character')::uuid) OR NOT game_node_is_uuid_v7((step->>'node')::uuid)
+ IF NOT game_character_is_uuid_v7((step->>'item')::uuid)
+  OR (step->>'actor_kind'='player' AND (NOT game_character_is_uuid_v7((step->>'session')::uuid)
+   OR NOT game_character_is_uuid_v7((step->>'character')::uuid)))
+  OR NOT game_node_is_uuid_v7((step->>'node')::uuid)
   OR (step->>'movement_revision')::numeric>18446744073709551615
   OR (step->>'previous_revision')::numeric>=(step->>'movement_revision')::numeric
   OR (step->>'actor_generation')::numeric>18446744073709551615
   OR NOT game_world_reset_map_epoch_current(NEW.world_id,(step->>'epoch')::numeric)
   OR game_runtime_scope_assignment_history_valid() IS NOT TRUE OR game_node_registration_history_valid() IS NOT TRUE
  THEN RAISE EXCEPTION 'source Ground STEP current owner/reset proof' USING ERRCODE='23514'; END IF;
+ IF step->>'actor_kind'='player' THEN
  SELECT * INTO session FROM game_durability_reconnect_sessions s
  WHERE s.game_session_id=(step->>'session')::uuid AND s.character_id=(step->>'character')::uuid
   AND s.world_id=NEW.world_id AND s.runtime_scope_world_id=NEW.world_id AND s.runtime_scope_house_key IS NULL
@@ -96,7 +108,9 @@ BEGIN
    WHERE c.character_id=session.character_id AND c.account_id=session.account_id AND c.world_id=NEW.world_id
     AND c.eligible AND c.lease_generation=session.character_lease_generation AND c.holder_game_session_id=session.game_session_id
     AND a.presence_character_id=c.character_id AND a.holder_game_session_id=c.holder_game_session_id)
-  OR NOT EXISTS(SELECT 1 FROM game_runtime_scope_assignments a JOIN game_node_registrations n ON n.node_id=a.holder_node_id
+ THEN RAISE EXCEPTION 'source Ground STEP requires its actual current Player owner' USING ERRCODE='23514'; END IF;
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM game_runtime_scope_assignments a JOIN game_node_registrations n ON n.node_id=a.holder_node_id
    JOIN game_durability_admission_runtime_guards ready ON ready.scope_key=set_byte(a.scope_key,0,NEW.runtime_scope_kind)
    WHERE a.world_id=NEW.world_id AND a.state=1 AND a.house_key IS NULL AND a.ownership_generation=NEW.ownership_generation
     AND a.holder_node_id=(step->>'node')::uuid AND a.holder_registration_revision=(step->>'node_registration_revision')::numeric
@@ -125,8 +139,6 @@ BEGIN
    JOIN game_activity_runtime_entries e USING(handoff_id)
    JOIN game_activity_handoff_participants origin ON origin.handoff_id=h.handoff_id
     AND origin.character_id=e.initiating_character_id
-   JOIN game_activity_handoff_participants participant ON participant.handoff_id=h.handoff_id
-    AND participant.character_id=session.character_id AND participant.destination_game_session_id=session.game_session_id
    JOIN game_content_activations c ON c.world_id=h.world_id AND c.channel_id=origin.origin_channel_id
    WHERE h.world_id=NEW.world_id AND h.instance_id=NEW.instance_id
     AND h.ownership_generation=NEW.ownership_generation AND h.state=2
@@ -137,8 +149,11 @@ BEGIN
     AND origin.server_artifact_digest=NEW.catalog_digest
     AND c.activation_sequence=(p->>'activation_sequence')::numeric
     AND c.server_artifact_digest=NEW.catalog_digest AND c.client_artifact_digest=decode(p->>'client_content','hex')
-    AND NOT EXISTS(SELECT 1 FROM game_activity_runtime_returns returned
-     WHERE returned.handoff_id=participant.handoff_id AND returned.character_id=participant.character_id)))
+    AND EXISTS(SELECT 1 FROM game_activity_handoff_participants participant WHERE participant.handoff_id=h.handoff_id
+     AND (step->>'actor_kind'='creature' OR (participant.character_id=session.character_id
+      AND participant.destination_game_session_id=session.game_session_id))
+     AND NOT EXISTS(SELECT 1 FROM game_activity_runtime_returns returned
+      WHERE returned.handoff_id=participant.handoff_id AND returned.character_id=participant.character_id))))
  THEN RAISE EXCEPTION 'source Ground STEP requires its independently current session/scope/content' USING ERRCODE='23514'; END IF;
 
  IF (SELECT count(*) FROM game_spell_item_lines WHERE transaction_id=NEW.transaction_id)<>NEW.operation_count

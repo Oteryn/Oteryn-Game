@@ -21,6 +21,38 @@ impl CreatureAiTable {
         root: &GameplayDecisionRoot,
         now: u64,
     ) {
+        self.fire_steps_through(
+            runtime,
+            cells,
+            blocking,
+            current_map,
+            source,
+            ground,
+            root,
+            now,
+            now,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::ai_think) fn fire_steps_through(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &NativeEntryMovementCells,
+        blocking: &dyn CellBlocker,
+        current_map: Option<&crate::movement::monster_map::MonsterMap>,
+        source: &dyn CurrentCreatureSpeedReader,
+        ground: &dyn GroundSpeedSource,
+        root: &GameplayDecisionRoot,
+        through_us: u64,
+        now: u64,
+    ) {
+        if through_us > now {
+            return;
+        }
+        if current_map.is_some_and(|map| map.source_ground_step_pending()) {
+            return;
+        }
         let cadence_now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now);
         if self.step_timers.is_none() {
             let b = runtime.binding();
@@ -45,16 +77,28 @@ impl CreatureAiTable {
                 timers.cancel(StepFamily, entry.state.actor);
             }
         }
-        let Ok(fence) = runtime.owner_fence() else {
-            self.step_timers = Some(timers);
-            return;
-        };
-        let fired = timers.drain_due(
-            &VirtualOwnerClock::new(SemanticTimeMicros::from_micros(now)),
-            fence,
-            |actor| runtime.contains_live_creature(actor),
-        );
-        for timer in fired {
+        loop {
+            if current_map.is_some_and(|map| map.source_ground_step_pending()) {
+                // The completed movement published its original Item cohort.
+                // Leave every later timer and prepared motion exactly where
+                // its real owner scheduled it, including the original due.
+                self.step_timers = Some(timers);
+                return;
+            }
+            let Ok(fence) = runtime.owner_fence() else {
+                self.step_timers = Some(timers);
+                return;
+            };
+            let mut first = true;
+            let fired = timers.drain_due_matching(
+                &VirtualOwnerClock::new(SemanticTimeMicros::from_micros(through_us)),
+                fence,
+                |actor| runtime.contains_live_creature(actor),
+                |_, _| std::mem::take(&mut first),
+            );
+            let Some(timer) = fired.into_iter().next() else {
+                break;
+            };
             let actor = timer.occurrence;
             let Some(entry) = self.entry_mut(actor) else {
                 continue;

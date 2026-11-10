@@ -64,6 +64,7 @@ pub(super) fn fixture() -> Result<
         frame: pin.frame_binding_digest(),
         map: pin.map_revision_digest(),
         tiles: BTreeMap::new(),
+        source_steps: Default::default(),
     };
     map.tiles.insert(
         (101, 100, 13),

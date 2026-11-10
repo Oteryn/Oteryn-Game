@@ -1,6 +1,86 @@
 use super::*;
 
 #[test]
+fn retained_movement_cutoff_keeps_the_original_timer_and_uses_current_cadence() {
+    use crate::movement::speed::{EngineeringGroundSpeed, creature_speed_fixture::Native};
+    let mut channel = Channel::new();
+    let creature = channel.admit(at(110, 100), 0);
+    channel.thinks(0, true);
+    let motion = &channel.table.entry(creature).expect("entry").motion;
+    let due = motion.due.expect("actual scheduled movement");
+    let prepared = motion.prepared;
+    let cursor = motion.cursor;
+    let before = channel.position(creature);
+    let execution_now = due.checked_add(2 * SECOND).expect("execution clock");
+    channel
+        .runtime
+        .note_rotten_movement_time(execution_now)
+        .expect("current physical movement clock");
+    let source = Native {
+        actor: creature,
+        base: 67,
+        pin: channel.runtime.content_pin().server_artifact_digest(),
+    };
+    channel.table.fire_steps_through(
+        &mut channel.runtime,
+        &channel.cells,
+        &BTreeSet::new(),
+        None,
+        &source,
+        &EngineeringGroundSpeed,
+        &channel.root,
+        due.checked_sub(1).expect("earlier retained cutoff"),
+        execution_now,
+    );
+    assert_eq!(channel.position(creature), before);
+    let motion = &channel.table.entry(creature).expect("entry").motion;
+    assert_eq!(motion.due, Some(due));
+    assert_eq!(motion.prepared, prepared);
+    assert_eq!(motion.cursor, cursor);
+    assert_eq!(
+        channel
+            .table
+            .step_timers
+            .as_ref()
+            .expect("lane")
+            .pending_len(),
+        1
+    );
+
+    channel.table.fire_steps_through(
+        &mut channel.runtime,
+        &channel.cells,
+        &BTreeSet::new(),
+        None,
+        &source,
+        &EngineeringGroundSpeed,
+        &channel.root,
+        due,
+        execution_now,
+    );
+    assert_ne!(channel.position(creature), before);
+    assert_eq!(
+        channel
+            .runtime
+            .committed_movement_occurrence(creature)
+            .expect("actual actor")
+            .expect("real translation")
+            .observed_us(),
+        execution_now
+    );
+    assert!(
+        channel
+            .table
+            .entry(creature)
+            .expect("entry")
+            .motion
+            .due
+            .is_some_and(|next| next > execution_now),
+        "the next cadence is calculated from current execution, never the old cutoff"
+    );
+}
+
+#[test]
 fn creature_steps_on_its_own_deadline_and_refusal_waits_for_the_next_think() {
     let mut channel = Channel::new();
     let creature = channel.admit(at(110, 100), 0);
