@@ -14,6 +14,7 @@ pub(super) struct HatredCallbacks {
     entered: bool,
     removed: bool,
     removing: Option<[Option<ExactActorRef>; 4]>,
+    pending_sorrow: Option<[u8; 16]>,
     entry_extras: Vec<EntryExtraMemo>,
 }
 #[derive(Debug, Clone)]
@@ -55,6 +56,7 @@ impl HatredCallbacks {
             entered: false,
             removed: false,
             removing: None,
+            pending_sorrow: None,
             entry_extras: Vec::new(),
         })
     }
@@ -113,6 +115,9 @@ impl HatredCallbacks {
             return Err(());
         }
         runtime.owner_fence().map_err(|_| ())?;
+        if self.pending_sorrow.is_some() {
+            return Err(());
+        }
         if self
             .clock
             .last_think()
@@ -196,6 +201,86 @@ impl HatredCallbacks {
 }
 
 impl SoulWarCallbacks {
+    /// The literal USE changes the existing Burning clock, with the selected
+    /// actor and current source generation still owned by the native runtime.
+    pub(in crate::gameplay_transport) fn prepare_sorrow_use(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        native: &NativeGameplayState,
+        target: &crate::durability::item_use::soul_war_source::QualifiedSoulWarUseTarget,
+    ) -> Result<(HatredRoom, HatredRoom), ()> {
+        use crate::durability::item_use::soul_war_source::SourceUse;
+        runtime.owner_fence().map_err(|_| ())?;
+        let owner = self.hatred.as_ref().ok_or(())?;
+        let (actor, definition, at) = target.creature_target().ok_or(())?;
+        let snapshot = runtime
+            .companion_snapshot_including_dead(actor)
+            .map_err(|_| ())?;
+        if target.source_use() != SourceUse::Sorrow
+            || !target.target_accepted()
+            || !owner.entered
+            || owner.removed
+            || owner.removing.is_some()
+            || owner.pending_sorrow.is_some()
+            || owner.boss.runtime_scope() != runtime.binding().runtime_scope()
+            || owner.boss.scope_generation() != runtime.binding().scope_generation()
+            || owner.content != runtime.content_pin().server_artifact_digest()
+            || !qualifies_source(runtime, native)
+            || !runtime
+                .source_creature_is_registered(actor)
+                .map_err(|_| ())?
+            || snapshot.position != at
+            || snapshot.state.policy.definition_key != definition.production_key
+            || snapshot.state.policy.definition_revision != definition.revision_ref
+            || !native.creature_profiles().records.iter().any(|record| {
+                record.profile.target.key == definition.production_key
+                    && record.profile.target.revision == definition.revision_ref
+            })
+        {
+            return Err(());
+        }
+        let before = owner.clock.clone();
+        let mut after = before.clone();
+        after.sorrow_used().ok_or(())?;
+        Ok((before, after))
+    }
+
+    pub(in crate::gameplay_transport) fn retain_sorrow_use(&mut self, event: [u8; 16]) {
+        if let Some(owner) = &mut self.hatred {
+            owner.pending_sorrow = Some(event);
+        }
+    }
+
+    pub(in crate::gameplay_transport) fn validate_sorrow_use(
+        &self,
+        event: [u8; 16],
+        before: &HatredRoom,
+    ) -> Result<(), ()> {
+        let owner = self.hatred.as_ref().ok_or(())?;
+        if owner.pending_sorrow != Some(event)
+            || owner.clock.remaining() != before.remaining()
+            || owner.clock.last_think() != before.last_think()
+        {
+            return Err(());
+        }
+        Ok(())
+    }
+
+    pub(in crate::gameplay_transport) fn publish_sorrow_use(
+        &mut self,
+        event: [u8; 16],
+        before: &HatredRoom,
+        after: Option<&HatredRoom>,
+    ) -> Result<(), ()> {
+        self.validate_sorrow_use(event, before)?;
+        let owner = self.hatred.as_mut().ok_or(())?;
+        if let Some(after) = after {
+            owner.clock = after.clone();
+        }
+        owner.pending_sorrow = None;
+        Ok(())
+    }
+
     #[cfg(test)]
     pub(in crate::gameplay_transport) fn hatred_entry_for_test(&self) -> Option<(u64, bool)> {
         self.hatred
@@ -374,7 +459,7 @@ impl HatredCallbacks {
         }
         // Copied death handlers require their occupied slots until source completion.
         // The native owner drains them before this onDisappear callback.
-        if runtime.has_pending_source_creature_deaths() {
+        if runtime.has_pending_source_creature_deaths() || self.pending_sorrow.is_some() {
             return Err(());
         }
         let forms = [

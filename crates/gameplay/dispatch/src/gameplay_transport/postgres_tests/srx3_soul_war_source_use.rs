@@ -19,7 +19,7 @@ fn srx3_soul_war_sanity_wrong_native_target_commits_cooldown_without_burn_postgr
         run(async |admin| {
             super::reset();
             // Exact source walkable tile next to Murcion's literal flame.
-            let scene = SourceScene::new(
+            let (scene, activation_pin) = SourceScene::new_with_activation(
                 PinnedActivitySourceRoom::Bakragore,
                 MovementLocalPosition {
                     x: 33084,
@@ -43,7 +43,25 @@ fn srx3_soul_war_sanity_wrong_native_target_commits_cooldown_without_burn_postgr
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::Bakragore)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            assert_ne!(
+                activation_pin.frame_binding_digest(),
+                scene.pin.frame_binding_digest(),
+                "real native-entry issuance and bundle runtime must keep their distinct frames"
+            );
+            let map_revision = crate::map::overlay::map_revision(
+                owner
+                    .bundle_map()
+                    .ok_or("actual source bundle map")?
+                    .overlay
+                    .base(),
+            );
+            super::boss_activity::issue_content_and_reset_with_runtime_pin(
+                &h,
+                &activation_pin,
+                &scene.pin,
+                &map_revision,
+            )
+            .await?;
             let catalogue =
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?;
@@ -157,6 +175,18 @@ fn srx3_soul_war_sanity_wrong_native_target_commits_cooldown_without_burn_postgr
                 "wrong-target Sanity retains the original physical item");
             assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-transition/soul-war/source-items/cleansed-sanity'")
                 .fetch_one(&h.pool).await?,1);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_soul_war_source_use_proofs WHERE source_key='oteryn:item.tibia.i33950' AND NOT accepted")
+                .fetch_one(&h.pool).await?,1,
+                "cooldown refusal must roll back the second selected-target witness");
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>(
+                    "SELECT count(*) FROM game_item_use_records WHERE cause_kind=5"
+                )
+                .fetch_one(&h.pool)
+                .await?,
+                0
+            );
+            source_pair_refusals(&h).await?;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -169,4 +199,118 @@ fn srx3_soul_war_sanity_wrong_native_target_commits_cooldown_without_burn_postgr
         result.is_ok()
     );
     result
+}
+
+/// Exercise the new deferred reciprocal boundary with the live authority and
+/// custody from the real wrong-target USE above. These are attempted receipt
+/// forgeries; force this guard specifically, then roll back without admitting
+/// them through any of the independent Item/Quest commit-time guards.
+async fn source_pair_refusals(h: &Harness) -> TestResult {
+    let original = sqlx::query_scalar::<_, sqlx::types::Json<serde_json::Value>>(
+        "SELECT to_jsonb(p) FROM game_soul_war_source_use_proofs p WHERE source_key='oteryn:item.tibia.i33950' AND NOT accepted",
+    ).fetch_one(&h.pool).await?.0;
+    let columns: Vec<String> = sqlx::query_scalar(
+        "SELECT attname::text FROM pg_attribute WHERE attrelid='game_soul_war_source_use_proofs'::regclass \
+         AND attnum>0 AND NOT attisdropped AND attgenerated='' ORDER BY attnum",
+    ).fetch_all(&h.pool).await?;
+    let insert = format!(
+        "INSERT INTO game_soul_war_source_use_proofs ({}) SELECT {} FROM jsonb_populate_record(NULL::game_soul_war_source_use_proofs,$1::jsonb) p",
+        columns.join(","),
+        columns
+            .iter()
+            .map(|column| format!("p.{column}"))
+            .collect::<Vec<_>>()
+            .join(","),
+    );
+    for (command, mutation, expected) in [
+        (
+            901,
+            "missing-burn",
+            "accepted source USE requires its exact same-xact one-unit burn",
+        ),
+        (
+            902,
+            "false-with-burn",
+            "wrong-target Sanity must retain its exact current carried Item without a burn",
+        ),
+        (
+            903,
+            "frame_digest",
+            "source USE requires its exact current session and qualified source scope",
+        ),
+        (
+            904,
+            "map_digest",
+            "source USE requires its exact current session and qualified source scope",
+        ),
+    ] {
+        let transaction = crate::operator_files::uuid_v7().map_err(debug)?;
+        let event = crate::operator_files::uuid_v7().map_err(debug)?;
+        let mut proof = original.clone();
+        proof["transaction_id"] = sqlx::types::Uuid::from_bytes(transaction)
+            .to_string()
+            .into();
+        proof["event_id"] = sqlx::types::Uuid::from_bytes(event).to_string().into();
+        proof["command_id"] = serde_json::json!(command);
+        if mutation == "missing-burn" {
+            proof["target_kind"] = serde_json::json!(1);
+            proof["target_family"] = "Item".into();
+            proof["target_key"] = "oteryn:item.tibia.i33890".into();
+            proof["target_revision"] = "definition-r1".into();
+            proof["target_actor"] = serde_json::Value::Null;
+            proof["target_generation"] = serde_json::Value::Null;
+        } else if matches!(mutation, "frame_digest" | "map_digest") {
+            let different = serde_json::Value::String(format!("\\x{}", "a5".repeat(32)));
+            assert_ne!(proof[mutation], different);
+            proof[mutation] = different;
+        }
+        let mut tx = h.pool.begin().await?;
+        sqlx::query(&insert)
+            .bind(sqlx::types::Json(proof))
+            .execute(&mut *tx)
+            .await?;
+        if mutation == "false-with-burn" {
+            // A false target cannot be used to conceal a consuming receipt,
+            // even when every identity/scope/custody field names its exact USE.
+            sqlx::query(
+                "INSERT INTO game_item_use_records (transaction_id,event_id,cause_kind,game_session_id,command_id,\
+                  content_revision,ruleset_revision,sim_revision,request_binding,character_id,world_id,channel_id,\
+                  runtime_scope_ownership_generation,expected_session_generation,shape,source_item_instance_id,\
+                  source_definition_family,source_definition_production_key,source_definition_revision_ref,\
+                  source_parent_item_instance_id,source_placement_ordinal,source_quantity_before,source_quantity_after,\
+                  occurred_at,envelope_sha256,activity_instance_id) \
+                 SELECT transaction_id,event_id,5,game_session_id,command_id,content_revision,ruleset_revision,sim_revision,\
+                  item_request_binding,character_id,world_id,channel_id,scope_generation,connection_generation,1,source_item_instance_id,\
+                  'Item',source_key,'definition-r1',source_parent_item_instance_id,source_placement_ordinal,source_quantity_before,\
+                  source_quantity_before-1,occurred_at,decode(repeat('01',32),'hex'),activity_instance_id \
+                 FROM game_soul_war_source_use_proofs WHERE transaction_id=encode($1,'hex')::uuid",
+            ).bind(transaction.as_slice()).execute(&mut *tx).await?;
+        }
+        let error = sqlx::query("SET CONSTRAINTS game_soul_war_source_use_proof_pair IMMEDIATE")
+            .execute(&mut *tx)
+            .await
+            .err()
+            .ok_or("inconsistent source USE proof was accepted")?;
+        let database = error
+            .as_database_error()
+            .ok_or("source pair refusal must be a database constraint")?;
+        assert_eq!(database.code().as_deref(), Some("23514"));
+        assert!(database.message().contains(expected), "{error:?}");
+        tx.rollback().await?;
+    }
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_soul_war_source_use_proofs")
+            .fetch_one(&h.pool)
+            .await?,
+        1
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_item_use_records WHERE cause_kind=5"
+        )
+        .fetch_one(&h.pool)
+        .await?,
+        0
+    );
+    Ok(())
 }

@@ -1003,7 +1003,7 @@ impl DurabilityRoot {
                         }
                         if let Some(super::QuestSourceAction::SoulWar(input))=&source_action
                             && !soul_step
-                            && !super::soul_war_source::consume(&mut tx,fence,input).await? {
+                            && !super::soul_war_source::consume(&mut tx,fence,&node,input).await? {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                         if let Some(super::QuestSourceAction::RottenArea(input))=&source_action

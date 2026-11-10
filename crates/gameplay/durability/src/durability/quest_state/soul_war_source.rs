@@ -147,27 +147,36 @@ impl DurabilityRoot {
 pub(super) async fn consume(
     tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
     fence: CurrentCharacterGameplayFence,
+    node: &NodeIncarnationProof,
     action: &SoulWarSourceAction,
 ) -> StoredResult<bool> {
     use super::super::item_use::{ItemUseError, ItemUseOutcome};
     let SoulWarSourceAction::Use(input) = action else {
         return Ok(false);
     };
+    if !input.target.target_accepted() && input.target.source_use() != SourceUse::CleansedSanity {
+        return Ok(false);
+    }
+    let request = input
+        .request(&fence)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let binding = input.binding(fence.character_id, &request);
+    match super::super::item_use::soul_war_source::record_source_use_proof(
+        tx,
+        &fence.item_fence(),
+        node,
+        &input.item,
+        &input.target,
+        Some(&binding),
+    )
+    .await
+    {
+        Ok(()) => {}
+        Err(ItemUseError::Unavailable(error)) => return Err(error),
+        Err(_) => return Ok(false),
+    }
     if !input.target.target_accepted() {
-        if input.target.source_use() != SourceUse::CleansedSanity {
-            return Ok(false);
-        }
-        return match super::super::item_use::soul_war_source::assert_retained_source(
-            tx,
-            &fence.item_fence(),
-            &input.item,
-        )
-        .await
-        {
-            Ok(()) => Ok(true),
-            Err(ItemUseError::Unavailable(error)) => Err(error),
-            Err(_) => Ok(false),
-        };
+        return Ok(true);
     }
     let tuple = tx.tuple();
     match super::super::item_use::write(tx, &fence.item_fence(), &input.item, tuple).await {

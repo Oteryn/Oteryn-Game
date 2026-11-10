@@ -45,6 +45,7 @@ fn srx3_hatred_real_source_pad_resets_torment_before_native_handoff_postgres() -
                 .await?;
             let evidence = super::house_transfer::RecoverySource::start(&h).await?;
             super::house_transfer::prepare_owned_session(&h).await?;
+            super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i33793", 1)]).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -175,6 +176,139 @@ fn srx3_hatred_real_source_pad_resets_torment_before_native_handoff_postgres() -
                     .is_err(),
                 "the reset belongs to the transferred Player, not a fabricated destination state"
             );
+            drop(view);
+            // Reach the actual Burning child through ordinary source-map STEP;
+            // no runtime teleport or administrative boss catalogue seeds the USE.
+            for _ in 0..4 {
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_millis(500))
+                    .ok_or("actual Sorrow approach pace")?;
+                let view = owner.runtime_view(&registered);
+                let (step, _) = view
+                    .ordinary_paced_step(
+                        actor,
+                        admitted.game_session_id,
+                        oteryn_protocol_oteryn::world_spatial::StepDirection::North,
+                        None,
+                        None,
+                    )
+                    .await;
+                assert_eq!(
+                    step.disposition,
+                    oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
+                );
+            }
+            let view = owner.runtime_view(&registered);
+            let (burning, boss, before) = {
+                let runtime = view.runtime.lock().await;
+                let visible = runtime.visible_entities();
+                let find = |key: &[u8]| {
+                    visible
+                        .creatures
+                        .iter()
+                        .find(|entry| runtime.matches_live_creature_identity(entry.actor, key))
+                        .map(|entry| entry.actor)
+                };
+                let burning = find(b"oteryn:creature.ashes_of_burning_hatred")
+                    .ok_or("real initial Burning actor")?;
+                let boss = find(b"oteryn:creature.goshnar_s_hatred").ok_or("real Hatred boss")?;
+                let state = view
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .soul_war_callbacks
+                    .hatred_entry_for_test()
+                    .ok_or("real current Burning clock")?;
+                (burning, boss, state.0)
+            };
+            let source_item = view
+                .active_generation
+                .and_then(|generation| generation.native_gameplay())
+                .and_then(|native| native.item_index())
+                .and_then(|index| {
+                    index.definition_ref("Item", "oteryn:item.tibia.i33793", "definition-r1")
+                })
+                .ok_or("qualified original Sorrow Item")?;
+            let intent = oteryn_protocol_oteryn::world_object::UseIntent {
+                target: oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(
+                    source_item,
+                ),
+                use_with: Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                    identity: burning.placement_identity(),
+                    generation: burning.actor_local_generation(),
+                }),
+                use_with_map_item: None,
+                use_with_position: None,
+            };
+            let wrong = oteryn_protocol_oteryn::world_object::UseIntent {
+                use_with: Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                    identity: boss.placement_identity(),
+                    generation: boss.actor_local_generation(),
+                }),
+                ..intent.clone()
+            };
+            let command = |command_id| crate::gameplay_transport::connection::UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: admitted.item_fence,
+            };
+            let rejected = view
+                .dispatch_soul_war_source_use(actor, command(1), &wrong, None, None)
+                .await
+                .map_err(|_| "actual wrong Sorrow target")?
+                .ok_or("source Sorrow selection")?;
+            assert_eq!(
+                rejected.disposition,
+                oteryn_protocol_oteryn::world_object::UseDisposition::NotPossible
+            );
+            let quest_before: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
+                    .fetch_one(&h.pool)
+                    .await?;
+            let accepted = view
+                .dispatch_soul_war_source_use(actor, command(2), &intent, None, None)
+                .await
+                .map_err(|_| "actual Sorrow Item owner")?
+                .ok_or("actual accepted Sorrow")?;
+            assert_eq!(
+                accepted.disposition,
+                oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+            );
+            let replay = view
+                .dispatch_soul_war_source_use(actor, command(2), &intent, None, None)
+                .await
+                .map_err(|_| "original Sorrow replay")?
+                .ok_or("retained Sorrow replay")?;
+            assert_eq!(
+                replay.disposition,
+                oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+            );
+            let runtime = view.runtime.lock().await;
+            assert!(!runtime.actor_spell_reserved(actor));
+            assert!(!runtime.actor_spell_reserved(burning));
+            assert_eq!(
+                view.states
+                    .spell_states
+                    .lock()
+                    .await
+                    .soul_war_callbacks
+                    .hatred_entry_for_test(),
+                Some((before + 10, true))
+            );
+            drop(runtime);
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_quest_receipts")
+                    .fetch_one(&h.pool)
+                    .await?,
+                quest_before,
+                "Sorrow has no durable Quest transition"
+            );
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_soul_war_source_use_proofs WHERE source_key='oteryn:item.tibia.i33793' AND accepted AND transition_key IS NULL AND quest_request_binding IS NULL")
+                .fetch_one(&h.pool).await?,1);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_use_records WHERE cause_kind=5 AND source_definition_production_key='oteryn:item.tibia.i33793' AND source_quantity_before=1 AND source_quantity_after=0 AND channel_id IS NULL AND activity_instance_id IS NOT NULL")
+                .fetch_one(&h.pool).await?,1);
             drop(view);
             drop(registered);
             drop(owner);

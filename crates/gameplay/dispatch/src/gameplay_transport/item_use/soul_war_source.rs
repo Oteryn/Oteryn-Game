@@ -18,6 +18,14 @@ struct CurrentSelection<'a> {
     source: &'a TypedDefinitionRef,
     selected: SelectedSoulWarUseTarget,
 }
+
+#[derive(Debug, Clone)]
+struct PreparedSorrowUse {
+    before: oteryn_gameplay_encounters::bosses::goshnars_hatred::HatredRoom,
+    after: oteryn_gameplay_encounters::bosses::goshnars_hatred::HatredRoom,
+    affected: [ExactActorRef; 1],
+    at: crate::foundation::MovementLocalPosition,
+}
 impl SoulWarUseTargetRead for CurrentSelection<'_> {
     fn source_definition(&self, _: &UseIntent) -> Option<TypedDefinitionRef> {
         Some(self.source.clone())
@@ -110,7 +118,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let selected = if let Some(wanted) = intent.use_with {
             let visible = runtime.visible_entities();
-            let creature = visible
+            let mut creature = visible
                 .creatures
                 .iter()
                 .find(|entry| {
@@ -118,6 +126,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && entry.generation == wanted.generation
                 })
                 .map(|entry| entry.actor);
+            if creature.is_none()
+                && source_use(&entry.item.definition)
+                    == Some(crate::durability::item_use::soul_war_source::SourceUse::Sorrow)
+            {
+                // The source resolves Creature(id), including HP0 before its
+                // copied death handlers finish. This is no combat eligibility.
+                creature = runtime
+                    .source_registered_creature_census()
+                    .ok()?
+                    .into_iter()
+                    .find(|(actor, _)| {
+                        actor.placement_identity() == wanted.identity
+                            && actor.actor_local_generation() == wanted.generation
+                    })
+                    .map(|(actor, _)| actor);
+            }
             let selected = creature.or_else(|| {
                 visible
                     .players
@@ -252,6 +276,7 @@ pub(super) struct PendingSourceUse {
     input: crate::durability::quest_state::soul_war_source::SoulWarSourceUse,
     maw: Option<PreparedMawUse>,
     sanity: Option<PreparedSanityUse>,
+    sorrow: Option<PreparedSorrowUse>,
     reservation: Option<SourceActorReservation>,
 }
 impl PendingSourceUse {
@@ -284,6 +309,11 @@ impl SourceActorReservationProof for PendingSourceUse {
             .as_ref()
             .map(PreparedMawUse::affected)
             .or_else(|| self.sanity.as_ref().map(PreparedSanityUse::affected))
+            .or_else(|| {
+                self.sorrow
+                    .as_ref()
+                    .map(|prepared| prepared.affected.as_slice())
+            })
             .unwrap_or(&[])
     }
     fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
@@ -327,6 +357,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             held.source_pending.as_deref().cloned()
         };
+        let permit = self.spell_lane_permit().await.ok_or(())?;
         let pending = if let Some(pending) = pending {
             if pending.actor != actor || pending.command != command || pending.wire != wire {
                 return Err(());
@@ -339,28 +370,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Ok(None);
             };
-            if qualified.source_use()
-                == crate::durability::item_use::soul_war_source::SourceUse::MortalEssence
-                && !qualified.target_accepted()
+            if matches!(
+                qualified.source_use(),
+                crate::durability::item_use::soul_war_source::SourceUse::MortalEssence
+                    | crate::durability::item_use::soul_war_source::SourceUse::Sorrow
+            ) && !qualified.target_accepted()
             {
                 return Ok(Some(UseOutcome {
                     disposition: UseDisposition::NotPossible,
                     ..UseOutcome::rejected()
                 }));
             }
-            // Sorrow has no persistent Quest transition and stays with its exact
-            // item-only source owner rather than manufacturing a cursor write.
-            if qualified.source_use()
-                == crate::durability::item_use::soul_war_source::SourceUse::Sorrow
-            {
-                return Ok(Some(UseOutcome::rejected()));
-            }
-            let pending = PendingSourceUse {
+            let mut pending = PendingSourceUse {
                 actor,
                 command,
                 wire,
                 maw: None,
                 sanity: None,
+                sorrow: None,
                 reservation: None,
                 input: SoulWarSourceUse {
                     target: qualified,
@@ -381,13 +408,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     },
                 },
             };
-            let runtime = self.runtime.lock().await;
+            let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if !rotten_essence::current(&runtime, actor, command)
                 || states.is_dead(actor)
                 || states.has_pending_spell_commit(actor, command.game_session_id)
             {
                 return Err(());
+            }
+            let mut sorrow_reservation = None;
+            if pending.input.target.source_use()
+                == crate::durability::item_use::soul_war_source::SourceUse::Sorrow
+            {
+                let native = self
+                    .active_generation
+                    .and_then(|generation| generation.native_gameplay())
+                    .ok_or(())?;
+                let (target, _, at) = pending.input.target.creature_target().ok_or(())?;
+                let Ok((before, after)) = states.soul_war_callbacks.prepare_sorrow_use(
+                    &runtime,
+                    native,
+                    &pending.input.target,
+                ) else {
+                    return Ok(Some(UseOutcome {
+                        disposition: UseDisposition::NotPossible,
+                        ..UseOutcome::rejected()
+                    }));
+                };
+                pending.sorrow = Some(PreparedSorrowUse {
+                    before,
+                    after,
+                    affected: [target],
+                    at,
+                });
+                sorrow_reservation = Some(
+                    runtime
+                        .prepare_source_actor_reservation(&pending)
+                        .map_err(|_| ())?,
+                );
             }
             let held = rotten_essence::gate(&mut states, &runtime, actor, command.game_session_id);
             held.admit(command.command_id, self.owner_ms())
@@ -403,10 +461,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             held.start_drink(self.owner_ms()).map_err(|_| ())?;
             held.unspendable
                 .push(pending.input.item.source_item_instance_id);
-            held.source_pending = Some(Box::new(pending.clone()));
+            if let Some(mut reservation) = sorrow_reservation {
+                runtime
+                    .reserve_source_actors(&mut reservation, &pending)
+                    .map_err(|_| ())?;
+                pending.reservation = Some(reservation);
+                states
+                    .soul_war_callbacks
+                    .retain_sorrow_use(pending.input.item.event_id);
+            }
+            // Sorrow's exact target, clock successor and source reservation are
+            // installed in this same owner turn, before any cancellation point.
+            rotten_essence::gate(&mut states, &runtime, actor, command.game_session_id)
+                .source_pending = Some(Box::new(pending.clone()));
             pending
         };
-        let permit = self.spell_lane_permit().await.ok_or(())?;
         self.settle_soul_war_source_use(&permit, pending)
             .await
             .map(Some)
@@ -429,7 +498,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter_map(|(_, _, gate)| {
                     gate.source_pending
                         .as_deref()
-                        .filter(|pending| pending.maw.is_some() || pending.sanity.is_some())
+                        .filter(|pending| {
+                            pending.maw.is_some()
+                                || pending.sanity.is_some()
+                                || pending.sorrow.is_some()
+                        })
                         .cloned()
                 })
                 .collect::<Vec<_>>();
@@ -483,6 +556,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             retained.clone()
         };
+        if pending.input.target.source_use()
+            == crate::durability::item_use::soul_war_source::SourceUse::Sorrow
+        {
+            return self.settle_sorrow_use(permit, pending).await;
+        }
         if pending.input.target.source_use()
             == crate::durability::item_use::soul_war_source::SourceUse::MortalEssence
         {
@@ -810,6 +888,100 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if known_transition {
             Box::pin(self.refresh_quest_session(command.game_session_id, false)).await;
+        }
+        Ok(UseOutcome {
+            disposition,
+            ..UseOutcome::rejected()
+        })
+    }
+
+    async fn settle_sorrow_use(
+        &self,
+        _permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        pending: PendingSourceUse,
+    ) -> Result<UseOutcome, ()> {
+        use crate::durability::item_use::{ItemUseError, ItemUseOutcome};
+        let actor = pending.actor;
+        let command = pending.command;
+        {
+            let runtime = self.runtime.lock().await;
+            runtime
+                .validate_source_actor_reservation(
+                    pending.reservation.as_ref().ok_or(())?,
+                    &pending,
+                )
+                .map_err(|_| ())?;
+            let states = self.states.spell_states.lock().await;
+            states.soul_war_callbacks.validate_sorrow_use(
+                pending.input.item.event_id,
+                &pending.sorrow.as_ref().ok_or(())?.before,
+            )?;
+        }
+        let result = self
+            .root
+            .commit_soul_war_sorrow_use(
+                self.character,
+                self.holder,
+                command.item_fence.ok_or(())?,
+                pending.input.item.clone(),
+                pending.input.target.clone(),
+            )
+            .await;
+        let (committed, disposition) = match result {
+            Ok(ItemUseOutcome::Written { .. } | ItemUseOutcome::AlreadyCommitted { .. }) => {
+                (true, UseDisposition::Committed)
+            }
+            Err(ItemUseError::Unavailable(_)) => return Err(()),
+            Err(
+                ItemUseError::StaleState | ItemUseError::AuthorityRejected | ItemUseError::Cooldown,
+            ) => (false, UseDisposition::NotPossible),
+            Err(_) => (false, UseDisposition::Rejected),
+        };
+        let mut runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        let prepared = pending.sorrow.as_ref().ok_or(())?;
+        runtime
+            .validate_source_actor_reservation(pending.reservation.as_ref().ok_or(())?, &pending)
+            .map_err(|_| ())?;
+        states
+            .soul_war_callbacks
+            .validate_sorrow_use(pending.input.item.event_id, &prepared.before)?;
+        runtime
+            .release_source_actors_after_observed_outcome(
+                pending.reservation.clone().ok_or(())?,
+                &pending,
+            )
+            .map_err(|_| ())?;
+        states.soul_war_callbacks.publish_sorrow_use(
+            pending.input.item.event_id,
+            &prepared.before,
+            committed.then_some(&prepared.after),
+        )?;
+        let held = rotten_essence::gate(&mut states, &runtime, actor, command.game_session_id);
+        held.source_pending = None;
+        held.source_last = Some((command.command_id, pending.wire, disposition));
+        held.unspendable
+            .retain(|item| *item != pending.input.item.source_item_instance_id);
+        held.settle(command.command_id, disposition, &[]);
+        if committed
+            && let Some(map) = self.bundle_map()
+            && let Some(position) = super::super::soul_war_scene::wire_position(prepared.at)
+        {
+            let captured_name = self
+                .states
+                .chat
+                .speaker_name(command.game_session_id)
+                .and_then(|name| {
+                    oteryn_protocol_oteryn::entity_names::EntityDisplayName::new(&name).ok()
+                });
+            map.facts
+                .emit_movement_speech(crate::map::facts::MovementSpeech {
+                    speaker: actor,
+                    position,
+                    talk_type: 36,
+                    text: "The flame of hatred is doused!".into(),
+                    captured_name,
+                });
         }
         Ok(UseOutcome {
             disposition,
