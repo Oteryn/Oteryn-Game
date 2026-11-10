@@ -162,9 +162,12 @@ fn slow_serene_and_slow_input_keep_clock_and_liveness_progressing() -> TestResul
 
 async fn live_clock() -> TestResult {
     let authority = SlowSerene::default();
+    let admitted = admitted()?;
+    // The snapshot carries the admission's existing clock revision without incrementing it.
+    let initial_clock_revision = admitted.continuity.world_clock_revision;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let served = async {
-        let end = serve_admitted_actor(&mut server, admitted()?, &authority, IDLE_LIVENESS).await;
+        let end = serve_admitted_actor(&mut server, admitted, &authority, IDLE_LIVENESS).await;
         drop(server);
         Ok::<_, Box<dyn std::error::Error + Send + Sync>>(end)
     };
@@ -197,8 +200,14 @@ async fn live_clock() -> TestResult {
                 MessageType::StateDelta => {
                     let delta = decode_state_delta(envelope.payload())?;
                     if delta.domain_id == STATE_DOMAIN_WORLD_CLOCK {
-                        assert_eq!(delta.base_revision, u64::from(clock_deltas) + 1);
-                        assert_eq!(delta.new_revision, u64::from(clock_deltas) + 2);
+                        assert_eq!(
+                            delta.base_revision,
+                            initial_clock_revision + u64::from(clock_deltas)
+                        );
+                        assert_eq!(
+                            delta.new_revision,
+                            initial_clock_revision + u64::from(clock_deltas) + 1
+                        );
                         clock_deltas += 1;
                         let clock = decode_world_clock(delta.payload)
                             .map_err(|error| format!("clock delta: {error:?}"))?;
