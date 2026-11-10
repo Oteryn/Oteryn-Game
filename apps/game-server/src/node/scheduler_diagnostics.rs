@@ -8,6 +8,7 @@ oteryn_error_codes::error_kinds! {
 }
 
 pub(super) fn job(name: &'static str) -> Span {
+    super::serve::install_error_sink();
     let mut span = Span::start(Level::Info, "scheduler", "job", None);
     span.field("name", name);
     span

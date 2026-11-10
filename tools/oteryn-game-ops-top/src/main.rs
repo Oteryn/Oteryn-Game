@@ -19,6 +19,23 @@ use std::time::{Duration, Instant};
 
 const REQUEST_LIMIT: u64 = 64 * 1024;
 
+#[derive(Default)]
+struct TerminalGuard {
+    raw_mode: bool,
+    alternate_screen: bool,
+}
+
+impl Drop for TerminalGuard {
+    fn drop(&mut self) {
+        if self.raw_mode {
+            let _ = disable_raw_mode();
+        }
+        if self.alternate_screen {
+            let _ = execute!(std::io::stdout(), LeaveAlternateScreen);
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize)]
 struct Health {
     readiness: bool,
@@ -189,8 +206,11 @@ fn draw(frame: &mut ratatui::Frame<'_>, app: &App) {
 }
 
 fn run(socket: PathBuf) -> Result<(), String> {
+    let mut guard = TerminalGuard::default();
     enable_raw_mode().map_err(|error| error.to_string())?;
+    guard.raw_mode = true;
     let mut output = std::io::stdout();
+    guard.alternate_screen = true;
     execute!(output, EnterAlternateScreen).map_err(|error| error.to_string())?;
     let backend = CrosstermBackend::new(output);
     let mut terminal = Terminal::new(backend).map_err(|error| error.to_string())?;
@@ -203,7 +223,7 @@ fn run(socket: PathBuf) -> Result<(), String> {
         diagnose: Vec::new(),
     };
     let mut refresh_at = Instant::now();
-    let result = loop {
+    loop {
         if Instant::now() >= refresh_at {
             app.refresh();
             refresh_at = Instant::now() + Duration::from_secs(1);
@@ -239,10 +259,7 @@ fn run(socket: PathBuf) -> Result<(), String> {
                 }
             }
         }
-    };
-    let _ = disable_raw_mode();
-    let _ = execute!(terminal.backend_mut(), LeaveAlternateScreen);
-    result
+    }
 }
 
 fn main() -> std::process::ExitCode {

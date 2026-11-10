@@ -236,6 +236,13 @@ struct OpsError {
 /// Write one leveled diagnostic line of `process` to stderr unless `OTERYN_LOG` drops it
 /// (ERR-NODE-1). Warn, error and coded lines are always written.
 pub fn emit(process: &str, line: &oteryn_error_codes::Line<'_>) {
+    record_error(line);
+    if oteryn_error_codes::filter().allows(line.level, line.module, line.code.is_some()) {
+        eprintln!("{}", line.render(process, oteryn_error_codes::unix_ms()));
+    }
+}
+
+fn record_error(line: &oteryn_error_codes::Line<'_>) {
     if let Some(code) = line.code {
         let errors = LAST_ERRORS.get_or_init(Default::default);
         let mut errors = errors
@@ -246,15 +253,17 @@ pub fn emit(process: &str, line: &oteryn_error_codes::Line<'_>) {
         }
         errors.push_back(OpsError {
             ts: oteryn_error_codes::unix_ms(),
-            code: code.to_string(),
+            code: format!("E{:04}", code.number),
             module: line.module.to_owned(),
             event: line.event.to_owned(),
             trace: line.trace.map(str::to_owned),
         });
     }
-    if oteryn_error_codes::filter().allows(line.level, line.module, line.code.is_some()) {
-        eprintln!("{}", line.render(process, oteryn_error_codes::unix_ms()));
-    }
+}
+
+pub(super) fn install_error_sink() {
+    static INSTALL: std::sync::Once = std::sync::Once::new();
+    INSTALL.call_once(|| oteryn_error_codes::install_observer(record_error));
 }
 
 /// Start of a game-server process, before anything else: mint the boot trace, install the
@@ -266,6 +275,7 @@ pub fn begin_process(
     log_spec_code: oteryn_error_codes::ErrorCode,
 ) -> Result<String, oteryn_error_codes::LogSpecError> {
     use oteryn_error_codes::{Level, Line};
+    install_error_sink();
     let trace = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
     let build = oteryn_error_codes::build_id(version);
     oteryn_error_codes::install_panic_hook(process, build.clone(), trace.clone());
@@ -4314,6 +4324,22 @@ mod tests {
         assert!(control_diagnose(b"diagnose E4001\n").is_some());
         assert!(control_diagnose(b"diagnose E40\n").is_none());
         assert!(control_diagnose(b"diagnose player-id\n").is_none());
+    }
+
+    #[test]
+    fn scheduler_failures_reach_health_and_diagnose() {
+        {
+            let mut span = super::super::scheduler_diagnostics::job("test_pass");
+            span.set_outcome("failed");
+            span.set_code(
+                super::super::scheduler_diagnostics::SchedulerErrorKind::JobFailed.code(),
+            );
+        }
+
+        let diagnose = control_diagnose(b"diagnose E2015\n").expect("valid diagnose command");
+        assert!(diagnose.contains("\"code\":\"E2015\""));
+        assert!(diagnose.contains("\"module\":\"scheduler\""));
+        assert!(diagnose.contains("\"event\":\"job_end\""));
     }
 
     #[test]

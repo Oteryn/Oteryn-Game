@@ -1,21 +1,32 @@
 //! Low-cardinality AI counters and sampled budget-breach diagnostics.
 
-use oteryn_error_codes::metrics::Registry;
+use oteryn_error_codes::metrics::{Counter, Registry};
 use oteryn_error_codes::{FieldValue, Level, Line, emit};
+use std::sync::{Arc, OnceLock};
+
+fn evaluation_total() -> &'static Counter {
+    static COUNTER: OnceLock<Arc<Counter>> = OnceLock::new();
+    COUNTER.get_or_init(|| Registry::global().counter("monster_ai_evaluation_total", &[]))
+}
+
+fn evaluation_units_total() -> &'static Counter {
+    static COUNTER: OnceLock<Arc<Counter>> = OnceLock::new();
+    COUNTER.get_or_init(|| Registry::global().counter("monster_ai_evaluation_units_total", &[]))
+}
+
+fn budget_exceeded_total() -> &'static Counter {
+    static COUNTER: OnceLock<Arc<Counter>> = OnceLock::new();
+    COUNTER.get_or_init(|| Registry::global().counter("monster_ai_budget_exceeded_total", &[]))
+}
 
 /// Record one AI evaluation and, when refused by its budget, a sampled warning.
 pub fn record_ai_evaluation(units: usize, budget: usize, over_budget: bool) {
-    let metrics = Registry::global();
-    metrics
-        .counter("monster_ai_evaluation_total", &[])
-        .increment();
-    metrics
-        .counter("monster_ai_evaluation_units_total", &[])
-        .add(u64::try_from(units).unwrap_or(u64::MAX));
+    evaluation_total().increment();
+    evaluation_units_total().add(u64::try_from(units).unwrap_or(u64::MAX));
     if !over_budget {
         return;
     }
-    let exceeded = metrics.counter("monster_ai_budget_exceeded_total", &[]);
+    let exceeded = budget_exceeded_total();
     exceeded.increment();
     let count = exceeded.get();
     // First occurrence is immediately visible; powers of two retain a bounded logarithmic sample.
@@ -43,13 +54,22 @@ mod tests {
 
     #[test]
     fn budget_breaches_are_counted_and_power_of_two_sampled() {
+        let start = budget_exceeded_total().get();
         let lines = capture(|| {
             record_ai_evaluation(129, 128, true);
             record_ai_evaluation(130, 128, true);
             record_ai_evaluation(131, 128, true);
         });
-        assert_eq!(lines.len(), 2);
-        assert!(lines[0].contains("module=monster_ai event=ai_budget_exceeded"));
+        let expected = (1..=3)
+            .filter(|offset| start.saturating_add(*offset).is_power_of_two())
+            .count();
+        assert_eq!(budget_exceeded_total().get(), start + 3);
+        assert_eq!(lines.len(), expected);
+        assert!(
+            lines
+                .iter()
+                .all(|line| line.contains("module=monster_ai event=ai_budget_exceeded"))
+        );
         assert!(lines.iter().all(|line| !line.contains("player")));
     }
 }
