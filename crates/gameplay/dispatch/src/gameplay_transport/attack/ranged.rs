@@ -828,6 +828,10 @@ fn resolved_damage(
     offence.convert_physical(primary, secondary, element)
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "keep independent weapon, target, decision, native health, Cruelty and Wheel inputs explicit"
+)]
 pub(super) fn creature_damage(
     ranged: &RangedLoadout,
     policy: &crate::content::creature_policy::CompiledCreaturePolicy,

@@ -166,7 +166,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
-            let Ok(census) = runtime.current_live_creature_candidates(4096) else {
+            let Ok(census) = runtime.current_live_creature_census() else {
                 index += 1;
                 continue;
             };

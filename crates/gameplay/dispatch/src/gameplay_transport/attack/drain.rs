@@ -2449,12 +2449,15 @@ mod tests {
             },
         );
         assert_eq!(parts, Some([34, 29]));
+        let mut wheel_called = false;
         assert_eq!(
             super::finish_melee_components([50, 50], Some, Some(100), |_, _| {
-                panic!("fully drained health must not reach Wheel")
+                wheel_called = true;
+                None
             }),
             None
         );
+        assert!(!wheel_called, "fully drained health must not reach Wheel");
     }
 
     #[test]
