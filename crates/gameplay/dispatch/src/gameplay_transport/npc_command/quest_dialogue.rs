@@ -36,6 +36,8 @@ pub(super) struct Choice {
 pub(super) struct State {
     context: Option<Context>,
     topic: Topic,
+    // A failed offer does not advance the topic, but still owns its confirmation.
+    pub(super) reward_request: Option<Context>,
     pending: Option<Pending>,
     #[cfg(test)]
     interrupt_after_commit: Option<u64>,
@@ -64,6 +66,7 @@ impl State {
         if self.pending.is_none() {
             self.context = None;
             self.topic = Topic::default();
+            self.reward_request = None;
         }
     }
 
@@ -79,6 +82,9 @@ impl State {
         let previous = self.topic(&context);
         self.context = Some(context);
         self.topic = next.unwrap_or(previous);
+        if self.topic == Topic::default() {
+            self.reward_request = None;
+        }
     }
 }
 

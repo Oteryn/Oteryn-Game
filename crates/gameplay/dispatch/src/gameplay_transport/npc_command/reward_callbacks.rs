@@ -79,6 +79,27 @@ pub(super) fn prepare(
     {
         return None;
     }
+    let context = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent,
+    )?;
+    let text = intent.text.trim().to_ascii_lowercase();
+    if text == "no"
+        || (!matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
+            && offers
+                .offers
+                .iter()
+                .any(|offer| offer.npc == context.2 && offer.keywords.contains(&text)))
+    {
+        let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
+        sessions
+            .get_mut(&command.game_session_id)?
+            .quest_dialogue
+            .reward_request = (text != "no").then_some(context);
+    }
     let catalogue = admission.quest_catalogue.as_deref()?;
     quest_dialogue::prepare(
         admission,
@@ -207,11 +228,12 @@ pub(super) fn unhandled_confirmation(
         return false;
     };
     let topic = state.quest_dialogue.topic(&context).number;
+    let requested = state.quest_dialogue.reward_request.as_ref() == Some(&context);
     drop(sessions);
     reward_callbacks::load().is_ok_and(|callbacks| {
         callbacks.iter().any(|callback| {
             callback.npc == context.2
-                && callback.topic == topic
+                && (callback.topic == topic || requested)
                 && callback.keywords.contains(&text)
         })
     })
