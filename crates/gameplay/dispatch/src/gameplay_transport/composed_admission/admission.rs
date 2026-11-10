@@ -6,8 +6,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: FreshAdmissionAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
+        let started = std::time::Instant::now();
         let mut stage = "input_gate";
-        self.admit_fresh_session_at_stage(attempt, &mut stage)
+        let mut evidence_failure = None;
+        self.admit_fresh_session_at_stage(attempt, &mut stage, &mut evidence_failure)
             .await
             .inspect_err(|refusal| {
                 // [DBG-NODEBOOT]: terminal labels only; no grant, identity or error payload.
@@ -19,8 +21,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     AdmissionRefusal::Queued(_) => "queued",
                     AdmissionRefusal::RecoveryCapabilityRequired => "recovery_capability_required",
                 };
+                let evidence = evidence_failure
+                    .map(|error| format!(" {error}"))
+                    .unwrap_or_default();
                 super::super::operator_event(&format!(
-                    "[DBG-NODEBOOT] event=fresh_admission_refused stage={stage} class={class}"
+                    "[DBG-NODEBOOT] event=fresh_admission_refused stage={stage} class={class}{evidence} admission_ms={}",
+                    started.elapsed().as_millis(),
                 ));
             })
     }
@@ -29,6 +35,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: FreshAdmissionAttempt<'_>,
         stage: &mut &'static str,
+        evidence_failure: &mut Option<EvidenceUnavailable>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         use AdmissionRefusal::{Classified, Rejected, Unavailable};
         use FoundationProtocolError as N8;
@@ -103,7 +110,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // D4: the five-second source-age bound requires evidence fetched for
             // this attempt; S2 custody retains it and the composition decides.
             *stage = "owner_evidence_refresh";
-            if self
+            if let Err(error) = self
                 .evidence
                 .refresh_fresh_admission(
                     self.root,
@@ -112,9 +119,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &subject.signing_key_id,
                 )
                 .await
-                .is_err()
             {
                 if !budget.retries_unavailable(Unavailable).await {
+                    *evidence_failure = Some(error);
                     return Err(Unavailable);
                 }
                 continue;

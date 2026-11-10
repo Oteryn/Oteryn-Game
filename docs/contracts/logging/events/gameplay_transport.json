@@ -3,6 +3,14 @@
   "owner": "crates",
   "events": [
     {
+      "event": "appearance_prepare_failed",
+      "level": "info",
+      "span": false,
+      "fields": ["class", "component", "stage", "subclass"],
+      "codes": [],
+      "note": "[DBG-NODEBOOT] Temporary closed-stage appearance diagnostics; no identities or error payloads."
+    },
+    {
       "event": "attack_target_condition_gated",
       "level": "info",
       "span": false,
@@ -65,6 +73,14 @@
       "fields": [],
       "codes": [],
       "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "fresh_admission_refused",
+      "level": "info",
+      "span": false,
+      "fields": ["admission_ms", "cause", "class", "replay", "stage", "step"],
+      "codes": [],
+      "note": "[DBG-NODEBOOT] Temporary fixed-token diagnostics; no identifiers or source payload."
     },
     {
       "event": "join_prepare_failed",

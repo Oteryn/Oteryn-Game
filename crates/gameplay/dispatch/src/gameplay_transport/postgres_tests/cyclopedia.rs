@@ -459,6 +459,16 @@ fn scenario(canonical: bool) -> TestResult {
                     || point.y.abs_diff(other.y) >= 4
             })
         }));
+        let (advanced, unchanged): (i64, i64) = sqlx::query_as(
+            "SELECT count(*) FILTER (WHERE committed_character_revision IS NOT NULL), \
+                    count(*) FILTER (WHERE committed_character_revision IS NULL) \
+               FROM game_character_cyclopedia_receipts WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(advanced > 0, "native discovery committed a Character revision");
+        assert!(unchanged > 0, "repeated Start retained a non-advancing receipt");
         // Simulate process state replacement and a lost ACK. The Channel keeps the GameSession's
         // command stream (SESSION-INGRESS-1), which replays the retained result; the same
         // command still reaches PostgreSQL through the native receipt.
@@ -468,6 +478,14 @@ fn scenario(canonical: bool) -> TestResult {
                 .command_ingress,
         );
         drop(owner);
+        // A new process must recover the native Cyclopedia revision before it can
+        // replay the command; retaining the old authority would miss that gate.
+        drop(authority);
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
         std::sync::Arc::get_mut(&mut owner.states)
             .expect("W02: isolated fixture state")

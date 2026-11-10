@@ -3,6 +3,14 @@
   "owner": "crates",
   "events": [
     {
+      "event": "character_authority_gate_failed",
+      "level": "warn",
+      "span": false,
+      "fields": ["gate"],
+      "codes": [],
+      "note": "DBG-NODEBOOT temporary failed Character authority gate: recovery_fence, offline_training, npc_purchase, creation, bazaar, revision_chain, appearance, build_chain, proficiency_history, familiar_chain, familiar_group, spell_item_chain or bootstrap_payload. Closed labels only; no SQL, identities, rows, payloads or error text. Remove after diagnosis."
+    },
+    {
       "event": "db_pool",
       "level": "info",
       "span": false,

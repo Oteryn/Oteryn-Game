@@ -148,40 +148,51 @@ impl SessionAppearance {
         item_view: Option<&mut SessionItemView>,
     ) -> Option<(u32, Vec<u8>)> {
         let mut item_view = item_view;
-        let mut snapshot = view
-            .snapshot(channel, &mut |entities| {
+        let mut snapshot = initial_stage(
+            "visibility_snapshot",
+            view.snapshot(channel, &mut |entities| {
                 attach_spatial_handles(item_view.as_deref_mut(), entities)
             })
-            .ok()?;
+            .ok(),
+        )?;
         if self.selected {
             self.select_hirelings(channel);
             let players = self.players(&snapshot.entities);
-            let observation = authority
-                .appearance_observation_projected(
-                    actor,
-                    admitted.game_session_id,
-                    self.empty_outfit,
-                    players.clone(),
-                )
-                .await?;
-            self.upserts(observation, &players)?;
-            self.attach(&mut snapshot.entities)?;
-            let payload = wire::Snapshot {
-                catalogue: self.catalogue.clone()?,
-                bindings: self.bindings.values().cloned().collect(),
-                high_water: self.high_water,
-            }
-            .encode()
-            .ok()?;
+            let observation = initial_stage(
+                "observation",
+                authority
+                    .appearance_observation_projected(
+                        actor,
+                        admitted.game_session_id,
+                        self.empty_outfit,
+                        players.clone(),
+                    )
+                    .await,
+            )?;
+            initial_stage("upserts", self.upserts(observation, &players))?;
+            initial_stage("attach", self.attach(&mut snapshot.entities))?;
+            let payload = initial_stage(
+                "appearance_encoding",
+                wire::Snapshot {
+                    catalogue: initial_stage("appearance_encoding", self.catalogue.clone())?,
+                    bindings: self.bindings.values().cloned().collect(),
+                    high_water: self.high_water,
+                }
+                .encode()
+                .ok(),
+            )?;
             self.snapshot = Some(payload.into());
             self.revision = 1;
         }
-        encode_visibility_snapshot_lit(
-            admitted.continuity.selected_capabilities.as_slice(),
-            &snapshot,
-            view.lights(),
+        initial_stage(
+            "visibility_encoding",
+            encode_visibility_snapshot_lit(
+                admitted.continuity.selected_capabilities.as_slice(),
+                &snapshot,
+                view.lights(),
+            )
+            .ok(),
         )
-        .ok()
     }
     pub(super) fn domain<'a>(&'a self, domains: &mut Vec<DomainSnapshot<'a>>) {
         if let Some(payload) = &self.snapshot {
@@ -196,6 +207,16 @@ impl SessionAppearance {
             );
         }
     }
+}
+
+// [DBG-NODEBOOT]: preserve each existing None without actor or payload data.
+fn initial_stage<T>(stage: &'static str, result: Option<T>) -> Option<T> {
+    if result.is_none() {
+        crate::gameplay_transport::operator_event(&format!(
+            "[DBG-NODEBOOT] event=appearance_prepare_failed component=initial stage={stage} class=none subclass=none"
+        ));
+    }
+    result
 }
 
 pub(in crate::gameplay_transport) async fn dispatch<A: FreshAdmissionAuthority>(
