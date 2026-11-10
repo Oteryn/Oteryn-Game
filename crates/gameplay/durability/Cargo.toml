@@ -37,6 +37,7 @@ oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
 oteryn-gameplay-native-admission-source = { version = "=0.1.0", path = "../native-admission-source" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../protocol-oteryn" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }
+oteryn-task-supervisor = { version = "=0.1.0", path = "../../task-supervisor" }
 oteryn-world-bundle = { version = "=0.1.0", path = "../../world-bundle" }
 prost.workspace = true
 serde = { workspace = true, features = ["derive"] }
