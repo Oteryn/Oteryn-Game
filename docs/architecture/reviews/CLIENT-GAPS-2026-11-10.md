@@ -21,10 +21,11 @@ tracing, changes under construction and executed validation.
 | 5 | T187 | IMPLEMENTED; broader validation pending | Reset button 10 sends `Intent::Shuffle` / operation 2 to the durable owner; button 25 separately toggles visibility. The existing committed discovery notice now reaches the notification banner even with the map closed, deduplicated by session sequence. Manual Find emits the same notice only after the seventh POI commits. New client/real-dispatch regressions cover reset, snapshot, receipt replay and expiry; they have not yet run. |
 | 6 | T188, T197 | BLOCKED: rule/source gap | Personal highest/unlocks exist, but there is no authoritative pity producer. `boss-difficulty-v1.md` explicitly excludes inferred pity parameters. See the bounded source finding below; do not display a synthetic zero, test percentage or kill count as a drop bonus. |
 | 7 | T195 | IMPLEMENTED; broader validation pending | Every bounty reroll requires one existing Daily Reroll Token. The free timer is removed from production state, legacy JSON is tolerated, and the retained wire deadline is zero. UI shows the token cost. New/extended rule, client and real-dispatch regressions cover no-resource refusal and replay; they have not yet run. |
-| 8 | O040 | IN AUTHORING | Add the sourced bed-use skill-selection dialog as a rule-owned producer, using the existing sleep owner and generic modal transport. Choices/cancel/retry remain bound to the exact session and bed; House permission, Premium, distance and logout stay with the existing owners. |
+| 8 | O040 | IMPLEMENTED; broader validation pending | Normal House bed USE offers the sourced six-skill dialog through the existing sleep owner. The retained placement, revision and full session/House fence are checked again at the callback. Cancel/retry and unknown outcomes remain explicit. Opted-in clients receive a typed terminal ACK and end play before further I/O; legacy queries keep their original reply vocabulary. Codec/hub/UI checks pass; complete client and C10 PostgreSQL execution remain pending. |
 
 T153/T154 must not be reopened solely because this report originally missed
-their receiver. O040 still needs a real general rule source beyond MOTD/store.
+their receiver. O040 now has a real gameplay rule source beyond MOTD/store;
+the complete integrated execution still requires the checks listed above.
 
 ## Pity source finding
 
@@ -42,8 +43,14 @@ serializes a bad-luck number supplied by its caller. The located caller in
 value; it does not implement a combat/reward progression owner. A serializer
 and a test constant are not evidence for a player's statistic.
 
+The later [accepted W21 correction](https://github.com/Oteryn/Oteryn-Game/pull/2769#issuecomment-6549596550)
+sets difficulty-based loot multipliers and special reward thresholds. Those
+parameters do not define a per-failed-attempt pity increment or the rewards
+that reset it; the difficulty multiplier must not be substituted for pity.
+
 Required to close T188/T197: a sourced or explicitly accepted initial value,
-per-boss/per-difficulty update rule and qualifying reward set, then a durable
+per-boss/per-difficulty update rule, qualifying attempts and reward set, and
+the exact reset event, then a durable
 atomic reward-outcome producer and negotiated client projection. Until then the
 tracker remains explicitly incomplete; no invented economy rule is introduced.
 

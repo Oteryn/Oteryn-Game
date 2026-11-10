@@ -369,8 +369,13 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // only by this test producer. It is selected in the genuine source session
     // against the same boot offer already bound above, before the native handoff.
     let offers = if matches!(case, Case::Store) { OFFERS } else { owner.offered_capabilities() };
+    let mut supported = vec![3, 4, 6, 15, 21, 37, 49, 51, 62, 86, 154, 165, 207, 250];
+    if matches!(case, Case::BedRest) {
+        supported.retain(|id| ![165, 250].contains(id));
+        supported.extend([11, 18, 92, 450]);
+    }
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(offers, &[3, 4, 6, 15, 21, 37, 49, 51, 62, 86, 154, 165, 207, 250])
+        SelectedCapabilities::select(offers, &supported)
             .ok_or("hireling offer")?;
     let source_selection = admitted.continuity.selected_capabilities;
 
