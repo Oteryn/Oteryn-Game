@@ -61,14 +61,6 @@ pub struct MonsterMap {
     source_steps: source_ground_step::SourceStepTiles,
 }
 impl MonsterMap {
-    /// A real committed STEP owns its original Item continuation. The movement
-    /// driver must retain later due inputs until this queue has reconciled.
-    pub fn source_ground_step_pending(&self) -> bool {
-        self.source_steps
-            .binding
-            .as_ref()
-            .is_some_and(|(queue, _)| queue.is_pending())
-    }
     pub fn matches(&self, runtime: &ChannelRuntimeV1) -> bool {
         self.valid
             && runtime
