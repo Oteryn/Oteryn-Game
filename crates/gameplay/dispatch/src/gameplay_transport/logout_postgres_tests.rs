@@ -314,6 +314,194 @@ fn nbeof_lifecycle_reads_keep_holder_preference_postgres() -> TestResult {
 }
 
 #[test]
+fn nbeof_training_readback_waits_without_replaying_write_postgres() -> TestResult {
+    run(async |admin| {
+        use crate::durability::DurabilityError;
+        use crate::gameplay_transport::AdmissionRetryBudget;
+        use crate::gameplay_transport::actor_spell::{TRAINING_READBACK_BARRIER, TrainingSave};
+        use oteryn_gameplay_progression::hit_training::SkillFamily;
+        use std::sync::Arc;
+        use tokio::sync::Notify;
+
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "training_readback_busy", true, false)
+                .await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let (generation, _) = super::death_ml_loss_composed::production_generation_with_pin(
+            dependencies.admitted.world_id,
+            "content-1",
+        )?;
+        let active = generation.active().ok_or("activated generation")?;
+        let formula = active
+            .native_gameplay()
+            .and_then(|native| native.training_formula())
+            .ok_or("training formula")?;
+        let mut owner = dependencies.owner(&harness, &authority);
+        owner.active_generation = Some(active);
+        let actor = dependencies.actor;
+        let session = dependencies.admitted.game_session_id;
+        let character = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(|()| "current character fence")?
+            .ok_or("current character fence")?
+            .character_id;
+        let build = owner
+            .root
+            .read_character_build_state(&authority, character)
+            .await
+            .map_err(debug)?;
+        {
+            let mut runtime = owner.runtime.lock().await;
+            runtime
+                .initialize_first_entry_position(actor)
+                .map_err(debug)?;
+            let mut states = owner.states.spell_states.lock().await;
+            assert!(
+                states
+                    .initialize(
+                        &runtime,
+                        actor,
+                        session,
+                        crate::spell::cast::CharacterCastFacts {
+                            vocation: crate::spell::Vocation::from_key(build.vocation())
+                                .ok_or("build vocation")?,
+                            magic_level: u32::from(build.magic().0),
+                            ..crate::gameplay_transport::actor_spell::tests::FACTS
+                        },
+                        (0, 0),
+                        owner.owner_now(),
+                    )
+                    .is_some()
+            );
+            assert!(states.load_owned_build(&runtime, actor, session, &build));
+            states
+                .get_mut(&runtime, actor, session)
+                .ok_or("actor")?
+                .enable_owned_training(&build, formula)
+                .map_err(debug)?;
+        }
+
+        for stale in [false, true] {
+            {
+                let runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                states
+                    .get_mut(&runtime, actor, session)
+                    .ok_or("actor")?
+                    .train_skill(SkillFamily::Sword, owner.owner_now().get(), formula, |_| 1)
+                    .map_err(debug)?;
+            }
+            let before_receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_build_receipts")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            let barrier = Arc::new((Notify::new(), Notify::new()));
+            // Inspection of a real committed receipt shares one existing root
+            // budget; it never renews the production command retry deadline.
+            let budget = AdmissionRetryBudget::for_foreground_root(&session, owner.root)?;
+            let mut saving = Box::pin(TRAINING_READBACK_BARRIER.scope(
+                Arc::clone(&barrier),
+                owner.save_spell_training_with_budget(actor, session, true, &budget),
+            ));
+            tokio::select! {
+                result = saving.as_mut() => return Err(format!("save ended before readback: {result:?}").into()),
+                () = barrier.0.notified() => {}
+            }
+            assert!(owner.runtime.try_lock().is_ok());
+            assert!(owner.states.spell_states.try_lock().is_ok());
+            let retained = {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                states
+                    .get(&runtime, actor, session)
+                    .ok_or("actor")?
+                    .pending_training_checkpoint()
+                    .ok_or("retained checkpoint")?
+                    .clone()
+            };
+            let committed_receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_build_receipts")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(committed_receipts, before_receipts + 1);
+
+            if stale {
+                // A genuine independently current terminal release invalidates
+                // the old live-install authority after the checkpoint committed.
+                let controller = dependencies.admitted.controller.ok_or("controller")?;
+                let account = crate::gameplay_transport::canonical_uuid(&controller.account_id);
+                let released = FreshAdmissionStore::from_root(owner.root.clone())
+                    .release_logout_session(session, &account, controller.transport)
+                    .await?;
+                assert!(matches!(released, ExpiredLossReleaseV1::Released { .. }));
+            }
+            let held = owner.root.try_issue_semantic_pass()?;
+            barrier.1.notify_one();
+            let polled = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(std::future::Future::poll(saving.as_mut(), cx))
+            })
+            .await;
+            assert!(
+                polled.is_pending(),
+                "busy readback must wait without repeating the write"
+            );
+            assert!(owner.runtime.try_lock().is_ok());
+            assert!(owner.states.spell_states.try_lock().is_ok());
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            assert!(matches!(
+                owner.root.try_issue_background_semantic_pass(),
+                Err(DurabilityError::RootUnavailable)
+            ));
+            assert_eq!(
+                saving.await,
+                if stale {
+                    TrainingSave::FencedOut
+                } else {
+                    TrainingSave::Saved
+                }
+            );
+            let after_receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_build_receipts")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(
+                after_receipts, committed_receipts,
+                "readback must never resend the write"
+            );
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let pending = states
+                .get(&runtime, actor, session)
+                .ok_or("actor")?
+                .pending_training_checkpoint();
+            if stale {
+                assert_eq!(
+                    pending,
+                    Some(&retained),
+                    "stale authority must not acknowledge the checkpoint"
+                );
+            } else {
+                assert!(pending.is_none());
+            }
+        }
+
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
 fn nbeof_logout_wire_postgres() -> TestResult {
     run(async |admin| {
         use crate::foundation::{MessageType, decode_wire_envelope};
@@ -482,6 +670,21 @@ fn logout_in_fight_is_refused_and_changes_nothing() -> TestResult {
         let dependencies = Dependencies::new()?;
         let owner = dependencies.owner(&harness, &authority);
         enter(&owner, &dependencies).await?;
+        let mut demand = Some(owner.root.foreground_demand()?);
+        assert!(
+            !owner
+                .hold_while_in_fight_releasing_demand(
+                    dependencies.actor,
+                    dependencies.admitted.game_session_id,
+                    &mut demand,
+                )
+                .await
+        );
+        assert!(
+            demand.is_some(),
+            "a quick no-fight check must keep the same window"
+        );
+        drop(demand);
         let now = owner.owner_now();
         {
             let runtime = owner.runtime.lock().await;
@@ -512,6 +715,27 @@ fn logout_in_fight_is_refused_and_changes_nothing() -> TestResult {
         let left_ms = until.get().saturating_sub(now.get()).div_ceil(1_000);
         assert!(retry_after_ms >= 1 && u64::from(retry_after_ms) <= left_ms);
         assert!(left_ms - u64::from(retry_after_ms) <= 1_000);
+        let mut demand = Some(owner.root.foreground_demand()?);
+        let mut hold = Box::pin(owner.hold_while_in_fight_releasing_demand(
+            dependencies.actor,
+            dependencies.admitted.game_session_id,
+            &mut demand,
+        ));
+        let polled = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(std::future::Future::poll(hold.as_mut(), cx))
+        })
+        .await;
+        assert!(polled.is_pending());
+        // A real combat wait must permit background work even when a previous
+        // release attempt retained a demand. Cancel before the melee step.
+        owner
+            .root
+            .try_issue_background_semantic_pass()?
+            .run(|_, _| Box::pin(async { Ok(()) }))
+            .await?;
+        drop(hold);
+        assert!(demand.is_none());
+
         // Nothing changed: the session is ACTIVE, the actor present, nothing written.
         assert_eq!(
             session_state(&harness, &dependencies).await?,

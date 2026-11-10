@@ -70,6 +70,8 @@ pub(in crate::gameplay_transport) use native_combat_cast::{
 mod spell_periodic;
 #[path = "training_save.rs"]
 mod training_save;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use training_save::TRAINING_READBACK_BARRIER;
 pub(in crate::gameplay_transport) use training_save::TrainingSave;
 #[path = "actor_spell_commit.rs"]
 mod owner_commit;

@@ -126,7 +126,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             attempts += 1;
             // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
             // Each hold step runs the melee pass; the whole hold counts as one attempt.
-            if self.hold_while_in_fight(actor, session).await {
+            if self
+                .hold_while_in_fight_releasing_demand(actor, session, &mut foreground)
+                .await
+            {
                 while self.hold_while_in_fight(actor, session).await {}
                 continue;
             }

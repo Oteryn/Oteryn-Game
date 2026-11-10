@@ -195,6 +195,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.hold_step_within(actor, session, Duration::MAX).await
     }
 
+    /// A retried release can be hit before it acquires its transition fence.
+    /// Relinquish its foreground preference only when a combat wait actually
+    /// starts, retaining the existing window on a quick no-fight recheck.
+    pub(in crate::gameplay_transport) async fn hold_while_in_fight_releasing_demand(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        foreground: &mut Option<crate::durability::ForegroundDemand>,
+    ) -> bool {
+        self.hold_step_within_with_demand(actor, session, Duration::MAX, Some(foreground))
+            .await
+    }
+
     /// A release serialized with Activity transitions must never wait for a
     /// combat deadline while holding that shared lock. This repeats the normal
     /// hold preflight, including current PvP locks, without sleeping or driving
@@ -257,6 +270,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         limit: Duration,
     ) -> bool {
+        self.hold_step_within_with_demand(actor, session, limit, None)
+            .await
+    }
+
+    async fn hold_step_within_with_demand(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        limit: Duration,
+        foreground: Option<&mut Option<crate::durability::ForegroundDemand>>,
+    ) -> bool {
         let now = self.owner_now();
         let mut step = {
             let states = self.states.spell_states.lock().await;
@@ -272,6 +296,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Recheck before release even when its cached ordinary hit lock has elapsed;
             // a session with no cached lock entry contributed to no PvP harm here.
             if !self.refresh_pvp_locks(actor, session).await {
+                if let Some(demand) = foreground {
+                    drop(demand.take());
+                }
                 tokio::time::sleep(Duration::from_millis(250).min(limit)).await;
                 return true;
             }
@@ -282,6 +309,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(step) = step else {
             return false;
         };
+        if let Some(demand) = foreground {
+            drop(demand.take());
+        }
         tokio::time::sleep(step).await;
         if self.ensure_source_map_initialized().await {
             self.drain_monster_melee().await;
