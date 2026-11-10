@@ -59,6 +59,74 @@ BEGIN
  END LOOP;
 END $migration$;
 
+-- The native death-tree owner still locks/revalidates the graph, inserts each
+-- exact reservation and visits children before their parents. Keep its four
+-- writes in that order within one call per child; every installed trigger and
+-- deferred live-authority proof still runs. The reservation supplies immutable
+-- payload only, never current authority or a replacement for those proofs.
+CREATE FUNCTION game_player_death_retire_entry(
+ p_item UUID,p_generation NUMERIC,p_transaction_id UUID,p_parent UUID,p_entry_kind SMALLINT,
+ p_event_type_id BIGINT,p_schema_revision BIGINT,p_retention_profile_id TEXT,p_retention_ms BIGINT
+) RETURNS BOOLEAN
+LANGUAGE plpgsql VOLATILE SECURITY INVOKER AS $retire$
+DECLARE v game_item_decay_retire_reservations%ROWTYPE; affected BIGINT; envelope_hash BYTEA;
+BEGIN
+ SELECT * INTO v FROM game_item_decay_retire_reservations
+  WHERE item_instance_id=p_item AND fence_scope_ownership_generation=p_generation
+   AND transaction_id=p_transaction_id;
+ IF NOT FOUND OR v.cause_kind NOT IN('WORLD_RESET','ACTIVITY_RETIREMENT')
+  OR v.placement_ordinal IS NULL OR v.ground_root_item_instance_id IS NULL
+  OR v.ground_root_item_instance_id=p_item
+  OR v.type2_schema_revision IS DISTINCT FROM p_schema_revision THEN
+  RETURN FALSE;
+ END IF;
+ IF p_entry_kind=1 THEN
+  DELETE FROM game_item_container_entries
+   WHERE item_instance_id=p_item AND parent_item_instance_id=p_parent
+    AND placement_ordinal=v.placement_ordinal;
+  GET DIAGNOSTICS affected=ROW_COUNT;
+ ELSIF p_entry_kind=2 THEN
+  DELETE FROM game_item_nested_entries
+   WHERE item_instance_id=p_item AND parent_item_instance_id=p_parent
+    AND placement_ordinal=v.placement_ordinal;
+  GET DIAGNOSTICS affected=ROW_COUNT;
+ ELSE
+  RETURN FALSE;
+ END IF;
+ IF affected<>1 THEN RETURN FALSE; END IF;
+ UPDATE game_item_instances SET quantity=0,lifecycle=2,last_transaction_id=v.transaction_id
+  WHERE item_instance_id=p_item AND lifecycle=1 AND quantity=v.quantity_before;
+ GET DIAGNOSTICS affected=ROW_COUNT;
+ IF affected<>1 THEN RETURN FALSE; END IF;
+ envelope_hash:=sha256(v.envelope);
+ INSERT INTO game_item_decay_retire_receipts
+  (item_instance_id,corpse_item_instance_id,world_id,channel_id,
+   fence_scope_ownership_generation,transaction_id,event_id,quantity_before,
+   placement_ordinal,deadline,occurred_at,envelope_sha256,committed_at,cause_kind,
+   reset_epoch,retirement_binding,target_digest,ground_root_item_instance_id,
+   scope_kind,instance_id,activity_handoff_id,activity_ownership_generation)
+ VALUES(p_item,NULL,v.world_id,v.channel_id,v.fence_scope_ownership_generation,
+  v.transaction_id,v.event_id,v.quantity_before,v.placement_ordinal,NULL,v.occurred_at,
+  envelope_hash,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,
+  v.cause_kind,v.reset_epoch,v.retirement_binding,v.target_digest,v.ground_root_item_instance_id,
+  v.scope_kind,v.instance_id,v.activity_handoff_id,v.activity_ownership_generation);
+ INSERT INTO game_item_audit_outbox
+  (event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,
+   schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,
+   envelope,envelope_sha256,publication_state)
+ VALUES(v.event_id,v.transaction_id,1,1,p_event_type_id,p_schema_revision,p_retention_profile_id,
+  p_item,v.occurred_at,v.occurred_at+p_retention_ms,v.envelope,envelope_hash,1);
+ RETURN TRUE;
+END $retire$;
+DO $migration$
+BEGIN
+ EXECUTE format('ALTER FUNCTION game_player_death_retire_entry(uuid,numeric,uuid,uuid,smallint,bigint,bigint,text,bigint) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $migration$;
+REVOKE ALL ON FUNCTION game_player_death_retire_entry(uuid,numeric,uuid,uuid,smallint,bigint,bigint,text,bigint)
+ FROM PUBLIC,oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_player_death_retire_entry(uuid,numeric,uuid,uuid,smallint,bigint,bigint,text,bigint)
+ TO oteryn_game_runtime;
+
 -- Capture only a current retirement reservation's actual edge. All ancestors
 -- must still be live in the same World, with one parent and a bounded acyclic
 -- path to the receipt-proven death Ground root. A raw DELETE gets no proof.

@@ -105,7 +105,46 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
             work_units_used: 0,
         };
         retirement_workflow::insert_reservation(tx, child, &admitted, &reservation, tuple).await?;
-        apply_retire(tx, permit, child, &admitted, &reservation, tuple).await?;
+        apply_death_entry_retire(tx, permit, child, &admitted, &reservation, tuple).await?;
+    }
+    Ok(())
+}
+
+async fn apply_death_entry_retire(
+    tx: &mut mint_audit::Type2Transaction<'_>,
+    permit: &SpellLanePermit,
+    step: DecayRetireStep,
+    admitted: &Admitted,
+    reservation: &Reservation,
+    tuple: SelectedType2Tuple,
+) -> std::result::Result<(), DurabilityError> {
+    use crate::durability::world_reset::ground_step::DeathEntryKind;
+    // Keep the same SpellLane check immediately before the ordered custody,
+    // Item, receipt and audit writes; a refusal aborts the caller's transaction.
+    permit.check_scope(admitted.runtime_scope)?;
+    let entry = admitted
+        .death_entry
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let retired: bool = sqlx::query_scalar(
+        "SELECT game_player_death_retire_entry(encode($1,'hex')::uuid, $2::text::numeric(20,0), \
+         encode($3,'hex')::uuid, encode($4,'hex')::uuid, $5, $6, $7, $8, $9)",
+    )
+    .bind(step.item_instance_id.as_slice())
+    .bind(reservation.fence_generation.to_string())
+    .bind(reservation.transaction_id.as_slice())
+    .bind(entry.parent.as_slice())
+    .bind(match entry.kind {
+        DeathEntryKind::Direct => 1_i16,
+        DeathEntryKind::Nested => 2_i16,
+    })
+    .bind(EVENT_TYPE_ID)
+    .bind(i64::from(tuple.schema_revision()))
+    .bind(tuple.retention_profile_id())
+    .bind(mint_audit::AUDIT_RETENTION_P90D_MS)
+    .fetch_one(&mut ***tx)
+    .await?;
+    if !retired {
+        return Err(DurabilityError::InvalidStoredState);
     }
     Ok(())
 }

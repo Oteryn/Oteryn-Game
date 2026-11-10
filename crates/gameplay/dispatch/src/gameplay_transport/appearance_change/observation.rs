@@ -28,7 +28,7 @@ pub(in crate::gameplay_transport) async fn observe(
     // One existing holder retry window covers every read and target. A failed
     // observation drops its runtime/spell guards before waiting and starts again
     // with current fences; other refusals remain terminal.
-    let budget = super::super::AdmissionRetryBudget::for_command(&admission.root);
+    let budget = super::super::AdmissionRetryBudget::for_command(admission.root);
     loop {
         let mut unavailable = None;
         let observation = observe_current(
