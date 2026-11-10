@@ -1,0 +1,18 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "command": [
+    "/home/agent/.cargo/bin/rustc",
+    "--edition=2024",
+    "--test",
+    "/workspace/scratch/9868b8ed6bb7/audit-r2/lead/encounters-entry-unchanged-tests.rs",
+    "-o",
+    "/workspace/scratch/9868b8ed6bb7/audit-r2/lead/test-bin/encounters-entry"
+  ],
+  "compile_exit": 0,
+  "source_unchanged": true,
+  "harness": "Absolute path-only inclusion of original source and its original six tests; no replacements or stubs.",
+  "compiled_source_sha256": "765fa22b2f269f43dce87781b1043dedd0ae1b52843024d540efea21d4fadd47",
+  "test_exit": 0,
+  "output": "\nrunning 6 tests\ntest endgame_entry::tests::endgame_entry_only_applies_sourced_quest_gates ... ok\ntest endgame_entry::tests::endgame_entry_forwards_primal_soul_policy_and_canonical_final_phase ... ok\ntest endgame_entry::tests::endgame_entry_keeps_w02_content_unavailable_typed ... ok\ntest endgame_entry::tests::endgame_entry_passes_all_participants_to_shared_owner ... ok\ntest endgame_entry::tests::endgame_entry_refusals_never_call_shared_owner ... ok\ntest endgame_entry::tests::endgame_entry_forwards_canonical_rotten_lever_and_retry_policy ... ok\n\ntest result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+  "recorded_at_utc": "2026-11-10T15:26:48.473887+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "generator": "unchanged crates/gameplay/dispatch/build_mechanics.rs via scratch #[path] harness",
+  "status": "PASS",
+  "fragments": 110,
+  "registered_commands": 169,
+  "checks": [
+    "actual closed parser/unique validation and write_outputs succeeded",
+    "generated route table exactly matches current fragments without duplicate commands"
+  ],
+  "outputs": [
+    {
+      "path": "/workspace/scratch/9868b8ed6bb7/audit-r2/client-support/dispatch-generated-mechanics/mechanic_methods.rs",
+      "sha256": "2129bf4d68f0bbf6acef26a4bd41cff6b5951ac7f02819d4728ff6e2d5ab3bb7",
+      "lines": 157
+    },
+    {
+      "path": "/workspace/scratch/9868b8ed6bb7/audit-r2/client-support/dispatch-generated-mechanics/mechanic_modules.rs",
+      "sha256": "5e123748a77a335a5293fed92eae781605d1390d3b71903b47195bbdc2a30baa",
+      "lines": 77
+    },
+    {
+      "path": "/workspace/scratch/9868b8ed6bb7/audit-r2/client-support/dispatch-generated-mechanics/mechanic_offers.rs",
+      "sha256": "de6e541265a144c867dc0c57bf598b75b16ca632319efae60b774c7c144f8884",
+      "lines": 33
+    },
+    {
+      "path": "/workspace/scratch/9868b8ed6bb7/audit-r2/client-support/dispatch-generated-mechanics/mechanic_routes.rs",
+      "sha256": "cd6a6cc820e1d58a3a4838ee37af053aff89b6213801a712c7d09a9d43f8a7fc",
+      "lines": 927
+    }
+  ],
+  "not_run": [
+    "Cargo compile of emitted dispatch expressions",
+    "native gameplay routes"
+  ]
+}

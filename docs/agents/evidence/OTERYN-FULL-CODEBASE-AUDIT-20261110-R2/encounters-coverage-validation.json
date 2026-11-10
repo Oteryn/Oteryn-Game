@@ -1,0 +1,1130 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "observed_at_utc": "2026-11-10T15:42:45.634549+00:00",
+  "status": "PASS",
+  "package": "oteryn-gameplay-encounters",
+  "tracked_files": 93,
+  "fully_analyzed_files": 93,
+  "analyzed_lines": 22624,
+  "source_checkout_clean": true,
+  "coverage_method": "Every tracked package source/test/manifest file directly read in full; validation checks already-completed substantive review ranges and exact Git bytes, not review by parsing.",
+  "runtime_status": "Direct unchanged-source endgame entry tests6/6 PASS. Full Cargo package, SQL, native retained-capture and integrated client/server tests not executed.",
+  "files": [
+    {
+      "path": "crates/gameplay/encounters/Cargo.toml",
+      "sha256": "d9e9da206e4fb2e7e2fc30e54ebd8d9610455a643b5163b77f2ad54fefdb8de7",
+      "file_lines": 46,
+      "analyzed_ranges": [
+        [
+          1,
+          46
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/bone_overlord/bone_phase_registry.rs",
+      "sha256": "235a74897c56cce2f75ab64a7b5a77cfff2c31efc01982158e0bca58f7d36ddc",
+      "file_lines": 273,
+      "analyzed_ranges": [
+        [
+          1,
+          273
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/bone_overlord/mod.rs",
+      "sha256": "cd43d627f8921a979cd29ff5e0eeb3b0753de14113b38859afe73ca9c8fd0145",
+      "file_lines": 3,
+      "analyzed_ranges": [
+        [
+          1,
+          3
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/bone_overlord/native_owner.rs",
+      "sha256": "008c3770f9e18e83049f620b11dfd84216373f56e56f00aa6b05f63c2a75e22c",
+      "file_lines": 770,
+      "analyzed_ranges": [
+        [
+          1,
+          770
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/bone_overlord/native_owner_tests.rs",
+      "sha256": "4cad7c2f8cba119581654f40035c1ab38d27fe856615632f998c63c19dcd4d21",
+      "file_lines": 675,
+      "analyzed_ranges": [
+        [
+          1,
+          675
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/boreth/mod.rs",
+      "sha256": "5f3b986d7ed613a9646dd7aa7030f859b89c6b609381a48dbe15ce12b93df9d9",
+      "file_lines": 3,
+      "analyzed_ranges": [
+        [
+          1,
+          3
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/boreth/native_death.rs",
+      "sha256": "12553c6ee82dcdcab21bd75ac2044cb1eb3f2ca58521204138e6442be634c160",
+      "file_lines": 96,
+      "analyzed_ranges": [
+        [
+          1,
+          96
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/boreth/native_death_tests.rs",
+      "sha256": "652baaca72fe829b559a0fd6a3f4da7f6aa22b72de5912897fde49e1d2d2e28c",
+      "file_lines": 109,
+      "analyzed_ranges": [
+        [
+          1,
+          109
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/boreth/self_heal_tests.rs",
+      "sha256": "651c0cac3b4a347526f01832baa9647603019c8dd09f51b5c68ca99a5445aeac",
+      "file_lines": 197,
+      "analyzed_ranges": [
+        [
+          1,
+          197
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/crystal_deaths/crystal_callbacks.rs",
+      "sha256": "44c1087c064eb649c1184bd3264d76e794dafcb326b0914aaaee92defc7e208c",
+      "file_lines": 109,
+      "analyzed_ranges": [
+        [
+          1,
+          109
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/crystal_deaths/crystal_death_composition.rs",
+      "sha256": "30d9040b23cedcce259c5f8c63ebfda670c476f7c7dd34f9205ebacf703635ae",
+      "file_lines": 1147,
+      "analyzed_ranges": [
+        [
+          1,
+          1147
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/crystal_deaths/crystal_death_composition/speech.rs",
+      "sha256": "a4f9c60b53eadd330cef53fa78d63067fb8d8a3bd71acdeaa7ddc6534ef85fa3",
+      "file_lines": 536,
+      "analyzed_ranges": [
+        [
+          1,
+          536
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/crystal_deaths/mod.rs",
+      "sha256": "ba2c340af8487c424dbcdca50c8d81ab3c8af036af49ed2ecf6fdacfddf0e96e",
+      "file_lines": 5,
+      "analyzed_ranges": [
+        [
+          1,
+          5
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/crystal_deaths/native_fixtures.rs",
+      "sha256": "435b088d521a50c6b8b5ad6f2d4708652bdfbed7b82feaf764c423ea6cc62b44",
+      "file_lines": 147,
+      "analyzed_ranges": [
+        [
+          1,
+          147
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/endgame_entry.rs",
+      "sha256": "765fa22b2f269f43dce87781b1043dedd0ae1b52843024d540efea21d4fadd47",
+      "file_lines": 233,
+      "analyzed_ranges": [
+        [
+          1,
+          233
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/endgame_entry_tests.rs",
+      "sha256": "4c1e5bd067bb1fd33f5d133333a32133eea806d4b756c5178ca4f4e7fe54db82",
+      "file_lines": 222,
+      "analyzed_ranges": [
+        [
+          1,
+          222
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/gaz_haragoth/mod.rs",
+      "sha256": "c2a5913ce08a5d11a71d71f024d6821d6212e77abc6894615f4e94688a8be67b",
+      "file_lines": 2,
+      "analyzed_ranges": [
+        [
+          1,
+          2
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/gaz_haragoth/native_owner_tests.rs",
+      "sha256": "9db131e0519830eab98929e4bfa6a2a6b1eee1be2575e5f20d56b5f7573a55f4",
+      "file_lines": 276,
+      "analyzed_ranges": [
+        [
+          1,
+          276
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/goshnars_greed/mod.rs",
+      "sha256": "68e11ba9e4b66273c18ff11969eb2ff2c31c1ca242fbeab29a0387fd91e7d58a",
+      "file_lines": 361,
+      "analyzed_ranges": [
+        [
+          1,
+          361
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/goshnars_greed/tests.rs",
+      "sha256": "d540df01135e4cd28aaae5daea6c47f4e56abfe838c17253b8573fd8e8be7155",
+      "file_lines": 294,
+      "analyzed_ranges": [
+        [
+          1,
+          294
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/hazard_primal/mod.rs",
+      "sha256": "ac987932a289580435258e13facf3d84297c3746f0f1e62e3b26cdf0d3185f62",
+      "file_lines": 5,
+      "analyzed_ranges": [
+        [
+          1,
+          5
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/hazard_primal/primal_menace_think.rs",
+      "sha256": "5fe00fb953f9ffff22917db26b35af3bdb6b94cbaddea3e5a325ade2b7aef759",
+      "file_lines": 302,
+      "analyzed_ranges": [
+        [
+          1,
+          302
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/hazard_primal/primal_menace_think_tests.rs",
+      "sha256": "e16bd69f3cca2059ee19c0b9431f145ba3a88ffdac1b7ddf04f29796cea60e62",
+      "file_lines": 259,
+      "analyzed_ranges": [
+        [
+          1,
+          259
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/herald_of_fire/crystal_herald_quest.rs",
+      "sha256": "0f6eacb70680060e8456e15975ba3f7f751541568dc2d8b92d380407834e7568",
+      "file_lines": 234,
+      "analyzed_ranges": [
+        [
+          1,
+          234
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/herald_of_fire/death_dispatch.rs",
+      "sha256": "6e467343dd308441d8ec40a012fdc2ae1dc6771028fa87d1319b70382e80442d",
+      "file_lines": 150,
+      "analyzed_ranges": [
+        [
+          1,
+          150
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/herald_of_fire/mod.rs",
+      "sha256": "dd2888e9aa34b2da1afff9fcce3a7f6be5dee200ecdbec4dbcb367af91f032c1",
+      "file_lines": 3,
+      "analyzed_ranges": [
+        [
+          1,
+          3
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/icicle/creature_icicle.rs",
+      "sha256": "83058a51b60d05c32ebcf66075cd136c43c0036a2e04210d55acb7da57ce237e",
+      "file_lines": 336,
+      "analyzed_ranges": [
+        [
+          1,
+          336
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/icicle/mod.rs",
+      "sha256": "c60cd822898e3ad7cc2339e84a1cb9ed1314a08b8001829f07502540dcbf0bad",
+      "file_lines": 3,
+      "analyzed_ranges": [
+        [
+          1,
+          3
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/icicle/native_owner.rs",
+      "sha256": "96528e199c20b22bce51eda8f1d4a46f60a8bb68dd0dd342537d31d0730d273b",
+      "file_lines": 36,
+      "analyzed_ranges": [
+        [
+          1,
+          36
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/mod.rs",
+      "sha256": "eea12885508eea36433472fdaaba5cb2859fffe1a5cf490ddc5e0ea02a54500b",
+      "file_lines": 25,
+      "analyzed_ranges": [
+        [
+          1,
+          25
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/native_combat/mod.rs",
+      "sha256": "a1c5e9d7e59d8f00b5012df8bb73eab527e1b2d3984e2a436d0121ec91c0e3ca",
+      "file_lines": 2,
+      "analyzed_ranges": [
+        [
+          1,
+          2
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs",
+      "sha256": "3c5bbef9895e2e1be73d0ac028582643655926e4e2fc30ff3e6ef4396fd1f500",
+      "file_lines": 3192,
+      "analyzed_ranges": [
+        [
+          1,
+          3192
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane/turn.rs",
+      "sha256": "139b0d00292ac32acf982ebec65cd4974f56046398648264086c48dcdac6bd2d",
+      "file_lines": 477,
+      "analyzed_ranges": [
+        [
+          1,
+          477
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane/turn/proposals.rs",
+      "sha256": "61330cce0a1dbf198f855e315a0416d265a1d2635667de913de2ffcde4f26ca2",
+      "file_lines": 493,
+      "analyzed_ranges": [
+        [
+          1,
+          493
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/resilience.rs",
+      "sha256": "8106d79ba1d76963c810178a66f5c6c402f2dd613b30287d178cc304e2a1901c",
+      "file_lines": 152,
+      "analyzed_ranges": [
+        [
+          1,
+          152
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/reward_chest.rs",
+      "sha256": "5516cb462d565a536108ff63cec42f0c934ea7a09e46be8b7b208fc961634dd6",
+      "file_lines": 3,
+      "analyzed_ranges": [
+        [
+          1,
+          3
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/room.rs",
+      "sha256": "d77ce943e4a8143e1ad4bd6e7afa64e96be49bda2a67974f89161f08f845a417",
+      "file_lines": 2,
+      "analyzed_ranges": [
+        [
+          1,
+          2
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/area_icons.rs",
+      "sha256": "afc6ace73ea480852300326fd4b5a067e5ed61fa35a4f969639e7006981ab3db",
+      "file_lines": 283,
+      "analyzed_ranges": [
+        [
+          1,
+          283
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/area_icons_tests.rs",
+      "sha256": "3a1c748092e77a6c3285aff04dcf43e07894e763d29d9e0a3d71b01cf8a85b60",
+      "file_lines": 327,
+      "analyzed_ranges": [
+        [
+          1,
+          327
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/bakragore_think.rs",
+      "sha256": "f4b898b0d1c61ba333456bb51298558498792041f785f3f57fdaef16092f559a",
+      "file_lines": 303,
+      "analyzed_ranges": [
+        [
+          1,
+          303
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/bakragore_think_tests.rs",
+      "sha256": "08d9a05f4f4bd4712181771c1181bb4e6f0e27619da11c52e16b734455c1479c",
+      "file_lines": 302,
+      "analyzed_ranges": [
+        [
+          1,
+          302
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/chagorz_think.rs",
+      "sha256": "b158a6d25de712ec6711ccaa5591e2191e79c54d8dc89ab65fe41fd94cd68617",
+      "file_lines": 279,
+      "analyzed_ranges": [
+        [
+          1,
+          279
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/chagorz_think_tests.rs",
+      "sha256": "30106269c5619d91672af42b3fbdcdb2b7f934754afb719e96a2936452f8653b",
+      "file_lines": 196,
+      "analyzed_ranges": [
+        [
+          1,
+          196
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/dispatch_tests.rs",
+      "sha256": "9cadd2ab39670edfe029a2d193a5ea835dba5829baa40201dd12472133069afd",
+      "file_lines": 108,
+      "analyzed_ranges": [
+        [
+          1,
+          108
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/elder_bloodjaw_think.rs",
+      "sha256": "b060ff959826ab8b38f13db3bb2584627c6dd0ed61b00b375a5387ba147515da",
+      "file_lines": 137,
+      "analyzed_ranges": [
+        [
+          1,
+          137
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/elder_bloodjaw_think_tests.rs",
+      "sha256": "a35cdba8c3530d231fde7359f77757760f6e289aba5914d6f7d82f150f431eed",
+      "file_lines": 130,
+      "analyzed_ranges": [
+        [
+          1,
+          130
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/ichgahal_think.rs",
+      "sha256": "96daa3518a5cd997782410d0e86723796cdb6476499e37d79ae9439634568631",
+      "file_lines": 148,
+      "analyzed_ranges": [
+        [
+          1,
+          148
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/ichgahal_think_tests.rs",
+      "sha256": "fb67312dd9a099ad0bfa4f4edb655194841c667b9fe623dd368cb65421390e9b",
+      "file_lines": 205,
+      "analyzed_ranges": [
+        [
+          1,
+          205
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs",
+      "sha256": "83cab9aa23c3ba688ce9fa3223e4b58457dc922c323a8d580a2a17291f0fb5aa",
+      "file_lines": 131,
+      "analyzed_ranges": [
+        [
+          1,
+          131
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/murcion_think.rs",
+      "sha256": "fb6e78f4a53e0d13036f236fcf5d9d07cee1d4cff8bc5ea9d8387b06b969cffd",
+      "file_lines": 154,
+      "analyzed_ranges": [
+        [
+          1,
+          154
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/murcion_think_tests.rs",
+      "sha256": "21a974988afd4094d5e9a078d2ce812dda9d04497baddd91d7c713cbfadfcdaa",
+      "file_lines": 166,
+      "analyzed_ranges": [
+        [
+          1,
+          166
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/mushroom_think.rs",
+      "sha256": "46a779aa132a5a8084a54cbd49e7ee90ee660c42ca839fe911686e65124738d9",
+      "file_lines": 153,
+      "analyzed_ranges": [
+        [
+          1,
+          153
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/mushroom_think_tests.rs",
+      "sha256": "bfd4a9cd6b0438a70b50f43ec636de439ba4275ae5cffc43764fecd557561a5a",
+      "file_lines": 186,
+      "analyzed_ranges": [
+        [
+          1,
+          186
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/pillar_of_dark_energy_think.rs",
+      "sha256": "1e8795bdf644c08762ec4ea7d0b5434d6d148d585407512b024623f3af43cbff",
+      "file_lines": 73,
+      "analyzed_ranges": [
+        [
+          1,
+          73
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/pillar_of_dark_energy_think_tests.rs",
+      "sha256": "2c12daee7072155f105fb296003574b4f2faf29cdb5466a9fae644f270a0fb42",
+      "file_lines": 80,
+      "analyzed_ranges": [
+        [
+          1,
+          80
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/vemiath_think.rs",
+      "sha256": "abe12622071fcfe87c7024088393cf3d004b19ccc3eff8b78af14f2ada022644",
+      "file_lines": 90,
+      "analyzed_ranges": [
+        [
+          1,
+          90
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rotten_blood/vemiath_think_tests.rs",
+      "sha256": "6106c67ef865a4f994fe5348f26e84382ad86366f1f20c8403169bab3236b739",
+      "file_lines": 128,
+      "analyzed_ranges": [
+        [
+          1,
+          128
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rum_barrel/mod.rs",
+      "sha256": "e06f6a3436de14a7b7c4381a6741991443d5de66654c9de631c9e8b4cfffef30",
+      "file_lines": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rum_barrel/native_death.rs",
+      "sha256": "014a85e6887afa8f506616c1ea0b6c8fb524c887db2800b48a4d8bb8d7561da1",
+      "file_lines": 167,
+      "analyzed_ranges": [
+        [
+          1,
+          167
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/rum_barrel/native_death_tests.rs",
+      "sha256": "5a6b01caa961bf82a578955bd0dc5125257e80b6486ec82414c007e938239316",
+      "file_lines": 130,
+      "analyzed_ranges": [
+        [
+          1,
+          130
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/seven_encounters/mod.rs",
+      "sha256": "3afe5035bc4c492f0dc489a820d3446ef1407dca4c077b6417421d03fbb02f70",
+      "file_lines": 2,
+      "analyzed_ranges": [
+        [
+          1,
+          2
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/seven_encounters/source_encounter_seven.rs",
+      "sha256": "58072dc72180071ff45619bc9f36337e86e557df9212903a617fa6dbc7ecbc73",
+      "file_lines": 729,
+      "analyzed_ranges": [
+        [
+          1,
+          729
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/smelly_cheese/mod.rs",
+      "sha256": "353d77489e0721fa479cc73aa2d0594f11bd035b877eae00d8dba4fa24ae4d22",
+      "file_lines": 5,
+      "analyzed_ranges": [
+        [
+          1,
+          5
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/smelly_cheese/native_owner.rs",
+      "sha256": "8f73d6b1cb2ec8752ebad784c00a7a38037cb5d9eba37d724c53cef68546a200",
+      "file_lines": 89,
+      "analyzed_ranges": [
+        [
+          1,
+          89
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/smelly_cheese/smelly_damage.rs",
+      "sha256": "a393b274cb1479ac1f59cbfeb713e0b9066a3485d833bff1c7f062ca5c1b6f5f",
+      "file_lines": 80,
+      "analyzed_ranges": [
+        [
+          1,
+          80
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/smelly_cheese/smelly_damage_tests.rs",
+      "sha256": "2053f61753f7552e200d5771be51586804dfb1e743bff22b10610e2890634bc3",
+      "file_lines": 242,
+      "analyzed_ranges": [
+        [
+          1,
+          242
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/smelly_cheese/smelly_encounter_dispatch.rs",
+      "sha256": "8eee3481dbb13c344b8444546cd54eb76c0098c0bef8dcf2185cca22c08ab24a",
+      "file_lines": 455,
+      "analyzed_ranges": [
+        [
+          1,
+          455
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/smelly_cheese/smelly_encounter_dispatch_tests.rs",
+      "sha256": "9e8e470813d9e652768bde197cdd86593db1fe7d5535d0cb71b88953e47d2709",
+      "file_lines": 531,
+      "analyzed_ranges": [
+        [
+          1,
+          531
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/smelly_cheese/timers.rs",
+      "sha256": "09f3489e275a4451083eb04c7d333ce2456bfa85543fdd8df28574ccb9216429",
+      "file_lines": 279,
+      "analyzed_ranges": [
+        [
+          1,
+          279
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/source_callbacks/callback_speech.rs",
+      "sha256": "c753e60cc5de6ec7ec970853cbef4bf45fc357485a61895a2b0fc57f873effba",
+      "file_lines": 116,
+      "analyzed_ranges": [
+        [
+          1,
+          116
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/source_callbacks/mod.rs",
+      "sha256": "f236b3fc353aa7d8f4bbf63719a0d8d90eabde55f8ebffdce9933b1ee7857fb9",
+      "file_lines": 6,
+      "analyzed_ranges": [
+        [
+          1,
+          6
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/source_callbacks/oberon_think.rs",
+      "sha256": "6cc0b807d3e8ee6b6925c6298fb94cffe643177df5580fae6cab171b8b1c6523",
+      "file_lines": 103,
+      "analyzed_ranges": [
+        [
+          1,
+          103
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/source_callbacks/oberon_think_tests.rs",
+      "sha256": "5b505f890a9ff8a3da0ac11ce453cd5d55e4b72df33d32af0652abe2b74d68b6",
+      "file_lines": 85,
+      "analyzed_ranges": [
+        [
+          1,
+          85
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/source_callbacks/source_callback_cast.rs",
+      "sha256": "cba51f4b2b6c4b81f2121234443e93708dd93f0901e343326af95de3f7ca8626",
+      "file_lines": 679,
+      "analyzed_ranges": [
+        [
+          1,
+          679
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/source_callbacks/source_callback_intent.rs",
+      "sha256": "85e6a151fbe980d87f2dd1787ceb7e457854769d27b7faa85e1f6893b6475b73",
+      "file_lines": 42,
+      "analyzed_ranges": [
+        [
+          1,
+          42
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/source_callbacks/source_callback_spawn.rs",
+      "sha256": "e807331dbdfd4951d1b782e4f7d52d932232a046e6acd8ff918d040ea328bef2",
+      "file_lines": 1014,
+      "analyzed_ranges": [
+        [
+          1,
+          1014
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/source_callbacks/spell_callback_speech_tests.rs",
+      "sha256": "ddaa369b0e4d6929703d57529ba4d98a308e50d3e342be36760339e0e2d4281b",
+      "file_lines": 152,
+      "analyzed_ranges": [
+        [
+          1,
+          152
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/summer_2026.rs",
+      "sha256": "f250b0865f6eab2b72a921bc932fee61176ca3646a431c43d8da6775607eacc9",
+      "file_lines": 91,
+      "analyzed_ranges": [
+        [
+          1,
+          91
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/tentacles/mod.rs",
+      "sha256": "e06f6a3436de14a7b7c4381a6741991443d5de66654c9de631c9e8b4cfffef30",
+      "file_lines": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/tentacles/native_death.rs",
+      "sha256": "5fa572fcbb2dccd555c853b6a524cae56c856391e35f117a56045427b3b27556",
+      "file_lines": 268,
+      "analyzed_ranges": [
+        [
+          1,
+          268
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/tentacles/native_death_tests.rs",
+      "sha256": "133c2d61d12a65fa029af438e06efb1272518e6aac5d3e904983c2c3bf4399cd",
+      "file_lines": 154,
+      "analyzed_ranges": [
+        [
+          1,
+          154
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/the_welter/mod.rs",
+      "sha256": "dd673bc133a72494e2b2fd8363d6791f3893849e3549bee74aaf7446adb6048f",
+      "file_lines": 4,
+      "analyzed_ranges": [
+        [
+          1,
+          4
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/the_welter/native_owner.rs",
+      "sha256": "4567be7bad167b4f1d13468c8c038ba07c50670ec544f13b4af48c8f60e19e64",
+      "file_lines": 338,
+      "analyzed_ranges": [
+        [
+          1,
+          338
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/the_welter/native_owner_tests.rs",
+      "sha256": "93940fd38c5afd92ff8a52cc3db595143222e509ed85a869082718a2e1d2b576",
+      "file_lines": 218,
+      "analyzed_ranges": [
+        [
+          1,
+          218
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/the_welter/welter_consume.rs",
+      "sha256": "657f868b5181f227d1fbfbbdd96e25d9a678c0a6252846e6b0d4d2a83eb3cf26",
+      "file_lines": 572,
+      "analyzed_ranges": [
+        [
+          1,
+          572
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/threshold_heals/mod.rs",
+      "sha256": "2b56701219ed74f44f8c7b091c4f6cbd91a3c8c306932605c82abec25e11f8e9",
+      "file_lines": 2,
+      "analyzed_ranges": [
+        [
+          1,
+          2
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/threshold_heals/source_threshold_heal.rs",
+      "sha256": "aed6246530b4e5e6d9d18203366a6e9ad5d19caab84e642d5041d5e52fd6fcc2",
+      "file_lines": 456,
+      "analyzed_ranges": [
+        [
+          1,
+          456
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/time_guardian/source_time_profile_bundle.rs",
+      "sha256": "77139c2f197f203d2cd95a7e3b02d486d27a0be12b8446f4acbea06e6fff0b8d",
+      "file_lines": 242,
+      "analyzed_ranges": [
+        [
+          1,
+          242
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/weak_spot/mod.rs",
+      "sha256": "943700fdd35c927212b3c9d996a6d434a20784d722c0cc9a4f096c063d8b5e4e",
+      "file_lines": 1,
+      "analyzed_ranges": [
+        [
+          1,
+          1
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "sha256": "882397ad7ed0c779b5fcb61725f75aad7ff8c3a0215111e2122ab1de3461611b",
+      "file_lines": 62,
+      "analyzed_ranges": [
+        [
+          1,
+          62
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/self_heal_qualification.rs",
+      "sha256": "2e0af40f8c35fe5bb374eed06bfa6dae804420c341ebdb10e5a0574f09ab80e3",
+      "file_lines": 40,
+      "analyzed_ranges": [
+        [
+          1,
+          40
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/soul_war_taint_teleport.rs",
+      "sha256": "121c179fb1cd99b8c45678ccdc8f998b86599f32ac7584c4199181b0e6d6e055",
+      "file_lines": 245,
+      "analyzed_ranges": [
+        [
+          1,
+          245
+        ]
+      ],
+      "scope": "FULL_FILE"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/soul_war_taint_teleport_tests.rs",
+      "sha256": "7c3f9f5249b3088049d2e53d676f0ed9fe7005de9f8095eec0f0ed82648426dc",
+      "file_lines": 266,
+      "analyzed_ranges": [
+        [
+          1,
+          266
+        ]
+      ],
+      "scope": "FULL_FILE"
+    }
+  ]
+}

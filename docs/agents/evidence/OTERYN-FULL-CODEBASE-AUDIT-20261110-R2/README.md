@@ -1,12 +1,12 @@
-# OTERYN FULL AUDIT — continuation checkpoint 13
+# OTERYN FULL AUDIT — continuation checkpoint 14
 
 Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues across all remaining packages and supplementary domains.
 
 ## Verified evidence at this checkpoint
 
 - 67 workspace packages; 11 supplementary domains; 27900 tracked input files.
-- **59 packages REVIEWED / 8 IN PROGRESS / 0 NOT STARTED / 0 VERIFIED**.
-- **5,573 distinct substantively analyzed files**: 5,405 full and 168 selected-range files; 960,297 deduplicated text line positions.
+- **60 packages REVIEWED / 7 IN PROGRESS / 0 NOT STARTED / 0 VERIFIED**.
+- **5,928 distinct substantively analyzed files**: 5,776 full and 152 selected-range files; 1,043,097 deduplicated text line positions.
 - Four binary fixtures were semantically decoded in full, totaling 475 bytes. Their exact ranges use bytes and are excluded from line counts.
 - 192 historical files retain their exact ranges only because their Git blobs are identical. Four changed historical files receive no automatic carryover credit; fresh review is attributed separately.
 - REVIEWED requires every tracked package file and a substantive report. File discovery, text search, hash checks and test-source inspection are not runtime execution.
@@ -46,6 +46,7 @@ Fresh main is `af33fd3baeac15d9991bd24c91bcacc8733492e2`. Its complete diff from
 - Lead: `admin-review.md`, `admission-recovery-review.md`, `determinism-ops-review.md`, `world-bundle-review.md`, `dev-client-bots-review.md`, `architecture-review.md`, `world-compiler-review.md`, `domain-review.md`, `combat-review.md`, `entities-review.md`, `progression-review.md`, `monster-ai-review.md`.
 - Gameplay foundation, content promotion and native admission source: `foundation.md`, `content-promotion.md`, `native-admission-source.md`.
 - Complete spell source: `spell-review.md`, `spell-coverage-validation.json`, `spell-embedded-source-validation.json`; complete content: `content.md`, `content-completion-validation.json`; complete items: `items-review.md`, `items-coverage-validation.json`, `items-imbuement-unchanged-tests.json`.
+- Complete encounters: `encounters-review.md`, `encounters-coverage-validation.json`, `encounters-entry-unchanged-tests.json`; partial dispatch: `dispatch-progress.md`.
 - Native client application: `apps-client.md`; 1,180 full files, with unresolved candidates separated from confirmed findings.
 - Protocol/session: `protocol-session.md`, `platform-client.md`, `session.md`, `protocol.md`; partial `durability-progress.md` and `game-server-progress.md`.
 - Gameplay: `characters.md`, `node-files.md`, `weather.md`, `source-critical-baseline.md`, `housing.md`, `economy.md`, `combat-rules.md`, `encounter-rules.md`, `social-rules.md`, `spell-rules.md`, `world-change.md`, `npc.md`.
@@ -69,8 +70,10 @@ Items is now **REVIEWED: 59/59 files and 15,160 lines**. Review includes the com
 
 Content is now **REVIEWED: 139/139 files and 71,505 line-accounting units**. Its complete Rust, manifest, JSON and binary assets were reviewed with source/reference closure and real consumers. Read-only validation includes all 5,095 market filter records, 233 travel records with 3,695 checks, both native room assets with 1,184 checks and the full land mask. CL-018 received independent root confirmation of the complete actual marriage-to-appearance path and maintained content mismatch; its bounded public proof is included.
 
-Frozen durability cumulative coverage is **404/721 full files**, 424 with substantive ranges and **127,146 lines**. Frozen game-server coverage is **439/873 full files**, 442 with ranges and **91,114 lines**. Attributed cross-references are included without double counting. The superseding 439-file server capture was parent-validated before integration. Later live work is excluded from this frozen checkpoint.
+Encounters is now **REVIEWED: 93/93 files and 22,624 lines**. The complete source, manifest and test bodies were read, and exact Git/worktree/full-range checks passed. Review traces pure rules, native physical state, map-dependent callbacks, timers, child lifecycle and actual boss entry/party prerequisites. Six original endgame-entry tests passed through an unchanged-source path-only rustc harness. Other native/source test bodies were inspected, not executed. No additional confirmed finding was established.
 
-All 67 packages have substantive review coverage; eight remain incomplete. The eleven supplementary domains remain **5 IN PROGRESS / 6 NOT STARTED**. Lead continues encounters, quests, social, world and the synthetic client harness while delegated lanes complete dispatch, durability and server. Every supplementary domain remains in scope. Cumulative confirmed counts are **P0=0 / P1=4 / P2=15 / P3=0**. No source fixes or deployed-system reproduction are claimed.
+Frozen durability coverage is **448/721 full files**, 463 with substantive ranges and **139,297 lines**. Frozen game-server coverage is **518/873 full files**, 519 with ranges and **124,200 lines**. Frozen dispatch coverage is **196/1668 full files**, 295 with ranges and **43,118 lines**. The 430-file durability capture and parent-validated 518-file server capture are included. All attributed ranges are deduplicated; later live work is excluded.
+
+All 67 packages have substantive review coverage; seven remain incomplete. The eleven supplementary domains remain **5 IN PROGRESS / 6 NOT STARTED**. Lead continues quests, social, world and the synthetic client harness while delegated lanes complete dispatch, durability and server. Every supplementary domain remains in scope. Confirmed counts remain **P0=0 / P1=4 / P2=15 / P3=0**. SEC-001 corroboration is deduplicated; no new candidate is promoted by this checkpoint.
 
 The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and lifecycle. Repairs remain separate work; this branch changes audit evidence only.

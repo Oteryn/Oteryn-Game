@@ -1,0 +1,16 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "command": "/home/agent/.cargo/bin/rustc --edition=2024 --test dispatch-build-mechanics-tests.rs -o dispatch-build-mechanics-tests && ./dispatch-build-mechanics-tests --nocapture",
+  "scope": "two existing unmodified build_mechanics registry tests via scratch #[path] harness; no Cargo; no SQL/native runtime",
+  "prior_attempt": "rustc executable name not found in PATH; compilation did not begin",
+  "result": {
+    "status": "fulfilled",
+    "value": {
+      "chunk_id": "d57235",
+      "wall_time_seconds": 0.359024943,
+      "exit_code": 0,
+      "original_token_count": 362,
+      "output": "warning: fields `composed`, `authority`, and `route` are never read\n  --> /workspace/scratch/9868b8ed6bb7/Oteryn-Game-audit-r2/crates/gameplay/dispatch/build_mechanics.rs:12:5\n   |\n 8 | struct Mechanic {\n   |        -------- fields in this struct\n...\n12 |     composed: Option<String>,\n   |     ^^^^^^^^\n13 |     authority: Option<String>,\n   |     ^^^^^^^^^\n14 |     offer: Option<(u32, String, String)>,\n15 |     route: String,\n   |     ^^^^^\n   |\n   = note: `Mechanic` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: function `generate` is never used\n   --> /workspace/scratch/9868b8ed6bb7/Oteryn-Game-audit-r2/crates/gameplay/dispatch/build_mechanics.rs:128:15\n    |\n128 | pub(super) fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error>> {\n    |               ^^^^^^^^\n\nwarning: function `write_outputs` is never used\n   --> /workspace/scratch/9868b8ed6bb7/Oteryn-Game-audit-r2/crates/gameplay/dispatch/build_mechanics.rs:150:4\n    |\n150 | fn write_outputs(\n    |    ^^^^^^^^^^^^^\n\nwarning: 3 warnings emitted\n\n\nrunning 2 tests\ntest build_mechanics::tests::registry_rejects_invalid_headers ... ok\ntest build_mechanics::tests::registry_rejects_duplicate_names_and_command_ids ... ok\n\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n"
+    }
+  }
+}
