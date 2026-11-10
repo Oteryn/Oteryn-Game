@@ -236,6 +236,8 @@ impl LoopbackRedirect {
     ) -> Result<AuthorizationCode, IdentityError> {
         let (sender, mut receiver) = mpsc::channel(1);
         let listener = self.listener;
+        // Raw spawn kept in logging-raw-spawn-baseline.json: client-only crate, and the server is
+        // always aborted on return, which the supervisor would report as a cancelled task.
         let server = tokio::spawn(async move {
             loop {
                 let Ok((stream, _peer)) = listener.accept().await else {
