@@ -94,7 +94,7 @@ pub(super) async fn drive(
     drive_due_through(runtime, states, room, native, map, now, now).await
 }
 #[allow(clippy::too_many_arguments)]
-pub(super) async fn drive_due_through(
+pub(in crate::gameplay_transport) async fn drive_due_through(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     room: &QualifiedNativeEntryRoom,
