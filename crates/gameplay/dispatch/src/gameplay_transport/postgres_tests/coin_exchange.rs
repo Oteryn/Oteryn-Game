@@ -758,6 +758,7 @@ async fn report_coin_use_failure(
     error: &dyn std::error::Error,
 ) {
     // One bounded, read-only snapshot after failure; never replay an unknown write.
+    let game_session_id = command.game_session_id();
     let snapshot = sqlx::query_scalar::<_, serde_json::Value>(
         r#"SELECT jsonb_build_object(
          'receipt',(SELECT jsonb_build_object('transaction',r.transaction_id,'result',r.result,
@@ -768,7 +769,7 @@ async fn report_coin_use_failure(
           'last_transaction',i.last_transaction_id) FROM game_item_instances i
           WHERE i.item_instance_id=encode($3,'hex')::uuid LIMIT 1))"#,
     )
-    .bind(command.game_session_id().as_bytes().as_slice())
+    .bind(game_session_id.as_bytes().as_slice())
     .bind(command.command_id().get().to_string())
     .bind(source.as_slice())
     .fetch_one(&h.pool);
