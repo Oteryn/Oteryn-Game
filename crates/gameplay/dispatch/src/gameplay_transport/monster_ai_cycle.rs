@@ -65,7 +65,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         if !self
-            .drive_spite_global_due(now.get())
+            .drive_spite_global_due(&permit, now.get())
             .await
             .unwrap_or(false)
         {

@@ -110,7 +110,7 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                 }
             );
             let prepared = callback.prepare_current_write(&runtime).map_err(debug)?;
-            if reserve_target {
+            let target = if reserve_target || expire {
                 oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt::install_companion_policies(native, &mut runtime).map_err(debug)?;
                 let key = "oteryn:creature.goshnar_s_spite";
                 let policy = runtime.companion_policy(key).map_err(debug)?;
@@ -138,14 +138,61 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                     policy.maximum_health
                 );
                 assert!(prepared.current_for(&runtime));
-                eprintln!("SRX3_REGISTERED_GLOBAL_CURRENT_NATIVE_RESERVATION_REACHED");
-                let reservation = runtime.reserve_source_global_action(&prepared, &[target]);
-                assert!(
-                    reservation.is_ok(),
-                    "real actor-free Global proof must reserve current native target: {reservation:?}"
-                );
-                return Ok(());
-            }
+                let snapshot = runtime.companion_snapshot(target).map_err(debug)?;
+                let defense = runtime
+                    .effective_creature_defense(&snapshot)
+                    .map_err(debug)?;
+                if reserve_target {
+                    eprintln!("SRX3_REGISTERED_GLOBAL_CURRENT_NATIVE_RESERVATION_REACHED");
+                    let reservation = runtime.reserve_source_global_action(&prepared, &[target]);
+                    assert!(
+                        reservation.is_ok(),
+                        "real actor-free Global proof must reserve current native target: {reservation:?}"
+                    );
+                    let reservation = reservation.map_err(debug)?;
+                    assert!(runtime.assert_actor_spell_unreserved(target).is_err());
+                    runtime
+                        .validate_source_global_action(&reservation, &prepared)
+                        .map_err(debug)?;
+                    runtime
+                        .complete_spite_global_action(
+                            &reservation,
+                            &prepared,
+                            Some((&snapshot, defense)),
+                            false,
+                        )
+                        .map_err(debug)?;
+                    assert_eq!(
+                        runtime
+                            .effective_creature_defense(&snapshot)
+                            .map_err(debug)?,
+                        defense
+                    );
+                    runtime
+                        .assert_actor_spell_unreserved(target)
+                        .map_err(debug)?;
+                    assert!(
+                        runtime
+                            .validate_source_global_action(&reservation, &prepared)
+                            .is_err()
+                    );
+                    assert!(
+                        runtime
+                            .complete_spite_global_action(
+                                &reservation,
+                                &prepared,
+                                Some((&snapshot, defense)),
+                                true,
+                            )
+                            .is_err(),
+                        "a released reservation cannot publish a later duplicate defense change"
+                    );
+                    return Ok(());
+                }
+                Some((snapshot, defense))
+            } else {
+                None
+            };
             drop(runtime);
             let receipt = owner
                 .root
@@ -186,16 +233,56 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                     "current scope/pins after receipt replay"
                 );
             }
-            assert_eq!(receipt.transaction_id, replay.transaction_id);
-            assert!(replay.already_committed);
+            assert!(!receipt.removed);
+            assert!(!replay.removed);
+            assert_eq!(
+                receipt.receipt.transaction_id,
+                replay.receipt.transaction_id
+            );
+            assert!(replay.receipt.already_committed);
             let row:(i16,Option<Vec<u8>>,Option<String>,i32)=sqlx::query_as(
                 "SELECT cause_kind,creature_placement,creature_definition_key,operation_count FROM game_spell_item_receipts WHERE transaction_id=encode($1,'hex')::uuid")
-                .bind(receipt.transaction_id.as_slice()).fetch_one(&h.pool).await?;
+                .bind(receipt.receipt.transaction_id.as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(row, (4, None, None, 1));
             let count:i64=sqlx::query_scalar("SELECT count(*) FROM game_spell_item_lines WHERE transaction_id=encode($1,'hex')::uuid AND operation_kind=1 AND definition_production_key='oteryn:item.tibia.i33877'")
-                .bind(receipt.transaction_id.as_slice()).fetch_one(&h.pool).await?;
+                .bind(receipt.receipt.transaction_id.as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(count, 1);
             if expire {
+                // A later real MINT at the same anchor becomes the current
+                // top-down Thing. The old callback retains a position, not its UUID.
+                let (later, later_prepared) = {
+                    let mut runtime = owner.runtime.lock().await;
+                    let later = SpiteGlobalFireCallback::from_current_registration(
+                        &mut runtime,
+                        &scene.room,
+                        native,
+                        &proof,
+                        2,
+                        0,
+                        owner.owner_now().get(),
+                    )
+                    .map_err(debug)?;
+                    let prepared = later.prepare_current_write(&runtime).map_err(debug)?;
+                    (later, prepared)
+                };
+                let later_receipt = owner
+                    .root
+                    .commit_spite_global_fire(
+                        &permit,
+                        owner.character,
+                        owner.holder,
+                        &later,
+                        &later_prepared,
+                    )
+                    .await
+                    .map_err(debug)?;
+                let original_item: String = sqlx::query_scalar(
+                    "SELECT item_instance_id::text FROM game_spell_item_lines WHERE transaction_id=encode($1,'hex')::uuid AND operation_kind=1",
+                ).bind(receipt.receipt.transaction_id.as_slice()).fetch_one(&h.pool).await?;
+                let later_item: String = sqlx::query_scalar(
+                    "SELECT item_instance_id::text FROM game_spell_item_lines WHERE transaction_id=encode($1,'hex')::uuid AND operation_kind=1",
+                ).bind(later_receipt.receipt.transaction_id.as_slice()).fetch_one(&h.pool).await?;
+                assert_ne!(original_item, later_item);
                 tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                 let expiry = {
                     let mut runtime = owner.runtime.lock().await;
@@ -207,12 +294,17 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                         .prepare_current_expiry(&mut runtime, &scene.room, owner.owner_now().get())
                         .map_err(debug)?
                 };
-                let prepared = {
-                    let runtime = owner.runtime.lock().await;
-                    expiry.prepare_current_write(&runtime).map_err(debug)?
+                let (prepared, reservation) = {
+                    let mut runtime = owner.runtime.lock().await;
+                    let prepared = expiry.prepare_current_write(&runtime).map_err(debug)?;
+                    let (snapshot, _) = target.as_ref().ok_or("actual expiry target")?;
+                    let reservation = runtime
+                        .reserve_source_global_action(&prepared, &[snapshot.actor])
+                        .map_err(debug)?;
+                    (prepared, reservation)
                 };
                 eprintln!("SRX3_REGISTERED_GLOBAL_ORIGINAL_FIVE_SECOND_EXPIRY_REACHED");
-                owner
+                let expired = owner
                     .root
                     .commit_spite_global_fire(
                         &permit,
@@ -223,11 +315,44 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                     )
                     .await
                     .map_err(debug)?;
+                assert!(expired.removed);
+                {
+                    let mut runtime = owner.runtime.lock().await;
+                    let (snapshot, defense) = target.as_ref().ok_or("actual expiry target")?;
+                    runtime
+                        .complete_spite_global_action(
+                            &reservation,
+                            &prepared,
+                            Some((snapshot, *defense)),
+                            expired.removed,
+                        )
+                        .map_err(debug)?;
+                    assert_eq!(
+                        runtime
+                            .effective_creature_defense(snapshot)
+                            .map_err(debug)?,
+                        defense + 10
+                    );
+                    assert_eq!(
+                        runtime
+                            .companion_snapshot(snapshot.actor)
+                            .map_err(debug)?
+                            .health,
+                        snapshot.health
+                    );
+                }
                 let removed: i32 = sqlx::query_scalar("SELECT operation_count FROM game_spell_item_receipts WHERE cause_kind=4 AND creature_occurrence LIKE '%:expire'")
                     .fetch_one(&h.pool).await?;
                 assert_eq!(
                     removed, 1,
                     "actual same-tile current33877 is removed by the existing Item writer"
+                );
+                let removed_item: String = sqlx::query_scalar(
+                    "SELECT item_instance_id::text FROM game_spell_item_lines WHERE transaction_id=encode($1,'hex')::uuid AND operation_kind=2",
+                ).bind(expired.receipt.transaction_id.as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(
+                    removed_item, later_item,
+                    "expiry removes the current matching Thing, not the originally minted UUID"
                 );
                 let replay = owner
                     .root
@@ -240,7 +365,38 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
                     )
                     .await
                     .map_err(debug)?;
-                assert!(replay.already_committed);
+                assert!(replay.receipt.already_committed);
+                assert!(
+                    replay.removed,
+                    "the immutable receipt retains the original current-field outcome"
+                );
+                let original_still_current: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=$1::uuid)",
+                ).bind(&original_item).fetch_one(&h.pool).await?;
+                assert!(
+                    original_still_current,
+                    "receipt replay cannot remove the next current field at the retained position"
+                );
+                {
+                    let mut runtime = owner.runtime.lock().await;
+                    let (snapshot, defense) = target.as_ref().ok_or("actual expiry target")?;
+                    assert!(
+                        runtime
+                            .complete_spite_global_action(
+                                &reservation,
+                                &prepared,
+                                Some((snapshot, *defense)),
+                                replay.removed,
+                            )
+                            .is_err()
+                    );
+                    assert_eq!(
+                        runtime
+                            .effective_creature_defense(snapshot)
+                            .map_err(debug)?,
+                        defense + 10
+                    );
+                }
             }
             Ok(())
         })
@@ -372,6 +528,32 @@ fn srx3_spite_registered_world_owner_emits_one_selected_field_without_a_boss_aft
             owner.drain_monster_melee().await;
             let replay: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=4 AND creature_occurrence LIKE '%:create'").fetch_one(&h.pool).await?;
             assert_eq!(replay, 1, "one dispatch, no reroll or catchup batch");
+            let expiry_due = owner
+                .states
+                .spell_states
+                .try_lock()
+                .map_err(debug)?
+                .spite_global
+                .next_due_us()
+                .ok_or("retained original expiry")?;
+            assert!(expiry_due > registered + 14_000_000);
+            assert!(expiry_due <= owner.owner_now().get() + 5_000_000);
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            assert!(owner.owner_now().get() >= expiry_due);
+            owner.drain_monster_melee().await;
+            let expired: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=4 AND creature_occurrence LIKE '%:expire' AND operation_count=1 AND creature_placement IS NULL")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(
+                expired, 1,
+                "the actual owner removes the current field after its retained five-second deadline without a boss"
+            );
+            owner.drain_monster_melee().await;
+            let expired_replay: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=4 AND creature_occurrence LIKE '%:expire'")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(
+                expired_replay, 1,
+                "completed expiry is not repeated by another owner pass"
+            );
             Ok(())
         })
     });

@@ -88,9 +88,30 @@ fn identity(proof: &impl SourceActorReservationProof) -> SourceReservationIdenti
         death_cursor: None,
     }
 }
+fn global_identity(
+    runtime: &ChannelRuntimeV1,
+    proof: &impl SourceGlobalReservationProof,
+) -> SourceReservationIdentity {
+    let mut event = [0; 16];
+    event[..8].copy_from_slice(&proof.execution_micros().to_be_bytes());
+    event[8..].copy_from_slice(&proof.work_stamp().ordinal().get().to_be_bytes());
+    SourceReservationIdentity {
+        owner: SourceReservationOwner::Scope(
+            runtime.binding().runtime_scope(),
+            runtime.binding().scope_generation(),
+        ),
+        event,
+        source: proof.event_binding(),
+        death_cursor: None,
+    }
+}
 impl ChannelRuntimeV1 {
     /// Reserve the actual callback-time target cohort before detached physical
     /// SQL. Unknown outcomes must retain this same reservation and proof.
+    #[allow(
+        clippy::expect_used,
+        reason = "all exact source slots are validated before atomic reservation publication"
+    )]
     pub fn reserve_source_global_action(
         &mut self,
         proof: &impl SourceGlobalReservationProof,
@@ -102,15 +123,125 @@ impl ChannelRuntimeV1 {
             || !self.owner_fence()?.accepts_stamp(proof.work_stamp())
             || proof.event_binding() == [0; 32]
             || affected.len() > self.carrier.slots.len()
+            || affected.len() > 1
         {
             return Err(CarrierError::PlanConflict);
         }
+        let identity = Arc::new(global_identity(self, proof));
+        let mut originals = Vec::new();
+        originals
+            .try_reserve_exact(affected.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
         for actor in affected {
-            self.carrier.validate_ref(&self.continuity, actor.0)?;
+            let slot = self.carrier.validate_ref(&self.continuity, actor.0)?;
             self.assert_actor_spell_unreserved(*actor)?;
+            let snapshot = self.companion_snapshot_including_dead(*actor)?;
+            if !self.source_creature_is_registered(*actor)?
+                || snapshot.state.policy.definition_key != super::soul_war_spite::SPITE
+                || snapshot.state.master.is_some()
+                || self.native_summon_master(*actor).is_some()
+            {
+                return Err(CarrierError::CreatureTargetMismatch);
+            }
+            state(&self.carrier.slots[slot])?;
+            originals.push((slot, self.carrier.slots[slot].clone()));
         }
-        // Neutral until the real registered callback target reaches this owner.
-        Err(CarrierError::PlanConflict)
+        for (slot, original) in &mut originals {
+            state_mut(&mut self.carrier.slots[*slot])
+                .expect("validated Global source slot")
+                .pending_source = Some(Arc::clone(&identity));
+            state_mut(original)
+                .expect("validated Global source original")
+                .pending_source = Some(Arc::clone(&identity));
+        }
+        Ok(SourceActorReservation {
+            identity,
+            originals,
+            installed: true,
+        })
+    }
+
+    pub fn validate_source_global_action(
+        &self,
+        reservation: &SourceActorReservation,
+        proof: &impl SourceGlobalReservationProof,
+    ) -> Result<(), CarrierError> {
+        if !proof.current_for(self)
+            || !self.owner_fence()?.accepts_stamp(proof.work_stamp())
+            || proof.registration().content() != self.content_pin().server_artifact_digest()
+            || *reservation.identity != global_identity(self, proof)
+            || !reservation.installed
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        for (slot, original) in &reservation.originals {
+            if self.carrier.slots.get(*slot) != Some(original) {
+                return Err(CarrierError::PlanConflict);
+            }
+            let combat = state(original)?;
+            if combat.pending_owner.is_some()
+                || combat.pending_source.as_ref() != Some(&reservation.identity)
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+        }
+        Ok(())
+    }
+
+    /// Complete one known physical result in the same runtime turn. A missing
+    /// field releases its target without empowering it; Unknown retains both.
+    #[allow(
+        clippy::expect_used,
+        reason = "all canonical Spite mutation gates are checked before releasing its exact reservation"
+    )]
+    pub fn complete_spite_global_action(
+        &mut self,
+        reservation: &SourceActorReservation,
+        proof: &impl SourceGlobalReservationProof,
+        target: Option<(&super::runtime_actor_companion::CompanionSnapshot, u32)>,
+        removed: bool,
+    ) -> Result<(), CarrierError> {
+        self.validate_source_global_action(reservation, proof)?;
+        if let Some((expected, defense)) = target {
+            let slot = self
+                .carrier
+                .validate_ref(&self.continuity, expected.actor.0)?;
+            self.validate_companion_snapshot(expected)?;
+            if reservation.originals.len() != 1
+                || reservation.originals[0].0 != slot
+                || !self.source_creature_is_registered(expected.actor)?
+                || expected.state.policy.definition_key != super::soul_war_spite::SPITE
+                || expected.state.master.is_some()
+                || self.native_summon_master(expected.actor).is_some()
+                || expected.health < 0
+                || expected.maximum_health <= 0
+                || expected.health > expected.maximum_health
+                || self.effective_creature_defense(expected)? != defense
+            {
+                return Err(CarrierError::CreatureTargetMismatch);
+            }
+            if removed {
+                defense
+                    .checked_add(10)
+                    .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+            }
+        } else if !reservation.originals.is_empty() {
+            return Err(CarrierError::PlanConflict);
+        }
+        for (slot, _) in &reservation.originals {
+            state_mut(&mut self.carrier.slots[*slot])
+                .expect("validated Global source slot")
+                .pending_source = None;
+        }
+        if removed && let Some((expected, defense)) = target {
+            self.change_soul_war_spite(
+                expected,
+                defense,
+                super::soul_war_spite::SpiteChange::FireExpired,
+            )
+            .expect("prevalidated canonical Spite expiry");
+        }
+        Ok(())
     }
     #[allow(
         clippy::expect_used,

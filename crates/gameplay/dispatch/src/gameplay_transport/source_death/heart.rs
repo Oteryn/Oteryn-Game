@@ -7,7 +7,10 @@ use crate::durability::quest_state::{
     native_kills::{NativeDeathSource, NativeQuestDeath},
     source_deaths::SourceDeathContext,
 };
-use crate::map::{overlay::TilePos, view::EntrySource};
+use crate::map::{
+    overlay::TilePos,
+    view::{EntrySource, MapFacts},
+};
 use oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal;
 
 const TRANSITION: &str = "oteryn:quest-transition/heart-destruction/outburst-room-death";

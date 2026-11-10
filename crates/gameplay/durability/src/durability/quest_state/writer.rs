@@ -9,6 +9,60 @@ use super::*;
 #[path = "writer/ground_fixture.rs"]
 mod ground_fixture;
 
+#[cfg(test)]
+mod personal_event_tests;
+
+/// Empty donor missions stay unavailable. These separately authored surveys
+/// already passed the canonical resolved-World ownership check; their live
+/// Premium, map/reset and native placement evidence still belongs to consume.
+fn unavailable_personal_event(
+    transition: &oteryn_gameplay_quests::quest::QuestTransition,
+    cause: QuestCause,
+    world_context: bool,
+    callback: Option<&oteryn_gameplay_quests::quest::world_callbacks::Callback>,
+) -> bool {
+    use oteryn_gameplay_quests::quest::{authored_bindings, world_callbacks};
+    if !matches!(
+        authored_bindings::personal_event_profile(&transition.quest),
+        Some(authored_bindings::PersonalEventProfile::Unavailable { .. })
+    ) {
+        return false;
+    }
+    let required_world = match (transition.quest.as_str(), transition.key.as_str()) {
+        (
+            "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+            "oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s1/entry"
+            | "oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s3/entry",
+        ) => None,
+        (
+            "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+            "oteryn:quest-callback/m01b/fire-from-the-earth-mini-world-change/s1/entry",
+        ) => Some("fire_from_the_earth"),
+        _ => return true,
+    };
+    if !world_context || !matches!(cause, QuestCause::Step(_)) {
+        return true;
+    }
+    let Some(callback) = callback else {
+        return true;
+    };
+    !(callback.key == transition.key
+        && callback.quest == transition.quest
+        && callback.trigger == world_callbacks::Trigger::StepIn
+        && callback.actor_kind == world_callbacks::ActorKind::Player
+        && callback.requires_world_admission
+        && callback.selector.native.is_some()
+        && callback
+            .admission
+            .as_ref()
+            .is_some_and(|gate| gate.premium && !gate.regular_blessings && !gate.promotion)
+        && callback.world_change.as_deref() == required_world
+        && !transition.completes
+        && transition.experience.is_none()
+        && world_callbacks::primary_transition(callback)
+            .is_ok_and(|canonical| canonical == *transition))
+}
+
 impl DurabilityRoot {
     /// Isolated source fixtures exercise the production reward transaction without adding quest content.
     #[cfg(feature = "test-support")]
@@ -972,7 +1026,7 @@ impl DurabilityRoot {
                     let Some(transition) = catalogue.transition(&request.transition_key) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
-                    if matches!(oteryn_gameplay_quests::quest::authored_bindings::personal_event_profile(&transition.quest), Some(oteryn_gameplay_quests::quest::authored_bindings::PersonalEventProfile::Unavailable { .. })) {
+                    if unavailable_personal_event(transition, request.cause, context.is_some(), callback.as_ref()) {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::NotSupported)));
                     }
                     let arena = if transition.quest == oteryn_gameplay_quests::quest::arena_completion::QUEST && transition.completes {

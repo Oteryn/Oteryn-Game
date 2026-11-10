@@ -241,7 +241,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 y: u16::try_from(y)?,
                 floor: i8::try_from(floor)?,
             };
-            let stack = crate::map::view::compose_tile(&world.overlay, &world.facts, tile)
+            let stack = crate::map::view::compose_tile(world.overlay(), world.facts(), tile)
                 .map_err(debug)?
                 .ok_or("actual pillar floor")?;
             assert_eq!(

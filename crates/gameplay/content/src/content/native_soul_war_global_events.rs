@@ -37,7 +37,7 @@ impl QualifiedSpiteGlobalEvent {
     }
 }
 
-pub(in crate::content) fn matches_capture(value: &serde_json::Value) -> bool {
+fn captured_event() -> Option<&'static serde_json::Value> {
     static CAPTURE: std::sync::OnceLock<Option<serde_json::Value>> = std::sync::OnceLock::new();
     CAPTURE
         .get_or_init(|| {
@@ -47,7 +47,10 @@ pub(in crate::content) fn matches_capture(value: &serde_json::Value) -> bool {
             .ok()
         })
         .as_ref()
-        == Some(value)
+}
+
+pub(in crate::content) fn matches_capture(value: &serde_json::Value) -> bool {
+    captured_event() == Some(value)
 }
 
 impl super::native_gameplay::NativeGameplayState {
@@ -65,8 +68,9 @@ impl super::native_gameplay::NativeGameplayState {
         {
             return None;
         }
-        // Neutral until the actual full published-World target proves this port.
-        None
+        // The registered event is immutable source DATA. Its four anchors must
+        // exist in this exact published World; no private room alias authorizes it.
+        self.qualify_spite_global_event_data(room, captured_event()?)
     }
     pub fn qualify_spite_global_event(
         &self,
@@ -98,6 +102,14 @@ impl super::native_gameplay::NativeGameplayState {
             .ok()?;
             retained.get("registered_global_events")?
         };
+        self.qualify_spite_global_event_data(room, data)
+    }
+
+    fn qualify_spite_global_event_data(
+        &self,
+        room: &QualifiedNativeEntryRoom,
+        data: &serde_json::Value,
+    ) -> Option<QualifiedSpiteGlobalEvent> {
         if !matches_capture(data) {
             return None;
         }
