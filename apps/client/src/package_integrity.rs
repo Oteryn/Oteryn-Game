@@ -194,18 +194,28 @@ pub fn verify(directory: &Path, expected: Identity<'_>) -> Result<Report, String
     })
 }
 
+fn development_without_manifest(
+    release_id: &str,
+    smoke: bool,
+    require_manifest: bool,
+    manifest_present: bool,
+) -> bool {
+    !manifest_present
+        && !require_manifest
+        && (release_id.contains(".local.") || (smoke && release_id.contains("+dev.")))
+}
+
 pub fn verify_current(require_manifest: bool) -> Result<Report, String> {
     let executable = std::env::current_exe().map_err(|_| "Cannot locate the running client")?;
     let directory = executable
         .parent()
         .ok_or("Cannot locate the release directory")?;
-    if !require_manifest
-        && crate::RELEASE_ID.contains(".local.")
-        && !directory
-            .join("packages.json")
-            .try_exists()
-            .map_err(|_| "Cannot inspect packages.json")?
-    {
+    let manifest_present = directory
+        .join("packages.json")
+        .try_exists()
+        .map_err(|_| "Cannot inspect packages.json")?;
+    let smoke = std::env::args_os().any(|argument| argument == "--smoke");
+    if development_without_manifest(crate::RELEASE_ID, smoke, require_manifest, manifest_present) {
         return Ok(Report::Development);
     }
     verify(directory, Identity::compiled())
@@ -216,4 +226,63 @@ pub fn show_repair_required(error: &str) {
     crate::about::show_information(&format!(
         "Installation verification failed: {error}\r\nClose the client and run the trusted Oteryn installer for this release to repair it. Automatic updates are unavailable. Obtain updates from your operator's trusted release channel."
     ));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::development_without_manifest;
+
+    #[test]
+    fn unattended_development_smoke_can_run_without_manifest() {
+        assert!(development_without_manifest(
+            "1.2.3+dev.ci.g0123456789ab",
+            true,
+            false,
+            false
+        ));
+    }
+
+    #[test]
+    fn installed_and_explicit_checks_still_require_manifest() {
+        assert!(!development_without_manifest(
+            "1.2.3+stable.rel.g0123456789ab",
+            true,
+            false,
+            false
+        ));
+        assert!(!development_without_manifest(
+            "1.2.3+dev.ci.g0123456789ab",
+            true,
+            true,
+            false
+        ));
+        assert!(!development_without_manifest(
+            "1.2.3+dev.ci.g0123456789ab",
+            false,
+            false,
+            false
+        ));
+    }
+
+    #[test]
+    fn local_build_without_manifest_remains_development() {
+        assert!(development_without_manifest(
+            "1.2.3+dev.local.g000000000000",
+            false,
+            false,
+            false
+        ));
+        assert!(!development_without_manifest(
+            "1.2.3+dev.local.g000000000000",
+            false,
+            true,
+            false
+        ));
+        assert!(!development_without_manifest(
+            "1.2.3+dev.local.g000000000000",
+            false,
+            false,
+            true
+        ));
+    }
 }
