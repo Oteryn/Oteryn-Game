@@ -66,8 +66,8 @@ booleans, unknown refusal codes, balances outside their owner ranges, kill/bount
 progress above its requirement and overlong/non-canonical race keys.
 
 The full response includes the week identity, all three balances, weekly
-progress and pending rewards, bounty offers/active progress, free-offer-reroll
-timestamp (the historical `daily_reroll_at` field), preferred/unwanted lists, talisman levels/bonuses/next prices and
+progress and pending rewards, bounty offers/active progress, the historical
+`daily_reroll_at` field (always zero), preferred/unwanted lists, talisman levels/bonuses/next prices and
 shop offer data. Item identifiers in delivery/shop rows identify donor catalogue
 entries; the server resolves them against the active canonical Item catalogue
 before any custody write.
@@ -92,7 +92,7 @@ Refused commands do not spend currency or consume items.
 | 2 | Wrong board or bounty state |
 | 3 | Level below the selected difficulty's minimum |
 | 4 | Insufficient points, tokens, or other rule resources |
-| 5 | Free-reroll cooldown has not elapsed |
+| 5 | Retained legacy cooldown refusal; no new bounty reroll emits it |
 | 6 | Progression or list limit reached |
 | 7 | Permanent offer already owned |
 | 8 | Addon requires the base outfit |
@@ -115,7 +115,10 @@ records arithmetic-overflow refusal atomically and returns that refusal on repla
 
 The reroll balance uses uint64 on the wire and the existing nonnegative BIGINT
 durable owner, through `i64::MAX`. The free daily token is granted only by Daily Reward; completed
-bounties retain their earned token reward. The maximum talisman level remains 355, following the accepted
+bounties retain their earned token reward. Every bounty offer reroll consumes exactly one
+token; a zero balance is refusal 4 (insufficient resources), regardless of elapsed time.
+The retired free-reroll deadline in saved board JSON is ignored when loading old boards.
+The maximum talisman level remains 355, following the accepted
 repository profile in `docs/reference/NEWS-HIST-TALISMAN-1.md:15–27` and the PR's
 coordinator decisions. No saved level is converted.
 
@@ -164,8 +167,9 @@ Reference: TibiaData v4 news 8567, fetched 2026-11-09
 (`https://api.tibiadata.com/v4/news/id/8567`, `OTHER_STRUCTURED_TIBIA_DATA`),
 reports a special Monday reward window displaying rewards and choosing the next
 difficulty. News 8998 (same fetch date and source class) retires the daily-token
-claim from the Bounty Board; Daily Reward supplies it instead. Bounty offer
-rerolls and earned completed-bounty tokens retain their existing rules.
+claim from the Bounty Board; Daily Reward supplies it instead. The owner's T195
+request in PR #3091 (2026-11-10) also removes the timed free offer reroll.
+Earned completed-bounty tokens retain their existing rules.
 
 ## Elite bounty tasks (T201)
 

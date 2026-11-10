@@ -7,7 +7,7 @@ use std::future::Future;
 use std::panic::AssertUnwindSafe;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::task::JoinHandle;
@@ -15,6 +15,64 @@ use tokio::time::Instant;
 
 const MODULE: &str = "runtime";
 static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
+static GLOBAL: OnceLock<Supervisor> = OnceLock::new();
+static WATCHDOG_STARTED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+fn global() -> &'static Supervisor {
+    GLOBAL.get_or_init(|| Supervisor::new(4_096))
+}
+
+fn start_watchdog() {
+    if WATCHDOG_STARTED
+        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .is_ok()
+    {
+        let supervisor = global().clone();
+        tokio::spawn(async move {
+            supervisor
+                .run_watchdog(Duration::from_secs(5), Duration::from_secs(30))
+                .await;
+        });
+    }
+}
+
+/// Spawn a lifecycle-only supervised task without stall detection while preserving its output.
+pub fn spawn_lifecycle_supervised<F>(
+    name: &'static str,
+    trace: Option<String>,
+    future: F,
+) -> JoinHandle<F::Output>
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    start_watchdog();
+    let guard = global().register(name, trace, TaskKind::Async, false);
+    tokio::spawn(async move { guard.run_preserving(future).await })
+}
+
+/// Spawn a process-supervised task with an explicit progress heartbeat.
+pub fn spawn_supervised_with_heartbeat<F, Fut>(
+    name: &'static str,
+    trace: Option<String>,
+    make_future: F,
+) -> JoinHandle<Fut::Output>
+where
+    F: FnOnce(Heartbeat) -> Fut + Send + 'static,
+    Fut: Future + Send + 'static,
+    Fut::Output: Send + 'static,
+{
+    start_watchdog();
+    let guard = global().register(name, trace, TaskKind::Async, true);
+    let heartbeat = guard.heartbeat();
+    tokio::spawn(async move { guard.run_preserving(make_future(heartbeat)).await })
+}
+
+/// Return the process-wide live-task snapshot for operations health output.
+#[must_use]
+pub fn supervised_tasks() -> Vec<TaskInfo> {
+    global().snapshot()
+}
 
 /// The execution mechanism used by a supervised task.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,6 +105,20 @@ pub struct TaskInfo {
     pub since_beat_ms: u64,
     /// How the task is being executed.
     pub kind: TaskKind,
+    /// Whether this task opted into progress-heartbeat stall detection.
+    pub heartbeat_supervised: bool,
+    /// Whether the task declared that its current wait is expected.
+    pub expected_idle: bool,
+}
+
+impl TaskInfo {
+    /// Whether this heartbeat-supervised task has exceeded `stall_after` while active.
+    #[must_use]
+    pub fn is_stalled(&self, stall_after: Duration) -> bool {
+        self.heartbeat_supervised
+            && !self.expected_idle
+            && Duration::from_millis(self.since_beat_ms) >= stall_after
+    }
 }
 
 #[derive(Debug)]
@@ -56,6 +128,8 @@ struct Entry {
     started_at: Instant,
     last_heartbeat: Instant,
     kind: TaskKind,
+    heartbeat_supervised: bool,
+    expected_idle: u64,
     stalled: bool,
 }
 
@@ -119,8 +193,8 @@ impl Supervisor {
         }
     }
 
-    /// Spawn a supervised asynchronous operation returning `Some` only on success.
-    pub fn spawn_supervised<F, T, E>(
+    /// Spawn a lifecycle-only asynchronous operation returning `Some` only on success.
+    pub fn spawn_lifecycle_supervised<F, T, E>(
         &self,
         name: &'static str,
         trace: Option<String>,
@@ -131,7 +205,7 @@ impl Supervisor {
         T: Send + 'static,
         E: Send + 'static,
     {
-        let guard = self.register(name, trace, TaskKind::Async);
+        let guard = self.register(name, trace, TaskKind::Async, false);
         tokio::spawn(async move { guard.run(future).await })
     }
 
@@ -148,7 +222,7 @@ impl Supervisor {
         T: Send + 'static,
         E: Send + 'static,
     {
-        let guard = self.register(name, trace, TaskKind::Async);
+        let guard = self.register(name, trace, TaskKind::Async, true);
         let heartbeat = guard.heartbeat();
         tokio::spawn(async move { guard.run(make_future(heartbeat)).await })
     }
@@ -165,13 +239,13 @@ impl Supervisor {
         T: Send + 'static,
         E: Send + 'static,
     {
-        let guard = self.register(name, trace, TaskKind::Blocking);
+        let guard = self.register(name, trace, TaskKind::Blocking, false);
         tokio::spawn(async move {
             match tokio::task::spawn_blocking(operation).await {
                 Ok(Ok(value)) => guard.finish("ok", Some(value)),
                 Ok(Err(_)) => guard.finish("err", None),
                 Err(error) if error.is_panic() => {
-                    guard.panic_line(error.into_panic());
+                    guard.panic_line(error.into_panic().as_ref());
                     guard.finish("err", None)
                 }
                 Err(_) => guard.finish("cancelled", None),
@@ -191,6 +265,8 @@ impl Supervisor {
                 age_ms: elapsed_ms(entry.started_at, now),
                 since_beat_ms: elapsed_ms(entry.last_heartbeat, now),
                 kind: entry.kind,
+                heartbeat_supervised: entry.heartbeat_supervised,
+                expected_idle: entry.expected_idle != 0,
             })
             .collect();
         snapshot.sort_unstable_by_key(|task| task.name);
@@ -218,7 +294,9 @@ impl Supervisor {
             let now = Instant::now();
             let mut lines = Vec::new();
             for entry in lock(&self.inner.tasks).values_mut() {
-                let is_stalled = now.duration_since(entry.last_heartbeat) >= stall_after;
+                let is_stalled = entry.heartbeat_supervised
+                    && entry.expected_idle == 0
+                    && now.duration_since(entry.last_heartbeat) >= stall_after;
                 if is_stalled != entry.stalled {
                     entry.stalled = is_stalled;
                     if is_stalled {
@@ -248,7 +326,13 @@ impl Supervisor {
         }
     }
 
-    fn register(&self, name: &'static str, trace: Option<String>, kind: TaskKind) -> TaskGuard {
+    fn register(
+        &self,
+        name: &'static str,
+        trace: Option<String>,
+        kind: TaskKind,
+        heartbeat_supervised: bool,
+    ) -> TaskGuard {
         let id = NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
         self.inner.counters.started.fetch_add(1, Ordering::Relaxed);
         let now = Instant::now();
@@ -263,6 +347,8 @@ impl Supervisor {
                     started_at: now,
                     last_heartbeat: now,
                     kind,
+                    heartbeat_supervised,
+                    expected_idle: 0,
                     stalled: false,
                 },
             );
@@ -342,13 +428,36 @@ impl TaskGuard {
             Ok(Ok(value)) => self.finish("ok", Some(value)),
             Ok(Err(_)) => self.finish("err", None),
             Err(payload) => {
-                self.panic_line(payload);
+                self.panic_line(payload.as_ref());
                 self.finish("err", None)
             }
         }
     }
 
-    fn panic_line(&self, payload: Box<dyn Any + Send>) {
+    async fn run_preserving<F: Future>(self, future: F) -> F::Output {
+        match (CatchUnwind {
+            future: Box::pin(future),
+        })
+        .await
+        {
+            Ok(value) => {
+                self.finish_preserving("ok");
+                value
+            }
+            Err(payload) => {
+                self.panic_line(payload.as_ref());
+                self.finish_preserving("err");
+                std::panic::resume_unwind(payload)
+            }
+        }
+    }
+
+    fn finish_preserving(mut self, outcome: &str) {
+        self.finished = true;
+        self.write_end(outcome);
+    }
+
+    fn panic_line(&self, payload: &(dyn Any + Send)) {
         self.supervisor
             .inner
             .counters
@@ -426,6 +535,37 @@ impl Heartbeat {
             entry.last_heartbeat = Instant::now();
         }
     }
+
+    /// Mark a deliberate idle wait as exempt from stall detection until the guard is dropped.
+    #[must_use]
+    pub fn expected_idle(&self) -> ExpectedIdle {
+        if let Some(inner) = self.inner.upgrade()
+            && let Some(entry) = lock(&inner.tasks).get_mut(&self.id)
+        {
+            entry.expected_idle = entry.expected_idle.saturating_add(1);
+        }
+        ExpectedIdle {
+            inner: self.inner.clone(),
+            id: self.id,
+        }
+    }
+}
+
+/// A scoped exemption for an intentional idle wait in a heartbeat-supervised task.
+pub struct ExpectedIdle {
+    inner: std::sync::Weak<Inner>,
+    id: u64,
+}
+
+impl Drop for ExpectedIdle {
+    fn drop(&mut self) {
+        if let Some(inner) = self.inner.upgrade()
+            && let Some(entry) = lock(&inner.tasks).get_mut(&self.id)
+        {
+            entry.expected_idle = entry.expected_idle.saturating_sub(1);
+            entry.last_heartbeat = Instant::now();
+        }
+    }
 }
 
 struct CatchUnwind<F> {
@@ -481,7 +621,7 @@ mod tests {
     fn default_writer_emits_structured_terminal_line() {
         let supervisor = Supervisor::new(1);
         let lines = oteryn_error_codes::capture(|| {
-            let _guard = supervisor.register("captured", None, TaskKind::Async);
+            let _guard = supervisor.register("captured", None, TaskKind::Async, false);
         });
         assert!(lines.iter().any(|line| {
             line.contains("module=runtime event=task_end")
@@ -495,20 +635,20 @@ mod tests {
         let (supervisor, lines) = fixture(8);
         assert_eq!(
             supervisor
-                .spawn_supervised("ok", None, async { Ok::<_, ()>(7) })
+                .spawn_lifecycle_supervised("ok", None, async { Ok::<_, ()>(7) })
                 .await
                 .unwrap(),
             Some(7)
         );
         assert_eq!(
             supervisor
-                .spawn_supervised("err", None, async { Err::<(), _>(()) })
+                .spawn_lifecycle_supervised("err", None, async { Err::<(), _>(()) })
                 .await
                 .unwrap(),
             None
         );
 
-        let cancelled = supervisor.spawn_supervised("cancel", None, async {
+        let cancelled = supervisor.spawn_lifecycle_supervised("cancel", None, async {
             std::future::pending::<()>().await;
             Ok::<(), ()>(())
         });
@@ -516,11 +656,12 @@ mod tests {
         cancelled.abort();
         assert!(cancelled.await.unwrap_err().is_cancelled());
 
-        let panic = supervisor.spawn_supervised("panic", Some("trace-1".to_owned()), async {
-            std::panic::resume_unwind(Box::new("static panic"));
-            #[allow(unreachable_code)]
-            Ok::<(), ()>(())
-        });
+        let panic =
+            supervisor.spawn_lifecycle_supervised("panic", Some("trace-1".to_owned()), async {
+                std::panic::resume_unwind(Box::new("static panic"));
+                #[allow(unreachable_code)]
+                Ok::<(), ()>(())
+            });
         assert_eq!(panic.await.unwrap(), None);
 
         let ends = matching(&lines, "task_end");
@@ -553,7 +694,7 @@ mod tests {
     #[tokio::test]
     async fn formatted_panic_payload_is_withheld() {
         let (supervisor, lines) = fixture(1);
-        let task = supervisor.spawn_supervised("panic", None, async {
+        let task = supervisor.spawn_lifecycle_supervised("panic", None, async {
             std::panic::resume_unwind(Box::new("private runtime value".to_owned()));
             #[allow(unreachable_code)]
             Ok::<(), ()>(())
@@ -623,6 +764,7 @@ mod tests {
         tokio::time::advance(Duration::from_secs(4)).await;
         tokio::task::yield_now().await;
         assert_eq!(matching(&lines, "task_stalled").len(), 1);
+        assert!(supervisor.snapshot()[0].is_stalled(Duration::from_secs(3)));
         lock(&heartbeat_slot).as_ref().unwrap().beat();
         tokio::time::advance(Duration::from_secs(1)).await;
         tokio::task::yield_now().await;
@@ -633,19 +775,78 @@ mod tests {
     }
 
     #[tokio::test(start_paused = true)]
+    async fn lifecycle_only_task_idle_past_stall_bound_is_not_stalled() {
+        let (supervisor, lines) = fixture(1);
+        let task = supervisor.spawn_lifecycle_supervised("lifecycle", None, async {
+            std::future::pending::<()>().await;
+            Ok::<(), ()>(())
+        });
+        tokio::task::yield_now().await;
+        let watchdog = tokio::spawn({
+            let supervisor = supervisor.clone();
+            async move {
+                supervisor
+                    .run_watchdog(Duration::from_secs(1), Duration::from_secs(3))
+                    .await
+            }
+        });
+        tokio::time::advance(Duration::from_secs(4)).await;
+        tokio::task::yield_now().await;
+
+        assert!(matching(&lines, "task_stalled").is_empty());
+        assert!(!supervisor.snapshot()[0].is_stalled(Duration::from_secs(3)));
+        watchdog.abort();
+        task.abort();
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn expected_idle_wait_does_not_stall_heartbeat_task() {
+        let (supervisor, lines) = fixture(1);
+        let task = supervisor.spawn_supervised_with_heartbeat(
+            "waiting",
+            None,
+            move |heartbeat| async move {
+                let _idle = heartbeat.expected_idle();
+                std::future::pending::<()>().await;
+                Ok::<(), ()>(())
+            },
+        );
+        tokio::task::yield_now().await;
+        let watchdog = tokio::spawn({
+            let supervisor = supervisor.clone();
+            async move {
+                supervisor
+                    .run_watchdog(Duration::from_secs(1), Duration::from_secs(3))
+                    .await
+            }
+        });
+        tokio::time::advance(Duration::from_secs(4)).await;
+        tokio::task::yield_now().await;
+
+        assert!(matching(&lines, "task_stalled").is_empty());
+        assert!(!supervisor.snapshot()[0].is_stalled(Duration::from_secs(3)));
+        watchdog.abort();
+        task.abort();
+    }
+
+    #[tokio::test(start_paused = true)]
     async fn registry_is_bounded_and_snapshot_has_task_times() {
         let (supervisor, _lines) = fixture(1);
         let entered = Arc::new(AtomicBool::new(false));
         let marker = Arc::clone(&entered);
-        let first = supervisor.spawn_supervised("first", Some("trace-2".to_owned()), async move {
-            marker.store(true, Ordering::SeqCst);
-            std::future::pending::<()>().await;
-            Ok::<(), ()>(())
-        });
+        let first = supervisor.spawn_lifecycle_supervised(
+            "first",
+            Some("trace-2".to_owned()),
+            async move {
+                marker.store(true, Ordering::SeqCst);
+                std::future::pending::<()>().await;
+                Ok::<(), ()>(())
+            },
+        );
         while !entered.load(Ordering::SeqCst) {
             tokio::task::yield_now().await;
         }
-        let second = supervisor.spawn_supervised("second", None, async {
+        let second = supervisor.spawn_lifecycle_supervised("second", None, async {
             std::future::pending::<()>().await;
             Ok::<(), ()>(())
         });
@@ -657,6 +858,8 @@ mod tests {
         assert_eq!(snapshot[0].age_ms, 12);
         assert_eq!(snapshot[0].since_beat_ms, 12);
         assert_eq!(snapshot[0].kind, TaskKind::Async);
+        assert!(!snapshot[0].heartbeat_supervised);
+        assert!(!snapshot[0].expected_idle);
         first.abort();
         second.abort();
     }

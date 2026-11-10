@@ -166,7 +166,7 @@ pub async fn send<S: SessionStream>(
     };
     let text = match disposition {
         UseDisposition::Committed => "completed",
-        UseDisposition::BedChooseSkill => "training selection unavailable for this bed",
+        UseDisposition::BedChooseSkill => "choose an offline training skill in the server dialog",
         UseDisposition::BedOccupied => "this bed is occupied",
         UseDisposition::BedWoken => "sleeper woke",
         UseDisposition::OfflineTraining => "offline training started",

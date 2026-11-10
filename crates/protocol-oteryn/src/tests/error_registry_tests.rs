@@ -255,6 +255,7 @@ fn admission_refusal_frame_carries_only_code_and_disposition() -> Result<(), Fou
             related_command_id: 0,
             expected_command_id: 0,
             expected_server_sequence: 0,
+            connection_trace: None,
         }
     );
     Ok(())

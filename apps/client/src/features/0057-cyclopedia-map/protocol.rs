@@ -4,6 +4,38 @@ use oteryn_client_runtime::{
     raw_feature::{FeatureCommand, GatedCommandResult},
 };
 use oteryn_client_ui::cyclopedia_map::{Intent, Panel};
+
+pub(super) const DISCOVERY_NOTICE: &str = "Subarea discovered! All seven points of interest found.";
+
+impl crate::play::Outbox {
+    pub(in crate::play) fn cyclopedia_discovery_events(
+        &self,
+        events: &[oteryn_session::SessionEvent],
+    ) {
+        let mut mailbox = crate::play::mailbox::lock(&self.0);
+        let panel = &mut mailbox.properties.cyclopedia_map;
+        for event in events {
+            // Session permits a sequence rewind only for a committed House/activity
+            // destination; ordinary replacement snapshots advance the current sequence.
+            // Apply each barrier in order, retaining any discovery awaiting presentation.
+            if let oteryn_session::SessionEvent::GatedSnapshotReplaced(delta) = event
+                && delta.server_sequence < panel.discovery_notice_sequence
+            {
+                panel.discovery_notice_sequence = delta.server_sequence;
+            }
+            if let oteryn_session::SessionEvent::TutorialNotice(delta) = event
+                && matches!(&delta.value,
+                    oteryn_client_runtime::tutorial_notices::TutorialNotice::StatusText(text)
+                    if text == DISCOVERY_NOTICE)
+                && delta.server_sequence > panel.discovery_notice_sequence
+            {
+                panel.discovery_notice_sequence = delta.server_sequence;
+                panel.discovery_banner = Some(delta.server_sequence);
+            }
+        }
+    }
+}
+
 pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureCommand, String> {
     if intent == Intent::Atlas {
         return Ok(FeatureCommand {

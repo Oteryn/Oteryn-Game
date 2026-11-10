@@ -23,6 +23,9 @@ pub struct Panel {
     pub atlas_after: u32,
     pub floor: i8,
     pub hide_pois: bool,
+    /// Transient confirmation from the discovery owner's notice, never a queried snapshot.
+    pub discovery_banner: Option<u64>,
+    pub discovery_notice_sequence: u64,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,

@@ -154,15 +154,19 @@ class HeavyGateTests(unittest.TestCase):
             "exact merge-group SHA", "exact PR head SHA").replace(
             "github.event.merge_group.head_sha || github.sha", "github.event.pull_request.head.sha").replace(
             "${{ github.sha }}", "${{ github.event.pull_request.head.sha }}")
-        self.assertEqual(node_boot.split("    steps:\n", 1)[1].split("\n  #", 1)[0].rstrip(),
-                         expected_steps.rstrip())
+        # Protected-main may add failure-only diagnostics after the qualification
+        # without making those artifacts part of the pull-request heavy lane. Keep
+        # the complete qualification step in the parity comparison.
+        actual_steps = node_boot.split("    steps:\n", 1)[1].split("\n  #", 1)[0]
+        protected_core = expected_steps.split("      - name: Redact failed node boot logs\n", 1)[0]
+        self.assertEqual(actual_steps.rstrip(), protected_core.rstrip())
         self.assertIn("          NODE_BOOT_RESULT: ${{ needs.node_boot.result }}\n", self.job)
 
     def test_node_boot_job_outlives_serial_natural_clock_and_light_observations(self):
         source = (ROOT / "apps/game-server/src/qualification/client_phases/full_e2ef7.rs").read_text()
         observation_seconds = 0
         for journey in ("clock_journey", "light_journey"):
-            deadline = re.search(r"Duration::from_secs\(([0-9_]+)\),\s*" + journey + r"\(", source)
+            deadline = re.search(r"qualification_deadline\(([0-9_]+)\),\s*" + journey + r"\(", source)
             self.assertIsNotNone(deadline, journey)
             observation_seconds += int(deadline[1].replace("_", ""))
         budgets = []

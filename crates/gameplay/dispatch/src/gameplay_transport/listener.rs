@@ -173,6 +173,57 @@ fn connection_end_kind(end: &connection::ConnectionEnd) -> &'static str {
     }
 }
 
+fn report_transport_close(
+    end: &connection::ConnectionEnd,
+    served: bool,
+    elapsed: Duration,
+    trace: Option<[u8; 16]>,
+) {
+    let mut line = oteryn_error_codes::Line::new(
+        oteryn_error_codes::Level::Info,
+        "gameplay_transport",
+        "transport_close",
+    )
+    .field(
+        "outcome",
+        oteryn_error_codes::FieldValue::Token(connection_end_kind(end)),
+    )
+    .field(
+        "served",
+        oteryn_error_codes::FieldValue::Token(if served { "true" } else { "false" }),
+    )
+    .field(
+        "ms",
+        oteryn_error_codes::FieldValue::U64(u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)),
+    );
+    let reason = match end {
+        connection::ConnectionEnd::ProtocolViolation(error)
+        | connection::ConnectionEnd::AdmittedThenClosed(_, error) => Some(*error),
+        connection::ConnectionEnd::AdmissionRefused(connection::AdmissionRefusal::Classified(
+            error,
+        )) => Some(*error),
+        _ => None,
+    };
+    if let Some(error) = reason {
+        line = line.field(
+            "reason_code",
+            oteryn_error_codes::FieldValue::U64(u64::from(error.code())),
+        );
+    }
+    let trace = trace.map(format_connection_trace);
+    if let Some(trace) = trace.as_deref() {
+        line = line.trace(trace);
+    }
+    if let connection::ConnectionEnd::AdmittedThenClosed(session, _)
+    | connection::ConnectionEnd::AdmittedThenDisconnected(session)
+    | connection::ConnectionEnd::AdmittedThenControlLost(session)
+    | connection::ConnectionEnd::AdmittedThenLoggedOut(session) = end
+    {
+        line = line.session_gen(session.continuity.connection_generation);
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn serve_accepted<A, I, O>(
     stream: TcpStream,
@@ -191,6 +242,7 @@ where
     O: ConnectionObserver,
 {
     use connection::ConnectionEnd;
+    let trace = crate::operator_files::uuid_v7().ok();
     // Entry work (unit wait, TLS, entry frame) is bounded by the deadline and
     // cancelled by shutdown; nothing authoritative has started yet.
     // NBDIAG-6: which entry step a failed or slow entry was waiting for.
@@ -228,14 +280,17 @@ where
         Some(Ok(Some(_))) => "entered",
     };
     let Some(Ok(Some((unit, mut stream, frame)))) = entry else {
-        operator_event(&format!(
-            "event=connection_entry_failed step={entry_step} outcome={outcome} ms={entry_ms}"
-        ));
+        operator_event_with_trace(
+            &format!(
+                "event=connection_entry_failed step={entry_step} outcome={outcome} ms={entry_ms}"
+            ),
+            trace,
+        );
         observer.ended(ConnectionEnd::TransportFailed);
         return None;
     };
     if entry_ms >= LISTENER_POLL_REPORT.as_millis() {
-        operator_event(&format!("event=connection_entry_slow ms={entry_ms}"));
+        operator_event_with_trace(&format!("event=connection_entry_slow ms={entry_ms}"), trace);
     }
     // The owning authority's decision is never cancelled midway.
     if cast_observer::ingress(&frame) {
@@ -248,18 +303,33 @@ where
         return None;
     }
     let admit_started = tokio::time::Instant::now();
-    let admitted = admit_frame(&mut stream, &frame, authority, identifiers).await;
+    let admitted = match trace {
+        Some(trace) => {
+            connection::with_connection_trace(
+                trace,
+                admit_frame(&mut stream, &frame, authority, identifiers),
+            )
+            .await
+        }
+        None => admit_frame(&mut stream, &frame, authority, identifiers).await,
+    };
     drop(unit);
     match &admitted {
-        Err(end) => operator_event(&format!(
-            "event=connection_admit_failed end={} ms={}",
-            connection_end_kind(end),
-            admit_started.elapsed().as_millis(),
-        )),
-        Ok(_) => operator_event(&format!(
-            "event=connection_admitted ms={}",
-            admit_started.elapsed().as_millis()
-        )),
+        Err(end) => operator_event_with_trace(
+            &format!(
+                "event=connection_admit_failed end={} ms={}",
+                connection_end_kind(end),
+                admit_started.elapsed().as_millis(),
+            ),
+            trace,
+        ),
+        Ok(_) => operator_event_with_trace(
+            &format!(
+                "event=connection_admitted ms={}",
+                admit_started.elapsed().as_millis()
+            ),
+            trace,
+        ),
     }
     let (end, served) = match admitted {
         // A durably admitted or resumed session whose acceptance could not be delivered
@@ -267,7 +337,21 @@ where
         Err(end @ ConnectionEnd::AdmittedThenDisconnected(_)) => (end, true),
         Err(end) => (end, false),
         Ok(admitted) => match first(
-            serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
+            async {
+                match trace {
+                    Some(trace)
+                        if admitted.continuity.selected_capabilities.contains(
+                            oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1,
+                        ) => connection::with_selected_connection_trace(
+                            trace,
+                            serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
+                        )
+                        .await,
+                    Some(_) | None => {
+                        serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS).await
+                    }
+                }
+            },
             async {
                 match drain {
                     Some(drain) => {
@@ -289,17 +373,7 @@ where
             ),
         },
     };
-    operator_event(&format!(
-        "event=connection_served end={} served={served} ms={} detail={}",
-        connection_end_kind(&end),
-        admit_started.elapsed().as_millis(),
-        match &end {
-            ConnectionEnd::AdmissionRefused(r) => format!("{r:?}"),
-            ConnectionEnd::AdmittedThenClosed(_, e) | ConnectionEnd::ProtocolViolation(e) =>
-                format!("{e:?}"),
-            _ => String::from("-"),
-        },
-    ));
+    report_transport_close(&end, served, admit_started.elapsed(), trace);
     if let ConnectionEnd::AdmittedThenClosed(session, _)
     | ConnectionEnd::AdmittedThenDisconnected(session)
     | ConnectionEnd::AdmittedThenControlLost(session)
@@ -448,4 +522,60 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
         }
     };
     let _ = first(lifecycle, shutdown.cancelled()).await;
+}
+
+#[cfg(test)]
+mod logging_tests {
+    use super::*;
+
+    #[test]
+    fn admission_refusal_and_transport_close_emit_registered_events() {
+        let lines = oteryn_error_codes::capture(|| {
+            connection::report_admission_refusal(connection::AdmissionRefusal::Unavailable);
+            report_transport_close(
+                &connection::ConnectionEnd::TransportFailed,
+                false,
+                Duration::from_millis(7),
+                None,
+            );
+        });
+        assert_eq!(lines.len(), 2);
+        assert!(lines[0].contains("level=warn module=admission event=admission_refused"));
+        assert!(lines[0].contains("kind=unavailable"));
+        assert!(lines[1].contains(
+            "level=info module=gameplay_transport event=transport_close \
+                 outcome=transport_failed served=false ms=7"
+        ));
+    }
+
+    #[test]
+    fn classified_close_diagnostics_retain_reason_codes() {
+        let error = FoundationProtocolError::MalformedEnvelope;
+        let lines = oteryn_error_codes::capture(|| {
+            connection::report_admission_refusal(connection::AdmissionRefusal::Classified(error));
+            report_transport_close(
+                &connection::ConnectionEnd::ProtocolViolation(error),
+                false,
+                Duration::ZERO,
+                None,
+            );
+        });
+        let reason = format!("reason_code={}", error.code());
+        assert!(lines.iter().all(|line| line.contains(&reason)));
+    }
+
+    #[test]
+    fn monitored_operator_diagnostic_is_a_structured_event() {
+        let trace = [1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16];
+        let lines = oteryn_error_codes::capture(|| {
+            operator_event_with_trace(
+                "event=serve_end reason=control_lost server_sequence=23",
+                Some(trace),
+            );
+        });
+        assert!(lines[0].contains("event=serve_end"));
+        assert!(lines[0].contains("reason=control_lost server_sequence=23"));
+        assert!(lines[0].contains("trace=01020304-0506-7008-800a-0b0c0d0e0f10"));
+        assert!(!lines[0].contains("event=transport_diagnostic"));
+    }
 }

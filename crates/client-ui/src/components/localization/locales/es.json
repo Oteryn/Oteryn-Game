@@ -336,5 +336,7 @@
  "Silver": "Plata",
  "Platinum": "Platino",
  "Dust (Premium)": "Polvo (Premium)",
- "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Tareas de élite: los monstruos infligen +100% de daño y reciben -50% de daño.\n"
+ "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Tareas de élite: los monstruos infligen +100% de daño y reciben -50% de daño.\n",
+ "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token": "Recompensa: estado {}, dificultad {}, fichas de cambio {} — cada cambio cuesta 1 ficha",
+ "Reroll bounty (1 token)": "Cambiar recompensa (1 ficha)"
 }

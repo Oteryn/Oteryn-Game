@@ -176,5 +176,6 @@
  "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}",
  "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}",
  "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n",
- "Weapon proficiency XP: {}% chance to gain double XP\n"
+ "Weapon proficiency XP: {}% chance to gain double XP\n",
+ "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token"
 ]

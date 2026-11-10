@@ -86,6 +86,8 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
 fi
 
 WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/node-boot.XXXXXX")"
+node_log="$WORK/node.log"
+failed_node_log="$WORK/failed-node.log"
 WP5_PKI="$WORK/pki"
 WP5_SCRATCH="$WORK/scratch"
 mkdir -p "$WP5_PKI" "$WP5_SCRATCH"
@@ -137,6 +139,14 @@ cleanup() {
   compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
   docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
   sudo rm -rf "$BASE" || true
+  if [[ $rc != 0 && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
+    mkdir -p "$NODE_BOOT_FAILURE_LOG_DIR"
+    if [[ -f "$failed_node_log" ]]; then
+      cp "$failed_node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
+    elif [[ -f "$node_log" ]]; then
+      cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
+    fi
+  fi
   find "$WORK" -type f -delete 2>/dev/null || true
   find "$WORK" -depth -type d -empty -delete 2>/dev/null || true
   evidence "cleanup=complete"
@@ -447,7 +457,6 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
 fi
 
 ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
-node_log="$WORK/node.log"
 start_node() {
   # Detached from the stage's output pipe, so the stage ends while it serves.
   sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
@@ -631,6 +640,10 @@ stage() { # name prerequisite... -- function
     fi
   else
     STATUS[$name]="FAIL(exit $rc)"
+    # Later probes start new server incarnations and truncate node_log. Preserve
+    # the first failed incarnation now so cleanup uploads the log that explains
+    # the qualification failure rather than a subsequent successful shutdown.
+    [[ -f "$failed_node_log" || ! -f "$node_log" ]] || cp "$node_log" "$failed_node_log"
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
     echo "--- session close events"
     grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed)( |$)' "$node_log" 2>/dev/null | tail -n 40 || true
