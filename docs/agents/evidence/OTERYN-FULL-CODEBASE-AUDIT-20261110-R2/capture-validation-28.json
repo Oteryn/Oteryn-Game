@@ -1,0 +1,277 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T21:21:12.048611+00:00",
+  "captures": {
+    "durability": {
+      "path": "protocol-session/durability/captures/checkpoint-50-ledger.json",
+      "sha256": "4fdb43477aefdac4adbc679b8c1f91406769ead34deba052f7eb5f6f8599ddc4",
+      "full_files": 721,
+      "full_file_physical_lines": 216548,
+      "all_scope_text_lines_union": 216548,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "server": {
+      "path": "protocol-session/game-server-worker-captures/checkpoint-873-ledger.json",
+      "sha256": "0272f69956687e04b05e6a6461fa4dc5e8e3e40217335596abde763ea68e4e7b",
+      "full_files": 873,
+      "full_file_physical_lines": 489700,
+      "all_scope_text_lines_union": 489700,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 2703,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_client": {
+      "path": "client-support/dispatch-checkpoint79-ledger.json",
+      "sha256": "0a65152ddb0b67a9a1bb3cd4d9ca78c45622b426ce389ad324fab0e43979437c",
+      "full_files": 871,
+      "full_file_physical_lines": 255332,
+      "all_scope_text_lines_union": 258825,
+      "partial_reviewed_lines": 3493,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_social_world": {
+      "path": "protocol-session/dispatch-social-world/captures/checkpoint-26-ledger.json",
+      "sha256": "0fd3f2f9679cb7e58f83252b4009f6c3b5f74c93bf02ad296897775bbd019ffa",
+      "full_files": 226,
+      "full_file_physical_lines": 67091,
+      "all_scope_text_lines_union": 67091,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_items_economy": {
+      "path": "protocol-session/game-server-worker/dispatch-items-economy/captures/checkpoint-21-ledger.json",
+      "sha256": "2ef1eb9dc1c9cc36238592b5a0f528c4ef116a17b91126493d394c2d82007aaf",
+      "full_files": 207,
+      "full_file_physical_lines": 73025,
+      "all_scope_text_lines_union": 73025,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_root": {
+      "path": "lead/dispatch-quests-npc-encounters/checkpoint-158-ledger.json",
+      "sha256": "fd11085a9d81cb53d3834e02ce8a67a668619c419ad56cecea611786a02b4128",
+      "full_files": 158,
+      "full_file_physical_lines": 43986,
+      "all_scope_text_lines_union": 44058,
+      "partial_reviewed_lines": 72,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_quest_social": {
+      "path": "control/checkpoint26-inputs/quest-social-ledger.json",
+      "sha256": "1fe768d8fce3b16d381d0598ced329838901bfe2b2a67bc7e4f98cf80859d918",
+      "full_files": 99,
+      "full_file_physical_lines": 34122,
+      "all_scope_text_lines_union": 34122,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch_quest_items": {
+      "path": "control/checkpoint26-inputs/quest-items-ledger.json",
+      "sha256": "d4913ca6f2ba35187b1c044805d7ca83e65d5defd7b32bdbb3e39984ddaa574f",
+      "full_files": 99,
+      "full_file_physical_lines": 41793,
+      "all_scope_text_lines_union": 41793,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "supplementary_core": {
+      "path": "control/checkpoint26-inputs/supplementary-core-ledger.json",
+      "sha256": "52581faf0b04ba52768d2563a9c90d61a64e05ea80cf952e6bb1fb8959d399a3",
+      "full_files": 44,
+      "full_file_physical_lines": 9938,
+      "all_scope_text_lines_union": 9938,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "supplementary_tools": {
+      "path": "control/checkpoint27-inputs/supplementary-tools-ledger.json",
+      "sha256": "fe541d2683793694094900a569f1246f0aeffc36008edc45ca4e651c8690e4ba",
+      "full_files": 130,
+      "full_file_physical_lines": 25330,
+      "all_scope_text_lines_union": 25330,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "review_methods": {
+        "manual-semantic-full": 129,
+        "whole-corpus-semantic": 1
+      },
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "supplementary_rulesets": {
+      "path": "control/checkpoint28-inputs/supplementary-rulesets-ledger.json",
+      "sha256": "bf3640cf14c547334e4296366c4e725268623e5e450d58a6ea378dc7ae2d1d46",
+      "full_files": 77,
+      "full_file_physical_lines": 124738,
+      "all_scope_text_lines_union": 124738,
+      "partial_reviewed_lines": 0,
+      "binary_bytes": 0,
+      "review_methods": {
+        "manual_full_semantic": 67,
+        "mixed_full_semantic": 10
+      },
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    }
+  },
+  "server_method_maps": {
+    "game-server-appearance-capture-method-map.md": "90fb804da69c6658b0276f7c488d6862b2d09d3dc371795f3f51dbda51308aa8",
+    "game-server-spawn-fixture-method-map.md": "2219981460bf6bd58cf0e9ddf7306a90584b0bb9fe239b1ae4cdf8b087be9df3",
+    "game-server-seven-fixture-method-map.md": "348390d50ea1da0dd25ae206bd8c550cc9120851d94c0d0067e267359311480b",
+    "game-server-auto-attack-fixture-method-map.md": "d7593104034863d3328a3bef6c649fbcd83965e39db31e895e639f3cdb126ba5",
+    "game-server-callback-cast-fixture-method-map.md": "3fbba196681354508896b1f61c4cb865a8ec62b53118d75943b982b32e9c3538",
+    "game-server-tls-fixture-method-map.md": "51e1efbd633d88829848ddd3653328cbc985da328a24383dc47d1f9187d92836",
+    "game-server-transport-tls-method-map.md": "429224a77cf514e99c1b92d4872b99d6b9a5f52529c2bf3a7edf2f8a0cf9366f"
+  },
+  "dispatch_aggregate": {
+    "full_files": 1668,
+    "text_lines": 517542,
+    "remaining_files": 0,
+    "status": "REVIEWED"
+  },
+  "prior_qualification": "capture-validation-27.json retains67 completed Cargo packages, four completed supplementary domains, tools capture06 and the independently qualified conditional local staging finding.",
+  "supplementary_rulesets": {
+    "checkpoint": 8,
+    "full_files": 77,
+    "text_lines": 124738,
+    "remaining_rulesets": 0,
+    "rulesets_status": "REVIEWED",
+    "content_new_credit": 0,
+    "review_methods": {
+      "manual_full_semantic": 67,
+      "mixed_full_semantic": 10
+    },
+    "original_reviewer": "/root/r2_dispatch_social_resume",
+    "assignment_sha256": "fb588d25724fc55aac6330f07f0bd50d07f8afd7853f003cba5d8ccb10602c63",
+    "ledger_sha256": "bf3640cf14c547334e4296366c4e725268623e5e450d58a6ea378dc7ae2d1d46",
+    "validation_sha256": "84143eeb0e4ebeef4eb3ca1e8ece566fb5ad66892078169ed6e6462338544348",
+    "report_sha256": "f58bd7aac8f0e44db56fa21a00e969bb602e0828d8fa8ca60b726f15e93a5aef",
+    "primary_semantic_notes_read_by_root": 77,
+    "cross_reference_notes_read_by_root": 67,
+    "cumulative_report_read_by_root": true,
+    "method_programs_read_by_root": [
+      "check_progression.py",
+      "check_store_prey.py",
+      "check_wheel.py",
+      "batch05.py",
+      "check_imbuement_relations.py",
+      "check_equipment_relations.py",
+      "prepare_wheel_review.py",
+      "prepare_charms_review.py",
+      "prepare_equipment_review.py",
+      "read_equipment_rows.py",
+      "prepare_imbuement_review.py"
+    ],
+    "semantic_evidence_sha256": {
+      "batch03.py": "08ce07d19cced09291336506c64f82b2f18d0e484d195a3e8bb8186d966c6fc4",
+      "batch04.py": "94511b595ae284d7b716cfae7aa1763a7cf1d2a1968d61eb609a090312cc602e",
+      "batch05.py": "6f0bf29684fcddffc901a2734db663163560c3039eaa7a818d7f3e400d9a17f3",
+      "batch06.py": "c69f1555edd1120f67994cdfe3edbab0d99cfce97c96f329127de699aa19785a",
+      "batch07.py": "d0efd8bae1ea4d8d679642303590eb17a1b275b529ec6ba144346c3f7895effe",
+      "batch08.py": "67a16a4e2df87534cf95c02aa7b6456d3467e41a9272438849c891dc8fa9c9fa",
+      "blessing-reference-checks.json": "965764d3d94da318388ce3dec6309217d359d439198990b10a3c093c0dfaafc4",
+      "charms-semantic-checks.json": "a428f801671159e6834dea995ea9a026fe19b15603ec8e6e96f9b415bb9c4b1b",
+      "charms-semantic-projection.json": "0186bd6f3b5392cb61347308b21c6761ea2f5c3658777212b154dbba81652a1d",
+      "check_equipment_relations.py": "910a053259f8474dd48295876143a9c009ce211443af5e5d5315523156200d59",
+      "check_imbuement_relations.py": "baad3f5fece5d34a19397060785201eddf6a81ffbdae65a94a4c62f44fa32f43",
+      "check_progression.py": "65660ca116d498941c2d85175f1dbb4319e022ba86ec81fd96c292841606f163",
+      "check_store_prey.py": "44b510ebba4d37a494e88da7ecf938187dd9be753e56cdaa5aa448bea60e6fc2",
+      "check_wheel.py": "e66e9c6a52f09f3eddc01231e491850c0cc419dd308fe2e053fd228d9841cad5",
+      "imbuement-access-projection.json": "3b5141d5b092d2c56321fde3d79238671a9e8dfbc7f0e3014f5ffa316a0ac8c0",
+      "imbuement-catalogue-projection.json": "fa1de8373684453804fe396e5354f6ef2fb3d0e23b2ab30a4b8fe98c87894f83",
+      "imbuement-equipment-projection.json": "dd60de350df19f8e6892c4ef8969b33f650971c78e218d0540ecb879989b368b",
+      "imbuement-equipment-relational-checks.json": "59278f7d0fe2e5f0d32462e8a507797303b22f97c03569b2b012c2a0a1a391e0",
+      "imbuement-equipment-review-tables.json": "c6f68998c77db2169fece8c02b58b55297dc74def79725c6d39c55bdd27f52ea",
+      "imbuement-producer-checks.json": "4ec733b79f407a78db514225fc45c1f22076fb8ffb3a0533714cb151ee32b7f8",
+      "imbuement-relational-checks.json": "31a6302dc25360c789d2a3addfbefddb9011af79943372a70352d86d3e983263",
+      "prepare_charms_review.py": "9012b5838e09eaa0777eeef87b702ed07cf278d45fb105fb6c4a81837d573bec",
+      "prepare_equipment_review.py": "ddc929cd1ef7dcde187efd4cdb17d1bace466e931e50a0ab2f52307dfd141343",
+      "prepare_imbuement_review.py": "706a4a9fd01d60c43d990f6c24e490470c2ebf58c9e3de274f7633bc91c2395b",
+      "prepare_wheel_review.py": "208551da7bbbe4a007ac81f8b77c4e0bbd3be96e734b1c2b85f722a16a6d1c41",
+      "progression-semantic-checks.json": "b7cdc98d844151d9e713c115a84aea8aecac10178a62880b35ccc4d6a5233afc",
+      "read_equipment_rows.py": "13527e0344f0a8528ced070841e218f1d295f332441a3afceb4eff4ea6d38300",
+      "shaping-semantic-checks.json": "31c817bbe02eaf9c43bb0832e1133d526dfd2cb1ee82acd0982b8c08369c1b75",
+      "store-prey-semantic-checks.json": "123cf1740b5ec181ea8ee6c2fdf096d2a9d0238c673b1b253245cb09fa4f7873",
+      "training-wheel-envelope-checks.json": "20acaa6c8b7793e66f89256455b16365f07d169de580a918612d0191eccbcc72",
+      "wheel-semantic-checks.json": "ebb88508e6e5db4a3ef5cdcd486c3845652ae8386fbb49bec2a378c36c5dd774",
+      "wheel-semantic-projection.json": "ae5a4e5773a104fe1fae5fc00d6d8023448d205706a42a922c0d5f4ff6161c3f"
+    },
+    "independent_lossless_projection_reconstruction": [
+      "663 equipment records",
+      "24 catalogue families and72 tiers",
+      "149 charm evidence uses"
+    ],
+    "historical_manifests": {
+      "0": {
+        "sha256": "fd91cfd99cd8f11eca8c5ddd6be8e289692d946c9ecba8036f89e92e868c9059",
+        "files": 6,
+        "rows": 0
+      },
+      "1": {
+        "sha256": "6164e62c2a06bb5dd2b509267b3ce0f50acaa0b4a676917dee913a414f3280fa",
+        "files": 6,
+        "rows": 52
+      },
+      "2": {
+        "sha256": "e20f348c8b51af504cf57a37fb3d185d5cb3879a00a783952d960507c51e8c93",
+        "files": 6,
+        "rows": 61
+      },
+      "3": {
+        "sha256": "2edef0151448ccd0291956913cbc3f995e7326b544ec35d0ea50a40afac37487",
+        "files": 6,
+        "rows": 66
+      },
+      "4": {
+        "sha256": "976a333cf73ccda560e35d702e25e4f100997959c3c968f6091e92638a30c428",
+        "files": 6,
+        "rows": 69
+      },
+      "5": {
+        "sha256": "cd4d3751038294225359c85fd1b2c906106c2cf47c158e2119c2b392b706cfb4",
+        "files": 6,
+        "rows": 71
+      },
+      "6": {
+        "sha256": "a15b23480db91ace9ea59780612a77d8afd428bec3a783b3d8044d2caf8da7cb",
+        "files": 6,
+        "rows": 73
+      },
+      "7": {
+        "sha256": "5f346a6ea11a8cecd254c3ad023b842b0e7abaa4b56186abc97ec1a5c66a9d85",
+        "files": 6,
+        "rows": 76
+      },
+      "8": {
+        "sha256": "28e47c50eb4845b146c78764170338d436586d09e29d68cf80a523a507bae27d",
+        "files": 6,
+        "rows": 77
+      }
+    },
+    "cross_reference_primary_credit_added": false
+  },
+  "new_source_identity_checks": 144,
+  "root_qualification_sha256": "498712777e9735ee2034f022ba6df876a438913401f2be73c202e865086656df",
+  "scope": "Root qualified attributed complete semantic review, all notes and report, bespoke method programs/results, source identities, exact assignment and immutable history. This is not a second full manual reread of all delegated source/data values.",
+  "unresolved": "Q-IMBUE-LIFE-01 remains an unconfirmed, current-swing normative precedence question. No new confirmed finding or all-spell/AoE inference.",
+  "runtime_limitations": "No Cargo, SQL, native server, simulation, external donor fetch, financial operation, deployment or source mutation; static semantic data qualification only."
+}

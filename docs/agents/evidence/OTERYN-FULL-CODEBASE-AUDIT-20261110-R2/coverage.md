@@ -80,7 +80,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | docs | IN PROGRESS | 7398 | 46 | 24 | 3712 |
 | imports | NOT STARTED | 565 | 0 | 0 | 0 |
 | repository-root | REVIEWED | 16 | 16 | 16 | 7392 |
-| rulesets | IN PROGRESS | 77 | 4 | 3 | 359 |
+| rulesets | REVIEWED | 77 | 77 | 77 | 124738 |
 | tests | REVIEWED | 12 | 12 | 12 | 852 |
 | tools | IN PROGRESS | 2681 | 110 | 105 | 25086 |
 | vendor | NOT STARTED | 793 | 0 | 0 | 0 |

@@ -241,6 +241,22 @@
       "auditor": "lead"
     },
     {
+      "module": "rulesets",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "report": "rulesets-review.md",
+      "original_reviewer": "/root/r2_dispatch_social_resume",
+      "fully_analyzed_files": 77,
+      "analyzed_lines": 124738,
+      "remaining_files": [],
+      "review_methods": {
+        "manual_full_semantic": 67,
+        "mixed_full_semantic": 10
+      },
+      "verification": "Full delegated semantic source/data review, original notes and runtime cross-references qualified by root; all77 identities and nine immutable capture manifests pass. No native runtime execution.",
+      "auditor": "lead"
+    },
+    {
       "module": "oteryn-identity",
       "status": "REVIEWED",
       "report": "protocol-session.md",
@@ -901,7 +917,7 @@
       "analyzed_files": 1668,
       "analyzed_lines": 517542,
       "remaining_files": [],
-      "qualification": "Complete independently attributed reservations retained in capture-validation-26.json and rechecked in27; no runtime execution claim."
+      "qualification": "Complete independently attributed reservations retained in capture-validation-26.json and rechecked in28; no runtime execution claim."
     }
   ]
 }
