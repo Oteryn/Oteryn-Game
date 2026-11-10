@@ -774,6 +774,8 @@ pub(super) async fn account_security(
 
 // UNION ALL arm order is irrelevant: the query checks only for the existence of an
 // invalid row; chain continuity and latest state are joined by Character revision.
+// Each arm names the first violating row it finds (LOGDBG-C): the receipt family, a closed
+// violation kind and two revision numbers as text, never an identity.
 const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_bazaar_character_revision_chain",
     "game_character_bestiary_kill_receipts",
@@ -796,7 +798,8 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
         .iter()
         .map(|table| {
             format!(
-                "SELECT character_id, original_character_revision, committed_character_revision, \
+                "SELECT '{table}'::text AS family, \
+                 character_id, original_character_revision, committed_character_revision, \
                  level_before, level_after, experience_before, experience_after, \
                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
                  evidence_revision, declaration_revision, policy_revision, reward_revision \
@@ -807,31 +810,51 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
         .join(" UNION ALL ");
     format!(
         "WITH chain AS ({chain}) \
-         SELECT 1 FROM game_character_roots r \
+         (SELECT 'game_character_progression_state' AS family, \
+                 CASE WHEN s.character_id IS NULL THEN 'missing_typed_state' \
+                      ELSE 'latest_mismatch' END AS violation, \
+                 r.character_revision::text AS before, s.character_revision::text AS after \
+            FROM game_character_roots r \
            LEFT JOIN game_character_progression_state s USING (character_id) \
           WHERE (r.character_revision <> 1 AND s.character_id IS NULL) \
              OR (s.character_id IS NOT NULL AND s.character_revision <> r.character_revision) \
+          LIMIT 1) \
          UNION ALL \
-         SELECT 1 FROM game_character_progression_state s \
+         (SELECT 'game_character_progression_state', 'orphan_state', \
+                 NULL::text, s.character_revision::text \
+            FROM game_character_progression_state s \
            LEFT JOIN game_character_roots r USING (character_id) \
           WHERE r.character_id IS NULL \
+          LIMIT 1) \
          UNION ALL \
-         SELECT 1 FROM game_character_roots r \
+         (SELECT 'receipt_chain', \
+                 CASE WHEN count(x.committed_character_revision) \
+                           <> count(DISTINCT x.committed_character_revision) \
+                      THEN 'fork' ELSE 'gap' END, \
+                 count(x.committed_character_revision)::text, r.character_revision::text \
+            FROM game_character_roots r \
            LEFT JOIN chain x USING (character_id) \
           GROUP BY r.character_id, r.character_revision \
          HAVING count(x.committed_character_revision)::numeric <> r.character_revision - 1 \
              OR count(DISTINCT x.committed_character_revision)::numeric \
                 <> r.character_revision - 1 \
+          LIMIT 1) \
          UNION ALL \
-         SELECT 1 FROM chain x \
+         (SELECT x.family, \
+                 CASE WHEN p.committed_character_revision IS NULL THEN 'gap' ELSE 'fork' END, \
+                 x.original_character_revision::text, x.committed_character_revision::text \
+            FROM chain x \
            LEFT JOIN chain p \
              ON p.character_id = x.character_id \
             AND p.committed_character_revision = x.original_character_revision \
           WHERE (x.original_character_revision <> 1 AND p.committed_character_revision IS NULL) \
              OR (p.committed_character_revision IS NOT NULL AND \
                  (p.experience_after <> x.experience_before OR p.level_after <> x.level_before)) \
+          LIMIT 1) \
          UNION ALL \
-         SELECT 1 FROM game_character_progression_state s \
+         (SELECT COALESCE(x.family, 'game_character_progression_state'), 'latest_mismatch', \
+                 x.committed_character_revision::text, s.character_revision::text \
+            FROM game_character_progression_state s \
            JOIN game_character_roots r USING (character_id) \
            LEFT JOIN chain x \
              ON x.character_id = s.character_id \
@@ -846,8 +869,13 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
              OR x.declaration_revision <> s.declaration_revision \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision) \
+          LIMIT 1) \
          UNION ALL \
-         SELECT 1 FROM chain x \
+         (SELECT x.family, \
+                 CASE WHEN s.character_id IS NULL THEN 'missing_typed_state' \
+                      ELSE 'latest_mismatch' END, \
+                 x.committed_character_revision::text, s.character_revision::text \
+            FROM chain x \
            LEFT JOIN game_character_progression_state s USING (character_id) \
           WHERE s.character_id IS NULL \
              OR x.committed_character_revision > s.character_revision \
@@ -859,9 +887,60 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
              OR x.declaration_revision <> s.declaration_revision \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision \
+          LIMIT 1) \
          LIMIT 1"
     )
 });
+
+/// The first row [`CHARACTER_INTEGRITY_SQL`] finds in violation, without identities.
+#[derive(Debug, PartialEq, Eq)]
+struct RevisionChainViolation {
+    family: String,
+    violation: String,
+    before: Option<String>,
+    after: Option<String>,
+}
+
+impl RevisionChainViolation {
+    fn from_row(row: &sqlx::postgres::PgRow) -> Self {
+        // Diagnostics only: an unreadable column is reported as absent, never as an error.
+        let text = |column: &str| row.try_get::<Option<String>, _>(column).ok().flatten();
+        Self {
+            family: text("family").unwrap_or_default(),
+            violation: text("violation").unwrap_or_default(),
+            before: text("before"),
+            after: text("after"),
+        }
+    }
+
+    fn line(&self) -> oteryn_error_codes::Line<'_> {
+        let token = oteryn_error_codes::FieldValue::Token;
+        oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Warn,
+            "durability",
+            "character_revision_chain_violation",
+        )
+        .field("family", token(&self.family))
+        .field("violation", token(&self.violation))
+        .field("before", token(self.before.as_deref().unwrap_or("none")))
+        .field("after", token(self.after.as_deref().unwrap_or("none")))
+    }
+}
+
+/// The revision-chain arm of [`verify_character_integrity`]: the same rows fail as before, and
+/// the first one found is reported (LOGDBG-C).
+async fn verify_revision_chain(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> std::result::Result<Option<RevisionChainViolation>, DurabilityError> {
+    let violation = sqlx::query(CHARACTER_INTEGRITY_SQL.as_str())
+        .fetch_optional(&mut **tx)
+        .await?
+        .map(|row| RevisionChainViolation::from_row(&row));
+    if let Some(violation) = &violation {
+        oteryn_error_codes::emit("oteryn-game-server", &violation.line());
+    }
+    Ok(violation)
+}
 
 /// Complete first-slice integrity: each root has exactly one creation receipt, from the
 /// operator bootstrap with its reconstructed intent binding or from a committed create
@@ -887,8 +966,7 @@ async fn verify_character_integrity(
     // (0032), familiar state change (0033) or quest transition (0056), each
     // `before` equal to its predecessor's `after` across kinds.  The bootstrap
     // receipt remains bound to initial revision 1.
-    sqlx::query(CHARACTER_INTEGRITY_SQL.as_str())
-        .fetch_optional(&mut **tx)
+    verify_revision_chain(tx)
         .await?
         .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
     super::character_appearance::verify_character_appearance_integrity(tx)
@@ -1169,6 +1247,10 @@ async fn assert_predecessor_admission(
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "character_authority/revision_chain_tests.rs"]
+mod revision_chain_tests;
 
 #[cfg(test)]
 mod inventory_tests {

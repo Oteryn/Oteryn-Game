@@ -71,7 +71,8 @@ async fn with_connection_trace_state<F: Future>(
                 trace,
                 enabled: std::cell::Cell::new(enabled),
             },
-            future,
+            // LOGDBG-C: the durable passes this connection issues carry its trace.
+            crate::durability::with_holder_trace(trace, future),
         )
         .await
 }

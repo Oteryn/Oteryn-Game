@@ -17,6 +17,7 @@ mod premium;
 mod progression;
 mod quest;
 mod release;
+mod release_deferred;
 mod resume;
 mod spells;
 mod training;
