@@ -397,6 +397,32 @@ def outputs(
         for name in activity_static.SHARDS.values():
             files[name] = static_files[name]
         files[activity_static.REGISTRY] = static_files[activity_static.REGISTRY]
+        # The qualified restore target keeps its original base ordinal. Apply
+        # only that record; published neighbours must not hide base-source drift.
+        restore = next(
+            row["catalogue_record"]
+            for row in json.loads(static_files[activity_static.REGISTRY])["records"]
+            if row["source_item_id"] == 23049
+        )
+        restore_path = "content/world/terrain/terrain-05500-05999.json"
+        base_shard = json.loads(files[restore_path])
+        matches = [
+            i
+            for i, row in enumerate(base_shard["records"])
+            if row["identity"]["key"] == restore["identity"]["key"]
+        ]
+        if len(matches) != 1:
+            raise ValueError("Anomaly restore target lost its original base ordinal")
+        previous = base_shard["records"][matches[0]]
+        if (
+            previous["identity"] != restore["identity"]
+            or previous["provenance"]["source_item_id"] != 23049
+            or previous["provenance"]["source"]["profile"]
+            != "crystal_ff7ede5_item_definition_v1"
+        ):
+            raise ValueError("unreviewed Anomaly base source body")
+        base_shard["records"][matches[0]] = restore
+        files[restore_path] = world_objects.canonical_bytes(base_shard) + b"\n"
         for directory in ["terrain", "objects"]:
             name = f"content/world/{directory}/index.json"
             index = json.loads(files[name])
@@ -457,6 +483,7 @@ def outputs(
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += engnpc2_ram_world.NOTE
+        index["notes"] = activity_static.compose_terrain_notes(index["notes"])
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()

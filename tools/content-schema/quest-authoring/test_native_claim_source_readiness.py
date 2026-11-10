@@ -6,6 +6,44 @@ import quest_tree_authoring as tree
 
 
 class NativeClaimSourceReadinessTests(unittest.TestCase):
+    def test_draconia_preserves_donor_reward_and_historical_hold(self):
+        # Crystal 201189f871d23597b82caf88fd611454a2ddefb8:
+        # data-global/startup/tables/chest.lua:748-756 gives UID 6023 a bag
+        # containing one ice rapier (3284) and one serpent sword (3297).
+        # data/items/items.xml:8546-8559 defines the rapier with one charge.
+        # The CLASSIC-5/Q09 historical review hold is a frozen SOURCE witness,
+        # not a donor prohibition on the separately authored native reward.
+        root = Path(__file__).resolve().parents[3]
+        index = tree.read(root, tree.CLAIM_INDEX)
+        native = {row['definition']['identity']['key']: row['definition']
+                  for path in index['shards'] for row in tree.read(root, path)['records']}
+        source = {row['identity']['key']: row for row in tree.claim_catalogue(root)}
+        key = 'oteryn:reward-claim.kv.draconia1'
+        self.assertEqual(native[key]['data_holds'], [])
+        self.assertEqual(source[key]['data_holds'], [{
+            'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
+            'item': 'oteryn:item.tibia.i3284', 'placement_index': 0,
+            'reason': 'waiting', 'reward_field': 'items', 'reward_index': 0,
+        }])
+        self.assertEqual(source[key]['_source_hold_categories'], ['item'])
+        self.assertNotIn('_source_hold_categories', native[key])
+        contents = native[key]['native_contents']
+        self.assertEqual(contents['revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
+        self.assertEqual(len(contents['placements']), 1)
+        placement = contents['placements'][0]
+        self.assertEqual((placement['unique_id'], placement['line']), (6023, 748))
+        self.assertEqual(placement['root']['key'], 'oteryn:item.tibia.i2853')
+        self.assertEqual([(item['item']['key'], item['count'])
+                          for item in placement['contents']], [
+            ('oteryn:item.tibia.i3284', 1), ('oteryn:item.tibia.i3297', 1),
+        ])
+        charges = native[key]['source_variant']['charge_dispositions']
+        self.assertEqual(len(charges), 1)
+        self.assertEqual(charges[0]['definition_charges'], {'state': 'KNOWN', 'value': 1})
+        self.assertEqual(charges[0]['normalized_quantity'], {'state': 'KNOWN', 'value': 1})
+        self.assertEqual(source[key]['native_contents'], contents)
+        self.assertEqual(source[key]['placements'], native[key]['placements'])
+
     def test_native_admission_and_historical_source_holds_remain_separate(self):
         root = Path(__file__).resolve().parents[3]
         index = tree.read(root, tree.CLAIM_INDEX)
