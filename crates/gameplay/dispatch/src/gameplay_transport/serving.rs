@@ -1,5 +1,9 @@
 use super::*;
 
+async fn background_cadence<F: Future>(root: &DurabilityRoot, future: F) -> F::Output {
+    root.background_semantic_passes(future).await
+}
+
 /// Constructed only here after the listener and physical owner jobs have joined
 /// (or been dropped) and the shared input gate has drained. A disabled ready
 /// guard or a source-cycle cancellation alone cannot construct this proof.
@@ -148,7 +152,7 @@ pub async fn serve_gameplay(
     }
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
-    let quest_retries = async {
+    let quest_retries = background_cadence(owners.root, async {
         loop {
             if first(
                 tokio::time::sleep(QUEST_RETRY_CADENCE),
@@ -161,7 +165,7 @@ pub async fn serve_gameplay(
             }
             authority.refresh_due_quest_sessions().await;
         }
-    };
+    });
     let serving = first(
         listener::serve_listener_with_drain(
             listener,
@@ -177,13 +181,25 @@ pub async fn serve_gameplay(
     );
     let mut serving = pin!(serving);
     let cycles_stop = CancellationToken::new();
-    let mut cycles = pin!(authority.run_source_owner_cycles(&cycles_stop));
-    let mut activities = pin!(authority.run_activity_owner_cycles(&cycles_stop));
+    let mut cycles = pin!(background_cadence(
+        owners.root,
+        authority.run_source_owner_cycles(&cycles_stop),
+    ));
+    let mut activities = pin!(background_cadence(
+        owners.root,
+        authority.run_activity_owner_cycles(&cycles_stop),
+    ));
     let mut activities_done = false;
-    let mut respawns = Box::pin(authority.run_world_respawns(shutdown));
+    let mut respawns = Box::pin(background_cadence(
+        owners.root,
+        authority.run_world_respawns(shutdown),
+    ));
     let mut respawns_done = false;
     let mut owner_failed = false;
-    let mut countdown = pin!(authority.run_server_save_countdown(shutdown));
+    let mut countdown = pin!(background_cadence(
+        owners.root,
+        authority.run_server_save_countdown(shutdown),
+    ));
     let mut countdown_done = false;
     let mut quiesce = pin!(async {
         drain.requested().await;
@@ -192,7 +208,10 @@ pub async fn serve_gameplay(
     let mut quiesced = false;
     // CHAR-POSITION-0 §3.2 (`CHARPOS0-RL-01`): the periodic last-position writes run on their own
     // deadlines, so no other cadence work delays them.
-    let mut positions = pin!(authority.run_last_position_writes(shutdown));
+    let mut positions = pin!(background_cadence(
+        owners.root,
+        authority.run_last_position_writes(shutdown),
+    ));
     // CHAR-POSITION-0 §3.2: the shutdown write is polled with the seam and never holds its end.
     let mut flush = pin!(async {
         match owners.last_position_flush {
@@ -280,6 +299,30 @@ pub async fn serve_gameplay(
     if owner_failed {
         Err(GameplayServeError::OwnerUnavailable)
     } else {
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{DurabilityRoot, background_cadence};
+
+    #[tokio::test]
+    async fn serving_background_cadence_declines_checkout_for_foreground_waiter()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root =
+            DurabilityRoot::connect_test_runtime("postgres://oteryn:fixture@127.0.0.1:1/oteryn")?;
+        let waiter = root.foreground_waiter();
+
+        let marked = background_cadence(&root, async {
+            root.background_checkout_declined_for_test()
+        })
+        .await;
+        let control = root.background_checkout_declined_for_test();
+
+        assert!(marked, "the serving wrapper must decline cadence checkout");
+        assert!(!control, "an unmarked foreground checkout remains eligible");
+        drop(waiter);
         Ok(())
     }
 }

@@ -1350,6 +1350,15 @@ impl DurabilityRoot {
         BACKGROUND_SEMANTIC_PASSES.scope((), future).await
     }
 
+    /// Test-support observation of the exact checkout gate used by
+    /// [`Self::try_issue_semantic_pass`].
+    #[cfg(any(test, feature = "test-support"))]
+    #[must_use]
+    pub fn background_checkout_declined_for_test(&self) -> bool {
+        BACKGROUND_SEMANTIC_PASSES.try_with(|()| ()).is_ok()
+            && !self.foreground_waiters.background_may_acquire()
+    }
+
     #[must_use]
     pub fn has_ready_demand(&self) -> bool {
         self.ready_demand.load(Ordering::Acquire)

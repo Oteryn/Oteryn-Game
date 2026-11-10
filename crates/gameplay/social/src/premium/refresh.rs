@@ -131,7 +131,13 @@ impl PremiumRefresher {
             return;
         }
         let wake = Arc::new(Notify::new());
-        let task = tokio::spawn(run(self.inner.clone(), account_id, wake.clone()));
+        let inner = self.inner.clone();
+        let root = inner.root.clone();
+        let running_wake = wake.clone();
+        let task = tokio::spawn(async move {
+            root.background_semantic_passes(run(inner, account_id, running_wake))
+                .await;
+        });
         schedules.insert(account_id, Schedule { wake, task });
     }
 
