@@ -3,6 +3,7 @@
 import copy
 import sys
 import unittest
+from collections import defaultdict
 from pathlib import Path
 from unittest.mock import patch
 
@@ -11,6 +12,26 @@ import qualification_inputs as engine
 
 
 class AppearanceScopeTests(unittest.TestCase):
+    def test_mapping_probes_preserve_missing_keys_and_consumer_isolation(self):
+        source = defaultdict(list, {100: [{"flags": {}}]})
+        first = engine._AppearanceView(source.copy())
+        second = engine._AppearanceView(source.copy())
+        missing = object()
+        self.assertIs(first.get(101, missing), missing)
+        self.assertNotIn(101, first)
+        self.assertEqual(set(first), {100})
+        self.assertEqual(first._local, {}, "membership probes must not copy records")
+        first[100][0]["flags"]["changed"] = True
+        first[101].append("private")
+        self.assertEqual(second[100], [{"flags": {}}])
+        self.assertIsNone(second.get(101))
+        self.assertEqual(second[101], [])
+        self.assertEqual(dict(source), {100: [{"flags": {}}]})
+        del first[100]
+        self.assertNotIn(100, first)
+        self.assertIs(first.get(100, missing), missing)
+        self.assertIn(100, second)
+
     def test_scope_reuses_bytes_without_sharing_consumer_mutations(self):
         # An object-family protobuf record with id 100 and default flags.
         raw = bytes((10, 2, 8, 100))

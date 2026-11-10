@@ -45,6 +45,16 @@ class _AppearanceView(MutableMapping):
     def __setitem__(self, key, value):
         self._local[key] = value
 
+    def __contains__(self, key):
+        if key in self._local:
+            return self._local[key] is not _deleted_appearance
+        return key in self._source
+
+    def get(self, key, default=None):
+        if key not in self:
+            return default
+        return self[key]
+
     def __delitem__(self, key):
         self[key]
         self._local[key] = _deleted_appearance
