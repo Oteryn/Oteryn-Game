@@ -145,6 +145,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.set_soulpit_obelisk(true).await
     }
 
+    pub(super) async fn reset_soulpit_obelisk(&self) -> Result<(), ()> {
+        self.set_soulpit_obelisk(false).await
+    }
+
     async fn set_soulpit_obelisk(&self, active: bool) -> Result<(), ()> {
         use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
         use crate::content::native_cell_lookup::NativeMovementCollisionIndex;

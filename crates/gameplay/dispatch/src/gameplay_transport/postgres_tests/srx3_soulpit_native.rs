@@ -345,7 +345,7 @@ fn native_soulpit_scenario_with_entry_cue(
                         owner
                             .template
                             .as_ref()
-                            .is_some_and(|template| template.key == "oteryn:room.soulpit-source")
+                            .is_some_and(|template| template.key == crate::content::soulpit_activity::SOULPIT_TEMPLATE_KEY)
                     })
                     .ok_or("retained physical Soulpit owner")?;
                 let generation =
