@@ -35,6 +35,20 @@ fn srx3_murcion_native_mushroom_normal_damage_and_effects_postgres() -> TestResu
         true,
         false,
         false,
+        false,
+    )
+}
+
+#[test]
+fn srx3_murcion_native_mushroom_retry_keeps_original_cohort_and_damage_postgres() -> TestResult {
+    run_murcion_source_entry_checks(
+        PinnedActivitySourceRoom::Murcion,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
     )
 }
 
@@ -47,6 +61,7 @@ fn srx3_murcion_actual_native_lethal_retains_canonical_source_death_notice_postg
         false,
         false,
         true,
+        false,
         false,
     )
 }
@@ -61,6 +76,7 @@ fn srx3_murcion_native_death_barrier_runs_only_originally_eligible_mushroom_fuse
         true,
         false,
         true,
+        false,
     )
 }
 
@@ -68,6 +84,7 @@ fn srx3_murcion_native_death_barrier_runs_only_originally_eligible_mushroom_fuse
 fn srx3_ichgahal_actual_source_entry_native_think_spawns_owned_children_postgres() -> TestResult {
     run_murcion_source_entry_checks(
         PinnedActivitySourceRoom::Ichgahal,
+        false,
         false,
         false,
         false,
@@ -159,6 +176,7 @@ fn run_murcion_source_entry(published_world: bool, mushroom_fuse: bool) -> TestR
         false,
         false,
         false,
+        false,
     )
 }
 
@@ -169,6 +187,7 @@ fn run_murcion_source_entry_checks(
     mushroom_damage: bool,
     source_notice: bool,
     mushroom_cutoff: bool,
+    mushroom_retry: bool,
 ) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -558,6 +577,16 @@ fn run_murcion_source_entry_checks(
                     drop(seal);
                     return h.cleanup().await;
                 }
+                if mushroom_retry {
+                    owner
+                        .runtime_view(&registered)
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .rotten_blood_callbacks
+                        .pause_mushroom_after_player_commit_for_test();
+                }
                 owner.clock_origin = owner
                     .clock_origin
                     .checked_sub(std::time::Duration::from_millis(1001))
@@ -581,6 +610,27 @@ fn run_murcion_source_entry_checks(
                     return Err("actual Mushroom Bundle facts".into());
                 };
                 let cues = bundle.map().facts.creature_visuals_since(cursor);
+                let retained = if mushroom_retry {
+                    let progress = states
+                        .rotten_blood_callbacks
+                        .mushroom_progress_for_test()
+                        .ok_or("actual Mushroom continuation after committed Player HP")?;
+                    assert!(progress.cursor > 0 && progress.cursor <= progress.total);
+                    assert_eq!(progress.players, vec![(actor, admitted.game_session_id)]);
+                    assert!(progress.original_due <= view.owner_now().get());
+                    assert_eq!(
+                        runtime
+                            .read_actor_position(progress.actor)
+                            .map_err(debug)?
+                            .position(),
+                        center,
+                        "the retained callback still names the original Mushroom"
+                    );
+                    assert!(runtime.contains_live_creature(progress.actor));
+                    Some((progress.actor, receipts.clone()))
+                } else {
+                    None
+                };
                 for dy in -2_i32..=2 {
                     let width = if dy.abs() == 2 { 1 } else { 2 };
                     for dx in -width..=width {
@@ -602,6 +652,56 @@ fn run_murcion_source_entry_checks(
                 }
                 drop(states);
                 drop(runtime);
+                drop(view);
+                if let Some((original, receipts)) = retained {
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_millis(1))
+                        .ok_or("Mushroom later retry clock")?;
+                    owner.runtime_view(&registered).drain_monster_melee().await;
+                    let view = owner.runtime_view(&registered);
+                    let runtime = view.runtime.lock().await;
+                    let states = view.states.spell_states.lock().await;
+                    assert!(
+                        states
+                            .rotten_blood_callbacks
+                            .mushroom_progress_for_test()
+                            .is_none()
+                    );
+                    assert!(!runtime.contains_live_creature(original));
+                    assert_eq!(
+                        states.mushroom_damage_receipts_for_test(actor, admitted.game_session_id),
+                        receipts,
+                        "later retry keeps the exact canonical HP receipt of the captured Player"
+                    );
+                    let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
+                        bundle,
+                    ) = view.effective_movement_cells().index()
+                    else {
+                        return Err("actual Mushroom retry Bundle facts".into());
+                    };
+                    let blast_only = crate::gameplay_transport::soul_war_scene::wire_position(
+                        MovementLocalPosition {
+                            x: center.x + 2,
+                            y: center.y + 1,
+                            floor: center.floor,
+                        },
+                    )
+                    .ok_or("Mushroom blast-only cell")?;
+                    assert_eq!(
+                        bundle
+                            .map()
+                            .facts
+                            .creature_visuals_since(cursor)
+                            .iter()
+                            .filter(|(_, cue)| matches!(cue,
+                            crate::map::facts::CreatureVisualKind::Effect { position, effect: 9 }
+                            if *position == blast_only))
+                            .count(),
+                        1,
+                        "the retained21-cell blast is published once across owner retries"
+                    );
+                }
             }
             if mushroom_fuse {
                 // Give the real spawned source actors their first reserved think,

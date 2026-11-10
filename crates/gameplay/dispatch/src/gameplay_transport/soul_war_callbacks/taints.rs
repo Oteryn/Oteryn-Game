@@ -265,6 +265,30 @@ pub(in crate::gameplay_transport) struct QualifiedThirdTaintPolicy {
     current: Option<(GameSessionId, u8)>,
 }
 impl QualifiedThirdTaintPolicy {
+    /// A Mushroom's already scheduled native event can precede its canonical
+    /// onDeath while the exact registered creature is HP0. Keep the same
+    /// target/geometry/taint policy; this is no generic dead-source admission.
+    pub(in crate::gameplay_transport) fn apply_registered_mushroom(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        target: ExactActorRef,
+        now: u64,
+        raw: u32,
+    ) -> Option<u32> {
+        if !runtime.source_creature_is_registered(issuer).ok()? {
+            return None;
+        }
+        let source = runtime.companion_snapshot_including_dead(issuer).ok()?;
+        if source.state.policy.definition_key != "oteryn:creature.mushroom"
+            || source.state.master.is_some()
+            || runtime.native_summon_master(issuer).is_some()
+        {
+            return None;
+        }
+        self.apply_current(runtime, issuer, target, now, raw, true)
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "existing component policy receives the exact opaque retained callback stage"

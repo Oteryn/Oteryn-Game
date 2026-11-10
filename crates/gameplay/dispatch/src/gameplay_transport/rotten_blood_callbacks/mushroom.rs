@@ -6,18 +6,81 @@ use crate::creature_damage_spell::native_event::{
 use crate::map::boot::BundleCollisionIndexExt;
 use oteryn_gameplay_encounters::bosses::rotten_blood::{RoomTarget, mushroom_think as rule};
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct Tracked {
     actor: ExactActorRef,
     source: MushroomThinkSource,
     owner: rule::MushroomThinkOwner,
     last: Option<u64>,
+    pending: Option<PreparedExplosion>,
+}
+impl Tracked {
+    fn fresh_draft(&self) -> Result<Self, ()> {
+        if self.pending.is_some() {
+            return Err(());
+        }
+        Ok(Self {
+            actor: self.actor,
+            source: self.source.clone(),
+            owner: self.owner.clone(),
+            last: self.last,
+            pending: None,
+        })
+    }
+}
+#[derive(Debug)]
+enum Hit {
+    SelfVisual(Option<crate::map::facts::CreatureVisualCue>),
+    Player(
+        Box<NativeCreatureEventDamagePlan>,
+        Option<crate::map::facts::CreatureVisualCue>,
+    ),
+    Creature {
+        target: ExactActorRef,
+        amount: u32,
+        target_atom: String,
+        occurrence: String,
+        binding: Vec<u8>,
+        cue: Option<crate::map::facts::CreatureVisualCue>,
+    },
+}
+#[derive(Debug)]
+struct PreparedExplosion {
+    cues: Vec<crate::map::facts::CreatureVisualCue>,
+    hits: Vec<Hit>,
+    cursor: usize,
 }
 #[derive(Debug, Default)]
 pub(super) struct Mushrooms {
     tracked: Vec<Tracked>,
+    #[cfg(test)]
+    pause_after_player_commit: bool,
 }
 impl Mushrooms {
+    #[cfg(test)]
+    pub(super) fn pause_after_player_commit_for_test(&mut self) {
+        self.pause_after_player_commit = true;
+    }
+    #[cfg(test)]
+    pub(super) fn progress_for_test(&self) -> Option<super::MushroomProgressForTest> {
+        self.tracked.iter().find_map(|tracked| {
+            let pending = tracked.pending.as_ref()?;
+            Some(super::MushroomProgressForTest {
+                actor: tracked.actor,
+                original_due: tracked.owner.explode_at(1)?.checked_mul(1000)?,
+                cursor: pending.cursor,
+                total: pending.hits.len(),
+                players: pending
+                    .hits
+                    .iter()
+                    .filter_map(|hit| match hit {
+                        Hit::Player(plan, _) => Some(plan.target()),
+                        _ => None,
+                    })
+                    .collect(),
+            })
+        })
+    }
     pub(super) fn next_due_time(&self) -> Option<u64> {
         self.tracked
             .iter()
@@ -36,7 +99,7 @@ fn cue(
     at: MovementLocalPosition,
     effect: u16,
 ) -> Option<crate::map::facts::CreatureVisualCue> {
-    crate::map::facts::CreatureVisualCue::effect(
+    crate::map::facts::CreatureVisualCue::effect_from_registered_source(
         runtime,
         stamp,
         actor,
@@ -95,17 +158,17 @@ pub(super) async fn drive(
         .rotten_blood_callbacks
         .mushrooms
         .tracked
-        .retain(|m| m.source.current(runtime) && runtime.contains_live_creature(m.actor));
+        .retain(|m| m.source.current(runtime));
     let due = states
         .rotten_blood_callbacks
         .mushrooms
         .tracked
         .iter()
         .filter(|m| m.owner.explode_at(1).is_some_and(|at| at <= now / 1000))
-        .cloned()
+        .map(|m| m.actor)
         .collect::<Vec<_>>();
-    for tracked in due {
-        explode(runtime, states, attack, room, native, map, tracked, now).await?;
+    for actor in due {
+        drive_fuse(runtime, states, attack, room, native, map, actor, now).await?;
     }
     for occurrence in occurrences {
         if super::super::soul_war_callbacks::source_actor(runtime, native, occurrence.actor)
@@ -122,7 +185,7 @@ pub(super) async fn drive(
             .iter()
             .position(|m| m.actor == occurrence.actor);
         let mut tracked = match current {
-            Some(index) => states.rotten_blood_callbacks.mushrooms.tracked[index].clone(),
+            Some(index) => states.rotten_blood_callbacks.mushrooms.tracked[index].fresh_draft()?,
             None => {
                 if states.rotten_blood_callbacks.mushrooms.tracked.len() >= 512 {
                     return Err(());
@@ -137,6 +200,7 @@ pub(super) async fn drive(
                     .map_err(|_| ())?,
                     owner: Default::default(),
                     last: None,
+                    pending: None,
                 }
             }
         };
@@ -223,7 +287,68 @@ pub(super) async fn drive(
     clippy::too_many_arguments,
     reason = "a source fuse uses the same physical runtime, native facts, HP owner and map transaction"
 )]
-async fn explode(
+async fn drive_fuse(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    attack: &mut super::super::attack::ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    actor: ExactActorRef,
+    now: u64,
+) -> Result<(), ()> {
+    let index = states
+        .rotten_blood_callbacks
+        .mushrooms
+        .tracked
+        .iter()
+        .position(|m| m.actor == actor)
+        .ok_or(())?;
+    if states.rotten_blood_callbacks.mushrooms.tracked[index]
+        .pending
+        .is_none()
+    {
+        let draft = states.rotten_blood_callbacks.mushrooms.tracked[index].fresh_draft()?;
+        let prepared =
+            prepare_explosion(runtime, states, attack, room, native, map, draft, now).await?;
+        states.rotten_blood_callbacks.mushrooms.tracked[index].pending = Some(prepared);
+    }
+    // Taking the continuation is confined to this synchronous section. It is
+    // restored on every refusal, including a partially committed spectator.
+    let source = states.rotten_blood_callbacks.mushrooms.tracked[index]
+        .source
+        .clone();
+    let mut pending = states.rotten_blood_callbacks.mushrooms.tracked[index]
+        .pending
+        .take()
+        .ok_or(())?;
+    let result = finish_explosion(
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        &source,
+        &mut pending,
+        now,
+    );
+    if result.is_ok() {
+        states
+            .rotten_blood_callbacks
+            .mushrooms
+            .tracked
+            .remove(index);
+    } else {
+        states.rotten_blood_callbacks.mushrooms.tracked[index].pending = Some(pending);
+    }
+    result
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one actual fuse preflights its full spectator cohort before any published effect"
+)]
+async fn prepare_explosion(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     attack: &mut super::super::attack::ChannelAttackStates,
@@ -232,9 +357,9 @@ async fn explode(
     map: &mut CurrentMonsterMap<'_, '_>,
     tracked: Tracked,
     now: u64,
-) -> Result<(), ()> {
-    if !tracked.source.current(runtime) || !runtime.contains_live_creature(tracked.actor) {
-        return Ok(());
+) -> Result<PreparedExplosion, ()> {
+    if !tracked.source.current(runtime) {
+        return Err(());
     }
     let centre = position(runtime, tracked.actor).ok_or(())?;
     let stamp = runtime.issue_owner_work().map_err(|_| ())?;
@@ -253,21 +378,13 @@ async fn explode(
         )
         .await
         .ok_or(())?;
-    enum Hit {
-        SelfVisual(crate::map::facts::CreatureVisualCue),
-        Player(
-            Box<NativeCreatureEventDamagePlan>,
-            crate::map::facts::CreatureVisualCue,
-        ),
-        Creature(ExactActorRef, u32, crate::map::facts::CreatureVisualCue),
-    }
-    let mut hits: Vec<(usize, Hit)> = Vec::new();
+    let mut hits: Vec<(u32, Hit)> = Vec::new();
     let mut cues = Vec::new();
     let mut recipients = Vec::new();
     let mut source_draws = Vec::new();
     let census = runtime.positioned_actor_census().map_err(|_| ())?;
     let mut ids = Vec::new();
-    for (order, (actor, _, session)) in census.iter().enumerate() {
+    for (actor, _, session) in &census {
         let Some(at) = position(runtime, *actor) else {
             continue;
         };
@@ -276,7 +393,7 @@ async fn explode(
         }
         if *actor != tracked.actor {
             let id = ids.len() as u64 + 2;
-            ids.push((*actor, *session, at, order));
+            ids.push((*actor, *session, at, actor.actor_local_id()));
             recipients.push(RoomTarget {
                 actor: id,
                 position: pos(at),
@@ -292,15 +409,13 @@ async fn explode(
         })
         .map_err(|_| ())?;
     if effects.is_empty() {
-        return Ok(());
+        return Err(());
     }
-    let source_order = census
-        .iter()
-        .position(|(actor, _, _)| *actor == tracked.actor)
-        .ok_or(())?;
     hits.push((
-        source_order,
-        Hit::SelfVisual(cue(runtime, stamp, tracked.actor, centre, 9).ok_or(())?),
+        tracked.actor.actor_local_id(),
+        Hit::SelfVisual(Some(
+            cue(runtime, stamp, tracked.actor, centre, 9).ok_or(())?,
+        )),
     ));
     let issuer_pz = room
         .movement_cells()
@@ -353,7 +468,7 @@ async fn explode(
                                 order,
                                 Hit::Player(
                                     Box::new(plan),
-                                    cue(runtime, stamp, tracked.actor, at, 9).ok_or(())?,
+                                    Some(cue(runtime, stamp, tracked.actor, at, 9).ok_or(())?),
                                 ),
                             ));
                         }
@@ -412,13 +527,29 @@ async fn explode(
                         amount,
                     )
                     .ok_or(())?;
+                    let occurrence = format!(
+                        "native:mushroom-fuse:{}:{}",
+                        crate::creature_damage_spell::hex(&tracked.actor.placement_identity()),
+                        crate::creature_damage_spell::hex(&actor.placement_identity())
+                    );
+                    let binding = Sha256::new()
+                        .chain_update(b"oteryn:mushroom-creature-hit:v1")
+                        .chain_update(occurrence.as_bytes())
+                        .chain_update(amount.to_be_bytes())
+                        .finalize()
+                        .to_vec();
                     hits.push((
                         order,
-                        Hit::Creature(
-                            actor,
+                        Hit::Creature {
+                            target: actor,
                             amount,
-                            cue(runtime, stamp, tracked.actor, at, 9).ok_or(())?,
-                        ),
+                            target_atom: runtime
+                                .creature_spell_target_atom(actor)
+                                .map_err(|_| ())?,
+                            occurrence,
+                            binding,
+                            cue: Some(cue(runtime, stamp, tracked.actor, at, 9).ok_or(())?),
+                        },
                     ));
                 }
             }
@@ -429,55 +560,115 @@ async fn explode(
     if !map.validate_transaction(runtime).await {
         return Err(());
     }
-    emit(runtime, room, cues)?;
     hits.sort_by_key(|(order, _)| *order);
-    for (_, hit) in hits {
-        match hit {
-            Hit::SelfVisual(cue) => emit(runtime, room, vec![cue])?,
-            Hit::Player(plan, cue) => {
-                emit(runtime, room, vec![cue])?;
-                let (target, session) = plan.target();
-                if let Some(hit) = (*plan).commit(runtime, states, semantic).map_err(|_| ())? {
-                    crate::gameplay_transport::monster_profile_cycle::physical_spell::record_native_player_hit(runtime,attack,Some(tracked.actor),target,session,&hit,now);
-                }
-            }
-            Hit::Creature(target, amount, cue) => {
-                emit(runtime, room, vec![cue])?;
-                if amount == 0 {
-                    continue;
-                }
-                let occurrence = format!(
-                    "native:mushroom-fuse:{}:{}",
-                    crate::creature_damage_spell::hex(&tracked.actor.placement_identity()),
-                    crate::creature_damage_spell::hex(&target.placement_identity())
-                );
-                let binding = Sha256::new()
-                    .chain_update(b"oteryn:mushroom-creature-hit:v1")
-                    .chain_update(occurrence.as_bytes())
-                    .chain_update(amount.to_be_bytes())
-                    .finalize()
-                    .to_vec();
-                let key = runtime.creature_spell_target_atom(target).map_err(|_| ())?;
-                runtime
-                    .borrow_exact_actor_commit_at_us(now)
-                    .commit_damage(
-                        target,
-                        crate::foundation::OwnerDamageCommand {
-                            target: key.as_bytes(),
-                            occurrence: occurrence.as_bytes(),
-                            binding: &binding,
-                            damage: i64::from(amount),
-                        },
-                    )
-                    .map_err(|_| ())?;
-            }
+    for (_, hit) in &mut hits {
+        if let Hit::Player(plan, _) = hit {
+            plan.retain(runtime, states).map_err(|_| ())?;
         }
     }
-    remove(runtime, native, tracked.actor)?;
-    states
-        .rotten_blood_callbacks
-        .mushrooms
-        .tracked
-        .retain(|m| m.actor != tracked.actor);
-    Ok(())
+    Ok(PreparedExplosion {
+        cues,
+        hits: hits.into_iter().map(|(_, hit)| hit).collect(),
+        cursor: 0,
+    })
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "a retained source callback uses the same exact HP, physical, native and visual owners"
+)]
+fn finish_explosion(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    attack: &mut super::super::attack::ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    source: &MushroomThinkSource,
+    pending: &mut PreparedExplosion,
+    now: u64,
+) -> Result<(), ()> {
+    if !source.current(runtime)
+        || !matches!(
+            room.movement_cells().index(),
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+        )
+    {
+        return Err(());
+    }
+    let semantic = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now);
+    emit(runtime, room, std::mem::take(&mut pending.cues))?;
+    while let Some(hit) = pending.hits.get_mut(pending.cursor) {
+        match hit {
+            Hit::SelfVisual(cue) => {
+                if let Some(cue) = cue.take() {
+                    emit(runtime, room, vec![cue])?;
+                }
+            }
+            Hit::Player(plan, cue) => {
+                let (target, session) = plan.target();
+                if runtime.player_control_facts(target, session).is_err() {
+                    pending.cursor += 1;
+                    continue;
+                }
+                if let Some(cue) = cue.take() {
+                    emit(runtime, room, vec![cue])?;
+                }
+                let receipt = plan
+                    .commit_retained(runtime, states, semantic)
+                    .map_err(|_| ())?;
+                if let Some(hit) = receipt {
+                    crate::gameplay_transport::monster_profile_cycle::physical_spell::record_native_player_hit(runtime,attack,Some(source.actor()),target,session,&hit,now);
+                }
+                pending.cursor += 1;
+                #[cfg(test)]
+                if receipt.is_some()
+                    && states
+                        .rotten_blood_callbacks
+                        .mushrooms
+                        .pause_after_player_commit
+                {
+                    states
+                        .rotten_blood_callbacks
+                        .mushrooms
+                        .pause_after_player_commit = false;
+                    return Err(());
+                }
+                continue;
+            }
+            Hit::Creature {
+                target,
+                amount,
+                target_atom,
+                occurrence,
+                binding,
+                cue,
+            } => {
+                if !runtime.contains_live_creature(*target) {
+                    pending.cursor += 1;
+                    continue;
+                }
+                if let Some(cue) = cue.take() {
+                    emit(runtime, room, vec![cue])?;
+                }
+                if *amount > 0 {
+                    runtime
+                        .borrow_exact_actor_commit_at_us(now)
+                        .commit_damage(
+                            *target,
+                            crate::foundation::OwnerDamageCommand {
+                                target: target_atom.as_bytes(),
+                                occurrence: occurrence.as_bytes(),
+                                binding,
+                                damage: i64::from(*amount),
+                            },
+                        )
+                        .map_err(|_| ())?;
+                }
+            }
+        }
+        pending.cursor += 1;
+    }
+    // HP0 remains registered for its existing canonical SourceDeath owner.
+    // Only a live source is administratively retired by this literal callback.
+    remove(runtime, native, source.actor())
 }
