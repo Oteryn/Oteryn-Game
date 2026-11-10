@@ -575,9 +575,19 @@ labels = {
               'trade_open', 'trade_observation', 'inventory', 'visibility', 'appearances'},
     'deadline_exceeded': {'true', 'false'},
     'ready': {'true', 'false'},
+    # LOG-17: what a blocked logout, loss reconciliation or holder-busy step waits for.
+    'awaiting': {'activity_return', 'actor_spell_reserved', 'familiar_cast',
+                 'foreground_preference', 'gourmet_checkpoint', 'item_effects',
+                 'movement_position', 'native_cast', 'newhaven_travel', 'parameters',
+                 'pending_enchanting', 'pending_familiar', 'pending_gourmet',
+                 'pending_hireling_lamp', 'pending_item_effect', 'pending_native',
+                 'pending_parameters', 'pending_stance', 'pending_training_checkpoint',
+                 'pending_world_items', 'release_commit', 'release_fence', 'session_binding',
+                 'session_not_current', 'training_save', 'unknown', 'world_items',
+                 'idle', 'absent', 'semantic_pass', 'maintenance'},
 }
 numbers = {'ts', 'next_command_id', 'server_sequence', 'command_type', 'command_id',
-           'ms', 'connections', 'lifecycles', 'held_ms'}
+           'ms', 'connections', 'lifecycles', 'held_ms', 'waited_ms', 'attempts'}
 counts = collections.Counter()
 event_counts = collections.Counter()
 emitted = 0

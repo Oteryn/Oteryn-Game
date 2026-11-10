@@ -419,7 +419,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let pass = match pass {
             Ok(pass) => pass,
             Err(crate::gameplay_transport::connection::AdmissionRefusal::Unavailable) => {
-                super::super::operator_event("event=step_rejected_holder_busy");
+                super::super::wait_reason::blocked_event(
+                    session,
+                    "event=step_rejected_holder_busy",
+                    None,
+                    super::super::wait_reason::Awaiting::Holder(self.root.holder_state()),
+                );
                 return fail();
             }
             Err(_) => return fail(),

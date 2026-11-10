@@ -208,6 +208,7 @@ mod tutorial_movement;
 mod tutorial_session;
 mod vip_presence;
 mod vocation_choice;
+mod wait_reason;
 pub mod weapon_proficiency;
 mod world_event;
 mod world_map;
