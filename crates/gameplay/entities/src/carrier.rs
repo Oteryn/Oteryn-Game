@@ -1033,6 +1033,9 @@ pub struct ChannelActorCarrier {
     /// evicted ([`ChannelRuntimeV1::pin_corpse_projection`]); at most
     /// `MAX_PINNED_CORPSE_PROJECTIONS`, each naming a retained projection.
     corpse_projection_pins: Vec<ExactActorRef>,
+    /// The canonical FIFO's one uncredited Outburst corpse, independent of the
+    /// 64 ordinary reward pins. Only a current source BEGIN may retain it.
+    source_corpse_projection_pin: Option<native_source_death::SourceCreatureDeathSeal>,
     /// HOUSE-TRANSFER-1 custody metadata only; all actor state stays in `slots`.
     house_custody: Vec<house_custody::HouseResident>,
     activity_transfers: Vec<activity_transfer::ActivityFrozenPlayer>,
@@ -1167,7 +1170,8 @@ const MAX_RETAINED_CORPSE_PROJECTIONS: usize =
 /// Codex 4248192466 (LOOT-LIVE-1): the most corpse projections pinned against eviction at once,
 /// one per unsettled kill of KILLRW-RL-01 (64, `gameplay_transport::kill_reward`). The bound of
 /// `MAX_RETAINED_CORPSE_PROJECTIONS` applies to the unpinned projections only, so
-/// `corpse_projections` holds at most 128.
+/// `corpse_projections` holds at most 128 ordinary projections, plus the canonical FIFO's
+/// one independently pinned uncredited source corpse.
 const MAX_PINNED_CORPSE_PROJECTIONS: usize = MAX_RETAINED_CORPSE_PROJECTIONS;
 
 /// Outcome of a first-entry position initialization.
@@ -1804,6 +1808,7 @@ impl ChannelActorCarrier {
             occupied,
             corpse_item_bindings: Vec::new(),
             corpse_projection_pins: Vec::new(),
+            source_corpse_projection_pin: None,
             soulpit: None,
             house_custody: Vec::new(),
             activity_transfers: Vec::new(),

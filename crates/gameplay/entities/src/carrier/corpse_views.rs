@@ -166,10 +166,67 @@ impl ChannelRuntimeV1 {
             .retain(|pinned| held.contains(pinned));
     }
 
+    /// Retain the canonical FIFO's one rowless Outburst corpse through its
+    /// copied Heart handler and physical MINT. Ordinary reward cleanup cannot
+    /// release this independent pin or consume its one-slot source capacity.
+    pub fn pin_uncredited_source_corpse_projection(
+        &mut self,
+        begin: &native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if !begin.current_for(self)
+            || begin.definition_key() != "oteryn:creature.outburst"
+            || begin.has_reward_damage_credit()
+            || !begin
+                .events()
+                .iter()
+                .any(|event| event.name() == "HeartBossDeath")
+            || !self.next_source_creature_death()?.is_some_and(|notice| {
+                notice.actor() == begin.actor() && notice.death_key() == begin.death_key()
+            })
+            || !self.carrier.retains_corpse_projection(begin.actor())
+            || self
+                .carrier
+                .source_corpse_projection_pin
+                .as_ref()
+                .is_some_and(|retained| retained != begin)
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.carrier.source_corpse_projection_pin = Some(begin.clone());
+        Ok(())
+    }
+
+    /// Release only the retained source's exact completed task after the
+    /// physical writer bound its committed corpse; Unknown keeps the pin.
+    pub fn release_uncredited_source_corpse_projection(
+        &mut self,
+        completed: &native_source_death::SourceCreatureDeathCompletion,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if !completed.current_for(self)
+            || self.carrier.source_corpse_projection_pin.as_ref() != Some(completed.begin())
+            || !self.carrier.corpse_item_bindings.iter().any(|binding| {
+                binding.actor == completed.actor()
+                    && binding.minted_item.family == "Item"
+                    && binding.minted_item.production_key == "oteryn:item.tibia.i23564"
+            })
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.carrier.source_corpse_projection_pin = None;
+        Ok(())
+    }
+
     /// Whether `actor`'s corpse projection is pinned against eviction.
     #[cfg(any(test, feature = "test-support"))]
     pub fn corpse_projection_pinned(&self, actor: ExactActorRef) -> bool {
         self.carrier.corpse_projection_pins.contains(&actor)
+            || self
+                .carrier
+                .source_corpse_projection_pin
+                .as_ref()
+                .is_some_and(|seal| seal.actor() == actor)
     }
 
     /// Whether `actor`'s committed death is still projected and retained in this generation.

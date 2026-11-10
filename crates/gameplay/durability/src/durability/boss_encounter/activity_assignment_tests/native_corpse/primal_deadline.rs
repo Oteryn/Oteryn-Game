@@ -8,7 +8,13 @@ fn primal_ordeal_instance_corpse_postgres_deadline_and_scope_fences() -> TestRes
     };
     fixture::runtime()?.block_on(async move {
         let started = std::time::Instant::now();
-        let h = fixture::Harness::create(admin, "encx_primal_deadline", true).await?;
+        let h = fixture::Harness::create_with_admission_seed(
+            admin,
+            "encx_primal_deadline",
+            true,
+            false,
+        )
+        .await?;
         let result = prove(&h).await;
         h.cleanup().await?;
         eprintln!(
@@ -60,6 +66,16 @@ async fn prove(h: &fixture::Harness) -> TestResult {
         0,
     )
     .map_err(fixture::debug)?;
+    assert!(
+        matches!(
+            h.root
+                .freeze_item_mint(&authority, &h.node, request.clone())
+                .await,
+            Err(ItemMintError::AuthorityRejected)
+        ),
+        "a ready allocation alone cannot admit a Primal corpse"
+    );
+    activity_entry::enter(h, scope).await?;
     let mut corpse = h
         .root
         .freeze_item_mint(&authority, &h.node, request)

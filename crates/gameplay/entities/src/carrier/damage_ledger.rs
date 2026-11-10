@@ -1367,15 +1367,19 @@ impl ChannelActorCarrier {
     /// Codex 4248192466: the eviction takes the oldest unpinned projection, so a projection that
     /// an accepted kill settlement still binds to survives any number of newer deaths (a full
     /// kill queue's, a familiar's, an encounter's). At most `MAX_RETAINED_CORPSE_PROJECTIONS`
-    /// unpinned and `MAX_PINNED_CORPSE_PROJECTIONS` pinned projections are retained.
+    /// unpinned and `MAX_PINNED_CORPSE_PROJECTIONS` ordinary pinned projections are retained,
+    /// plus at most one independently pinned canonical source corpse.
     pub(super) fn retain_corpse_projection(&mut self, projected: RuntimeCorpseProjection) {
         while self.unpinned_corpse_projections() >= MAX_RETAINED_CORPSE_PROJECTIONS {
             let pins = &self.corpse_projection_pins;
-            let Some(index) = self
-                .corpse_projections
-                .iter()
-                .position(|projection| !pins.contains(&projection.occurrence.actor))
-            else {
+            let source = self
+                .source_corpse_projection_pin
+                .as_ref()
+                .map(|seal| seal.actor());
+            let Some(index) = self.corpse_projections.iter().position(|projection| {
+                !pins.contains(&projection.occurrence.actor)
+                    && source != Some(projection.occurrence.actor)
+            }) else {
                 break;
             };
             let evicted = self.corpse_projections.remove(index).occurrence.actor.0;
@@ -1391,6 +1395,10 @@ impl ChannelActorCarrier {
                 !self
                     .corpse_projection_pins
                     .contains(&projection.occurrence.actor)
+                    && self
+                        .source_corpse_projection_pin
+                        .as_ref()
+                        .is_none_or(|seal| seal.actor() != projection.occurrence.actor)
             })
             .count()
     }

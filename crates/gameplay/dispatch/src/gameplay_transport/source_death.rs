@@ -7,6 +7,10 @@ use super::soul_war_malice;
 use super::*;
 use crate::movement::monster_map::CurrentMonsterMap;
 
+mod heart;
+mod uncredited;
+pub(super) use uncredited::PendingSourceCorpse;
+
 /// One retained action payload for the canonical head's current copied event.
 /// This carries no independent ordering: only the carrier's FIFO/cursor selects it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,10 +18,12 @@ pub(super) struct PreparedSourceDeathAction {
     begin: oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
     index: usize,
     now_us: u64,
+    heart: Option<heart::HeartAction>,
 }
 impl PreparedSourceDeathAction {
     fn capture(
-        runtime: &ChannelRuntimeV1,
+        owner: &ComposedFreshAdmission<'_, '_, '_>,
+        runtime: &mut ChannelRuntimeV1,
         begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
         now_us: u64,
     ) -> Result<Self, ()> {
@@ -25,10 +31,16 @@ impl PreparedSourceDeathAction {
             .source_creature_death_event_index(begin)
             .map_err(|_| ())?
             .ok_or(())?;
+        let heart = if begin.events().get(index).ok_or(())?.name() == "HeartBossDeath" {
+            Some(heart::HeartAction::capture(owner, runtime, begin)?)
+        } else {
+            None
+        };
         Ok(Self {
             begin: begin.clone(),
             index,
             now_us,
+            heart,
         })
     }
     pub(super) fn begin(
@@ -191,12 +203,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             (action.clone(), states.native_callbacks.clone())
         };
-        if !matches!(
-            callbacks
-                .finish_source_death_action(self, permit, &action)
-                .await,
-            Ok(true)
-        ) {
+        let completed = if let Some(heart) = &action.heart {
+            heart.execute(self, &action).await.is_ok()
+        } else {
+            matches!(
+                callbacks
+                    .finish_source_death_action(self, permit, &action)
+                    .await,
+                Ok(true)
+            )
+        };
+        if !completed {
             return false;
         }
         let mut runtime = self.runtime.lock().await;
@@ -212,10 +229,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if runtime
             .validate_source_death_action_reservation(&reservation)
             .is_err()
-            || !matches!(
-                callbacks.publish_source_death_action(&mut runtime, &action),
-                Ok(true)
-            )
+            || if let Some(heart) = &action.heart {
+                heart.publish_vortex(self).is_err()
+            } else {
+                !matches!(
+                    callbacks.publish_source_death_action(&mut runtime, &action),
+                    Ok(true)
+                )
+            }
         {
             return false;
         }
@@ -235,6 +256,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         states.source_death_action = None;
         states.source_death_action_ready = false;
+        drop(states);
+        drop(runtime);
+        if let Some(heart) = &action.heart {
+            heart.refresh_after_release(self).await;
+        }
         true
     }
 
@@ -296,8 +322,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(());
                 }
             } else {
-                states.source_death_action =
-                    Some(PreparedSourceDeathAction::capture(runtime, &begin, now)?);
+                let action = PreparedSourceDeathAction::capture(self, runtime, &begin, now)?;
+                if action.heart.is_some() && !begin.has_reward_damage_credit() {
+                    // Keep the projected death and its per-player occurrences through
+                    // asynchronous Heart effects, before any durable side effect runs.
+                    PendingSourceCorpse::request(native, &begin)?;
+                    runtime
+                        .pin_uncredited_source_corpse_projection(&begin)
+                        .map_err(|_| ())?;
+                }
+                states.source_death_action = Some(action);
             }
             let action_now = states.source_death_action.as_ref().ok_or(())?.now_us();
             // Source clocks/Quest player eligibility are captured at this
@@ -317,13 +351,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     event.name(),
                     begin.definition_key()
                 );
-                let prepared =
-                    callbacks.prepare_source_death_action(runtime, room, native, action)?;
+                let prepared = if action.heart.is_some() {
+                    true
+                } else {
+                    callbacks.prepare_source_death_action(runtime, room, native, action)?
+                };
                 if prepared {
                     if states.source_death_action_reservation.is_none() {
                         states.source_death_action_reservation = Some(
                             runtime
-                                .reserve_source_death_action(action.begin(), action.event(), &[])
+                                .reserve_source_death_action(
+                                    action.begin(),
+                                    action.event(),
+                                    action.heart.as_ref().map_or(&[], |heart| heart.actors()),
+                                )
                                 .map_err(|_| ())?,
                         );
                     }
@@ -352,7 +393,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok()
                 .is_some_and(|row| row.corpse_item.is_some())
         {
-            return Ok(false);
+            if states.source_death_corpse.is_some() {
+                return Err(());
+            }
+            let request = PendingSourceCorpse::request(native, &begin)?;
+            runtime
+                .pin_uncredited_source_corpse_projection(&begin)
+                .map_err(|_| ())?;
+            let completed = runtime
+                .finish_source_creature_death_task(&begin)
+                .map_err(|_| ())?;
+            states.source_death_corpse = Some(std::sync::Arc::new(tokio::sync::Mutex::new(
+                PendingSourceCorpse::new(completed, request),
+            )));
+            return Ok(true);
         }
         let completed = runtime
             .finish_source_creature_death_task(&begin)

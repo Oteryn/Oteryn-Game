@@ -218,6 +218,13 @@ impl NativeCasts {
     ) -> Vec<super::outburst_cast::OutburstNullDeath> {
         self.outburst.take_deaths()
     }
+    pub(super) fn acknowledge_outburst_null_death(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        completed: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathCompletion,
+    ) -> Result<(), ()> {
+        self.outburst.acknowledge_death(runtime, completed)
+    }
     pub(super) fn next_due(&self) -> Option<u64> {
         self.owner
             .as_ref()

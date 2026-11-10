@@ -61,6 +61,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.drain_cloak_blood_with_permit(&permit).await {
             return;
         }
+        if self.drain_uncredited_source_corpse(&permit).await {
+            return;
+        }
         if !self
             .drive_spite_global_due(now.get())
             .await

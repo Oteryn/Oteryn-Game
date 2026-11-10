@@ -36,7 +36,9 @@ fn scenario(name: &'static str) -> TestResult {
 }
 
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
-    oteryn_gameplay_quests::quest::world_callbacks::load()?
+    let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(debug)?;
+    oteryn_gameplay_quests::quest::world_callbacks::load_for(lowered.catalogue())?
         .into_iter()
         .find(|c| {
             c.key
@@ -178,11 +180,8 @@ async fn anniversary(
     );
     assert_eq!(state(h).await?, before);
     let catalogue = crate::content::blessing_catalogue::BlessingCatalogue::load()?;
-    let regular: Vec<_> = catalogue
-        .blessings
-        .iter()
-        .filter(|b| b.storage_key != "oteryn:blessing.twist_of_fate")
-        .collect();
+    let regular: Vec<_> = catalogue.regular().collect();
+    assert_eq!(regular.len(), 5);
     for (index, blessing) in regular.iter().enumerate() {
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica")

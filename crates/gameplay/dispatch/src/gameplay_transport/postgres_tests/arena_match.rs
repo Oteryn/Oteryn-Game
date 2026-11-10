@@ -231,6 +231,35 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             },
         )
         .map_err(debug)?;
+        for number in 1..=10 {
+            let [x, y, floor] = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(number)
+                .ok_or("source pit")?
+                .layout()
+                .pillar;
+            let tile = crate::map::overlay::TilePos {
+                x: u16::try_from(x)?,
+                y: u16::try_from(y)?,
+                floor: i8::try_from(floor)?,
+            };
+            let stack = crate::map::view::compose_tile(&world.overlay, &world.facts, tile)
+                .map_err(debug)?
+                .ok_or("actual pillar floor")?;
+            assert_eq!(
+                stack
+                    .entries
+                    .iter()
+                    .filter(|entry| entry.facts.appearance_id == 1841)
+                    .count(),
+                usize::from(!matches!(route, Some(NativeScenario::RecreatedPillars))),
+                "one source pillar, or a genuinely empty floor for source recreation",
+            );
+            assert!(
+                !stack
+                    .entries
+                    .iter()
+                    .any(|entry| entry.facts.appearance_id == 5022)
+            );
+        }
         fixture::runtime(&mut deps, active, &pin, &world)?;
         let cells = world
             .movement_cells(deps.room.movement_cells())
@@ -587,15 +616,39 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                     .actor
             };
             fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
+            if rank == 1 && pit == 1 {
+                let phase: i32 = sqlx::query_scalar("SELECT (body->>'phase')::int FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(
+                    phase, 1,
+                    "the actual lethal still awaits its durable victory owner"
+                );
+                let mut runtime = deps.runtime.lock().await;
+                crate::gameplay_transport::arena_match::tick(&owner, &mut runtime);
+                assert!(
+                    !crate::gameplay_transport::arena_match::pit_exit_open(
+                        &owner,
+                        admitted.game_session_id
+                    ),
+                    "a projection-only tick must not acknowledge an uncommitted victory"
+                );
+            }
             // Exercise the production cadence, including its spell-lane and runtime fencing.
             // A direct arena tick would miss a disconnected scheduler registration.
+            owner.clock_origin -= std::time::Duration::from_secs(3);
             owner.drain_monster_melee().await;
             assert!(
                 crate::gameplay_transport::arena_match::pit_exit_open(&owner, admitted.game_session_id),
                 "credited death opens the source pit without another client command"
             );
+            let committed: (i32, i32, i32) = sqlx::query_as("SELECT (body->>'rank')::int,(body->>'pit')::int,(body->>'phase')::int FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(
+                committed,
+                (i32::from(rank), i32::from(pit), 2),
+                "the native death owner persists the exact pit before its portal is visible"
+            );
             let (x, y) = crate::durability::arena_match::donor::CENTERS[usize::from(pit - 1)];
-            owner.clock_origin -= std::time::Duration::from_secs(3);
             let map = owner.bundle_map().ok_or("arena map")?;
             let pos = crate::map::overlay::TilePos { x: (x - 6) as u16, y: y as u16, floor: -7 };
             let mut projected = Vec::new();

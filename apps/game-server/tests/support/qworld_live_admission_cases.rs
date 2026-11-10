@@ -5,10 +5,7 @@ use crate::durability::quest_state::{
 };
 use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::foundation::{CommandId, CommandRef, GameSessionId};
-use oteryn_gameplay_quests::quest::{
-    QuestStateCatalogue, QuestTrack,
-    world_callbacks::{self},
-};
+use oteryn_gameplay_quests::quest::world_callbacks;
 use std::sync::{
     Arc,
     atomic::{AtomicBool, Ordering},
@@ -66,7 +63,13 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'world-policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'qm03-owned-purchase-fixture')")
         .bind(f::id(f::WORLD).as_slice()).execute(&h.pool).await?;
     // Use the retained production quest binding unchanged, including level and storage gates.
-    let callback = world_callbacks::load()?
+    let catalogue = Arc::new(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(f::debug)?
+            .catalogue()
+            .clone(),
+    );
+    let callback = world_callbacks::load_for(&catalogue)?
         .into_iter()
         .find(|c| c.key == "oteryn:quest-callback/qm03/anniversary")
         .ok_or("anniversary production callback")?;
@@ -75,20 +78,6 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     assert_eq!(callback.minimum_level, Some(20));
     let admission = callback.admission.as_ref().ok_or("production admission")?;
     assert!(admission.regular_blessings && admission.promotion && admission.premium);
-    let catalogue = Arc::new(
-        QuestStateCatalogue::new(
-            "content-1",
-            vec![QuestTrack {
-                key: callback.storage[0].track.clone(),
-                quest: callback.quest.clone(),
-                initial: -1,
-                min: -1,
-                max: 1,
-            }],
-            vec![world_callbacks::primary_transition(&callback).map_err(f::debug)?],
-        )
-        .map_err(f::debug)?,
-    );
     let (controller, pin) =
         oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
             f::scope()?.world_id(),

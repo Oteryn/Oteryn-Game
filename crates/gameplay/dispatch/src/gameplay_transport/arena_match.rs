@@ -207,20 +207,10 @@ pub(in crate::gameplay_transport) fn tick(
             .try_lock()
             .is_ok_and(|states| states.is_dead(live.actor));
         if present && inside && !expired && !dead {
-            // The existing owner cadence also runs for a silent connection.
-            let character = runtime
-                .bound_attacker_lease(live.actor, *session)
-                .ok()
-                .map(|lease| *lease.character_id().as_bytes());
-            if live.state.phase == 1
-                && character.is_some_and(|character| {
-                    live.opponent.is_some_and(|opponent| credited_victory(runtime, opponent, &character).is_some())
-                })
-            {
-                live.state.phase = 2;
-            }
-            if live.state.phase == 2 && let Some(map) = owner.bundle_map() {
-                pit_exit::project(map, live.state.pit, true);
+            // The fenced death owner persists phase 2 before publishing it here.
+            // Promoting a pending phase 1 would make its next durable poll skip it.
+            if live.state.phase == 2 {
+                let _ = pillar::project(owner, &live.state, PillarProjection::Victory);
             }
             return true;
         }
@@ -228,9 +218,6 @@ pub(in crate::gameplay_transport) fn tick(
         // failed database pass must not discard the only retry owner.
         if present && !inside && !expired && !dead {
             return true;
-        }
-        if let Some(map) = owner.bundle_map() {
-            pit_exit::project(map, live.state.pit, false);
         }
         if let Some(opponent) = live.opponent {
             let _ = runtime.remove_arena_opponent(opponent);
@@ -757,9 +744,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return None;
             }
             if let Some(old) = existing.as_ref() {
-                if let Some(map) = self.bundle_map() {
-                    pit_exit::project(map, old.state.pit, false);
-                }
                 if let Some(opponent) = old.opponent {
                     let _ = runtime.remove_arena_opponent(opponent);
                 }
@@ -789,9 +773,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && current.y.abs_diff(reward_room.y) <= 30)
             {
                 if let Some(old) = self.states.arena_matches.live.lock().ok()?.remove(&session) {
-                    if let Some(map) = self.bundle_map() {
-                        pit_exit::project(map, old.state.pit, false);
-                    }
+                    let _ = pillar::project(self, &old.state, PillarProjection::Release);
                     if let Some(opponent) = old.opponent {
                         let _ = runtime.remove_arena_opponent(opponent);
                     }

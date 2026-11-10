@@ -63,6 +63,47 @@ struct Pending {
 #[derive(Debug, Default)]
 pub(super) struct OutburstCasts(Vec<Pending>);
 impl OutburstCasts {
+    pub(super) fn acknowledge_death(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        completed: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathCompletion,
+    ) -> Result<(), ()> {
+        if !completed.current_for(runtime) {
+            return Err(());
+        }
+        let mut matching = self.0.iter().enumerate().filter_map(|(index, pending)| {
+            pending
+                .death
+                .as_ref()
+                .filter(|death| death.actor == completed.actor())
+                .map(|_| index)
+        });
+        let Some(index) = matching.next() else {
+            return Ok(());
+        };
+        if matching.next().is_some() {
+            return Err(());
+        }
+        let death = self.0[index].death.as_ref().ok_or(())?;
+        let pin = runtime.content_pin();
+        if death.receipt.statistics_death_key().map_err(|_| ())? != completed.death_key()
+            || !runtime
+                .owner_fence()
+                .map_err(|_| ())?
+                .accepts_stamp(death.stamp)
+            || death.pin.world_id() != pin.world_id()
+            || death.pin.activation_sequence() != pin.activation_sequence()
+            || death.pin.server_artifact_digest() != pin.server_artifact_digest()
+            || death.pin.client_artifact_digest() != pin.client_artifact_digest()
+            || death.pin.map_revision_digest() != pin.map_revision_digest()
+            || death.pin.frame_binding_digest() != pin.frame_binding_digest()
+        {
+            return Err(());
+        }
+        self.0[index].death = None;
+        Ok(())
+    }
+
     #[cfg(test)]
     pub(super) fn receipt(&self, caster: ExactActorRef) -> Option<OutburstCastReceipt> {
         self.0

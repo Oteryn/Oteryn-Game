@@ -9,7 +9,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, false, false)
+    bundle_layout(native, true, false)
 }
 
 pub(in super::super) fn bundle_with_pillars(
@@ -44,16 +44,6 @@ fn bundle_layout(
     bundle.manifest.palette[0].key = ground.into();
     bundle.manifest.palette[0].family = oteryn_world_bundle::bundle::Family::Item;
     bundle.manifest.palette[0].id = reference.get() - 1;
-    for source in [1841, 5022] {
-        let key = format!("oteryn:item.tibia.i{source}");
-        let reference = native.item_index()
-            .and_then(|index| index.definition_ref("Item", &key, "definition-r1"))
-            .ok_or("arena item reference")?;
-        bundle.manifest.palette.push(oteryn_world_bundle::writer::PaletteEntry {
-            key, family: oteryn_world_bundle::bundle::Family::Item,
-            id: reference.get() - 1, terrain: None,
-        });
-    }
     for source in [1841, 5022] {
         let key = format!("oteryn:item.tibia.i{source}");
         let reference = native
@@ -96,27 +86,14 @@ fn bundle_layout(
     // M51 source pillars and portal Item facts, without changing production
     // definitions. Crystal svargrond_arena.lua:25-115,207-246.
     if with_pillars {
-        let mut pillar_palette = None;
-        for source in [1841, 5022] {
-            let key = format!("oteryn:item.tibia.i{source}");
-            let reference = native
-                .item_index()
-                .and_then(|index| index.definition_ref("Item", &key, "definition-r1"))
-                .ok_or("arena object reference")?;
-            let palette = u32::try_from(bundle.manifest.palette.len())?;
+        let pillar_palette = u32::try_from(
             bundle
                 .manifest
                 .palette
-                .push(oteryn_world_bundle::bundle::PaletteEntry {
-                    key,
-                    family: oteryn_world_bundle::bundle::Family::Item,
-                    id: reference.get() - 1,
-                    terrain: None,
-                });
-            if source == 1841 {
-                pillar_palette = Some(palette);
-            }
-        }
+                .iter()
+                .position(|entry| entry.key == "oteryn:item.tibia.i1841")
+                .ok_or("pillar palette")?,
+        )?;
         for number in 1..=10 {
             let layout = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(number)
                 .ok_or("source pit")?
@@ -130,14 +107,14 @@ fn bundle_layout(
                 tile
             });
             tile.items.push(oteryn_world_bundle::sector::Item {
-                palette: pillar_palette.ok_or("pillar palette")?,
+                palette: pillar_palette,
                 depth: 0,
                 attrs: Default::default(),
             });
         }
     }
     // Crystal svargrond_arena.lua:235-244 recreates absent pillars on real floors.
-    // No pillar or portal palette entries are present in this fixture.
+    // Their definition facts remain available, but no pillar is placed in the base.
     if pillar_floors_only {
         for number in 1..=10 {
             let [x, y, floor] = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(number)
@@ -150,23 +127,6 @@ fn bundle_layout(
             tile.y = at.1;
             tiles.insert(at, tile);
         }
-    }
-    for &(x, y) in &donor::CENTERS {
-        let tile = tiles.get_mut(&((x - 6) as u16, y as u16, -7))
-            .ok_or("pillar tile")?;
-        tile.items.push(oteryn_world_bundle::sector::Item {
-            palette: 3, depth: 0, attrs: Default::default(),
-        });
-    }
-    for &(x, y) in &donor::CENTERS {
-        let tile = tiles
-            .get_mut(&((x - 6) as u16, y as u16, -7))
-            .ok_or("pillar tile")?;
-        tile.items.push(oteryn_world_bundle::sector::Item {
-            palette: 3,
-            depth: 0,
-            attrs: Default::default(),
-        });
     }
     let mut sectors = std::collections::BTreeMap::<(i8, u16, u16), Sector>::new();
     for ((x, y, z), tile) in tiles {

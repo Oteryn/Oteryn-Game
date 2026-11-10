@@ -4,6 +4,73 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+/// One current death: at most one detached turn per copied event, its completion,
+/// and the retained uncredited corpse ACK. Never advance the source clock here.
+pub(super) async fn drain_source_death(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    now: oteryn_simulation_determinism::SemanticTimeMicros,
+) -> TestResult {
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("actual native death content")?;
+    let profile = owner
+        .runtime
+        .lock()
+        .await
+        .companion_snapshot(actor)
+        .map_err(debug)?
+        .state
+        .policy;
+    let definition = crate::content::ProjectV2DefinitionRef {
+        family: crate::content::ProjectV2Family::Creature,
+        key: profile.definition_key.clone(),
+        revision: profile.definition_revision.clone(),
+    };
+    let event_count = native
+        .native_death_events(&definition)
+        .map_or(0, |events| events.events().len());
+    for _ in 0..event_count + 2 {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let head = runtime.next_source_creature_death().map_err(debug)?;
+        if let Some(head) = &head {
+            assert_eq!(
+                head.actor(),
+                actor,
+                "only this exact retained death may be drained"
+            );
+        }
+        let pending = head.is_some() || states.source_death_corpse.is_some();
+        drop(states);
+        drop(runtime);
+        if !pending {
+            break;
+        }
+        owner.drain_monster_melee_at(now).await;
+    }
+    assert!(
+        !owner
+            .runtime
+            .lock()
+            .await
+            .has_pending_source_creature_deaths(),
+        "all copied source events must finish without advancing time"
+    );
+    assert!(
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .source_death_corpse
+            .is_none(),
+        "the retained physical corpse must have its real writer ACK"
+    );
+    Ok(())
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "independent actual source play case facts"
@@ -124,6 +191,11 @@ fn source_cast_case_inner(
             let mut owner = deps.owner(&h,&authority);
             owner.active_generation = Some(active);
             owner.movement_cells = (&cells).into();
+            if slug == "charging_outburst" {
+                let quests = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
+                owner.quest_catalogue = Some(std::sync::Arc::new(quests.catalogue().clone()));
+                owner.refresh_quest_session(deps.admitted.game_session_id, true).await;
+            }
             {
                 let runtime = owner.runtime.lock().await;
                 owner.states.spell_states.lock().await.initialize(&runtime,deps.actor,deps.admitted.game_session_id,
@@ -194,7 +266,8 @@ fn source_cast_case_inner(
                 let states=owner.states.spell_states.lock().await;
                 let receipt=states.native_callbacks.outburst_cast_receipt_for_test(caster)
                     .expect("actual source birth and canonical NULL health receipt");
-                assert_ne!(receipt.replacement.expect("actual normal Outburst replacement"),caster);
+                let replacement = receipt.replacement.expect("actual normal Outburst replacement");
+                assert_ne!(replacement,caster);
                 assert_eq!(receipt.global_health,0,"no historical normal Outburst exists in this source case");
                 assert_eq!(receipt.synchronized_health,Some(0),"must use literal source global default, not Charging HP");
                 assert!(receipt.committed_null_lethal,"real canonical lethal receipt required, not absence inference");
@@ -205,6 +278,7 @@ fn source_cast_case_inner(
                     runtime.matches_live_creature_identity(*actor,b"oteryn:creature.outburst")),
                     "default global zero must never leave a live replacement with Charging HP");
                 drop(runtime);
+                drain_source_death(&owner, replacement, owner.owner_now()).await?;
                 owner.clock_origin -= std::time::Duration::from_millis(1001);
                 owner.drain_monster_melee().await;
                 assert!(!owner.runtime.lock().await.contains_live_creature(caster),
