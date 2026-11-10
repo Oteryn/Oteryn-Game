@@ -508,7 +508,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         // before COMMIT, rollback or pool-return can be cancelled.
                         // PlayerField installs only PlayerSpellState; its lane
                         // receipt and this fixed-slot reservation can coexist.
-                        super::super::spite_step::stage(owner,runtime,states,actor,session,*committed)
+                        super::super::spite_step::stage_from_current_read(owner,runtime,states,actor,session,*committed,&read)
                             .map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                         #[cfg(test)]
                         super::super::spite_step::pause_captured_step_for_test().await;

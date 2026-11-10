@@ -66,7 +66,7 @@ struct Input {
     clippy::too_many_arguments,
     reason = "the sampled quest clock and current scope authority are independent owner inputs"
 )]
-pub(crate) async fn consume_spite_source_step(
+pub(crate) async fn consume_soul_war_source_step(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
@@ -79,15 +79,21 @@ pub(crate) async fn consume_spite_source_step(
         &super::runtime_scope_assignment::NodeIncarnationProof,
     ),
 ) -> Result<bool, DurabilityError> {
+    use super::quest_state::soul_war_source::step::SourceStepKind;
     use super::spell_item_transaction::{
         assert_spell_item_scope_with_recovery, read_creature_scope_tile_in_transaction,
+    };
+    let transition = match step.kind() {
+        SourceStepKind::SpiteFire => "oteryn:quest-transition/soul-war/source-items/spite-fire",
+        SourceStepKind::Remorse => "oteryn:quest-transition/soul-war/source-items/remorse",
+        SourceStepKind::Energy => return Ok(false),
     };
     if !step.matches_context(context)
         || step.game_session_id() != fence.game_session_id
         || step.runtime_scope() != fence.runtime_scope
         || step.scope_generation() != fence.scope_ownership_generation
         || !matches!(request.cause, super::quest_state::QuestCause::SourceStep(_))
-        || request.transition_key != "oteryn:quest-transition/soul-war/source-items/spite-fire"
+        || request.transition_key != transition
     {
         return Ok(false);
     }
