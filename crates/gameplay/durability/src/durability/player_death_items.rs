@@ -76,13 +76,13 @@ impl std::error::Error for PlayerDeathItemError {}
 type Result<T> = std::result::Result<T, PlayerDeathItemError>;
 
 /// Fixed one-item plan. Slot zero means a direct backpack entry; nine is the main backpack.
-/// No splitting, nested expansion, or stack of necklaces is admitted.
-fn plan(burn: bool, slot: u8, quantity: u32, depth: u8) -> Result<(u32, u32)> {
+/// Contents follow their existing parent identities; only the selected root is written.
+/// No splitting, burning contents, or stack of necklaces is admitted.
+fn plan(burn: bool, slot: u8, quantity: u32, has_contents: bool) -> Result<(u32, u32)> {
     if quantity == 0
         || quantity > 100
         || slot > 10
-        || depth > 1
-        || (burn && (slot != NECKLACE_SLOT || quantity != 1 || depth != 0))
+        || (burn && (slot != NECKLACE_SLOT || quantity != 1 || has_contents))
     {
         return Err(PlayerDeathItemError::InvalidInput);
     }
@@ -362,20 +362,18 @@ async fn write(
     };
     let slot = u8::try_from(source.try_get::<i16, _>("slot")?)
         .map_err(|_| PlayerDeathItemError::StaleState)?;
-    // Only direct contents of a main backpack move implicitly. Any nested placement needs a decision.
-    let too_deep: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_item_container_entries e JOIN game_item_nested_entries n ON n.parent_item_instance_id=e.item_instance_id WHERE e.parent_item_instance_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
+    // BAGS-1 admits nested carried containers. The current Character root fence and
+    // selected item lock serialize their custody; transferring the root leaves every
+    // descendant unchanged, including the existing graph's depth and size bounds.
+    // Corpse custody is still outside this carried-item primitive.
+    let (direct_contents, nested_contents, corpse_contents): (bool, bool, bool) = sqlx::query_as("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid), EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid), EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
         .bind(cause.item_instance.as_slice()).fetch_one(&mut *connection).await?;
-    if too_deep {
-        return Err(PlayerDeathItemError::InvalidInput);
-    }
-    let has_contents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
-        .bind(cause.item_instance.as_slice()).fetch_one(&mut *connection).await?;
-    if has_contents && (slot != 9 || burn) {
+    if corpse_contents || (direct_contents && slot != 9) {
         return Err(PlayerDeathItemError::InvalidInput);
     }
     let quantity = u32::try_from(item.try_get::<i64, _>("quantity")?)
         .map_err(|_| PlayerDeathItemError::StaleState)?;
-    let (after, lifecycle) = plan(burn, slot, quantity, u8::from(has_contents))?;
+    let (after, lifecycle) = plan(burn, slot, quantity, direct_contents || nested_contents)?;
     let revision = numeric_u64(&item, "revision")?;
     let parent = source
         .try_get::<Option<String>, _>("parent")?

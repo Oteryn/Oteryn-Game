@@ -466,6 +466,355 @@ impl crate::durability::item_loop_move::ItemLoopContent for PickupContent {
     }
 }
 
+async fn nested_carried_tree(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult<Vec<[u8; 16]>> {
+    use crate::durability::item_loop_move::{
+        ITEM_LOOP_DEPTH_MAX, LoopDestination, LoopMoveRequest,
+    };
+
+    assert_eq!(ITEM_LOOP_DEPTH_MAX, 8);
+    let backpack = h.mint(authority, BACKPACK, 1).await?;
+    h.committed(authority, to_slot(command(1)?, backpack, backpack_facts()))
+        .await?;
+    initialize(h, authority).await?;
+    let mut items = vec![backpack];
+    // Main backpack -> seven bags -> stone: every edge is admitted by its
+    // normal pickup or loop-move owner, including the deepest legal placement.
+    for depth in 1..=ITEM_LOOP_DEPTH_MAX {
+        let leaf = depth == ITEM_LOOP_DEPTH_MAX;
+        let item = h
+            .mint(
+                authority,
+                if leaf {
+                    crate::item_transfer_postgres_cases::STONE
+                } else {
+                    BACKPACK
+                },
+                1,
+            )
+            .await?;
+        let definition = if leaf {
+            facts(
+                crate::item_transfer_postgres_cases::STONE,
+                ItemStackClass::NonStackable,
+            )
+        } else {
+            backpack_facts()
+        };
+        h.committed(
+            authority,
+            to_backpack(command(10 + depth as u64)?, item, definition),
+        )
+        .await?;
+        if depth > 1 {
+            let f = fence()?;
+            let permit = SpellLanePermit::of_fresh_scope(f.runtime_scope).await?;
+            let moved = h
+                .root
+                .commit_item_loop_move(
+                    &permit,
+                    authority,
+                    &h.node,
+                    &f,
+                    command(30 + depth as u64)?,
+                    &PickupContent,
+                    LoopMoveRequest {
+                        item,
+                        count: None,
+                        pickup_cell: None,
+                        destination: LoopDestination::Container(*items.last().ok_or("parent bag")?),
+                    },
+                )
+                .await?
+                .map_err(debug)?;
+            assert!(!moved.replayed);
+            assert_eq!(moved.operation, 1);
+        }
+        let owner: (Option<String>, Option<i32>) = sqlx::query_as(
+            "SELECT owner_character::text,depth FROM game_item_loop_owner(encode($1,'hex')::uuid)",
+        )
+        .bind(item.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            owner,
+            (
+                Some(crate::item_transfer_postgres_cases::uuid_text(id(
+                    crate::item_transfer_postgres_cases::CHARACTER
+                ))),
+                Some(depth)
+            )
+        );
+        items.push(item);
+    }
+    assert_eq!(items.len(), 9);
+    Ok(items)
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct NestedDeathSnapshot {
+    items: Vec<String>,
+    placements: Vec<(String, String)>,
+}
+
+/// Compare complete surviving rows, including revision, transaction and ordinal
+/// columns. Only the selected root and its source placement may change.
+async fn nested_death_snapshot(h: &Harness, selected: [u8; 16]) -> TestResult<NestedDeathSnapshot> {
+    let items = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id<>encode($1,'hex')::uuid ORDER BY item_instance_id LIMIT 10")
+        .bind(selected.as_slice()).fetch_all(&h.pool).await?;
+    let placements = sqlx::query_as("SELECT 'slot'::text AS kind,to_jsonb(s)::text AS data FROM game_item_container_slots s WHERE item_instance_id<>encode($1,'hex')::uuid UNION ALL SELECT 'main',to_jsonb(e)::text FROM game_item_container_entries e WHERE item_instance_id<>encode($1,'hex')::uuid UNION ALL SELECT 'nested',to_jsonb(n)::text FROM game_item_nested_entries n WHERE item_instance_id<>encode($1,'hex')::uuid ORDER BY 1,2 LIMIT 10")
+        .bind(selected.as_slice()).fetch_all(&h.pool).await?;
+    let snapshot = NestedDeathSnapshot { items, placements };
+    assert_eq!(snapshot.items.len(), 8);
+    assert_eq!(snapshot.placements.len(), 8);
+    Ok(snapshot)
+}
+
+async fn run_nested_death_regression(admin: String, direct_bag: bool) -> TestResult {
+    use crate::durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
+    };
+    use crate::durability::character_progression::CharacterProgressionError;
+    use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+    use crate::durability::{DurabilityError, DurabilityRoot, SqlxFailureClass};
+    use oteryn_gameplay_spell::spell::mana_training::CompiledTrainingFormula;
+
+    let h = Harness::create(
+        admin,
+        if direct_bag {
+            "death_nested_bag"
+        } else {
+            "death_nested_selected"
+        },
+    )
+    .await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let items = nested_carried_tree(&h, &authority).await?;
+    let selected = items[usize::from(direct_bag)];
+    let before = nested_death_snapshot(&h, selected).await?;
+    let f = fence()?;
+    let mut gameplay = CurrentCharacterGameplayFence {
+        character_id: f.character_id,
+        game_session_id: f.game_session_id,
+        connection_generation: f.connection_generation,
+        character_lease_generation: f.character_lease_generation,
+        runtime_scope: f.runtime_scope,
+        scope_ownership_generation: f.scope_ownership_generation,
+        expected_character_revision: CharacterRevision::new(1).map_err(debug)?,
+    };
+    let formula = CompiledTrainingFormula::from_profile(
+        include_bytes!("../../../../../tools/content-schema/native-gameplay/build-training.json"),
+        "content-1",
+    )
+    .map_err(debug)?;
+    let build = DurableBuildState::default();
+    h.root
+        .commit_character_build(
+            &authority,
+            &h.node,
+            gameplay,
+            BuildChangeRequest {
+                occurrence: BuildOccurrence::from_bytes(id(160)).map_err(debug)?,
+                cause: BuildCause::VocationChoice,
+                after: convert_vocation(&formula, &build, "druid").map_err(debug)?,
+                before: build,
+                pruned_stance: None,
+            },
+            &formula,
+        )
+        .await
+        .map_err(debug)?;
+    gameplay.expected_character_revision =
+        CharacterRevision::new(h.character_revision().await?.parse()?).map_err(debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut intent = death()?;
+    intent.death_cell.spatial_position = vec![0, 0, 0, 12, 0, 0, 0, 13, 0, 7];
+    // The normal death selects the equipped backpack. The sibling direct-entry
+    // primitive also remains valid for historical receipts without a selection.
+    let committed = h
+        .root
+        .settle_runtime_player_death_with_items(
+            &sequencer,
+            &authority,
+            &h.node,
+            gameplay,
+            intent,
+            Some(&formula),
+            None,
+            (!direct_bag).then_some(DIGEST),
+        )
+        .await
+        .map_err(debug)?;
+    let pending_fence = CurrentCharacterGameplayFence {
+        expected_character_revision: committed.committed_character_revision,
+        ..gameplay
+    };
+    let planned = if direct_bag {
+        assert!(committed.items.is_none());
+        request(180)
+    } else {
+        let selection = committed
+            .items
+            .as_ref()
+            .ok_or("persisted death selection")?;
+        assert_eq!(selection.root, DIGEST);
+        assert_eq!(selection.amulet, None);
+        assert_eq!(selection.lost, vec![items[0]]);
+        assert!(
+            h.root
+                .pending_respawn(&authority, &h.node, pending_fence)
+                .await
+                .map_err(debug)?
+                .is_some()
+        );
+        assert!(matches!(
+            h.root
+                .consume_pending_respawn(
+                    &authority,
+                    &h.node,
+                    pending_fence,
+                    Some(committed.occurrence)
+                )
+                .await,
+            Err(CharacterProgressionError::Unavailable(
+                DurabilityError::Database(SqlxFailureClass::Database(_))
+            ))
+        ));
+        assert_eq!(h.count("game_character_pending_respawns").await?, 1);
+        PlayerDeathItemRequest::selected(&committed, selected, false)?
+    };
+    assert_eq!(h.count("game_player_death_item_records").await?, 0);
+    drop(authority);
+    drop(seal);
+
+    // Reopen the real durable root and reconcile independently before resuming
+    // the saved selection; no actor or in-memory request supplies new authority.
+    let reopened = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+    assert!(reopened.maintain_ready_once().await?);
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = reopened
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let retained = reopened
+        .reconcile_character_death(&authority, committed.occurrence)
+        .await
+        .map_err(debug)?
+        .ok_or("retained death")?;
+    assert_eq!(retained, committed);
+    if !direct_bag {
+        assert_eq!(
+            PlayerDeathItemRequest::selected(&retained, selected, false)?,
+            planned
+        );
+    }
+    let cause = PlayerDeathDropCause {
+        death_occurrence: *retained.occurrence.as_bytes(),
+        item_instance: selected,
+    };
+    let permit = SpellLanePermit::of_fresh_scope(f.runtime_scope).await?;
+    let audits_before = h.count("game_item_audit_outbox").await?;
+    assert_eq!(
+        reopened
+            .commit_player_death_drop(&permit, &authority, &h.node, f, cause, planned.clone())
+            .await?,
+        PlayerDeathItemOutcome::Written
+    );
+    assert_eq!(nested_death_snapshot(&h, selected).await?, before);
+    assert!(h.on_ground(selected).await?);
+    let written: String = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        reopened
+            .commit_player_death_drop(&permit, &authority, &h.node, f, cause, planned)
+            .await?,
+        PlayerDeathItemOutcome::Replay
+    );
+    let replayed: String = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(written, replayed);
+    assert_eq!(nested_death_snapshot(&h, selected).await?, before);
+    assert_eq!(h.count("game_player_death_item_records").await?, 1);
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 1);
+    for item in &items[usize::from(direct_bag)..] {
+        let owner: Option<String> = sqlx::query_scalar(
+            "SELECT owner_character::text FROM game_item_loop_owner(encode($1,'hex')::uuid)",
+        )
+        .bind(item.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(owner, None);
+        assert_eq!(h.item_state(*item).await?, (1, 1));
+    }
+    let consumed = reopened
+        .consume_pending_respawn(
+            &authority,
+            &h.node,
+            pending_fence,
+            Some(retained.occurrence),
+        )
+        .await
+        .map_err(debug)?
+        .ok_or("terminal respawn")?;
+    assert_eq!(consumed.occurrence, retained.occurrence);
+    assert_eq!(consumed.respawn_position, retained.respawn_position);
+    assert!(
+        reopened
+            .consume_pending_respawn(
+                &authority,
+                &h.node,
+                pending_fence,
+                Some(retained.occurrence)
+            )
+            .await
+            .map_err(debug)?
+            .is_none()
+    );
+    assert_eq!(
+        h.character_revision().await?,
+        retained.committed_character_revision.get().to_string()
+    );
+    drop(permit);
+    drop(authority);
+    drop(seal);
+    drop(reopened);
+    h.cleanup().await
+}
+
+fn nested_death_case(direct_bag: bool) -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_nested_death_regression(admin, direct_bag))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "nested death test thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn player_death_nested_selected_backpack_depth_eight_survives_restart() -> TestResult {
+    nested_death_case(false)
+}
+
+#[test]
+fn player_death_nested_direct_bag_preserves_descendants() -> TestResult {
+    nested_death_case(true)
+}
+
 async fn run_death_ground_regression(admin: String, reset: bool) -> TestResult {
     use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
     use crate::durability::runtime_scope_assignment::{
