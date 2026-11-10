@@ -1,0 +1,47 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "checked_at_utc": "2026-11-10T17:02:46.432234+00:00",
+  "captures": {
+    "durability": {
+      "path": "protocol-session/durability/captures/checkpoint-40-ledger.json",
+      "sha256": "cf4cec72832901afe61513d2a045a02476842350ed9e8e70a37d378b9e9eb008",
+      "full_files": 583,
+      "full_file_physical_lines": 187566,
+      "all_scope_text_lines_union": 187566,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "server": {
+      "path": "protocol-session/game-server-worker-captures/checkpoint-660-ledger.json",
+      "sha256": "cf182478e3f028f4a3d64219ed4a7b15c656fd3bfa3708ea5aee36e3bff855e5",
+      "full_files": 660,
+      "full_file_physical_lines": 330924,
+      "all_scope_text_lines_union": 330924,
+      "binary_bytes": 2703,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    },
+    "dispatch": {
+      "path": "client-support/dispatch-checkpoint19-ledger.json",
+      "sha256": "9f06e3b44eaf0021098c2f3f52f18dd27597004a6b18ec6826c6d7b02f3b9961",
+      "full_files": 486,
+      "full_file_physical_lines": 90093,
+      "all_scope_text_lines_union": 96763,
+      "binary_bytes": 0,
+      "all_in_frozen_ledger": true,
+      "exact_git_worktree_hashes_and_ranges": "PASS"
+    }
+  },
+  "server_method_maps": {
+    "game-server-appearance-capture-method-map.md": "90fb804da69c6658b0276f7c488d6862b2d09d3dc371795f3f51dbda51308aa8",
+    "game-server-spawn-fixture-method-map.md": "2219981460bf6bd58cf0e9ddf7306a90584b0bb9fe239b1ae4cdf8b087be9df3",
+    "game-server-seven-fixture-method-map.md": "348390d50ea1da0dd25ae206bd8c550cc9120851d94c0d0067e267359311480b",
+    "game-server-auto-attack-fixture-method-map.md": "d7593104034863d3328a3bef6c649fbcd83965e39db31e895e639f3cdb126ba5",
+    "game-server-callback-cast-fixture-method-map.md": "3fbba196681354508896b1f61c4cb865a8ec62b53118d75943b982b32e9c3538",
+    "game-server-tls-fixture-method-map.md": "51e1efbd633d88829848ddd3653328cbc985da328a24383dc47d1f9187d92836"
+  },
+  "root_scope": "Independent immutable byte/range/coverage validation and reading of the complete method maps; not a second manual review of every delegated file.",
+  "runtime_execution": false
+}

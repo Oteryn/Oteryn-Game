@@ -1,0 +1,35 @@
+{
+  "checked_at_utc": "2026-11-10T16:56:43.342983+00:00",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "status": "PASS",
+  "source": "crates/gameplay/world/src/map/door_registry.rs",
+  "source_sha256": "798f10ead0e9868809bacfacbef8618ac0b68794b1f1ad93971d32ef25444a0a",
+  "tests": "3 original door_registry tests; unchanged source imported by path",
+  "source_modified": false,
+  "stubs_or_reimplemented_logic": false,
+  "cargo_sql_native_deployment_run": false,
+  "commands": [
+    {
+      "argv": [
+        "/home/agent/.cargo/bin/rustc",
+        "--edition=2024",
+        "--test",
+        "/workspace/scratch/9868b8ed6bb7/audit-r2/lead/door-registry-tests.rs",
+        "-o",
+        "/tmp/oteryn-audit-world-door-registry-tests"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "warning: function `key_closed_forms` is never used\n   --> /workspace/scratch/9868b8ed6bb7/Oteryn-Game-audit-r2/crates/gameplay/world/src/map/door_registry.rs:259:15\n    |\n259 | pub(super) fn key_closed_forms(appearance: u32) -> Option<(u32, u32)> {\n    |               ^^^^^^^^^^^^^^^^\n    |\n    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default\n\nwarning: function `level_door_of` is never used\n   --> /workspace/scratch/9868b8ed6bb7/Oteryn-Game-audit-r2/crates/gameplay/world/src/map/door_registry.rs:279:15\n    |\n279 | pub(super) fn level_door_of(appearance: u32) -> Option<u32> {\n    |               ^^^^^^^^^^^^^\n\nwarning: 2 warnings emitted\n\n"
+    },
+    {
+      "argv": [
+        "/tmp/oteryn-audit-world-door-registry-tests",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "stdout": "\nrunning 3 tests\ntest door_registry::tests::m06q_quest_families_include_the_remaining_donor_doors ... ok\ntest door_registry::tests::pairs_are_ascending_and_consecutive ... ok\ntest door_registry::tests::key_door_predicates_cover_every_source_triple ... ok\n\ntest result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+      "stderr": ""
+    }
+  ]
+}

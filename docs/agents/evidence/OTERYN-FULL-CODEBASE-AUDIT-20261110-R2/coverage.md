@@ -7,7 +7,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | Module | Status | Tracked files | Analyzed files | Full files | Analyzed lines |
 |---|---|---:|---:|---:|---:|
 | oteryn-client | REVIEWED | 1180 | 1180 | 1180 | 143488 |
-| oteryn-game-server | IN PROGRESS | 873 | 586 | 585 | 162679 |
+| oteryn-game-server | IN PROGRESS | 873 | 661 | 660 | 331400 |
 | oteryn-admin-agent | REVIEWED | 12 | 12 | 12 | 1865 |
 | oteryn-admin-contracts | REVIEWED | 7 | 7 | 7 | 834 |
 | oteryn-client-assets | REVIEWED | 19 | 19 | 19 | 2341 |
@@ -25,9 +25,9 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-combat-rules | REVIEWED | 29 | 29 | 29 | 5131 |
 | oteryn-gameplay-content | REVIEWED | 139 | 139 | 139 | 71505 |
 | oteryn-gameplay-content-promotion | REVIEWED | 36 | 36 | 36 | 13600 |
-| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 537 | 455 | 92760 |
+| oteryn-gameplay-dispatch | IN PROGRESS | 1668 | 600 | 519 | 114903 |
 | oteryn-gameplay-domain | REVIEWED | 67 | 67 | 67 | 33806 |
-| oteryn-gameplay-durability | IN PROGRESS | 721 | 551 | 540 | 175666 |
+| oteryn-gameplay-durability | IN PROGRESS | 721 | 598 | 591 | 190626 |
 | oteryn-gameplay-economy | REVIEWED | 28 | 28 | 28 | 3978 |
 | oteryn-gameplay-encounter-rules | REVIEWED | 21 | 21 | 21 | 4945 |
 | oteryn-gameplay-encounters | REVIEWED | 93 | 93 | 93 | 22624 |
@@ -47,7 +47,7 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | oteryn-gameplay-spell | REVIEWED | 83 | 83 | 83 | 41011 |
 | oteryn-gameplay-spell-rules | REVIEWED | 24 | 24 | 24 | 6664 |
 | oteryn-gameplay-weather | REVIEWED | 3 | 3 | 3 | 692 |
-| oteryn-gameplay-world | IN PROGRESS | 73 | 15 | 6 | 2163 |
+| oteryn-gameplay-world | IN PROGRESS | 73 | 32 | 27 | 12735 |
 | oteryn-gameplay-world-change | REVIEWED | 14 | 14 | 14 | 3078 |
 | oteryn-identity | REVIEWED | 2 | 2 | 2 | 491 |
 | oteryn-input-actions | REVIEWED | 7 | 7 | 7 | 2002 |
@@ -82,5 +82,5 @@ A REVIEWED package has all tracked package files covered and a substantive modul
 | repository-root | NOT STARTED | 16 | 0 | 0 | 0 |
 | rulesets | IN PROGRESS | 77 | 4 | 3 | 359 |
 | tests | NOT STARTED | 12 | 0 | 0 | 0 |
-| tools | IN PROGRESS | 2681 | 7 | 4 | 1121 |
+| tools | IN PROGRESS | 2681 | 8 | 5 | 1167 |
 | vendor | NOT STARTED | 793 | 0 | 0 | 0 |

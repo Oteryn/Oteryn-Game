@@ -1,0 +1,307 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "status": "PASS",
+  "scope_status": "PARTIAL",
+  "full_files": 27,
+  "checked_at_utc": "2026-11-10T17:02:46.426925+00:00",
+  "method": "Exact Git blob/worktree SHA and complete endpoints for already completed substantive reviews; not a second manual review of delegated helpers.",
+  "files": [
+    {
+      "path": "crates/gameplay/world/Cargo.toml",
+      "sha256": "eec984c9d6ad52a9cc9177f340f02befbff48a376050919a43b1ad00bcbe18c4",
+      "blob_sha": "2d80ff98b3e9d079f2eac5c8ded4190dbae8e99e",
+      "analyzed_ranges": [
+        [
+          1,
+          49
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/house_scope/mod.rs",
+      "sha256": "a8c49829ce5e1f022a1259421727c312961b4f08d7684e8037be8bee12edced3",
+      "blob_sha": "c10950785d8c01713dfc86e46ed43eba65dc1d47",
+      "analyzed_ranges": [
+        [
+          1,
+          31
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/lib.rs",
+      "sha256": "d911cfb9c186c8b86f8ea5fc9b2f3b14f6ac01a4b556e1d0b5e6d0f6fada6435",
+      "blob_sha": "38d6babc93fd403fb42672551ebd50d5d4b31cba",
+      "analyzed_ranges": [
+        [
+          1,
+          26
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/admit_cap_2_bundle_zones_tests.rs",
+      "sha256": "f1104622eebac7ee33429c8bd98f229c8281943db7fb6f74a49c7b563cb4e519",
+      "blob_sha": "9fe2dc2262857ab26fc79dbf2eecd0624c7edd71",
+      "analyzed_ranges": [
+        [
+          1,
+          68
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/boot.rs",
+      "sha256": "f342e67a76fc544aeb6e368cf9490f51582e201052a38dc3c6dc45c1670fa1af",
+      "blob_sha": "660dcb35cc524c1d605b1eee43383cbf0d4285c5",
+      "analyzed_ranges": [
+        [
+          1,
+          2667
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/daily.rs",
+      "sha256": "248e99148320fccd2b64421f96b7a9afab8cd005439d9d17862e3fc9c86d1822",
+      "blob_sha": "8e5e2cf7e95de8ce0231269556a8c2dd976e27b9",
+      "analyzed_ranges": [
+        [
+          1,
+          476
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/door.rs",
+      "sha256": "60c151fac5521976dd8f4a0ad7081d12e80013ca54c35ed90e762340de0bfcba",
+      "blob_sha": "2f021e98604dc6d70aeb9a4c585dea93be8da9eb",
+      "analyzed_ranges": [
+        [
+          1,
+          867
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/door_registry.rs",
+      "sha256": "798f10ead0e9868809bacfacbef8618ac0b68794b1f1ad93971d32ef25444a0a",
+      "blob_sha": "c394f88ed04958b634f922a6ee6e485e7bab672a",
+      "analyzed_ranges": [
+        [
+          1,
+          456
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts.rs",
+      "sha256": "14172ecdfeb556e6fe98456bf8e0b44207de3a0c92432c3b2d0a97bb465e7852",
+      "blob_sha": "17457425d739ec8f8fe48675b6d83b2f51d75853",
+      "analyzed_ranges": [
+        [
+          1,
+          1763
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts/house_base_tests.rs",
+      "sha256": "4928a0a9c09ce517ffe30583a3b87143252d209f9dd5b56048adb0799bc0a3f7",
+      "blob_sha": "add8305174c54d2dfd095e0d57fa033fe7aec813",
+      "analyzed_ranges": [
+        [
+          1,
+          88
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts/pickup_tests.rs",
+      "sha256": "891fa859f2a2523b3c59d90a4b7d674dc0f6db49683fb0433ad3bd904b75a53e",
+      "blob_sha": "3930fc4517069b16b67ba710fd4bca23a4eeb97a",
+      "analyzed_ranges": [
+        [
+          1,
+          175
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts/quest_callbacks.rs",
+      "sha256": "8d4c7b91ba861454138855b04fe99d555a552ee0651c592b6abb0b78d0c39c5d",
+      "blob_sha": "2ec83c1897b6e04876bd19d17a3bba654edecb40",
+      "analyzed_ranges": [
+        [
+          1,
+          1100
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts/terrain_collision_tests.rs",
+      "sha256": "8fbd6590acf154350bb823cbad8bb05fafbbb5c924d4db4778625b16e4d385ed",
+      "blob_sha": "f3eff9f7e139b354af1d113df969255077d56bac",
+      "analyzed_ranges": [
+        [
+          1,
+          97
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/facts/world_change_phases.rs",
+      "sha256": "e73b1c692b8ecff6cc73b5c3a4eecb14a8005876ba08dab05982e6b352223b65",
+      "blob_sha": "7c5c5535d3c3c3262675a8291b3262ad69e96677",
+      "analyzed_ranges": [
+        [
+          1,
+          188
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/mod.rs",
+      "sha256": "6f2894b0e664d79e883843fff625689906a319326b5107b96cacad2faf037ffc",
+      "blob_sha": "23032dd62c2d9a424eaf49d7e8deef2e3521e0c6",
+      "analyzed_ranges": [
+        [
+          1,
+          779
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/overlay.rs",
+      "sha256": "fa44b3c8ab3555ce31bc3c2537ad95ebffc33a5429feab40052c7f97783c9423",
+      "blob_sha": "c928ac4eaa468e744fcaf06cd9178b5f9acc7d24",
+      "analyzed_ranges": [
+        [
+          1,
+          726
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/overlay/pickup.rs",
+      "sha256": "1a6d418974af281610b1a61c6ab0726899cd26d1d7713fc62feba32dcb8b1a49",
+      "blob_sha": "69ea805cd8961e1864a7fd339cf5c9f845b7120a",
+      "analyzed_ranges": [
+        [
+          1,
+          367
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map/view.rs",
+      "sha256": "e76b7daeec7d8d39a7e36f633012c0bc891c70dcea26871d88b04f92a852fc11",
+      "blob_sha": "9b26073becd1f9eab27ce60ee584566a5b6a6ec0",
+      "analyzed_ranges": [
+        [
+          1,
+          516
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/map_view_diff.rs",
+      "sha256": "c4f287a60c5ec2bce9eb9a18391c492243efe72ff266fe5026b631b431d6c6d2",
+      "blob_sha": "68869bc33e64a68a57561029bb243c1749696fe6",
+      "analyzed_ranges": [
+        [
+          1,
+          298
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/pacing.rs",
+      "sha256": "0528fee6437738c204f42d600a33e2763427d28044f1b00a9dbf48d67d9b86ca",
+      "blob_sha": "4b2b9a01769517e20e27b9f5ed4ef4142618511e",
+      "analyzed_ranges": [
+        [
+          1,
+          151
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_budget.rs",
+      "sha256": "1f6b929d31dd57ee757374424002ab13d3585b3b4350bd103a4601fafa90be73",
+      "blob_sha": "6cf9f58c0349ffede8f6ca51c38933366de660d4",
+      "analyzed_ranges": [
+        [
+          1,
+          76
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search/path_kernel.rs",
+      "sha256": "c7d8b93f4ae88abd5a731218b2a094db5f0d41dd884785c57ceda5c02979bd67",
+      "blob_sha": "736ac79ea40f95e765ab6c198680c99dad644d2d",
+      "analyzed_ranges": [
+        [
+          1,
+          104
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search/path_labels.rs",
+      "sha256": "6bb3a8413eb60623d5d6ad1e69d227edad70db64942c12a199909877c011717f",
+      "blob_sha": "a34ea5d22e81387e5daafcaee2f9a2b4906973db",
+      "analyzed_ranges": [
+        [
+          1,
+          127
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/path_search/path_tiles.rs",
+      "sha256": "59bc9b131a5dc5e194c1b5561a4a232f27c7378b2ff834f92c0c926c64e66c13",
+      "blob_sha": "a8fea37f4f0a1796e534230353eda713f1873848",
+      "analyzed_ranges": [
+        [
+          1,
+          44
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/movement/relocate.rs",
+      "sha256": "49c6964c5263f328b23679cda5e2919c534095ac892a4b55a4b48f5d52ab1227",
+      "blob_sha": "0f1b92e48fb707bb8a94b5c3d75a3fe6c52408a5",
+      "analyzed_ranges": [
+        [
+          1,
+          111
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/observability.rs",
+      "sha256": "c0f5c099ba570d7cdb4b5d384964e6401d89872b7d714edc10459aa9db259b2c",
+      "blob_sha": "114b52263e8862c4764337e4831feed833fec626",
+      "analyzed_ranges": [
+        [
+          1,
+          75
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/world/src/world_clock.rs",
+      "sha256": "a7741f6d22898e3a3860f7c03195351ee65dfd778c5badd75a5f00753c9fa432",
+      "blob_sha": "2a1cfee897fec232b4183413f3a8db001ad7ba5e",
+      "analyzed_ranges": [
+        [
+          1,
+          427
+        ]
+      ]
+    }
+  ]
+}
