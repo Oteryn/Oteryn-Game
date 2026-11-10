@@ -51,7 +51,7 @@ fn run_case(case: Case) -> TestResult {
         return Ok(());
     }
     std::thread::Builder::new()
-        .stack_size(256 << 20)
+        .stack_size(64 << 20)
         .spawn(move || scenario(case).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "periodic appearance test thread panicked")??;
@@ -493,7 +493,7 @@ async fn read_snapshot(client: &mut DuplexStream) -> TestResult<appearance::Snap
                     }
                 }
             }
-            MessageType::SnapshotEnd => {
+            MessageType::SnapshotCommit => {
                 return appearance.ok_or_else(|| "appearance snapshot missing".into());
             }
             _ => {}
