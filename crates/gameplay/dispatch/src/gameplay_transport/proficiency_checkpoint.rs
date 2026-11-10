@@ -201,8 +201,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let definitions =
             catalogue.for_content(&binding.context.content) as Arc<dyn ProficiencyDefinitions>;
         let current = match budget
-            .retry_durability("proficiency_fence", async || {
-                self.current_quest_fence_durable(session).await
+            .retry_durability("proficiency_fence", || {
+                self.current_quest_fence_durable(session)
             })
             .await
         {
@@ -212,7 +212,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut slot = self.revision_sequencer.acquire(current.character_id).await;
         let Ok(Ok(root)) = budget
-            .retry_durability("proficiency_character", async || {
+            .retry_durability("proficiency_character", || async {
                 match self
                     .root
                     .read_current_character(self.character, current.character_id)
@@ -231,7 +231,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ..current
         };
         let Ok(Ok((stored, _))) = budget
-            .retry_durability("proficiency_snapshot", async || {
+            .retry_durability("proficiency_snapshot", || async {
                 match self
                     .root
                     .read_character_proficiency_with_definitions(
@@ -331,8 +331,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         };
         let fresh = match budget
-            .retry_durability("proficiency_readback", async || {
-                self.current_quest_fence_durable(session).await
+            .retry_durability("proficiency_readback", || {
+                self.current_quest_fence_durable(session)
             })
             .await
         {

@@ -439,11 +439,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 impl AdmissionRetryBudget<'_> {
     /// Retry only a holder acquisition failure. Storage and ambiguous commit failures
     /// retain their original outcome; neither is evidence that replay is safe.
-    pub(super) async fn retry_durability<T>(
+    /// Each attempt returns its own future, without borrowing mutable callback
+    /// state, so the retry remains usable from boxed Send activity futures.
+    pub(super) async fn retry_durability<T, F, Fut>(
         &self,
         stage: &'static str,
-        mut step: impl AsyncFnMut() -> Result<T, crate::durability::DurabilityError>,
-    ) -> Result<T, crate::durability::DurabilityError> {
+        mut step: F,
+    ) -> Result<T, crate::durability::DurabilityError>
+    where
+        F: FnMut() -> Fut,
+        Fut: std::future::Future<Output = Result<T, crate::durability::DurabilityError>>,
+    {
         use crate::durability::DurabilityError;
         loop {
             match step().await {

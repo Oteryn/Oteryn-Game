@@ -31,9 +31,9 @@ fn nbeof_logout_storage_and_unknown_commit_fail_without_retry()
             let mut attempts = 0;
             let started = tokio::time::Instant::now();
             let result = budget
-                .retry_durability("release_commit", async || {
+                .retry_durability("release_commit", || {
                     attempts += 1;
-                    failure.take().map_or(Ok(()), Err)
+                    std::future::ready(failure.take().map_or(Ok(()), Err))
                 })
                 .await;
             assert!(
@@ -68,13 +68,13 @@ fn nbeof_holder_reads_share_one_absolute_retry_deadline() -> Result<(), Box<dyn 
         };
         let mut attempts = 0;
         let first = budget
-            .retry_durability("first_read", async || {
+            .retry_durability("first_read", || {
                 attempts += 1;
-                if attempts < 3 {
+                std::future::ready(if attempts < 3 {
                     Err(DurabilityError::RootUnavailable)
                 } else {
                     Ok(7)
-                }
+                })
             })
             .await;
         assert_eq!(first.ok(), Some(7));
@@ -82,9 +82,9 @@ fn nbeof_holder_reads_share_one_absolute_retry_deadline() -> Result<(), Box<dyn 
         tokio::time::sleep(Duration::from_millis(350)).await;
         attempts = 0;
         let second = budget
-            .retry_durability("later_read", async || {
+            .retry_durability("later_read", || {
                 attempts += 1;
-                Err::<(), _>(DurabilityError::RootUnavailable)
+                std::future::ready(Err::<(), _>(DurabilityError::RootUnavailable))
             })
             .await;
         assert!(matches!(second, Err(DurabilityError::RootUnavailable)));

@@ -212,6 +212,7 @@ impl ChannelSpellStates {
     }
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[cfg(test)]
     pub(in crate::gameplay_transport) async fn flush_prey(&self, session: GameSessionId) -> bool {
         let budget = AdmissionRetryBudget::for_command(self.root);
         self.flush_prey_with_budget(session, &budget).await
@@ -266,8 +267,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         let Ok(Some(fence)) = budget
-            .retry_durability("prey_checkpoint_fence", async || {
-                self.current_quest_fence_durable(session).await
+            .retry_durability("prey_checkpoint_fence", || {
+                self.current_quest_fence_durable(session)
             })
             .await
         else {
@@ -333,7 +334,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let store =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone());
         let Ok(current) = budget
-            .retry_durability("prey_checkpoint_session", async || store.current_session(session).await)
+            .retry_durability("prey_checkpoint_session", || store.current_session(session))
             .await
         else {
             return false;

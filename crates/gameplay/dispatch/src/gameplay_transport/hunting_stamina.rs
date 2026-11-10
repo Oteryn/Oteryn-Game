@@ -228,16 +228,6 @@ impl ChannelSpellStates {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn save_resting_stamina(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-    ) -> TrainingSave {
-        let budget = AdmissionRetryBudget::for_command(self.root);
-        self.save_resting_stamina_with_budget(actor, session, &budget)
-            .await
-    }
-
     pub(super) async fn save_resting_stamina_with_budget(
         &self,
         actor: ExactActorRef,
@@ -359,6 +349,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .unwrap_or(TrainingSave::Unknown)
     }
 
+    #[cfg(test)]
     pub(super) async fn save_hunting_stamina(
         &self,
         actor: ExactActorRef,
