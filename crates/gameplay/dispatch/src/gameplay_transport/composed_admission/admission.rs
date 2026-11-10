@@ -23,6 +23,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // pass at once with nothing written. Such a busy holder is retried within the
         // root recovery window, with a per-attempt backoff so concurrent attempts do not
         // stay in lockstep.
+        // Keep the attempt's holder preference across every read and wait,
+        // including the existing post-commit budget handoff below. A retry
+        // never creates a new preference window; cancellation drops this guard.
+        let _foreground = self.root.foreground_demand().map_err(|_| Unavailable)?;
         let mut budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
         let record = loop {
             match self
