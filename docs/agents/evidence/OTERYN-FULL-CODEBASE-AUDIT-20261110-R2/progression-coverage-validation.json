@@ -1,0 +1,268 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "status": "PASS",
+  "files_full": 43,
+  "text_lines": 11169,
+  "method": "Full source review ledger independently matched to exact Git blobs and clean worktree; not runtime test execution.",
+  "package_tests_executed": false,
+  "files": [
+    {
+      "path": "crates/gameplay/progression/Cargo.toml",
+      "lines": 26,
+      "sha256": "f712ae7953c7313112580f3aa1e66f1c3d1d35ae082976946bf320f2da11fdf7",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/account_achievement.rs",
+      "lines": 141,
+      "sha256": "6ac1df2079c0e6215480103da1cde01f07174fc36b373457bc3142c4face18d1",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/achievement_catalogue.rs",
+      "lines": 176,
+      "sha256": "f73fff2f28ba9d4ca2904d47cbf6d3eb5df2673ebc191707ddfd1f6efcd683fb",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/achievement_granters.rs",
+      "lines": 118,
+      "sha256": "79abe3548af8b23998552282048a82184e3374e969a58b57f21e1d54c32da082",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/atelier.rs",
+      "lines": 505,
+      "sha256": "3a72b1d24f617d38bf63a45638a9b0693f2207b80808d6cc2c48221afdc4ca6d",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/atelier/parity_tests.rs",
+      "lines": 384,
+      "sha256": "3cb9434b91144bbc389961999d7623025be9d426bf27be99c169591eca5d4be6",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/bestiary.rs",
+      "lines": 39,
+      "sha256": "fb9d0feffdb00155651baf32c095da5bcd1adfb26a60985da0c272da715ac1a4",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/bestiary_achievement.rs",
+      "lines": 142,
+      "sha256": "27344acc0f2459e9ea4931f655a0b068f100e8d5c7c707e07a91c41bd186406f",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/bestiary_charm_crystal_parity_tests.rs",
+      "lines": 562,
+      "sha256": "193b83f187f50bc022a48795bf9cc3f43151087321aaa0f7c0be6dfb7595349d",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/charm_effects.rs",
+      "lines": 550,
+      "sha256": "b0ff811efcb4e3c68df626914f31f881d3864e1fd6bca9bf1027264c2f1bca0c",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/charm_effects/tests.rs",
+      "lines": 1594,
+      "sha256": "be942fae766e0ef89468f6c9f43fbfc98e4090cef51eb5986302f2d662962fe8",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/charm_effects_property_tests.rs",
+      "lines": 83,
+      "sha256": "a6ac5913c1cce567ce88ef228cc20289df9fd7ca78c6ef504885d0230c5619e9",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/condition_potions.rs",
+      "lines": 223,
+      "sha256": "b2f7c3cd69e41566aff1d656dc47d3a8a8ae83497667dc70ee64052d3317b161",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/daily_reward.rs",
+      "lines": 160,
+      "sha256": "8c71468f09693ef1331a712b8a5d7e73b16621f911843be243e44588ca662735",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/daily_reward/picker.rs",
+      "lines": 112,
+      "sha256": "da9f3cb3a1bdb5ae4ed99b01e73744cb32144cc8997295b339f1c618fc9f58dd",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/daily_reward_tests.rs",
+      "lines": 311,
+      "sha256": "3b3c691c40aa4d7eae163d578639698727b32aefc6ff9c0fe0b70536849d4932",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/experience_property_tests.rs",
+      "lines": 93,
+      "sha256": "ea718019332067c82f7ad58030c56c806bebcbdd7e218175ffb58be633509569",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/hit_training.rs",
+      "lines": 192,
+      "sha256": "d4babd3f4a7bdca9525c7e887f07c7a29307cbe16e55a570153843d22946ad23",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/item_use_achievement.rs",
+      "lines": 50,
+      "sha256": "17a58a4c4c05ae8f16a78d3954418c0d990f6f34b6760d4fa55947f3b9d6260a",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/lib.rs",
+      "lines": 39,
+      "sha256": "fb6ec4d2df30622cc36c6cc822d53a37c038f2f767e7796070440c6df99df329",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/loop_training.rs",
+      "lines": 219,
+      "sha256": "f680f64886631b87bc4bcac7b6ce2aeea4a8d408af9861bc0a4ecea245c01103",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/loop_training_tests.rs",
+      "lines": 240,
+      "sha256": "46951a1fe7f0d8bc9c23ccabe4a0034e4a3eefbf12b0dfcfbcab1b11a7488e5c",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/loyalty.rs",
+      "lines": 155,
+      "sha256": "956eb6d7614e7504890095ec40a9eb31ee64f71708aac70ece4390a9508c4cdd",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/mana_training.rs",
+      "lines": 125,
+      "sha256": "082fef23204522331c7bd55ffa674d2ad2c8a0e903a90c88ff76f8eca57502aa",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/mana_training_property_tests.rs",
+      "lines": 71,
+      "sha256": "09ba4bce55fa1c4df23e0e62bb5db0b5517f0ed718591c3182cfd651772643d6",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/npc_trade_achievement.rs",
+      "lines": 48,
+      "sha256": "a6644dbf08bd171cf1b775031369aafd420fa3b99702ce5d67cf2cb25ec23fdb",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/prey.rs",
+      "lines": 242,
+      "sha256": "ade316996b8a9c367f82aca8a5bdf94cda0e64ef4984c2af190d32fa6f252169",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/prey/difficulty.rs",
+      "lines": 266,
+      "sha256": "bd78d082469d0c134dc3ada765e8a86c7659d57cbe2af3ed658c5e556ff7af49",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/prey_tests.rs",
+      "lines": 228,
+      "sha256": "91954bee035cc7135af3a9659eeb0736aed40b186adbde486838a0af3ecdcb86",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/proficiency.rs",
+      "lines": 430,
+      "sha256": "ee8636e187e3f7b602cf411cf5632614c5ee2db5566740a8b1ffceca9aaf1bdc",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/proficiency_modification.rs",
+      "lines": 47,
+      "sha256": "d2f8932bad826b61babac2d323c8864bfd7aa8c81db8f93ea9ea8fa04bc369cd",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/promotion.rs",
+      "lines": 32,
+      "sha256": "dec3e4d3ca692f730142c05feaec4de18961cb032de5f082a879dd030ce84e2a",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/promotion_tests.rs",
+      "lines": 18,
+      "sha256": "9ccc1ad04717b43abd4312026b8b23a1f8b97059b62220ef451b70d65ddee512",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/ranking.rs",
+      "lines": 96,
+      "sha256": "87e49e1fb393bd000063f23c1e7ecc5d847e957c9740bd80d4d5255a98b4b30c",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/regeneration.rs",
+      "lines": 549,
+      "sha256": "9ddca319a2faab5e51c94e02b24b209b53308c639fd774d0c5ff76a18d68056e",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/regeneration_crystal_parity_tests.rs",
+      "lines": 128,
+      "sha256": "10a5efd166017ee94d16ac3079ec79109b6cbbb6d3469b1fec33464c46cdd62d",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/revision.rs",
+      "lines": 11,
+      "sha256": "1e2916a98fb2bda79e5f20c7b284c1659d81ed3578e7d87084bed0e5aefb8b93",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/spell_wheel.rs",
+      "lines": 80,
+      "sha256": "cdbb73aed3d6bbff5f74c3b2075e2118d326a37b5db1e19539571a950f60890a",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/wheel.rs",
+      "lines": 901,
+      "sha256": "d0a1409165528dadbd468aa6d93877543ed94a6c0f5a2ea11e6177ce41413e00",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/wheel_effects.rs",
+      "lines": 1020,
+      "sha256": "ab50025a93e329e55f8bc9196a696536dc4d0b6702540e6cc5134c3027f812ea",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/wheel_effects/gems.rs",
+      "lines": 381,
+      "sha256": "fe4f2fb8c437bc76337578b1cef8cadaaad42b71024ab07616e98829c34657e7",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/wheel_gem_data.rs",
+      "lines": 255,
+      "sha256": "25d68c7283235a0345600ec4b97f781b5f158ec2c735f8b93f9f6fe9ef0605aa",
+      "full": true
+    },
+    {
+      "path": "crates/gameplay/progression/src/wheel_read.rs",
+      "lines": 127,
+      "sha256": "68f6ca059733f899d37d62a4f572e9419504b4983cb8dcc253bc1ca59aed7b05",
+      "full": true
+    }
+  ]
+}

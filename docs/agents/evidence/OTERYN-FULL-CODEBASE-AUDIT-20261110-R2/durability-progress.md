@@ -1,8 +1,6 @@
 # Durability — partial source review
 
-Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**.
-
-Frozen cumulative coverage is **125/721 complete files**, 161 files with substantive ranges and **59,365 deduplicated lines**. This includes attributable earlier lead/cross-reference work and the current full-scope lane. These are deduplicated figures, not additive estimates. Remaining exact paths are in the coverage ledger.
+Input: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. Status: **IN PROGRESS**. Frozen cumulative coverage is **163/721 complete files**, 194 files with substantive ranges and **70,133 deduplicated lines**. This includes separately attributed cross-references and is not an additive estimate. The complete-scope lane has independently qualified 134 full files; exact cumulative remaining paths are in the coverage ledger.
 
 ## Entrypoints and reviewed behavior
 
@@ -28,14 +26,16 @@ The complete House hireling module (13 files), native NPC trade owner and all it
 
 The complete MINT and TRANSFER transaction owners, audit codecs, included unit-test source and golden tag/wire fixtures were reviewed. Reservations preserve immutable request content, exact producer identity and a persisted retry budget. Commit and receipt replay are separated: fresh authority requires the current exact tagged runtime scope and Character/Node fences, while a historical receipt returns retained bytes without reconstructing authority. Corpse exclusivity, authoritative corpse cap, root item locks, quantity conservation and atomic receipt/outbox composition were traced. Canonical Instance history translation does not conflate Channel with Instance. The type-2 activation lock precedes a fresh activation read and stays held through commit.
 
-An independent bounded Python check inspected all 14 embedded V1 envelope fixtures, their payload SHA-256, transaction membership, operation tags, selected state semantics and transfer quantity conservation, plus the additive WriteOnce codec fixture. It passed after correcting the helper to allow registered repeated fee-line fields. This supplementary check is not execution of Rust codecs or gameplay/SQL behavior. Full included Rust test source was reviewed but not run.
+An independent bounded Python check inspected all14 embedded V1 envelope fixtures, their payload SHA-256, transaction membership, operation tags, selected state semantics and transfer quantity conservation, plus the additive WriteOnce codec fixture. It passed after correcting the helper to allow registered repeated fee-line fields. This supplementary check is not execution of Rust codecs or gameplay/SQL behavior. Full included Rust test source was reviewed but not run.
 
 The full player-death item owner, dedicated audit codec, departed-owner recovery and included tests were reviewed. Live and recovery paths retain the original deterministic operation IDs and immutable selection. Recovery revalidates sealed lost-Instance evidence in the mutation transaction; origin ownership never substitutes for the original death Ground. Each one-item result is independently atomic and replayable, while final respawn waits for all selected operations. A rejected operation remains pending rather than being silently skipped.
 
+The complete Character death settlement module, source-qualified public cause, immutable item selection, current Premium/charm/adventurer protection, self forecast, PvP consequences and tutorial reset were reviewed. The actual production dispatch takes the current content decision root, invokes the sequenced owner, then waits for selected item operations. New death advances one checked global revision and composes progression, blessings, public/PvP/guild attribution and pending respawn atomically. Historical receipts retain their exact original binding and outcome. Channel respawn placement remains separate from Instance death-item obligation recovery. Included deterministic callback tests establish only control flow; PostgreSQL fixtures and historical replica setup were inspected but not run.
+
+Additional completed source review covers item-loop movement, House/Depot adapters, floor and seed lifecycle, quick-loot and sorting, death settlement and replay, mail/inbox/reward bridges and search/read owners. Current command, generation, custody and receipt guards were traced with selected real callers. Detailed restricted corroboration of an existing finding is retained privately and does not add a new ID.
+
 ## Findings and limits
 
-Unconfirmed integration and custody questions remain private and outside confirmed totals. Current producer validation is required; accepting a value shape in a test or a generic API is not evidence of a reachable production input. Later migration and caller review continues, including counterguards to existing findings.
+Unconfirmed integration questions remain outside confirmed totals. A supported value shape or synthetic fixture is not proof of a reachable production producer. Later migration and caller review continues. The earlier bosstiary kill-credit CharacterRevision hypothesis was refuted; the timeout scheduling question remains unproven because the actual timeout polls its inner future first.
 
-The previously proposed CharacterRevision mismatch after bosstiary kill credit was refuted in the inspected owner chain. A timeout scheduling concern remains unproven because the actual timeout polls its inner future first. No lost-outcome claim is made.
-
-Included DB/foundation/reconnect and item tests were inspected. Environment gates, multiple-connection fixtures and source-string/linkage checks have narrower scope than production holder/replay validation. No durability Cargo suite, SQL migration, PostgreSQL race, native client or live TLS connection was executed. Exact source hashes/ranges were independently validated; remaining work stays IN PROGRESS.
+Included test sources, environment gates and SQL/string/linkage assertions were inspected. No durability Cargo suite, SQL migration, PostgreSQL race, native client or live TLS connection was executed. The bounded Python fixture check is semantic data verification, not Rust codec or database execution. The package remains IN PROGRESS.

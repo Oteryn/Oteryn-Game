@@ -1,6 +1,6 @@
 {
   "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
-  "observed_at_utc": "2026-11-10T13:03:13.977114+00:00",
+  "observed_at_utc": "2026-11-10T13:23:48.065638+00:00",
   "lifecycle": "AUTHORING",
   "branch": "audit/full-codebase-20261110-4f0b6c62",
   "sole_writer": "lead /root",
@@ -8,7 +8,7 @@
   "lanes": [
     {
       "lane": "lead",
-      "ledger_rows": 393,
+      "ledger_rows": 442,
       "reported_completed_modules": [
         "oteryn-admin-contracts",
         "oteryn-admin-agent",
@@ -23,12 +23,13 @@
         "oteryn-world-bundle-compiler",
         "oteryn-gameplay-domain",
         "oteryn-gameplay-combat",
-        "oteryn-gameplay-entities"
+        "oteryn-gameplay-entities",
+        "oteryn-gameplay-progression"
       ]
     },
     {
       "lane": "protocol-session",
-      "ledger_rows": 917,
+      "ledger_rows": 1010,
       "reported_completed_modules": [
         "oteryn-identity",
         "oteryn-platform-contracts",
@@ -59,7 +60,7 @@
     },
     {
       "lane": "client-support",
-      "ledger_rows": 2637,
+      "ledger_rows": 2788,
       "reported_completed_modules": [
         "oteryn-client-domain",
         "oteryn-synthetic-assets",
@@ -74,13 +75,16 @@
         "oteryn-input-platform",
         "oteryn-client-runtime",
         "oteryn-renderer",
-        "oteryn-client-ui"
+        "oteryn-client-ui",
+        "oteryn-client"
       ]
     }
   ],
-  "checkpoint": 8,
-  "allocation_comment": 6768041329,
-  "predecessor": "2284138241007ca11dae256f6e7f519531fb079c",
-  "expected_predecessor_tree": "ad788063a980a4e45673220bd8d32f41058dc028",
-  "publication_rule": "Sole-parent successor; expected-SHA non-force ref update; fresh exact remote-head qualification before completion; explicit AUTHORING continuation afterward."
+  "checkpoint": 9,
+  "allocation_comment": 6768460573,
+  "predecessor": "b6f651b16e7996cbeae11f0c405638cd1f019cc5",
+  "predecessor_tree": "3322b0b7fe416dd444bacda32d88024c42ae742e",
+  "expected_sha": "b6f651b16e7996cbeae11f0c405638cd1f019cc5",
+  "latest_main": "af33fd3baeac15d9991bd24c91bcacc8733492e2",
+  "latest_main_observed_at_utc": "2026-11-10T13:26:28Z"
 }

@@ -142,6 +142,16 @@
       "auditor": "lead"
     },
     {
+      "module": "oteryn-gameplay-progression",
+      "path": "crates/gameplay/progression",
+      "report": "progression-review.md",
+      "verification": "All 43 tracked package files fully read and analyzed; exact Git/worktree SHA and line coverage qualification before publication. Package tests read, not executed; no Cargo/SQL/native runtime claim.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
       "module": "oteryn-identity",
       "status": "REVIEWED",
       "report": "protocol-session.md",
@@ -186,7 +196,7 @@
     {
       "module": "oteryn-protocol-oteryn",
       "status": "REVIEWED",
-      "report": "protocol.md",
+      "report": "protocol-session.md",
       "verification": "Exact source error-codes rustc unit tests: 25 passed; panic integration tests: 3 passed. Other packages native tests not run.",
       "auditor": "protocol-session"
     },
@@ -587,6 +597,39 @@
       "remaining_files": [],
       "verification": "REVIEWED, not independently VERIFIED. Static complete package analysis. JSON semantic validation PASS. Exact-source existing Highscores mapping test isolated:0passed/1failed; not a Cargo-suite result. No full client-ui Cargo/native/GPU/SQL execution. Prior isolated input-actions11/input-platform17 tests apply to those packages only. Full apps/client native/source/tests remains separate ongoing scope.",
       "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-client",
+      "path": "apps/client",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 1180,
+      "source_test_build_rs_files": 1056,
+      "json_files": 115,
+      "other_files": 9,
+      "tracked_line_count": 143488,
+      "entrypoints_and_invariants": "Complete tracked application source/test/manifest/installer/docs and semantic data audit. Native startup/login/install/update, actual Windows shell/input/callbacks, Session/mailbox/generation/authority boundaries, assets/rendering/preferences, all feature adapters and local account services. Detailed report apps-client.md,36 bounded groups in app-groups.json and child422-file final packet. No authoritative server state manufactured by UI intended contract.",
+      "dependency_edges": [
+        "Native selection/OAuth -> platform-client -> admitted Session",
+        "Actual shell -> client-ui proposals -> Outbox/runtime guards -> Session -> server authority",
+        "Typed snapshot/delta -> bounded mailbox reduction -> native renderer",
+        "Pinned client-assets -> map/appearance/sound; local settings -> UI only",
+        "Account forms -> separate service scope; immutable request/quote -> authoritative receipt"
+      ],
+      "negative_hypotheses": [
+        "Real module mounts and opener paths checked; old native copies excluded as sole impact evidence.",
+        "Exact revision/occurrence/pending/receipt guards bound candidate impact.",
+        "Tests with mock peers and synthetic payment authority do not establish production server or Win32 behavior.",
+        "Latent unreachable BossRewards parser and unproven difficulty range discrepancy not promoted."
+      ],
+      "findings": [
+        "CL-001..CL-006 independently root-confirmed static, bounded native evidence",
+        "CL-007..CL-015 candidates pending root adjudication"
+      ],
+      "remaining_files": [],
+      "verification": "All1180 tracked paths fully ledgered and hashes/ranges/base validated; clean immutable source tree. Semantic registration, reference catalogue and child wire-fixture checks executed; no full Cargo/native/GPU/PowerShell/SQL/live-service testing. REVIEWED not whole-package VERIFIED. Four changed af33 startup blobs separately reviewed in latest-main-delta.",
+      "auditor": "client-support",
+      "report": "apps-client.md"
     },
     {
       "module": "oteryn-foundation",
