@@ -702,11 +702,13 @@ def main() -> int:
     # Native policies seal the complete regenerated creature root. Keep their
     # bounded, independently reviewed source witnesses in the same generation.
     native = "tools/content-schema/native-gameplay/"
-    for name in ("build_srx3_soul_war_witness.py", "build_srx3_rotten_blood_witness.py",
+    for name in ("build_native_callback_witness.py",
+                 "build_srx3_soul_war_witness.py", "build_srx3_rotten_blood_witness.py",
                  "build_srx3_primal_witness.py", "build_srx3_soul_war_attacks.py",
                  "build_srx3_omrafir_attacks.py", "build_srx3_w01_prepare_death.py"):
         run(["python3", native + name])
-    for name in ("build_srx3_soul_war_death_events.py", "build_native_death_event_witness.py"):
+    for name in ("build_srx3_soul_war_death_events.py", "build_srx3_rotten_death_events.py",
+                 "build_native_death_event_witness.py"):
         run(["python3", native + name, "--refresh-native-pin"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])

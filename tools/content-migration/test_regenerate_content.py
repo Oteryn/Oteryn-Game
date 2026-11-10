@@ -395,8 +395,41 @@ def test_normal_repin_updates_raw_extent_without_rewriting_history_checks() -> N
         assert 'assert_eq!(historical.len(), 2);' in text
         assert 'assert_eq!(&batches[..prior.len()], prior.as_slice());' in text
 
+def test_normal_generation_orders_native_callback_producers() -> None:
+    commands: list[list[str]] = []
+    with (
+        patch.object(rc, "run", side_effect=commands.append),
+        patch.multiple(rc, materialize_world=lambda: None,
+                       refresh_quest_callback_proof=lambda: None,
+                       refresh_source_cohort_extent=lambda: None,
+                       repin_rust_inventory=lambda: None,
+                       refresh_world_metadata=lambda: None,
+                       AUTHORING_TOOLS=()),
+        patch.object(sys, "argv", ["regenerate_content.py", "--skip-checks"]),
+        patch.dict(os.environ, {"OTERYN_SPELL_SOURCE_ROOT": ""}),
+        patch("builtins.print"),
+    ):
+        assert rc.main() == 0
+    native = "tools/content-schema/native-gameplay/"
+    tree = ["python3", "tools/content-migration/world_project_v2_to_tree.py"]
+    pairs = [
+        (["python3", native + producer], ["python3", native + consumer, "--refresh-native-pin"])
+        for producer, consumer in (
+            ("build_native_callback_witness.py", "build_native_death_event_witness.py"),
+            ("build_srx3_soul_war_witness.py", "build_srx3_soul_war_death_events.py"),
+            ("build_srx3_rotten_blood_witness.py", "build_srx3_rotten_death_events.py"),
+        )
+    ]
+    required = [tree, *(command for pair in pairs for command in pair)]
+    nonunique = {command[1]: commands.count(command) for command in required if commands.count(command) != 1}
+    assert not nonunique, nonunique
+    for producer, consumer in pairs:
+        assert commands.index(tree) < commands.index(producer) < commands.index(consumer), (producer, consumer)
+
+
 def main() -> None:
     tests = [
+        test_normal_generation_orders_native_callback_producers,
         test_normal_repin_updates_raw_extent_without_rewriting_history_checks,
         test_source_cohort_extent_separates_npc_profiles_and_tracks_successors,
         test_no_stage_checks_binary_conflicts_without_decoding,
