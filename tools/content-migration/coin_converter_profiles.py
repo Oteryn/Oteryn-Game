@@ -8,9 +8,9 @@ are nonstackable carried tools; no source asset or identity is introduced.
 import copy
 import hashlib
 import json
+import xml.etree.ElementTree as ET
 
 from native_profile_composition import encode_native_profile
-import xml.etree.ElementTree as ET
 
 IDS = {23722, 25719, 28525, 28526}
 SOURCE = 'imports/canary/items-xml/items.xml'
