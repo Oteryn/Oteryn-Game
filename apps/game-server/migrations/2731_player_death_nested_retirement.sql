@@ -3,6 +3,8 @@
 -- reservation, terminal receipt and immutable audit. Ordinary decay is unchanged.
 -- Historical main entries and normalized nested edges retain their actual parent
 -- and ordinal; no retirement flattens the graph or invents custody.
+-- Equipped quivers use the exact game_item_loop_owner key/slot contract and
+-- retain its at-most-20 ammunition leaves; they are not general nested roots.
 CREATE TABLE game_player_death_retirement_edges (
  item_instance_id UUID PRIMARY KEY REFERENCES game_item_instances(item_instance_id),
  parent_item_instance_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id),
@@ -86,13 +88,17 @@ BEGIN
   SELECT * INTO g FROM game_item_ground_locations WHERE item_instance_id=current_item;
   IF FOUND THEN
    SELECT * INTO d FROM game_player_death_item_records
-    WHERE item_instance_id=current_item AND operation=1 AND source_slot IN(0,9)
+    WHERE item_instance_id=current_item AND operation=1 AND source_slot IN(0,6,9,10)
      AND world_id=g.world_id
      AND (scope_kind,channel_id,instance_id) IS NOT DISTINCT FROM (g.scope_kind,g.channel_id,g.instance_id)
      AND g.corpse_ref=convert_to('OTERYN_ITEM_LOOP_DROP/v1:','UTF8')||uuid_send(transaction_id);
    IF NOT FOUND OR current_item<>v.ground_root_item_instance_id OR g.world_id<>OLD.world_id
     OR (g.scope_kind,g.channel_id,g.instance_id) IS DISTINCT FROM (v.scope_kind,v.channel_id,v.instance_id)
     OR (d.source_slot=0 AND level>7)
+    OR (d.source_slot IN(6,10) AND (level>1 OR NOT EXISTS(SELECT 1 FROM game_item_instances qi
+     WHERE qi.item_instance_id=current_item AND qi.definition_production_key IN(
+      'oteryn:item.tibia.i35562','oteryn:item.tibia.i35848','oteryn:item.tibia.i35849','oteryn:item.tibia.i35524',
+      'oteryn:item.tibia.i36666','oteryn:item.tibia.i39150','oteryn:item.tibia.i39160','oteryn:item.tibia.i45644'))))
     OR NOT EXISTS(SELECT 1 FROM game_item_decay_retire_reservations root
      WHERE root.item_instance_id=current_item AND root.ground_root_item_instance_id=current_item
       AND root.fence_scope_ownership_generation=v.fence_scope_ownership_generation
@@ -136,6 +142,7 @@ LANGUAGE sql VOLATILE SECURITY DEFINER AS $proof$
   JOIN game_item_decay_retire_receipts r ON r.item_instance_id=e.item_instance_id
   JOIN game_item_decay_retire_receipts parent ON parent.item_instance_id=e.parent_item_instance_id
   JOIN game_item_decay_retire_receipts root ON root.item_instance_id=e.ground_root_item_instance_id
+  JOIN game_item_instances root_item ON root_item.item_instance_id=root.item_instance_id
   JOIN game_item_ground_removal_evidence g ON g.item_instance_id=root.item_instance_id
   JOIN game_player_death_item_records d ON d.transaction_id=e.death_transaction_id
   WHERE e.item_instance_id=p_item AND e.created_xact_id=pg_current_xact_id()
@@ -146,9 +153,12 @@ LANGUAGE sql VOLATILE SECURITY DEFINER AS $proof$
    AND e.placement_ordinal=r.placement_ordinal AND e.world_id=r.world_id
    AND (e.scope_kind,e.channel_id,e.instance_id) IS NOT DISTINCT FROM (r.scope_kind,r.channel_id,r.instance_id)
    AND (g.world_id,g.scope_kind,g.channel_id,g.instance_id) IS NOT DISTINCT FROM (r.world_id,r.scope_kind,r.channel_id,r.instance_id)
-   AND d.item_instance_id=root.item_instance_id AND d.operation=1 AND d.source_slot IN(0,9)
+   AND d.item_instance_id=root.item_instance_id AND d.operation=1 AND d.source_slot IN(0,6,9,10)
    AND (d.world_id,d.scope_kind,d.channel_id,d.instance_id) IS NOT DISTINCT FROM (r.world_id,r.scope_kind,r.channel_id,r.instance_id)
-   AND e.depth<=CASE WHEN d.source_slot=9 THEN 8 ELSE 7 END
+   AND e.depth<=CASE d.source_slot WHEN 9 THEN 8 WHEN 0 THEN 7 ELSE 1 END
+   AND (d.source_slot NOT IN(6,10) OR root_item.definition_production_key IN(
+    'oteryn:item.tibia.i35562','oteryn:item.tibia.i35848','oteryn:item.tibia.i35849','oteryn:item.tibia.i35524',
+    'oteryn:item.tibia.i36666','oteryn:item.tibia.i39150','oteryn:item.tibia.i39160','oteryn:item.tibia.i45644'))
    AND root.ground_root_item_instance_id=root.item_instance_id AND root.placement_ordinal IS NULL
    AND parent.ground_root_item_instance_id=root.item_instance_id
    AND (root.world_id,root.scope_kind,root.channel_id,root.instance_id,root.cause_kind,
@@ -167,7 +177,7 @@ LANGUAGE sql VOLATILE SECURITY DEFINER AS $proof$
         r.fence_scope_ownership_generation)
    AND (SELECT count(*) FROM game_player_death_retirement_edges all_edges
         WHERE all_edges.ground_root_item_instance_id=root.item_instance_id
-         AND all_edges.created_xact_id=pg_current_xact_id())<=CASE WHEN d.source_slot=9 THEN 500 ELSE 499 END
+         AND all_edges.created_xact_id=pg_current_xact_id())<=CASE d.source_slot WHEN 9 THEN 500 WHEN 0 THEN 499 ELSE 20 END
    AND NOT EXISTS(SELECT 1 FROM game_player_death_retirement_edges all_edges
         WHERE all_edges.ground_root_item_instance_id=root.item_instance_id
          AND all_edges.created_xact_id=pg_current_xact_id()

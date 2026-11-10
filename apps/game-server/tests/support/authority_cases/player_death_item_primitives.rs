@@ -476,6 +476,220 @@ impl crate::durability::item_loop_move::ItemLoopContent for PickupContent {
     }
 }
 
+const DEATH_QUIVER: &str = "oteryn:item.tibia.i35562";
+const DEATH_ARROW: &str = "oteryn:item.tibia.i3447";
+
+/// Test-only qualified Content: the ordinary quiver has six entries, accepts
+/// ammunition and can occupy left-hand/extra-ammunition slots. All persistence
+/// below still uses the real mint, transfer, loop and equipment owners.
+struct QuiverDeathContent;
+impl policy_registration::Registered for QuiverDeathContent {}
+
+impl crate::durability::item_transfer::ItemWeightLookup for QuiverDeathContent {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0xd1; 32]
+    }
+    fn weight_of(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        if definition.family == "Item"
+            && definition.revision_ref == "definition-r1"
+            && [DEATH_QUIVER, DEATH_ARROW].contains(&definition.production_key.as_str())
+        {
+            Ok(1)
+        } else {
+            crate::durability::item_transfer::ItemWeightLookup::weight_of(
+                &PickupContent,
+                definition,
+            )
+        }
+    }
+}
+
+impl crate::durability::item_loop_move::ItemLoopContent for QuiverDeathContent {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        DIGEST
+    }
+    fn loop_facts(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Option<ItemDefinitionFacts> {
+        let mut value = match definition.production_key.as_str() {
+            DEATH_QUIVER => {
+                let mut value = facts(DEATH_QUIVER, ItemStackClass::NonStackable);
+                value.container_capacity = Some(6);
+                value
+            }
+            DEATH_ARROW => facts(
+                DEATH_ARROW,
+                ItemStackClass::Stackable {
+                    proven_maximum: Some(100),
+                },
+            ),
+            _ => {
+                return crate::durability::item_loop_move::ItemLoopContent::loop_facts(
+                    &PickupContent,
+                    definition,
+                );
+            }
+        };
+        value.weight = Some(1);
+        (value.definition == *definition).then_some(value)
+    }
+    fn is_quiver(&self, definition: &crate::durability::item_mint::TypedDefinitionRef) -> bool {
+        definition.family == "Item"
+            && self.is_quiver_item(&definition.production_key, &definition.revision_ref)
+    }
+    fn is_ammunition(&self, definition: &crate::durability::item_mint::TypedDefinitionRef) -> bool {
+        definition.family == "Item"
+            && self.is_ammunition_item(&definition.production_key, &definition.revision_ref)
+    }
+}
+
+impl EquipmentPolicyLookup for QuiverDeathContent {
+    fn source_digest(&self) -> [u8; 32] {
+        DIGEST
+    }
+    fn equipment_policy(&self, key: &str, revision: &str) -> Option<QualifiedEquipmentPolicy> {
+        if !self.is_quiver_item(key, revision) {
+            return EquipmentPolicyLookup::equipment_policy(&EquipmentFixture, key, revision);
+        }
+        QualifiedEquipmentPolicy::from_qualified_content(
+            DIGEST,
+            [1, 2, 3, 4, 5, 6, 7, 8, 10]
+                .into_iter()
+                .map(|slot| {
+                    (
+                        slot,
+                        if matches!(slot, 6 | 10) {
+                            Ok(EquipmentClaims {
+                                slots: vec![slot],
+                                groups: Vec::new(),
+                                level: 0,
+                                vocations: Vec::new(),
+                            })
+                        } else {
+                            Err("quiver requires a supported equipment slot")
+                        },
+                    )
+                })
+                .collect(),
+            Some(6),
+        )
+    }
+}
+
+impl EquipmentMoveContent for QuiverDeathContent {
+    fn is_plain_item(&self, key: &str, _: &str) -> bool {
+        key != DEATH_QUIVER && key != BACKPACK
+    }
+    fn is_quiver_item(&self, key: &str, revision: &str) -> bool {
+        key == DEATH_QUIVER && revision == "definition-r1"
+    }
+    fn is_ammunition_item(&self, key: &str, revision: &str) -> bool {
+        key == DEATH_ARROW && revision == "definition-r1"
+    }
+    fn is_timed_item(&self, _: &str, _: &str) -> bool {
+        false
+    }
+    fn equipment_stack_class(&self, key: &str, _: &str) -> ItemStackClass {
+        if key == DEATH_ARROW {
+            ItemStackClass::Stackable {
+                proven_maximum: Some(100),
+            }
+        } else {
+            ItemStackClass::NonStackable
+        }
+    }
+}
+
+async fn pickup_quiver_fixture_item(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    key: &str,
+    command_id: u64,
+) -> TestResult<[u8; 16]> {
+    use crate::durability::item_loop_move::ItemLoopContent;
+    use crate::durability::item_transfer::ItemTransferOutcome;
+    let content = QuiverDeathContent;
+    let item = h.mint(authority, key, 1).await?;
+    let definition = facts(key, ItemStackClass::NonStackable).definition;
+    let facts = content
+        .loop_facts(&definition)
+        .ok_or("qualified quiver fixture facts")?;
+    let f = fence()?;
+    let mut candidate = h
+        .root
+        .freeze_item_transfer(
+            authority,
+            &h.node,
+            f,
+            to_backpack(command(command_id)?, item, facts),
+            &content,
+        )
+        .await
+        .map_err(debug)?;
+    let permit = SpellLanePermit::of_fresh_scope(f.runtime_scope).await?;
+    assert!(matches!(
+        h.root
+            .commit_item_transfer(&permit, authority, &h.node, f, &mut candidate, &content)
+            .await
+            .map_err(debug)?,
+        ItemTransferOutcome::Committed(_)
+    ));
+    Ok(item)
+}
+
+fn quiver_loss_occurrence(
+    main: [u8; 16],
+    quiver: [u8; 16],
+    slot: u8,
+) -> TestResult<PlayerDeathOccurrence> {
+    use crate::domain::death::{EquipmentSlot, EquippedItem, PveDeathInput, calculate_pve_death};
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    let equipment = [
+        EquippedItem {
+            slot: EquipmentSlot::Container,
+            item: main,
+        },
+        EquippedItem {
+            slot: if slot == 6 {
+                EquipmentSlot::LeftHand
+            } else {
+                EquipmentSlot::Ammo
+            },
+            item: quiver,
+        },
+    ];
+    // Choose a bounded deterministic occurrence with the actual native sampler.
+    // The real death transaction independently reloads and selects its equipment.
+    for nonce in 0_u16..1024 {
+        let mut occurrence = id(170);
+        occurrence[14..].copy_from_slice(&nonce.to_be_bytes());
+        let selected = calculate_pve_death(
+            &PveDeathInput {
+                level: 50,
+                total_experience: ExactI64::new(0),
+                regular_blessings: 0,
+                promotion_benefit_current: false,
+                has_vocation: true,
+                equipment: &equipment,
+                necklace_is_amulet_of_loss: false,
+            },
+            &GameplayDecisionRoot::from_bytes(DIGEST),
+            DecisionOccurrenceId::from_bytes(occurrence),
+        )
+        .map_err(debug)?;
+        if selected.lost_items.iter().any(|item| item.item == quiver) {
+            assert!(selected.lost_items.iter().any(|item| item.item == main));
+            return PlayerDeathOccurrence::from_bytes(occurrence)
+                .map_err(|error| debug(error).into());
+        }
+    }
+    Err("no quiver-loss occurrence in the bounded native sampler fixture".into())
+}
+
 async fn nested_carried_tree(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -1825,6 +2039,513 @@ fn player_death_nested_historical_backpack_pickup_same_owner_is_atomic() -> Test
 #[test]
 fn player_death_nested_historical_backpack_pickup_changes_every_descendant_owner() -> TestResult {
     nested_death_pickup_case(true, true)
+}
+
+async fn run_historical_slot_zero_death(admin: String) -> TestResult {
+    use crate::corpse_transfer_postgres_cases::{
+        SECOND_CHARACTER, SECOND_SESSION, command_of, fence_of, seed_second_character,
+    };
+    use crate::durability::character_death::CharacterDeathOutcome;
+    use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
+    use crate::durability::item_transfer::ItemTransferOutcome;
+    use crate::item_transfer_postgres_cases::uuid_text;
+
+    let h = Harness::create(admin, "death_historical_slot_zero").await?;
+    seed_second_character(&h.pool).await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let items = carried_chain(&h, &authority, 2).await?;
+    let selected = items[0];
+    drop_unselected_death_root(&h, &authority, selected, true).await?;
+    let f = fence_of(SECOND_CHARACTER, SECOND_SESSION)?;
+    let destination = h.mint(&authority, BACKPACK, 1).await?;
+    assert!(matches!(
+        h.transfer(
+            &authority,
+            f,
+            to_slot(
+                command_of(SECOND_SESSION, 200)?,
+                destination,
+                backpack_facts()
+            )
+        )
+        .await
+        .map_err(debug)?,
+        ItemTransferOutcome::Committed(_)
+    ));
+    initialize_for(&h, &authority, &f, command_of(SECOND_SESSION, 202)?).await?;
+    // Preserve only the old writer's representation in this disposable DB.
+    // The real historical pickup keeps all existing custody/fence guards;
+    // its new normalization trigger is restored before the tested death.
+    sqlx::query("ALTER TABLE game_item_loop_move_lines DISABLE TRIGGER game_player_death_container_normalize")
+        .execute(&h.pool).await?;
+    let permit = SpellLanePermit::of_fresh_scope(f.runtime_scope).await?;
+    let picked = h
+        .root
+        .commit_item_loop_move(
+            &permit,
+            &authority,
+            &h.node,
+            &f,
+            command_of(SECOND_SESSION, 210)?,
+            &PickupContent,
+            LoopMoveRequest {
+                item: selected,
+                count: None,
+                pickup_cell: Some(nested_death_cell()),
+                destination: LoopDestination::MainBackpack,
+            },
+        )
+        .await;
+    sqlx::query("ALTER TABLE game_item_loop_move_lines ENABLE TRIGGER game_player_death_container_normalize")
+        .execute(&h.pool).await?;
+    let picked = picked?.map_err(debug)?;
+    assert_eq!(picked.operation, 5);
+    assert!(!picked.replayed);
+    drop(permit);
+    assert_eq!(h.count("game_item_container_entries").await?, 2);
+    assert_eq!(h.count("game_item_nested_entries").await?, 1);
+    let source: (String, String) = sqlx::query_as("SELECT character_id::text,parent_item_instance_id::text FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        source,
+        (uuid_text(id(SECOND_CHARACTER)), uuid_text(destination))
+    );
+    let before = nested_death_snapshot(&h, selected).await?;
+    let mut intent = death()?;
+    intent.occurrence = PlayerDeathOccurrence::from_bytes(id(171)).map_err(debug)?;
+    let second_cell = vec![0, 0, 0, 14, 0, 0, 0, 15, 0, 7];
+    intent.death_cell.spatial_position = second_cell.clone();
+    let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(SECOND_CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    let gameplay = CurrentCharacterGameplayFence {
+        character_id: f.character_id,
+        game_session_id: f.game_session_id,
+        connection_generation: f.connection_generation,
+        character_lease_generation: f.character_lease_generation,
+        runtime_scope: f.runtime_scope,
+        scope_ownership_generation: f.scope_ownership_generation,
+        expected_character_revision: CharacterRevision::new(revision.parse()?).map_err(debug)?,
+    };
+    // Slot zero is an existing historical primitive; the current native
+    // selector chooses equipment/main roots, not arbitrary direct entries.
+    let committed = match h
+        .root
+        .commit_character_death(&authority, &h.node, gameplay, intent)
+        .await
+        .map_err(debug)?
+    {
+        CharacterDeathOutcome::Committed(value) => value,
+        other => {
+            return Err(format!("expected new historical primitive death, got {other:?}").into());
+        }
+    };
+    assert!(committed.items.is_none());
+    let permit = SpellLanePermit::of_fresh_scope(f.runtime_scope).await?;
+    let cause = PlayerDeathDropCause {
+        death_occurrence: id(171),
+        item_instance: selected,
+    };
+    let audits_before = h.count("game_item_audit_outbox").await?;
+    assert_eq!(
+        h.root
+            .commit_player_death_drop(&permit, &authority, &h.node, f, cause, request(184))
+            .await?,
+        PlayerDeathItemOutcome::Written
+    );
+    assert_eq!(nested_death_snapshot(&h, selected).await?, before);
+    let source_slot: i16 = sqlx::query_scalar("SELECT source_slot FROM game_player_death_item_records WHERE death_occurrence_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid")
+        .bind(id(171).as_slice()).bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(source_slot, 0);
+    assert_eq!(h.count("game_player_death_item_records").await?, 2);
+    assert_eq!(h.count("game_item_container_entries").await?, 0);
+    assert_eq!(h.count("game_item_nested_entries").await?, 2);
+    let position: Vec<u8> = sqlx::query_scalar("SELECT spatial_position FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(position, second_cell);
+    for item in &items {
+        let owner: Option<String> = sqlx::query_scalar(
+            "SELECT owner_character::text FROM game_item_loop_owner(encode($1,'hex')::uuid)",
+        )
+        .bind(item.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(owner, None);
+    }
+    let written = nested_death_snapshot(&h, [0; 16]).await?;
+    assert_eq!(
+        h.root
+            .commit_player_death_drop(&permit, &authority, &h.node, f, cause, request(184))
+            .await?,
+        PlayerDeathItemOutcome::Replay
+    );
+    assert_eq!(nested_death_snapshot(&h, [0; 16]).await?, written);
+    assert_eq!(h.count("game_player_death_item_records").await?, 2);
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 1);
+    drop(permit);
+    assert!(
+        h.root
+            .consume_pending_respawn(
+                &authority,
+                &h.node,
+                CurrentCharacterGameplayFence {
+                    expected_character_revision: committed.committed_character_revision,
+                    ..gameplay
+                },
+                Some(committed.occurrence)
+            )
+            .await
+            .map_err(debug)?
+            .is_some()
+    );
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}
+
+#[test]
+fn player_death_nested_historical_repickup_remains_a_legal_slot_zero_primitive() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_historical_slot_zero_death(admin))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "historical slot-zero death thread panicked")?
+        .map_err(Into::into)
+}
+
+async fn run_selected_quiver_death_reset(admin: String, slot: u8) -> TestResult {
+    use crate::durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
+    };
+    use crate::durability::character_progression::CharacterProgressionError;
+    use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+    use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
+    use crate::durability::{DurabilityError, SqlxFailureClass};
+    use crate::item_transfer_postgres_cases::uuid_text;
+    use oteryn_gameplay_spell::spell::mana_training::CompiledTrainingFormula;
+
+    assert!(matches!(slot, 6 | 10));
+    let h = Harness::create(
+        admin,
+        if slot == 6 {
+            "death_selected_quiver_left"
+        } else {
+            "death_selected_quiver_ammo"
+        },
+    )
+    .await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let main = h.mint(&authority, BACKPACK, 1).await?;
+    h.committed(&authority, to_slot(command(1)?, main, backpack_facts()))
+        .await?;
+    initialize(&h, &authority).await?;
+    let quiver = pickup_quiver_fixture_item(&h, &authority, DEATH_QUIVER, 2).await?;
+    let arrow = pickup_quiver_fixture_item(&h, &authority, DEATH_ARROW, 3).await?;
+    let f = fence()?;
+    let content = QuiverDeathContent;
+    let permit = SpellLanePermit::of_fresh_scope(f.runtime_scope).await?;
+    let moved = h
+        .root
+        .commit_item_loop_move(
+            &permit,
+            &authority,
+            &h.node,
+            &f,
+            command(40)?,
+            &content,
+            LoopMoveRequest {
+                item: arrow,
+                count: None,
+                pickup_cell: None,
+                destination: LoopDestination::Container(quiver),
+            },
+        )
+        .await?
+        .map_err(debug)?;
+    assert_eq!(moved.operation, 1);
+    assert!(!moved.replayed);
+    drop(permit);
+    let equipped = h
+        .root
+        .commit_equipment_move(
+            &authority,
+            &h.node,
+            &f,
+            command(41)?,
+            &content,
+            EquipmentMove {
+                item: quiver,
+                from_slot: None,
+                to_slot: Some(slot),
+            },
+        )
+        .await?
+        .map_err(debug)?;
+    assert!(!equipped.replayed);
+    let equipped_id: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND slot=$2")
+        .bind(f.character_id.as_bytes().as_slice()).bind(i16::from(slot)).fetch_one(&h.pool).await?;
+    assert_eq!(equipped_id, quiver);
+    let arrow_before: String = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(arrow.as_slice()).fetch_one(&h.pool).await?;
+    let edge_before: String = sqlx::query_scalar("SELECT to_jsonb(e)::text FROM game_item_nested_entries e WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid")
+        .bind(arrow.as_slice()).bind(quiver.as_slice()).fetch_one(&h.pool).await?;
+    let formula = CompiledTrainingFormula::from_profile(
+        include_bytes!("../../../../../tools/content-schema/native-gameplay/build-training.json"),
+        "content-1",
+    )
+    .map_err(debug)?;
+    let mut gameplay = CurrentCharacterGameplayFence {
+        character_id: f.character_id,
+        game_session_id: f.game_session_id,
+        connection_generation: f.connection_generation,
+        character_lease_generation: f.character_lease_generation,
+        runtime_scope: f.runtime_scope,
+        scope_ownership_generation: f.scope_ownership_generation,
+        expected_character_revision: CharacterRevision::new(h.character_revision().await?.parse()?)
+            .map_err(debug)?,
+    };
+    let build = DurableBuildState::default();
+    h.root
+        .commit_character_build(
+            &authority,
+            &h.node,
+            gameplay,
+            BuildChangeRequest {
+                occurrence: BuildOccurrence::from_bytes(id(160)).map_err(debug)?,
+                cause: BuildCause::VocationChoice,
+                after: convert_vocation(&formula, &build, "druid").map_err(debug)?,
+                before: build,
+                pruned_stance: None,
+            },
+            &formula,
+        )
+        .await
+        .map_err(debug)?;
+    gameplay.expected_character_revision =
+        CharacterRevision::new(h.character_revision().await?.parse()?).map_err(debug)?;
+    let mut intent = death()?;
+    intent.occurrence = quiver_loss_occurrence(main, quiver, slot)?;
+    intent.death_cell.spatial_position = nested_death_cell();
+    let committed = h
+        .root
+        .settle_runtime_player_death_with_items(
+            &CharacterRevisionSequencer::new(),
+            &authority,
+            &h.node,
+            gameplay,
+            intent,
+            Some(&formula),
+            None,
+            Some(DIGEST),
+        )
+        .await
+        .map_err(debug)?;
+    let selection = committed.items.as_ref().ok_or("selected quiver death")?;
+    assert_eq!(selection.root, DIGEST);
+    assert_eq!(selection.amulet, None);
+    assert_eq!(selection.lost, vec![main, quiver]);
+    let pending = CurrentCharacterGameplayFence {
+        expected_character_revision: committed.committed_character_revision,
+        ..gameplay
+    };
+    let quiver_cause = PlayerDeathDropCause {
+        death_occurrence: *committed.occurrence.as_bytes(),
+        item_instance: quiver,
+    };
+    let main_cause = PlayerDeathDropCause {
+        item_instance: main,
+        ..quiver_cause
+    };
+    let quiver_request = PlayerDeathItemRequest::selected(&committed, quiver, false)?;
+    let main_request = PlayerDeathItemRequest::selected(&committed, main, false)?;
+    let permit = SpellLanePermit::of_fresh_scope(f.runtime_scope).await?;
+    let before_quiver_drop = nested_death_snapshot(&h, quiver).await?;
+    let audits_before = h.count("game_item_audit_outbox").await?;
+    assert_eq!(
+        h.root
+            .commit_player_death_drop(
+                &permit,
+                &authority,
+                &h.node,
+                f,
+                quiver_cause,
+                quiver_request.clone()
+            )
+            .await?,
+        PlayerDeathItemOutcome::Written
+    );
+    assert_eq!(nested_death_snapshot(&h, quiver).await?, before_quiver_drop);
+    let actual_slot: i16 = sqlx::query_scalar("SELECT source_slot FROM game_player_death_item_records WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(quiver.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(actual_slot, i16::from(slot));
+    assert!(matches!(
+        h.root
+            .consume_pending_respawn(&authority, &h.node, pending, Some(committed.occurrence))
+            .await,
+        Err(CharacterProgressionError::Unavailable(
+            DurabilityError::Database(SqlxFailureClass::Database(_))
+        ))
+    ));
+    assert_eq!(h.count("game_character_pending_respawns").await?, 1);
+    assert_eq!(
+        h.root
+            .commit_player_death_drop(
+                &permit,
+                &authority,
+                &h.node,
+                f,
+                main_cause,
+                main_request.clone()
+            )
+            .await?,
+        PlayerDeathItemOutcome::Written
+    );
+    let arrow_after: String = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(arrow.as_slice()).fetch_one(&h.pool).await?;
+    let edge_after: String = sqlx::query_scalar("SELECT to_jsonb(e)::text FROM game_item_nested_entries e WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(arrow.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(arrow_after, arrow_before);
+    assert_eq!(edge_after, edge_before);
+    let owner: Option<String> = sqlx::query_scalar(
+        "SELECT owner_character::text FROM game_item_loop_owner(encode($1,'hex')::uuid)",
+    )
+    .bind(arrow.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(owner, None);
+    let written = nested_death_snapshot(&h, [0; 16]).await?;
+    let grounds: Vec<String> = sqlx::query_scalar("SELECT to_jsonb(g)::text FROM game_item_ground_locations g ORDER BY item_instance_id LIMIT 3")
+        .fetch_all(&h.pool).await?;
+    assert_eq!(grounds.len(), 2);
+    for (cause, request) in [(quiver_cause, quiver_request), (main_cause, main_request)] {
+        assert_eq!(
+            h.root
+                .commit_player_death_drop(&permit, &authority, &h.node, f, cause, request)
+                .await?,
+            PlayerDeathItemOutcome::Replay
+        );
+    }
+    assert_eq!(nested_death_snapshot(&h, [0; 16]).await?, written);
+    let replay_grounds: Vec<String> = sqlx::query_scalar("SELECT to_jsonb(g)::text FROM game_item_ground_locations g ORDER BY item_instance_id LIMIT 3")
+        .fetch_all(&h.pool).await?;
+    assert_eq!(replay_grounds, grounds);
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 2);
+    drop(permit);
+    assert!(
+        h.root
+            .consume_pending_respawn(&authority, &h.node, pending, Some(committed.occurrence))
+            .await
+            .map_err(debug)?
+            .is_some()
+    );
+    let reset = prepare_nested_reset(&h, &h.root).await?;
+    observe_nested_retirement_order(&h).await?;
+    let audits_before_reset = h.count("game_item_audit_outbox").await?;
+    assert!(
+        h.root
+            .retire_world_reset_ground(&authority, &h.node, &reset)
+            .await
+            .map_err(debug)?
+    );
+    let order: Vec<String> = sqlx::query_scalar(
+        "SELECT item::text FROM test_nested_retire_order ORDER BY position LIMIT 4",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(order.len(), 3);
+    assert!(
+        order
+            .iter()
+            .position(|item| item == &uuid_text(arrow))
+            .ok_or("retired arrow")?
+            < order
+                .iter()
+                .position(|item| item == &uuid_text(quiver))
+                .ok_or("retired quiver")?
+    );
+    let (transactions, receipts): (i64, i64) = sqlx::query_as("SELECT count(DISTINCT created_xact_id),count(*) FROM game_item_decay_retire_receipts WHERE ground_root_item_instance_id=encode($1,'hex')::uuid")
+        .bind(quiver.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!((transactions, receipts), (1, 2));
+    assert_nested_retirement_audits(&h, quiver, &[(arrow, quiver)]).await?;
+    assert_nested_retirement_audits(&h, main, &[]).await?;
+    for item in [main, quiver, arrow] {
+        assert_eq!(h.item_state(item).await?, (0, 2));
+    }
+    for relation in [
+        "game_item_ground_locations",
+        "game_item_container_slots",
+        "game_character_equipment_slots",
+        "game_item_container_entries",
+        "game_item_nested_entries",
+    ] {
+        assert_eq!(h.count(relation).await?, 0);
+    }
+    assert_eq!(h.count("game_item_decay_retire_receipts").await?, 3);
+    assert_eq!(
+        h.count("game_item_audit_outbox").await?,
+        audits_before_reset + 3
+    );
+    let retired = nested_death_snapshot(&h, [0; 16]).await?;
+    assert!(
+        h.root
+            .retire_world_reset_ground(&authority, &h.node, &reset)
+            .await
+            .map_err(debug)?
+    );
+    assert_eq!(nested_death_snapshot(&h, [0; 16]).await?, retired);
+    assert_eq!(h.count("game_item_decay_retire_receipts").await?, 3);
+    assert_eq!(
+        h.count("game_item_audit_outbox").await?,
+        audits_before_reset + 3
+    );
+    assert_eq!(h.count("test_nested_retire_order").await?, 3);
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}
+
+fn selected_quiver_death_case(slot: u8) -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_selected_quiver_death_reset(admin, slot))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "selected quiver death/reset thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn player_death_nested_selected_left_quiver_retires_with_ammunition() -> TestResult {
+    selected_quiver_death_case(6)
+}
+
+#[test]
+fn player_death_nested_selected_extra_quiver_retires_with_ammunition() -> TestResult {
+    selected_quiver_death_case(10)
 }
 
 async fn run_death_ground_regression(admin: String, reset: bool) -> TestResult {

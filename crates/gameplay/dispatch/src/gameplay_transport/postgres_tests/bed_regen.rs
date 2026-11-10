@@ -1,4 +1,4 @@
-//! BED-REGEN-1: production first-entry -> runtime-role transaction -> wire vitals.
+//! BED-REGEN-1: production first-entry -> fenced durable transaction -> wire vitals.
 use super::fixture::{Harness, debug, id, run};
 use super::tutorial_vitals_fixture::admit;
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -49,8 +49,9 @@ fn gr_soul_001_bed_admission_uses_current_account_premium_postgres() -> TestResu
                         .bind(id(41).as_slice()).execute(&h.pool).await?;
                 }
                 if promoted {
-                    // Historical promotion is fixture input; settlement itself
-                    // still runs through the restricted runtime role and fences.
+                    // Historical promotion is fixture input; settlement still
+                    // resolves current account Premium and gameplay fences.
+                    // This fixture does not qualify SQL role privileges.
                     let mut tx = h.pool.begin().await?;
                     sqlx::query("SET LOCAL session_replication_role=replica")
                         .execute(&mut *tx)

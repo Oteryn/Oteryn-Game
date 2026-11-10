@@ -70,6 +70,19 @@ pub(in crate::durability) struct DeathTreeEntry {
     pub depth: i32,
 }
 
+// These are the exact equipped-container roots admitted by game_item_loop_owner.
+// Their native destination policy accepts ammunition leaves only, capped at 20.
+pub(super) const EQUIPPED_QUIVERS: [&str; 8] = [
+    "oteryn:item.tibia.i35562",
+    "oteryn:item.tibia.i35848",
+    "oteryn:item.tibia.i35849",
+    "oteryn:item.tibia.i35524",
+    "oteryn:item.tibia.i36666",
+    "oteryn:item.tibia.i39150",
+    "oteryn:item.tibia.i39160",
+    "oteryn:item.tibia.i45644",
+];
+
 /// Retained historical direct entries and ordinary nested entries keep their exact edges.
 /// The materialized limit bounds traversal even when restored storage is malformed.
 pub(in crate::durability) async fn death_tree(
@@ -77,9 +90,10 @@ pub(in crate::durability) async fn death_tree(
     root: [u8; 16],
 ) -> Result<Vec<DeathTreeEntry>> {
     use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
-    let source: Option<(Vec<u8>, i16)> = sqlx::query_as(
-        "SELECT uuid_send(g.world_id),r.source_slot FROM game_player_death_item_records r \
+    let source: Option<(Vec<u8>, i16, String)> = sqlx::query_as(
+        "SELECT uuid_send(g.world_id),r.source_slot,i.definition_production_key FROM game_player_death_item_records r \
          JOIN game_item_ground_locations g USING(item_instance_id) \
+         JOIN game_item_instances i USING(item_instance_id) \
          WHERE r.item_instance_id=encode($1,'hex')::uuid AND r.operation=1 \
          AND g.world_id=r.world_id \
          AND (g.scope_kind,g.channel_id,g.instance_id) IS NOT DISTINCT FROM (r.scope_kind,r.channel_id,r.instance_id) \
@@ -88,7 +102,8 @@ pub(in crate::durability) async fn death_tree(
     .bind(root.as_slice())
     .fetch_optional(&mut **tx)
     .await?;
-    let (world, source_slot) = source.ok_or(DurabilityError::InvalidStoredState)?;
+    let (world, source_slot, root_definition) =
+        source.ok_or(DurabilityError::InvalidStoredState)?;
     let rows = sqlx::query(
         "WITH RECURSIVE tree(item,parent,ordinal,kind,world,depth,path,cycle) AS ( \
            SELECT encode($1,'hex')::uuid,NULL::uuid,NULL::numeric,0,encode($2,'hex')::uuid,0,ARRAY[encode($1,'hex')::uuid],false \
@@ -153,12 +168,13 @@ pub(in crate::durability) async fn death_tree(
             depth,
         });
     }
-    order_death_tree(root, source_slot, entries)
+    order_death_tree(root, source_slot, &root_definition, entries)
 }
 
 fn order_death_tree(
     root: [u8; 16],
     source_slot: i16,
+    root_definition: &str,
     mut entries: Vec<DeathTreeEntry>,
 ) -> Result<Vec<DeathTreeEntry>> {
     use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
@@ -166,6 +182,10 @@ fn order_death_tree(
     let (depth_limit, descendants_limit) = match source_slot {
         9 => (ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX),
         0 => (ITEM_LOOP_DEPTH_MAX - 1, ITEM_LOOP_TREE_ITEMS_MAX - 1),
+        6 | 10 if EQUIPPED_QUIVERS.contains(&root_definition) => (
+            1,
+            i64::from(crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX),
+        ),
         _ => (0, 0),
     };
     if entries.len() > descendants_limit as usize {
@@ -244,31 +264,54 @@ mod tests {
 
     #[test]
     fn death_tree_preserves_the_full_carried_count_and_postorder() -> Result<()> {
-        let tree = order_death_tree(id(0), 9, wide_tree(500))?;
+        let tree = order_death_tree(id(0), 9, "fixture:backpack", wide_tree(500))?;
         assert_eq!(tree.len(), 500); // Plus the separately retired main root: 501.
         assert!(tree.windows(2).all(|pair| pair[0].depth >= pair[1].depth));
-        assert!(order_death_tree(id(0), 9, wide_tree(501)).is_err());
+        assert!(order_death_tree(id(0), 9, "fixture:backpack", wide_tree(501)).is_err());
         let mut direct = wide_tree(499);
         for entry in &mut direct {
             entry.kind = DeathEntryKind::Nested;
         }
-        assert_eq!(order_death_tree(id(0), 0, direct)?.len(), 499);
-        assert!(order_death_tree(id(0), 0, wide_tree(500)).is_err());
+        assert_eq!(
+            order_death_tree(id(0), 0, "fixture:backpack", direct)?.len(),
+            499
+        );
+        assert!(order_death_tree(id(0), 0, "fixture:backpack", wide_tree(500)).is_err());
         Ok(())
     }
 
     #[test]
     fn death_tree_preserves_depth_eight_and_monotonic_ordinals() -> Result<()> {
-        let main = order_death_tree(id(0), 9, chain(8))?;
+        let main = order_death_tree(id(0), 9, "fixture:backpack", chain(8))?;
         assert_eq!(main[0].item, id(8));
         assert_eq!(main[0].ordinal, u64::MAX);
-        assert!(order_death_tree(id(0), 9, chain(9)).is_err());
-        assert!(order_death_tree(id(0), 0, chain(7)).is_ok());
-        assert!(order_death_tree(id(0), 0, chain(8)).is_err());
+        assert!(order_death_tree(id(0), 9, "fixture:backpack", chain(9)).is_err());
+        assert!(order_death_tree(id(0), 0, "fixture:backpack", chain(7)).is_ok());
+        assert!(order_death_tree(id(0), 0, "fixture:backpack", chain(8)).is_err());
         let mut historical = chain(3);
         historical[1].kind = DeathEntryKind::Direct;
-        assert!(order_death_tree(id(0), 0, historical).is_ok());
+        assert!(order_death_tree(id(0), 0, "fixture:backpack", historical).is_ok());
         Ok(())
+    }
+
+    #[test]
+    fn equipped_quivers_keep_their_leaf_capacity_and_exact_source_scope() {
+        for slot in [6, 10] {
+            for definition in EQUIPPED_QUIVERS {
+                let mut tree = wide_tree(20);
+                for entry in &mut tree {
+                    entry.kind = DeathEntryKind::Nested;
+                }
+                assert!(order_death_tree(id(0), slot, definition, tree).is_ok());
+                assert!(order_death_tree(id(0), slot, definition, wide_tree(21)).is_err());
+                assert!(order_death_tree(id(0), slot, definition, chain(2)).is_err());
+            }
+            assert!(order_death_tree(id(0), slot, "fixture:backpack", chain(1)).is_err());
+            assert!(order_death_tree(id(0), slot, "fixture:ordinary-gear", vec![]).is_ok());
+        }
+        for slot in [1, 2, 3, 4, 5, 7, 8] {
+            assert!(order_death_tree(id(0), slot, EQUIPPED_QUIVERS[0], chain(1)).is_err());
+        }
     }
 
     #[test]
@@ -288,11 +331,11 @@ mod tests {
         for mutate in mutations {
             let mut tree = wide_tree(21);
             mutate(&mut tree);
-            assert!(order_death_tree(id(0), 9, tree).is_err());
+            assert!(order_death_tree(id(0), 9, "fixture:backpack", tree).is_err());
         }
         let mut tree = chain(2);
         tree[1].depth = 1;
-        assert!(order_death_tree(id(0), 9, tree).is_err());
-        assert!(order_death_tree(id(0), 7, chain(1)).is_err());
+        assert!(order_death_tree(id(0), 9, "fixture:backpack", tree).is_err());
+        assert!(order_death_tree(id(0), 7, "fixture:backpack", chain(1)).is_err());
     }
 }

@@ -60,6 +60,9 @@ fn death_tree_retirement_adds_private_source_proofs_without_replacing_authority_
         "root.fence_scope_ownership_generation",
         "root.activity_handoff_id,root.activity_ownership_generation",
         "root.reset_epoch,root.retirement_binding,root.target_digest",
+        "CASE d.source_slot WHEN 9 THEN 8 WHEN 0 THEN 7 ELSE 1 END",
+        "CASE d.source_slot WHEN 9 THEN 500 WHEN 0 THEN 499 ELSE 20 END",
+        "d.source_slot NOT IN(6,10) OR root_item.definition_production_key IN(",
         "REVOKE ALL ON game_player_death_retirement_edges FROM PUBLIC,oteryn_game_runtime,oteryn_game_control",
         "SECURITY DEFINER SET search_path=pg_catalog,%I,pg_temp",
     ] {
@@ -70,5 +73,8 @@ fn death_tree_retirement_adds_private_source_proofs_without_replacing_authority_
     }
     assert!(!sql.contains("GRANT INSERT ON game_player_death_retirement_edges"));
     assert!(!sql.contains("DISABLE TRIGGER"));
+    for key in super::ground_step::EQUIPPED_QUIVERS {
+        assert!(sql.contains(key), "missing admitted equipped quiver: {key}");
+    }
     Ok(())
 }
