@@ -256,7 +256,7 @@ impl ChannelSpellStates {
             || self.has_retained_familiar_logout(actor, session)
     }
     /// A paid or lifecycle familiar commit whose outcome is unknown.
-    pub(super) fn has_pending_familiar_cast(
+    pub(in crate::gameplay_transport) fn has_pending_familiar_cast(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
