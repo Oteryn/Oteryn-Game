@@ -67,6 +67,16 @@
       "note": "Node boot diagnostics (NBDIAG, #3057)."
     },
     {
+      "event": "control_loss_reconcile_pending",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage"
+      ],
+      "codes": [],
+      "note": "NBFIX: closed retained-work stage blocking logout or loss reconciliation."
+    },
+    {
       "event": "join_prepare_failed",
       "level": "info",
       "span": false,
@@ -89,6 +99,16 @@
       "fields": [],
       "codes": [],
       "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "logout_busy",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage"
+      ],
+      "codes": [],
+      "note": "NBFIX: closed logout refusal stage; no account, session or authentication material."
     },
     {
       "event": "logout_unknown",

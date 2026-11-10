@@ -474,6 +474,46 @@ durability_report_lines() {
     -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=holder_usage /DURABILITY_HOLDER_USAGE /' \
     -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=pass_dropped /DURABILITY_PASS_DROPPED /'
 }
+report_character_authority_failures() {
+  # Startup runs outside the seam monitor. Export only the closed check names
+  # from the current log snapshot, never identifiers, SQL, or stored payloads.
+  python3 - "$node_log" "$1" "$NODE_BOOT_WORLD" <<'PY_CHARACTER_AUTHORITY'
+import os, re, sys
+
+path, stage, world = sys.argv[1:]
+checks = {'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
+          'bazaar', 'revision_chain', 'appearance', 'build_chain',
+          'proficiency_history', 'familiar_chain', 'spell_familiar_group',
+          'spell_item_chain', 'audit_payload'}
+reported = set()
+try:
+    with open(path, 'rb') as stream:
+        remaining = os.fstat(stream.fileno()).st_size
+        oversized = False
+        while remaining > 0 and len(reported) < len(checks):
+            piece = stream.readline(min(4097, remaining))
+            if not piece:
+                break
+            remaining -= len(piece)
+            complete = piece.endswith(b'\n')
+            if oversized or len(piece) > 4096 or not complete:
+                oversized = not complete
+                continue
+            line = piece.decode('utf-8', errors='replace')
+            if not line.startswith('oteryn-game-server '):
+                continue
+            fields = dict(re.findall(r'\b([a-z_]+)=([^\s]+)', line))
+            check = fields.get('stage')
+            if (fields.get('module') == 'durability'
+                    and fields.get('event') == 'character_authority_check_failed'
+                    and check in checks and check not in reported):
+                print(f'NODE_BOOT_CHARACTER_AUTHORITY_CHECK stage={stage} '
+                      f'world_bundle={world} check={check}')
+                reported.add(check)
+except FileNotFoundError:
+    pass
+PY_CHARACTER_AUTHORITY
+}
 start_runtime_diagnostics() {
   # Read the regular file independently: neither a slow log consumer nor a stalled
   # qualification pipeline can hold up the server's stderr. No raw error text is copied.
@@ -495,7 +535,8 @@ events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'step_rejected_dead', 'step_rejected_lane', 'step_rejected_pvp_locks',
           'step_rejected_stale_position', 'step_rejected_pending_spell',
           'step_rejected_drome', 'step_rejected_movement', 'step_rejected_holder_busy',
-          'session_durability_failed', 'logout_unknown'}
+          'session_durability_failed', 'logout_unknown', 'logout_busy',
+          'control_loss_reconcile_pending', 'character_authority_check_failed'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
@@ -503,10 +544,28 @@ labels = {
              'CoordinateOverflow', 'Cell', 'Blocked', 'CapacityExceeded', 'NotQualified',
              'holder_busy', 'storage', 'deadline', 'commit_unknown', 'authority',
              'invalid_state', 'unavailable', 'unknown'},
-    'failure_stage': {'pvp_refresh', 'logout_settle', 'terminal_session',
-                      'retire_session', 'account_closure', 'release_commit',
-                      'release_attempt', 'retire', 'activity_view', 'activity_return',
-                      'activity_publish', 'activity_successor', 'activity_destination'},
+    'failure_stage': {'account_closure', 'activity_destination', 'activity_loss_session',
+                      'activity_publish', 'activity_return', 'activity_scope',
+                      'activity_successor', 'activity_view', 'actor_unreserved',
+                      'admitted_binding', 'appearance_observation', 'familiar_cast',
+                      'foreground_demand', 'gourmet_checkpoint', 'hunting_stamina_readback',
+                      'item_effects', 'logout_settle', 'loss_activity_origin',
+                      'loss_resumed_history', 'loss_session', 'loss_session_time',
+                      'loss_transferred_history', 'native_cast', 'newhaven_travel',
+                      'parameters', 'pending_spell_commit', 'prey_checkpoint_fence',
+                      'prey_checkpoint_session', 'proficiency_character', 'proficiency_fence',
+                      'proficiency_readback', 'proficiency_snapshot', 'pvp_refresh',
+                      'release_attempt', 'release_commit', 'release_fence',
+                      'release_not_applicable', 'release_retry_lifted',
+                      'resting_stamina_readback', 'retire', 'retire_session',
+                      'spell_reconcile', 'stamina_character', 'stamina_session',
+                      'terminal_session', 'training_character', 'training_readback',
+                      'training_save', 'training_session', 'world_items',
+                      'zones_after_reconcile', 'zones_before_reconcile',
+                      'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
+                      'bazaar', 'revision_chain', 'appearance', 'build_chain',
+                      'proficiency_history', 'familiar_chain', 'spell_familiar_group',
+                      'spell_item_chain', 'audit_payload'},
     'reason': {'transferred', 'disconnected', 'control_lost', 'logged_out',
                'protocol_error', 'commit_outcome_unknown', 'closed', 'no_evidence'},
     'path': {'server_message_timeout', 'liveness_missed', 'probe_write_timeout',
@@ -555,7 +614,9 @@ def report(line):
     if counts[identity] >= 2:
         return
     # Reserve room for terminal failures even if many different slow callers recur.
-    limit = {'serve_end': 32, 'durability_pass_slow': 16}.get(event, 8)
+    limit = {'serve_end': 32, 'durability_pass_slow': 16,
+             'logout_busy': 16, 'control_loss_reconcile_pending': 16,
+             'character_authority_check_failed': 16}.get(event, 8)
     if event_counts[event] >= limit or emitted >= 128:
         if event not in limited:
             print(f'NODE_BOOT_RUNTIME_LIMIT stage={stage} world_bundle={world} '
@@ -642,6 +703,7 @@ stage() { # name prerequisite... -- function
   else
     STATUS[$name]="FAIL(exit $rc)"
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
+    report_character_authority_failures "$name"
     echo "--- session close events"
     grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed)( |$)' "$node_log" 2>/dev/null | tail -n 40 || true
     echo "--- last node events"; durability_report_lines < "$node_log" 2>/dev/null | grep -v 'DURABILITY_' | tail -n 40 || true
