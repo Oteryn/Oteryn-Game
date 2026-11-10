@@ -61,6 +61,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return GraceExpiryResult::Unknown;
             }
         }
+        // Keep preference through the existing release attempts, after any
+        // combat hold has ended; a single busy read must not drop the demand.
+        let Ok(_foreground) = self.root.foreground_demand() else {
+            return GraceExpiryResult::Unknown;
+        };
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
             return GraceExpiryResult::Unknown;
         };

@@ -175,6 +175,145 @@ fn nbeof_logout_busy_holder_postgres() -> TestResult {
 }
 
 #[test]
+fn nbeof_lifecycle_reads_keep_holder_preference_postgres() -> TestResult {
+    run(async |admin| {
+        use crate::durability::DurabilityError;
+        use crate::gameplay_transport::AdmissionRetryBudget;
+        use crate::gameplay_transport::actor_spell::TrainingSave;
+
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "lifecycle_holder_reads", true, false)
+                .await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let (generation, _) = super::death_ml_loss_composed::production_generation_with_pin(
+            dependencies.admitted.world_id,
+            "content-1",
+        )?;
+        let active = generation.active().ok_or("activated generation")?;
+        assert!(
+            active
+                .native_gameplay()
+                .and_then(|native| native.training_formula())
+                .is_some()
+        );
+        let mut owner = dependencies.owner(&harness, &authority);
+        owner.active_generation = Some(active);
+        enter(&owner, &dependencies).await?;
+
+        // A fresh actor has no training checkpoint to replay. Its native save
+        // still reads the current session and Character before discovering that.
+        let before = revision(&harness).await?;
+        let before_build_receipts: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_build_receipts")
+                .fetch_one(&harness.pool)
+                .await?;
+        let held = owner.root.try_issue_semantic_pass()?;
+        let mut training = Box::pin(owner.save_spell_training(
+            dependencies.actor,
+            dependencies.admitted.game_session_id,
+            true,
+        ));
+        let polled = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(std::future::Future::poll(training.as_mut(), cx))
+        })
+        .await;
+        assert!(
+            polled.is_pending(),
+            "native training reads must await the holder"
+        );
+        assert!(owner.runtime.try_lock().is_ok());
+        assert!(owner.states.spell_states.try_lock().is_ok());
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        assert!(matches!(
+            owner.root.try_issue_background_semantic_pass(),
+            Err(DurabilityError::RootUnavailable)
+        ));
+        assert_eq!(training.await, TrainingSave::NotApplicable);
+        assert_eq!(revision(&harness).await?, before);
+
+        // Cancelling an owner that is still waiting releases only its demand.
+        let held = owner.root.try_issue_semantic_pass()?;
+        let mut cancelled = Box::pin(async {
+            let budget = AdmissionRetryBudget::for_foreground_command(owner.root)?;
+            budget
+                .retry_durability("cancelled_read", async || {
+                    FreshAdmissionStore::from_root(owner.root.clone())
+                        .current_session(dependencies.admitted.game_session_id)
+                        .await
+                })
+                .await
+        });
+        let polled = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(std::future::Future::poll(cancelled.as_mut(), cx))
+        })
+        .await;
+        assert!(polled.is_pending());
+        drop(cancelled);
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        owner
+            .root
+            .try_issue_background_semantic_pass()?
+            .run(|_, _| Box::pin(async { Ok(()) }))
+            .await?;
+
+        // Loss keeps the same demand from its first read through its single
+        // durable decision. No gap is inserted before the background retake.
+        let held = owner.root.try_issue_semantic_pass()?;
+        let mut loss = Box::pin(owner.commit_control_loss(
+            dependencies.admitted.game_session_id,
+            dependencies.actor,
+            dependencies.admitted.controller.ok_or("controller")?,
+        ));
+        let polled = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(std::future::Future::poll(loss.as_mut(), cx))
+        })
+        .await;
+        assert!(
+            polled.is_pending(),
+            "loss must await its first current read"
+        );
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        assert!(matches!(
+            owner.root.try_issue_background_semantic_pass(),
+            Err(DurabilityError::RootUnavailable)
+        ));
+        assert_eq!(loss.await, ControlLossResult::Recorded);
+        let current = FreshAdmissionStore::from_root(owner.root.clone())
+            .current_session(dependencies.admitted.game_session_id)
+            .await?;
+        assert_eq!(current.session_state(), GameSessionState::Reconnectable);
+        assert_eq!(
+            current
+                .current_control_loss_epoch()
+                .map(|epoch| epoch.get()),
+            Some(1)
+        );
+        assert_eq!(revision(&harness).await?, before);
+        let build_receipts: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_build_receipts")
+                .fetch_one(&harness.pool)
+                .await?;
+        assert_eq!(
+            build_receipts, before_build_receipts,
+            "waiting reads must not manufacture a checkpoint"
+        );
+
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
 fn nbeof_logout_wire_postgres() -> TestResult {
     run(async |admin| {
         use crate::foundation::{MessageType, decode_wire_envelope};

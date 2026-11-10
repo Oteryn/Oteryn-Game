@@ -77,8 +77,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if admitted.controller.is_some() || self.activity_runtimes.account_for(admitted).is_none() {
             return ControlLossResult::NotApplicable;
         }
-        let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(admitted.game_session_id)
+        let Ok(budget) =
+            AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
+        else {
+            return ControlLossResult::Unknown;
+        };
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let Ok((current, _)) = budget
+            .retry_durability("activity_loss_session", async || {
+                store.current_session_at(admitted.game_session_id).await
+            })
             .await
         else {
             return ControlLossResult::Unknown;
@@ -144,11 +152,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         controller: ControllerBinding,
         cause: ControlLossCauseV1,
     ) -> ControlLossResult {
+        let Ok(budget) = AdmissionRetryBudget::for_foreground_root(&game_session_id, self.root)
+        else {
+            return ControlLossResult::Unknown;
+        };
         let store = FreshAdmissionStore::from_root(self.root.clone())
             .with_house_lifecycle_owner(self.holder);
         // LOGOUT-WIRE-1 (§1.6): a session already TERMINAL ended in a release whose
         // acknowledgement was lost; the lifecycle reconciles it (`reconcile_terminal`).
-        match store.current_session(game_session_id).await {
+        match budget
+            .retry_durability("loss_session", async || {
+                store.current_session(game_session_id).await
+            })
+            .await
+        {
             Ok(current) if current.session_state() == GameSessionState::Terminal => {
                 return ControlLossResult::Terminal;
             }
@@ -163,7 +180,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Loss is timed on the durable owner's clock, the same clock that
         // samples the final decision time.
-        let Ok((session, now)) = store.current_session_at(game_session_id).await else {
+        let Ok((session, now)) = budget
+            .retry_durability("loss_session_time", async || {
+                store.current_session_at(game_session_id).await
+            })
+            .await
+        else {
             return ControlLossResult::Unknown;
         };
         // A logout whose commit became visible during the spell reconciliation is the same
@@ -200,7 +222,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // an unreadable history stays unknown so the listener retries.
         let (history, protection) = match session.current_control_loss_epoch() {
             None if session.current_game_session_id() != session.commit().game_session_id() => {
-                match store.activity_loss_origin(game_session_id).await {
+                match budget
+                    .retry_durability("loss_activity_origin", async || {
+                        store.activity_loss_origin(game_session_id).await
+                    })
+                    .await
+                {
                     Ok(Some(
                         history @ ControlLossHistoryV1::ActivityOrigin {
                             protection: retained,
@@ -230,14 +257,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     },
                 },
             ),
-            Some(_) => match store.resumed_history(game_session_id).await {
+            Some(_) => match budget
+                .retry_durability("loss_resumed_history", async || {
+                    store.resumed_history(game_session_id).await
+                })
+                .await
+            {
                 Ok(Some(
                     history @ ControlLossHistoryV1::Resumed {
                         protection: retained,
                         ..
                     },
                 )) => (history, retained),
-                Ok(None) => match store.transferred_loss_history(game_session_id).await {
+                Ok(None) => match budget
+                    .retry_durability("loss_transferred_history", async || {
+                        store.transferred_loss_history(game_session_id).await
+                    })
+                    .await
+                {
                     Ok(Some(
                         history @ ControlLossHistoryV1::ScopeTransfer {
                             protection: retained,

@@ -44,6 +44,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // One hold across the attempts of an epoch, so a retry is counted once.
         let mut settled_death = None;
+        // The grace/combat wait does not request preference. Once release work
+        // starts, retain it across the existing attempts and their backoff.
+        let mut foreground = None;
         let mut attempts = 0;
         while attempts < EXPIRY_ATTEMPTS {
             // Timeout/defeat may return an offline actor while its original
@@ -126,6 +129,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if self.hold_while_in_fight(actor, session).await {
                 while self.hold_while_in_fight(actor, session).await {}
                 continue;
+            }
+            if foreground.is_none() {
+                let Ok(demand) = self.root.foreground_demand() else {
+                    return GraceExpiryResult::Unknown;
+                };
+                foreground = Some(demand);
             }
             if !self
                 .settle_released_death(actor, session, &mut settled_death)

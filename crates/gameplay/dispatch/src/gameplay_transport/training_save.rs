@@ -1,12 +1,14 @@
 //! Actual actor-end/checkpoint D151 save. Unknown outcomes retain the original
 //! occurrence in the player's existing state and reconcile before new attempts.
 use super::super::{ComposedFreshAdmission, SecureIdentifiers};
+use crate::durability::character_authority::CharacterAuthorityError;
 use crate::durability::character_build::{BuildCommitOutcome, BuildFormula, BuildOccurrence};
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
+use crate::gameplay_transport::AdmissionRetryBudget;
 use crate::spell::mana_training::RetainedTrainingCheckpoint;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::gameplay_transport) enum TrainingSave {
@@ -61,7 +63,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.training_before_save(actor, session, force).await {
             return TrainingSave::Unknown;
         }
-        let saved = self.save_spell_training_once(actor, session, force).await;
+        let Ok(budget) = AdmissionRetryBudget::for_foreground_command(self.root) else {
+            return TrainingSave::Unknown;
+        };
+        let saved = self
+            .save_spell_training_once(actor, session, force, &budget)
+            .await;
         if saved != TrainingSave::Saved
             || !self
                 .spell_training_successor_due(actor, session, force)
@@ -72,7 +79,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // A replayed receipt merged the hits resolved while it was retained. A level they
         // reach is written now, never left to the cadence (SKILLS-0 §3.4); a forced save
         // writes all of them.
-        match self.save_spell_training_once(actor, session, force).await {
+        match self
+            .save_spell_training_once(actor, session, force, &budget)
+            .await
+        {
             TrainingSave::NotApplicable => TrainingSave::Saved,
             other => other,
         }
@@ -101,6 +111,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         force: bool,
+        budget: &AdmissionRetryBudget<'_>,
     ) -> TrainingSave {
         let formula = self
             .active_generation
@@ -110,7 +121,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return TrainingSave::NotApplicable;
         };
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let Ok((current, _)) = store.current_session_at(session).await else {
+        let Ok((current, _)) = budget
+            .retry_durability("training_session", async || {
+                store.current_session_at(session).await
+            })
+            .await
+        else {
             return TrainingSave::Unknown;
         };
         if current.session_state() == GameSessionState::Terminal {
@@ -124,9 +140,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // CHAR-REV-SEQ-1: this Character's revision writer, held across the save and its
         // reconciliation and taken before the runtime lock.
         let mut slot = self.revision_sequencer.acquire(character).await;
-        let Ok(root) = self
-            .root
-            .read_current_character(self.character, character)
+        let Ok(root) = budget
+            .retry_durability("training_character", async || {
+                self.root
+                    .read_current_character(self.character, character)
+                    .await
+                    .map_err(|error| match error {
+                        CharacterAuthorityError::Unavailable(error) => error,
+                        CharacterAuthorityError::Rejected
+                        | CharacterAuthorityError::Conflict
+                        | CharacterAuthorityError::NameUnavailable => {
+                            crate::durability::DurabilityError::CommitRejected
+                        }
+                    })
+            })
             .await
         else {
             return TrainingSave::Unknown;

@@ -352,7 +352,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let session = admitted.game_session_id;
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let Ok(current) = AdmissionRetryBudget::for_command(self.root)
+        let Ok(budget) = AdmissionRetryBudget::for_foreground_command(self.root) else {
+            return GraceExpiryResult::Unknown;
+        };
+        let Ok(current) = budget
             .retry_durability("terminal_session", async || {
                 store.current_session(session).await
             })
