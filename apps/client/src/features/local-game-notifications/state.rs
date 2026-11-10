@@ -37,14 +37,15 @@ impl State {
     }
     pub(in crate::play) fn show(&self, id: &str, text: &str, popup: bool) {
         let now_ms = self.elapsed(Instant::now());
-        if !lock(&self.0).show(id, text, popup, now_ms, 8000) {
-            return;
-        }
+        let inserted = lock(&self.0).show(id, text, popup, now_ms, 8000);
+        #[cfg(any(not(windows), test))]
+        let _ = inserted;
         #[cfg(all(windows, not(test)))]
-        if !self
-            .0
-            .started
-            .swap(true, std::sync::atomic::Ordering::Relaxed)
+        if inserted
+            && !self
+                .0
+                .started
+                .swap(true, std::sync::atomic::Ordering::Relaxed)
             && !super::view::native::open(Arc::downgrade(&self.0))
         {
             self.0
