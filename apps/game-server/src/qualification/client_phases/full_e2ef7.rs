@@ -336,11 +336,10 @@ async fn refused(
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let logout = client.session_mut().logout().await?;
-    if logout.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err(format!("ranking character logout refused: {logout:?}").into());
+    let (result, logout, attempts, busy_timed_out) =
+        super::logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("ranking character logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     Ok(())
 }
@@ -1778,17 +1777,34 @@ impl LightClient {
         Ok(())
     }
     async fn logout(&mut self) -> TestResult {
-        let (status, payload) = self
-            .command(native::logout::COMMAND_TYPE_LOGOUT_INTENT, &[])
-            .await?;
-        if status != CommandStatus::Accepted
-            || native::logout::decode_logout_result(&payload)
-                .map_err(|e| format!("personal-light logout codec: {e:?}"))?
-                != native::logout::LogoutResult::Accepted
-        {
-            return Err(format!("personal-light logout refused: status={status:?}; result={:?}", native::logout::decode_logout_result(&payload)).into());
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+        let mut attempts = 0;
+        loop {
+            attempts += 1;
+            let command_id = self.command;
+            let (status, payload) = self
+                .command(native::logout::COMMAND_TYPE_LOGOUT_INTENT, &[])
+                .await
+                .map_err(|error| format!("personal-light logout attempt {attempts} command_id={command_id} failed: {error}"))?;
+            let result = native::logout::decode_logout_result(&payload)
+                .map_err(|error| format!("personal-light logout codec: {error:?}; command_id={command_id}; status={status:?}; attempts={attempts}"))?;
+            if status == CommandStatus::Accepted
+                && result == native::logout::LogoutResult::Accepted
+            {
+                return Ok(());
+            }
+            let busy_timed_out = result == native::logout::LogoutResult::Busy
+                && tokio::time::Instant::now() >= deadline;
+            if status != CommandStatus::Rejected
+                || result != native::logout::LogoutResult::Busy
+                || busy_timed_out
+            {
+                return Err(format!("personal-light logout refused: command_id={command_id}; server_sequence={}; status={status:?}; result={result:?}; attempts={attempts}; busy_timed_out={busy_timed_out}", self.sequence).into());
+            }
+            // Only a fully correlated Busy permits a new command. The next
+            // command services probes; never cancel receive() inside a frame.
+            tokio::time::sleep(Duration::from_millis(250)).await;
         }
-        Ok(())
     }
 }
 

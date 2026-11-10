@@ -248,11 +248,10 @@ async fn wait_inventory(
 
 async fn relog(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     let old = client.join_snapshot().game_session_id;
-    let logout = client.session_mut().logout().await?;
-    if logout.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err(format!("durability-check logout refused: {logout:?}").into());
+    let (result, logout, attempts, busy_timed_out) =
+        super::logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("durability-check logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     *client = connect_character(clients, 0x85, 1).await?;
     if client.join_snapshot().game_session_id == old {
@@ -466,9 +465,10 @@ async fn trade(
         Err("accept/logout-race/relog-custody assertions unfinished".into())
     }
     .await;
-    let cleanup = peer.session_mut().logout().await?;
-    if cleanup.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("trade peer cleanup logout refused: {cleanup:?}").into());
+    let (cleanup_result, cleanup, attempts, busy_timed_out) =
+        super::logout_retrying_busy(&mut peer).await?;
+    if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("trade peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
     result
 }
@@ -768,9 +768,10 @@ async fn party(
     }
     .await;
     let _ = send(client, Some(PartyIntent::Leave)).await;
-    let cleanup = peer.session_mut().logout().await?;
-    if cleanup.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("party peer cleanup logout refused: {cleanup:?}").into());
+    let (cleanup_result, cleanup, attempts, busy_timed_out) =
+        super::logout_retrying_busy(&mut peer).await?;
+    if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("party peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
     result
 }
@@ -804,24 +805,25 @@ async fn logout(
         .tile(tile(position)?.x, tile(position)?.y, tile(position)?.floor)
         .is_some_and(|t| t.protection_zone())
     {
-        let cleanup = peer.session_mut().logout().await?;
-        return Err(format!("logout peer is not on authored PZ tile: cleanup={cleanup:?}").into());
+        let (_, cleanup, attempts, busy_timed_out) =
+            super::logout_retrying_busy(&mut peer).await?;
+        return Err(format!("logout peer is not on authored PZ tile: cleanup={cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     let session = peer.join_snapshot().game_session_id;
-    let logout = peer.session_mut().logout().await?;
-    if logout.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err(format!("PZ logout refused: {logout:?}").into());
+    let (result, logout, attempts, busy_timed_out) =
+        super::logout_retrying_busy(&mut peer).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("PZ logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     row.pass("pz-logout", "authored-PZ-native-logout-accepted");
     drop(peer);
     let mut peer = connect_character(clients, 0x84, 0).await?;
     let retained = peer.world_spatial().actor_position == position
         && peer.join_snapshot().game_session_id != session;
-    let cleanup = peer.session_mut().logout().await?;
-    if !retained || cleanup.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("fresh-login-position-or-cleanup-mismatch: retained={retained}; cleanup={cleanup:?}").into());
+    let (cleanup_result, cleanup, attempts, busy_timed_out) =
+        super::logout_retrying_busy(&mut peer).await?;
+    if !retained || cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("fresh-login-position-or-cleanup-mismatch: retained={retained}; cleanup={cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     row.pass("relog-position", "fresh-session-retained-saved-position");
     Err("fight/NOLOGOUT/15-minute-warning/16-minute-removal/gameplay-reset assertions unfinished;no-clock-override-used;source:crates/gameplay/dispatch/src/gameplay_transport/connection/serve/idle.rs:1".into())

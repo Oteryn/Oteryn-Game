@@ -723,9 +723,9 @@ mod e2ef1 {
         })
         .await?;
         let saved = peer.world_spatial().actor_position;
-        let logout = peer.session_mut().logout().await?;
-        if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("pushed peer logout refused: {logout:?}").into());
+        let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(peer).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("pushed peer logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
         }
         // The caller reconnects this peer after the row and checks this exact saved cell.
         evidence(&format!("E2EF1_PUSH_SAVED position={saved:?}"));
