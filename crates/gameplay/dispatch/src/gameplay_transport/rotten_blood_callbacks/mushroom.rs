@@ -144,6 +144,45 @@ fn remove(
     clippy::too_many_arguments,
     reason = "actual Think occurrences share the existing physical, spell-state and map owners"
 )]
+pub(super) async fn drive_one_due(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    attack: &mut super::super::attack::ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    through: u64,
+    now: u64,
+) -> Result<(), ()> {
+    states
+        .rotten_blood_callbacks
+        .mushrooms
+        .tracked
+        .retain(|m| m.source.current(runtime));
+    let selected = states
+        .rotten_blood_callbacks
+        .mushrooms
+        .tracked
+        .iter()
+        .filter_map(|m| {
+            m.owner
+                .explode_at(1)
+                .and_then(|at| at.checked_mul(1000))
+                .filter(|at| *at <= through && *at <= now)
+                .map(|at| (at, m.actor))
+        })
+        .min_by_key(|(at, _)| *at)
+        .map(|(_, actor)| actor);
+    if let Some(actor) = selected {
+        drive_fuse(runtime, states, attack, room, native, map, actor, now).await?;
+    }
+    Ok(())
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "actual Think occurrences share the existing physical, spell-state and map owners"
+)]
 pub(super) async fn drive(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,

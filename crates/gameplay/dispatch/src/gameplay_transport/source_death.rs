@@ -14,6 +14,65 @@ mod uncredited;
 pub(super) use soul_war::SoulWarAction;
 pub(super) use uncredited::PendingSourceCorpse;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum SourceWorkFamily {
+    Native,
+    TaintOne,
+    SoulWarAttack,
+    RottenBlood,
+    Detached,
+    Profile,
+}
+
+/// Compare original causal deadlines. Scheduler retry wakes and busy-lock
+/// sentinels must never become a source event's place before the death FIFO.
+pub(super) fn next_source_work(
+    runtime: &ChannelRuntimeV1,
+    states: &actor_spell::ChannelSpellStates,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> Result<Option<(SourceWorkFamily, u64)>, ()> {
+    let detached = states
+        .soul_war_callbacks
+        .next_native_due_without_inline_callbacks()
+        .into_iter()
+        .chain(
+            states
+                .soul_war_callbacks
+                .next_splinter_due(runtime, native)?,
+        )
+        .chain(states.spite_global.next_due_us())
+        .chain(states.primal_callbacks.next_source_due_time()?)
+        .min();
+    Ok([
+        (
+            SourceWorkFamily::Native,
+            states.native_callbacks.next_source_due_time()?,
+        ),
+        (
+            SourceWorkFamily::TaintOne,
+            states.soul_war_callbacks.next_taint_one_due(),
+        ),
+        (
+            SourceWorkFamily::SoulWarAttack,
+            states.soul_war_callbacks.next_attack_due(),
+        ),
+        (
+            SourceWorkFamily::RottenBlood,
+            states
+                .rotten_blood_callbacks
+                .next_source_due_time(runtime)?,
+        ),
+        (SourceWorkFamily::Detached, detached),
+        (
+            SourceWorkFamily::Profile,
+            states.native_profile_pass.next_due(runtime)?,
+        ),
+    ]
+    .into_iter()
+    .filter_map(|(family, due)| due.map(|due| (family, due)))
+    .min_by_key(|(_, due)| *due))
+}
+
 /// One retained action payload for the canonical head's current copied event.
 /// This carries no independent ordering: only the carrier's FIFO/cursor selects it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -71,6 +130,27 @@ impl PreparedSourceDeathAction {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn source_profile_pass_can_resume(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        states: &actor_spell::ChannelSpellStates,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        now: u64,
+    ) -> Result<bool, ()> {
+        let Some(due) = states.native_profile_pass.next_due(runtime)? else {
+            return Ok(false);
+        };
+        if due > now {
+            return Ok(false);
+        }
+        if let Some(notice) = runtime.next_source_creature_death().map_err(|_| ())?
+            && due > notice.enqueued_at_us().ok_or(())?
+        {
+            return Ok(false);
+        }
+        Ok(next_source_work(runtime, states, native)? == Some((SourceWorkFamily::Profile, due)))
+    }
+
     /// Drain one genuinely older Malice callback without retaining any volatile
     /// owner guard across SQL. Other timer families retain their own FIFO gate.
     pub(super) async fn drain_detached_malice_before_source_death(
@@ -81,11 +161,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.drain_detached_megalomania_timer(permit, now).await? {
             return Ok(true);
         }
-        let has_source_head = {
+        let has_retained_boundary = {
             let runtime = self.runtime.lock().await;
-            runtime.has_pending_source_creature_deaths()
+            let states = self.states.spell_states.try_lock().map_err(|_| ())?;
+            runtime.has_pending_source_creature_deaths() || states.native_profile_pass.has_pending()
         };
-        if !has_source_head {
+        if !has_retained_boundary {
             return Ok(false);
         }
         let room = self.effective_rooms().gate_monster_ai().ok_or(())?;
@@ -93,13 +174,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(|active| active.native_gameplay())
             .ok_or(())?;
-        let (notice, timer, map_plan, names_plan, scope, generation) = {
+        let (notice, profile, timer, map_plan, names_plan, scope, generation) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.try_lock().map_err(|_| ())?;
-            let Some(notice) = runtime.next_source_creature_death().map_err(|_| ())? else {
-                return Ok(false);
+            let notice = runtime.next_source_creature_death().map_err(|_| ())?;
+            let profile = if notice.is_none() {
+                states.native_profile_pass.pending()
+            } else {
+                None
             };
-            let cutoff = notice.enqueued_at_us().ok_or(())?;
+            let cutoff = match notice.as_ref() {
+                Some(notice) => notice.enqueued_at_us().ok_or(())?,
+                None => match states.native_profile_pass.next_due(&runtime)? {
+                    Some(due) => due,
+                    None => return Ok(false),
+                },
+            };
             let Some(timer) = soul_war_malice::prepare_due_timer(&states, cutoff, now) else {
                 return Ok(false);
             };
@@ -113,7 +203,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok_or(())?;
             if states
                 .native_callbacks
-                .next_due_time()
+                .next_source_due_time()?
                 .into_iter()
                 .chain(states.soul_war_callbacks.next_native_due_without_malice())
                 .chain(
@@ -121,9 +211,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .soul_war_callbacks
                         .next_splinter_due(&runtime, native)?,
                 )
-                .chain(states.primal_callbacks.next_due_us())
-                .chain(states.rotten_blood_callbacks.next_due_time())
+                .chain(states.primal_callbacks.next_source_due_time()?)
+                .chain(states.spite_global.next_due_us())
+                .chain(
+                    states
+                        .rotten_blood_callbacks
+                        .next_source_due_time(&runtime)?,
+                )
                 .any(|other| other <= due && other <= now)
+                || states
+                    .native_profile_pass
+                    .next_due(&runtime)?
+                    .is_some_and(|other| other < due && other <= now)
             {
                 return Ok(false);
             }
@@ -138,6 +237,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let names = self.prepare_source_names(&runtime, &["Soul Cage", "Goshnar's Malice"])?;
             (
                 notice,
+                profile,
                 timer,
                 map_plan,
                 names,
@@ -152,6 +252,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map_plan,
             Some(names),
             notice,
+            profile,
             timer,
             room,
             native,
@@ -162,7 +263,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.root.try_issue_semantic_pass().map_err(|_| ())?
             .run_with_context(&mut context, |holder, deadline, context| {
                 Box::pin(async move {
-                    let (owner, permit, map_plan, names, notice, timer, room, native, scope, generation, now) = context;
+                    let (owner, permit, map_plan, names, notice, profile, timer, room, native, scope, generation, now) = context;
                     let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(holder, deadline).await?;
                     let authority = crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
                         &mut tx, permit, owner.root, owner.character, owner.holder, *scope, *generation,
@@ -175,7 +276,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                         let objects = owner.door.try_lock()
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                        if runtime.next_source_creature_death().ok().flatten().as_ref() != Some(&*notice) {
+                        if runtime.next_source_creature_death()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?.as_ref() != notice.as_ref()
+                            || profile.as_ref().is_some_and(|original| states.native_profile_pass.pending()
+                                .as_ref().is_none_or(|current| !std::sync::Arc::ptr_eq(original,current))) {
                             return Err(crate::durability::DurabilityError::Unavailable);
                         }
                         let view = read.into_current_view(&runtime, room, &objects, native)
@@ -308,19 +412,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(|active| active.native_gameplay())
             .ok_or(())?;
-        let splinter = states
-            .soul_war_callbacks
-            .next_splinter_due(runtime, native)?;
-        Ok(!states
-            .soul_war_callbacks
-            .next_native_due()
-            .into_iter()
-            .chain(states.spite_global.next_due_us())
-            .chain(states.primal_callbacks.next_due_us())
-            .chain(states.rotten_blood_callbacks.next_due_time())
-            .chain(states.native_callbacks.next_due_time())
-            .chain(splinter)
-            .any(|due| due <= cutoff && due <= now))
+        Ok(next_source_work(runtime, states, native)?
+            .is_none_or(|(_, due)| due > cutoff || due > now))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -478,41 +571,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         now: u64,
         native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<bool, ()> {
-        let Some(notice) = runtime.next_source_creature_death().map_err(|_| ())? else {
-            return Ok(true);
+        let notice = runtime.next_source_creature_death().map_err(|_| ())?;
+        let cutoff = match notice.as_ref() {
+            Some(notice) => notice.enqueued_at_us().ok_or(())?,
+            None => match states.native_profile_pass.next_due(runtime)? {
+                Some(due) => due,
+                None => return Ok(true),
+            },
         };
-        let cutoff = notice.enqueued_at_us().ok_or(())?;
         #[cfg(test)]
         eprintln!("[DBG-W11-DEATH] source-head cutoff={cutoff} now={now}");
-        // Compare original deadlines across owners before selecting a callback.
-        // A later non-W01 timer must not block earlier W01 work, and draining
-        // W01 through the whole death cutoff could overtake another family.
-        let other_due = states
-            .soul_war_callbacks
-            .next_native_due_without_taint_one()
-            .into_iter()
-            .chain(
-                states
-                    .soul_war_callbacks
-                    .next_splinter_due(runtime, native)?,
-            )
-            .chain(states.spite_global.next_due_us())
-            .chain(states.primal_callbacks.next_due_us())
-            .chain(states.rotten_blood_callbacks.next_due_time())
-            .min();
-        let selected = [
-            states.native_callbacks.next_source_due_time()?,
-            states.soul_war_callbacks.next_taint_one_due(),
-            other_due,
-        ]
-        .into_iter()
-        .enumerate()
-        .filter_map(|(family, due)| due.map(|due| (family, due)))
-        .filter(|(_, due)| *due <= cutoff && *due <= now)
-        .min_by_key(|(_, due)| *due);
+        let selected = next_source_work(runtime, states, native)?
+            .filter(|(_, due)| *due <= cutoff && *due <= now);
         let active = self.active_generation.ok_or(())?;
         match selected {
-            Some((0, due)) => {
+            Some((SourceWorkFamily::Native, due)) => {
                 let callbacks = states.native_callbacks.clone();
                 callbacks
                     .drain_due_through(
@@ -530,7 +603,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await?;
             }
-            Some((1, due)) => {
+            Some((SourceWorkFamily::TaintOne, due)) => {
                 let published = active.qualify_published_world_context(room, runtime.content_pin());
                 super::soul_war_callbacks::refresh_taints(
                     self.root,
@@ -548,6 +621,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await?;
             }
+            Some((SourceWorkFamily::SoulWarAttack, due)) => {
+                super::soul_war_callbacks::drive_attack_due_through(
+                    runtime, states, room, native, map, due, now,
+                )
+                .await?;
+            }
+            Some((SourceWorkFamily::RottenBlood, due)) => {
+                super::rotten_blood_callbacks::refresh_taints(self.root, runtime, states, map)
+                    .await?;
+                super::rotten_blood_callbacks::drive_due_before(
+                    runtime,
+                    states,
+                    attack,
+                    &self.states.server_messages,
+                    room,
+                    native,
+                    map,
+                    due,
+                    now,
+                )
+                .await?;
+            }
             // Detached source owners keep their exact head and reservation;
             // their qualified consumer must run before beginning this death.
             Some(_) => return Ok(false),
@@ -555,6 +650,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if !map.validate_transaction(runtime).await {
             return Err(());
+        }
+        // A retained native pass also has an original causal deadline when no
+        // death notice exists. Yield after its selected predecessor; the same
+        // pass and its Item tail remain owned until the next selected turn.
+        if notice.is_none() {
+            return Ok(true);
         }
         if !self.source_death_can_begin_without_timer_read(runtime, states, now)? {
             return Ok(false);

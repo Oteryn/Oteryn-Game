@@ -12,7 +12,14 @@ pub(super) struct Pending {
     pub(super) occurrence: ThinkOccurrence,
     pub(super) started_us: u64,
     pub(super) resolved: bool,
+    pub(super) sources: Sources,
     publication: Option<Arc<BakPhasePublication>>,
+}
+#[derive(Debug, Clone)]
+pub(super) struct Sources {
+    pub(super) spawn: Arc<RottenBloodSpawnSource>,
+    pub(super) portal: Arc<crate::durability::creature_source_items::RottenPortalSource>,
+    pub(super) icon: Arc<RottenBloodIconSource>,
 }
 pub(in crate::gameplay_transport) fn before_drive(
     runtime: &mut ChannelRuntimeV1,
@@ -51,7 +58,7 @@ pub(in crate::gameplay_transport) fn before_drive(
     }) else {
         return Ok(None);
     };
-    await_claim(runtime, states, native, *occurrence, now)?;
+    await_claim(runtime, states, room, native, *occurrence, now)?;
     Ok(states
         .rotten_blood_callbacks
         .advanced
@@ -63,6 +70,7 @@ pub(in crate::gameplay_transport) fn before_drive(
 pub(super) fn await_claim(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
     occurrence: ThinkOccurrence,
     now: u64,
@@ -81,11 +89,19 @@ pub(super) fn await_claim(
         return Ok(false);
     }
     let claim = BakFirstThinkClaim::from_current_owner(runtime, native, occurrence).ok_or(())?;
+    // All three source capabilities are qualified by the original live Think,
+    // before its durable boundary. A retry never admits a fresh HP0 Think.
+    let sources = Sources {
+        spawn: Arc::new(runtime.qualify_rotten_blood_spawn_source(occurrence.actor, native).map_err(|_| ())?),
+        portal: Arc::new(crate::durability::creature_source_items::RottenPortalSource::from_current_native_think(runtime, room, native, &occurrence).map_err(|_| ())?),
+        icon: Arc::new(runtime.qualify_rotten_blood_icon_source(occurrence.actor, native).map_err(|_| ())?),
+    };
     advanced.first_think = Some(Pending {
         claim: Arc::new(claim),
         occurrence,
         started_us: now,
         resolved: false,
+        sources,
         publication: None,
     });
     states.owner_wake.notify_one();
@@ -94,9 +110,25 @@ pub(super) fn await_claim(
 
 impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn drain_bak_first_think_claims(&self) {
-        let claim = {
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return;
+        };
+        let (claim, prefix) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
+            let prefix = match super::super::source_prefix(
+                &runtime,
+                &states,
+                native,
+                DueKind::BakFirstThink,
+                self.owner_now().get(),
+            ) {
+                Ok(prefix) => prefix,
+                Err(()) => return,
+            };
             let Some(pending) = states
                 .rotten_blood_callbacks
                 .advanced
@@ -106,7 +138,7 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return;
             };
-            Arc::clone(&pending.claim)
+            (Arc::clone(&pending.claim), prefix)
         };
         let Ok(proof) = self.root.commit_bak_first_think(self.holder, &claim).await else {
             return;
@@ -115,7 +147,8 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
             let Some(_permit) = self.spell_lane_permit().await else {
                 return;
             };
-            self.acknowledge_bak_first_think(&claim, proof).await;
+            self.acknowledge_bak_first_think(&claim, proof, prefix.as_ref())
+                .await;
             return;
         }
         let Some(origin) = proof.origin() else {
@@ -140,7 +173,12 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
             let source_runtime = source.runtime.lock().await;
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
-            if !origin.current(&source_runtime) || !claim.current(&runtime) {
+            if !origin.current(&source_runtime)
+                || !claim.current(&runtime)
+                || prefix
+                    .as_ref()
+                    .is_some_and(|prefix| !prefix.current(&runtime, &states))
+            {
                 return;
             }
             let Some(pending) = states
@@ -181,16 +219,21 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
-        self.acknowledge_bak_first_think(&claim, published).await;
+        self.acknowledge_bak_first_think(&claim, published, prefix.as_ref())
+            .await;
     }
     async fn acknowledge_bak_first_think(
         &self,
         claim: &Arc<BakFirstThinkClaim>,
         proof: PreparedBakEssences,
+        prefix: Option<&super::super::SourcePrefix>,
     ) {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        if !claim.current(&runtime) || proof.current_mask(&runtime).is_none() {
+        if !claim.current(&runtime)
+            || proof.current_mask(&runtime).is_none()
+            || prefix.is_some_and(|prefix| !prefix.current(&runtime, &states))
+        {
             return;
         }
         let Some(pending) = states

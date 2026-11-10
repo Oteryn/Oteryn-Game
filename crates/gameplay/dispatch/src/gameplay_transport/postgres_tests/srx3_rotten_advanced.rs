@@ -69,6 +69,7 @@ enum Extra {
     None,
     PortalStep,
     Footprints,
+    DueBeforeDeath,
 }
 pub(super) fn footprints(
     kind: PinnedActivitySourceRoom,
@@ -97,6 +98,21 @@ fn srx3_vemiath_actual_source_portal_step_postgres() -> TestResult {
         false,
         false,
         Extra::PortalStep,
+    )
+}
+#[test]
+fn srx3_vemiath_original_portal_due_precedes_death_and_late_mint_postgres() -> TestResult {
+    scenario_with_step(
+        PinnedActivitySourceRoom::Vemiath,
+        MovementLocalPosition {
+            x: 33078,
+            y: 32333,
+            floor: 15,
+        },
+        "oteryn:creature.vemiath",
+        false,
+        false,
+        Extra::DueBeforeDeath,
     )
 }
 fn scenario(
@@ -306,6 +322,13 @@ fn scenario_with_step(
             }
             if matches!(extra, Extra::Footprints) {
                 super::srx3_rotten_footprints::exercise(&h, &mut owner, &admitted, kind).await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
+            if matches!(extra, Extra::DueBeforeDeath) {
+                super::srx3_rotten_due::exercise(&h, &mut owner, &admitted).await?;
                 drop(owner);
                 drop(authority);
                 drop(seal);

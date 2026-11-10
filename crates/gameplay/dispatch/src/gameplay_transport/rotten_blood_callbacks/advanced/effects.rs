@@ -7,21 +7,37 @@ use super::*;
 pub(super) async fn drain(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    now: u64,
+) -> Result<(), ()> {
+    drain_through(runtime, states, room, native, map, now, now).await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) async fn drain_through(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
     _room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
+    through: u64,
     now: u64,
 ) -> Result<(), ()> {
     if !states.rotten_blood_callbacks.advanced.pending.is_empty() {
         states.rotten_blood_callbacks.advanced.pending_due = Some(now.saturating_add(1_000_000));
     }
-    while let Some(effect) = states
+    while let Some((due, effect)) = states
         .rotten_blood_callbacks
         .advanced
         .pending
         .front()
         .cloned()
     {
+        if due > through || due > now {
+            return Ok(());
+        }
         match effect {
             AdvancedEffect::Spawn {
                 source,
@@ -33,13 +49,11 @@ pub(super) async fn drain(
                 offset,
                 close,
             } => {
-                if runtime.contains_live_creature(parent) {
-                    super::super::spawn_child(
-                        runtime, states, native, map, &source, parent, sequence, ordinal, key,
-                        around, offset, close, now,
-                    )
-                    .await?;
-                }
+                super::super::spawn_child(
+                    runtime, states, native, map, &source, parent, sequence, ordinal, key, around,
+                    offset, close, now,
+                )
+                .await?;
             }
             AdvancedEffect::Icon {
                 source,
@@ -66,7 +80,11 @@ pub(super) async fn drain(
                 session,
                 amount,
             } => {
-                if !states.is_dead(actor) && runtime.contains_live_creature(boss) {
+                if !states.is_dead(actor)
+                    && runtime
+                        .source_creature_is_registered(boss)
+                        .map_err(|_| ())?
+                {
                     #[cfg(test)]
                     let before = states
                         .get(runtime, actor, session)

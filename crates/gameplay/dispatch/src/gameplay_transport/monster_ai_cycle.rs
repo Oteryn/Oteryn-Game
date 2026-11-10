@@ -29,6 +29,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         self.drain_arena_matches(self.owner_now().get()).await;
+        self.drain_bak_first_think_claims().await;
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
@@ -45,6 +46,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         self.drain_arena_matches(now.get()).await;
+        self.drain_bak_first_think_claims().await;
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
@@ -86,6 +88,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(true) | Err(()) => return,
             Ok(false) => {}
         }
+        match self
+            .drain_detached_rotten_before_source_death(&permit, now.get())
+            .await
+        {
+            Ok(true) | Err(()) => return,
+            Ok(false) => {}
+        }
         // Snapshot the real core prefix before native owners. While present,
         // only its detached retained Primal work runs; no fresh Think/expiry sweep.
         if self.rooms().gate_monster_ai().is_some_and(|room| {
@@ -120,11 +129,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(()) => return,
         };
         let mut runtime = self.runtime.lock().await;
+        let retained_work = {
+            let Ok(states) = self.states.spell_states.try_lock() else {
+                return;
+            };
+            runtime.has_pending_source_creature_deaths() || states.native_profile_pass.has_pending()
+        };
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.
-        drive_owner_spawns(&mut runtime, now.get());
-        super::arena_match::tick(self, &mut runtime);
-        super::tibiadrome::tick(self, &mut runtime);
+        if !retained_work {
+            drive_owner_spawns(&mut runtime, now.get());
+            super::arena_match::tick(self, &mut runtime);
+            super::tibiadrome::tick(self, &mut runtime);
+        }
         // BUNDLE-MONSTER-AI-1: the pass reads the combat room, the entry room on the fixture
         // World and its bundle view (bundle cells and map revision) on a bundle World.
         let Some(room) = self.rooms().gate_monster_ai() else {
@@ -171,7 +188,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.finish_prepared_source_death_action(&permit).await;
             return;
         }
-        if states.rotten_area.pending() {
+        if states.rotten_area.pending()
+            && (!retained_work
+                || self
+                    .source_profile_pass_can_resume(&runtime, &states, content, now.get())
+                    .unwrap_or(false))
+        {
             drop(states);
             drop(runtime);
             self.finish_rotten_area(&permit).await;
@@ -179,12 +201,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // The source-qualified callback owner already owns this Primal room.
         // Retain the catalogue owner's route for other qualified main rooms.
-        if room.pinned_activity_source_room()
-            != Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal)
+        if !retained_work
+            && room.pinned_activity_source_room()
+                != Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal)
         {
             super::primal_menace::tick(self, &mut runtime, room, content, now.get() / 1_000);
         }
-        let periodic_pass = now.get() >= states.next_monster_ai_pass_us;
+        let periodic_pass = !retained_work && now.get() >= states.next_monster_ai_pass_us;
         if periodic_pass {
             super::encounter_phases::tick(&mut runtime, &states);
         }
@@ -197,6 +220,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !states.soul_war_callbacks.has_native_due(now.get())
             && !states.native_callbacks.has_native_due(now.get())
             && !states.rotten_blood_callbacks.has_native_due(now.get())
+            && !states.native_profile_pass.has_pending()
             && !states.rotten_area.pending()
             && !runtime.has_pending_source_creature_deaths()
         {
@@ -249,6 +273,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !states.soul_war_callbacks.has_native_work()
             && !states.native_callbacks.has_native_work()
             && !states.rotten_blood_callbacks.has_native_work()
+            && !states.native_profile_pass.has_pending()
             && !states.rotten_area.pending()
             && !runtime.has_pending_source_creature_deaths()
         {
@@ -308,6 +333,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !states.soul_war_callbacks.has_native_work()
             && !states.native_callbacks.has_native_work()
             && !states.rotten_blood_callbacks.has_native_work()
+            && !states.native_profile_pass.has_pending()
             && !runtime.has_pending_source_creature_deaths()
         {
             return;
@@ -334,6 +360,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || states.soul_war_callbacks.has_native_due(now.get())
             || states.native_callbacks.has_native_due(now.get())
             || states.rotten_blood_callbacks.has_native_due(now.get())
+            || states.native_profile_pass.has_pending()
             || states.rotten_area.pending()
             || runtime.has_pending_source_creature_deaths()
         {
@@ -382,11 +409,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return;
         }
-        if states.rotten_area.pending() {
+        if states.rotten_area.pending()
+            && self
+                .source_profile_pass_can_resume(&runtime, &states, content, now.get())
+                .unwrap_or(false)
+        {
             drop(attack);
             drop(states);
             drop(runtime);
             self.finish_rotten_area(&permit).await;
+            return;
+        }
+        if retained_work && thought_actors.is_empty() {
+            let source_action = states.source_death_action_ready;
+            drop(attack);
+            drop(states);
+            drop(runtime);
+            if source_action {
+                self.finish_prepared_source_death_action(&permit).await;
+            }
             return;
         }
         if let Some(map) = self.bundle_map() {
@@ -498,6 +539,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         for movement_retry in [false, true] {
+            if movement_retry && runtime.has_pending_source_creature_deaths() {
+                continue;
+            }
             // Re-read current player positions and vitals after profile movement and after
             // the first melee batch. No all-actor census is needed for a movement-only pass.
             let player_census = think_player_census(&runtime, &melee_owner.think_players);

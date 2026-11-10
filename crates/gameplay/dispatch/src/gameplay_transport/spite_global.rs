@@ -306,7 +306,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut pending = {
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.try_lock().map_err(|_| ())?;
-            let Some(registration) = &mut states.spite_global.registration else {
+            let Some(registration) = &states.spite_global.registration else {
                 return Ok(true);
             };
             if !registration.current_for(&runtime) {
@@ -320,7 +320,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .active_generation
                 .and_then(|active| active.native_gameplay())
                 .ok_or(())?;
-            registration.capture_due(&mut runtime, room, native, now_us)?
+            let due = registration.next_due_us();
+            if (runtime.has_pending_source_creature_deaths()
+                || states.native_profile_pass.has_pending())
+                && super::source_death::next_source_work(&runtime, &states, native)?
+                    .is_some_and(|(_, earlier)| earlier < due && earlier <= now_us)
+            {
+                return Ok(true);
+            }
+            states
+                .spite_global
+                .registration
+                .as_mut()
+                .ok_or(())?
+                .capture_due(&mut runtime, room, native, now_us)?
         };
         if pending.callback.is_expiry() && pending.expiry_target.is_none() {
             self.reserve_spite_expiry(permit, &mut pending).await?;

@@ -39,7 +39,9 @@ fn primal_native_cancelled_map_read_keeps_original_callback_owner() -> TestResul
     );
     assert!(callbacks.has_native_due(0));
     assert_eq!(callbacks.next_due_us(), Some(0));
+    assert_eq!(callbacks.next_source_due_time(), Err(()));
     drop(work);
+    assert_eq!(callbacks.next_source_due_time(), Ok(Some(24_000_000)));
     let retained = callbacks.retained_owner();
     let owner = retained
         .try_lock()

@@ -79,15 +79,18 @@ pub(super) async fn prepare_chain_map(
     stamp: RuntimeWorkStamp,
     attack: &mut ChannelAttackStates,
     now: u64,
-) -> Option<CurrentChainMap> {
+) -> Result<CurrentChainMap, PreparationError> {
     let mut positions = vec![
         runtime
             .read_actor_position(proposal.issuer)
-            .ok()?
+            .map_err(|_| PreparationError::Refused)?
             .position(),
     ];
     for (actor, _) in &reader.players {
-        let at = runtime.read_actor_position(*actor).ok()?.position();
+        let at = runtime
+            .read_actor_position(*actor)
+            .map_err(|_| PreparationError::Refused)?
+            .position();
         if !positions.contains(&at) {
             positions.push(at);
         }
@@ -97,30 +100,37 @@ pub(super) async fn prepare_chain_map(
         sights: BTreeMap::new(),
         paths: BTreeMap::new(),
     };
-    let distance = i32::try_from(CHAIN_PATH_SEARCH_TILES).ok()?;
+    let distance = i32::try_from(CHAIN_PATH_SEARCH_TILES).map_err(|_| PreparationError::Refused)?;
     for from in &positions {
         // Reuse the existing bounded Movement search for presentation traces. Its cardinal
         // geometry is the repository's explicit projection, not Crystal's diagonal trace.
         for dx in -distance..=distance {
             for dy in -distance..=distance {
                 let at = MovementLocalPosition {
-                    x: from.x.checked_add(dx)?,
-                    y: from.y.checked_add(dy)?,
+                    x: from.x.checked_add(dx).ok_or(PreparationError::Refused)?,
+                    y: from.y.checked_add(dy).ok_or(PreparationError::Refused)?,
                     floor: from.floor,
                 };
                 map.read(runtime, at).await;
             }
         }
         for to in &positions {
+            // Invalid source geometry is a known refusal; only missing current
+            // cells below are unavailable work which must keep its proposal.
+            crate::durability::native_world_read::source_sight_steps(*from, *to)
+                .map_err(|_| PreparationError::Refused)?;
             let pair = (tile(*from), tile(*to));
-            result
-                .sights
-                .insert(pair, read_sight(runtime, map, *from, *to).await?);
+            result.sights.insert(
+                pair,
+                read_sight(runtime, map, *from, *to)
+                    .await
+                    .ok_or(PreparationError::Unavailable)?,
+            );
             let mut path = Vec::new();
             if from != to {
                 let waiting = attack.players_waiting(now);
                 if !attack.path_budget.admits(now, false, waiting) {
-                    return None;
+                    return Err(PreparationError::Refused);
                 }
                 let mut path_facts_known = true;
                 let (route, work) = crate::movement::path_search::measured_route_with_distance(
@@ -142,13 +152,13 @@ pub(super) async fn prepare_chain_map(
                 // Charge the real search work, then refuse before publishing a trace
                 // or admitting a timer. Qualified empty cells remain known blockers.
                 if !path_facts_known {
-                    return None;
+                    return Err(PreparationError::Unavailable);
                 }
                 let mut at = *from;
                 for step in route.unwrap_or_default() {
                     let (dx, dy) = crate::movement::path_search::delta(step);
-                    at.x = at.x.checked_add(dx)?;
-                    at.y = at.y.checked_add(dy)?;
+                    at.x = at.x.checked_add(dx).ok_or(PreparationError::Refused)?;
+                    at.y = at.y.checked_add(dy).ok_or(PreparationError::Refused)?;
                     path.push(tile(at));
                 }
             }
@@ -157,7 +167,10 @@ pub(super) async fn prepare_chain_map(
             result.paths.insert(pair, path);
         }
     }
-    map.validate_transaction(runtime).await.then_some(result)
+    if !map.validate_transaction(runtime).await {
+        return Err(PreparationError::Unavailable);
+    }
+    Ok(result)
 }
 
 struct FactsKey {
@@ -250,6 +263,9 @@ pub(super) async fn drain(
             Some(Box::new(windups.swap_remove(index).1) as Box<dyn SpellWorldReader + '_>)
         },
     );
+    // The completed windup owner must be back in the channel before the first
+    // awaited chain read. Cancellation retains both its receipts and successors.
+    states.monster_spells = spells;
     if let Ok(outcomes) = outcomes {
         for (_, outcome) in outcomes {
             if let Ok(outcome) = outcome {
@@ -257,13 +273,13 @@ pub(super) async fn drain(
             }
         }
     }
-    let Some(mut chains) = states.monster_chains.take() else {
-        states.monster_spells = spells;
+    let Some(chains) = states.monster_chains.as_ref() else {
         return;
     };
+    let pending = chains.pending_sources();
     let mut bank = Vec::new();
     players.clear();
-    if let Ok(pending) = chains.pending_sources() {
+    if let Ok(pending) = pending {
         for pending in pending {
             if pending.due.get() > now {
                 continue;
@@ -312,10 +328,14 @@ pub(super) async fn drain(
         }
     }
     if !map.validate_transaction(runtime).await {
-        states.monster_chains = Some(chains);
-        states.monster_spells = spells;
         return;
     }
+    // Descriptors above are read-only DATA. Take the actual owners only for the
+    // synchronous commit; no await separates this section from their restore.
+    let Some(mut chains) = states.monster_chains.take() else {
+        return;
+    };
+    let spells = std::mem::take(&mut states.monster_spells);
     let outcomes = chains.run_due_current_with(
         runtime,
         stamp,

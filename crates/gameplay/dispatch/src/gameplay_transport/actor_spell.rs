@@ -8,6 +8,8 @@ mod activity_transfer;
 mod novelty_item_owner;
 #[path = "actor_spell/rotten_blood.rs"]
 mod rotten_blood;
+#[path = "actor_spell/soul_war_attacks.rs"]
+mod soul_war_attacks;
 #[path = "actor_spell/soul_war_torment.rs"]
 mod soul_war_torment;
 pub(in crate::gameplay_transport) use activity_transfer::PreparedActivitySpellStates;
@@ -185,6 +187,7 @@ pub struct ChannelSpellStates {
     pub(super) rotten_blood_callbacks: super::rotten_blood_callbacks::RottenBloodCallbacks,
     pub(super) rotten_area: super::monster_profile_cycle::rotten_area::AreaState,
     pub(super) native_callbacks: super::monster_profile_cycle::native_callbacks::NativeCallbacks,
+    pub(super) native_profile_pass: super::monster_profile_cycle::retained::ProfilePassOwner,
     pub(super) source_death_action: Option<super::source_death::PreparedSourceDeathAction>,
     pub(super) source_death_action_ready: bool,
     pub(super) source_death_corpse: Option<std::sync::Arc<tokio::sync::Mutex<super::source_death::PendingSourceCorpse>>>,
@@ -365,6 +368,7 @@ impl Default for ChannelSpellStates {
             rotten_blood_callbacks: Default::default(),
             rotten_area: Default::default(),
             native_callbacks: Default::default(),
+            native_profile_pass: Default::default(),
             source_death_action: None,
             source_death_action_ready: false,
             source_death_corpse: None,

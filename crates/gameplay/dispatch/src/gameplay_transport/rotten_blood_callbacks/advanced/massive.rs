@@ -184,14 +184,60 @@ pub(super) async fn drive(
     map: &mut CurrentMonsterMap<'_, '_>,
     now: u64,
 ) -> Result<(), ()> {
-    for _ in 0..MAX_PENDING {
+    drive_through(
+        runtime,
+        states,
+        attack,
+        notices,
+        room,
+        native,
+        map,
+        now,
+        now,
+        MAX_PENDING,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) async fn drive_one_due(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    attack: &mut super::super::super::attack::ChannelAttackStates,
+    notices: &super::super::super::raid_notices::ServerMessageHub,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    through: u64,
+    now: u64,
+) -> Result<(), ()> {
+    drive_through(
+        runtime, states, attack, notices, room, native, map, through, now, 1,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn drive_through(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    attack: &mut super::super::super::attack::ChannelAttackStates,
+    notices: &super::super::super::raid_notices::ServerMessageHub,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    through: u64,
+    now: u64,
+    budget: usize,
+) -> Result<(), ()> {
+    for _ in 0..budget {
         let Some(index) = states
             .rotten_blood_callbacks
             .advanced
             .massive
             .iter()
             .enumerate()
-            .filter(|(_, pending)| pending.due_us <= now)
+            .filter(|(_, pending)| pending.due_us <= now && pending.due_us <= through)
             .min_by_key(|(_, pending)| pending.due_us)
             .map(|(index, _)| index)
         else {

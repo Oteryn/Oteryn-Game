@@ -31,6 +31,7 @@ struct PendingPodStep {
     session: crate::foundation::GameSessionId,
     maximum_health: u32,
     hazard: u16,
+    observed_us: u64,
     applied_events: std::sync::atomic::AtomicUsize,
 }
 
@@ -276,6 +277,40 @@ impl PrimalCallbacks {
             return Some(0);
         }
         self.next_retained_due_us()
+    }
+    /// Original deadlines for source ordering; a locked owner is unavailable,
+    /// while the ordinary scheduler keeps its separate immediate retry hint.
+    pub(super) fn next_source_due_time(&self) -> Result<Option<u64>, ()> {
+        let owner = self.owner.try_lock().map_err(|_| ())?;
+        let deferred = owner
+            .deferred
+            .original_next_due()
+            .map(|due| due.checked_mul(1_000).ok_or(()))
+            .transpose()?;
+        for expiry in &self.expiries {
+            if !self.pod_executions.iter().any(|execution| {
+                execution.source == expiry.source_transaction_id && execution.created
+            }) {
+                return Err(());
+            }
+        }
+        Ok(deferred
+            .into_iter()
+            .chain(
+                self.normal
+                    .as_ref()
+                    .filter(|pending| !pending.source_ready())
+                    .map(|pending| pending.batch().observed_at_us()),
+            )
+            .chain(self.steps.iter().map(|step| step.observed_us))
+            .chain(self.pods.iter().map(|pod| pod.due_us()))
+            .chain(
+                self.pod_executions
+                    .iter()
+                    .filter(|execution| execution.created)
+                    .map(|execution| execution.expiry_us),
+            )
+            .min())
     }
     pub(in crate::gameplay_transport) fn next_retained_due_us(&self) -> Option<u64> {
         if !self.expiries.is_empty() || !self.steps.is_empty() {
@@ -613,6 +648,7 @@ pub(super) async fn step_in(
                 session,
                 maximum_health,
                 hazard,
+                observed_us: now,
                 applied_events: std::sync::atomic::AtomicUsize::new(0),
             }));
     }
