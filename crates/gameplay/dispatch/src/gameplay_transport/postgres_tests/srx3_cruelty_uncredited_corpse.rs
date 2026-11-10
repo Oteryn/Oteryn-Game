@@ -318,7 +318,11 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
                 .fetch_one(&h.pool)
                 .await?
             );
-            super::house_transfer::finish_owned_session(&h).await?;
+            drop(view);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            drop(evidence);
             h.cleanup().await?;
             Ok(())
         })

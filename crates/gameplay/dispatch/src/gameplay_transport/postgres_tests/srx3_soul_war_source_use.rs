@@ -209,19 +209,6 @@ async fn source_pair_refusals(h: &Harness) -> TestResult {
     let original = sqlx::query_scalar::<_, sqlx::types::Json<serde_json::Value>>(
         "SELECT to_jsonb(p) FROM game_soul_war_source_use_proofs p WHERE source_key='oteryn:item.tibia.i33950' AND NOT accepted",
     ).fetch_one(&h.pool).await?.0;
-    let columns: Vec<String> = sqlx::query_scalar(
-        "SELECT attname::text FROM pg_attribute WHERE attrelid='game_soul_war_source_use_proofs'::regclass \
-         AND attnum>0 AND NOT attisdropped AND attgenerated='' ORDER BY attnum",
-    ).fetch_all(&h.pool).await?;
-    let insert = format!(
-        "INSERT INTO game_soul_war_source_use_proofs ({}) SELECT {} FROM jsonb_populate_record(NULL::game_soul_war_source_use_proofs,$1::jsonb) p",
-        columns.join(","),
-        columns
-            .iter()
-            .map(|column| format!("p.{column}"))
-            .collect::<Vec<_>>()
-            .join(","),
-    );
     for (command, mutation, expected) in [
         (
             901,
@@ -265,10 +252,25 @@ async fn source_pair_refusals(h: &Harness) -> TestResult {
             proof[mutation] = different;
         }
         let mut tx = h.pool.begin().await?;
-        sqlx::query(&insert)
-            .bind(sqlx::types::Json(proof))
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query(
+            "INSERT INTO game_soul_war_source_use_proofs (\
+              transaction_id,event_id,character_id,game_session_id,command_id,\
+              source_item_instance_id,source_key,source_parent_item_instance_id,source_placement_ordinal,source_quantity_before,\
+              item_request_binding,quest_request_binding,content_revision,ruleset_revision,sim_revision,\
+              world_id,channel_id,activity_instance_id,scope_generation,connection_generation,character_lease_generation,\
+              node_id,node_registration,assignment_revision,activation_sequence,server_digest,client_digest,frame_digest,map_digest,\
+              target_kind,target_family,target_key,target_revision,target_actor,target_generation,target_position,occurred_at,created_xact_id) \
+             SELECT p.transaction_id,p.event_id,p.character_id,p.game_session_id,p.command_id,\
+              p.source_item_instance_id,p.source_key,p.source_parent_item_instance_id,p.source_placement_ordinal,p.source_quantity_before,\
+              p.item_request_binding,p.quest_request_binding,p.content_revision,p.ruleset_revision,p.sim_revision,\
+              p.world_id,p.channel_id,p.activity_instance_id,p.scope_generation,p.connection_generation,p.character_lease_generation,\
+              p.node_id,p.node_registration,p.assignment_revision,p.activation_sequence,p.server_digest,p.client_digest,p.frame_digest,p.map_digest,\
+              p.target_kind,p.target_family,p.target_key,p.target_revision,p.target_actor,p.target_generation,p.target_position,p.occurred_at,p.created_xact_id \
+             FROM jsonb_populate_record(NULL::game_soul_war_source_use_proofs,$1::jsonb) p",
+        )
+        .bind(sqlx::types::Json(proof))
+        .execute(&mut *tx)
+        .await?;
         if mutation == "false-with-burn" {
             // A false target cannot be used to conceal a consuming receipt,
             // even when every identity/scope/custody field names its exact USE.
