@@ -589,15 +589,17 @@ mod target_tests {
         // its old exact identity does not resolve after physical slot removal.
         reader.digest = native.source_digest();
         runtime.install_companion_policies(native.policies().clone())?;
-        let burning = runtime.spawn_arena_opponent(
-            "oteryn:creature.ashes_of_burning_hatred",
-            MovementLocalPosition {
-                x: 33856,
-                y: 31874,
-                floor: 7,
-            },
-            |_, _| Some(true),
-        )?;
+        let burning = runtime
+            .spawn_arena_opponent(
+                "oteryn:creature.ashes_of_burning_hatred",
+                MovementLocalPosition {
+                    x: 33856,
+                    y: 31874,
+                    floor: 7,
+                },
+                |_, _| Some(true),
+            )
+            .map_err(|error| format!("actual Ashes of Burning Hatred spawn: {error:?}"))?;
         let sorrow_intent = UseIntent {
             target: UseTarget::ItemByDefinition(
                 index

@@ -24,5 +24,5 @@ pub(super) async fn require(
 }
 
 #[cfg(test)]
-#[path = "completed_quests_postgres.rs"]
+#[path = "completed_quests_postgres_tests.rs"]
 mod postgres_tests;

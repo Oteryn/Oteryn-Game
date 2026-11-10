@@ -36,7 +36,9 @@ fn scenario(name: &'static str) -> TestResult {
 }
 
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
-    oteryn_gameplay_quests::quest::world_callbacks::load()?
+    let state = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(debug)?;
+    oteryn_gameplay_quests::quest::world_callbacks::load_for(state.catalogue())?
         .into_iter()
         .find(|c| {
             c.key
