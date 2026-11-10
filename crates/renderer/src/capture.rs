@@ -89,7 +89,7 @@ impl Readback {
         }
         drop(mapped);
         self.buffer.unmap();
-        for pixel in bgra.chunks_exact_mut(4) {
+        for pixel in bgra.as_chunks_mut::<4>().0 {
             if self.rgba {
                 pixel.swap(0, 2);
             }
