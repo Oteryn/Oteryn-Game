@@ -241,6 +241,13 @@ def pre_overlay_definitions(root):
         if row["identity"]["key"] in definitions:
             raise ValueError("duplicate pre-overlay canonical Item")
         definitions[row["identity"]["key"]] = row
+    # Tree-first identity owners extend the frozen legacy promotion input.
+    # Reuse their exact source-qualified, nonmaterializable references.
+    sys.path.insert(0, str(root / "tools/content-migration"))
+    from tree_item_references import extend_records
+    qualified = list(definitions.values())
+    extend_records(qualified, root)
+    definitions = {row["identity"]["key"]: row for row in qualified}
     if set(definitions) != current:
         raise ValueError("pre-overlay/current Item identity set drift")
     return definitions

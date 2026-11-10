@@ -1224,7 +1224,15 @@ fn quest_guards_reject_rows_without_their_receipt() -> TestResult {
             "game_character_quest_states",
             "game_character_quest_obligations",
         ] {
-            expect_rejected(pool, relation, &format!("TRUNCATE {relation};"), TRUNCATE).await?;
+            // Include the merged owners' FK closure as well: CASCADE must still
+            // reach and be rejected by the immutable relation's own guard.
+            expect_rejected(
+                pool,
+                relation,
+                &format!("TRUNCATE {relation} CASCADE;"),
+                TRUNCATE,
+            )
+            .await?;
         }
 
         // The exact writer shape continues the quest, and completes it.
@@ -1470,6 +1478,58 @@ fn quest_tracks_are_bounded_at_rl_01_and_the_load_fails_closed_over_it() -> Test
 #[path = "quest_xp_postgres_cases.rs"]
 mod quest_xp_postgres_cases;
 
+/// The source-death writer requires the same captured recipient evidence as dispatch.
+fn source_death_evidence(
+    fence: CurrentCharacterGameplayFence,
+    transition: &str,
+) -> TestResult<crate::durability::quest_state::native_kills::NativeQuestDeath> {
+    use crate::durability::quest_state::{
+        native_kills::{NativeDeathSource, NativeQuestDeath},
+        source_deaths::SourceDeathContext,
+    };
+    let rule = oteryn_gameplay_quests::quest::source_deaths::rule(transition)
+        .ok_or("registered source death")?;
+    let position = rule.room.map_or([0, 0, 0], |[x, y, _, _, z]| [x, y, z]);
+    Ok(NativeQuestDeath {
+        transition: transition.into(),
+        creature: rule.creature.clone(),
+        observed_revision: fence.expected_character_revision.get(),
+        definition_hash: None,
+        source: NativeDeathSource::Source(SourceDeathContext {
+            scope: fence.runtime_scope,
+            scope_generation: fence.scope_ownership_generation.get(),
+            character: *fence.character_id.as_bytes(),
+            session: fence.game_session_id,
+            lease_generation: fence.character_lease_generation,
+            position,
+            dealt_damage: true,
+        }),
+    })
+}
+
+async fn commit_source_death(
+    harness: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    fence: CurrentCharacterGameplayFence,
+    request: QuestTransitionRequest,
+    catalogue: &Arc<QuestStateCatalogue>,
+) -> Result<QuestTransitionOutcome, String> {
+    let death = source_death_evidence(fence, &request.transition_key).map_err(debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(fence.character_id).await;
+    slot.commit_native_quest_kill(
+        &harness.root,
+        authority,
+        &harness.node,
+        fence,
+        request.cause,
+        &death,
+        Arc::clone(catalogue),
+    )
+    .await
+    .map_err(debug)
+}
+
 #[test]
 fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_atomic() -> TestResult
 {
@@ -1499,6 +1559,12 @@ fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_at
         let before = snapshot(&harness.pool).await?;
         assert_eq!(
             commit(harness, &authority, fence(1)?, request.clone(), &catalogue).await,
+            Err("InvalidInput".into()),
+            "a caller-supplied death identifier is not native recipient evidence"
+        );
+        assert_eq!(snapshot(&harness.pool).await?, before);
+        assert_eq!(
+            commit_source_death(harness, &authority, fence(1)?, request.clone(), &catalogue).await,
             Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))
         );
         assert_eq!(snapshot(&harness.pool).await?, before);
@@ -1509,12 +1575,13 @@ fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_at
             .acquire(CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?)
             .await;
         let first = committed(
-            slot.commit_quest_transition(
+            slot.commit_native_quest_kill(
                 &harness.root,
                 &authority,
                 &harness.node,
                 fence(2)?,
-                request.clone(),
+                request.cause,
+                &source_death_evidence(fence(2)?, source_key)?,
                 Arc::clone(&catalogue),
             )
             .await,
@@ -1524,12 +1591,13 @@ fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_at
         assert_eq!(first.changes.len(), 2);
         let applied = snapshot(&harness.pool).await?;
         assert_eq!(
-            slot.commit_quest_transition(
+            slot.commit_native_quest_kill(
                 &harness.root,
                 &authority,
                 &harness.node,
                 fence(2)?,
-                request.clone(),
+                request.cause,
+                &source_death_evidence(fence(2)?, source_key)?,
                 Arc::clone(&catalogue)
             )
             .await
@@ -1547,13 +1615,13 @@ fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_at
         let mut stale = fence(3)?;
         stale.game_session_id = GameSessionId::decode(&id(99)).map_err(debug)?;
         assert!(
-            commit(harness, &authority, stale, other.clone(), &catalogue)
+            commit_source_death(harness, &authority, stale, other.clone(), &catalogue)
                 .await
                 .is_err()
         );
         assert_eq!(snapshot(&harness.pool).await?, applied);
         assert_eq!(
-            commit(harness, &authority, fence(3)?, other, &catalogue).await,
+            commit_source_death(harness, &authority, fence(3)?, other, &catalogue).await,
             Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))
         );
         assert_eq!(snapshot(&harness.pool).await?, applied);

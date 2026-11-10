@@ -713,7 +713,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let result = match observation {
                 Ok(observation) => {
-                    self.execute_quest_callback(
+                    Box::pin(self.execute_quest_callback(
                         &permit,
                         &mut runtime,
                         &mut states,
@@ -729,7 +729,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         observation.as_ref(),
                         optional_pvp,
                         None,
-                    )
+                    ))
                     .await
                 }
                 Err(disposition) => disposition,
@@ -968,7 +968,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 directional.teleport=Some(destination);
                 &directional
             } else { callback };
-            let result = self.execute_quest_callback(
+            let result = Box::pin(self.execute_quest_callback(
                 &permit,
                 &mut runtime,
                 &mut states,
@@ -984,7 +984,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 observation.as_ref(),
                 optional_pvp,
                 selected_tool.as_ref(),
-            )
+            ))
             .await;
             drop(states);
             drop(runtime);
@@ -1172,7 +1172,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let result = match observation {
                 Ok(observation) => {
-                    self.execute_quest_callback(
+                    Box::pin(self.execute_quest_callback(
                         permit,
                         &mut runtime,
                         &mut states,
@@ -1188,7 +1188,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         observation.as_ref(),
                         optional_pvp,
                         None,
-                    )
+                    ))
                     .await
                 }
                 Err(disposition) => disposition,

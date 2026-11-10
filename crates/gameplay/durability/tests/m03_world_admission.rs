@@ -11,7 +11,7 @@ use oteryn_gameplay_entities as foundation;
 )]
 #[path = "../../../../apps/game-server/tests/support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;
-#[path = "../../../../apps/game-server/tests/support/authority_cases/qm03_world_admission.rs"]
+#[path = "../../../../apps/game-server/tests/support/qworld_live_admission_cases.rs"]
 mod world_admission;
 
 #[path = "../../../../apps/game-server/tests/support/authority_cases/character_promotion_fixture/participant.rs"]

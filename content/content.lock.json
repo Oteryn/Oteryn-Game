@@ -23,6 +23,7 @@
     "Document": 1609,
     "Effect": 5800,
     "Encounter": 108,
+    "Encounter.Raid": 240,
     "Formula": 6129,
     "Item": 34122,
     "Loot": 1292,
@@ -48,7 +49,7 @@
   "legacy_blobs": {
     "declarations": "3e8752c1a5c578e3d74b93e92c4839f2c35603cc",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "4c8aa501e96ffa0c84ac6a448f0fe9836433ea90",
+    "imports": "b01ad7b57a018540ef6766f1544eb4a83a95a606",
     "reference": "5ea6d7f635a63d18d48f368c70e252e39910bc76",
     "sources": "4f6b825b939e0b74d049f6be23306972299ecf28"
   },

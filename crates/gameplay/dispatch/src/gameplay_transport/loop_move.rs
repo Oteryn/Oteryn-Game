@@ -226,6 +226,7 @@ impl LoopGroundOverlay {
         for entry in items {
             let ordinal = entry.stack_ordinal;
             let mut item = entry.item;
+            let committed_corpse = entry.native_corpse && entry.field_collision.is_none();
             // A native MINT uses runtime coordinates. After an ordinary loop
             // move, the same nonportable corpse uses the loop's map coordinates.
             let native_axes = entry.field_collision.is_some()
@@ -243,12 +244,18 @@ impl LoopGroundOverlay {
                 } else {
                     &revision
                 };
+                let generation_matches = if committed_corpse {
+                    item.runtime_scope_ownership_generation != 0
+                        && item.runtime_scope_ownership_generation <= field_pin.2
+                } else {
+                    item.runtime_scope_ownership_generation == field_pin.2
+                };
                 if &item.ground.map_revision != expected_map
                     || item.ground.content_revision != field_content
                     || item.ground.native_room_placement_context.as_slice()
                         != field_pin.1.as_slice()
-                    || (entry.field_collision.is_some()
-                        && item.runtime_scope_ownership_generation != field_pin.2)
+                    || field_pin.2 == 0
+                    || !generation_matches
                 {
                     continue;
                 }
@@ -301,7 +308,10 @@ impl LoopGroundOverlay {
             };
             let native_cell =
                 (entry.native_corpse && native_axes).then(|| item.ground.spatial_position.clone());
-            if native_axes {
+            let native_corpse_view = committed_corpse && native_axes;
+            let native_ground_view =
+                (entry.source_plain_corpse || entry.source_native_ground) && native_axes;
+            if native_axes && !native_corpse_view && !native_ground_view {
                 let Ok(cell) = crate::durability::spell_items_abi::decode_ground_cell(
                     &item.ground.spatial_position,
                 ) else {
@@ -311,13 +321,16 @@ impl LoopGroundOverlay {
                     continue;
                 };
                 item.ground.spatial_position = ground_cell(cell.x, cell.y, floor);
+                // Ordinary overlay entries use map coordinates and revision.
+                // Native read views below perform their own single conversion.
+                item.ground.map_revision = revision.clone();
             }
             let id = item.item_instance_id;
-            let added = if entry.native_corpse && entry.field_collision.is_none() {
+            let added = if native_corpse_view {
                 // `native_corpse` comes only from the scoped materialized MINT,
                 // audit and reservation join. A live field never uses history.
                 overlay.add_committed_corpse_ground_view(item, field_pin)
-            } else if entry.source_plain_corpse || entry.source_native_ground {
+            } else if native_ground_view {
                 overlay.add_native_ground_view(item, field_pin)
             } else {
                 overlay.add_ground(item)
@@ -1575,8 +1588,13 @@ mod tests {
         field.native_corpse = false;
         field.field_collision = Some((false, false));
         assert!(
-            !project(field).overlay().has_added_item(tile),
+            !project(field.clone()).overlay().has_added_item(tile),
             "fields still require the live owner generation"
+        );
+        field.item.runtime_scope_ownership_generation = pin.2;
+        assert!(
+            project(field).overlay().has_added_item(tile),
+            "current native fields convert coordinates and revision exactly once"
         );
         Ok(())
     }

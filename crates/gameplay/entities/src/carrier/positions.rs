@@ -1084,7 +1084,12 @@ impl ChannelActorCarrier {
             }
             return Err(error);
         }
-        if let Some(order) = tile_entry {
+        // Separation can retire the moving summon itself. It has no destination
+        // tile membership after removal; preserve the typed removal outcome.
+        // Namespace validation alone does not prove an occupied generation.
+        if let Some(order) = tile_entry
+            && self.read_position(continuity, expected.actor_ref).is_ok()
+        {
             self.install_tile_entry_order(index, order);
         }
         if let Some(movement) = movement {

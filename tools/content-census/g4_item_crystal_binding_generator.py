@@ -948,6 +948,23 @@ def generate() -> tuple[dict[str, Any], bytes]:
         or len({row["target"]["key"] for row in bindings}) != EXPECTED_BOUND
     ):
         raise GeneratorError("BOUND_TARGET_UNIQUENESS")
+    # A separately approved map-only Item is additive to both immutable epochs.
+    # Its exact producer/definition is checked; none of the historical allocations change.
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
+    from event_item_identity import evidence
+    packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/cake-bridge-identity.json').read_bytes())
+    target = {'family': 'Item', 'key': 'oteryn:item.tibia.i48227', 'revision': 'definition-r1'}
+    approved = {'source_key': 'oteryn:source.crystalserver', 'source_revision': evidence()['source_revision'],
+                'identity_namespace': 'ots/item_server_id', 'external_id': '48227',
+                'target': target, 'disposition': 'EXACT'}
+    if packet != {**evidence(), 'definition': {'kind': 'Item', 'identity': target,
+                    'client_projection': 'ClientSafe', 'materializable': False, 'stack_class': 'Unknown'},
+                  'binding': approved}:
+        raise GeneratorError('CAKE_APPROVED_BINDING_DRIFT')
+    if any(row['external_id'] == '48227' or row['target']['key'] == target['key'] for row in bindings):
+        raise GeneratorError('CAKE_APPROVED_BINDING_COLLISION')
+    bindings = sorted([*bindings, approved], key=canonical_bytes)
     output = {"schema": SCHEMA, "family": "Item", "bindings": bindings}
     return output, canonical_bytes(output)
 

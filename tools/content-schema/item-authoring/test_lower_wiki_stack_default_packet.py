@@ -1,6 +1,7 @@
 """Guards for a documented source default, distinct from explicit raw No."""
 
 import copy
+import json
 import unittest
 from collections import defaultdict
 
@@ -9,6 +10,19 @@ from check_stack_default_historical_context import qualification_context
 
 
 class QualificationTests(unittest.TestCase):
+    def test_later_cake_binding_requires_exact_historical_table(self):
+        records = json.loads((lower.ROOT / lower.BINDINGS).read_bytes())["bindings"]
+        revisions = sorted({r["source_revision"] for r in records if r["external_id"] != "48227"})
+        bound = lower.exact_bindings(records, revisions)
+        self.assertEqual(len(bound), len(records) - 1)
+        self.assertNotIn("oteryn:item.tibia.i48227", bound)
+        for external in ("48227", "5801"):
+            changed = copy.deepcopy(records)
+            row = next(r for r in changed if r["external_id"] == external)
+            row["target"]["revision"] = "definition-r2"
+            with self.subTest(external=external), self.assertRaises(ValueError):
+                lower.exact_bindings(changed, revisions)
+
     def setUp(self):
         self.source = {
             "source_item_id": 1,

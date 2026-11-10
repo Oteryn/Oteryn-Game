@@ -128,9 +128,24 @@ def outputs(items_xml: Path, root: Path = base.ROOT, *, refresh_summary=False, r
     return generated | {path: base.canonical(summary)}
 
 
+def binding_pin_outputs(root=base.ROOT):
+    """Refresh provenance only after proving the exact approved additive binding."""
+    import sys
+    sys.path.insert(0, str(root / 'tools/content-schema/native-gameplay'))
+    from build_spell_item_identities import historical_binding_bytes
+    name = 'content/world/placements/index.json'
+    index = json.loads((root / name).read_bytes())
+    descriptor = index['item_bindings']
+    raw = (root / descriptor['path']).read_bytes()
+    historical_binding_bytes(raw, descriptor['sha256'])
+    descriptor['sha256'] = hashlib.sha256(raw).hexdigest()
+    return {name: base.canonical(index)}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--items-xml", type=Path, required=True)
+    parser.add_argument("--items-xml", type=Path)
+    parser.add_argument("--binding-pin", action="store_true")
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--palette", action="store_true", help="refresh stable palette entries from current Item and World catalogues")
     parser.add_argument(
@@ -138,7 +153,15 @@ def main() -> int:
         help="recount merged region facts and copy their source provenance; retain donor-only facts",
     )
     args = parser.parse_args()
-    for name, data in outputs(args.items_xml, refresh_summary=args.summary, refresh_palette=args.palette).items():
+    if args.binding_pin:
+        if args.items_xml or args.summary or args.palette:
+            parser.error('--binding-pin is a provenance-only operation')
+        generated = binding_pin_outputs()
+    else:
+        if args.items_xml is None:
+            parser.error('--items-xml is required for palette/summary recapture')
+        generated = outputs(args.items_xml, refresh_summary=args.summary, refresh_palette=args.palette)
+    for name, data in generated.items():
         path = base.ROOT / name
         if args.check:
             if path.read_bytes() != data:

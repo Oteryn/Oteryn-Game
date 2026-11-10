@@ -789,6 +789,7 @@ async fn capacity_refusal(
     Ok(())
 }
 
+// Lane futures stay on the heap: adding a story must not enlarge every scenario frame.
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -797,107 +798,107 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     if name == "qengine-rewards-m25-galthen-native-deaths" {
-        return super::m25_galthen_native_death::exercise(owner, admitted, h).await;
+        return Box::pin(super::m25_galthen_native_death::exercise(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-m09-rookie" {
-        return super::m09_rookie_reward::exercise(owner, admitted, h, authority).await;
+        return Box::pin(super::m09_rookie_reward::exercise(owner, admitted, h, authority)).await;
     }
     if name == "qengine-rewards-m37-peter" {
-        return super::questpc8_npc_teleport_story::exercise(owner, admitted, h, authority).await;
+        return Box::pin(super::questpc8_npc_teleport_story::exercise(owner, admitted, h, authority)).await;
     }
     if name.starts_with("qengine-rewards-m56-wax") {
-        return super::m56_cursed_crystal_wax::exercise(owner, admitted, h, name.ends_with("-outside")).await;
+        return Box::pin(super::m56_cursed_crystal_wax::exercise(owner, admitted, h, name.ends_with("-outside"))).await;
     }
     if name.starts_with("qengine-rewards-m09-tower-") {
-        return super::m09_multi_rewards::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::m09_multi_rewards::exercise(owner, admitted, h, authority, name)).await;
     }
     if name.starts_with("qengine-rewards-qworld-phase-") {
-        return super::qworld_phase_steps::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::qworld_phase_steps::exercise(owner, admitted, h, authority, name)).await;
     }
     if name == "qengine-rewards-questpc5-personal-map-query" {
-        return super::questpc5_personal_map_marks::exercise(owner, admitted, h).await;
+        return Box::pin(super::questpc5_personal_map_marks::exercise(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-m23-last-creep" {
-        return super::m23_last_creep::exercise(owner, admitted, h).await;
+        return Box::pin(super::m23_last_creep::exercise(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-srvgap-disguise" {
-        return super::srvgap_quest_disguise::exercise(owner, admitted, h).await;
+        return Box::pin(super::srvgap_quest_disguise::exercise(owner, admitted, h)).await;
     }
     if name.starts_with("qengine-rewards-qworld-phase-") {
-        return super::qworld_phase_steps::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::qworld_phase_steps::exercise(owner, admitted, h, authority, name)).await;
     }
     if name == "qengine-rewards-m39-any-topic" {
-        return m39_any_topic::exercise(owner, admitted, h).await;
+        return Box::pin(m39_any_topic::exercise(owner, admitted, h)).await;
     }
     if name.starts_with("qengine-rewards-m39-tomes") {
-        return super::m39_tomes_journey::exercise(owner, admitted, h, name).await;
+        return Box::pin(super::m39_tomes_journey::exercise(owner, admitted, h, name)).await;
     }
     if name.starts_with("qengine-rewards-m39-bone") {
-        return super::m39_bone_journey::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::m39_bone_journey::exercise(owner, admitted, h, authority, name)).await;
     }
     if name == "qengine-rewards-m39-any-topic" {
-        return m39_any_topic::exercise(owner, admitted, h).await;
+        return Box::pin(m39_any_topic::exercise(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-authored-imported-talk-group" {
-        return super::qengine_m01a_imported_talk::exercise_group(owner, admitted, h).await;
+        return Box::pin(super::qengine_m01a_imported_talk::exercise_group(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-m01a-sven" {
-        return super::qengine_m01a_sven::exercise(owner, admitted, h, authority).await;
+        return Box::pin(super::qengine_m01a_sven::exercise(owner, admitted, h, authority)).await;
     }
     if name == "qengine-rewards-m01a-starter-routes" {
-        return super::qengine_m01a_starter_routes::exercise(owner, admitted, h, authority).await;
+        return Box::pin(super::qengine_m01a_starter_routes::exercise(owner, admitted, h, authority)).await;
     }
     if name == "qengine-rewards-m01a-production-pirate-talk" {
-        return super::qengine_m01a_production_talk::exercise(owner, admitted, h).await;
+        return Box::pin(super::qengine_m01a_production_talk::exercise(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-authored-imported-talk-group" {
-        return super::qengine_m01a_imported_talk::exercise_group(owner, admitted, h).await;
+        return Box::pin(super::qengine_m01a_imported_talk::exercise_group(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-authored-imported-talk" {
-        return super::qengine_m01a_imported_talk::exercise(owner, admitted, h).await;
+        return Box::pin(super::qengine_m01a_imported_talk::exercise(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-m01c-collection" {
-        return super::m01c_collection::exercise(owner, admitted, h).await;
+        return Box::pin(super::m01c_collection::exercise(owner, admitted, h)).await;
     }
     if name.starts_with("qengine-rewards-qnpcfx-m10-") {
-        return super::qnpcfx_m10::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::qnpcfx_m10::exercise(owner, admitted, h, authority, name)).await;
     }
     if name.starts_with("qengine-rewards-qnpcfx-koshei") {
-        return super::qnpcfx_koshei::exercise(owner, admitted, h, authority, name.ends_with("-bank")).await;
+        return Box::pin(super::qnpcfx_koshei::exercise(owner, admitted, h, authority, name.ends_with("-bank"))).await;
     }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
-        return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::l6_paradox_upper::exercise(owner, admitted, h, authority, name)).await;
     }
     if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
-        return super::l6_paradox_story::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::l6_paradox_story::exercise(owner, admitted, h, authority, name)).await;
     }
     if name.starts_with("qengine-rewards-questpc4-native-tower-") {
-        return super::l6_paradox_native::exercise(owner, admitted, h, name).await;
+        return Box::pin(super::l6_paradox_native::exercise(owner, admitted, h, name)).await;
     }
     if name.starts_with("qengine-rewards-questpc4-admission-") {
-        return super::l6_world_admission::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::l6_world_admission::exercise(owner, admitted, h, authority, name)).await;
     }
     if name.starts_with("qengine-rewards-questpc4-puzzle-") {
-        return super::l6_world_puzzles::exercise(owner, admitted, h, name).await;
+        return Box::pin(super::l6_world_puzzles::exercise(owner, admitted, h, name)).await;
     }
     if name.starts_with("qengine-rewards-questpc4-paradox") {
-        return super::l6_paradox::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::l6_paradox::exercise(owner, admitted, h, authority, name)).await;
     }
     if name == "qengine-rewards-questpc4-spirit" {
-        return super::l6_spirit::exercise(owner, admitted, h, authority).await;
+        return Box::pin(super::l6_spirit::exercise(owner, admitted, h, authority)).await;
     }
     if name.starts_with("qengine-rewards-l12-") {
-        return super::qengine_kill_stories::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::qengine_kill_stories::exercise(owner, admitted, h, authority, name)).await;
     }
     if name.starts_with("qengine-rewards-l11-") {
-        return super::qengine_level_stories::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::qengine_level_stories::exercise(owner, admitted, h, authority, name)).await;
     }
     if name.starts_with("qengine-rewards-l10-documents-") {
-        return super::qengine_document_stories::exercise(owner, admitted, h, authority, name)
+        return Box::pin(super::qengine_document_stories::exercise(owner, admitted, h, authority, name))
             .await;
     }
     if name.starts_with("qengine-rewards-l9-") {
-        return super::qengine_voucher_stories::exercise(owner, admitted, h, name).await;
+        return Box::pin(super::qengine_voucher_stories::exercise(owner, admitted, h, name)).await;
     }
     if name.starts_with("qengine-rewards-l10-")
         || name.starts_with("qengine-rewards-l8-")
@@ -908,7 +909,7 @@ pub(super) async fn exercise(
         || name.starts_with("qengine-rewards-l5-")
         || name.starts_with("qengine-rewards-l6-")
     {
-        return super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name).await;
+        return Box::pin(super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name)).await;
     }
     if name == "qengine-rewards-l1-legacy-decaying" {
         return legacy_decaying(owner, admitted, h).await;

@@ -59,14 +59,12 @@ def claim_catalogue(root):
             # claims retain their SOURCE holds beside native_contents.
             if claim['readiness'] == 'ready':
                 claim['readiness'] = 'waiting_item_semantics'
-        if key in {'oteryn:reward-claim.kv.desert2', 'oteryn:reward-claim.kv.triangletower',
-                   'oteryn:reward-claim.kv.draconia1'} and not claim['data_holds']:
+        if key in {'oteryn:reward-claim.kv.desert2', 'oteryn:reward-claim.kv.triangletower'} and not claim['data_holds']:
             # The new native bag projection does not rewrite the frozen SOURCE
             # witness that its necklace originally lacked Item qualification.
             item = {
                 'oteryn:reward-claim.kv.desert2': 3084,
                 'oteryn:reward-claim.kv.triangletower': 3083,
-                'oteryn:reward-claim.kv.draconia1': 3284,
             }[key]
             claim['data_holds'] = [{'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
                 'item': f'oteryn:item.tibia.i{item}', 'placement_index': 0, 'reason': 'waiting',

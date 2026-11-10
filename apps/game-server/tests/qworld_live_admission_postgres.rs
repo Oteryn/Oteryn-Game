@@ -10,5 +10,5 @@ pub use production_server::{admission_evidence, character_bootstrap_intent, doma
 mod bestiary_postgres_harness;
 #[path = "support/authority_cases/character_promotion_fixture.rs"]
 mod character_promotion_fixture;
-#[path = "support/authority_cases/qm03_world_admission.rs"]
+#[path = "support/qworld_live_admission_cases.rs"]
 mod qm03_world_admission;

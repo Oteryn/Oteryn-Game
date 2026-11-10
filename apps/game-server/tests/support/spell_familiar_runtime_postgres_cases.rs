@@ -29,8 +29,8 @@ fn state() -> TestResult<DurableFamiliarState> {
         saved_expiry_unix: 1_800_001_800,
         last_logout_unix: 0,
         lifecycle_epoch: 1,
-        familiar_definition: Some("creature:knight/familiar".into()),
-        familiar_revision: Some("r20".into()),
+        familiar_definition: Some("canary:creature/knight_familiar".into()),
+        familiar_revision: Some("canary-47dfd51f".into()),
         profile_revision: "spell-p2-r20".into(),
         cooldowns: Vec::new(),
     };
@@ -101,8 +101,8 @@ fn knight_familiar_runtime(
             CompiledCreaturePolicies::from_active_artifact(
                 [1; 32],
                 vec![CompiledCreaturePolicy {
-                    definition_key: "creature:knight/familiar".into(),
-                    definition_revision: "r20".into(),
+                    definition_key: "canary:creature/knight_familiar".into(),
+                    definition_revision: "canary-47dfd51f".into(),
                     display_name: "Knight familiar".into(),
                     maximum_health: 812,
                     forge_difficulty: None,
@@ -142,6 +142,13 @@ fn knight_familiar_runtime(
         .iter()
         .find(|v| v["name"] == "Knight familiar")
         .ok_or("Knight familiar")?;
+    // The selected S21 profile owns its exact Creature identity and revision;
+    // a display-name-compatible fixture alias cannot satisfy that source proof.
+    let selected = knight_familiar_spell(profile)?
+        .familiar_creature_definition()
+        .ok_or("selected familiar Creature definition")?;
+    assert_eq!(selected.key, "canary:creature/knight_familiar");
+    assert_eq!(selected.revision, "canary-47dfd51f");
     Ok((physical, actor, session, profile.clone()))
 }
 fn knight_familiar_spell(
@@ -365,7 +372,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
             .commit_damage(
                 dead,
                 crate::foundation::OwnerDamageCommand {
-                    target: b"creature:knight/familiar",
+                    target: b"canary:creature/knight_familiar",
                     occurrence: b"test:familiar-lethal:1",
                     binding: b"test:familiar-lethal:1\0source-qualified-damage:812",
                     damage: 812,

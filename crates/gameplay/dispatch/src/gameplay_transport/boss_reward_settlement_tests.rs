@@ -116,8 +116,8 @@ fn boss_reward_settlement_retains_full_census_and_replays_independently_of_input
     );
     assert_eq!(
         first.chests.len(),
-        1,
-        "accepted anti-leech gate remains separate from donor loot scaling"
+        3,
+        "Crystal 201189f reward_chest.lua:54-69 rewards every nonzero score"
     );
     assert_eq!(
         first.chests[0].character_id.as_bytes(),

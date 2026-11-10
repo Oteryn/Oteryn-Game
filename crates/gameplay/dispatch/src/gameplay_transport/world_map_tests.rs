@@ -1467,18 +1467,22 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
 // all 324 recorded updates with the v5/runtime-3 fixture proved that only the 32-byte
 // bundle_digest in each of the 283 payload-carrying updates changed; all other bytes,
 // update counts and payload lengths are identical.
+// QREADY1 adds captured-container source handles to these same seeded updates;
+// the retained-identity digest below independently guards their exact wire bytes.
 const GOLDEN: (usize, usize, &str) = (
     324,
-    5_431_963,
-    "212408a7b0779ef39613a505339751452e860ead8f1d1252d277c6584515e4db",
+    6_074_547,
+    "a7853b7f889b06e035b50f64e8e2c16b4acc1fe59b6329931cca20da6e332b56",
 );
 
 // v7 changes only bundle identity in these layerless fixtures. The recorder separately
 // reconstitutes v6 identity and must reproduce this retained wire digest byte for byte.
+// QREADY1 captured-container handles extend the seeded wire in both identity
+// views; the bound-container and read-only source-handle assertions above guard it.
 const LEGACY_GOLDEN: (usize, usize, &str) = (
     324,
-    5_431_963,
-    "de9296f14dff732c590cdf36a8bcd6ae670db88662794e9605354f36b8dcb8d4",
+    6_074_547,
+    "4b99dc8ea6262753cf917c8066f367d90b3de42ef5d6f85ba0b03e51f090469f",
 );
 
 // --- MAP01-VIEWPORT-US -------------------------------------------------------------------------

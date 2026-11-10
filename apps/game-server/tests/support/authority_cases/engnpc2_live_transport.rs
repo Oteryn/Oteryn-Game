@@ -41,13 +41,12 @@ fn run(handle: bool) -> TestResult {
 }
 
 fn run_case(handle: bool, corpse: bool) -> TestResult {
-    if fixture::configured_admin().is_none() {
+    let Some(admin) = fixture::configured_admin() else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
-            let admin = fixture::configured_admin().ok_or("configured PG admin")?;
             fixture::runtime()
                 .map_err(|error| error.to_string())?
                 .block_on(async {

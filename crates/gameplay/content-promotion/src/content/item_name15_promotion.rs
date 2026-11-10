@@ -11,7 +11,7 @@ pub const ITEM_NAME15_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json"
 );
 pub const ITEM_NAME15_PACKET_SHA256: &str =
-    "23877721577dc10fabbac3e8176e2115c6d32294f3bbdb615ceef8468112ee26";
+    "4af336b8e2bb7a624e70b8ec2ed20e0e0c53ca400c8dbd5dd1cb44f0ee0c7b6e";
 const IDS: [u32; 15] = [
     23577, 23583, 23589, 23596, 23605, 23609, 23619, 23624, 23638, 23641, 23644, 23656, 23659,
     23662, 23665,

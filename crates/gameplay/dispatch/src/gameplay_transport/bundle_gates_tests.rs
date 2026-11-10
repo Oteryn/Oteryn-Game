@@ -56,6 +56,10 @@ const INVENTORY: &[Entry] = &[
         key: "",
         state: Gate::AllocatedOpen { task: "SRX-3" },
         calls: &[
+            (
+                "gameplay_transport/postgres_tests/srx3_primal_death_cutoff.rs",
+                1,
+            ),
             ("gameplay_transport/wire_position.rs", 1),
             // SRX-3 source/current-owner reads; gate semantics remain unchanged.
             ("gameplay_transport/native_cue_offer.rs", 1),
@@ -164,7 +168,13 @@ const INVENTORY: &[Entry] = &[
             pr: 2036,
         },
         calls: &[
-            ("gameplay_transport/monster_ai_cycle.rs", 1),
+            // Composed native callbacks retain the existing open monster gate.
+            ("gameplay_transport/primal_callbacks/normal.rs", 1),
+            ("gameplay_transport/kill_reward.rs", 1),
+            ("gameplay_transport/raid_live_world/feroxa_map.rs", 1),
+            ("gameplay_transport/primal_callbacks.rs", 2),
+            ("gameplay_transport/soul_war_cloak_blood.rs", 1),
+            ("gameplay_transport/monster_ai_cycle.rs", 2),
             // S10: source NPC wandering uses the same live-world movement gate.
             ("gameplay_transport/npc_actor/current_map.rs", 1),
             (
@@ -949,6 +959,9 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 /// owners in `mod.rs`, its one production construction in `serve.rs`, the shared test
 /// constructor and explicit fixture room overrides.
 const CONSTRUCTIONS: &[(&str, usize)] = &[
+    ("gameplay_transport/postgres_tests/m25_ahau_exit.rs", 1),
+    ("gameplay_transport/postgres_tests/engenc2_nomads_use.rs", 1),
+    ("gameplay_transport/postgres_tests/engenc2_cults.rs", 1),
     // Qualified activity content inherits the origin gate, checked below.
     ("gameplay_transport/activity_content.rs", 3),
     // Scoped activity assets explicitly withhold qualification, checked below.
@@ -1332,29 +1345,43 @@ fn qualification_guard_rejects_unconditional_or_inverted_bundle_room()
 /// Its shared map owner may supply combat, never generic casting or House gates.
 #[test]
 fn a_source_instance_effective_room_constructs_only_none_some_combat() {
-    let source = parse_source("src/gameplay_transport/mod.rs");
+    // Source runtimes now use the canonical shared Activity owner. Its owned
+    // room closes qualification; the separate inherited-owner path must retain
+    // exactly its origin's qualification rather than opening it unconditionally.
+    let source = parse_source("src/gameplay_transport/activity_content.rs");
     let mut constructions = Constructions::default();
     constructions.visit_file(&source);
     assert_eq!(
         constructions.0.len(),
-        1,
-        "canonical source rooms must have exactly one explicit construction"
+        2,
+        "exact source and inherited owned rooms"
     );
-    let call = &constructions.0[0];
-    assert_eq!(call.args.len(), 2);
-    assert!(matches!(call.args.first(), Some(syn::Expr::Path(path))
-        if path_name(&path.path) == "None"));
+    let source = constructions.0[0];
+    assert!(matches!(&*source.func, syn::Expr::Path(path)
+        if path_name(&path.path).ends_with("SeamRooms::owned")));
+    assert_eq!(source.args.len(), 2);
     assert!(
-        matches!(call.args.iter().nth(1), Some(syn::Expr::Call(some))
-        if matches!(&*some.func, syn::Expr::Path(path) if path_name(&path.path) == "Some")
-            && some.args.len() == 1
-            && matches!(some.args.first(), Some(syn::Expr::MethodCall(as_ref))
-                if as_ref.method == "as_ref"
-                    && as_ref.args.is_empty()
-                    && as_ref.attrs.is_empty()
-                    && as_ref.turbofish.is_none()
-                    && matches!(&*as_ref.receiver, syn::Expr::Path(path)
-                        if path_name(&path.path) == "room")))
+        matches!(source.args.iter().nth(1), Some(syn::Expr::Lit(value))
+        if matches!(value.lit, syn::Lit::Bool(ref flag) if !flag.value))
+    );
+    assert!(matches!(source.args.first(), Some(syn::Expr::Call(clone))
+        if matches!(&*clone.func, syn::Expr::Path(path)
+            if path_name(&path.path) == "std::sync::Arc::clone")
+        && clone.args.len() == 1
+        && matches!(clone.args.first(), Some(syn::Expr::Reference(reference))
+            if reference.mutability.is_none()
+            && matches!(&*reference.expr, syn::Expr::Path(path)
+                if path.path.is_ident("owned_room")))));
+    let inherited = constructions.0[1];
+    assert!(matches!(&*inherited.func, syn::Expr::Path(path)
+        if path_name(&path.path).ends_with("SeamRooms::owned")));
+    assert_eq!(inherited.args.len(), 2);
+    assert!(
+        inherited
+            .args
+            .iter()
+            .nth(1)
+            .is_some_and(inherits_origin_qualification)
     );
 }
 

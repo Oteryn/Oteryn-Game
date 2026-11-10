@@ -50,6 +50,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tarfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -140,6 +141,40 @@ CHECKS = (
 def run(command: list[str]) -> None:
     print("+", " ".join(command), flush=True)
     subprocess.run(command, cwd=ROOT, check=True)
+
+
+def refresh_world_metadata() -> None:
+    """Recount final overlays using the already committed, hash-pinned XML."""
+    donor = ROOT / "tools/content-schema/quest-authoring/samples/donor-source"
+    declaration = json.loads((donor / "corpus-input.json").read_bytes())
+    archive = donor / declaration["path"]
+    if hashlib.sha256(archive.read_bytes()).hexdigest() != declaration["sha256"]:
+        raise SystemExit("World metadata source archive digest differs")
+    summary = json.loads((ROOT / "tools/content-schema/world-authoring/samples/world-base-capture-v1.json").read_bytes())
+    expected = next(row["sha256"] for row in summary["source"]["files"]
+                    if row["path"] == "data/items/items.xml")
+    with tarfile.open(archive, "r:gz") as stream:
+        manifest_raw = stream.extractfile("corpus-manifest.json").read()
+        if hashlib.sha256(manifest_raw).hexdigest() != declaration["manifest_sha256"]:
+            raise SystemExit("World metadata source manifest digest differs")
+        rows = [row for row in json.loads(manifest_raw)["files"]
+                if row["source"] == "crystal-summer" and row["path"] == "data/items/items.xml"]
+        if len(rows) != 1 or rows[0]["sha256"] != expected:
+            raise SystemExit("World metadata requires the exact qualified source XML")
+        xml = stream.extractfile(rows[0]["cache_path"]).read()
+    if hashlib.sha256(xml).hexdigest() != expected:
+        raise SystemExit("World metadata source XML digest differs")
+    with tempfile.TemporaryDirectory() as directory:
+        source = Path(directory)
+        path = source / "data/items/items.xml"
+        path.parent.mkdir(parents=True)
+        path.write_bytes(xml)
+        run(["python3", "tools/content-schema/world-authoring/refresh_palette_capture.py",
+             "--items-xml", str(path), "--summary"])
+        run(["python3", "tools/content-schema/world-authoring/convert_appearance_only_ids.py",
+             "--crystal-root", str(source)])
+    for name in ("convert_islands.py", "convert_world_record.py"):
+        run(["python3", "tools/content-schema/world-authoring/" + name])
 
 
 def git(*args: str) -> str:
@@ -665,6 +700,17 @@ def main() -> int:
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
+    # Native policies seal the complete regenerated creature root. Keep their
+    # bounded, independently reviewed source witnesses in the same generation.
+    native = "tools/content-schema/native-gameplay/"
+    for name in ("build_srx3_soul_war_witness.py", "build_srx3_rotten_blood_witness.py",
+                 "build_srx3_primal_witness.py", "build_srx3_soul_war_attacks.py",
+                 "build_srx3_omrafir_attacks.py", "build_srx3_w01_prepare_death.py"):
+        run(["python3", native + name])
+    for name in ("build_srx3_soul_war_death_events.py", "build_native_death_event_witness.py"):
+        run(["python3", native + name, "--refresh-native-pin"])
+    run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
+    run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():
@@ -674,6 +720,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
     run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
+    refresh_world_metadata()
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():

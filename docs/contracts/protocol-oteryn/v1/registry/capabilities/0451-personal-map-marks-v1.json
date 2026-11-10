@@ -12,5 +12,5 @@
   ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "Bundle World with native gameplay and at least one native NPC map-mark callback."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only, filtered without native gameplay and at least one native NPC map-mark callback."
 }

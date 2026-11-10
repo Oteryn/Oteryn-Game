@@ -494,6 +494,9 @@ def official_shards():
 
 
 def qualified_shards():
+    import activity_static
+    import feroxa_static
+
     return {
         path
         for relative in (
@@ -506,6 +509,8 @@ def qualified_shards():
             "content/world/terrain/terrain-08749-08749.json",
             "content/world/terrain/terrain-08750-08750.json",
             "content/world/objects/objects-12917-12931.json",
+            *activity_static.SHARDS.values(),
+            feroxa_static.SHARD,
         )
         if (path := ROOT / relative).exists()
     }

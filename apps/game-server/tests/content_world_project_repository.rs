@@ -18,7 +18,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         418,
-        "84c6639fa3abb88761b4c50e99ae062b91ee31053d953ecec7fcc39b60fa9d56",
+        "7b4f0c3859cf602c9fb24234899f8854e9582f3a9a419c9b549a4451a730dcce",
     ),
     (
         "definitions/declarations.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1957,
-        "b61ace852a7b8f386e06e12b94bbb50c795cf268738c4ac7188939bf5c9d580a",
+        "879d22ddfcd2c1a565f9188c66942968ad725ef67ca4fe430f0f7cb0166e4d31",
     ),
     (
         "presentations/bindings.json",
@@ -48,12 +48,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         408,
-        "410f7980307ddb78c5ac74d14bc83306d96419a60902a3f84a71b7e38e2c149a",
+        "1bbabdecae8efee9d4fb9389fa5ef5c61cefdde7809dc2cacbf5fb4f9ae14158",
     ),
     (
         "provenance/imports.json",
         6_773_975,
-        "27f1de94e714ddae4df28f7cd6af38f28a5df2f82837d6667de88c16c40d82f4",
+        "55def96d134aa145691a3b9caecba476c3adfbbfc6d9e3cc09a062aed78ac804",
     ),
     (
         "provenance/sources.json",
@@ -91,7 +91,10 @@ const SHARED_DIRECTORY_SUCCESSOR_SHARDS: [&str; 1] = ["worlds/worlds-00000-00000
 /// locator, so legacy locator lookups scan no additional directory entries, except for the
 /// single explicit `SHARED_DIRECTORY_SUCCESSOR_SHARDS` entry.
 fn is_successor_shard(locator: &str) -> bool {
-    SHARED_DIRECTORY_SUCCESSOR_SHARDS.contains(&locator)
+    // Native Activity definitions belong to the compiled successor World, never
+    // to the manifest-listed legacy editable package.
+    locator == "source-static-definitions.json"
+        || SHARED_DIRECTORY_SUCCESSOR_SHARDS.contains(&locator)
         || is_unshared_successor_shard(locator)
         || is_spawn_family_file(locator)
         || is_npc_placement_family_file(locator)
@@ -140,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "cc61338992bd0709123c10a640c12f89b9d9474d68962cc085bec263c10db7f8";
+const TREE_SHA256: &str = "4463f29b52b51945fdcefa95131b43e0508bdc1535fc61d1c36778852f63a8a4";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -212,7 +215,8 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // LOOP-MAP-1 (#2152) adds the `content/cyclopedia/` sibling of `world` under `content/`: +1 (measured, 230).
         // WEATHER-1 adds the `content/weather/` sibling of `world` under `content/`: +1 (measured, 231).
         // CRAFT-CONTENT-1 adds content/craft/: +1 (measured, 232).
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1,
+        // Native Activity registry adds one root entry to each of 11 locator scans.
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1 + 11,
     }
 }
 
@@ -313,6 +317,11 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
     // The reviewed World pins (`pins/`, WORLD-BUNDLE-CI-1) are CI inputs, not package documents.
     files.retain(|locator| !locator.starts_with("pins/"));
     let files_seen = files.clone();
+    assert!(
+        files_seen
+            .iter()
+            .any(|path| path == "source-static-definitions.json")
+    );
     let (successors, mut actual): (Vec<_>, Vec<_>) = files.into_iter().partition(|locator| {
         SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()) || is_successor_shard(locator)
     });

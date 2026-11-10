@@ -25,8 +25,8 @@ def encode(value):
     return (json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False)+'\n').encode()
 
 
-def compose_placement_palette(placement, activity_registry, soulpit_rows):
-    """Qualify existing indices once; retain already accepted Activity identities."""
+def compose_placement_palette(placement, activity_registry, soulpit_rows, root=ROOT):
+    """Retain private Activity identities and canonical public palette precedence."""
     soulpit = {row['provenance']['source_item_id']: row for row in soulpit_rows}
     family_aliases = 0
     for entry in activity_registry:
@@ -46,11 +46,17 @@ def compose_placement_palette(placement, activity_registry, soulpit_rows):
         family_aliases += 1
     if family_aliases != 39:
         raise ValueError('joint static palette family set changed')
-    by_id = {row['provenance']['source_item_id']: row['identity'] for row in soulpit_rows}
-    expected_soulpit = set(by_id)
-    # Existing Activity records are independently source-qualified. Soulpit adds
-    # its remaining IDs, rather than replacing those valid family identities.
-    by_id.update({row['source_item_id']: row['identity'] for row in activity_registry})
+    by_id = {row['source_item_id']: row['identity'] for row in activity_registry}
+    expected_soulpit = set(soulpit)
+    # The public World palette follows ruling162 Q1b: Item, Terrain,
+    # WorldObject. Private Activity source records retain their own identities.
+    by_id.update({row['provenance']['source_item_id']: row['identity'] for row in soulpit_rows})
+    item_keys = {row['definition']['identity']['key']
+                 for shard in json.loads((root/'content/items/index.json').read_bytes())['shards']
+                 for row in json.loads((root/shard).read_bytes())['records']}
+    for binding in json.loads((root/'imports/crystalserver/bindings/items.json').read_bytes())['bindings']:
+        if binding['disposition'] == 'EXACT' and binding['target']['key'] in item_keys:
+            by_id[int(binding['external_id'])] = binding['target']
     selected = [row['source_item_id'] for row in placement['palette']
                 if row['source_item_id'] in expected_soulpit]
     if len(selected) != len(expected_soulpit) or set(selected) != expected_soulpit:
@@ -196,7 +202,7 @@ def outputs(root=ROOT):
         ''.join('    '+', '.join(str(value) for value in sorted(M25_IDENTIFIERS)[start:start+13])+',\n'
                 for start in range(0,len(M25_IDENTIFIERS),13))+'];\n').encode()
     placement_path='content/world/placements/index.json'; placement=json.loads((root/placement_path).read_bytes())
-    compose_placement_palette(placement, registry, soulpit_rows)
+    compose_placement_palette(placement, registry, soulpit_rows, root)
     files[placement_path]=encode(placement)
     for family,directory in [('Terrain','terrain'),('WorldObject','objects')]:
         name=f'content/world/{directory}/index.json'; marker=json.loads((root/name).read_bytes())
@@ -212,7 +218,16 @@ def main():
     if not args.check:
         previous_registry = ROOT / 'content/encounters/source-static-definitions.json'
         if previous_registry.exists():
-            if previous_registry.read_bytes() != planned[REGISTRY]:
+            previous = json.loads(previous_registry.read_bytes())
+            current = json.loads(planned[REGISTRY])
+            old_keys = set(previous['technical_terrain_keys'])
+            new_keys = set(current['technical_terrain_keys'])
+            additions = {f'oteryn:terrain.tibia.i{i}' for i in (7748, 13841, 17970, 53439)}
+            # The legacy materializer retains the pre-lane terrain inventory.
+            # All source records must still match; only the four independently
+            # qualified lane grounds may extend that generated inventory.
+            if (previous | {'technical_terrain_keys': current['technical_terrain_keys']} != current
+                    or not old_keys <= new_keys or new_keys - old_keys not in (set(), additions)):
                 raise ValueError('refusing to replace changed activity static registry')
             previous_registry.unlink()
         previous_terrain=ROOT/'content/world/terrain/terrain-08614-08650.json'

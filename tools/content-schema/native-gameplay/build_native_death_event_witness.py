@@ -98,13 +98,34 @@ def outputs(result:dict,output:Path):
       +''.join('    '+json.dumps(key)+',\n' for key in keys)+'];\n').encode()
  return {output:raw,output.with_name('native_w01_death_events_pin.rs'):pin}
 
+def refresh_native_pin(path:Path):
+ """Rebind the frozen source capture only when all selected native bodies match."""
+ result=json.loads(path.read_bytes())
+ if result.get('schema')!='OTERYN_W01_ORDERED_NATIVE_DEATH_EVENTS/v1' or sha(canonical(result['parents']))!=EXPECTED_PARENT_ROWS_SHA256:
+  raise ValueError('ordered source registration/native profile semantics changed')
+ native=json.loads((ROOT/'content/creatures/definitions/spell-native-profiles.json').read_bytes())
+ main=json.loads((ROOT/'crates/gameplay/content/src/content/native_monster_callback_witness.json').read_bytes())
+ if main['source_definitions_sha256']!=native['source_definitions_sha256']:
+  raise ValueError('source root mismatch')
+ profiles={row['profile']['target']['key']:row['profile'] for row in native['records']}
+ bindings={row['definition']['identity']['key']:row['source_bindings']
+           for shard in (ROOT/'content/creatures/definitions').glob('creatures-*.json')
+           for row in json.loads(shard.read_bytes())['records']}
+ for row in result['parents']:
+  key=row['native_profile']['target']['key']
+  if profiles.get(key)!=row['native_profile'] or row['source_identity_binding'] not in bindings.get(key,[]):
+   raise ValueError('ordered death native body or source binding changed: '+key)
+ result['source_definitions_sha256']=native['source_definitions_sha256']
+ return result
+
 def main():
  parser=argparse.ArgumentParser(description=__doc__)
  parser.add_argument('--source-cache',type=Path,default=Path('/tmp/srx3-lua-audit/blobs'))
  parser.add_argument('--canary-tree',type=Path,default=Path('/tmp/srx-canary-tree.json'))
  parser.add_argument('--out',type=Path,default=ROOT/'crates/gameplay/content/src/content/native_w01_death_events_witness.json')
  parser.add_argument('--check',action='store_true')
- args=parser.parse_args();result=build(args.source_cache,args.canary_tree)
+ parser.add_argument('--refresh-native-pin',action='store_true')
+ args=parser.parse_args();result=refresh_native_pin(args.out) if args.refresh_native_pin else build(args.source_cache,args.canary_tree)
  for path,raw in outputs(result,args.out).items():
   if args.check:
    if not path.exists() or path.read_bytes()!=raw:raise SystemExit('stale source capture: '+str(path))

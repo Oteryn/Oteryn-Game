@@ -124,7 +124,11 @@ mod tests {
                 sqlx::query("INSERT INTO game_character_promotions(character_id,purchase_occurrence_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
                     .bind(character.as_bytes().as_slice()).bind(harness::id(201).as_slice()).execute(&mut *tx).await?;
                 assert!(satisfied(&mut tx, character, &requirements).await?);
-                requirements.blessings = oteryn_gameplay_quests::quest::world_callbacks::load()?.into_iter()
+                // Main moved the time machine to the catalogue-scoped authored owner.
+                // Read the same callbacks as the durable quest writer, retaining every live guard.
+                let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(harness::debug)?;
+                requirements.blessings = oteryn_gameplay_quests::quest::world_callbacks::load_for(loaded.catalogue())?.into_iter()
                     .find(|callback| callback.key == "oteryn:quest-callback/qm03/anniversary-25095")
                     .and_then(|callback| callback.character_requirements).ok_or("registered time machine requirements")?.blessings;
                 assert_eq!(requirements.blessings.len(), 5);

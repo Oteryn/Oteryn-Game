@@ -307,7 +307,22 @@ fn qn5_grimvale_area_uses_frozen_victim_position_and_retains_first_capture() -> 
         lowered.catalogue(),
         &std::collections::BTreeMap::from([("oteryn:quest-progress/qn5/grimvale-entry".into(), 1)]),
     );
-    assert_eq!(observed.native_counters.len(), 1);
+    let mut active: Vec<_> = observed
+        .native_counters
+        .iter()
+        .map(|counter| counter.transition.as_str())
+        .collect();
+    active.sort_unstable();
+    // QUESTPC3's two source death routes begin at zero. Neither species may
+    // receive the werewolf credit tested below; keep the complete exact census.
+    assert_eq!(
+        active,
+        [
+            "oteryn:quest-transition/native-kills/m01c-ancient-aucar-ahau",
+            "oteryn:quest-transition/native-kills/m01c-decaying-defender-bakragore",
+            "oteryn:quest-transition/native-kills/qn5-grimvale-werewolves",
+        ]
+    );
     let snapshots = [observed];
     let capture = |position| {
         freeze_at(

@@ -27,10 +27,10 @@
   },
   "input_digests": {
     "content/items/aliases.json": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
-    "crates/gameplay/content/src/content/item_name_promotion.rs": "781e6901a592220f0d8f9b2f5647139e6c727e0562221106a99e408e7e97a858",
-    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "42ca530585913bf767f947c0b549c2226092d77b97fcbac32a18a438ae8fb4a6",
+    "crates/gameplay/content/src/content/item_name_promotion.rs": "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
+    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9",
     "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json": "7b5ef171482f6db3cf654ff81d66a7c689224df5f5fcf506276b1c01929be75e",
-    "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
+    "imports/crystalserver/bindings/items.json": "6e2952b3017d8f5e5ab952216387075238bd37e7f1aba5bdc501cdcf43b90b66",
     "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
     "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
     "tools/content-schema/item-authoring/appearance_membership.py": "0746bb0e350fb04503919295a718907afc87866b0299fa277b914c74e85cfc09",
@@ -38,7 +38,7 @@
     "tools/content-schema/item-authoring/lower_client_market_packet.py": "f00fa5306f1bcf7c84d0f316a325410dee7b8340f26563e8c789c6255564a9b2",
     "tools/content-schema/item-authoring/lower_item_name_packet.py": "9a5553910c9f0796094a6ffb611bf65a0d4f9d7256eca72085dc70a5b7a4f61b",
     "tools/content-schema/item-authoring/lower_wiki_movable_packet.py": "ee76296626184ba6dff90755cd0fc7c64bfb758ecb075961db6746468dae5923",
-    "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e",
+    "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "3f6a78aece8db60a19f0114c4ed9998c28c4330cc598319936e3eb0446740182",
     "tools/content-schema/item-authoring/samples/promotion-crystal-ff7ede5.json": "69d5c1ff24b979658fc24a310d6715c131cfca6abe759ff1fa29479da0ecffe2"
   },
   "protected_XML_source": {

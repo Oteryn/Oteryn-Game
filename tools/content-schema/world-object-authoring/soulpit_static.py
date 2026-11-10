@@ -246,7 +246,7 @@ def outputs(root=ROOT):
     index = json.loads((root / index_path).read_bytes())
     import activity_static
     _, registry, _ = activity_static.source_records(root)
-    activity_static.compose_placement_palette(index, registry, rows)
+    activity_static.compose_placement_palette(index, registry, rows, root)
     marker_path = "content/world/terrain/index.json"
     marker = json.loads((root / marker_path).read_bytes())
     marker["notes"] = activity_static.compose_terrain_notes(marker["notes"])

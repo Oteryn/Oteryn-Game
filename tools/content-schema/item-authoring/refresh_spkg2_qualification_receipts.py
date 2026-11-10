@@ -19,7 +19,7 @@ from historical_world_owner_context import GROUND, MARKER, SUGAR_GROUND, origina
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "tools/content-migration"))
 
-from source_relocations import current_path
+from source_relocations import current_path, read_pinned
 
 HERE = "tools/content-schema/item-authoring/"
 RECIPES = (
@@ -114,7 +114,8 @@ def refresh_pin(root, path, previous):
     raw = (root / current_path(path)).read_bytes()
     actual = digest(raw)
     if actual != previous and path not in ALLOWED:
-        raise ValueError(f"unqualified input change: {path}")
+        if read_pinned(root, path, previous) != raw:
+            raise ValueError(f"unqualified input change: {path}")
     return actual, len(raw)
 
 

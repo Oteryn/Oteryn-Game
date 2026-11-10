@@ -1,3 +1,4 @@
+// Keep delegated lane futures off the shared scenario stack as the integration grows.
 use super::*;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
@@ -1048,68 +1049,68 @@ fn scenario_case(
         }
         owner.admit_quest_session(&admitted).await;
         if m03_use {
-            super::super::qengine_m03_use::exercise(&mut owner, &mut admitted, &h, &authority)
+            Box::pin(super::super::qengine_m03_use::exercise(&mut owner, &mut admitted, &h, &authority))
                 .await?;
         } else if engenc_asura {
-            super::super::engenc_asura_dispatch::exercise(&mut owner, &mut admitted, &h, name)
+            Box::pin(super::super::engenc_asura_dispatch::exercise(&mut owner, &mut admitted, &h, name))
                 .await?;
         } else if m03_pits {
-            super::super::qengine_m03_pits::exercise(&mut owner, &mut admitted, &h, &authority)
+            Box::pin(super::super::qengine_m03_pits::exercise(&mut owner, &mut admitted, &h, &authority))
                 .await?;
         } else if nomads_window {
-            super::super::qengine_m02_use::exercise(
+            Box::pin(super::super::qengine_m02_use::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &callback,
                 name.ends_with("-wrong-order"),
-            )
+            ))
             .await?;
         } else if elemental_pin {
-            super::super::qn1_elemental_world_pin::exercise(
+            Box::pin(super::super::qn1_elemental_world_pin::exercise(
                 &owner,
                 &h,
                 name,
                 deps.actor,
                 fence.item_fence(),
                 admitted,
-            )
+            ))
             .await?;
         } else if qready_workbench {
-            super::super::qready1_workbenches::exercise(&owner, &mut admitted, &h, &callback, name)
+            Box::pin(super::super::qready1_workbenches::exercise(&owner, &mut admitted, &h, &callback, name))
                 .await?;
         } else if qready_craft {
-            super::super::qready1_crafting::exercise(&owner, &mut admitted, &h, &callback).await?;
+            Box::pin(super::super::qready1_crafting::exercise(&owner, &mut admitted, &h, &callback)).await?;
         } else if matches!(
             name,
             "qready1-bewitched-contribution" | "qready1-threatened-raven-herb"
         ) {
-            super::super::qready1_world_clocks::exercise(&owner, &mut admitted, &h, &callback)
+            Box::pin(super::super::qready1_world_clocks::exercise(&owner, &mut admitted, &h, &callback))
                 .await?;
         } else if qm47 {
-            super::super::qm47_mead_dispatch::exercise(
+            Box::pin(super::super::qm47_mead_dispatch::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 fence,
                 &callback,
-            )
+            ))
             .await?;
         } else if name == "barbarian-test-mead" {
-            super::super::qm47_mead::exercise(&mut owner, &admitted, &h, fence, &callback).await?;
+            Box::pin(super::super::qm47_mead::exercise(&mut owner, &admitted, &h, fence, &callback)).await?;
         } else if qm03 {
-            super::super::qm03_world_admission::exercise(
+            Box::pin(super::super::qm03_world_admission::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &callback,
                 name,
-            )
+            ))
             .await?;
         } else if qm50 {
-            super::super::qm50_elevator::exercise(&owner, &mut admitted).await?;
+            Box::pin(super::super::qm50_elevator::exercise(&owner, &mut admitted)).await?;
         } else if m01b_explore {
-            super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
+            Box::pin(super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback)).await?;
         } else if m07_too_hot {
             Box::pin(super::super::m07_too_hot_columns::exercise(
                 &mut owner,
@@ -1156,15 +1157,15 @@ fn scenario_case(
             ))
             .await?;
         } else if m07_dreamer {
-            super::super::m07_dreamer_levers::exercise(&mut owner, &mut admitted, &h, &callback)
+            Box::pin(super::super::m07_dreamer_levers::exercise(&mut owner, &mut admitted, &h, &callback))
                 .await?;
         } else if mead {
-            super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
+            Box::pin(super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback))
                 .await?;
         } else if reward_fluids {
-            super::super::l6_reward_fluids::exercise(&owner, admitted, &h, &authority).await?;
+            Box::pin(super::super::l6_reward_fluids::exercise(&owner, admitted, &h, &authority)).await?;
         } else if small_ruby {
-            super::super::l6_world_pickups::exercise(&owner, &mut admitted, &h, 0).await?;
+            Box::pin(super::super::l6_world_pickups::exercise(&owner, &mut admitted, &h, 0)).await?;
             if name.ends_with("-reset") {
                 let mut next = super::super::l6_world_pickups::cycle(
                     &owner,
@@ -1241,7 +1242,7 @@ fn scenario_case(
                     .ok_or("active reset epoch")?;
                 deps.initialize(&owner).await;
                 owner.admit_progression_session(&mut next).await;
-                super::super::l6_world_pickups::exercise(&owner, &mut next, &h, 1).await?;
+                Box::pin(super::super::l6_world_pickups::exercise(&owner, &mut next, &h, 1)).await?;
                 super::super::l6_world_pickups::refuse_old_epoch(&owner, next, &h).await?;
                 drop(owner);
                 drop(authority);
@@ -1249,36 +1250,36 @@ fn scenario_case(
                 return h.cleanup().await;
             }
         } else if let Some(source_id) = super::super::l6_treasure_rewards::source_id(name) {
-            super::super::l6_treasure_rewards::exercise(
+            Box::pin(super::super::l6_treasure_rewards::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 fence,
                 source_id,
-            )
+            ))
             .await?;
         } else if m49 {
-            super::super::m49_elemental_arrival::exercise(
+            Box::pin(super::super::m49_elemental_arrival::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 name,
                 deps.actor,
-            )
+            ))
             .await?;
         } else if m44_flower {
-            super::super::m44_flower_lifecycle::exercise(
+            Box::pin(super::super::m44_flower_lifecycle::exercise(
                 &owner,
                 &mut admitted,
                 &h,
                 name.ends_with("/later"),
                 name.ends_with("/uncertain"),
-            )
+            ))
             .await?;
         } else if m44_amphora {
-            super::super::m44_amphora_lifecycle::exercise(&owner, &mut admitted, &h).await?;
+            Box::pin(super::super::m44_amphora_lifecycle::exercise(&owner, &mut admitted, &h)).await?;
         } else if m44_lions {
-            super::super::m44_lions_lifecycle::exercise(
+            Box::pin(super::super::m44_lions_lifecycle::exercise(
                 &owner,
                 &mut admitted,
                 &h,
@@ -1286,41 +1287,41 @@ fn scenario_case(
                 &callback,
                 name.ends_with("-uncertain"),
                 name.ends_with("/later"),
-            )
+            ))
             .await?;
         } else if m44_children {
-            super::super::m44_children_lifecycle::exercise(&owner, &mut admitted, &h).await?;
+            Box::pin(super::super::m44_children_lifecycle::exercise(&owner, &mut admitted, &h)).await?;
         } else if m44 {
-            super::super::m44_source_lifecycle::exercise(&owner, &mut admitted, &h).await?;
+            Box::pin(super::super::m44_source_lifecycle::exercise(&owner, &mut admitted, &h)).await?;
         } else if qm48 {
-            super::super::qm48_mammoth::exercise(&mut owner, &mut admitted, &h).await?;
+            Box::pin(super::super::qm48_mammoth::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == "l6-stag-item-profile" {
-            super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence).await?;
+            Box::pin(super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence)).await?;
         } else if name == "l6-ruby-profile" {
-            super::super::l6_ruby_profile::exercise(&owner, &h).await?;
+            Box::pin(super::super::l6_ruby_profile::exercise(&owner, &h)).await?;
         } else if floor_profiles {
-            super::super::l6_floor_profiles::exercise(&mut owner, &mut admitted, &h, fence).await?;
+            Box::pin(super::super::l6_floor_profiles::exercise(&mut owner, &mut admitted, &h, fence)).await?;
         } else if diprath_room {
-            super::super::l6_diprath_room::exercise(&mut owner, &mut admitted, &h, name).await?;
+            Box::pin(super::super::l6_diprath_room::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if native_signs {
-            super::super::l6_native_signs::exercise(&mut owner, &mut admitted, &h, name).await?;
+            Box::pin(super::super::l6_native_signs::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if native_flames {
-            super::super::l6_native_flames::exercise(&mut owner, &mut admitted, &h, name).await?;
+            Box::pin(super::super::l6_native_flames::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if native_room {
-            super::super::l6_native_rooms::exercise(&mut owner, &mut admitted, &h, name).await?;
+            Box::pin(super::super::l6_native_rooms::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if room_raise {
-            super::super::l6_room_raise::exercise(&mut owner, &mut admitted, &h, name).await?;
+            Box::pin(super::super::l6_room_raise::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if native_altar {
-            super::super::l6_floor_native::exercise(&mut owner, &mut admitted, &h, fence, name)
+            Box::pin(super::super::l6_floor_native::exercise(&mut owner, &mut admitted, &h, fence, name))
                 .await?;
         } else if floor_assembly {
-            super::super::l6_floor_assembly::exercise(&mut owner, &mut admitted, &h, fence, name)
+            Box::pin(super::super::l6_floor_assembly::exercise(&mut owner, &mut admitted, &h, fence, name))
                 .await?;
         } else if native_gate {
-            super::super::l6_shared_gate_native::exercise(&mut owner, &mut admitted, &h, name)
+            Box::pin(super::super::l6_shared_gate_native::exercise(&mut owner, &mut admitted, &h, name))
                 .await?;
         } else if shared_gate {
-            super::super::l6_shared_gates::exercise(
+            Box::pin(super::super::l6_shared_gates::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -1328,38 +1329,38 @@ fn scenario_case(
                 fence,
                 trigger,
                 name,
-            )
+            ))
             .await?;
         } else if native_switch {
-            super::super::l6_shared_switch_native::exercise(
+            Box::pin(super::super::l6_shared_switch_native::exercise(
                 &owner,
                 &mut admitted,
                 &h,
                 trigger,
                 name,
-            )
+            ))
             .await?;
         } else if shared_switch && name.contains("-treasure-") {
-            super::super::l6_shared_switch_treasure::exercise(
+            Box::pin(super::super::l6_shared_switch_treasure::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 trigger,
                 name,
                 deps.actor,
-            )
+            ))
             .await?;
         } else if shared_switch && name.contains("-timer-") {
-            super::super::l6_shared_switch_timers::exercise(
+            Box::pin(super::super::l6_shared_switch_timers::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 trigger,
                 name,
-            )
+            ))
             .await?;
         } else if shared_switch {
-            super::super::l6_shared_switches::exercise(&owner, &mut admitted, &h, trigger).await?;
+            Box::pin(super::super::l6_shared_switches::exercise(&owner, &mut admitted, &h, trigger)).await?;
         } else if carried_step {
             if name.contains("-present-") {
                 let recipe = oteryn_gameplay_quests::quest::carried_step::RECIPES
@@ -1379,7 +1380,7 @@ fn scenario_case(
                 )
                 .await?;
             }
-            super::stateless::exercise(
+            Box::pin(super::stateless::exercise(
                 &owner,
                 &mut admitted,
                 &h,
@@ -1387,7 +1388,7 @@ fn scenario_case(
                 fence,
                 &callback,
                 stateless_destination.ok_or("source branch destination")?,
-            )
+            ))
             .await?;
             super::super::l6_carried_step::verify(
                 &owner,
@@ -1400,100 +1401,100 @@ fn scenario_case(
             )
             .await?;
         } else if ancient_instruments {
-            super::super::l6_ancient_tombs::exercise(
+            Box::pin(super::super::l6_ancient_tombs::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &authority,
                 fence,
                 trigger,
-            )
+            ))
             .await?;
         } else if name == "triangle-tower-wall" {
-            super::super::triangle_tower::exercise(
+            Box::pin(super::super::triangle_tower::exercise(
                 &mut owner,
                 &mut admitted,
                 &world,
                 &callback,
                 trigger,
-            )
+            ))
             .await?;
         } else if name == "m05-gnomus" {
-            super::super::m05_gnomus::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+            Box::pin(super::super::m05_gnomus::exercise(&mut owner, &mut admitted, &h, &authority)).await?;
         } else if name == "engoutfit-rock-steady" {
-            super::super::engoutfit::exercise_rock(&mut owner, &mut admitted, &h, &authority)
+            Box::pin(super::super::engoutfit::exercise_rock(&mut owner, &mut admitted, &h, &authority))
                 .await?;
         } else if name.starts_with("engoutfit-source") {
-            super::super::engoutfit::exercise_source(
+            Box::pin(super::super::engoutfit::exercise_source(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &authority,
                 name.ends_with("-fault"),
-            )
+            ))
             .await?;
         } else if name == "m16-marker" {
-            super::super::m16_personal_map_marker::exercise(&mut owner, &mut admitted, &h).await?;
+            Box::pin(super::super::m16_personal_map_marker::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == "engnpc-m04" {
-            super::super::engnpc_m04_completion::exercise(
+            Box::pin(super::super::engnpc_m04_completion::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &authority,
-            )
+            ))
             .await?;
         } else if name == "npc-item-exchanges" {
-            super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)
+            Box::pin(super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority))
                 .await?;
         } else if name == "m42-hot-final" {
-            super::super::m42_hot_cuisine::exercise_final(
+            Box::pin(super::super::m42_hot_cuisine::exercise_final(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &authority,
-            )
+            ))
             .await?;
         } else if name == "m42-hot-typed" {
-            super::super::m42_hot_cuisine::exercise(&mut owner, &mut admitted, &h, &authority)
+            Box::pin(super::super::m42_hot_cuisine::exercise(&mut owner, &mut admitted, &h, &authority))
                 .await?;
         } else if name == "catalogue-npc-xp" {
-            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority)
+            Box::pin(super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority))
                 .await?;
         } else if name == "catalogue-npc-calendar" {
-            super::super::npc_program::exercise_calendar(&mut owner, &mut admitted, &h).await?;
+            Box::pin(super::super::npc_program::exercise_calendar(&mut owner, &mut admitted, &h)).await?;
         } else if name == "catalogue-npc-end" {
-            super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
+            Box::pin(super::super::npc_program::exercise_end(&mut owner, &mut admitted)).await?;
         } else if name == "catalogue-npc" {
-            super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+            Box::pin(super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority)).await?;
         } else if name == "engitem-native-seal-paint" {
-            super::super::engitem_seal_paint::exercise(
+            Box::pin(super::super::engitem_seal_paint::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &callback,
                 trigger,
-            )
+            ))
             .await?;
         } else if name == "engitem-targuna-selected-tool" {
-            super::super::srv7_reliable_ram::exercise_selected(
+            Box::pin(super::super::srv7_reliable_ram::exercise_selected(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &callback,
                 trigger,
-            )
+            ))
             .await?;
         } else if name == "srv7-reliable-ram" {
-            super::super::srv7_reliable_ram::exercise(
+            Box::pin(super::super::srv7_reliable_ram::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &callback,
                 trigger,
-            )
+            ))
             .await?;
         } else if outfit_world {
-            super::super::qengine_access::exercise(
+            Box::pin(super::super::qengine_access::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -1501,34 +1502,34 @@ fn scenario_case(
                 fence,
                 &callback,
                 trigger,
-            )
+            ))
             .await?;
         } else if name.starts_with("m09-treasure-") {
-            super::super::m09_treasure_rewards::exercise(
+            Box::pin(super::super::m09_treasure_rewards::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &callback,
                 trigger,
-            )
+            ))
             .await?;
         } else if qengine_reward {
-            super::super::qengine_rewards::exercise(
+            Box::pin(super::super::qengine_rewards::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &authority,
                 name,
-            )
+            ))
             .await?;
         } else if ring_offering {
-            super::super::m07_dreamer_ring_offering::exercise(&mut owner,&mut admitted,&h,fence).await?;
+            Box::pin(super::super::m07_dreamer_ring_offering::exercise(&mut owner,&mut admitted,&h,fence)).await?;
         } else if callback.key == oteryn_gameplay_quests::quest::dreamer_death_ring::RESET {
-            super::super::m07_dreamer_ring_reset::exercise(&mut owner,&mut admitted,&callback,trigger).await?;
+            Box::pin(super::super::m07_dreamer_ring_reset::exercise(&mut owner,&mut admitted,&callback,trigger)).await?;
         } else if carrot {
-            super::super::m07_dreamer_carrot::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,origin,name == "m07-carrot-premium").await?;
+            Box::pin(super::super::m07_dreamer_carrot::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,origin,name == "m07-carrot-premium")).await?;
         } else if lion_trial {
-            super::super::m07_trials::exercise(
+            Box::pin(super::super::m07_trials::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -1536,10 +1537,10 @@ fn scenario_case(
                 fence,
                 &callback,
                 trigger,
-            )
+            ))
             .await?;
         } else if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
-            super::super::m07_dreamer_fire_bug::exercise(
+            Box::pin(super::super::m07_dreamer_fire_bug::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -1547,12 +1548,12 @@ fn scenario_case(
                 fence,
                 &callback,
                 trigger,
-            )
+            ))
             .await?;
         } else if callback.effects != Default::default()
             || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
         {
-            super::super::qengine_access::exercise(
+            Box::pin(super::super::qengine_access::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -1560,10 +1561,10 @@ fn scenario_case(
                 fence,
                 &callback,
                 trigger,
-            )
+            ))
             .await?;
         } else if let Some(expected_destination) = stateless_destination {
-            super::stateless::exercise(
+            Box::pin(super::stateless::exercise(
                 &owner,
                 &mut admitted,
                 &h,
@@ -1571,63 +1572,63 @@ fn scenario_case(
                 fence,
                 &callback,
                 expected_destination,
-            )
+            ))
             .await?;
         } else if name.starts_with("dryad-garden-") {
-            super::super::srvwld_dryad_garden::exercise(
+            Box::pin(super::super::srvwld_dryad_garden::exercise(
                 &owner,
                 &mut admitted,
                 deps.actor,
                 &callback,
                 trigger,
-            )
+            ))
             .await?;
         } else if name == "srv6-schrodinger-island" {
-            super::super::srv6_island_title::exercise(
+            Box::pin(super::super::srv6_island_title::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &authority,
                 &callback,
                 origin,
-            )
+            ))
             .await?;
         } else if name == "nx6-wayfarer" {
-            super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+            Box::pin(super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority)).await?;
         } else if name == "npcfix-m38-minzy" {
-            super::super::npcfix_m38_minzy::exercise(&mut owner, &mut admitted, &h).await?;
+            Box::pin(super::super::npcfix_m38_minzy::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == "npcfix-m38-rascalio" {
-            super::super::npcfix_m38_rascalio::exercise(&mut owner, &mut admitted, &h).await?;
+            Box::pin(super::super::npcfix_m38_rascalio::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name.starts_with("npcfix-m38-mistrock") {
-            super::super::npcfix_m38_mistrock::exercise(
+            Box::pin(super::super::npcfix_m38_mistrock::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &authority,
                 !name.ends_with("-free"),
-            )
+            ))
             .await?;
         } else if name == "conditional-quest-greetings" {
-            super::super::conditional_quest_greetings::exercise(
+            Box::pin(super::super::conditional_quest_greetings::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &authority,
-            )
+            ))
             .await?;
         } else if name == "threatened-dreams-npc" {
-            super::super::threatened_dreams::exercise(&mut owner, &mut admitted, &h, &authority)
+            Box::pin(super::super::threatened_dreams::exercise(&mut owner, &mut admitted, &h, &authority))
                 .await?;
         } else if name == "classic-rottin-disrepair" {
-            super::super::classic_quests::exercise_rottin(
+            Box::pin(super::super::classic_quests::exercise_rottin(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &authority,
-            )
+            ))
             .await?;
         } else if classic_npc {
-            super::super::classic_quests::exercise(&mut owner, &mut admitted, &h, &authority)
+            Box::pin(super::super::classic_quests::exercise(&mut owner, &mut admitted, &h, &authority))
                 .await?;
         } else if matches!(
             name,
@@ -1636,7 +1637,7 @@ fn scenario_case(
                 | "banshees-second-seal"
                 | "banshees-final-battle-exit"
         ) {
-            super::super::classic_quests::exercise_step(
+            Box::pin(super::super::classic_quests::exercise_step(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -1645,10 +1646,10 @@ fn scenario_case(
                 &callback,
                 trigger,
                 origin,
-            )
+            ))
             .await?;
         } else if monk {
-            super::super::monk_shrines::exercise(
+            Box::pin(super::super::monk_shrines::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -1656,10 +1657,10 @@ fn scenario_case(
                 &world,
                 name.ends_with("full-backpack"),
                 name.ends_with("capacity"),
-            )
+            ))
             .await?;
         } else if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
-            super::rotten_blood::exercise(
+            Box::pin(super::rotten_blood::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -1668,10 +1669,10 @@ fn scenario_case(
                 &callback,
                 trigger,
                 rotten_purchase,
-            )
+            ))
             .await?;
         } else if reusable_tool {
-            super::super::l6_reusable_tools::exercise(
+            Box::pin(super::super::l6_reusable_tools::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -1682,13 +1683,13 @@ fn scenario_case(
                 } else {
                     "oteryn:item.tibia.i3304"
                 },
-            )
+            ))
             .await?;
         } else if callback.item_on_target.is_some()
             || name == "outlaw-camp-door"
             || name == "travelling-trader-delivery"
         {
-            super::actions::exercise(
+            Box::pin(super::actions::exercise(
                 &owner,
                 &mut admitted,
                 &h,
@@ -1697,7 +1698,7 @@ fn scenario_case(
                 &callback,
                 trigger,
                 origin,
-            )
+            ))
             .await?;
         } else if !lever_fixture && !callback.offerings.is_empty() {
             for (n, altar) in callback.offerings.iter().take(3).enumerate() {
@@ -1754,7 +1755,7 @@ fn scenario_case(
                 .map_err(debug)?;
             assert_eq!(copy.tracks().get(&callback.storage[0].track), Some(&1));
         } else if name == "lions-rock-inner-sanctum-entry" {
-            super::lions_rock::exercise(
+            Box::pin(super::lions_rock::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -1762,12 +1763,12 @@ fn scenario_case(
                 fence,
                 &callback,
                 origin,
-            )
+            ))
             .await?;
         } else if name == "unnatural-selection-dance-native" {
-            super::super::m40_native_dance::exercise(&mut owner, &mut admitted, &h).await?;
+            Box::pin(super::super::m40_native_dance::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == "unnatural-selection-dance-2" {
-            super::unnatural_selection::exercise(
+            Box::pin(super::unnatural_selection::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -1775,7 +1776,7 @@ fn scenario_case(
                 fence,
                 &callback,
                 trigger,
-            )
+            ))
             .await?;
         } else if name == "liquid-black-shortcut" {
             // The source shortcut has no text. Exercise the generic authored refusal message

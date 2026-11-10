@@ -623,7 +623,9 @@ fn child_names(k: Kind) -> &'static [&'static str] {
         Kind::Razzagorn => &["demon"],
         Kind::Shulgrax => &["sin_devourer", "damned_soul"],
         Kind::Soulcatcher => &["corrupted_soul"],
-        Kind::Blazing | Kind::Freezing => &["lost_time", "time_waster"],
+        // Crystal 201189f time_guardian_lost_time.lua:8-11 selects by parent.
+        Kind::Blazing => &["time_waster"],
+        Kind::Freezing => &["lost_time"],
         Kind::Destruction => &["disruption"],
         Kind::Hunger => &["greed"],
         Kind::Rage => &["frenzy"],
