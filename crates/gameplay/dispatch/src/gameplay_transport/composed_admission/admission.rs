@@ -12,6 +12,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(_permit) = self.states.input_gate.enter().await else {
             return Err(Unavailable);
         };
+        // A player waiting to enter keeps the scheduled monster passes from retaking the
+        // returned holder ahead of it, as logout does.
+        let Ok(_foreground) = self.root.foreground_demand() else {
+            return Err(Unavailable);
+        };
         let malformed = Classified(N8::AdmissionGrantMalformed);
         let token = std::str::from_utf8(attempt.admission_material).map_err(|_| malformed)?;
         // Untrusted selector only; verification below checks the same token.
@@ -23,6 +28,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // pass at once with nothing written. Such a busy holder is retried within the
         // root recovery window, with a per-attempt backoff so concurrent attempts do not
         // stay in lockstep.
+        // Keep the attempt's holder preference across every read and wait,
+        // including the existing post-commit budget handoff below. A retry
+        // never creates a new preference window; cancellation drops this guard.
+        let _foreground = self.root.foreground_demand().map_err(|_| Unavailable)?;
         let mut budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
         let record = loop {
             match self
@@ -486,7 +495,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Both are reads or an idempotent fenced write through the shared holder, so a busy
         // holder is retried within the attempt's window rather than refusing it (DEFLAKE-3).
         if writes_after_progression(positioned, admitted.first_entry) {
-            let loaded = budget
+            #[cfg(test)]
+            if let Ok(barrier) = FRESH_SPELL_ADMISSION_BARRIER.try_with(std::sync::Arc::clone) {
+                barrier.0.notify_one();
+                barrier.1.notified().await;
+            }
+            let Ok(loaded) = budget
                 .retry_unavailable(async || {
                     match load_character_cast_facts(self.root, self.character, character_id).await {
                         CastFactsLoad::Ready {
@@ -497,11 +511,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         CastFactsLoad::Unavailable => Err(Unavailable),
                     }
                 })
-                .await?;
+                .await
+            else {
+                // COMMIT already owns this identity. A refusal here would hide it from
+                // the listener's control-loss lifecycle. Acknowledge it with the same
+                // input-ineligible outcome as the other unavailable entry participants.
+                operator_event("event=fresh_admission_pending phase=spell_facts");
+                if matches!(
+                    admitted.first_entry,
+                    FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+                ) {
+                    admitted.first_entry = FirstEntryOutcome::AwaitingSpellRepair;
+                }
+                return Ok(admitted);
+            };
             let Some((facts, character_revision)) = loaded else {
                 return Ok(admitted);
             };
-            budget
+            if budget
                 .retry_unavailable(async || {
                     if self
                         .reconcile_automatic_spells(
@@ -518,7 +545,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Err(Unavailable)
                     }
                 })
-                .await?;
+                .await
+                .is_err()
+            {
+                operator_event("event=fresh_admission_pending phase=automatic_spells");
+                if matches!(
+                    admitted.first_entry,
+                    FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+                ) {
+                    admitted.first_entry = FirstEntryOutcome::AwaitingSpellRepair;
+                }
+            }
         }
         Ok(admitted)
     }
@@ -615,10 +652,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         transport: AuthenticatedTransportRefV1,
     ) -> ReconciliationDisposition {
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        for attempt in 0..RECONCILE_ATTEMPTS {
-            if attempt > 0 {
-                tokio::time::sleep(RECONCILE_BACKOFF).await;
-            }
+        let budget = AdmissionRetryBudget::for_root(&game_session_id, self.root);
+        let mut storage_failures = 0;
+        loop {
             match store.reconcile(request.operation()).await {
                 Ok(FreshReconciliation::Committed(snapshot)) => {
                     return if owns_fresh_session(
@@ -641,9 +677,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         AdmissionRefusal::Rejected,
                     );
                 }
-                Err(_) => {}
+                // A busy holder has not read the receipt. In particular, a pass that
+                // outlasts the old five-read/800 ms window cannot turn a committed
+                // winner into Unknown (and a silent admission refusal). Wait for the
+                // holder within the same bounded recovery window as fresh entry.
+                Err(crate::durability::DurabilityError::RootUnavailable) => {
+                    if !budget
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
+                    {
+                        return ReconciliationDisposition::Unknown;
+                    }
+                }
+                Err(_) => {
+                    storage_failures += 1;
+                    if storage_failures >= RECONCILE_ATTEMPTS {
+                        return ReconciliationDisposition::Unknown;
+                    }
+                    tokio::time::sleep(RECONCILE_BACKOFF).await;
+                }
             }
         }
-        ReconciliationDisposition::Unknown
     }
 }

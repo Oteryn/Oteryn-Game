@@ -148,7 +148,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(())
             };
         }
-        let pass = self.root.try_issue_semantic_pass().map_err(|_| ())?;
+        // The coalesced monster scheduler must not retake the returned holder
+        // ahead of a waiting foreground owner (notably logout during world boot).
+        let pass = self
+            .root
+            .try_issue_background_semantic_pass()
+            .map_err(|_| ())?;
         let (next_due, proposals, native_actors, ran_profile) = {
             let mut context = (
                 self,

@@ -17,7 +17,9 @@ use super::world_required_capabilities::{
     AuthenticatedSessionCapabilities, SessionCapabilityError,
 };
 use super::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
-use super::{AdmissionRetryBudget, ComposedFreshAdmission, canonical_uuid};
+use super::{
+    AdmissionRetryBudget, ComposedFreshAdmission, SAME_SESSION_GRACE_SECONDS, canonical_uuid,
+};
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::recovery_evidence_composition::RecoveryEvidenceSubject;
@@ -62,6 +64,7 @@ pub(super) struct PrepareTestBarrier {
 #[cfg(test)]
 tokio::task_local! {
     pub(super) static PREPARE_TEST_BARRIER: Arc<PrepareTestBarrier>;
+    pub(super) static LOSS_READ_TEST_BARRIER: Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
 }
 
 /// Candidate lifetime: the widest the 5 s evidence freshness allows (FND-04B §18).
@@ -133,6 +136,21 @@ fn attempt_ref(attempt: &ResumeAttempt<'_>) -> Option<ReconnectAttemptRef> {
     let value = u64::from_be_bytes(bytes[..8].try_into().ok()?);
     ReconnectAttemptRef::new(value.max(1)).ok()
 }
+
+/// A resume read that could not decide refuses as `Unavailable`, as it did before NBRESUME:
+/// a storage error must not turn a reconnectable session into a permanent rejection. The
+/// caller retries it in place within the shared admission budget.
+fn resume_read_refusal(_error: crate::durability::DurabilityError) -> AdmissionRefusal {
+    AdmissionRefusal::Unavailable
+}
+
+async fn wait_for_loss_publication(
+    published: impl std::future::Future<Output = ()>,
+    deadline: tokio::time::Instant,
+) -> bool {
+    tokio::time::timeout_at(deadline, published).await.is_ok()
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// `wrote` is set before the first step that may write (the capability-mismatch release
     /// or PREPARE): until then a refusal wrote nothing and the resume may be repeated. After
@@ -152,31 +170,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             self.spell_lane_permit().await.ok_or(Unavailable)?;
         }
-        let lost = self
-            .states
-            .lost
-            .lock()
-            .map_err(|_| Unavailable)?
-            .get(&attempt.game_session_id)
-            .copied();
-        let mut lost = match lost {
-            Some(lost) => lost,
-            None => {
+        let mut loss_deadline = tokio::time::Instant::now()
+            + std::time::Duration::from_secs(
+                u64::try_from(SAME_SESSION_GRACE_SECONDS).map_err(|_| Unavailable)?,
+            );
+        let mut lost = loop {
+            // Register before looking: publication between the lookup and the wait must wake us.
+            let mut published = std::pin::pin!(self.states.lost_changed.notified());
+            published.as_mut().enable();
+            let lost = self
+                .states
+                .lost
+                .lock()
+                .map_err(|_| Unavailable)?
+                .get(&attempt.game_session_id)
+                .copied();
+            if let Some(lost) = lost {
+                break lost;
+            }
+            {
                 // The durable loss commit is visible before the loss task finishes its
                 // runtime mark, cleanup and lost-entry publication. This is readiness,
-                // not a permanent rejection: let the existing bounded pre-write retry
-                // read the completed publication, then prove every resume fence below.
-                let session = FreshAdmissionStore::from_root(self.root.clone())
-                    .current_session(attempt.game_session_id)
-                    .await
-                    .map_err(|_| Unavailable)?;
-                return Err(
-                    if session.session_state() == GameSessionState::Reconnectable {
-                        Unavailable
-                    } else {
-                        Rejected
-                    },
-                );
+                // not a permanent rejection. Wait for that local publication independently
+                // of the busy-holder admission budget: the session remains reconnectable for
+                // the full grace window, and the loss task does not use this notification.
+                let session = retry
+                    .retry_unavailable(async || {
+                        FreshAdmissionStore::from_root(self.root.clone())
+                            .current_session(attempt.game_session_id)
+                            .await
+                            .map_err(resume_read_refusal)
+                    })
+                    .await?;
+                if session.session_state() != GameSessionState::Reconnectable {
+                    return Err(Rejected);
+                }
+                if let Some(durable_deadline) = session
+                    .current_original_grace_deadline()
+                    .and_then(|deadline| {
+                        let now = super::unix_seconds()?;
+                        u64::try_from(deadline.saturating_sub(now).max(0)).ok()
+                    })
+                    .map(|remaining| {
+                        tokio::time::Instant::now() + std::time::Duration::from_secs(remaining)
+                    })
+                {
+                    loss_deadline = loss_deadline.min(durable_deadline);
+                }
+            }
+            if !wait_for_loss_publication(published, loss_deadline).await {
+                return Err(Unavailable);
             }
         };
         let (Some(actor), Some(controller)) = (lost.runtime_actor, lost.controller) else {
@@ -213,64 +256,105 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let key_id = fresh_grant_signing_key_id(token).ok_or(Rejected)?;
         let account =
             crate::domain::AccountId::from_bytes(controller.account_id).map_err(|_| Rejected)?;
-        if self
-            .root
-            .staff_account_banned(self.character, account)
-            .await
-            .map_err(|_| Unavailable)?
+        if retry
+            .retry_unavailable(async || {
+                self.root
+                    .staff_account_banned(self.character, account)
+                    .await
+                    .map_err(resume_read_refusal)
+            })
+            .await?
         {
             return Err(Rejected);
         }
         let store = FreshAdmissionStore::from_root(self.root.clone())
             .with_house_lifecycle_owner(self.holder);
         let session_id = lost.game_session_id;
-        let (session, _) = store
-            .current_session_at(session_id)
-            .await
-            .map_err(|_| Unavailable)?;
+        let (session, _) = retry
+            .retry_unavailable(async || {
+                store
+                    .current_session_at(session_id)
+                    .await
+                    .map_err(resume_read_refusal)
+            })
+            .await?;
         let epoch = session.current_control_loss_epoch().ok_or(Rejected)?;
         if session.session_state() != GameSessionState::Reconnectable {
             return Err(Rejected);
         }
         let fence = super::item_fence_of(session).ok_or(Rejected)?;
         if fence.connection_generation.get() != lost.continuity.connection_generation
-            || self
-                .root
-                .staff_lost_session_kicked(self.character, self.holder, fence, account, epoch)
-                .await
-                .map_err(|_| Unavailable)?
+            || retry
+                .retry_unavailable(async || {
+                    self.root
+                        .staff_lost_session_kicked(
+                            self.character,
+                            self.holder,
+                            fence,
+                            account,
+                            epoch,
+                        )
+                        .await
+                        .map_err(resume_read_refusal)
+                })
+                .await?
         {
             return Err(Rejected);
         }
         let account_id = canonical_uuid(&controller.account_id);
-        self.evidence
-            .refresh_recovery(self.root, self.holder, &account_id, &key_id)
-            .await
-            .map_err(|_| Unavailable)?;
+        retry
+            .retry_unavailable(async || {
+                self.evidence
+                    .refresh_recovery(self.root, self.holder, &account_id, &key_id)
+                    .await
+                    .map_err(|_| Unavailable)
+            })
+            .await?;
 
-        let (loss, loss_decided_at) = store
-            .owning_loss(session_id, epoch)
-            .await
-            .map_err(|_| Unavailable)?
+        #[cfg(test)]
+        if let Ok(barrier) = LOSS_READ_TEST_BARRIER.try_with(Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
+        // NBRESUME: retain completed reads/evidence when the next holder is busy.
+        // Restarting the entire pre-write attempt can repeatedly lose this same
+        // read to background work and exhaust the admission budget without progress.
+        let (loss, loss_decided_at) = retry
+            .retry_unavailable(async || {
+                store
+                    .owning_loss(session_id, epoch)
+                    .await
+                    .map_err(resume_read_refusal)
+            })
+            .await?
             .ok_or(Rejected)?;
         let scope = session.current_runtime_scope();
         let character = session.commit().character_id();
-        let rows = AdmissionGuardStore::from_root(self.root.clone())
-            .load(&[
-                AdmissionAuthorityGuardKeyV1::Account {
-                    account_id: account_id.clone(),
-                },
-                AdmissionAuthorityGuardKeyV1::Character(character),
-            ])
-            .await
-            .map_err(|_| Unavailable)?
+        let keys = [
+            AdmissionAuthorityGuardKeyV1::Account {
+                account_id: account_id.clone(),
+            },
+            AdmissionAuthorityGuardKeyV1::Character(character),
+        ];
+        let rows = retry
+            .retry_unavailable(async || {
+                AdmissionGuardStore::from_root(self.root.clone())
+                    .load(&keys)
+                    .await
+                    .map_err(resume_read_refusal)
+            })
+            .await?
             .into_iter()
             .collect::<Option<Vec<_>>>()
             .ok_or(Rejected)?;
-        let runtime_publication = store
-            .recovery_runtime_publication(session_id)
-            .await
-            .map_err(|_| Unavailable)?
+        let runtime_publication = retry
+            .retry_unavailable(async || {
+                store
+                    .recovery_runtime_publication(session_id)
+                    .await
+                    .map_err(resume_read_refusal)
+            })
+            .await?
             .ok_or(Rejected)?;
         let AdmissionAuthorityGuardKeyV1::Runtime(policy_scope) = &runtime_publication.key else {
             return Err(Unavailable);
@@ -302,22 +386,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.root
                 .verify_registered_recovery(self.holder, &subject, token, &recovery)
                 .await
-                .map_err(|_| Unavailable)?
+                .map_err(resume_read_refusal)?
                 .map_err(|_| Rejected)
         };
-        let verified: VerifiedRecoveryDurabilityFactsV2 = verify().await?;
+        let verified: VerifiedRecoveryDurabilityFactsV2 =
+            retry.retry_unavailable(async || verify().await).await?;
         // PREPARE is decided at a durable time sampled after verification, as COMMIT does with
         // `final_now`: the verifier stamps `verified_at` from its own later clock sample and
         // revalidation refuses any earlier `now`, so a sample taken before `verify()` loses the
         // resume whenever a second boundary falls between the two.
-        let (_, now) = store
-            .current_session_at(session_id)
-            .await
-            .map_err(|_| Unavailable)?;
-        let budget = store
-            .recovery_budget(session_id, epoch)
-            .await
-            .map_err(|_| Unavailable)?;
+        let (_, now) = retry
+            .retry_unavailable(async || {
+                store
+                    .current_session_at(session_id)
+                    .await
+                    .map_err(resume_read_refusal)
+            })
+            .await?;
+        // NBW0: `now` is sampled after the loss decision and the verification, so it is earlier
+        // than either only when the wall clock stepped back in between. The Foundation refuses
+        // such a time as stale authority; that is readiness, not a rejection of the credential.
+        // Nothing is written yet: the caller repeats the attempt from fresh reads.
+        if now < loss_decided_at || now < verified.verified_at() {
+            return Err(Unavailable);
+        }
+        let budget = retry
+            .retry_unavailable(async || recovery_budget_of(&store, session_id, epoch).await)
+            .await?;
         #[cfg(test)]
         if let Ok(barrier) = PREPARE_TEST_BARRIER.try_with(Arc::clone) {
             if barrier.delay {
@@ -632,7 +727,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     store
                         .current_session_at(session_id)
                         .await
-                        .map_err(|_| Unavailable)
+                        .map_err(resume_read_refusal)
                 })
                 .await?;
             let authorization = CompleteReconnectAuthorizationV1::reauthorize_history(
@@ -786,7 +881,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     store
                         .reconcile_complete_reconnect(operation)
                         .await
-                        .map_err(|_| AdmissionRefusal::Unavailable)
+                        .map_err(resume_read_refusal)
                 })
                 .await?;
             match reconciled {
@@ -826,13 +921,54 @@ async fn recovery_budget_of(
     store
         .recovery_budget(session, epoch)
         .await
-        .map_err(|_| AdmissionRefusal::Unavailable)
+        .map_err(resume_read_refusal)
 }
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn reconnectable_resume_waits_for_loss_publication() {
+        let changed = tokio::sync::Notify::new();
+        // Construct the waiter before publication, as `resume_lost` does before reading
+        // the local map, so a publication in the lookup-to-await gap cannot be missed.
+        let mut published = std::pin::pin!(changed.notified());
+        published.as_mut().enable();
+        changed.notify_waiters();
+        assert!(
+            wait_for_loss_publication(
+                published,
+                tokio::time::Instant::now() + std::time::Duration::from_millis(50)
+            )
+            .await
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn unrelated_loss_publications_do_not_extend_deadline() {
+        let changed = Arc::new(tokio::sync::Notify::new());
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(60);
+        let waiter = tokio::spawn({
+            let changed = Arc::clone(&changed);
+            async move {
+                loop {
+                    let mut published = std::pin::pin!(changed.notified());
+                    published.as_mut().enable();
+                    if !wait_for_loss_publication(published, deadline).await {
+                        return tokio::time::Instant::now();
+                    }
+                }
+            }
+        });
+        for _ in 0..6 {
+            tokio::time::advance(std::time::Duration::from_secs(10)).await;
+            changed.notify_waiters();
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(waiter.await.expect("waiter"), deadline);
+    }
 
     /// #162 5870253781 (r4122215795, reconnect fence P1): `resume_lost`'s FND-02
     /// reconciliation fence must carry both domain 1 (`WORLD_SPATIAL_VISIBILITY`) and domain 2

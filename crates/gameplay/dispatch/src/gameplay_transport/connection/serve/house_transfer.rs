@@ -197,6 +197,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             } = match event {
                 house_hireling::step::Event::Services => {
                     services.tick(stream, authority, &mut admitted).await?;
+                    house_hireling::step::services_completed(&mut service_cadence);
                     continue;
                 }
                 house_hireling::step::Event::Probe => {

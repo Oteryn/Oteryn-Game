@@ -61,15 +61,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> bool {
         // NODEBOOT-1: both reads go through the shared holder that background passes also
         // take, so a busy holder is retried briefly instead of refusing the command.
-        use crate::gameplay_transport::connection::AdmissionRefusal::{Rejected, Unavailable};
+        use crate::durability::{
+            DurabilityError, character_progression::CharacterProgressionError,
+        };
         let Ok((fence, stored, house_scope)) =
             crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
-                .retry_unavailable(async || {
+                .retry_durability("pvp_refresh", async || {
                     let fence = self
-                        .current_quest_fence(session)
-                        .await
-                        .map_err(|()| Unavailable)?
-                        .ok_or(Rejected)?;
+                        .current_quest_fence_durable(session)
+                        .await?
+                        .ok_or(DurabilityError::CommitRejected)?;
                     // Activities also use Instance scopes. Only a native House
                     // actor may select the named-House custody reader.
                     let house_scope = self
@@ -92,7 +93,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .read_pvp_state(self.character, self.holder, fence)
                             .await
                     }
-                    .map_err(|_| Unavailable)?;
+                    .map_err(|error| match error {
+                        CharacterProgressionError::Unavailable(error) => error,
+                        _ => DurabilityError::CommitRejected,
+                    })?;
                     Ok((fence, stored, house_scope))
                 })
                 .await

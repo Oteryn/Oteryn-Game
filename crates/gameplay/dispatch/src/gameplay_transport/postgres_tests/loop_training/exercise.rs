@@ -21,9 +21,19 @@ fn field(out: &mut Vec<u8>, key: u8, mut value: u64) {
 fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "exercise PG panic")??;
+    Ok(())
+}
+
+#[test]
+fn loop_training_postgres_exercise_terminal_readback_never_rebases_live_state() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario(false, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "terminal exercise readback PG panic")??;
     Ok(())
 }
 
@@ -31,7 +41,7 @@ fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload
 fn loop_training_postgres_node_boot_offline_settlement_and_replay() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "node boot training PG panic")??;
     Ok(())
@@ -263,11 +273,14 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
     })
 }
 
-fn scenario(node_boot: bool) -> TestResult {
+fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
     run(async |admin| {
-        let h =
-            Harness::create_with_admission_seed(admin, "loop_training_exercise", !node_boot, false)
-                .await?;
+        let tag = if terminal_readback {
+            "loop_training_terminal_readback"
+        } else {
+            "loop_training_exercise"
+        };
+        let h = Harness::create_with_admission_seed(admin, tag, !node_boot, false).await?;
         eprintln!("POSTGRES_STARTED LOOP-TRAIN-1 exercise");
         // Use the actual node-boot interpretation, including its content revision. Do not
         // rebind the production training formula to the fixture's usual content-1.
@@ -504,6 +517,36 @@ fn scenario(node_boot: bool) -> TestResult {
             stamina, 2339,
             "first training marker preserves legacy stamina"
         );
+        if terminal_readback {
+            // Give this negative readback case a real native training build, so
+            // an illicit rebase would observably change the live state.
+            let build = h
+                .root
+                .read_character_build_state(&authority, fence.character_id)
+                .await
+                .map_err(debug)?;
+            let runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let state = states
+                .get_mut(&runtime, deps.actor, admitted.game_session_id)
+                .ok_or("live trainer")?;
+            *state = crate::spell::cast::PlayerSpellState::new(
+                crate::spell::cast::CharacterCastFacts {
+                    vocation: crate::spell::Vocation::from_key(build.vocation())
+                        .ok_or("training vocation")?,
+                    magic_level: u32::from(build.magic().0),
+                    ..crate::gameplay_transport::actor_spell::tests::FACTS
+                },
+                0,
+                0,
+            )
+            .ok_or("native trainer state")?;
+            state.make_playable(owner.owner_now()).map_err(debug)?;
+            state.load_owned_build(&build).map_err(debug)?;
+            state
+                .enable_owned_training(&build, native.training_formula().ok_or("formula")?)
+                .map_err(debug)?;
+        }
         // Existing fixture builders provision custody; production dispatch owns every tested write.
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
@@ -603,6 +646,12 @@ fn scenario(node_boot: bool) -> TestResult {
             .disposition,
             4
         );
+        // Freeze the fixture clock before the Run chooses its first tick.
+        // No clock guard may hold an Arc during the config take/restore below.
+        owner.states.test_owner_time.store(
+            owner.owner_now().get().saturating_add(1),
+            std::sync::atomic::Ordering::Relaxed,
+        );
         let result = crate::gameplay_transport::loop_training::wire::dispatch(
             &owner,
             admitted,
@@ -660,19 +709,146 @@ fn scenario(node_boot: bool) -> TestResult {
             1
         );
 
-        owner.clock_origin -= Duration::from_secs(2);
-        let result = crate::gameplay_transport::loop_training::wire::dispatch(
-            &owner,
-            admitted,
-            UseCommand {
-                command_id: 2,
-                ..command
-            },
-            67,
-            &[8, 3],
-            Some(&items),
+        // Busy/readback inspection must not accrue extra real-time ticks.
+        let _clock = owner.freeze_owner_clock_for_test();
+        owner
+            .states
+            .test_owner_time
+            .fetch_add(2_000_000, std::sync::atomic::Ordering::Relaxed);
+        assert!(
+            owner
+                .training_before_save(deps.actor, admitted.game_session_id, false)
+                .await,
+            "accrue one tick without checkpointing"
+        );
+        let held = owner.root.try_issue_semantic_pass()?;
+        assert!(
+            !owner
+                .training_before_save(deps.actor, admitted.game_session_id, true)
+                .await,
+            "a busy fence is uncertain, not a completed training stop"
+        );
+        assert_eq!(owner.idle_training(admitted).await, Some(true));
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        let before_checkpoint: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_exercise_receipts")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(before_checkpoint, 0);
+
+        // Pause a real checkpoint before its live readback, then make only that
+        // read unavailable. Both the run and its known receipt must survive.
+        use crate::gameplay_transport::loop_training::EXERCISE_READBACK_BARRIER;
+        let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+        let mut stopping = Box::pin(EXERCISE_READBACK_BARRIER.scope(
+            Arc::clone(&barrier),
+            owner.training_before_save(deps.actor, admitted.game_session_id, true),
+        ));
+        tokio::select! {
+            () = barrier.0.notified() => {}
+            result = stopping.as_mut() =>
+                return Err(format!("exercise ended before its committed readback: {result}").into()),
+        }
+        let held = owner.root.try_issue_semantic_pass()?;
+        barrier.1.notify_one();
+        assert!(!stopping.await, "busy readback must retain the known receipt");
+        assert_eq!(owner.idle_training(admitted).await, Some(true));
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        let committed: (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_character_exercise_receipts), \
+             (SELECT sword_tries FROM game_character_build_state)",
         )
-        .await
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(committed, (1, 7));
+
+        if terminal_readback {
+            let before_live = {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                states
+                    .get(&runtime, deps.actor, admitted.game_session_id)
+                    .ok_or("live trainer before terminal release")?
+                    .clone()
+            };
+            let controller = admitted.controller.ok_or("controller")?;
+            let store =
+                crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone());
+            let released = store
+                .release_logout_session(
+                    admitted.game_session_id,
+                    &crate::gameplay_transport::canonical_uuid(&controller.account_id),
+                    controller.transport,
+                )
+                .await?;
+            assert!(matches!(
+                released,
+                crate::durability::fresh_admission::ExpiredLossReleaseV1::Released { .. }
+            ));
+            let terminal = store.current_session(admitted.game_session_id).await?;
+            assert_eq!(
+                terminal.session_state(),
+                crate::foundation::GameSessionState::Terminal
+            );
+            assert_eq!(
+                crate::gameplay_transport::item_fence_of(terminal),
+                Some(fence),
+                "terminal release alone does not change the item-fence fields"
+            );
+            assert!(
+                owner
+                    .training_before_save(deps.actor, admitted.game_session_id, true)
+                    .await,
+                "confirmed terminal authority ends the old trainer"
+            );
+            assert_eq!(owner.idle_training(admitted).await, Some(false));
+            {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                assert_eq!(
+                    states.get(&runtime, deps.actor, admitted.game_session_id),
+                    Some(&before_live),
+                    "a historical receipt cannot rebase a terminal actor"
+                );
+            }
+            let receipt_count: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_exercise_receipts")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(receipt_count, 1);
+            drop(store);
+            drop(_clock);
+            owner
+                .states
+                .test_owner_time
+                .store(0, std::sync::atomic::Ordering::Relaxed);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
+
+        // A second checkpoint call would hit the barrier again and fail this
+        // check, even an idempotent replay that leaves the receipt count at one.
+        let finishing = EXERCISE_READBACK_BARRIER.scope(
+            Arc::clone(&barrier),
+            crate::gameplay_transport::loop_training::wire::dispatch(
+                &owner,
+                admitted,
+                UseCommand {
+                    command_id: 2,
+                    ..command
+                },
+                67,
+                &[8, 3],
+                Some(&items),
+            ),
+        );
+        let result = tokio::select! {
+            () = barrier.0.notified() =>
+                return Err("readback replayed an already committed exercise checkpoint".into()),
+            result = finishing => result,
+        }
         .ok_or("known stop")?;
         assert_eq!(result.disposition, 2);
         assert_eq!(result.charges, 499);
@@ -795,7 +971,10 @@ fn scenario(node_boot: bool) -> TestResult {
 
         // Restart the same public dummy after its cooldown, then drive the real owner cadence
         // through every remaining charge, including the atomic last-charge expiry BURN.
-        owner.clock_origin -= Duration::from_secs(7);
+        owner
+            .states
+            .test_owner_time
+            .fetch_add(7_000_000, std::sync::atomic::Ordering::Relaxed);
         let receipts_before: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_exercise_receipts")
                 .fetch_one(&h.pool)
@@ -819,7 +998,10 @@ fn scenario(node_boot: bool) -> TestResult {
                 .fetch_one(&h.pool)
                 .await?;
         assert_eq!(receipts_after, receipts_before);
-        owner.clock_origin -= Duration::from_secs(1);
+        owner
+            .states
+            .test_owner_time
+            .fetch_add(1_000_000, std::sync::atomic::Ordering::Relaxed);
         let result = crate::gameplay_transport::loop_training::wire::dispatch(
             &owner,
             admitted,
@@ -834,7 +1016,10 @@ fn scenario(node_boot: bool) -> TestResult {
         .await
         .ok_or("restart exercise")?;
         assert_eq!(result.disposition, 1);
-        owner.clock_origin -= Duration::from_secs(1000);
+        owner
+            .states
+            .test_owner_time
+            .fetch_add(1_000_000_000, std::sync::atomic::Ordering::Relaxed);
         for _ in 0..32 {
             assert!(
                 owner
@@ -1097,6 +1282,11 @@ fn scenario(node_boot: bool) -> TestResult {
                 .map_err(debug)?,
             after
         );
+        drop(_clock);
+        owner
+            .states
+            .test_owner_time
+            .store(0, std::sync::atomic::Ordering::Relaxed);
         drop(owner);
         drop(authority);
         drop(seal);

@@ -47,7 +47,7 @@ struct ServeState {
     push_due: Option<tokio::time::Instant>,
     chase_yielded: bool,
     input_after_refresh: bool,
-    refresh_cursor: usize,
+    next_periodic_refresh: u8,
     chase_due: Option<tokio::time::Instant>,
     held: std::collections::VecDeque<(Vec<u8>, bool, tokio::time::Instant)>,
     buffered: Option<BufferedStep>,
@@ -123,6 +123,18 @@ fn command_session_matches(
         Some(session) => session == admitted.game_session_id.as_bytes(),
         None => !required,
     })
+}
+
+impl Drop for ServeState {
+    fn drop(&mut self) {
+        if let Some(buffered) = &self.buffered {
+            // Only a frame still waiting here is proven not to have entered its
+            // movement owner. An in-flight STEP has already taken this buffer.
+            let _ =
+                self.commands
+                    .cancel_buffered_step(&buffered.frame, self.generation, self.sequence);
+        }
+    }
 }
 
 enum ServeEnd {

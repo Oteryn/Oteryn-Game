@@ -5858,13 +5858,17 @@ fn assert_exhausted_budget_refused<
 #[test]
 fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Construct the complete future on the scenario stack, before Box::pin moves it.
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    // Construct and poll the complete PostgreSQL scenario on the same stack budget
+    // as the game-node thread; boxing its future alone does not bound poll frames.
     std::thread::Builder::new()
-        .name("complete-reconnect".into())
+        .name("complete-reconnect-scenario".into())
         .stack_size(64 << 20)
         .spawn(|| complete_reconnect_scenario().map_err(|error| error.to_string()))?
         .join()
-        .map_err(|_| "complete reconnect scenario thread panicked")?
+        .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
         .map_err(Into::into)
 }
 
@@ -5962,10 +5966,7 @@ fn complete_reconnect_scenario() -> Result<(), Box<dyn std::error::Error>> {
             &hex[20..]
         )
     }
-    if !postgres_e2e_is_configured()? {
-        return Ok(());
-    }
-    // The whole reconnect scenario is one large future; keep it off the test-thread stack.
+    // Keep the scenario state on the heap while polling it on the scenario thread.
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(Box::pin(async {
         let database = postgres::IsolatedPostgres::create("complete_reconnect").await?;
         let result = async {
