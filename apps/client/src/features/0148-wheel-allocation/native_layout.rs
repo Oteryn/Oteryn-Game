@@ -214,7 +214,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         for name in [tr!("Lesser gem"), tr!("Regular gem"), tr!("Greater gem")] {
             SendMessageW(quality, CB_ADDSTRING, 0, wide(name).as_ptr() as isize);
         }
-        for value in 0..4 {
+        for value in 0..12 {
             SendMessageW(
                 vessel,
                 CB_ADDSTRING,

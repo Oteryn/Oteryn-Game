@@ -1,7 +1,8 @@
 use super::state::SpellFeedback;
 use crate::combat::CombatReport;
 use oteryn_session::{
-    CastOutcome, Session, SessionError, SessionStream, SpellCastDisposition, SpellTarget,
+    AimedTarget, CAPABILITY_SPELL_AIM_MODE_V1, CastOutcome, Session, SessionError, SessionStream,
+    SpellCastDisposition, SpellTarget,
 };
 use std::num::NonZeroU32;
 use std::time::Duration;
@@ -44,6 +45,23 @@ pub async fn cast_selected<S: SessionStream>(
     Ok(outcome)
 }
 
+/// Casts `spell` with the action button's target option when the session negotiated capability
+/// 480, and records the disposition; `None` when 480 is not selected so the caller keeps the old
+/// encoding.
+pub async fn cast_aimed<S: SessionStream>(
+    session: &mut Session<S>,
+    feedback: &mut SpellFeedback,
+    spell: NonZeroU32,
+    aim: AimedTarget,
+) -> Result<Option<CastOutcome>, SessionError> {
+    if !session.is_selected(CAPABILITY_SPELL_AIM_MODE_V1) {
+        return Ok(None);
+    }
+    let outcome = session.cast_spell_aimed(spell, aim).await?;
+    feedback.record(outcome.disposition);
+    Ok(Some(outcome))
+}
+
 /// Applies queued combat state before aiming the selected spell.
 pub(crate) async fn run_cast<S: SessionStream>(
     session: &mut Session<S>,
@@ -52,6 +70,10 @@ pub(crate) async fn run_cast<S: SessionStream>(
 ) -> Result<CombatReport, SessionError> {
     // Apply any domain-10 delta already on the wire before reading the target.
     session.service_liveness(PUMP_SLICE).await?;
+    // With 480 the server resolves the held attack target itself (TARGET).
+    if let Some(outcome) = cast_aimed(session, feedback, spell, AimedTarget::Target).await? {
+        return Ok(CombatReport::Cast(outcome.disposition));
+    }
     // The server aims at its own attack target; the client only says whether to.
     let aimed = session
         .combat_state()

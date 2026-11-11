@@ -149,6 +149,9 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     imbuement::CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1,
     oteryn_protocol_oteryn::task_board::full::CAPABILITY_WEEKLY_RESULTS_V1,
     oteryn_protocol_oteryn::store::cosmetic_tokens::CAPABILITY,
+    // WU26-14 spell aim mode and WU26-10 Gem Atelier v2 (requires 148).
+    actor_spell::CAPABILITY_SPELL_AIM_MODE_V1,
+    atelier::v2::CAPABILITY_GEM_ATELIER_V2,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -260,6 +263,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     party::CAPABILITY_PARTY_LIST_V1,
     oteryn_protocol_oteryn::support_intake::CAPABILITY_SUPPORT_INTAKE_V1,
     oteryn_protocol_oteryn::task_board::full::CAPABILITY_WEEKLY_RESULTS_V1,
+    atelier::v2::CAPABILITY_GEM_ATELIER_V2,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {

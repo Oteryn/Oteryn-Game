@@ -88,8 +88,10 @@ pub(in crate::play) fn activate(m: &mut Mailbox, s: &UnboundedSender<PlayCommand
             }
         }
         Action::Quality(q) if q < 3 => m.wheel.quality = q,
-        Action::Vessel(d) if d < 4 => m.wheel.vessel_slot = d,
+        Action::Vessel(d) if d < m.wheel.vessel_slot_count() => m.wheel.vessel_slot = d,
         Action::Stage(i) => super::enqueue(m, s, i),
+        Action::Socket if m.wheel.atelier_v2 => super::enqueue(m, s, Intent::ReplaceVessel),
+        Action::Clear if m.wheel.atelier_v2 => super::enqueue(m, s, Intent::ClearVessel),
         Action::Socket => {
             m.wheel.socket_selected();
         }

@@ -110,7 +110,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // Soulseal fight command 6120 uses existing capability 72.
     // Coin market command 6128 uses existing capability 63.
     // Market details command 6126 uses existing capability 63.
-    // Daily picker and returner commands 6122..=6125 use existing capability 182.
+    // Daily returner commands 6124 and 6125 use existing capability 182 (the picker 6122/6123 left it).
     // Store browse command 6118 uses existing capability 154.
     // Wheel presentation queries 6119 and 6121 use existing capability 148.
     // Chat console command 6117 uses existing capability 7; no new advertised capability.

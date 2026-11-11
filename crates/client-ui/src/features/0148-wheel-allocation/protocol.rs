@@ -1,4 +1,5 @@
 use super::*;
+use crate::gem_atelier;
 
 #[path = "../0272-atelier-resources/protocol.rs"]
 mod resource_projection;
@@ -13,6 +14,10 @@ pub enum Intent {
     Reshape,
     Dismantle,
     GradeUp,
+    /// Capability 483: put the selected gem into the selected Gem Vessel slot.
+    ReplaceVessel,
+    /// Capability 483: empty the selected Gem Vessel slot.
+    ClearVessel,
     Retry,
 }
 
@@ -80,7 +85,8 @@ fn prepare(
             } else {
                 [0; 36]
             },
-            vessels: (intent == Intent::Save).then_some(panel.vessels),
+            // With 483 the vessels change through Replace Vessel; an absent field keeps them.
+            vessels: (intent == Intent::Save && !panel.atelier_v2).then_some(panel.vessels),
         })
         .map_err(|_| tr!("Wheel edits could not be sent"))?;
         return WheelCommand::new(wheel::COMMAND_TYPE_WHEEL_ALLOCATION, payload)
@@ -102,6 +108,9 @@ fn prepare(
         }
         Intent::ToggleLock => {
             let gem = panel.selected_gem().ok_or(tr!("Select a gem first"))?;
+            if panel.atelier_v2 {
+                return gem_atelier::set_lock(occurrence, atelier.revision, gem.id, !gem.locked);
+            }
             let payload = atelier::encode_set_lock(&atelier::SetLockRequest {
                 occurrence,
                 expected_revision: atelier.revision,
@@ -111,6 +120,29 @@ fn prepare(
             .map_err(|_| tr!("Gem lock change could not be sent"))?;
             return WheelCommand::new(atelier::COMMAND_TYPE_ATELIER_SET_LOCK, payload)
                 .ok_or(tr!("Gem lock change could not be sent"));
+        }
+        Intent::ReplaceVessel | Intent::ClearVessel => {
+            let board = panel
+                .vessel_board
+                .as_ref()
+                .filter(|_| panel.atelier_v2)
+                .ok_or("Gem Vessels are unavailable in this session")?;
+            let slot = panel.vessel_slot;
+            let gem = if intent == Intent::ReplaceVessel {
+                let gem = panel.selected_gem().ok_or(tr!("Select a gem first"))?;
+                if let Some(block) = gem_atelier::replace_block(board, gem, slot) {
+                    return Err(block.reason());
+                }
+                Some(gem.id)
+            } else {
+                board
+                    .slots
+                    .get(usize::from(slot))
+                    .and_then(|vessel| vessel.gem)
+                    .ok_or("This vessel is already empty")?;
+                None
+            };
+            return gem_atelier::replace_vessel(occurrence, board.wheel_revision, slot, gem);
         }
         Intent::Reshape => {
             let gem = panel.selected_gem().ok_or(tr!("Select a gem first"))?;
@@ -153,6 +185,9 @@ fn prepare(
         }
         _ => return Err(tr!("Unknown Wheel action")),
     };
+    if panel.atelier_v2 {
+        return gem_atelier::mutate(occurrence, atelier.revision, &mutation);
+    }
     let payload = atelier::encode_mutate(&atelier::MutateRequest {
         occurrence,
         expected_revision: atelier.revision,
@@ -173,6 +208,12 @@ fn operation_refused(response: &WheelResponse) -> Option<bool> {
         | atelier::COMMAND_TYPE_ATELIER_MUTATE => atelier::decode_reply(&response.payload)
             .ok()
             .map(|v| v.refused),
+        atelier::v2::COMMAND_TYPE_ATELIER_V2_QUERY
+        | atelier::v2::COMMAND_TYPE_ATELIER_V2_SET_LOCK
+        | atelier::v2::COMMAND_TYPE_ATELIER_V2_MUTATE
+        | atelier::v2::COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL => {
+            gem_atelier::decode_reply(&response.payload).map(|v| v.atelier.refused)
+        }
         _ => None,
     }
 }
@@ -212,16 +253,18 @@ pub fn apply_result(panel: &mut WheelPanel, response: &WheelResponse) -> bool {
             "The outcome is not confirmed; Retry sends the same request without a second payment"
         )),
     };
-    let Some((wheel, atelier)) = response
+    let Some((wheel, (atelier, board))) = response
         .wheel
         .as_deref()
         .and_then(|bytes| wheel::decode_wheel_reply(bytes).ok())
-        .zip(
-            response
-                .atelier
-                .as_deref()
-                .and_then(|bytes| atelier::decode_reply(bytes).ok()),
-        )
+        .zip(response.atelier.as_deref().and_then(|bytes| {
+            if panel.atelier_v2 {
+                let projection = gem_atelier::decode_reply(bytes)?;
+                Some((projection.atelier, Some(projection.board)))
+            } else {
+                Some((atelier::decode_reply(bytes).ok()?, None))
+            }
+        }))
     else {
         panel.feedback = Some(tr!(
             "The current view is unavailable; refresh before editing"
@@ -249,7 +292,14 @@ pub fn apply_result(panel: &mut WheelPanel, response: &WheelResponse) -> bool {
         return false;
     }
     let mut vessels = [None; 4];
-    for gem in &atelier.gems {
+    // With 483 the draft vessels mirror the first four Gem Vessel slots; gems carry their slot
+    // (0-11) in `domain`.
+    if let Some(board) = &board {
+        for (draft, slot) in vessels.iter_mut().zip(&board.slots) {
+            *draft = slot.gem;
+        }
+    }
+    for gem in atelier.gems.iter().filter(|_| board.is_none()) {
         if gem.vessel {
             let Some(slot) = vessels.get_mut(usize::from(gem.domain)) else {
                 return false;
@@ -263,6 +313,11 @@ pub fn apply_result(panel: &mut WheelPanel, response: &WheelResponse) -> bool {
     panel.vessels = vessels;
     panel.confirmed_wheel = Some(wheel);
     panel.confirmed_atelier = Some(atelier);
+    if let Some(board) = board {
+        panel.in_temple = Some(board.in_temple);
+        panel.premium = Some(board.premium);
+        panel.vessel_board = Some(board);
+    }
     panel.confirmed_resources = response
         .resources
         .as_deref()

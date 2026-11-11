@@ -331,30 +331,33 @@ fn activate_inner(
                 .find(|entry| entry.name == name && entry.words == words && entry.available)
                 && let Some(index) = NonZeroU32::new(entry.cast_index)
             {
-                let command = match aim {
-                    SpellAim::Target => crate::combat_input::CombatCommand::Cast(index),
-                    SpellAim::Facing => crate::combat_input::CombatCommand::CastFacing {
-                        spell: index,
-                        direction: None,
-                    },
-                    SpellAim::Cursor => {
-                        let Some((_, cursor)) = &mailbox.bar_actions.cursor else {
-                            mailbox.spell_bar.feedback =
-                                "Cursor is outside the game window or battle list".into();
-                            return true;
-                        };
-                        let Some(actor) = mailbox.bar_actions.own_actor else {
-                            return true;
-                        };
-                        let direction = cursor_direction(
+                let cursor_aim = if aim == SpellAim::Cursor {
+                    let Some((_, cursor)) = &mailbox.bar_actions.cursor else {
+                        mailbox.spell_bar.feedback =
+                            "Cursor is outside the game window or battle list".into();
+                        return true;
+                    };
+                    let Some(actor) = mailbox.bar_actions.own_actor else {
+                        return true;
+                    };
+                    Some(oteryn_client_ui::spell_aim_mode::CursorAim {
+                        position: oteryn_session::SpellTargetPosition {
+                            x: cursor.position.x,
+                            y: cursor.position.y,
+                            floor: cursor.position.floor,
+                        },
+                        direction: cursor_direction(
                             (actor.position.x, actor.position.y),
                             (cursor.position.x, cursor.position.y),
-                        );
-                        crate::combat_input::CombatCommand::CastFacing {
-                            spell: index,
-                            direction,
-                        }
-                    }
+                        ),
+                    })
+                } else {
+                    None
+                };
+                let Some(command) =
+                    oteryn_client_ui::spell_aim_mode::cast_command(aim.option(), index, cursor_aim)
+                else {
+                    return true;
                 };
                 let _ = commands.send(crate::combat_input::PlayCommand::Combat(command));
             } else {

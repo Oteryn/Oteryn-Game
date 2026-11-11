@@ -193,7 +193,26 @@ pub fn panel_text(panel: &WheelPanel) -> String {
         draft = draft
     ));
     lines.push(tr!("Save Wheel applies point and vessel edits together. Refresh discards unsaved edits. Removing points or resetting is blocked while you are in a fight (PZ lock).").into());
-    for (slot, gem) in panel.vessels.iter().enumerate() {
+    if let Some(board) = panel.vessel_board.as_ref().filter(|_| panel.atelier_v2) {
+        let name_of = |id: [u8; 16]| {
+            panel
+                .confirmed_atelier
+                .as_ref()
+                .and_then(|atelier| atelier.gems.iter().find(|gem| gem.id == id))
+                .map_or_else(|| tr!("Empty").into(), gem_label)
+        };
+        lines.extend(crate::gem_atelier::vessel_lines(board, name_of));
+        lines.push(format!(
+            "Selected: {}. Replace Vessel puts the selected gem there when its quality matches.",
+            vessel_name(panel.vessel_slot)
+        ));
+    }
+    for (slot, gem) in panel
+        .vessels
+        .iter()
+        .enumerate()
+        .take(if panel.atelier_v2 { 0 } else { 4 })
+    {
         let name = gem
             .and_then(|id| {
                 panel
@@ -206,10 +225,11 @@ pub fn panel_text(panel: &WheelPanel) -> String {
             .map_or_else(|| tr!("Empty").into(), gem_label);
         lines.push(format!("{}: {name}", vessel_name(slot as u8)));
     }
-    if panel.vessels.get(usize::from(panel.vessel_slot)) == Some(&None) {
+    if !panel.atelier_v2 && panel.vessels.get(usize::from(panel.vessel_slot)) == Some(&None) {
         lines.push("Select a Vessel to Modify Gems".into());
     }
     if let Some(atelier) = &panel.confirmed_atelier
+        && !panel.atelier_v2
         && panel.vessels.iter().any(Option::is_none)
         && atelier
             .gems

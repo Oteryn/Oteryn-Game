@@ -111,8 +111,8 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                         None
                     }
                     VESSEL => {
-                        if let Ok(value @ 0..=3) =
-                            u8::try_from(SendMessageW(vessel, CB_GETCURSEL, 0, 0))
+                        if let Ok(value) = u8::try_from(SendMessageW(vessel, CB_GETCURSEL, 0, 0))
+                            && value < mailbox.wheel.vessel_slot_count()
                         {
                             mailbox.wheel.vessel_slot = value;
                         }
@@ -133,6 +133,8 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                         }
                         None
                     }
+                    SOCKET if mailbox.wheel.atelier_v2 => Some(Intent::ReplaceVessel),
+                    UNSOCKET if mailbox.wheel.atelier_v2 => Some(Intent::ClearVessel),
                     SOCKET => {
                         mailbox.wheel.socket_selected();
                         None

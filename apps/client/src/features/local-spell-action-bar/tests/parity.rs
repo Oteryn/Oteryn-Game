@@ -313,24 +313,27 @@ fn spell_aim_modes_and_diagonal_cursor_use_real_play_queue()
         (
             SpellAim::Cursor,
             Some((99, 99)),
-            crate::combat_input::CombatCommand::CastFacing {
+            crate::combat_input::CombatCommand::CastCursor {
                 spell: std::num::NonZeroU32::new(71).ok_or("spell")?,
+                position: oteryn_session::SpellTargetPosition { x: 99, y: 99, floor: 7 },
                 direction: Some(StepDirection::West),
             },
         ),
         (
             SpellAim::Cursor,
             Some((101, 101)),
-            crate::combat_input::CombatCommand::CastFacing {
+            crate::combat_input::CombatCommand::CastCursor {
                 spell: std::num::NonZeroU32::new(71).ok_or("spell")?,
+                position: oteryn_session::SpellTargetPosition { x: 101, y: 101, floor: 7 },
                 direction: Some(StepDirection::East),
             },
         ),
         (
             SpellAim::Cursor,
             Some((100, 99)),
-            crate::combat_input::CombatCommand::CastFacing {
+            crate::combat_input::CombatCommand::CastCursor {
                 spell: std::num::NonZeroU32::new(71).ok_or("spell")?,
+                position: oteryn_session::SpellTargetPosition { x: 100, y: 99, floor: 7 },
                 direction: Some(StepDirection::North),
             },
         ),

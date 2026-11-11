@@ -119,15 +119,14 @@ pub fn spotlight_cards(panel: &DailyBoostPanel) -> Vec<SpotlightCard> {
 }
 
 /// Separate "Daily Reward XP boost" (source 4) and "Store XP boost" (source 3) lines, each with
-/// its own remaining hours or "(paused)"; a source without an active boost has no line.
+/// its own remaining hours; a source without an active boost has no line. The potion durations
+/// wire carries no paused state.
 pub fn xp_boost_lines(
     active: &[oteryn_client_runtime::potion_durations::PotionDuration],
     elapsed_ms: u64,
-    daily_paused: bool,
-    store_paused: bool,
 ) -> String {
     let mut text = String::new();
-    for (source, paused) in [(4u8, daily_paused), (3u8, store_paused)] {
+    for source in [4u8, 3u8] {
         let Some(entry) = active.iter().find(|e| e.source == source) else {
             continue;
         };
@@ -140,11 +139,7 @@ pub fn xp_boost_lines(
         } else {
             tr!("Store XP boost")
         };
-        let state = if paused {
-            tr!("paused").to_owned()
-        } else {
-            lfmt!("{} h remaining", remaining.div_ceil(3_600_000))
-        };
+        let state = lfmt!("{} h remaining", remaining.div_ceil(3_600_000));
         text.push_str(&format!("- {name}: +{}% ({state})\n", entry.percent));
     }
     text
@@ -163,20 +158,22 @@ mod xp_boost_tests {
         }
     }
     #[test]
-    fn xp_boosts_show_two_separate_lines_with_own_time_and_paused() {
+    fn xp_boosts_show_two_separate_lines_with_own_time_and_no_paused_state() {
         let active = [boost(3, 50, 7_200_000), boost(4, 25, 1_800_000)];
-        let text = xp_boost_lines(&active, 0, false, false);
+        let text = xp_boost_lines(&active, 0);
         assert_eq!(
             text,
             "- Daily Reward XP boost: +25% (1 h remaining)\n- Store XP boost: +50% (2 h remaining)\n"
         );
-        let paused = xp_boost_lines(&active, 0, false, true);
-        assert!(paused.contains("- Store XP boost: +50% (paused)"));
-        assert!(paused.contains("- Daily Reward XP boost: +25% (1 h remaining)"));
+        assert!(!text.contains("paused"));
         assert_eq!(
-            xp_boost_lines(&active[..1], 0, false, false),
+            xp_boost_lines(&active[..1], 0),
             "- Store XP boost: +50% (2 h remaining)\n"
         );
-        assert_eq!(xp_boost_lines(&active, 7_200_000, false, false), "");
+        assert_eq!(
+            xp_boost_lines(&active[1..], 1_000_000),
+            "- Daily Reward XP boost: +25% (1 h remaining)\n"
+        );
+        assert_eq!(xp_boost_lines(&active, 7_200_000), "");
     }
 }

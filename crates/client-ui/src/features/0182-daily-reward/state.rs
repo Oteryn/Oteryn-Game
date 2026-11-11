@@ -9,8 +9,6 @@ pub struct DailyRewardPanel {
     pub details_pending: bool,
     /// Set once the reward catalogue was requested, so the window loads it a single time.
     pub details_attempted: bool,
-    pub picker: Option<daily_reward::picker::Offer>,
-    pub picker_pending: Option<u32>,
     pub selected: bool,
     pub open: bool,
     pub wall: Option<daily_reward::DailyRewardWall>,

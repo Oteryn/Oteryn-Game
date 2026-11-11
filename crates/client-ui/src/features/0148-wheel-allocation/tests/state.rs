@@ -4,6 +4,8 @@ use super::*;
 mod reshape;
 #[path = "resources.rs"]
 mod resources;
+#[path = "vessels_v2.rs"]
+mod vessels_v2;
 #[path = "workshop.rs"]
 mod workshop;
 

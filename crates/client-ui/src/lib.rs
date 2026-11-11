@@ -202,6 +202,9 @@ pub mod analyser;
 /// Local spell action-bar key intent mapping.
 #[path = "features/local-spell-action-bar/mod.rs"]
 pub mod spell_action_bar;
+/// Action button target option to the aimed cast command (capability 480).
+#[path = "features/0480-spell-aim-mode/input.rs"]
+pub mod spell_aim_mode;
 #[path = "features/0287-actor-spell-catalog/mod.rs"]
 pub mod spell_catalog;
 #[path = "features/0449-spellbook-details/mod.rs"]
@@ -225,6 +228,9 @@ pub mod boss_rewards;
 /// Daily reward wall and one-click claim controls.
 #[path = "features/0182-daily-reward/mod.rs"]
 pub mod daily_reward;
+/// Gem Atelier v2 (capability 483): Gem Vessel slots and Replace Vessel.
+#[path = "features/0483-gem-atelier/mod.rs"]
+pub mod gem_atelier;
 /// Guild state and actions.
 #[path = "features/0040-guild/mod.rs"]
 pub mod guild;

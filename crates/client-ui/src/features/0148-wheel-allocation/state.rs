@@ -21,6 +21,11 @@ pub struct WheelPanel {
     pub preset_book: super::presets::PresetBook,
     pub preset_feedback: String,
     pub selected: bool,
+    /// Capability 483 is negotiated: the Atelier speaks commands 6210-6213 and reports twelve
+    /// Gem Vessel slots.
+    pub atelier_v2: bool,
+    /// The Gem Vessel facts of the last confirmed v2 reply.
+    pub vessel_board: Option<crate::gem_atelier::VesselBoard>,
     pub open: bool,
     pub synchronized: bool,
     pub confirmed_wheel: Option<wheel::WheelAllocationReply>,
@@ -53,6 +58,8 @@ impl Default for WheelPanel {
             preset_book: Default::default(),
             preset_feedback: String::new(),
             selected: false,
+            atelier_v2: false,
+            vessel_board: None,
             open: false,
             synchronized: false,
             confirmed_wheel: None,
@@ -130,8 +137,18 @@ impl WheelPanel {
             .map_or(0, |grade| grade.grade)
     }
 
-    /// The wire still reports a vessel's slot index in the gem's legacy `domain` field.
+    /// Selectable Gem Vessel slots: twelve with capability 483, else the four draft vessels.
+    pub fn vessel_slot_count(&self) -> u8 {
+        if self.atelier_v2 { 12 } else { 4 }
+    }
+
+    /// The wire still reports a vessel's slot index in the gem's legacy `domain` field. With
+    /// capability 483 vessels are changed by Replace Vessel, never drafted, so there is no draft
+    /// to compare.
     pub fn confirmed_vessels(&self) -> Option<wheel::WheelVessels> {
+        if self.atelier_v2 {
+            return Some(self.vessels);
+        }
         let mut vessels = [None; 4];
         for gem in &self.confirmed_atelier.as_ref()?.gems {
             if gem.vessel {

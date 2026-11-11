@@ -47,6 +47,15 @@ pub struct CastOutcome {
     pub actor_vitals_delta: Option<AppliedDelta<ActorVitals>>,
 }
 
+/// The target option of a capability-480 cast: the facing, the tile under the cursor, or the
+/// held attack target.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AimedTarget {
+    Facing,
+    Cursor(SpellTargetPosition),
+    Target,
+}
+
 /// The decoded `CommandResult` of a capability-21 `LOGOUT_INTENT`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LogoutOutcome {

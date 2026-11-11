@@ -82,13 +82,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             {
                                 let elapsed =
                                     u64::try_from(at.elapsed().as_millis()).unwrap_or(u64::MAX);
-                                // The wire carries no paused flag yet (WIRE NEEDED).
-                                text.push_str(&xp_boost_lines(
-                                    &snapshot.active,
-                                    elapsed,
-                                    false,
-                                    false,
-                                ));
+                                text.push_str(&xp_boost_lines(&snapshot.active, elapsed));
                             }
                             text
                         };

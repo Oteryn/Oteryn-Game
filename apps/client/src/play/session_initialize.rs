@@ -32,7 +32,10 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.world_weather_initialize(session.feature_snapshot(22));
     outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
-    outbox.wheel_initialize(session.wheel_selected());
+    outbox.wheel_initialize(
+        session.wheel_selected(),
+        session.feature_selected(oteryn_session::atelier::v2::CAPABILITY_GEM_ATELIER_V2),
+    );
     outbox.gem_presentation_initialize(session.feature_selected(148));
     outbox.wheel_presentation_initialize(session.feature_selected(148));
     outbox.exiva_initialize(session.exiva_selected());

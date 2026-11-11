@@ -15,7 +15,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         control(
             hwnd,
             "STATIC",
-            "Selected | Gem Vessel 1 | Gem Vessel 2 | Gem Vessel 3 | Gem Vessel 4 (draft vessels)",
+            "Selected | Gem Vessels 1-12 (Replace Vessel with 483; otherwise the first four are draft vessels)",
             2,
             [12, 80, 500, 24],
             0,
@@ -68,7 +68,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         for value in ["Lesser", "Regular", "Greater"] {
             SendMessageW(quality, CB_ADDSTRING, 0, wide(value).as_ptr() as isize);
         }
-        for d in 0..4 {
+        for d in 0..12 {
             SendMessageW(
                 vessel,
                 CB_ADDSTRING,

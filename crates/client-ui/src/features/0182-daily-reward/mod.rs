@@ -23,11 +23,6 @@ pub use returner::{ReturnerOffer, ReturnerRewardPanel};
 mod details;
 pub use details::{apply_details, details_text};
 
-#[path = "state/picker.rs"]
-mod picker;
-pub use picker::apply_picker;
-pub use protocol::request_picker;
-
 #[path = "state/returner_wire.rs"]
 mod returner_wire;
 pub use protocol::request_returner;

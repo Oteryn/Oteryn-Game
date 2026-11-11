@@ -1,11 +1,10 @@
 //! Session command routing for the current attack and spell features.
 use crate::attack::{attack, attack_text};
 use crate::spell::{SpellFeedback, run_cast};
-pub use oteryn_session::EntityRef;
 use oteryn_session::{
     AttackIntentDisposition, Session, SessionError, SessionStream, SpellCastDisposition,
-    SpellTargetPosition,
 };
+pub use oteryn_session::{EntityRef, SpellTargetPosition, StepDirection};
 use std::num::NonZeroU32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,7 +18,14 @@ pub enum CombatCommand {
     /// Cast along facing, optionally turning first and waiting for the server's acceptance.
     CastFacing {
         spell: NonZeroU32,
-        direction: Option<oteryn_session::StepDirection>,
+        direction: Option<StepDirection>,
+    },
+    /// Cast towards the tile under the cursor without a rune: with capability 480 the cursor
+    /// tile goes on the wire; without it the cast turns `direction` first, as `CastFacing`.
+    CastCursor {
+        spell: NonZeroU32,
+        position: SpellTargetPosition,
+        direction: Option<StepDirection>,
     },
     /// Cast an ordinary spell at the tile selected by the cursor.
     CastAt {
@@ -64,29 +70,66 @@ pub async fn run_combat<S: SessionStream>(
         CombatCommand::Modes(modes) => crate::attack::modes(session, modes).await,
         CombatCommand::Cast(spell) => run_cast(session, feedback, spell).await,
         CombatCommand::CastFacing { spell, direction } => {
-            if let Some(direction) = direction {
-                if !session.is_selected(64) {
-                    return Ok(CombatReport::Cast(SpellCastDisposition::Rejected));
-                }
-                let payload = oteryn_session::target_move::encode_target_move_intent(
-                    oteryn_session::target_move::TargetMoveIntent::Turn(direction),
-                )
-                .map_err(|_| SessionError::SessionUnusable)?;
-                let reply = session.gated_command(64, 81, &payload).await?;
-                if !matches!(
-                    reply.status,
-                    oteryn_session::CommandStatus::Accepted
-                        | oteryn_session::CommandStatus::DuplicateReplay
-                ) || reply.payload != [8, 1]
-                {
-                    return Ok(CombatReport::Cast(SpellCastDisposition::Rejected));
-                }
+            cast_facing(session, feedback, spell, direction).await
+        }
+        CombatCommand::CastCursor {
+            spell,
+            position,
+            direction,
+        } => {
+            let aimed = crate::spell::cast_aimed(
+                session,
+                feedback,
+                spell,
+                oteryn_session::AimedTarget::Cursor(position),
+            )
+            .await?;
+            match aimed {
+                Some(outcome) => Ok(CombatReport::Cast(outcome.disposition)),
+                None => cast_facing(session, feedback, spell, direction).await,
             }
-            let outcome = crate::spell::cast_selected(session, feedback, spell, false).await?;
-            Ok(CombatReport::Cast(outcome.disposition))
         }
         CombatCommand::CastAt { spell, position } => {
             crate::cursor_spell::cast_at(session, feedback, spell, position).await
         }
     }
+}
+
+/// Casts along facing, optionally turning first and waiting for the server's acceptance. With
+/// capability 480 and no turn the cast carries `FACING`.
+async fn cast_facing<S: SessionStream>(
+    session: &mut Session<S>,
+    feedback: &mut SpellFeedback,
+    spell: NonZeroU32,
+    direction: Option<StepDirection>,
+) -> Result<CombatReport, SessionError> {
+    if let Some(direction) = direction {
+        if !session.is_selected(64) {
+            return Ok(CombatReport::Cast(SpellCastDisposition::Rejected));
+        }
+        let payload = oteryn_session::target_move::encode_target_move_intent(
+            oteryn_session::target_move::TargetMoveIntent::Turn(direction),
+        )
+        .map_err(|_| SessionError::SessionUnusable)?;
+        let reply = session.gated_command(64, 81, &payload).await?;
+        if !matches!(
+            reply.status,
+            oteryn_session::CommandStatus::Accepted
+                | oteryn_session::CommandStatus::DuplicateReplay
+        ) || reply.payload != [8, 1]
+        {
+            return Ok(CombatReport::Cast(SpellCastDisposition::Rejected));
+        }
+    } else if let Some(outcome) = crate::spell::cast_aimed(
+        session,
+        feedback,
+        spell,
+        oteryn_session::AimedTarget::Facing,
+    )
+    .await?
+    {
+        return Ok(CombatReport::Cast(outcome.disposition));
+    }
+    let outcome = crate::spell::cast_selected(session, feedback, spell, false).await?;
+    Ok(CombatReport::Cast(outcome.disposition))
 }
