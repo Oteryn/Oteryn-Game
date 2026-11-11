@@ -49,7 +49,16 @@ then each receipt: epoch u64 LE, reset day i64 LE, lane day u8, streak u32 LE,
 jokers spent u8, own-character boolean u8. Records are newest first. No trailing
 bytes. Maximum 1104 bytes. The claim remains empty and server-owned.
 
-## item picker (T144, owner decision B 2026-11-09)
+## item picker (T144, owner decision B 2026-11-09), retired
+
+Retired by WU26-05 (Winter Update 2026 test server, thread 565: one-click claim, no
+choice of runes, potions or exercise weapons). Commands 6122 and 6123 stay registered
+under capability 182 so older clients still negotiate it, but Game refuses both with
+`Rejected` and an empty payload and never reads their bytes. The one-click claim is the
+only daily claim; its request binding is unchanged. No picked item is minted and
+`game_daily_reward_picks` (migration 1711) is history only. The rules below describe
+the retired behaviour.
+
 
 Reference: Canary `99902524e052f37574194466c2949c576e4ab269`,
 `data/modules/scripts/daily_reward/daily_reward.lua:68-75,107-150,409-479`.

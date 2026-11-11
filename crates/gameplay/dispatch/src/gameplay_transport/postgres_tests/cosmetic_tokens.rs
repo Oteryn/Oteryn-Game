@@ -199,7 +199,6 @@ fn scenario(tokens: bool) -> TestResult {
                     },
                     crate::durability::daily_reward_delivery::DailyRewardDeliveryPlan {
                         content_revision: content.revision.clone(),
-                        selection: None,
                     },
                     &crate::gameplay_transport::spell_premium_coordinator::DailyRewardPremium(None),
                 )

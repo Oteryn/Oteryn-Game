@@ -156,8 +156,5 @@ pub fn daily_reward_reset_day(
 #[path = "daily_reward_tests.rs"]
 mod tests;
 
-#[path = "daily_reward/picker.rs"]
-pub mod picker;
-
 #[path = "daily_reward/xp_boost.rs"]
 pub mod xp_boost;

@@ -39,16 +39,10 @@ pub(super) async fn dispatch(
             .daily_reward_returner(actor, command, command_type, payload)
             .await;
     }
+    // Winter Update 2026 retires the item picker: the claim is one click and no rune,
+    // potion or exercise weapon is chosen. Its registered commands are refused.
     if matches!(command_type, wire::picker::QUERY | wire::picker::CLAIM) {
-        if command_type == wire::picker::QUERY && !payload.is_empty() {
-            return None;
-        }
-        if command_type == wire::picker::CLAIM && wire::picker::Claim::decode(payload).is_err() {
-            return refusal(3);
-        }
-        return authority
-            .daily_reward_picker(actor, command, command_type, payload)
-            .await;
+        return None;
     }
     if command_type == wire::details::COMMAND_TYPE {
         if !payload.is_empty() {
@@ -98,7 +92,7 @@ pub(super) fn result(
         Some(bytes) => (
             if matches!(
                 command_type,
-                wire::COMMAND_TYPE_DAILY_REWARD_CLAIM | wire::picker::CLAIM | wire::returner::CLAIM
+                wire::COMMAND_TYPE_DAILY_REWARD_CLAIM | wire::returner::CLAIM
             ) && !matches!(bytes.get(1), Some(1 | 2))
             {
                 CommandStatus::Rejected
@@ -254,7 +248,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         claim: Option<wire::DailyRewardClaim>,
-        selection: Option<wire::picker::Claim>,
     ) -> Option<Vec<u8>> {
         let (_, content) = self.daily_content()?;
         let fence = command.item_fence?;
@@ -305,13 +298,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return refusal(5);
         }
         // One immutable server plan per content revision. No client choices enter it.
-        let mut digest = Sha256::new()
+        let binding = Sha256::new()
             .chain_update(b"oteryn:daily-reward:v2\0")
-            .chain_update(content.revision.as_bytes());
-        if let Some(selection) = &selection {
-            digest.update(selection.encode().ok()?);
-        }
-        let binding = digest.finalize().into();
+            .chain_update(content.revision.as_bytes())
+            .finalize()
+            .into();
         if let Some(receipt) = view.settled.or(view.receipt) {
             return refusal(if receipt.request_binding == binding {
                 2
@@ -328,8 +319,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return refusal(7);
             }
         }
-        let mut plan = plan(content, view.lane_day)?;
-        plan.selection = selection;
+        let plan = plan(content, view.lane_day)?;
         let transaction_id = crate::operator_files::uuid_v7().ok()?;
         let request = DailyRewardClaimRequest {
             command: command_ref,
@@ -375,7 +365,6 @@ fn plan(content: &DailyRewardContent, day: u8) -> Option<DailyRewardDeliveryPlan
     content.reward(day, false)?;
     Some(DailyRewardDeliveryPlan {
         content_revision: content.revision.clone(),
-        selection: None,
     })
 }
 
@@ -384,15 +373,6 @@ mod details;
 macro_rules! authority_methods {
     () => {
         fn daily_reward_returner(
-            &self,
-            _actor: crate::foundation::ExactActorRef,
-            _command: $crate::gameplay_transport::connection::UseCommand,
-            _kind: u32,
-            _payload: &[u8],
-        ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
-            async { None }
-        }
-        fn daily_reward_picker(
             &self,
             _actor: crate::foundation::ExactActorRef,
             _command: $crate::gameplay_transport::connection::UseCommand,
@@ -433,15 +413,6 @@ macro_rules! composed_methods {
         ) -> Option<Vec<u8>> {
             self.daily_returner(actor, command, kind, payload).await
         }
-        async fn daily_reward_picker(
-            &self,
-            actor: ExactActorRef,
-            command: connection::UseCommand,
-            kind: u32,
-            payload: &[u8],
-        ) -> Option<Vec<u8>> {
-            self.daily_picker(actor, command, kind, payload).await
-        }
         async fn daily_reward_details(
             &self,
             actor: ExactActorRef,
@@ -458,14 +429,95 @@ macro_rules! composed_methods {
             command: connection::UseCommand,
             claim: Option<oteryn_protocol_oteryn::daily_reward::DailyRewardClaim>,
         ) -> Option<Vec<u8>> {
-            self.daily_command(actor, command, claim, None).await
+            self.daily_command(actor, command, claim).await
         }
     };
 }
 pub(super) use composed_methods;
 
-#[path = "daily_reward/picker.rs"]
-mod picker;
-
 #[path = "daily_reward/returner.rs"]
 mod returner;
+
+#[cfg(test)]
+mod picker_retired_tests {
+    use super::super::connection::{
+        AdmissionRefusal, AdmittedSession, FreshAdmissionAttempt, FreshAdmissionAuthority,
+    };
+    use super::*;
+    use crate::foundation::{ChannelId, WorldId};
+
+    /// Answers every daily command as a committed claim, so only a refusal in
+    /// `dispatch` itself yields `None`.
+    struct Claims;
+    impl FreshAdmissionAuthority for Claims {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Unavailable)
+        }
+        async fn daily_reward(
+            &self,
+            _actor: ExactActorRef,
+            _command: UseCommand,
+            _claim: Option<wire::DailyRewardClaim>,
+        ) -> Option<Vec<u8>> {
+            Some(vec![8, 1])
+        }
+    }
+
+    fn id(n: u8) -> [u8; 16] {
+        [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
+    }
+
+    #[test]
+    fn daily_picker_query_and_claim_are_refused_without_reading_their_bytes()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let actor = ExactActorRef::transport_fixture(
+            WorldId::decode(&id(1)).map_err(|_| "world")?,
+            ChannelId::decode(&id(2)).map_err(|_| "channel")?,
+        );
+        let command = UseCommand {
+            game_session_id: GameSessionId::decode(&id(4)).map_err(|_| "session")?,
+            command_id: 1,
+            item_fence: None,
+        };
+        let selection = wire::picker::Claim {
+            epoch: 1,
+            day: 1,
+            picks: vec![wire::picker::Pick {
+                item: 266,
+                count: 5,
+            }],
+        }
+        .encode()?;
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                for (kind, payload) in [
+                    (wire::picker::QUERY, &[][..]),
+                    (wire::picker::CLAIM, &selection[..]),
+                    (wire::picker::CLAIM, &[1, 2, 3][..]),
+                ] {
+                    let reply = dispatch(&Claims, actor, command, kind, payload).await;
+                    assert_eq!(reply, None, "picker command {kind} is refused");
+                    assert_eq!(
+                        result(kind, reply),
+                        (crate::foundation::CommandStatus::Rejected, Vec::new())
+                    );
+                }
+                // The one-click claim still reaches the daily owner.
+                let claim = dispatch(
+                    &Claims,
+                    actor,
+                    command,
+                    wire::COMMAND_TYPE_DAILY_REWARD_CLAIM,
+                    &[],
+                )
+                .await;
+                assert_eq!(claim, Some(vec![8, 1]));
+            });
+        Ok(())
+    }
+}

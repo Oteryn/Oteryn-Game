@@ -12,7 +12,6 @@ pub(super) async fn grant(
     request: DailyRewardClaimRequest,
     day: u8,
     premium: bool,
-    selection: Option<&oteryn_protocol_oteryn::daily_reward::picker::Claim>,
 ) -> Result<(), DurabilityError> {
     let character = fence.character_id.as_bytes().as_slice();
     let world = fence.runtime_scope.world_id();
@@ -25,7 +24,6 @@ pub(super) async fn grant(
         request,
         day,
         reward.temple_teleport_scrolls,
-        selection,
     )
     .await?;
     let mut line: i16 = 0;
