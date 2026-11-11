@@ -484,6 +484,20 @@ schedule_check(
     check=True,
 )
 
+# Import both modules so every Boss corpse and authored NPC custody case runs.
+schedule_check(
+    [
+        sys.executable,
+        "-m",
+        "unittest",
+        "-v",
+        "test_boss_corpse_profiles",
+        "test_authored_npc_item_profiles",
+    ],
+    cwd=ROOT / "tools/content-migration",
+    check=True,
+)
+
 # Core Item admission is a separate accepted data overlay, retained by every regeneration.
 schedule_check(
     [
