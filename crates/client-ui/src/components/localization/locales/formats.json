@@ -156,7 +156,7 @@
  "{}\nCast chat: {}", "{}\nGame rechecks offline, guild, house and market restrictions before committing.", "{}\nOffline training: {} minutes",
  "{}\nSave this response as a local file?", "{}\r\nSaved builds:\r\n{}", "{}\r\n{}\r\nEarned: {} (server Unix ms)",
  "{} (weapon id {}): {} XP", "{} [{}]: {} XP, level {}, perks {:?}\n", "{} at {},{},{}; scope {}",
- "{} items; {} gold", "{} pays {}: {} gold\r\n", "{} points short",
+ "{} h remaining", "{} items; {} gold", "{} pays {}: {} gold\r\n", "{} points short",
  "{} points — {} earned — Page {}\r", "{} slots; clear cost: {} gold\n", "{} | Audio {}%{} ({status}, {}); F10 mute, F11/F12 volume",
  "{} | Death: {death} | Items: {} | Expires: {}", "{} | Item {} | Depot {} | Stash {} | Inbox {} | {}", "{} | item {} × {} | reward #{}\r\n",
  "{} | measurements unavailable", "{} | {}\r\nCommitted steps: {} | Active creatures: {}", "{} | {} items | death {} | expires {}\r\n",

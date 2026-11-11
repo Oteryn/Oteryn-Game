@@ -1,4 +1,5 @@
 //! Spell action-bar input and vitals rendering.
+#[path = "view/assign_dialog.rs"]
 mod assign_dialog;
 mod input;
 mod state;
