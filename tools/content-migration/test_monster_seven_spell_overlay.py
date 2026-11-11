@@ -84,6 +84,23 @@ class AcceptedOverlayTests(unittest.TestCase):
                 'hot-fishburger-profile', 'hot-corpse-profiles',
             )},
         }
+        print("NATIVE_REGISTRATION_OUTPUT_KEYSET=" + json.dumps({
+            "actual_keys": sorted(actual),
+            "actual_count": len(actual),
+            "qengine_proof": qengine.PROOF,
+            "successor_proofs": sorted(successor_proofs),
+            "successor_proof_count": len(successor_proofs),
+            "merged_outputs": sorted(merged_outputs),
+            "merged_output_count": len(merged_outputs),
+            "excluded_union": sorted(successor_proofs | merged_outputs),
+            "excluded_union_count": len(successor_proofs | merged_outputs),
+            "legacy_residual_keys": sorted(actual.keys() - {qengine.PROOF} - successor_proofs),
+            "legacy_residual_count": len(actual.keys() - {qengine.PROOF} - successor_proofs),
+            "union_residual_keys": sorted(
+                actual.keys() - {qengine.PROOF} - (successor_proofs | merged_outputs)),
+            "union_residual_count": len(
+                actual.keys() - {qengine.PROOF} - (successor_proofs | merged_outputs)),
+        }, sort_keys=True), flush=True)
         self.assertTrue((successor_proofs | merged_outputs) <= actual.keys())
         self.assertEqual(len(actual.keys() - {qengine.PROOF} - successor_proofs),43)
         self.assertIn(qengine.PROOF,actual)

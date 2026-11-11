@@ -72,6 +72,36 @@ def complete_source_top_order(record, appearance):
     record['attributes']['always_on_top_order'] = top
 
 
+def retain_terminal_canonical_container(root, record, node, appearance, physical, bindings, chains):
+    """Compose the accepted Game terminal4027 policy, preserving all other source facts."""
+    key = 'oteryn:item.tibia.i4027'
+    if ([chain for chain in chains if 4027 in chain] != [[5973, 4025, 4026, 4027]]
+            or node is None or node.get('id') != '4027'
+            or source.attrs(node) != {'duration': '60', 'decayto': '0'}
+            or appearance.get('id') != 4027 or physical.get('server_item_id') != 4027):
+        raise ValueError('BOSS_CORPSE_TERMINAL_SOURCE')
+    import quest_corpse_profiles as quest
+    definition = quest.definitions(root, {4027})[key]
+    if (definition.get('materializable') is not True
+            or definition.get('stack_class') != 'NonStackable'
+            or definition.get('semantics', {}).get('container') != source.NA):
+        raise ValueError('BOSS_CORPSE_TERMINAL_CANONICAL_OWNER')
+    qualified = quest.qualify(
+        4027, definition, quest.world_objects(root, {4027}).get(4027),
+        node, appearance, physical, bindings, False)
+    if (any(record[name] != qualified[name] for name in (
+            'production_definition', 'production_binding',
+            'production_binding_qualification', 'admission'))
+            or any(record['semantics'][group] != qualified['semantics'][group]
+                   for group in ('physical', 'stack', 'temporal'))
+            or record['semantics']['container'] != source.K({'capacity': source.K(8)})
+            or qualified['semantics']['container'] != source.NA):
+        raise ValueError('BOSS_CORPSE_TERMINAL_POLICY_CONFLICT')
+    # Crystal's generic DAT default is8. The existing encounter/native-goal
+    # owner admits this exact terminal without an XML capacity as non-container.
+    record['semantics']['container'] = copy.deepcopy(qualified['semantics']['container'])
+
+
 def capture(cache: Path, root: Path = ROOT):
     blobs = load_source_blobs(cache)
     xml = source.xml_index(blobs['data/items/items.xml'])
@@ -112,6 +142,9 @@ def capture(cache: Path, root: Path = ROOT):
         record['production_binding'] = copy.deepcopy(binding)
         record['production_binding_qualification'] = copy.deepcopy(packet) if item_id == 43666 else None
         record['production_definition'] = {'family':'Item', 'production_key':binding['target']['key'], 'revision_ref':binding['target']['revision']}
+        if item_id == 4027:
+            retain_terminal_canonical_container(
+                root, record, xml[item_id], objects[item_id], physics[item_id], bindings, chains)
         records.append(record)
     return {'schema':SCHEMA, 'producer':'tools/content-migration/boss_corpse_profiles.py',
             'source_revision':PIN, 'sources':[{'repository':'zimbadev/crystalserver','revision':PIN,'path':path,'sha256':digest} for path,digest in {**SOURCE_HASHES, **terminal.EXTRA_SOURCES}.items()],
@@ -121,10 +154,10 @@ def capture(cache: Path, root: Path = ROOT):
 def native_corpse_profile(root, record):
     if record['production_binding']['external_id'] != '4027':
         return record
-    # The immutable Crystal capture includes the DAT container/default8. The
-    # already accepted encounter owner makes this exact terminal stage a
-    # non-container. Prove both bodies before composing that one native fact.
-    if hashlib.sha256(encode(record)).hexdigest() != '7ed34644e4f25de7828aac46e5319fbd59fcbee31aef25fed9a54614659f1c9b':
+    # The qualified capture retains the accepted terminal non-container fact.
+    # The raw Crystal DAT still has the loader default8; prove this exact
+    # successor body and its unchanged source and canonical owners.
+    if hashlib.sha256(encode(record)).hexdigest() != '35ab1fae17ef27e5c8ce2f659d7c0a81e2ec22707c59d6aecdce7f8525a93ea9':
         raise ValueError('BOSS_CORPSE_TERMINAL_SOURCE_BODY')
     import encounter_corpse_items as encounter
     import primal_corpse_items as primal
