@@ -104,6 +104,11 @@ pub enum FeeBurnCause {
         occurrence: [u8; 16],
         proof: Vec<u8>,
     },
+    /// Mod Reshaping, atomic with the Atelier receipt and its fragment BURN lines.
+    GemReshape {
+        occurrence: [u8; 16],
+        proof: Vec<u8>,
+    },
     NpcTravel {
         service: String,
         occurrence: [u8; 16],
@@ -1074,7 +1079,9 @@ fn request_binding<C>(fence: &CurrentCharacterGameplayFence, request: &FeeBurnRe
     );
     digest.update(request.cause.key().as_bytes());
     match &request.cause {
-        FeeBurnCause::GemReveal { proof, .. } | FeeBurnCause::GemGradeUp { proof, .. } => {
+        FeeBurnCause::GemReveal { proof, .. }
+        | FeeBurnCause::GemGradeUp { proof, .. }
+        | FeeBurnCause::GemReshape { proof, .. } => {
             digest.update(Sha256::digest(proof))
         }
         _ => (),

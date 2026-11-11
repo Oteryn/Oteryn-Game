@@ -47,7 +47,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         payload: &[u8],
     ) -> AtelierWireReply {
         use oteryn_protocol_oteryn::atelier::v2 as wire;
-        if (wire::COMMAND_TYPE_ATELIER_V2_QUERY..=wire::COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL)
+        if (wire::COMMAND_TYPE_ATELIER_V2_QUERY..=wire::COMMAND_TYPE_ATELIER_V2_RESHAPE)
             .contains(&kind)
         {
             self.atelier_v2_wire(admitted, kind, payload).await
@@ -128,8 +128,30 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => return AtelierWireReply::Rejected,
         };
+        self.atelier_v1_apply(admitted, expected, kind, request, refused)
+            .await
+    }
+
+    /// Commits one decoded request through the one Atelier writer and builds the capability
+    /// 148 reply. Mod Reshaping (capability 483) enters here with its own decoded request.
+    pub(super) async fn atelier_v1_apply(
+        &self,
+        admitted: super::connection::AdmittedSession,
+        expected: crate::durability::item_transfer::CurrentCharacterItemFence,
+        kind: u32,
+        request: Option<crate::durability::character_atelier::AtelierRequest<'static>>,
+        mut refused: bool,
+    ) -> AtelierWireReply {
+        use oteryn_protocol_oteryn::atelier as wire;
         let mut recorded = None;
-        if let Some(mut request) = request {
+        if let Some(request) = request {
+            // Rebuilt so the resources may borrow this call's pinned content.
+            let mut request = crate::durability::character_atelier::AtelierRequest {
+                occurrence: request.occurrence,
+                expected_atelier_revision: request.expected_atelier_revision,
+                mutation: request.mutation,
+                resources: None,
+            };
             let Some(permit) = self.spell_lane_permit().await else {
                 return AtelierWireReply::Unavailable;
             };
@@ -589,6 +611,8 @@ fn atelier_wire_resources<'a>(
     }
     let supreme = match request.mutation {
         AtelierMutation::GradeUp { kind, .. } => kind == FragmentKind::Supreme,
+        // Mod Reshaping pays greater fragments only for the third position.
+        AtelierMutation::Reshape { position, .. } => position == 3,
         AtelierMutation::Dismantle { gem } => admission
             .states
             .atelier_sessions

@@ -1,9 +1,10 @@
 //! Gem Atelier v2 (capability 483): the v1 Atelier writer's replies without the gem domain,
-//! plus the ordered Gem Vessel slots and Replace Vessel through the durable Wheel writer.
+//! plus the ordered Gem Vessel slots and Replace Vessel through the durable Wheel writer, and
+//! Mod Reshaping through the same Atelier writer.
 use super::AtelierWireReply;
 use crate::gameplay_transport::connection::AdmittedSession;
 use crate::gameplay_transport::wheel_allocation::FencedWheelChange;
-use oteryn_gameplay_progression::atelier::vessels;
+use oteryn_gameplay_progression::atelier::{reshape, vessels};
 use oteryn_protocol_oteryn::atelier as v1;
 use oteryn_protocol_oteryn::atelier::v2 as wire;
 
@@ -22,21 +23,27 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             return AtelierWireReply::Rejected;
         }
         // Lock and paid requests carry the v1 bytes and run through the one Atelier writer.
-        let (v1_kind, replace) = match kind {
+        let (v1_kind, replace, reshape) = match kind {
             wire::COMMAND_TYPE_ATELIER_V2_QUERY if wire::decode_query(payload).is_ok() => {
-                (v1::COMMAND_TYPE_ATELIER_QUERY, None)
+                (v1::COMMAND_TYPE_ATELIER_QUERY, None, None)
             }
             wire::COMMAND_TYPE_ATELIER_V2_SET_LOCK if wire::decode_set_lock(payload).is_ok() => {
-                (v1::COMMAND_TYPE_ATELIER_SET_LOCK, None)
+                (v1::COMMAND_TYPE_ATELIER_SET_LOCK, None, None)
             }
             wire::COMMAND_TYPE_ATELIER_V2_MUTATE if wire::decode_mutate(payload).is_ok() => {
-                (v1::COMMAND_TYPE_ATELIER_MUTATE, None)
+                (v1::COMMAND_TYPE_ATELIER_MUTATE, None, None)
             }
             wire::COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL => {
                 let Ok(request) = wire::decode_replace_vessel(payload) else {
                     return AtelierWireReply::Rejected;
                 };
-                (v1::COMMAND_TYPE_ATELIER_QUERY, Some(request))
+                (v1::COMMAND_TYPE_ATELIER_QUERY, Some(request), None)
+            }
+            wire::COMMAND_TYPE_ATELIER_V2_RESHAPE => {
+                let Ok(request) = wire::decode_reshape(payload) else {
+                    return AtelierWireReply::Rejected;
+                };
+                (v1::COMMAND_TYPE_ATELIER_MUTATE, None, Some(request))
             }
             _ => return AtelierWireReply::Rejected,
         };
@@ -53,7 +60,11 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         } else {
             payload
         };
-        let reply = match self.atelier_v1_wire(admitted, v1_kind, v1_payload).await {
+        let reply = match reshape {
+            Some(request) => self.reshape(admitted, request).await,
+            None => self.atelier_v1_wire(admitted, v1_kind, v1_payload).await,
+        };
+        let reply = match reply {
             AtelierWireReply::Payload(bytes) => bytes,
             other => return other,
         };
@@ -114,6 +125,57 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         outcome
+    }
+
+    /// Mod Reshaping: only in a temple and with Premium; a refusal writes nothing. The
+    /// modifier draw, gold, fragment BURNs and receipt commit in the one Atelier writer.
+    async fn reshape(
+        &self,
+        admitted: AdmittedSession,
+        request: wire::ReshapeRequest,
+    ) -> AtelierWireReply {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(v1::CAPABILITY_WHEEL_ALLOCATION_V1)
+        {
+            return AtelierWireReply::Rejected;
+        }
+        let (Some(expected), Some(actor)) = (admitted.item_fence, admitted.runtime_actor) else {
+            return AtelierWireReply::Rejected;
+        };
+        if expected.game_session_id != admitted.game_session_id
+            || expected.connection_generation.get() != admitted.continuity.connection_generation
+        {
+            return AtelierWireReply::Rejected;
+        }
+        let in_temple = crate::gameplay_transport::wheel_allocation::removal_permitted(
+            self,
+            actor,
+            admitted.game_session_id,
+        )
+        .await;
+        let Some(read) = self.atelier_wheel_read(expected).await else {
+            return AtelierWireReply::Unavailable;
+        };
+        let refused = reshape::admitted(in_temple, read.premium_permitted).is_err();
+        let request = (!refused).then(|| crate::durability::character_atelier::AtelierRequest {
+            occurrence: request.occurrence,
+            expected_atelier_revision: request.expected_revision,
+            mutation: crate::durability::character_atelier::AtelierMutation::Reshape {
+                gem: request.gem,
+                position: request.position,
+            },
+            resources: None,
+        });
+        self.atelier_v1_apply(
+            admitted,
+            expected,
+            v1::COMMAND_TYPE_ATELIER_MUTATE,
+            request,
+            refused,
+        )
+        .await
     }
 
     async fn atelier_wheel_read(

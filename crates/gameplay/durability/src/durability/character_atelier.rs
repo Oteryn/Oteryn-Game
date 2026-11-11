@@ -51,6 +51,8 @@ pub enum AtelierMutation {
     Reveal { quality: GemQuality },
     Dismantle { gem: [u8; 16] },
     GradeUp { kind: FragmentKind, mod_id: u16 },
+    /// Mod Reshaping: redraws modifier `position` (1..=3) of a revealed gem.
+    Reshape { gem: [u8; 16], position: u8 },
 }
 
 #[derive(Debug, Clone)]

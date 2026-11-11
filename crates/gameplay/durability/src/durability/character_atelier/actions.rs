@@ -18,6 +18,7 @@ pub(super) fn kind(mutation: &AtelierMutation) -> &'static str {
         AtelierMutation::Reveal { .. } => "REVEAL",
         AtelierMutation::Dismantle { .. } => "DISMANTLE",
         AtelierMutation::GradeUp { .. } => "GRADE_UP",
+        AtelierMutation::Reshape { .. } => "RESHAPE",
     }
 }
 
@@ -121,6 +122,40 @@ pub(super) async fn apply(
             burn = Some((fragment_key(kind).into(), count));
             preview.fragments.insert(kind, count);
             AtelierAction::GradeUp { kind, mod_id }
+        }
+        AtelierMutation::Reshape { gem, position } => {
+            let Some(current) = state.gems.get(&u128::from_be_bytes(gem)) else {
+                return Ok(false);
+            };
+            let Some((gold, kind, count)) =
+                oteryn_gameplay_progression::atelier::reshape::cost(position)
+            else {
+                return Ok(false);
+            };
+            let Some(choices) =
+                oteryn_gameplay_progression::atelier::reshape::choices(family, &current.mods, position)
+            else {
+                return Ok(false);
+            };
+            let root = draw_root(tx, fence, "gem_reshape", data.revision()).await?;
+            let index = draw(
+                &root,
+                request.occurrence,
+                "gem_reshape",
+                u64::from(position),
+                choices.len() as u64,
+            )?;
+            let mod_id = *choices
+                .get(usize::try_from(index).map_err(|_| DurabilityError::InvalidStoredState)?)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            fee = gold;
+            burn = Some((fragment_key(kind).into(), count));
+            preview.fragments.insert(kind, count);
+            AtelierAction::Reshape {
+                id: current.id,
+                position,
+                mod_id,
+            }
         }
         AtelierMutation::Dismantle { gem } => {
             let Some(gem) = state.gems.get(&u128::from_be_bytes(gem)) else {
@@ -245,6 +280,10 @@ pub(super) async fn apply(
                     proof,
                 },
                 AtelierMutation::GradeUp { .. } => FeeBurnCause::GemGradeUp {
+                    occurrence: request.occurrence,
+                    proof,
+                },
+                AtelierMutation::Reshape { .. } => FeeBurnCause::GemReshape {
                     occurrence: request.occurrence,
                     proof,
                 },

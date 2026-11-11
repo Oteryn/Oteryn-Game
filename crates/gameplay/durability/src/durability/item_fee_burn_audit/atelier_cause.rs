@@ -18,7 +18,8 @@ pub(super) fn cause(value: &OneItemFeeBurnV1) -> Option<&OneItemNpcPurchaseV1> {
         Some(
             FeeBurnCauseV1::GemReveal(cause)
             | FeeBurnCauseV1::GemGradeUp(cause)
-            | FeeBurnCauseV1::GemSwitchDomain(cause),
+            | FeeBurnCauseV1::GemSwitchDomain(cause)
+            | FeeBurnCauseV1::GemReshape(cause),
         ) => Some(cause),
         Some(FeeBurnCauseV1::QuestRewardPayment(cause)) => cause.purchase.as_ref(),
         _ => None,
@@ -66,6 +67,18 @@ pub(super) fn check(
             return Err(AuditError::InvalidInput);
         }
         (1, None)
+    } else if action == "Reshape" {
+        // Winter Update 2026 Mod Reshaping: the position fixes gold, fragment kind and count.
+        let (needed, key) = match (
+            proof["mutation"]["Reshape"]["position"].as_u64(),
+            value.fee_gold_units,
+        ) {
+            (Some(1), 125_000) => (1, "oteryn:item.tibia.i46625"),
+            (Some(2), 1_000_000) => (2, "oteryn:item.tibia.i46625"),
+            (Some(3), 5_000_000) => (3, "oteryn:item.tibia.i46626"),
+            _ => return Err(AuditError::InvalidInput),
+        };
+        (needed, Some(key))
     } else {
         let (needed, key) = match (
             proof["mutation"]["GradeUp"]["kind"].as_str(),
@@ -299,6 +312,49 @@ mod tests {
         let (cause, value) = grade(5, 0);
         assert_eq!(
             check(&cause, &value, "Reveal"),
+            Err(AuditError::InvalidInput)
+        );
+    }
+
+    fn reshape(position: u8, fee: u64, inputs: Value) -> (OneItemNpcPurchaseV1, OneItemFeeBurnV1) {
+        let (mut cause, mut value) = grade(0, 5);
+        value.fee_gold_units = fee;
+        cause.service_key = "oteryn:atelier.reshape".into();
+        let mut proof: Value = serde_json::from_slice(&cause.atelier_proof).unwrap();
+        let gem = vec![7_u8; 16];
+        proof["mutation"] = json!({"Reshape":{"gem":gem,"position":position}});
+        proof["inputs"] = inputs;
+        cause.atelier_proof = serde_json::to_vec(&proof).unwrap();
+        (cause, value)
+    }
+
+    #[test]
+    fn atelier_audit_binds_reshape_position_to_its_fee_and_fragments() {
+        let lesser = |count: u32| json!({"count":count,"before":{"key":"oteryn:item.tibia.i46625"}});
+        let greater = |count: u32| json!({"count":count,"before":{"key":"oteryn:item.tibia.i46626"}});
+        for (position, fee, inputs) in [
+            (1, 125_000, json!([lesser(1)])),
+            (2, 1_000_000, json!([lesser(1), lesser(1)])),
+            (3, 5_000_000, json!([greater(3)])),
+        ] {
+            let (cause, value) = reshape(position, fee, inputs);
+            assert_eq!(check(&cause, &value, "Reshape"), Ok(()));
+        }
+        for (position, fee, inputs) in [
+            (1, 1_000_000, json!([lesser(1)])),
+            (2, 1_000_000, json!([lesser(1)])),
+            (3, 5_000_000, json!([lesser(3)])),
+            (4, 5_000_000, json!([greater(3)])),
+        ] {
+            let (cause, value) = reshape(position, fee, inputs);
+            assert_eq!(
+                check(&cause, &value, "Reshape"),
+                Err(AuditError::InvalidInput)
+            );
+        }
+        let (cause, value) = reshape(1, 125_000, json!([lesser(1)]));
+        assert_eq!(
+            check(&cause, &value, "GradeUp"),
             Err(AuditError::InvalidInput)
         );
     }
