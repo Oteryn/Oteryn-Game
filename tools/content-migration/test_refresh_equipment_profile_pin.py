@@ -428,5 +428,117 @@ class M25SourceCohortTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "M25_CAPTURE_DRIFT"):
                     refresh.source_cohorts(root)
 
+
+class RegisteredEngineNpcSourceTests(unittest.TestCase):
+    KEY = "oteryn:item.tibia.i27654"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.engine = json.loads((refresh.ROOT /
+            "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes())
+        cls.npc = json.loads((refresh.ROOT /
+            "tools/content-schema/native-gameplay/qnpcfx-item-profiles.json").read_bytes())
+
+    def shared(self, value):
+        return next(row for row in value["records"]
+                    if row["production_definition"]["production_key"] == self.KEY)
+
+    def qualified(self, engine, npc):
+        before = copy.deepcopy((engine, npc))
+        try:
+            return refresh.registered_engine_npc_documents(refresh.ROOT, engine, npc)
+        finally:
+            self.assertEqual((engine, npc), before)
+
+    def generate_shared(self, engine, npc, source=None):
+        base = document(0, 1, 2)
+        base["records"].append(copy.deepcopy(self.shared(engine)))
+        return regenerate(source or EquipmentPinTests.SOURCE, base, document(),
+                          {"records": [self.shared(engine)]},
+                          {"records": [self.shared(npc)]},
+                          engine_npc_shared=(self.KEY,))
+
+    def test_real_house_stage_difference_is_qualified_without_changing_other_rows(self):
+        self.assertEqual(refresh.keys(self.engine) & refresh.keys(self.npc), {self.KEY})
+        engine = copy.deepcopy(self.engine)
+        index = next(i for i, row in enumerate(engine["records"])
+                     if row["production_definition"]["production_key"] == self.KEY)
+        engine["records"][index] = refresh.registered_source_document(
+            refresh.ROOT, {"records": [self.shared(engine)]})["records"][0]
+        with self.assertRaisesRegex(ValueError, "QENGINE/NPC shared source"):
+            self.generate_shared(engine, self.npc)
+        qualified = self.qualified(engine, self.npc)
+        self.assertEqual(self.shared(qualified[0]), self.shared(qualified[1]))
+        self.assertIs(self.shared(qualified[0])["attributes"]["always_on_top"], False)
+        self.assertEqual(self.shared(qualified[0])["attributes"]["always_on_top_order"], 0)
+        for before, after in zip((engine, self.npc), qualified):
+            expected = copy.deepcopy(before)
+            self.shared(expected)["attributes"].update(
+                always_on_top=False, always_on_top_order=0)
+            self.assertEqual(after, expected)
+            self.assertEqual(refresh.keys(after), refresh.keys(before))
+        fixed, count = self.generate_shared(*qualified)
+        self.assertEqual(count, 4)
+        self.assertEqual(self.generate_shared(*qualified, source=fixed), (fixed, count))
+        self.assertEqual(self.qualified(*qualified), qualified)
+
+    def test_existing_house_values_require_exact_types_complete_pair_and_source_value(self):
+        values = [
+            {"always_on_top": True, "always_on_top_order": 0},
+            {"always_on_top": False, "always_on_top_order": 1},
+            {"always_on_top": 0, "always_on_top_order": 0},
+            {"always_on_top": False, "always_on_top_order": False},
+            {"always_on_top": False, "always_on_top_order": 0.0},
+            {"always_on_top": None, "always_on_top_order": 0},
+            {"always_on_top": False, "always_on_top_order": None},
+            {"always_on_top": False},
+            {"always_on_top_order": 0},
+        ]
+        for attributes in values:
+            with self.subTest(attributes=attributes):
+                engine = copy.deepcopy(self.engine)
+                actual = self.shared(engine)["attributes"]
+                actual.pop("always_on_top", None)
+                actual.pop("always_on_top_order", None)
+                actual.update(attributes)
+                with self.assertRaisesRegex(ValueError, "shared House facts differ"):
+                    self.qualified(engine, self.npc)
+
+    def test_binding_known_facts_and_extra_authoring_still_refuse(self):
+        for field in ("binding", "physical", "authoring"):
+            with self.subTest(field=field):
+                engine = copy.deepcopy(self.engine)
+                row = self.shared(engine)
+                if field == "binding":
+                    row["production_binding"]["target"]["revision"] = "unqualified"
+                elif field == "physical":
+                    row["semantics"]["physical"]["value"]["weight"]["value"] += 1
+                else:
+                    row["authoring"]["unqualified_extra"] = True
+                qualified = self.qualified(engine, self.npc)
+                with self.assertRaisesRegex(ValueError, "QENGINE/NPC shared source"):
+                    self.generate_shared(*qualified)
+
+    def test_missing_foreign_and_duplicate_shared_identities_refuse(self):
+        for case in ("missing", "changed_identity", "foreign_shared", "duplicate_engine",
+                     "duplicate_npc"):
+            with self.subTest(case=case):
+                engine, npc = copy.deepcopy((self.engine, self.npc))
+                if case == "missing":
+                    npc["records"].remove(self.shared(npc))
+                elif case == "changed_identity":
+                    self.shared(engine)["production_definition"]["production_key"] += "-unqualified"
+                elif case == "foreign_shared":
+                    extra = next(row for row in engine["records"]
+                                 if row["production_definition"]["production_key"] != self.KEY)
+                    npc["records"].append(copy.deepcopy(extra))
+                elif case == "duplicate_engine":
+                    engine["records"].append(copy.deepcopy(self.shared(engine)))
+                else:
+                    npc["records"].append(copy.deepcopy(self.shared(npc)))
+                with self.assertRaisesRegex(ValueError, "shared source|duplicate production key"):
+                    self.qualified(engine, npc)
+
+
 if __name__ == "__main__":
     unittest.main()

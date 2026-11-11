@@ -63,6 +63,39 @@ def registered_source_document(root, document):
     return result
 
 
+
+def registered_engine_npc_documents(root, qengine, npc):
+    """Compare the closed coowner at the same guarded registration stage."""
+    key = "oteryn:item.tibia.i27654"
+    if keys(qengine) & keys(npc) != {key}:
+        raise ValueError("QENGINE/NPC shared source identity or facts differ")
+    fields = {"always_on_top": bool, "always_on_top_order": int}
+    documents = []
+    for document in (qengine, npc):
+        index = next(i for i, row in enumerate(document["records"])
+                     if row["production_definition"]["production_key"] == key)
+        original = document["records"][index]
+        attributes = original["attributes"]
+        present = fields.keys() & attributes.keys()
+        if present and (present != fields.keys() or any(
+                type(attributes[name]) is not kind for name, kind in fields.items())):
+            raise ValueError("QENGINE/NPC shared House facts differ")
+        projected = registered_source_document(root, {"records": [original]})["records"][0]
+        expected = projected["attributes"]
+        if any(type(expected.get(name)) is not kind for name, kind in fields.items()):
+            raise ValueError("QENGINE/NPC shared House source facts differ")
+        if any(attributes[name] != expected[name] for name in present):
+            raise ValueError("QENGINE/NPC shared House facts differ")
+        allowed = copy.deepcopy(original)
+        allowed["attributes"].update({name: expected[name] for name in fields})
+        if allowed != projected:
+            raise ValueError("QENGINE/NPC shared House changed other facts")
+        qualified = copy.deepcopy(document)
+        qualified["records"][index] = projected
+        documents.append(qualified)
+    return tuple(documents)
+
+
 def source_cohorts(root):
     """Re-use each closed source authority before counting its independent keys."""
     taxonomy = {
@@ -540,8 +573,11 @@ def main():
         baseline_cohorts = declared_cohorts(published)
         baseline_qengine = subprocess.check_output(['git', 'show', custody['base'] + ':tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'], cwd=ROOT)
         baseline_qengine_count = len(keys(json.loads(baseline_qengine)))
+    documents = [json.loads((ROOT / p).read_text()) for p in paths]
+    documents[2], documents[3] = registered_engine_npc_documents(
+        ROOT, documents[2], documents[3])
     generated, count = regenerate(
-        register(source), *(json.loads((ROOT / p).read_text()) for p in paths), srx3=srx3,
+        register(source), *documents, srx3=srx3,
         coowners=source_coowners(ROOT), engine_npc_shared=("oteryn:item.tibia.i27654",),
         duplicate_keys=merged_source_duplicates(ROOT, source),
         custody=custody,
