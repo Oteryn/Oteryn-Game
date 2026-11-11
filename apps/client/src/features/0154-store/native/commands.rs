@@ -39,6 +39,16 @@ pub(super) unsafe fn handle(
                 }
                 continue;
             }
+            if (id == 24 || id == 25) && note == 0 {
+                if let Some(launcher) = lock(&link.mailbox).coin_shop.clone() {
+                    launcher.open_web(if id == 24 {
+                        crate::web_links::WebLink::CoinHistory
+                    } else {
+                        crate::web_links::WebLink::CoinTransfer
+                    });
+                }
+                continue;
+            }
             if id == 14 && note == 0 {
                 link.store_gift_open();
                 continue;

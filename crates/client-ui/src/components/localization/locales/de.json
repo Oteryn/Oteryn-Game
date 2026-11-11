@@ -328,6 +328,8 @@
  "Task points": "Aufgabenpunkte",
  "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Kopfgeld: Status {}, Schwierigkeit {}, Neuauswahlen {}, kostenlose Angebotsauswahl um {}",
  "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}": "Boss: {boss_key}\nRevision: {content_revision}\nGewählter Schwierigkeitsgrad: {selected_difficulty}\nPersönlicher Höchststand: {personal_highest}\nFreigeschalteter Schwierigkeitsgrad: {unlocked_max} / {maximum_difficulty}",
+ "Bad luck bonus: {bonus}\nKills without drop: {kills}": "Pechbonus: {bonus}\nKills ohne Drop: {kills}",
+ "Bad luck tracker: inactive": "Pechzähler: inaktiv",
  "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n": "\nPersönlicher Höchststand: {personal_highest}\nFreigeschalteter Schwierigkeitsgrad: {unlocked_max} / {maximum_difficulty}\n",
  "Enter a difficulty from 0 to 28": "Gib einen Schwierigkeitsgrad von 0 bis 28 ein",
  "Phosphorus Record": "Phosphorus-Rekord",

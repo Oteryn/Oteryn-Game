@@ -323,6 +323,9 @@ impl Settings {
     pub(in super::super) fn take_native_sign_out(&self) -> bool {
         lock(&self.shared).take_native_sign_out()
     }
+    pub(in super::super) fn take_web_link(&self) -> Option<oteryn_client::web_links::WebLink> {
+        lock(&self.shared).take_web_link()
+    }
     pub(in super::super) fn run_utility(
         &self,
         link: &oteryn_client::play::PlayLink,

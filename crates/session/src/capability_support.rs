@@ -161,6 +161,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     property_services::house_podium::CAPABILITY_HOUSE_PODIUM_FLAGS_V1,
     oteryn_protocol_oteryn::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
     imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1,
+    // WU26 boss pity tracker in the boss difficulty window (requires 225).
+    oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_PITY_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

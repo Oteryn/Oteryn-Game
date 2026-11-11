@@ -328,6 +328,8 @@
  "Task points": "Uppdragspoäng",
  "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Prisjakt: status {}, svårighet {}, omlottningar {}, gratis omlottning av erbjudanden vid {}",
  "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}": "Boss: {boss_key}\nRevision: {content_revision}\nVald svårighetsgrad: {selected_difficulty}\nPersonligt rekord: {personal_highest}\nUpplåst svårighetsgrad: {unlocked_max} / {maximum_difficulty}",
+ "Bad luck bonus: {bonus}\nKills without drop: {kills}": "Otursbonus: {bonus}\nDödanden utan drop: {kills}",
+ "Bad luck tracker: inactive": "Otursräknare: inaktiv",
  "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n": "\nPersonligt rekord: {personal_highest}\nUpplåst svårighetsgrad: {unlocked_max} / {maximum_difficulty}\n",
  "Enter a difficulty from 0 to 28": "Ange en svårighetsgrad från 0 till 28",
  "Phosphorus Record": "Phosphorusrekord",

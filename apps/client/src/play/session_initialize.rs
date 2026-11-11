@@ -78,7 +78,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.player_typing_initialize(session.player_typing_selected());
     outbox.arena_initialize(session.feature_selected(170));
     outbox.boss_encounter_initialize(session.feature_selected(117));
-    outbox.boss_difficulty_initialize(session.feature_selected(225));
+    outbox.boss_difficulty_initialize(session.feature_selected(225), session.feature_selected(492));
     outbox.cast_control_initialize(session.server_mechanic_selected(290));
     outbox.cast_consent_initialize(session.server_mechanic_selected(292));
     outbox.cast_chat_initialize(

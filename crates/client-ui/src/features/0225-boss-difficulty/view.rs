@@ -36,6 +36,13 @@ pub fn panel_text(p: &BossDifficultyPanel) -> String {
         Some(Reply::Refused { reason, .. }) => lfmt!("Server refusal: {reason:?}", reason = reason),
         None => tr!("Enter a boss id and open its server window").into(),
     };
+    let state = match &p.pity {
+        Some(pity) => format!(
+            "{state}\n{}",
+            crate::boss_difficulty_pity::tracker_text(pity)
+        ),
+        None => state,
+    };
     match p.feedback {
         Some(f) => format!("{state}\n{f}"),
         None => state,

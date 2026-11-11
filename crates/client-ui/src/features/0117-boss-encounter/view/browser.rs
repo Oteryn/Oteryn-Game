@@ -100,6 +100,9 @@ pub fn browser_text(panel: &BossEncounterPanel) -> String {
             unlocked_max = unlocked_max,
             maximum_difficulty = maximum_difficulty
         );
+        if let Some(pity) = panel.pity_windows.get(&panel.fields[0]) {
+            let _ = writeln!(text, "{}", crate::boss_difficulty_pity::tracker_text(pity));
+        }
     }
     text
 }

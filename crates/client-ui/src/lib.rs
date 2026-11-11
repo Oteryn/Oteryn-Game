@@ -118,6 +118,8 @@ pub mod arena;
 
 #[path = "features/0225-boss-difficulty/mod.rs"]
 pub mod boss_difficulty;
+#[path = "features/0492-boss-difficulty-pity/protocol.rs"]
+pub mod boss_difficulty_pity;
 #[path = "features/0230-browse-field/mod.rs"]
 pub mod browse_field;
 /// Local speech and named private messages.
