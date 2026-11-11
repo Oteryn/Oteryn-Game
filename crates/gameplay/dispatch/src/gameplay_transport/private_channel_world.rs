@@ -6,11 +6,16 @@ use crate::chat::{ChatText, relay::RelayDestination};
 use crate::domain::premium::PremiumStatus;
 use crate::durability::{
     item_transfer::CurrentCharacterItemFence,
-    private_channel::{ChannelView, JoinedChannel, Prepared},
+    private_channel::{ChannelMember, ChannelView, JoinedChannel, MemberView, Prepared},
 };
 use crate::foundation::{ChannelRuntimeV1, GameSessionId};
+use oteryn_protocol_oteryn::chat::line_extended::ChannelNotice;
 use oteryn_protocol_oteryn::chat::private_channel::{
     CAPABILITY_CHAT_PRIVATE_CHANNEL_V1, ChatChannelList, PrivateChannelIntent,
+};
+use oteryn_protocol_oteryn::chat::private_channel_extended::{
+    CAPABILITY_CHAT_CHANNEL_PARTICIPANTS_V1, CAPABILITY_CHAT_JOINED_CHANNELS_V1,
+    ChannelListExtension,
 };
 use oteryn_protocol_oteryn::chat::{ChatDisposition, ChatIntentResult, ChatLine};
 use std::collections::HashMap;
@@ -31,7 +36,20 @@ struct Binding {
     joined: Vec<JoinedChannel>,
     shown: Option<ChatChannelList>,
     force: bool,
+    /// Capabilities 494 and 495: the extension last shown and the members of the last read.
+    shown_extension: Option<ChannelListExtension>,
+    members: Option<Vec<ChannelMember>>,
 }
+
+/// Capabilities 494 and 495: the list delta when the list or its extension changed, and the
+/// member notices since the previous read.
+pub(super) type ExtendedChannelList = (
+    Option<(ChatChannelList, ChannelListExtension)>,
+    Vec<ChannelNotice>,
+);
+
+#[path = "private_channel_members.rs"]
+mod members;
 fn same(left: &AdmittedSession, right: &AdmittedSession) -> bool {
     left.world_id == right.world_id
         && left.channel_id == right.channel_id
@@ -70,6 +88,8 @@ impl PrivateChannelRuntime {
                 joined: Vec::new(),
                 shown: None,
                 force: true,
+                shown_extension: None,
+                members: None,
             },
         );
         Some(reservation)
@@ -162,6 +182,68 @@ impl PrivateChannelRuntime {
         entry.force = false;
         entry.shown = Some(view.list.clone());
         Some(view.list)
+    }
+    /// The sessions of the other joined members the last read showed.
+    fn probe(&self, admitted: &AdmittedSession) -> Vec<[u8; 16]> {
+        self.entries
+            .lock()
+            .ok()
+            .and_then(|entries| {
+                let entry = entries
+                    .get(&admitted.game_session_id)
+                    .filter(|entry| entry.ready && same(&entry.admitted, admitted))?;
+                Some(members::probe(
+                    *admitted.game_session_id.as_bytes(),
+                    entry.members.as_deref()?,
+                ))
+            })
+            .unwrap_or_default()
+    }
+    /// The first read after admission is the baseline: it shows the list, never notices.
+    fn list_extended(
+        &self,
+        admitted: &AdmittedSession,
+        read: MemberView,
+        joined_selected: bool,
+        participants_selected: bool,
+    ) -> Option<ExtendedChannelList> {
+        let mut entries = self.entries.lock().ok()?;
+        let entry = entries
+            .get_mut(&admitted.game_session_id)
+            .filter(|entry| entry.ready && same(&entry.admitted, admitted))?;
+        let MemberView {
+            view,
+            members,
+            active,
+        } = read;
+        entry.joined = view.joined;
+        let notices = match entry.members.as_deref() {
+            Some(before) if participants_selected => members::notices(
+                *admitted.game_session_id.as_bytes(),
+                before,
+                &members,
+                &active,
+            ),
+            _ => Vec::new(),
+        };
+        let extension = members::extension(
+            &view.list,
+            &entry.joined,
+            &members,
+            joined_selected,
+            participants_selected,
+        );
+        entry.members = Some(members);
+        if !entry.force
+            && entry.shown.as_ref() == Some(&view.list)
+            && entry.shown_extension.as_ref() == Some(&extension)
+        {
+            return Some((None, notices));
+        }
+        entry.force = false;
+        entry.shown = Some(view.list.clone());
+        entry.shown_extension = Some(extension.clone());
+        Some((Some((view.list, extension)), notices))
     }
 }
 
@@ -373,10 +455,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         reply
     }
 
-    pub(super) async fn private_channel_list(
+    /// The fence of a session whose capability-80 negotiation is ready, admitting it again on
+    /// the refresh cadence while the root's sole holder was busy at snapshot admission.
+    async fn private_channel_listing_fence(
         &self,
         admitted: AdmittedSession,
-    ) -> Option<ChatChannelList> {
+    ) -> Option<CurrentCharacterItemFence> {
         if !admitted
             .continuity
             .selected_capabilities
@@ -404,10 +488,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        let fence = {
-            let runtime = self.runtime.lock().await;
-            qualified(&admitted, &runtime)
-        }?;
+        let runtime = self.runtime.lock().await;
+        qualified(&admitted, &runtime)
+    }
+
+    pub(super) async fn private_channel_list(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<ChatChannelList> {
+        let fence = self.private_channel_listing_fence(admitted).await?;
         let mut view = self
             .root
             .read_private_channel_list(self.character, self.holder, fence)
@@ -415,6 +504,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()??;
         view.list.public_rooms = self.states.chat.public_room_list(admitted.game_session_id);
         self.states.chat.private_world.list(&admitted, view)
+    }
+
+    /// Capabilities 494 and 495: the list with its extension, and the member notices, from one
+    /// durable read of the list and the members of every channel the session is in.
+    pub(super) async fn private_channel_list_extended(
+        &self,
+        admitted: AdmittedSession,
+    ) -> ExtendedChannelList {
+        let selected = &admitted.continuity.selected_capabilities;
+        let joined_selected = selected.contains(CAPABILITY_CHAT_JOINED_CHANNELS_V1);
+        let participants_selected = selected.contains(CAPABILITY_CHAT_CHANNEL_PARTICIPANTS_V1);
+        if !joined_selected && !participants_selected {
+            return (None, Vec::new());
+        }
+        let Some(fence) = self.private_channel_listing_fence(admitted).await else {
+            return (None, Vec::new());
+        };
+        let probe = self.states.chat.private_world.probe(&admitted);
+        let Ok(Some(mut read)) = self
+            .root
+            .read_private_channel_members(self.character, self.holder, fence, probe)
+            .await
+        else {
+            return (None, Vec::new());
+        };
+        read.view.list.public_rooms = self.states.chat.public_room_list(admitted.game_session_id);
+        self.states
+            .chat
+            .private_world
+            .list_extended(&admitted, read, joined_selected, participants_selected)
+            .unwrap_or_default()
     }
 
     pub(super) async fn private_channel_accept(

@@ -1,0 +1,17 @@
+[
+  {
+    "mechanic": "0493-chat-private-echo",
+    "kind": "handlers",
+    "id": "0493-chat-private-echo-chat-extension",
+    "status": "unsupported",
+    "reason": "WU26 chat server side only: the native client private-message echo lands in the client lane.",
+    "commands": [],
+    "not_applicable": {
+      "state": "The echo is a transient egress line; the client keeps no new state for it.",
+      "protocol": "The shared chat codec in oteryn-protocol-oteryn encodes line field 12.",
+      "view": "The echoed line in the private tab lands with client support.",
+      "input": "No new input; the existing command 6 private intent carries it.",
+      "settings": "No client setting controls the echo."
+    }
+  }
+]

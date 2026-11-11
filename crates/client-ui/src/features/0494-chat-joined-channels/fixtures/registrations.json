@@ -1,0 +1,17 @@
+[
+  {
+    "mechanic": "0494-chat-joined-channels",
+    "kind": "handlers",
+    "id": "0494-chat-joined-channels-chat-extension",
+    "status": "unsupported",
+    "reason": "WU26 chat server side only: reopening the joined channel tabs lands in the client lane.",
+    "commands": [],
+    "not_applicable": {
+      "state": "The joined channels come from the server list on each change; the client keeps no new durable state.",
+      "protocol": "The shared chat codec in oteryn-protocol-oteryn encodes list field 4.",
+      "view": "Reopening the joined channel tabs lands with client support.",
+      "input": "No new input; the existing private channel intents carry it.",
+      "settings": "No client setting controls the joined channels."
+    }
+  }
+]
