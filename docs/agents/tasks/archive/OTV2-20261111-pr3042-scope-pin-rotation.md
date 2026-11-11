@@ -4,11 +4,11 @@
 task_id: OTV2-20261111-pr3042-scope-pin-rotation
 title: Preapprove the bounded PR3042 scope-recovery workflow
 mode: GOVERNANCE
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/pr3042-scope-pin-proposal-20261111
-pr: null
+pr: 3103
 issue: 3042
 base_sha: c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f
 head_sha: null
@@ -16,11 +16,11 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: PR3042 repair lead; sole publication and review dispatcher
 created_at: 2026-11-10T23:21:46Z
-updated_at: 2026-11-10T23:28:36Z
+updated_at: 2026-11-11T05:33:42Z
 execution_policy: continuous_progress
 owned_paths:
   - .github/workflows/merge-authority-audit.yml
-  - docs/agents/tasks/active/OTV2-20261111-pr3042-scope-pin-rotation.md
+  - docs/agents/tasks/archive/OTV2-20261111-pr3042-scope-pin-rotation.md
 public_contracts:
   - protected merge-authority approved workflow blob
 depends_on: []
@@ -31,11 +31,12 @@ external_repositories: []
 
 ## Outcome
 
-Preapprove exactly one reviewed future merge-gate blob, without activating that
-workflow in this PR. After a properly integrated rotation, PR3042 can receive
-its own exact-head protected-base audit for the count-drift recovery repair.
-The tracking issue is PR3042's existing issue record; a separate canonical
-rotation PR has not been created.
+Rotate the protected audit pin to exactly the reviewed PR3042 merge-gate blob,
+without changing that workflow in this PR. The proposal preceded PR3042's merge;
+the same workflow is now on main. Canonical rotation PR #3103 closes this task.
+This record is prepared for archive in its final authoring commit, as required
+by `docs/agents/tasks/archive/README.md`; merge and post-merge acceptance remain
+pending. The tracking issue remains PR3042's existing issue record.
 
 ## Architecture and source of truth
 
@@ -43,6 +44,9 @@ rotation PR has not been created.
   `1bfb5ff98c8aa156e73669a14e083a1d464c29fb`.
 - PROVEN: main is `c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f` at proposal
   preparation. Its audit approves merge-gate blob `2480e2eb9fb73d9af246188cde918359a260de94`.
+- PROVEN: main readback at 2026-11-11T05:33:42Z is
+  `f01f18582443f482b7adcfaf32cae3f9d3616876`, the squash of PR3042. The base
+  metadata above records the historical proposal base, not current main.
 - PROVEN: merged PR3055, commit `82ff2d753d26fa35fdc6686c07fffec7e545ddc5`,
   changed the cargo-deny step and the merge-gate blob from2480e2eb to
   `23a414176bb1c889de9f9477bf17c5c88d28dcbf`, leaving the audit unchanged.
@@ -54,9 +58,10 @@ rotation PR has not been created.
 - PROVEN: the current owner request covers PR3042 repair, subagents, frequent
   pushes, Codex review, all tests passing and eventual merge. This record does
   not invent a separate approval receipt for the protected-audit rotation.
-- UNKNOWN: a separate explicit approval receipt for this exact pin exception
-  has not been recorded in this proposal. Integration authority must be resolved
-  from the live owner session under `docs/repository/GITHUB_GOVERNANCE.md`.
+- PROVEN: control comment 6782243515 records the lead's current authority and
+  sole publication ownership, including the return to AUTHORING for this
+  record-only closeout. No separate historical rotation approval is fabricated;
+  integration remains subject to `docs/repository/GITHUB_GOVERNANCE.md`.
 
 ## High-risk authority/recovery qualification
 
@@ -72,10 +77,12 @@ validation, exact-head evidence and independent deep review.
   head/base checks, read-only permissions and all other guards remain unchanged.
 - [x] Repository/governance and relevant adversarial checks pass; the target
   blob identity and inert audit Python compilation are independently verified.
-- [ ] Normal required checks and one independent deep review qualify the
-  published rotation candidate; its expected self-audit rejection is disclosed.
-- [ ] Exact rotation authority is recorded before integration; normal squash
-  and protected-main pin readback precede PR3042's fresh audit/qualification.
+- [x] Codex receipt 6782300548 reports no major issues on published head `07909fea`;
+  its reviewed audit blob remains unchanged in this record-only successor.
+- [ ] The new frozen candidate passes its required qualification; the expected
+  self-audit rejection remains disclosed and is not a green audit or a bypass.
+- [ ] Normal squash, protected-main pin readback and post-merge qualification
+  complete under the live control record after main runtime health is restored.
 
 ## Reference parity
 
@@ -90,7 +97,7 @@ collector audit/group pair must not replace current main's pair.
 ## Implementation / findings
 
 The proposal changes only `EXPECTED_MERGE_GATE_BLOB` and this task record.
-Current main's group pin remains `7b7f36b197a72a4317d6318b1cc4ec4ab9b602f6`.
+The reviewed group pin remains `7b7f36b197a72a4317d6318b1cc4ec4ab9b602f6`.
 The candidate scope repair retains live open/same-repository/main-base/exact-head
 fences, rejects malformed counts, and invalidates transported file evidence on
 summary drift so trusted-base routing uses immutable Git evidence or FULL.
@@ -103,7 +110,13 @@ This proposal therefore cannot claim every check is green before integration.
 
 ## Validation
 
-### Focused
+### Final-authoring record change
+
+- `python tools/agents/validate_governance.py`: PASS on the final authoring tree.
+- `python -m unittest discover -s tools/agents/tests`: PASS, 129 tests on that tree.
+- `git diff --check`: PASS; only this record moves and changes.
+
+### Historical focused evidence on `07909fea`
 
 - PASS: one-line pin-only diff and recomputed target Git blob98ae5ef5. Replacing
   only the new pin with the old pin reconstructs the exact main audit bytes.
@@ -112,8 +125,6 @@ This proposal therefore cannot claim every check is green before integration.
   scope, incomplete enumeration, unapproved/missing/nonregular workflows and
   changed group bytes. This is a component check, not a live GitHub audit.
 - `python tools/repository/validate_repository_policy.py`: PASS,23files/68workflows.
-- `python tools/agents/validate_governance.py`: PASS,22documents/9lanes.
-- `python -m unittest discover -s tools/agents/tests`: PASS,129tests.
 - `python tools/repository/test_merge_authority_applicability.py`: PASS,1test.
 - `python -m unittest discover -s tools/repository -p test_validate_pr_gate_pg_sim.py`:
   PASS,10tests; `git diff --check`: PASS.
@@ -123,8 +134,9 @@ This proposal therefore cannot claim every check is green before integration.
 
 ### Component/integration
 
-Normal required CI and the independent deep review require a published frozen
-candidate. No PR, commit, review trigger or remote mutation is made by this worker.
+The published `07909fea` candidate received the independent review recorded below.
+This record-only successor requires its own published freeze and required CI;
+historical component checks are not relabelled as execution on the new SHA.
 
 ### E2E
 
@@ -132,41 +144,52 @@ NOT_APPLICABLE: this proposal does not activate a workflow or change runtime.
 
 ### Exact-head CI
 
-Final head, PR, run/job IDs and results: pending publication. The expected
-protected-base self-modification rejection must remain explicitly distinguished
-from ordinary required-check results and future PR3042 audit success.
+PR: https://github.com/Oteryn/Oteryn-Game/pull/3103. The successor's final head,
+run/job IDs and results remain pending publication in control comment 6782243515.
+The expected protected-base self-modification rejection remains distinct from
+ordinary required-check results and protected-main post-merge audit success.
 
 ## Self-review
 
-The implementing worker inspected both changed files and proved that replacing
-only the new pin reconstructs the exact main audit bytes. No additional concrete
-P0/P1 was found in this bounded proposal. The task record is within its300-line
-and12,000-character limits. No readiness or mergeability claim is made.
+The original implementing worker inspected both proposal files and proved that
+replacing only the new pin reconstructs the historical base's audit bytes.
+The final-authoring worker inspected the record move and verified that audit
+blob `5f5632ece0d2b5a3326bb246355f4d33e2a15293` remains byte-identical. This is
+not a claim that the successor has passed hosted qualification or merged.
 
 ## Independent review
 
-Required: YES, protected merge-authority change. Exact candidate, independent
-external reviewer and verdict remain pending. Bounded prepublication source
-inspection by `review_fixture`, reported to the lead, found no P0/P1 and exercised
-old-pin refusal, new-pin acceptance and8 adversarial refusals. The lead separately
-verified proposed audit blob `5f5632ece0d2b5a3326bb246355f4d33e2a15293`.
-This evidence does not replace the published exact-head independent review.
+Required: YES, protected merge-authority change. Codex
+[receipt 6782300548](https://github.com/Oteryn/Oteryn-Game/pull/3103#issuecomment-6782300548)
+reports no major issues on `07909feac18b9851bd920f2c4b5ea721198038a6`.
+Earlier source inspection by `review_fixture` found no P0/P1 and exercised
+old-pin refusal, new-pin acceptance and8 adversarial refusals.
+
+This final-authoring delta changes only the record; the reviewed workflow blob
+is unchanged. The receipt retains its scope on `07909fea` and is not presented as
+a review execution on the successor. No duplicate paid review is requested.
 
 ## PR and closeout
 
-PR and merge: none. Root owns publication, review dispatch and integration.
-After authorized squash, read back the protected pin, reconcile PR3042 with
-that main and rerun its exact-head audit and required qualification. Keep the
-task active until integration/readback completes; archive during final authoring.
+Canonical PR: #3103. Implementation and local record validation are complete;
+the archive is delivered to main only if this closing PR merges. Root retains
+publication and integration ownership under control comment 6782243515.
+
+- Merge commit/result: squash merge of #3103 (pending).
+- Final exact-head required CI, protected-main pin readback and post-merge
+  qualification: pending; integration waits for restored main runtime health.
+- Ownership release: pending successful integration and post-merge verification.
+
+PR3042 already merged as f01f1858; this rotation does not retroactively qualify it.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: isolated two-file proposal and lightweight deterministic checks complete
-status: implementing
+last_progress: reviewed workflow preserved; closing record prepared in final authoring
+status: completed
 branch: codex/pr3042-scope-pin-proposal-20261111
 head_sha: null
-pr: null
+pr: 3103
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -184,5 +207,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: lead publishes and freezes the reviewed two-file proposal for exact-head qualification
+next_action: lead publishes and freezes the record-only successor for its required CI
 ```
