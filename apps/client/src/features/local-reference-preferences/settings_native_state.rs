@@ -323,6 +323,13 @@ impl Settings {
     pub(in super::super) fn take_native_sign_out(&self) -> bool {
         lock(&self.shared).take_native_sign_out()
     }
+    pub(in super::super) fn run_utility(
+        &self,
+        link: &oteryn_client::play::PlayLink,
+        action: oteryn_client::play::UtilityAction,
+    ) -> bool {
+        lock(&self.shared).run_utility(link, action)
+    }
     pub(in super::super) fn confirm_exit(&self) -> bool {
         !lock(&self.shared).preferences.miscellaneous.confirm_exit
             || oteryn_client::device_login::confirm_action("Close Oteryn?")

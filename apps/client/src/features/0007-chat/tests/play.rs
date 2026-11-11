@@ -134,13 +134,18 @@ fn n021_alt_d_selects_the_default_tab_and_keypad_enter_sets_temporary_mode()
                 repeat: false,
             }])
         };
+    let open = || crate::play::mailbox::lock(&link.mailbox).chat.open;
+    assert!(!open());
     link.chat_console_tab(ConsoleTab::Guild);
     assert!(link.chat_input(&press(7, Modifiers::one(Modifier::Alt))?));
+    assert!(open(), "Alt+D opens the console it selects the tab of");
+    crate::play::mailbox::lock(&link.mailbox).chat.open = false;
     assert_eq!(
         crate::play::mailbox::lock(&link.mailbox).chat.console.tab,
         ConsoleTab::All
     );
     assert!(link.chat_input(&press(88, Modifiers::NONE)?));
+    assert!(open(), "Keypad Enter opens the console");
     assert_eq!(
         crate::play::mailbox::lock(&link.mailbox).chat.console.mode,
         ComposerMode::Temporary

@@ -398,3 +398,68 @@ fn n004_alt_click_attacks_a_creature_then_stops_when_it_is_the_target()
     ));
     Ok(())
 }
+
+#[test]
+fn alt_click_attacks_a_player_but_not_the_local_actor_and_honours_the_world_input_guard()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::PlayView;
+    use oteryn_renderer::TileCoord;
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+    };
+    let (link, mut commands, _) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[])?;
+    let entity = |id: u8, x: i32| {
+        (
+            EntityRef {
+                identity: [id; 16],
+                generation: 1,
+            },
+            x,
+        )
+    };
+    let (other, other_x) = entity(8, 2);
+    let (own, own_x) = entity(9, 3);
+    view.entities = [(other, other_x), (own, own_x)]
+        .into_iter()
+        .map(|(entity, x)| WorldSpatialEntity {
+            display_name: None,
+            kind: EntityKind::Player,
+            entity,
+            position: ActorPosition { x, y: 1, floor: 0 },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        })
+        .collect();
+    let targets = [(other, other_x), (own, own_x)].map(|(entity, x)| crate::input::Targetable {
+        tile: TileCoord::new(x, 1),
+        kind: crate::input::TargetKind::Entity,
+        glyph: true,
+        entity: Some(entity),
+        item: None,
+    });
+    view.scene = crate::scene::Scene::centered_with(
+        std::sync::Arc::new(crate::map::World::builtin()?),
+        None,
+        TileCoord::new(1, 1),
+        crate::input::StepDir::South,
+        &[],
+        &targets,
+    )?;
+    view.set_own_identity(own.identity);
+    assert!(!view.attack_toggle_click(TileCoord::new(3, 1), &link));
+    assert!(commands.try_recv().is_err());
+    assert!(view.attack_toggle_click(TileCoord::new(2, 1), &link));
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Attack(attacked))
+            if attacked == other
+    ));
+    lock(&link.mailbox).death.dead = true;
+    assert!(!view.attack_toggle_click(TileCoord::new(2, 1), &link));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

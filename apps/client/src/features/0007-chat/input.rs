@@ -16,10 +16,12 @@ impl PlayLink {
     pub fn chat_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if oteryn_client_ui::chat::default_channel_key(events) {
             self.chat_console_tab(oteryn_client_ui::chat::ConsoleTab::All);
+            self.open_chat();
             return true;
         }
         if oteryn_client_ui::chat::temporary_mode_key(events) {
             lock(&self.mailbox).chat.console.mode = oteryn_client_ui::chat::ComposerMode::Temporary;
+            self.open_chat();
             return true;
         }
         if !oteryn_client_ui::chat::open_key(events) {
