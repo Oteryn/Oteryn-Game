@@ -1,0 +1,15 @@
+{
+  "mechanic": "0496-chat-line-sequence",
+  "kind": "handlers",
+  "id": "0496-chat-line-sequence-chat-extension",
+  "status": "unsupported",
+  "reason": "WU26 chat server side only: ordering chat lines by sequence lands in the client lane.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The client compares each sequence with the last one it saw; no durable state.",
+    "protocol": "The shared chat codec in oteryn-protocol-oteryn encodes line field 13.",
+    "view": "Line ordering in the chat console lands with client support.",
+    "input": "No new input; every chat line carries it.",
+    "settings": "No client setting controls the sequence."
+  }
+}

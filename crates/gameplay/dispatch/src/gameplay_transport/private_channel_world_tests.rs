@@ -168,3 +168,132 @@ fn private_channel_legacy_sender_entry_never_creates_a_parallel_local_room() -> 
     }
     Ok(())
 }
+
+#[test]
+fn private_channel_member_reads_show_the_extension_and_notify_after_the_baseline() -> TestResult {
+    use oteryn_protocol_oteryn::chat::line_extended::ChannelNoticeKind;
+    use oteryn_protocol_oteryn::chat::private_channel::InvitedChannel;
+    let state = PrivateChannelRuntime::default();
+    let admitted = admitted(1)?;
+    let viewer = *admitted.game_session_id.as_bytes();
+    let reservation = state.begin(admitted).ok_or("reservation")?;
+    assert!(state.finish(
+        admitted.game_session_id,
+        reservation,
+        Some(vec![interest()])
+    ));
+    let list = ChatChannelList {
+        own_channel: None,
+        invited: vec![InvitedChannel {
+            channel_id: 100,
+            owner_name: "Bryn".into(),
+        }],
+        ..ChatChannelList::default()
+    };
+    let row = |session: [u8; 16], name: &str, joined: bool| ChannelMember {
+        channel_id: 100,
+        epoch: 7,
+        session,
+        joined,
+        name: name.into(),
+    };
+    let read = |members: Vec<ChannelMember>, active: Vec<[u8; 16]>| MemberView {
+        view: ChannelView {
+            list: list.clone(),
+            joined: vec![interest()],
+        },
+        members,
+        active,
+    };
+    let (bryn, cora) = (id(5), id(6));
+    // The first read is the baseline: the list with both fields, no notice.
+    let (shown, notices) = state
+        .list_extended(
+            &admitted,
+            read(
+                vec![row(viewer, "Aldric", true), row(bryn, "Bryn", true)],
+                Vec::new(),
+            ),
+            true,
+            true,
+        )
+        .ok_or("current binding")?;
+    let (_, extension) = shown.ok_or("first list")?;
+    assert_eq!(extension.joined, vec![100]);
+    assert_eq!(extension.participants[0].names, vec!["Aldric", "Bryn"]);
+    assert!(notices.is_empty());
+    assert_eq!(state.probe(&admitted), vec![bryn]);
+    // Cora joins: a notice and a changed extension; the legacy list is unchanged.
+    let (shown, notices) = state
+        .list_extended(
+            &admitted,
+            read(
+                vec![
+                    row(viewer, "Aldric", true),
+                    row(bryn, "Bryn", true),
+                    row(cora, "Cora", true),
+                ],
+                vec![bryn],
+            ),
+            true,
+            true,
+        )
+        .ok_or("current binding")?;
+    assert!(shown.is_some(), "a new participant changes field 5");
+    assert_eq!(notices.len(), 1);
+    assert_eq!(notices[0].kind, ChannelNoticeKind::Joined);
+    assert_eq!(notices[0].name, "Cora");
+    // Cora is excluded (row gone, session active), Bryn leaves (row kept, not joined).
+    let (_, notices) = state
+        .list_extended(
+            &admitted,
+            read(
+                vec![row(viewer, "Aldric", true), row(bryn, "Bryn", false)],
+                vec![bryn, cora],
+            ),
+            true,
+            true,
+        )
+        .ok_or("current binding")?;
+    assert_eq!(
+        notices
+            .iter()
+            .map(|notice| (notice.kind, notice.name.as_str()))
+            .collect::<Vec<_>>(),
+        vec![
+            (ChannelNoticeKind::Left, "Bryn"),
+            (ChannelNoticeKind::Excluded, "Cora"),
+        ]
+    );
+    // An unchanged read sends neither a list nor a notice; 494 alone sends no notice.
+    let unchanged = state
+        .list_extended(
+            &admitted,
+            read(
+                vec![row(viewer, "Aldric", true), row(bryn, "Bryn", false)],
+                vec![bryn],
+            ),
+            true,
+            true,
+        )
+        .ok_or("current binding")?;
+    assert_eq!(unchanged, (None, Vec::new()));
+    let (shown, notices) = state
+        .list_extended(
+            &admitted,
+            read(vec![row(viewer, "Aldric", true)], Vec::new()),
+            true,
+            false,
+        )
+        .ok_or("current binding")?;
+    assert!(notices.is_empty());
+    let (_, extension) = shown.ok_or("field 5 withdrawn")?;
+    assert!(extension.participants.is_empty());
+    // A stale connection reads nothing.
+    assert!(
+        state
+            .list_extended(&admitted(2)?, read(Vec::new(), Vec::new()), true, true)
+            .is_none()
+    );
+    Ok(())
+}
