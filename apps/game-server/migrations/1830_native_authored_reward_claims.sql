@@ -41,11 +41,13 @@ BEGIN
     body:=replace(replace(replace(body,'actual BIGINT','actual BIGINT; native_consumed_count BIGINT'),
         'INTO actual FROM','INTO native_consumed_count FROM'),
         'IF actual IS DISTINCT','IF native_consumed_count IS DISTINCT');
-    anchor:='r.cause_kind=''command''';
+    -- The receipt proof is the command-or-world-callback arm. The repeatable
+    -- counter proof also names r.cause_kind='command' and stays command-only.
+    anchor:='(r.cause_kind=''command'' OR (r.cause_kind=''use''';
     IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
         RAISE EXCEPTION 'native claim requires the exact quest receipt cause proof'; END IF;
     body:=replace(body,anchor,$proof$((r.cause_kind='command' AND NOT NEW.plan ? 'world_claim')
-        OR (r.cause_kind='use' AND game_quest_native_claim_plan(NEW.plan)))$proof$);
+        OR (r.cause_kind='use' AND game_quest_native_claim_plan(NEW.plan)) OR (r.cause_kind='use'$proof$);
     anchor:='m.claim_production_key=game_quest_reward_mint_claim_key(NEW.character_id,NEW.cause_id,NEW.cause_ordinal,NEW.transition_key,NEW.plan)';
     IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
         RAISE EXCEPTION 'native claim requires the exact existing native MINT proof'; END IF;
