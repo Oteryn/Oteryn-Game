@@ -7,7 +7,8 @@
 -- This migration admits that deadline's daily-delivery provenance, the scroll's
 -- movement with its deadline and its removal wherever it is, for an online or an
 -- offline Character: expiry applies in all custodies (section 7; session-less
--- receipt custody 2, 3, 4 Inbox root, 5 depot root). All prior item-use causes and
+-- receipt custody 2 container entry, 3 equipment, 4 Inbox root, 5 depot root,
+-- 6 House tile, 7 corpse entry). All prior item-use causes and
 -- shapes, deadline sources, custody kinds and movement guards stay admitted
 -- unchanged.
 --
@@ -163,23 +164,33 @@ END $migration$;
 -- 7. Expiry applies in every custody the scroll can occupy, for an online or an
 -- offline Character. The Channel pass keeps retiring a scroll that its current
 -- session carries (Ground kind 1, carried kinds 2 and 3, unchanged). Every other
--- due scroll (in the Inbox or a depot, in a container rooted there, or carried by
--- a Character with no live session) is retired by game_temple_scroll_expire_due
--- under no session: receipt custody 2 carried container entry, 3 equipment,
--- 4 Inbox root, 5 depot root (box or locker). The Supply Stash holds stackable
--- balances only and refuses scheduled Items (0189), as do House containers (1169)
--- and the market (0191), so the scroll never enters them.
+-- due scroll is retired by game_temple_scroll_expire_due under no session:
+-- receipt custody 2 container entry (carried by an offline Character, or in a
+-- container rooted in the Inbox, a depot, on Ground, on a House tile or in a
+-- backpack dropped at death), 3
+-- equipment of an offline Character, 4 Inbox root, 5 depot root (box or locker),
+-- 6 House floor tile, 7 corpse container entry. Ground-rooted custody belongs to
+-- the pass of its own Channel. Nothing inside bazaar custody is touched: an
+-- escrowed Item has no custody here and a Character locked for a bazaar transfer
+-- is skipped, so its due scroll goes on the first pass after the escrow or lock
+-- ends. The Supply Stash holds stackable balances only and refuses scheduled
+-- Items (0189), as do House containers (1169) and the market (0191).
 DO $migration$
 DECLARE c RECORD; n INTEGER:=0;
- arm CONSTANT TEXT:='(character_id IS NOT NULL'
-  ||' AND num_nonnulls(game_session_id,character_lease_generation,connection_generation)=0'
-  ||' AND ((custody_kind=2 AND source_parent IS NOT NULL AND source_ordinal>0'
-  ||'   AND num_nonnulls(source_slot,equipment_revision_before,source_stack_ordinal)=0)'
-  ||'  OR (custody_kind=3 AND source_slot BETWEEN 1 AND 10 AND source_slot<>9'
-  ||'   AND equipment_revision_before BETWEEN 1 AND 18446744073709551614'
-  ||'   AND num_nonnulls(source_parent,source_ordinal,source_stack_ordinal)=0)'
-  ||'  OR (custody_kind IN(4,5) AND source_ordinal>0'
-  ||'   AND num_nonnulls(source_parent,source_slot,equipment_revision_before,source_stack_ordinal)=0))) IS TRUE';
+ arm CONSTANT TEXT:='(num_nonnulls(game_session_id,character_lease_generation,connection_generation)=0'
+  ||' AND ((character_id IS NOT NULL'
+  ||'  AND ((custody_kind=2 AND source_parent IS NOT NULL AND source_ordinal>0'
+  ||'    AND num_nonnulls(source_slot,equipment_revision_before,source_stack_ordinal)=0)'
+  ||'   OR (custody_kind=3 AND source_slot BETWEEN 1 AND 10 AND source_slot<>9'
+  ||'    AND equipment_revision_before BETWEEN 1 AND 18446744073709551614'
+  ||'    AND num_nonnulls(source_parent,source_ordinal,source_stack_ordinal)=0)'
+  ||'   OR (custody_kind IN(4,5) AND source_ordinal>0'
+  ||'    AND num_nonnulls(source_parent,source_slot,equipment_revision_before,source_stack_ordinal)=0)))'
+  ||'  OR (character_id IS NULL'
+  ||'  AND ((custody_kind IN(2,7) AND source_parent IS NOT NULL AND source_ordinal>0'
+  ||'    AND num_nonnulls(source_slot,equipment_revision_before,source_stack_ordinal)=0)'
+  ||'   OR (custody_kind=6 AND source_ordinal>0'
+  ||'    AND num_nonnulls(source_parent,source_slot,equipment_revision_before,source_stack_ordinal)=0))))) IS TRUE';
 BEGIN
  FOR c IN SELECT conname,pg_get_expr(conbin,conrelid) AS rule FROM pg_constraint
    WHERE conrelid='game_spell_item_temporal_receipts'::regclass AND contype='c'
@@ -191,57 +202,81 @@ BEGIN
  IF n<>2 THEN RAISE EXCEPTION 'unexpected Item timer custody constraints: %',n; END IF;
 END $migration$;
 
--- The scroll's one current custody: the direct location row, its Character (for a
--- nested Item, the Character of the chain's root) and whether that root is stored
--- (Inbox or depot) rather than carried. No row: the scroll is on Ground or in a
--- custody without a Character, which the Channel's own pass or no pass hosts.
+-- The scroll's one current custody: its direct location row, the Character of
+-- the custody (a container entry's own Character; for a nested Item, the
+-- Character of its chain's root; none in the world), whether the chain's root is
+-- unattended by a session (Inbox, depot, Ground, House tile: a backpack dropped at
+-- death included) and, for Ground-rooted custody, the Channel that owns it.
+-- No row: the scroll lies on Ground itself (the Channel pass's kind 1), in
+-- bazaar custody, or in a custody no pass hosts.
 CREATE FUNCTION game_temple_scroll_custody(p_item UUID)
 RETURNS TABLE(kind SMALLINT,character_id UUID,parent UUID,ordinal NUMERIC,slot SMALLINT,
- equipment_revision NUMERIC,stored BOOLEAN)
+ equipment_revision NUMERIC,stored BOOLEAN,channel_id UUID)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
  WITH RECURSIVE up(item,depth) AS (
-   SELECT n.parent_item_instance_id,1 FROM public.game_item_nested_entries n WHERE n.item_instance_id=p_item
+   SELECT p_item,0
    UNION ALL
-   SELECT n.parent_item_instance_id,u.depth+1 FROM up u
-    JOIN public.game_item_nested_entries n ON n.item_instance_id=u.item WHERE u.depth<16
+   SELECT coalesce(e.parent_item_instance_id,n.parent_item_instance_id,c.parent_item_instance_id),u.depth+1 FROM up u
+    LEFT JOIN public.game_item_container_entries e ON e.item_instance_id=u.item
+    LEFT JOIN public.game_item_nested_entries n ON n.item_instance_id=u.item
+    LEFT JOIN public.game_item_corpse_container_entries c ON c.item_instance_id=u.item
+   WHERE u.depth<24 AND num_nonnulls(e.item_instance_id,n.item_instance_id,c.item_instance_id)>0
  ), root AS (SELECT item FROM up ORDER BY depth DESC LIMIT 1),
  owner AS (
-   SELECT coalesce(
-     (SELECT s.character_id FROM public.game_item_container_slots s JOIN root ON root.item=s.item_instance_id),
-     (SELECT e.character_id FROM public.game_item_container_entries e JOIN root ON root.item=e.item_instance_id),
-     (SELECT q.character_id FROM public.game_character_equipment_slots q JOIN root ON root.item=q.item_instance_id),
-     (SELECT x.character_id FROM public.game_item_character_inbox_locations x JOIN root ON root.item=x.item_instance_id),
-     (SELECT d.character_id FROM public.game_item_character_depot_locations d JOIN root ON root.item=d.item_instance_id)
-   ) AS character_id,
-   EXISTS(SELECT 1 FROM public.game_item_character_inbox_locations x JOIN root ON root.item=x.item_instance_id)
-   OR EXISTS(SELECT 1 FROM public.game_item_character_depot_locations d JOIN root ON root.item=d.item_instance_id) AS stored
+   SELECT s.character_id,false AS stored,NULL::uuid AS channel_id
+     FROM public.game_item_container_slots s JOIN root ON root.item=s.item_instance_id
+   UNION ALL SELECT q.character_id,false,NULL::uuid
+     FROM public.game_character_equipment_slots q JOIN root ON root.item=q.item_instance_id
+   UNION ALL SELECT x.character_id,true,NULL::uuid
+     FROM public.game_item_character_inbox_locations x JOIN root ON root.item=x.item_instance_id
+   UNION ALL SELECT d.character_id,true,NULL::uuid
+     FROM public.game_item_character_depot_locations d JOIN root ON root.item=d.item_instance_id
+   UNION ALL SELECT NULL::uuid,true,g.channel_id
+     FROM public.game_item_ground_locations g JOIN root ON root.item=g.item_instance_id
+    WHERE g.scope_kind=1 AND g.channel_id IS NOT NULL
+   UNION ALL SELECT NULL::uuid,true,NULL::uuid
+     FROM public.game_item_house_interior_locations h JOIN root ON root.item=h.item_instance_id
  )
- SELECT 2::smallint,e.character_id,e.parent_item_instance_id,e.placement_ordinal::numeric,NULL::smallint,NULL::numeric,false
-   FROM public.game_item_container_entries e WHERE e.item_instance_id=p_item
+ SELECT 2::smallint,e.character_id,e.parent_item_instance_id,e.placement_ordinal::numeric,NULL::smallint,NULL::numeric,o.stored,o.channel_id
+   FROM public.game_item_container_entries e,owner o WHERE e.item_instance_id=p_item
  UNION ALL
- SELECT 2::smallint,o.character_id,n.parent_item_instance_id,n.placement_ordinal::numeric,NULL::smallint,NULL::numeric,o.stored
-   FROM public.game_item_nested_entries n,owner o WHERE n.item_instance_id=p_item AND o.character_id IS NOT NULL
+ SELECT 2::smallint,o.character_id,n.parent_item_instance_id,n.placement_ordinal::numeric,NULL::smallint,NULL::numeric,o.stored,o.channel_id
+   FROM public.game_item_nested_entries n,owner o WHERE n.item_instance_id=p_item
  UNION ALL
- SELECT 3::smallint,q.character_id,NULL::uuid,NULL::numeric,q.slot::smallint,st.revision::numeric,false
+ SELECT 3::smallint,q.character_id,NULL::uuid,NULL::numeric,q.slot::smallint,st.revision::numeric,false,NULL::uuid
    FROM public.game_character_equipment_slots q JOIN public.game_character_equipment_state st USING(character_id)
   WHERE q.item_instance_id=p_item
  UNION ALL
- SELECT 4::smallint,x.character_id,NULL::uuid,x.ordinal::numeric,NULL::smallint,NULL::numeric,true
+ SELECT 4::smallint,x.character_id,NULL::uuid,x.ordinal::numeric,NULL::smallint,NULL::numeric,true,NULL::uuid
    FROM public.game_item_character_inbox_locations x WHERE x.item_instance_id=p_item
  UNION ALL
- SELECT 5::smallint,d.character_id,NULL::uuid,d.ordinal::numeric,NULL::smallint,NULL::numeric,true
+ SELECT 5::smallint,d.character_id,NULL::uuid,d.ordinal::numeric,NULL::smallint,NULL::numeric,true,NULL::uuid
    FROM public.game_item_character_depot_locations d WHERE d.item_instance_id=p_item
+ UNION ALL
+ SELECT 6::smallint,NULL::uuid,NULL::uuid,h.stack_ordinal::numeric,NULL::smallint,NULL::numeric,true,NULL::uuid
+   FROM public.game_item_house_interior_locations h WHERE h.item_instance_id=p_item
+ UNION ALL
+ -- A corpse entry leaves only while its corpse lies live on Channel Ground.
+ SELECT 7::smallint,NULL::uuid,c.parent_item_instance_id,c.placement_ordinal::numeric,NULL::smallint,NULL::numeric,true,g.channel_id
+   FROM public.game_item_corpse_container_entries c
+   JOIN public.game_item_ground_locations g ON g.item_instance_id=c.parent_item_instance_id AND g.world_id=c.world_id
+   JOIN public.game_item_instances corpse ON corpse.item_instance_id=g.item_instance_id
+  WHERE c.item_instance_id=p_item AND g.scope_kind=1 AND g.channel_id IS NOT NULL AND corpse.lifecycle=1
 $$;
 
--- A Character is live while a reconnect session is active or reconnectable.
-CREATE FUNCTION game_temple_scroll_owner_live(p_character UUID) RETURNS BOOLEAN
+-- Whether no session or bazaar transfer holds this custody: a Character-less
+-- custody always; a Character's custody unless it is locked for a bazaar
+-- transfer, and, when carried or worn, unless a reconnect session is live.
+CREATE FUNCTION game_temple_scroll_unattended(p_character UUID,p_stored BOOLEAN) RETURNS BOOLEAN
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
- SELECT EXISTS(SELECT 1 FROM public.game_durability_reconnect_sessions s
-  WHERE s.character_id=p_character AND s.session_state IN(1,2))
+ SELECT p_character IS NULL OR (
+  NOT EXISTS(SELECT 1 FROM public.game_bazaar_locks b WHERE b.character_id=p_character AND b.state='locked')
+  AND (p_stored OR NOT EXISTS(SELECT 1 FROM public.game_durability_reconnect_sessions s
+    WHERE s.character_id=p_character AND s.session_state IN(1,2))))
 $$;
 
 -- The predecessor of a session-less removal: the exact due scroll in the exact
--- custody the receipt names, stored or of an offline Character of this World.
+-- unattended custody the receipt names.
 CREATE FUNCTION game_temple_scroll_capture(o game_item_instances,p_transaction UUID)
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
 DECLARE
@@ -250,7 +285,7 @@ DECLARE
 BEGIN
  SELECT * INTO r FROM public.game_spell_item_temporal_receipts WHERE transaction_id=p_transaction
    AND item_instance_id=o.item_instance_id AND created_xact_id=pg_current_xact_id()
-   AND game_session_id IS NULL AND custody_kind IN(2,3,4,5);
+   AND game_session_id IS NULL AND custody_kind BETWEEN 2 AND 7;
  SELECT * INTO p FROM public.game_spell_item_temporal_schedules WHERE item_instance_id=o.item_instance_id;
  IF r.transaction_id IS NULL OR p.item_instance_id IS NULL
   OR o.lifecycle<>1 OR o.world_id<>r.world_id OR o.quantity<>r.quantity_before
@@ -259,15 +294,16 @@ BEGIN
     <>(p.definition_family,p.definition_production_key,p.definition_revision)
   OR p.definition_production_key<>'oteryn:item.tibia.i25718' OR p.target_family IS NOT NULL
   OR r.occurred_at_unix_ms<p.expires_at_unix_ms
-  OR NOT EXISTS(SELECT 1 FROM public.game_character_roots c
-    WHERE c.character_id=r.character_id AND c.world_id=r.world_id)
+  OR (r.character_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.game_character_roots c
+    WHERE c.character_id=r.character_id AND c.world_id=r.world_id))
   OR (SELECT count(*) FROM public.game_temple_scroll_custody(o.item_instance_id))<>1
   OR NOT EXISTS(SELECT 1 FROM public.game_temple_scroll_custody(o.item_instance_id) k
-    WHERE k.kind=r.custody_kind AND k.character_id=r.character_id
+    WHERE k.kind=r.custody_kind AND k.character_id IS NOT DISTINCT FROM r.character_id
       AND k.parent IS NOT DISTINCT FROM r.source_parent AND k.ordinal IS NOT DISTINCT FROM r.source_ordinal
       AND k.slot IS NOT DISTINCT FROM r.source_slot
       AND k.equipment_revision IS NOT DISTINCT FROM r.equipment_revision_before
-      AND (k.stored OR NOT public.game_temple_scroll_owner_live(r.character_id))) THEN
+      AND (k.channel_id IS NULL OR k.channel_id=r.channel_id)
+      AND public.game_temple_scroll_unattended(k.character_id,k.stored)) THEN
   RAISE EXCEPTION 'temple scroll timer lacks its exact due predecessor custody' USING ERRCODE='23514';
  END IF;
  INSERT INTO public.game_spell_item_temporal_before VALUES(r.transaction_id,o.item_instance_id,
@@ -304,77 +340,100 @@ BEGIN
   OR EXISTS(SELECT 1 FROM public.game_item_nested_entries WHERE item_instance_id=r.item_instance_id)
   OR EXISTS(SELECT 1 FROM public.game_character_equipment_slots WHERE item_instance_id=r.item_instance_id)
   OR EXISTS(SELECT 1 FROM public.game_item_character_inbox_locations WHERE item_instance_id=r.item_instance_id)
-  OR EXISTS(SELECT 1 FROM public.game_item_character_depot_locations WHERE item_instance_id=r.item_instance_id) THEN
+  OR EXISTS(SELECT 1 FROM public.game_item_character_depot_locations WHERE item_instance_id=r.item_instance_id)
+  OR EXISTS(SELECT 1 FROM public.game_item_house_interior_locations WHERE item_instance_id=r.item_instance_id)
+  OR EXISTS(SELECT 1 FROM public.game_item_house_reclaim_provenance WHERE item_instance_id=r.item_instance_id)
+  OR EXISTS(SELECT 1 FROM public.game_item_corpse_container_entries WHERE item_instance_id=r.item_instance_id)
+  OR EXISTS(SELECT 1 FROM public.game_bazaar_item_locations WHERE item_instance_id=r.item_instance_id) THEN
   RAISE EXCEPTION 'temple scroll timer outcome requires exact source/custody/audit/retirement'
    USING ERRCODE='23514';
  END IF;
 END $$;
 
--- The session-less pass: each due scroll this pass may retire, at most p_limit.
+-- The session-less pass: at most p_limit due scrolls, earliest deadline first.
+-- The window holds only scrolls this pass may retire (custody unattended, of this
+-- World, Ground-rooted ones of this Channel), so scrolls the session-bound pass
+-- owns can never fill it. A scroll whose removal a native guard refuses (a House
+-- under disposition, a busy lock) stays for the next pass; the others proceed.
 CREATE FUNCTION game_temple_scroll_expire_due(p_world UUID,p_channel UUID,p_generation NUMERIC,p_limit INTEGER)
 RETURNS INTEGER LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
-DECLARE s RECORD; k RECORD; tx UUID; ev UUID; done INTEGER:=0; removed BIGINT; envelope BYTEA;
+DECLARE s RECORD; tx UUID; ev UUID; done INTEGER:=0; removed BIGINT; envelope BYTEA;
 BEGIN
  IF p_limit IS NULL OR p_limit<=0 THEN RETURN 0; END IF;
- FOR s IN SELECT i.item_instance_id,i.state_revision FROM public.game_spell_item_temporal_schedules p
+ FOR s IN SELECT i.item_instance_id,i.state_revision,k.kind,k.character_id,k.parent,k.ordinal,k.slot,k.equipment_revision
+   FROM public.game_spell_item_temporal_schedules p
    JOIN public.game_item_instances i USING(item_instance_id)
+   CROSS JOIN LATERAL public.game_temple_scroll_custody(i.item_instance_id) k
    WHERE p.definition_production_key='oteryn:item.tibia.i25718' AND p.target_family IS NULL
      AND i.lifecycle=1 AND i.quantity=1 AND i.world_id=p_world
      AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)
        =(p.definition_family,p.definition_production_key,p.definition_revision)
      AND p.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint
      AND NOT EXISTS(SELECT 1 FROM public.game_spell_item_temporal_receipts d WHERE d.item_instance_id=i.item_instance_id)
+     AND (k.channel_id IS NULL OR k.channel_id=p_channel)
+     AND (k.character_id IS NULL OR EXISTS(SELECT 1 FROM public.game_character_roots c
+       WHERE c.character_id=k.character_id AND c.world_id=p_world))
+     AND public.game_temple_scroll_unattended(k.character_id,k.stored)
    ORDER BY p.expires_at_unix_ms,i.item_instance_id LIMIT 500
    FOR UPDATE OF i,p SKIP LOCKED
  LOOP
   EXIT WHEN done>=p_limit;
-  IF (SELECT count(*) FROM public.game_temple_scroll_custody(s.item_instance_id))<>1 THEN CONTINUE; END IF;
-  SELECT * INTO k FROM public.game_temple_scroll_custody(s.item_instance_id);
-  IF NOT EXISTS(SELECT 1 FROM public.game_character_roots c WHERE c.character_id=k.character_id AND c.world_id=p_world)
-   OR (NOT k.stored AND public.game_temple_scroll_owner_live(k.character_id)) THEN CONTINUE; END IF;
-  tx:=public.game_character_uuid_v7(); ev:=public.game_character_uuid_v7();
-  INSERT INTO public.game_spell_item_temporal_receipts(transaction_id,event_id,item_instance_id,world_id,channel_id,
-    ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,
-    source_parent,source_ordinal,source_slot,equipment_revision_before)
-   VALUES(tx,ev,s.item_instance_id,p_world,p_channel,p_generation,s.state_revision,1,
-    floor(extract(epoch FROM statement_timestamp())*1000)::bigint,k.kind,k.character_id,
-    k.parent,k.ordinal,k.slot,k.equipment_revision);
-  UPDATE public.game_item_instances SET quantity=0,lifecycle=2,last_transaction_id=tx
-   WHERE item_instance_id=s.item_instance_id AND state_revision=s.state_revision AND lifecycle=1;
-  IF NOT FOUND THEN RAISE EXCEPTION 'temple scroll timer compare-and-change' USING ERRCODE='23514'; END IF;
-  CASE k.kind
-   WHEN 2 THEN
-    DELETE FROM public.game_item_container_entries WHERE item_instance_id=s.item_instance_id
-      AND parent_item_instance_id=k.parent AND placement_ordinal=k.ordinal;
-    GET DIAGNOSTICS removed=ROW_COUNT;
-    IF removed=0 THEN
-     DELETE FROM public.game_item_nested_entries WHERE item_instance_id=s.item_instance_id
-       AND parent_item_instance_id=k.parent AND placement_ordinal=k.ordinal;
+  BEGIN
+   tx:=public.game_character_uuid_v7(); ev:=public.game_character_uuid_v7();
+   INSERT INTO public.game_spell_item_temporal_receipts(transaction_id,event_id,item_instance_id,world_id,channel_id,
+     ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,
+     source_parent,source_ordinal,source_slot,equipment_revision_before)
+    VALUES(tx,ev,s.item_instance_id,p_world,p_channel,p_generation,s.state_revision,1,
+     floor(extract(epoch FROM statement_timestamp())*1000)::bigint,s.kind,s.character_id,
+     s.parent,s.ordinal,s.slot,s.equipment_revision);
+   UPDATE public.game_item_instances SET quantity=0,lifecycle=2,last_transaction_id=tx
+    WHERE item_instance_id=s.item_instance_id AND state_revision=s.state_revision AND lifecycle=1;
+   IF NOT FOUND THEN RAISE EXCEPTION 'temple scroll timer compare-and-change' USING ERRCODE='23514'; END IF;
+   CASE s.kind
+    WHEN 2 THEN
+     DELETE FROM public.game_item_container_entries WHERE item_instance_id=s.item_instance_id
+       AND parent_item_instance_id=s.parent AND placement_ordinal=s.ordinal;
      GET DIAGNOSTICS removed=ROW_COUNT;
-    END IF;
-   WHEN 3 THEN
-    DELETE FROM public.game_character_equipment_slots WHERE item_instance_id=s.item_instance_id
-      AND character_id=k.character_id AND slot=k.slot;
-    GET DIAGNOSTICS removed=ROW_COUNT;
-    UPDATE public.game_character_equipment_state SET revision=revision+1,last_transaction_id=tx
-     WHERE character_id=k.character_id AND revision=k.equipment_revision;
-    IF NOT FOUND THEN RAISE EXCEPTION 'temple scroll timer equipment epoch' USING ERRCODE='23514'; END IF;
-   WHEN 4 THEN
-    DELETE FROM public.game_item_character_inbox_locations WHERE item_instance_id=s.item_instance_id
-      AND character_id=k.character_id AND ordinal=k.ordinal;
-    GET DIAGNOSTICS removed=ROW_COUNT;
-   ELSE
-    DELETE FROM public.game_item_character_depot_locations WHERE item_instance_id=s.item_instance_id
-      AND character_id=k.character_id AND ordinal=k.ordinal;
-    GET DIAGNOSTICS removed=ROW_COUNT;
-  END CASE;
-  IF removed<>1 THEN RAISE EXCEPTION 'temple scroll timer exact custody removal' USING ERRCODE='23514'; END IF;
-  SELECT convert_to(jsonb_build_object('receipt',to_jsonb(r),'schedule',to_jsonb(p))::text,'UTF8') INTO envelope
-    FROM public.game_spell_item_temporal_receipts r JOIN public.game_spell_item_temporal_schedules p USING(item_instance_id)
-   WHERE r.transaction_id=tx;
-  INSERT INTO public.game_spell_item_temporal_audit(event_id,transaction_id,envelope,envelope_sha256)
-   VALUES(ev,tx,envelope,sha256(envelope));
-  done:=done+1;
+     IF removed=0 THEN
+      DELETE FROM public.game_item_nested_entries WHERE item_instance_id=s.item_instance_id
+        AND parent_item_instance_id=s.parent AND placement_ordinal=s.ordinal;
+      GET DIAGNOSTICS removed=ROW_COUNT;
+     END IF;
+    WHEN 3 THEN
+     DELETE FROM public.game_character_equipment_slots WHERE item_instance_id=s.item_instance_id
+       AND character_id=s.character_id AND slot=s.slot;
+     GET DIAGNOSTICS removed=ROW_COUNT;
+     UPDATE public.game_character_equipment_state SET revision=revision+1,last_transaction_id=tx
+      WHERE character_id=s.character_id AND revision=s.equipment_revision;
+     IF NOT FOUND THEN RAISE EXCEPTION 'temple scroll timer equipment epoch' USING ERRCODE='23514'; END IF;
+    WHEN 4 THEN
+     DELETE FROM public.game_item_character_inbox_locations WHERE item_instance_id=s.item_instance_id
+       AND character_id=s.character_id AND ordinal=s.ordinal;
+     GET DIAGNOSTICS removed=ROW_COUNT;
+    WHEN 5 THEN
+     DELETE FROM public.game_item_character_depot_locations WHERE item_instance_id=s.item_instance_id
+       AND character_id=s.character_id AND ordinal=s.ordinal;
+     GET DIAGNOSTICS removed=ROW_COUNT;
+    WHEN 6 THEN
+     DELETE FROM public.game_item_house_interior_locations WHERE item_instance_id=s.item_instance_id
+       AND world_id=p_world AND stack_ordinal=s.ordinal;
+     GET DIAGNOSTICS removed=ROW_COUNT;
+     DELETE FROM public.game_item_house_reclaim_provenance WHERE item_instance_id=s.item_instance_id;
+    ELSE
+     DELETE FROM public.game_item_corpse_container_entries WHERE item_instance_id=s.item_instance_id
+       AND parent_item_instance_id=s.parent AND placement_ordinal=s.ordinal;
+     GET DIAGNOSTICS removed=ROW_COUNT;
+   END CASE;
+   IF removed<>1 THEN RAISE EXCEPTION 'temple scroll timer exact custody removal' USING ERRCODE='23514'; END IF;
+   SELECT convert_to(jsonb_build_object('receipt',to_jsonb(r),'schedule',to_jsonb(p))::text,'UTF8') INTO envelope
+     FROM public.game_spell_item_temporal_receipts r JOIN public.game_spell_item_temporal_schedules p USING(item_instance_id)
+    WHERE r.transaction_id=tx;
+   INSERT INTO public.game_spell_item_temporal_audit(event_id,transaction_id,envelope,envelope_sha256)
+    VALUES(ev,tx,envelope,sha256(envelope));
+   done:=done+1;
+  EXCEPTION WHEN check_violation OR unique_violation OR lock_not_available OR raise_exception THEN
+   NULL;
+  END;
  END LOOP;
  RETURN done;
 END $$;
@@ -390,7 +449,7 @@ BEGIN
    WHERE scroll_receipt.transaction_id=NEW.last_transaction_id
      AND scroll_receipt.item_instance_id=NEW.item_instance_id
      AND scroll_receipt.created_xact_id=pg_current_xact_id()
-     AND scroll_receipt.game_session_id IS NULL AND scroll_receipt.custody_kind IN(2,3,4,5)) THEN
+     AND scroll_receipt.game_session_id IS NULL AND scroll_receipt.custody_kind BETWEEN 2 AND 7) THEN
   PERFORM game_temple_scroll_capture(OLD,NEW.last_transaction_id);
   RETURN NEW;
  END IF;
@@ -401,7 +460,7 @@ $arm$;
  begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
  IF begin_at=0 THEN RAISE EXCEPTION 'missing Item timer outcome proof'; END IF;
  arm:=$arm$
- IF NEW.game_session_id IS NULL AND NEW.custody_kind IN(2,3,4,5) THEN
+ IF NEW.game_session_id IS NULL AND NEW.custody_kind BETWEEN 2 AND 7 THEN
   PERFORM game_temple_scroll_receipt_proven(NEW);
   RETURN NULL;
  END IF;
@@ -449,12 +508,44 @@ $arm$;
  END IF;
 $arm$;
  EXECUTE overlay(body placing E'BEGIN\n'||arm from begin_at for 5);
+
+ -- A House tile row and a corpse entry leave with their exact retired scroll.
+ body:=pg_get_functiondef('game_house_location_proven()'::regprocedure);
+ begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+ IF begin_at=0 THEN RAISE EXCEPTION 'missing House removal proof'; END IF;
+ arm:=$arm$
+ IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts r
+   JOIN game_spell_item_temporal_schedules p USING(item_instance_id)
+   JOIN game_item_instances i USING(item_instance_id)
+   WHERE r.custody_kind=6 AND r.item_instance_id=OLD.item_instance_id AND r.world_id=OLD.world_id
+     AND r.source_ordinal=OLD.stack_ordinal AND r.created_xact_id=pg_current_xact_id()
+     AND p.definition_production_key='oteryn:item.tibia.i25718' AND p.target_family IS NULL
+     AND i.last_transaction_id=r.transaction_id AND i.state_revision=r.state_revision_before+1
+     AND i.lifecycle=2 AND i.quantity=0) THEN RETURN NULL; END IF;
+$arm$;
+ EXECUTE overlay(body placing E'BEGIN\n'||arm from begin_at for 5);
+
+ body:=pg_get_functiondef('game_item_corpse_entry_removal_proven()'::regprocedure);
+ begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+ IF begin_at=0 THEN RAISE EXCEPTION 'missing corpse entry removal proof'; END IF;
+ arm:=$arm$
+ IF EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts r
+   JOIN game_spell_item_temporal_schedules p USING(item_instance_id)
+   JOIN game_item_instances i USING(item_instance_id)
+   WHERE r.custody_kind=7 AND r.item_instance_id=OLD.item_instance_id AND r.world_id=OLD.world_id
+     AND r.source_parent=OLD.parent_item_instance_id AND r.source_ordinal=OLD.placement_ordinal
+     AND r.created_xact_id=pg_current_xact_id()
+     AND p.definition_production_key='oteryn:item.tibia.i25718' AND p.target_family IS NULL
+     AND i.last_transaction_id=r.transaction_id AND i.state_revision=r.state_revision_before+1
+     AND i.lifecycle=2 AND i.quantity=0) THEN RETURN NULL; END IF;
+$arm$;
+ EXECUTE overlay(body placing E'BEGIN\n'||arm from begin_at for 5);
 END $migration$;
 
 REVOKE ALL ON FUNCTION game_temple_scroll_schedule_proven(game_spell_item_temporal_schedules),
  game_temple_scroll_moves(UUID),
  game_temple_scroll_custody(UUID),
- game_temple_scroll_owner_live(UUID),
+ game_temple_scroll_unattended(UUID,BOOLEAN),
  game_temple_scroll_capture(game_item_instances,UUID),
  game_temple_scroll_receipt_proven(game_spell_item_temporal_receipts),
  game_temple_scroll_expire_due(UUID,UUID,NUMERIC,INTEGER) FROM PUBLIC;

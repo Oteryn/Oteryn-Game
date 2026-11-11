@@ -4,7 +4,9 @@
 //! temple landing taken at commit rolls the burn back: the scroll is kept. A scroll past its
 //! seven-day deadline is refused with nothing written, and one Item deadline pass removes every
 //! due scroll wherever it is (carried, worn, in the Inbox, in a container in the Inbox, in a
-//! depot box), for an online or an offline Character: expiry applies in all custodies.
+//! depot box, on a House tile, in a corpse, in a container on Ground), for an online or an
+//! offline Character: expiry applies in all custodies. Due scrolls the session-bound pass owns
+//! never hold back the others.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
@@ -22,7 +24,14 @@ const DEPOT: u8 = 177;
 const PARCEL: u8 = 178;
 const NESTED: u8 = 179;
 const WORN: u8 = 180;
+const CORPSE: u8 = 181;
+const IN_CORPSE: u8 = 182;
+const GROUND_BAG: u8 = 183;
+const ON_GROUND: u8 = 184;
+const ON_TILE: u8 = 185;
+const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 const DUE: [u8; 5] = [OLD, INBOX, DEPOT, NESTED, WORN];
+const WORLD_DUE: [u8; 3] = [ON_TILE, IN_CORPSE, ON_GROUND];
 const START: MovementLocalPosition = MovementLocalPosition {
     x: 7,
     y: 0,
@@ -35,6 +44,7 @@ enum Case {
     LogoutBlock,
     Expired,
     Offline,
+    Backlog,
     NoLanding,
 }
 
@@ -70,6 +80,11 @@ fn temple_scroll_vanishes_through_the_item_deadline_owner() -> TestResult {
 #[test]
 fn temple_scroll_vanishes_in_every_custody_of_an_offline_character() -> TestResult {
     on_big_stack("temple_scroll_offline", Case::Offline)
+}
+
+#[test]
+fn temple_scroll_backlog_of_online_scrolls_never_holds_back_stored_ones() -> TestResult {
+    on_big_stack("temple_scroll_backlog", Case::Backlog)
 }
 
 fn on_big_stack(name: &'static str, case: Case) -> TestResult {
@@ -283,21 +298,53 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
             }
             Case::Offline => {
                 // The Character logs out with due scrolls carried, worn, in the Inbox, in a
-                // container in the Inbox and in a depot box. One pass removes each of them
-                // under no session; the fresh scroll stays.
+                // container in the Inbox and in a depot box; others lie on a House tile, in a
+                // corpse and in a backpack on Ground. One pass removes each of them under no
+                // session; the fresh scroll stays.
                 go_offline(&harness).await?;
                 owner.drain_source_item_deadlines().await;
-                for seed in DUE {
+                let due: Vec<u8> = DUE.into_iter().chain(WORLD_DUE).collect();
+                for seed in due.iter().copied() {
                     assert_eq!(item(seed).await?, (0, 2));
                 }
                 assert_eq!(item(FRESH).await?, (1, 1));
-                assert_eq!(custody(pool, &DUE).await?, (0, vec![2, 2, 3, 4, 5], 5, 0));
+                assert_eq!(
+                    custody(pool, &due).await?,
+                    (0, vec![2, 2, 2, 3, 4, 5, 6, 7], 8, 0)
+                );
+                let world: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_item_house_reclaim_provenance WHERE item_instance_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_spell_item_temporal_receipts WHERE character_id IS NULL AND custody_kind IN(2,6,7))")
+                    .bind(id(ON_TILE).as_slice())
+                    .fetch_one(pool)
+                    .await?;
+                assert_eq!(world, (0, 3));
                 let worn: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid), (SELECT revision::bigint FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid)")
                     .bind(id(41).as_slice())
                     .fetch_one(pool)
                     .await?;
                 assert_eq!(worn, (0, 2));
                 assert_eq!(uses().await?, (0, 0));
+            }
+            Case::Backlog => {
+                // 501 scrolls carried by the live Character fell due earlier than the stored
+                // ones. The session-less pass leaves them to the session-bound pass, and they
+                // never fill its window: a one-scroll pass still retires a stored scroll.
+                seed_backlog(&harness).await?;
+                let retired: i32 = sqlx::query_scalar("SELECT game_temple_scroll_expire_due(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1)")
+                    .bind(id(42).as_slice())
+                    .bind(id(43).as_slice())
+                    .fetch_one(pool)
+                    .await?;
+                assert_eq!(retired, 1);
+                let receipts: (i64, i64) = sqlx::query_as("SELECT count(*), count(*) FILTER (WHERE game_session_id IS NULL AND custody_kind IN(2,4,5)) FROM game_spell_item_temporal_receipts")
+                    .fetch_one(pool)
+                    .await?;
+                assert_eq!(receipts, (1, 1));
+                let live: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.definition_production_key=$2 AND i.lifecycle=1")
+                    .bind(id(41).as_slice())
+                    .bind(SCROLL)
+                    .fetch_one(pool)
+                    .await?;
+                assert_eq!(live, 503);
             }
         }
         eprintln!("{name}: cases executed");
@@ -316,7 +363,9 @@ async fn custody(pool: &sqlx::PgPool, seeds: &[u8]) -> TestResult<(i64, Vec<i16>
                    UNION ALL SELECT item_instance_id FROM game_item_nested_entries \
                    UNION ALL SELECT item_instance_id FROM game_character_equipment_slots \
                    UNION ALL SELECT item_instance_id FROM game_item_character_inbox_locations \
-                   UNION ALL SELECT item_instance_id FROM game_item_character_depot_locations)), \
+                   UNION ALL SELECT item_instance_id FROM game_item_character_depot_locations \
+                   UNION ALL SELECT item_instance_id FROM game_item_house_interior_locations \
+                   UNION ALL SELECT item_instance_id FROM game_item_corpse_container_entries)), \
                 (SELECT coalesce(array_agg(custody_kind ORDER BY custody_kind),'{}') \
                    FROM game_spell_item_temporal_receipts JOIN s USING(item_instance_id)), \
                 (SELECT count(*) FROM game_spell_item_temporal_receipts JOIN s USING(item_instance_id) \
@@ -350,12 +399,39 @@ async fn into_inbox(tx: &mut sqlx::PgConnection, seed: u8) -> TestResult {
     Ok(())
 }
 
+/// 501 more scrolls in the live Character's main backpack, each due two days ago.
+async fn seed_backlog(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "WITH s AS MATERIALIZED (SELECT g,game_character_uuid_v7() AS item FROM generate_series(1,501) g), \
+          i AS (INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) \
+                SELECT item,encode($1,'hex')::uuid,'Item',$3,'definition-r1',1,1,game_character_uuid_v7() FROM s), \
+          e AS (INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) \
+                SELECT encode($2,'hex')::uuid,encode($4,'hex')::uuid,item,encode($1,'hex')::uuid,100+g,game_character_uuid_v7() FROM s) \
+         INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) \
+         SELECT item,encode($5,'hex')::uuid,1,$6,floor(extract(epoch FROM clock_timestamp())*1000)::bigint-172800000,'Item',$3,'definition-r1',sha256(convert_to($3||'|definition-r1','UTF8')) FROM s",
+    )
+    .bind(id(42).as_slice())
+    .bind(id(41).as_slice())
+    .bind(SCROLL)
+    .bind(id(BAG).as_slice())
+    .bind(id(DELIVERY).as_slice())
+    .bind(crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_LIFETIME_MS)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
 /// One main backpack holding two scrolls, a scroll in the Character Inbox, a container in the
 /// Inbox holding a scroll and a scroll in depot box 1 of town 1 (and, for the offline case, a
-/// scroll in the left hand), each with its deadline on the Item deadline owner as the daily claim
-/// writes it: the carried fresh scroll is due in seven days less an hour, every other one was due
-/// a day ago.
-async fn seed_scrolls(h: &Harness, worn: bool) -> TestResult {
+/// scroll in the left hand, one on a House tile, one in a corpse on Ground and one in a backpack
+/// on Ground), each with its deadline on the Item deadline owner as the daily claim writes it: the
+/// carried fresh scroll is due in seven days less an hour, every other one was due a day ago.
+async fn seed_scrolls(h: &Harness, offline: bool) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -381,7 +457,19 @@ async fn seed_scrolls(h: &Harness, worn: bool) -> TestResult {
     into_inbox(&mut *tx, PARCEL).await?;
     let lifetime = crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_LIFETIME_MS;
     let mut scrolls = vec![(FRESH, lifetime - 3_600_000)];
-    scrolls.extend(DUE.into_iter().filter(|seed| worn || *seed != WORN).map(|seed| (seed, -86_400_000)));
+    scrolls.extend(DUE.into_iter().filter(|seed| offline || *seed != WORN).map(|seed| (seed, -86_400_000)));
+    if offline {
+        scrolls.extend(WORLD_DUE.map(|seed| (seed, -86_400_000)));
+        // A live corpse and a backpack lying on this Channel's Ground.
+        for (seed, key) in [(CORPSE, "oteryn:item.tibia.i4240"), (GROUND_BAG, "oteryn:item.tibia.i2854")] {
+            sqlx::raw_sql(sqlx::AssertSqlSafe(item(seed, key, 1)))
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,$4,'\\x01'::bytea,'map-r1','content-1','\\x01'::bytea,$5)")
+                .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice())
+                .bind(vec![seed, 0, 7]).bind(9_170_000 + i64::from(seed)).execute(&mut *tx).await?;
+        }
+    }
     for (seed, due_in_ms) in scrolls {
         sqlx::raw_sql(sqlx::AssertSqlSafe(item(seed, SCROLL, 1)))
             .execute(&mut *tx)
@@ -397,6 +485,20 @@ async fn seed_scrolls(h: &Harness, worn: bool) -> TestResult {
             NESTED => {
                 sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
                     .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(PARCEL).as_slice()).bind(id(247).as_slice()).execute(&mut *tx).await?;
+            }
+            ON_TILE => {
+                sqlx::query("INSERT INTO game_item_house_interior_locations VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,'\\x01'::bytea,1,encode($4,'hex')::uuid)")
+                    .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(id(187).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1)")
+                    .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).bind(id(187).as_slice()).execute(&mut *tx).await?;
+            }
+            IN_CORPSE => {
+                sqlx::query("INSERT INTO game_item_corpse_container_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+                    .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(CORPSE).as_slice()).bind(id(186).as_slice()).execute(&mut *tx).await?;
+            }
+            ON_GROUND => {
+                sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+                    .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(GROUND_BAG).as_slice()).bind(id(188).as_slice()).execute(&mut *tx).await?;
             }
             WORN => {
                 sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,6,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")

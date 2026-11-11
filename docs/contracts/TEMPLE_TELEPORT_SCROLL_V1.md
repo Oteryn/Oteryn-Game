@@ -106,10 +106,20 @@ third original source of that owner; no new clock, sweep or table is introduced.
   - Every other custody the scroll can occupy, through the one seam
     `game_temple_scroll_expire_due` (migration 2762) on the same pass, for this scroll only,
     under no session: the Character Inbox root (custody 4), a depot box or locker (custody 5,
-    the box's committed count decremented as a depot transfer does), a container rooted in
-    the Inbox (custody 2), and the carried tree (custody 2) and equipment (custody 3, the
+    the box's committed count decremented as a depot transfer does), a House floor tile
+    (custody 6, its reclaim provenance removed with it), a corpse lying on Ground (custody 7),
+    a container rooted in the Inbox, a depot, Ground, a House tile or a backpack dropped at
+    death (custody 2), and the carried tree (custody 2) and equipment (custody 3, the
     equipment revision advanced) of an offline Character. An offline Character's scroll does
-    not wait for login.
+    not wait for login. Ground-rooted custody (corpses, containers on Ground) is retired by the
+    pass of the Channel that owns that Ground.
+  - The seam's window holds only scrolls it may retire, earliest deadline first, so due scrolls
+    the session-bound removal owns never hold back stored, offline or world scrolls. A scroll
+    whose removal a native guard refuses at that moment (a House under disposition, a busy
+    lock) stays for the next pass without stopping the others.
+  - Bazaar custody is never changed: a due scroll in bazaar escrow, or of a Character locked for
+    a bazaar transfer, stays until the transfer completes or is cancelled, and the next pass
+    after that removes it through the offline-Character path.
   - The Supply Stash holds stackable balances only and refuses every scheduled Item, as do
     House containers and the market, so the scroll can never be in them.
 
@@ -129,12 +139,14 @@ Migration 2762 indexes daily lines by item instance; admits cause 481 in
 rule kept verbatim and widened); creates `game_temple_scroll_uses` with its stamp, its
 immutability and its deferred pairing checks; admits the scroll's schedule provenance in
 `game_spell_item_temporal_schedule_proven`, its movement in `game_item_loop_line_admit`,
-the session-less scroll receipt (custody 2, 3, 4, 5 with no session) in both receipt
-CHECKs, its predecessor capture in `game_spell_item_temporal_capture`, its outcome in
-`game_spell_item_temporal_receipt_proven` and the Inbox and depot row removals in
-`game_character_inbox_remove` and `game_character_depot_remove`, each as a prepended arm
-that keeps every previous arm; and creates the seam `game_temple_scroll_expire_due` with
-its custody resolver `game_temple_scroll_custody`.
+the session-less scroll receipt (custody 2 to 7 with no session; 2, 6 and 7 also without a
+Character) in both receipt CHECKs, its predecessor capture in
+`game_spell_item_temporal_capture`, its outcome in `game_spell_item_temporal_receipt_proven`
+and the Inbox, depot, House tile and corpse entry removals in `game_character_inbox_remove`,
+`game_character_depot_remove`, `game_house_location_proven` and
+`game_item_corpse_entry_removal_proven`, each as a prepended arm that keeps every previous
+arm; and creates the seam `game_temple_scroll_expire_due` with its custody resolver
+`game_temple_scroll_custody`.
 Applied migrations are immutable: a rollback is a successor migration that stops new
 writes (the dispatch branch, the claim's schedule insert and the INSERT grant) and keeps
 every record as evidence of a consumed or expired scroll.
@@ -154,5 +166,9 @@ under the session and the due scrolls in the Inbox, in a container in the Inbox 
 depot box under no session, receipt custody kinds 2, 2, 4 and 5, and removes their custody
 and the depot box count, while the fresh scroll stays and still teleports) and
 `temple_scroll_vanishes_in_every_custody_of_an_offline_character` (offline: one pass
-retires the due scrolls carried, worn, in the Inbox, in a container in the Inbox and in a
-depot box, receipt custody kinds 2, 2, 3, 4 and 5, all under no session).
+retires the due scrolls carried, worn, in the Inbox, in a container in the Inbox, in a depot
+box, on a House tile, in a corpse and in a backpack on Ground, receipt custody kinds 2, 2, 2,
+3, 4, 5, 6 and 7, all under no session) and
+`temple_scroll_backlog_of_online_scrolls_never_holds_back_stored_ones` (501 earlier-due
+scrolls carried by the live Character do not fill the seam's window: a one-scroll seam call
+retires a stored scroll and leaves them to the session-bound pass).
