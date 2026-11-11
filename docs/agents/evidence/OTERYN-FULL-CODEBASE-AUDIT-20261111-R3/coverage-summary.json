@@ -1,0 +1,19 @@
+{
+  "program": "OTERYN-FULL-CODEBASE-AUDIT",
+  "lane": "R3",
+  "audit_status": "IN_PROGRESS_NOT_COMPLETE",
+  "snapshot_commit": "2520d704c05f67d3f63c3637e62f8a8ae14fd304",
+  "snapshot_tree": "d47e916ad13ec17c4a235aad227f0e41abc3130d",
+  "review_checkpoint_utc": "2026-11-11T11:53:50.438383Z",
+  "tracked": 29759,
+  "FULL_FILE": 28203,
+  "UNREVIEWED_CURRENT_BLOB": 1554,
+  "SELECTED_RANGES": 2,
+  "modules_total": 78,
+  "module_reviewed": 73,
+  "module_in_progress": 5,
+  "module_verified": 0,
+  "qualification_errors": [],
+  "counts_only_valid_for_snapshot": true,
+  "all_scope_complete": false
+}
