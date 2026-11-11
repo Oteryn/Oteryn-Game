@@ -2,11 +2,118 @@ use super::*;
 #[path = "view/catalogue.rs"]
 mod catalogue;
 
-pub fn domain_name(domain: u8) -> &'static str {
-    [tr!("Green"), tr!("Red"), tr!("Purple"), tr!("Blue")]
-        .get(usize::from(domain))
-        .copied()
-        .unwrap_or(tr!("Unknown"))
+/// Gem Vessels are numbered slots; they carry no domain.
+pub fn vessel_name(slot: u8) -> String {
+    format!("Gem Vessel {}", u32::from(slot) + 1)
+}
+
+/// Text of a Gem Vessel perk node; each node grants a flat bonus and one vessel slot.
+pub fn vessel_node_perk(bonus: u32) -> String {
+    format!(
+        "Each node grants +{} Damage / Healing and unlocks a vessel in the Gem Atelier.",
+        bonus
+    )
+}
+
+/// Gem Vessel perk nodes are recognised by their name; the flat bonus is +1 per node.
+pub fn is_vessel_node(name: &str) -> bool {
+    name.to_ascii_lowercase().contains("gem vessel")
+}
+
+/// Mod Reshaping prices per mod position (1-3): gold, fragments, fragment kind.
+pub fn reshape_cost(position: usize) -> (u64, u32, &'static str) {
+    match position {
+        1 => (125_000, 1, "lesser"),
+        2 => (1_000_000, 2, "lesser"),
+        _ => (5_000_000, 3, "greater"),
+    }
+}
+
+/// 1-based position of the selected Workshop modifier inside the selected gem.
+pub fn reshape_position(panel: &WheelPanel, gem: &atelier::GemView) -> Option<usize> {
+    let (kind, id) = panel.modifier?;
+    gem.modifiers
+        .iter()
+        .enumerate()
+        .position(|(index, mod_id)| *mod_id == id && u8::from(index == 2) == kind)
+        .map(|index| index + 1)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReshapeBlock {
+    NotUnlocked,
+    NoModifier,
+    NotPremium,
+    NotInTemple,
+    Gold,
+    Fragments,
+}
+
+impl ReshapeBlock {
+    pub fn reason(self) -> &'static str {
+        match self {
+            Self::NotUnlocked => "The gem must be unlocked first",
+            Self::NoModifier => "Select a modifier of the gem first",
+            Self::NotPremium => "Your account must be Premium to reshape mods",
+            Self::NotInTemple => "You must be inside a temple to reshape mods",
+            Self::Gold => "You do not have enough gold at this position",
+            Self::Fragments => "You do not have enough fragments at this position",
+        }
+    }
+}
+
+/// Why Mod Reshaping is disabled for the selected gem, or `None` when it may be requested.
+pub fn reshape_block(panel: &WheelPanel, gem: &atelier::GemView) -> Option<ReshapeBlock> {
+    if gem.modifiers.is_empty() {
+        return Some(ReshapeBlock::NotUnlocked);
+    }
+    let position = reshape_position(panel, gem)?;
+    if panel.premium != Some(true) {
+        return Some(ReshapeBlock::NotPremium);
+    }
+    if panel.in_temple != Some(true) {
+        return Some(ReshapeBlock::NotInTemple);
+    }
+    let (gold, fragments, kind) = reshape_cost(position);
+    let resources = panel.confirmed_resources.as_ref()?;
+    if resources.carried_gold.saturating_add(resources.bank_gold) < gold {
+        return Some(ReshapeBlock::Gold);
+    }
+    let owned = if kind == "lesser" {
+        resources.basic_fragments
+    } else {
+        resources.supreme_fragments
+    };
+    (u64::from(owned) < u64::from(fragments)).then_some(ReshapeBlock::Fragments)
+}
+
+/// Fragment Workshop totals: +5 Health, Mana and Capacity per unlocked mod grade, one
+/// Promotion Point per fully enhanced mod (Grade IV), and Revelation Mastery mods.
+pub fn workshop_lines(panel: &WheelPanel) -> Vec<String> {
+    let Some(atelier) = &panel.confirmed_atelier else {
+        return Vec::new();
+    };
+    let unlocked: u32 = atelier.grades.iter().map(|g| u32::from(g.grade)).sum();
+    let promotion = atelier.grades.iter().filter(|g| g.grade >= 3).count();
+    let mut lines = vec![
+        format!(
+            "Fragment Workshop: +{} Health, Mana and Capacity (+5 for each mod grade unlocked).",
+            5 * unlocked
+        ),
+        format!(
+            "Promotion Points: {} (one promotion point for each fully enhanced mod).",
+            promotion
+        ),
+    ];
+    for grade in atelier.grades.iter().filter(|g| {
+        g.kind == 1 && catalogue::modifier_name(g.kind, g.mod_id).starts_with("Revelation Mastery")
+    }) {
+        lines.push(format!(
+            "{}: gain additional promotion points towards unlocking the related Revelation perk.",
+            modifier_label(panel, grade.kind, grade.mod_id)
+        ));
+    }
+    lines
 }
 
 fn quality_name(quality: u8) -> &'static str {
@@ -24,10 +131,9 @@ pub fn slot_label(panel: &WheelPanel, slot: usize) -> String {
     let Some(capacity) = SLOT_CAPACITIES.get(slot) else {
         return String::new();
     };
-    lfmt!(
-        "Slot {:02} · {} · {} / {}",
+    format!(
+        "Slot {:02} · {} / {}",
         slot + 1,
-        domain_name(SLOT_DOMAINS[slot]),
         panel.points[slot],
         capacity
     )
@@ -35,8 +141,7 @@ pub fn slot_label(panel: &WheelPanel, slot: usize) -> String {
 
 pub fn gem_label(gem: &atelier::GemView) -> String {
     format!(
-        "{} {} gem {:02X}{:02X}{}{}",
-        domain_name(gem.domain),
+        "{} gem {:02X}{:02X}{}{}",
         quality_name(gem.quality),
         gem.id[14],
         gem.id[15],
@@ -88,7 +193,7 @@ pub fn panel_text(panel: &WheelPanel) -> String {
         draft = draft
     ));
     lines.push(tr!("Save Wheel applies point and vessel edits together. Refresh discards unsaved edits. Removing points or resetting is blocked while you are in a fight (PZ lock).").into());
-    for (domain, gem) in panel.vessels.iter().enumerate() {
+    for (slot, gem) in panel.vessels.iter().enumerate() {
         let name = gem
             .and_then(|id| {
                 panel
@@ -99,7 +204,19 @@ pub fn panel_text(panel: &WheelPanel) -> String {
                     .find(|gem| gem.id == id)
             })
             .map_or_else(|| tr!("Empty").into(), gem_label);
-        lines.push(format!("{} vessel: {name}", domain_name(domain as u8)));
+        lines.push(format!("{}: {name}", vessel_name(slot as u8)));
+    }
+    if panel.vessels.get(usize::from(panel.vessel_slot)) == Some(&None) {
+        lines.push("Select a Vessel to Modify Gems".into());
+    }
+    if let Some(atelier) = &panel.confirmed_atelier
+        && panel.vessels.iter().any(Option::is_none)
+        && atelier
+            .gems
+            .iter()
+            .any(|gem| !panel.vessels.contains(&Some(gem.id)))
+    {
+        lines.push("Empty vessel slots are available in the Gem Atelier.".into());
     }
     if let Some(atelier) = &panel.confirmed_atelier {
         if let Some(resources) = &panel.confirmed_resources {
@@ -137,10 +254,9 @@ pub fn panel_text(panel: &WheelPanel) -> String {
                 .iter()
                 .find(|quote| quote.quality == gem.quality)
         {
-            lines.push(lfmt!(
-                "Selected: {}. Switch domain: {} gold. Dismantle: {}–{} {} fragments.",
+            lines.push(format!(
+                "Selected: {}. Dismantle: {}–{} {} fragments.",
                 gem_label(gem),
-                quote.switch_gold,
                 quote.fragment_min,
                 quote.fragment_max,
                 fragment_name(quote.fragment_kind)
@@ -157,6 +273,23 @@ pub fn panel_text(panel: &WheelPanel) -> String {
                 .collect::<Vec<_>>();
             lines.push(lfmt!("Selected gem modifiers: {}.", modifiers.join("; ")));
         }
+        if let Some(gem) = panel.selected_gem()
+            && let Some(position) = reshape_position(panel, gem)
+        {
+            let (gold, fragments, kind) = reshape_cost(position);
+            lines.push(format!("Reshaping a gem's mods lets you randomly re-roll each mod of the gem. Reshape position {}: {} gold and {} {} fragments.",
+                position,
+                gold,
+                fragments,
+                kind
+            ));
+        }
+        if let Some(gem) = panel.selected_gem()
+            && let Some(block) = reshape_block(panel, gem)
+        {
+            lines.push(format!("Mod Reshaping unavailable: {}.", block.reason()));
+        }
+        lines.extend(workshop_lines(panel));
         if let Some((kind, mod_id)) = panel.modifier {
             let grade = panel.grade(kind, mod_id);
             if let Some(quote) = atelier

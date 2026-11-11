@@ -38,7 +38,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             gems,
             modifiers,
             quality,
-            domain,
+            vessel,
             ..
         } = controls;
         let mut held: Option<WheelPanel> = None;
@@ -110,11 +110,11 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                         }
                         None
                     }
-                    DOMAIN => {
+                    VESSEL => {
                         if let Ok(value @ 0..=3) =
-                            u8::try_from(SendMessageW(domain, CB_GETCURSEL, 0, 0))
+                            u8::try_from(SendMessageW(vessel, CB_GETCURSEL, 0, 0))
                         {
-                            mailbox.wheel.domain = value;
+                            mailbox.wheel.vessel_slot = value;
                         }
                         None
                     }
@@ -146,7 +146,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     REFRESH => Some(Intent::Refresh),
                     REVEAL => Some(Intent::Reveal),
                     LOCK => Some(Intent::ToggleLock),
-                    SWITCH => Some(Intent::SwitchDomain),
+                    RESHAPE => Some(Intent::Reshape),
                     DISMANTLE => Some(Intent::Dismantle),
                     GRADE => Some(Intent::GradeUp),
                     RETRY => Some(Intent::Retry),

@@ -31,8 +31,12 @@ pub struct WheelPanel {
     pub slot: usize,
     pub gem: Option<[u8; 16]>,
     pub modifier: Option<(u8, u16)>,
-    pub domain: u8,
+    /// Selected Gem Vessel slot (0-based). Gems have no domain; any gem of a vessel's quality fits.
+    pub vessel_slot: u8,
     pub quality: u8,
+    /// Mod Reshaping context. `None` until the server reports it, which keeps Reshape disabled.
+    pub in_temple: Option<bool>,
+    pub premium: Option<bool>,
     pub pending: Option<WheelCommand>,
     /// Exact logical occurrence and expected revision survive an indeterminate response.
     pub retry: Option<WheelCommand>,
@@ -59,8 +63,10 @@ impl Default for WheelPanel {
             slot: 14,
             gem: None,
             modifier: None,
-            domain: 0,
+            vessel_slot: 0,
             quality: 0,
+            in_temple: None,
+            premium: None,
             pending: None,
             retry: None,
             feedback: None,
@@ -124,6 +130,7 @@ impl WheelPanel {
             .map_or(0, |grade| grade.grade)
     }
 
+    /// The wire still reports a vessel's slot index in the gem's legacy `domain` field.
     pub fn confirmed_vessels(&self) -> Option<wheel::WheelVessels> {
         let mut vessels = [None; 4];
         for gem in &self.confirmed_atelier.as_ref()?.gems {
@@ -167,11 +174,18 @@ impl WheelPanel {
         let Some(gem) = self.selected_gem() else {
             return false;
         };
-        let (domain, id) = (usize::from(gem.domain), gem.id);
-        let Some(vessel) = self.vessels.get_mut(domain) else {
+        let id = gem.id;
+        // Replace Vessel: the chosen slot takes the gem, whatever it held before.
+        let slot = usize::from(self.vessel_slot);
+        if slot >= self.vessels.len() {
             return false;
-        };
-        *vessel = Some(id);
+        }
+        for vessel in &mut self.vessels {
+            if *vessel == Some(id) {
+                *vessel = None;
+            }
+        }
+        self.vessels[slot] = Some(id);
         self.feedback = Some(tr!("Vessel change is pending; press Save Wheel"));
         true
     }
@@ -180,7 +194,7 @@ impl WheelPanel {
         if !self.ready() {
             return false;
         }
-        let Some(vessel) = self.vessels.get_mut(usize::from(self.domain)) else {
+        let Some(vessel) = self.vessels.get_mut(usize::from(self.vessel_slot)) else {
             return false;
         };
         *vessel = None;

@@ -8,7 +8,7 @@ pub(super) struct Controls {
     pub(super) modifiers: HWND,
     pub(super) quality: HWND,
     pub(super) lock_button: HWND,
-    pub(super) domain: HWND,
+    pub(super) vessel: HWND,
     pub(super) description: HWND,
 }
 pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
@@ -109,8 +109,8 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         let switch = control(
             hwnd,
             "BUTTON",
-            tr!("Switch domain"),
-            SWITCH,
+            "Reshape mod",
+            RESHAPE,
             [830, 346, 130, 28],
             WS_TABSTOP,
         );
@@ -130,18 +130,18 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
             [690, 414, 270, 28],
             WS_TABSTOP,
         );
-        let domain = control(
+        let vessel = control(
             hwnd,
             "COMBOBOX",
             "",
-            DOMAIN,
+            VESSEL,
             [10, 455, 300, 200],
             combo_style,
         );
         let socket = control(
             hwnd,
             "BUTTON",
-            tr!("Socket selected gem"),
+            "Replace Vessel",
             SOCKET,
             [330, 455, 165, 28],
             WS_TABSTOP,
@@ -199,7 +199,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
             dismantle,
             grade,
             presets,
-            domain,
+            vessel,
             socket,
             unsocket,
             refresh,
@@ -216,10 +216,10 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         }
         for value in 0..4 {
             SendMessageW(
-                domain,
+                vessel,
                 CB_ADDSTRING,
                 0,
-                wide(&format!("{} vessel", domain_name(value))).as_ptr() as isize,
+                wide(&vessel_name(value)).as_ptr() as isize,
             );
         }
         Some(Controls {
@@ -228,7 +228,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
             gems,
             modifiers,
             quality,
-            domain,
+            vessel,
             lock_button,
             description,
         })

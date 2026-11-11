@@ -261,24 +261,22 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
                 assert!(link.wheel_panel().selected_gem().ok_or("gem")?.locked);
                 link.wheel_request(Intent::ToggleLock);
                 ready(&link, Some((6, 6))).await?;
-                link.wheel_request(Intent::SwitchDomain);
+                // Mod Reshaping stays disabled until the server reports temple and Premium state.
+                link.wheel_request(Intent::Reshape);
                 assert!(link.wheel_panel().pending.is_none());
-                assert!(link.wheel_panel().gems.review.is_some());
-                link.gem_confirm();
-                ready(&link, Some((6, 7))).await?;
-                assert_eq!(link.wheel_panel().selected_gem().ok_or("gem")?.domain, 1);
+                assert!(link.wheel_panel().gems.review.is_none());
                 crate::play::mailbox::lock(&link.mailbox).wheel.modifier = Some((1, 5));
                 link.wheel_request(Intent::GradeUp);
                 assert!(link.wheel_panel().pending.is_none());
                 assert!(link.wheel_panel().gems.review.is_some());
                 link.gem_confirm();
-                ready(&link, Some((6, 8))).await?;
+                ready(&link, Some((6, 7))).await?;
                 assert_eq!(link.wheel_panel().grade(1, 5), 1);
                 link.wheel_request(Intent::Reveal);
                 assert!(link.wheel_panel().pending.is_none());
                 assert!(link.wheel_panel().gems.review.is_some());
                 link.gem_confirm();
-                ready(&link, Some((6, 9))).await?;
+                ready(&link, Some((6, 8))).await?;
                 assert_eq!(
                     link.wheel_panel()
                         .confirmed_atelier
@@ -292,10 +290,10 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
                 assert!(link.wheel_panel().pending.is_none());
                 assert!(link.wheel_panel().gems.review.is_some());
                 link.gem_confirm();
-                ready(&link, Some((6, 10))).await?;
+                ready(&link, Some((6, 9))).await?;
                 assert_eq!(link.wheel_panel().gem, Some([18; 16]));
                 link.wheel_request(Intent::Reset);
-                ready(&link, Some((7, 10))).await?;
+                ready(&link, Some((7, 9))).await?;
                 assert_eq!(link.wheel_panel().points, [0; 36]);
                 let recorded = commands
                     .lock()

@@ -10,7 +10,7 @@ pub enum Intent {
     Reset,
     Reveal,
     ToggleLock,
-    SwitchDomain,
+    Reshape,
     Dismantle,
     GradeUp,
     Retry,
@@ -112,12 +112,20 @@ fn prepare(
             return WheelCommand::new(atelier::COMMAND_TYPE_ATELIER_SET_LOCK, payload)
                 .ok_or(tr!("Gem lock change could not be sent"));
         }
-        Intent::SwitchDomain | Intent::Dismantle => {
+        Intent::Reshape => {
+            let gem = panel.selected_gem().ok_or(tr!("Select a gem first"))?;
+            if let Some(block) = super::reshape_block(panel, gem) {
+                return Err(block.reason());
+            }
+            // WIRE NEEDED: the Atelier mutate message has no Reshape action yet.
+            return Err("Mod Reshaping is not offered by this server yet");
+        }
+        Intent::Dismantle => {
             let gem = panel.selected_gem().ok_or(tr!("Select a gem first"))?;
             if gem.vessel {
                 return Err(tr!("Remove the gem from its vessel and save first"));
             }
-            if intent == Intent::Dismantle && gem.locked {
+            if gem.locked {
                 return Err(tr!("Unlock the gem first"));
             }
             atelier
@@ -125,11 +133,7 @@ fn prepare(
                 .iter()
                 .find(|quote| quote.quality == gem.quality)
                 .ok_or(tr!("Refresh current Atelier prices first"))?;
-            if intent == Intent::SwitchDomain {
-                atelier::Mutation::SwitchDomain { gem: gem.id }
-            } else {
-                atelier::Mutation::Dismantle { gem: gem.id }
-            }
+            atelier::Mutation::Dismantle { gem: gem.id }
         }
         Intent::GradeUp => {
             let (kind, mod_id) = panel
