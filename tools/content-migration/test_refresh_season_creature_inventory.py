@@ -59,6 +59,9 @@ class SeasonalInventory(unittest.TestCase):
 
     def test_tree_projection_preserves_source_closure(self):
         rows, index = self._rows_with_source_authoring(canonical=True)
+        profile = rows[index]['authoring']['profile']
+        self.assertNotIn('immunities', profile)
+        self.assertIsNone(profile['details']['reference_level'])
         before = copy.deepcopy(rows[index])
         native, = [row for row in self.native
                    if row['profile']['target']['key'] == 'oteryn:creature.thaian']
@@ -83,7 +86,9 @@ class SeasonalInventory(unittest.TestCase):
 
     def test_nondefault_canonical_fields_are_not_normalized_away(self):
         for canonical in (False, True):
-            for field, value in (('immunities', ['fire']), ('reference_level', 1)):
+            for field, value in (('immunities', ['fire']), ('immunities', None),
+                                 ('immunities', 'fire'), ('reference_level', 1),
+                                 ('reference_level', False), ('reference_level', [])):
                 with self.subTest(canonical=canonical, field=field):
                     rows, index = self._rows_with_source_authoring(canonical=canonical)
                     profile = rows[index]['authoring']['profile']
@@ -155,6 +160,16 @@ class SeasonalInventory(unittest.TestCase):
             'native': [row for row in self.native
                        if row['profile']['target']['key'] == 'oteryn:creature.thaian'],
         })
+
+    def test_native_behavior_remains_raw_source_exact(self):
+        rows, _ = self._rows_with_source_authoring(canonical=True)
+        native = list(self.native)
+        index = next(i for i, row in enumerate(native)
+                     if row['profile']['target']['key'] == 'oteryn:creature.thaian')
+        native[index] = copy.deepcopy(native[index])
+        native[index]['behavior']['data']['profile']['attacks'][0]['interval_ms'] += 1
+        with self.assertRaisesRegex(ValueError, 'Thaian source authoring closure'):
+            inventory.validate_inventory(self.root, rows, native, self.schedules)
 
 
 if __name__ == '__main__':

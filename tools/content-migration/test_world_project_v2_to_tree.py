@@ -498,6 +498,7 @@ schedule_check(
         "test_equipment_source_overlaps",
         "test_equipment_known_speed_pin",
         "test_refresh_equipment_profile_pin",
+        "test_refresh_season_creature_inventory",
         "test_m42_cooking_canonical",
         "test_quest_batch3_item_profiles",
         "test_questpc7_merge_audit_callbacks",
