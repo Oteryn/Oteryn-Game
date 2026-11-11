@@ -484,7 +484,7 @@ schedule_check(
     check=True,
 )
 
-# Import complete modules for corpse, yield, NPC custody and cohort overlap checks.
+# Import complete modules for corpse, yield, NPC custody, overlap and speed checks.
 schedule_check(
     [
         sys.executable,
@@ -495,6 +495,7 @@ schedule_check(
         "test_boss_reward_yield_profiles",
         "test_authored_npc_item_profiles",
         "test_equipment_source_overlaps",
+        "test_equipment_known_speed_pin",
     ],
     cwd=ROOT / "tools/content-migration",
     check=True,

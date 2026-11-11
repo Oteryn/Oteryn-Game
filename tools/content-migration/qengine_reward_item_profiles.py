@@ -23,6 +23,8 @@ IDS = {21897, 21898, 21899, 21901, 21902, 21905, 21906, 30168, 30169, 37002, 370
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
 # M51 arena trophy custody is qualified from the same pinned physical sources.
 CUSTODY_PROMOTIONS = {5805, 5806}
+# These three source-qualified zero speeds already belong to the native owner.
+SOURCE_KNOWN_SPEED_IDS = frozenset({2833, 5805, 5806})
 # M12 selected daily harvest: existing Juicy Roots identity, exact portable facts.
 IDS |= {21291}
 # M13: source-pinned carried Guardcatcher and each Perfume Gatherer stage.
@@ -112,6 +114,51 @@ def reconcile_active_physical(existing, record):
     existing['semantics']['physical']['value']['weight']=after.copy()
 
 
+def _source_known_speed(item_id, speed, prior=None):
+    if item_id not in SOURCE_KNOWN_SPEED_IDS:
+        return None
+    if type(speed) is not int or speed != 0:
+        raise ValueError('QENGINE_REWARD_ITEM_KNOWN_SPEED_SOURCE')
+    previous = prior.get('attributes', {}).get('speed_bonus') if prior is not None else None
+    if previous is not None and (type(previous) is not int or previous != speed):
+        raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:attributes.speed_bonus')
+    return speed
+
+
+def _known_speed_identity(record):
+    definition = record.get('production_definition') or {}
+    binding = record.get('production_binding') or {}
+    binding_target = binding.get('target') or {}
+    item_id = next((item_id for item_id in SOURCE_KNOWN_SPEED_IDS
+                    if definition.get('production_key') == f'oteryn:item.tibia.i{item_id}'
+                    or binding.get('external_id') == str(item_id)
+                    or binding_target.get('key') == f'oteryn:item.tibia.i{item_id}'), None)
+    if item_id is None:
+        return None
+    key = f'oteryn:item.tibia.i{item_id}'
+    target = dict(family='Item', key=key, revision='definition-r1')
+    if (definition != dict(family='Item', production_key=key, revision_ref='definition-r1')
+            or binding.get('disposition') != 'EXACT'
+            or binding.get('external_id') != str(item_id)
+            or binding.get('identity_namespace') != 'ots/item_server_id'
+            or binding.get('source_key') != 'oteryn:source.crystalserver'
+            or binding.get('source_revision') != 'ff7ede593c69d4c658b382c97443e8155926924a'
+            or binding.get('target') != target):
+        raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:known_speed_identity')
+    return item_id
+
+
+def _admitted_known_speed(record, prior):
+    item_id = _known_speed_identity(record)
+    if item_id is None:
+        return None
+    if prior is not None:
+        for field in ('production_definition', 'production_binding'):
+            if prior.get(field) != record[field]:
+                raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:' + field)
+    return _source_known_speed(item_id, record.get('attributes', {}).get('speed_bonus'), prior)
+
+
 def capture(root=ROOT, ids=None, *, item_ids=None):
     if item_ids is not None:
         if ids is not None:
@@ -146,6 +193,8 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):
             raise ValueError('QENGINE_REWARD_ITEM_FLUID_OWNER_REQUIRED')
         record=source.profile(item_id,node,objects[item_id],physical[item_id],bindings,None)
+        known_speed = _source_known_speed(item_id, record['attributes'].get('speed_bonus'),
+                                         admitted.get(f'oteryn:item.tibia.i{item_id}'))
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
         reconcile_canonical_physical(item_id,definition,record)
         if flower:
@@ -176,6 +225,8 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
             # physical qualification cannot invent an owner's unknown mechanic.
             import questpc7_physical_custody_join
             record=questpc7_physical_custody_join.observation(prior,record,accepted.accepted_first)
+        if known_speed is not None:
+            record['attributes']['speed_bonus'] = known_speed
         records.append(record)
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,selected)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
@@ -231,9 +282,12 @@ def admit(root,generated,profile_path,manifest_path,order,canonical):
 def admit_records(root,generated,profile_path,manifest_path,order,canonical,records):
     """Merge qualified physical profiles while preserving existing native owners."""
     document=json.loads(generated[profile_path])
+    for existing in document['records']:
+        _known_speed_identity(existing)
     present={r['production_definition']['production_key']:r for r in document['records']}
     for record in records:
         key=record['production_definition']['production_key']
+        known_speed = _admitted_known_speed(record, present.get(key))
         if key in present:
             prior = present[key]
             inert = prior['admission'] == {
@@ -251,6 +305,8 @@ def admit_records(root,generated,profile_path,manifest_path,order,canonical,reco
             questpc7_quest_item_reconcile.preserve(prior, record)
             import questpc7_physical_custody_join
             physical = questpc7_physical_custody_join.observation(prior, record, accepted.accepted_first)
+            if known_speed is not None:
+                physical['attributes']['speed_bonus'] = known_speed
             merged = reconcile(prior, physical)
             present[key].clear()
             present[key].update(merged)
