@@ -274,7 +274,7 @@
     },
     {
       "path": "components248/crosswalk.json",
-      "sha256": "fa2cffd995f22c0bdbad99a55cc7180d7d8cce9456fe8312f70cd4e24699f89f"
+      "sha256": "baa7d71c6d5bdaf6a49c0b0ee23e50c8d20bddef35bc25d449aaf0e5f544efc3"
     },
     {
       "path": "components248/dialogue.json.gz",
@@ -282,7 +282,7 @@
     },
     {
       "path": "components248/summary.json",
-      "sha256": "8227e21eaa16244da4feba820c0de20ad737e8142541e831f150c233b6933cb2"
+      "sha256": "e17a7ffcbd616ea61c41298ddd1060e5e4abd3db2868ee73b33374e82956a2fb"
     },
     {
       "path": "refinements/conditions.json",
