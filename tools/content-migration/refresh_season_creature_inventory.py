@@ -23,14 +23,16 @@ def validate_inventory(root, rows, native, schedules):
     key = 'oteryn:creature.thaian'
     canonical = [row for row in rows if row['definition']['identity']['key'] == key]
     active = [row for row in native if row['profile']['target']['key'] == key]
-    # The typed World writer omits only the source's empty immunities and
-    # null reference level. Retain both complete source representations;
+    # The typed World writer omits empty immunities and null reference level;
+    # the tree converter restores only the null level. Retain all three forms.
     # the native source profile and behavior must remain raw-exact.
     canonical_authoring = cake.source_profile(profiles['Creature'])['data']
+    converted_authoring = cake.source_profile(profiles['Creature'])['data']
+    converted_authoring['profile']['details'].setdefault('reference_level', None)
     if (len(canonical) != 1 or len(active) != 1
             or canonical[0]['definition'] != records['Creature']
             or canonical[0]['authoring'] not in (
-                profiles['Creature']['data'], canonical_authoring)
+                profiles['Creature']['data'], canonical_authoring, converted_authoring)
             or active[0]['profile'] != profiles['Creature']
             or active[0]['behavior'] != profiles['Behavior']):
         raise ValueError('Thaian source authoring closure: ' + json.dumps({
@@ -39,7 +41,7 @@ def validate_inventory(root, rows, native, schedules):
             'expected': {
                 'definition': records['Creature'],
                 'canonical_authoring_forms': [
-                    profiles['Creature']['data'], canonical_authoring],
+                    profiles['Creature']['data'], canonical_authoring, converted_authoring],
                 'native_profile': profiles['Creature'],
                 'native_behavior': profiles['Behavior'],
             },

@@ -71,19 +71,18 @@ class SeasonalInventory(unittest.TestCase):
         self.assertEqual(native['profile']['data']['profile']['immunities'], [])
         self.assertIsNone(native['profile']['data']['profile']['details']['reference_level'])
 
-    def test_partial_canonical_default_omissions_are_rejected(self):
-        for field in ('immunities', 'reference_level'):
-            with self.subTest(field=field):
-                rows, index = self._rows_with_source_authoring(canonical=False)
-                profile = rows[index]['authoring']['profile']
-                del (profile if field == 'immunities' else profile['details'])[field]
-                with self.assertRaisesRegex(ValueError, 'Thaian source authoring closure'):
-                    inventory.validate_inventory(
-                        self.root, rows, self.native, self.schedules)
+    def test_partial_reference_level_omission_is_rejected(self):
+        rows, index = self._rows_with_source_authoring(canonical=False)
+        del rows[index]['authoring']['profile']['details']['reference_level']
+        with self.assertRaisesRegex(ValueError, 'Thaian source authoring closure'):
+            inventory.validate_inventory(
+                self.root, rows, self.native, self.schedules)
 
     def test_nondefault_canonical_fields_are_not_normalized_away(self):
         for canonical in (False, True):
-            for field, value in (('immunities', ['fire']), ('reference_level', 1)):
+            for field, value in (('immunities', ['fire']), ('immunities', None),
+                                 ('immunities', 'fire'), ('reference_level', 1),
+                                 ('reference_level', False), ('reference_level', [])):
                 with self.subTest(canonical=canonical, field=field):
                     rows, index = self._rows_with_source_authoring(canonical=canonical)
                     profile = rows[index]['authoring']['profile']
@@ -130,6 +129,8 @@ class SeasonalInventory(unittest.TestCase):
         packet = json.loads((self.root / PACKET).read_bytes())
         rows, index = self._rows_with_source_authoring(canonical=True)
         expected_canonical = copy.deepcopy(rows[index]['authoring'])
+        expected_converted = copy.deepcopy(expected_canonical)
+        expected_converted['profile']['details'].setdefault('reference_level', None)
         rows[index]['authoring']['profile']['health'] += 1
         messages = []
         for _ in range(2):
@@ -146,7 +147,7 @@ class SeasonalInventory(unittest.TestCase):
         self.assertEqual(payload['expected'], {
             'definition': source_records['Creature'],
             'canonical_authoring_forms': [
-                source_profiles['Creature']['data'], expected_canonical],
+                source_profiles['Creature']['data'], expected_canonical, expected_converted],
             'native_profile': source_profiles['Creature'],
             'native_behavior': source_profiles['Behavior'],
         })
@@ -155,6 +156,27 @@ class SeasonalInventory(unittest.TestCase):
             'native': [row for row in self.native
                        if row['profile']['target']['key'] == 'oteryn:creature.thaian'],
         })
+
+    def test_tree_converter_restores_only_null_reference_level(self):
+        rows, index = self._rows_with_source_authoring(canonical=True)
+        profile = rows[index]['authoring']['profile']
+        profile['details'].setdefault('reference_level', None)
+        self.assertNotIn('immunities', profile)
+        self.assertIsNone(profile['details']['reference_level'])
+        before = copy.deepcopy(rows[index])
+        self.assertEqual(inventory.validate_inventory(
+            self.root, rows, self.native, self.schedules), 1)
+        self.assertEqual(rows[index], before)
+
+    def test_native_behavior_remains_raw_source_exact(self):
+        rows, _ = self._rows_with_source_authoring(canonical=True)
+        native = list(self.native)
+        index = next(i for i, row in enumerate(native)
+                     if row['profile']['target']['key'] == 'oteryn:creature.thaian')
+        native[index] = copy.deepcopy(native[index])
+        native[index]['behavior']['data']['profile']['attacks'][0]['interval_ms'] += 1
+        with self.assertRaisesRegex(ValueError, 'Thaian source authoring closure'):
+            inventory.validate_inventory(self.root, rows, native, self.schedules)
 
 
 if __name__ == '__main__':
