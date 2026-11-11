@@ -494,7 +494,7 @@ fn scenario() -> TestResult {
         migration_reapplication(&h).await?;
         // Reapplying 0314 restores a receipt kind list without RESHAPE, so Mod
         // Reshaping history is written only after the last reapplication.
-        reshape::exercise(&mut owner, &h).await?;
+        reshape::exercise(&mut owner, &h, &admitted).await?;
         drop(restarted);
         drop(owner);
         drop(authority);

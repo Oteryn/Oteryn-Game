@@ -35,6 +35,10 @@ pub struct AtelierResources<'a> {
     pub content: &'a dyn super::item_loop_move::ItemLoopContent,
     pub coins: super::item_fee_burn::FeeChangeFacts,
     pub fragment: super::item_mint::TypedDefinitionRef,
+    /// The character stands at a depot locker, so its Supply Stash is open. Only Mod
+    /// Reshaping reads it: carried fragments first, then the stash pays the remainder.
+    /// Grade Up keeps its unconditional stash remainder; Reveal never reaches the stash.
+    pub supply_stash: bool,
 }
 impl std::fmt::Debug for AtelierResources<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -34,6 +34,7 @@ pub(super) async fn exercise(
         content: &content,
         coins: fee_request(2, 1)?.change,
         fragment: definition("oteryn:item.tibia.i46625"),
+        supply_stash: false,
     });
     let session = crate::bestiary_postgres_harness::fence(1)?.game_session_id;
     let mut requests = Vec::new();
@@ -396,6 +397,7 @@ pub(super) async fn exercise(
                 content: &content,
                 coins: fee_request(3, 1)?.change,
                 fragment: definition("oteryn:item.tibia.i46626"),
+                supply_stash: false,
             })),
         };
         advance_ex_action(owner)?;
@@ -435,6 +437,7 @@ pub(super) async fn exercise(
             content: &content,
             coins: fee_request(4, 1)?.change,
             fragment: definition("oteryn:item.tibia.i46626"),
+            supply_stash: false,
         })),
     };
     advance_ex_action(owner)?;

@@ -10,7 +10,7 @@ ALTER TABLE game_character_atelier_receipts DROP CONSTRAINT IF EXISTS game_chara
 ALTER TABLE game_character_atelier_receipts ADD CONSTRAINT game_character_atelier_receipts_kind_check
  CHECK(kind IN ('GEM_INIT','SET_LOCK','REVEAL','SWITCH_DOMAIN','DISMANTLE','GRADE_UP','RESHAPE'));
 
--- Reshape burns carried fragments only; the Supply Stash remainder stays a Grade Up source.
+-- Reshape burns carried fragments first; at a depot the Supply Stash pays the remainder.
 ALTER TABLE game_atelier_item_records DROP CONSTRAINT IF EXISTS game_atelier_item_records_cause_check;
 ALTER TABLE game_atelier_item_records ADD CONSTRAINT game_atelier_item_records_cause_check
  CHECK(cause IN ('REVEAL','DISMANTLE','GRADE_UP','RESHAPE'));
@@ -19,7 +19,10 @@ ALTER TABLE game_atelier_item_records ADD CONSTRAINT game_atelier_material_shape
   (cause='REVEAL' AND jsonb_array_length(inputs)=1 AND jsonb_array_length(outputs)=0 AND stash_input IS NULL)
   OR (cause='GRADE_UP' AND jsonb_array_length(outputs)=0 AND (jsonb_array_length(inputs)>0 OR stash_input IS NOT NULL))
   OR (cause='DISMANTLE' AND jsonb_array_length(inputs)=0 AND jsonb_array_length(outputs) BETWEEN 1 AND 10 AND stash_input IS NULL)
-  OR (cause='RESHAPE' AND jsonb_array_length(inputs) BETWEEN 1 AND 3 AND jsonb_array_length(outputs)=0 AND stash_input IS NULL));
+  OR (cause='RESHAPE' AND jsonb_array_length(inputs)<=3 AND jsonb_array_length(outputs)=0 AND (jsonb_array_length(inputs)>0 OR stash_input IS NOT NULL)));
+ALTER TABLE game_atelier_item_records DROP CONSTRAINT IF EXISTS game_atelier_stash_shape;
+ALTER TABLE game_atelier_item_records ADD CONSTRAINT game_atelier_stash_shape CHECK(stash_input IS NULL OR
+  (cause IN ('GRADE_UP','RESHAPE') AND jsonb_typeof(stash_input)='object' AND (stash_input->>'count')::int BETWEEN 1 AND 30));
 
 -- Fee ledger: cause 483 joins the Atelier carried-coin cause set and its closed price list.
 DO $ledger$
@@ -151,6 +154,24 @@ BEGIN
   EXECUTE replace(body,old_part,'IF a.kind IN (''REVEAL'',''GRADE_UP'',''RESHAPE'') AND (key IS NULL');
  END IF;
 END $guard$;
+
+-- The Supply Stash ledger accepts a RESHAPE debit exactly like a Grade Up debit.
+DO $stash$
+DECLARE site TEXT[]; body TEXT;
+BEGIN
+ FOREACH site SLICE 1 IN ARRAY ARRAY[
+  ARRAY['game_atelier_supplement_complete(uuid)','r.cause<>''GRADE_UP''','r.cause NOT IN (''GRADE_UP'',''RESHAPE'')'],
+  ARRAY['game_stash_admit()','a.cause=''GRADE_UP''','a.cause IN (''GRADE_UP'',''RESHAPE'')'],
+  ARRAY['game_stash_balance_guard()','a.cause=''GRADE_UP''','a.cause IN (''GRADE_UP'',''RESHAPE'')']] LOOP
+  SELECT pg_get_functiondef(site[1]::regprocedure) INTO STRICT body;
+  IF position(site[3] IN body)=0 THEN
+   IF position(site[2] IN body)=0 THEN
+    RAISE EXCEPTION 'reshape stash debit requires the Atelier stash anchor: %',site[1];
+   END IF;
+   EXECUTE replace(body,site[2],site[3]);
+  END IF;
+ END LOOP;
+END $stash$;
 
 DO $search$
 DECLARE n TEXT;

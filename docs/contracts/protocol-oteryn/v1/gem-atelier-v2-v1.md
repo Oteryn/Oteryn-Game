@@ -55,8 +55,10 @@ Outside the temple or without Premium the reply is `refused=true` with nothing w
 
 Reshape runs through the v1 Atelier writer as receipt kind `RESHAPE`: the modifier draw, the
 gold fee (audited fee cause 483 `gem_reshape`, service key `oteryn:atelier.reshape`), the
-carried fragment BURNs and the receipt commit in one session-generation fenced transaction.
-Fragments come from carried containers only; the Supply Stash is not drawn. Migration 2771
+fragment BURNs and the receipt commit in one session-generation fenced transaction.
+Fragments come from carried containers first. While the character stands at a depot locker
+(Supply Stash open) the stash pays the remainder through its ledger; away from a depot only
+carried fragments count, and a shortfall is `refused=true` with nothing written. Migration 2771
 binds receipt, fee and fragments: the fee names the position, and at most one modifier of one
 unlocked gem changes, only at that position. The same occurrence and intent returns its
 recorded result.

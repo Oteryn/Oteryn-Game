@@ -44,6 +44,23 @@ pub fn admitted(in_temple: bool, premium: bool) -> Result<(), ReshapeRefusal> {
     }
 }
 
+/// Where a reshape's `needed` fragments come from: carried containers first; the Supply
+/// Stash pays the remainder only while it is open at a depot (owner decision WU26-10).
+/// Returns the (carried, stash) split, or `None` when the reachable fragments fall short.
+pub fn fragment_sources(
+    needed: u32,
+    carried: u32,
+    stash: u32,
+    at_depot: bool,
+) -> Option<(u32, u32)> {
+    let from_carried = needed.min(carried);
+    let rest = needed - from_carried;
+    if rest == 0 {
+        return Some((from_carried, 0));
+    }
+    (at_depot && stash >= rest).then_some((from_carried, rest))
+}
+
 /// The modifiers position `position` may draw for a gem holding `mods`, in catalogue order.
 /// As in the reveal draw, the two basic positions never hold the same modifier.
 pub fn choices(family: &serde_json::Value, mods: &[u16], position: u8) -> Option<Vec<u16>> {
@@ -90,6 +107,19 @@ mod tests {
         assert_eq!(admitted(false, true), Err(ReshapeRefusal::OutsideTemple));
         assert_eq!(admitted(true, false), Err(ReshapeRefusal::NoPremium));
         assert_eq!(admitted(false, false), Err(ReshapeRefusal::OutsideTemple));
+    }
+
+    #[test]
+    fn reshape_fragments_come_from_carried_first_and_the_stash_only_at_a_depot() {
+        // Away from a depot: carried containers only.
+        assert_eq!(fragment_sources(2, 2, 9, false), Some((2, 0)));
+        assert_eq!(fragment_sources(2, 1, 9, false), None);
+        assert_eq!(fragment_sources(1, 0, 9, false), None);
+        // At a depot with the Supply Stash open: carried first, then the stash.
+        assert_eq!(fragment_sources(2, 2, 9, true), Some((2, 0)));
+        assert_eq!(fragment_sources(2, 1, 9, true), Some((1, 1)));
+        assert_eq!(fragment_sources(3, 0, 3, true), Some((0, 3)));
+        assert_eq!(fragment_sources(3, 1, 1, true), None);
     }
 
     fn pool(family: &serde_json::Value, list: &str) -> Result<Vec<u16>, Error> {

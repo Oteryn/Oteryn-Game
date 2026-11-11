@@ -111,7 +111,8 @@ pub(super) fn check(
             .as_u64()
             .filter(|n| (1..=30).contains(n))
             .ok_or(AuditError::InvalidInput)?;
-        if action != "GradeUp"
+        // Grade Up, and Mod Reshaping at a depot, may take the remainder from the stash.
+        if !matches!(action, "GradeUp" | "Reshape")
             || key.is_none_or(|key| stash["key"] != key)
             || stash["quantity_before"]
                 .as_u64()
@@ -357,6 +358,32 @@ mod tests {
             check(&cause, &value, "GradeUp"),
             Err(AuditError::InvalidInput)
         );
+        // At a depot the Supply Stash pays what the carried fragments do not.
+        let stashed = |position: u8, fee: u64, inputs: Value, stash: u64, key: &str| {
+            let (mut cause, value) = reshape(position, fee, inputs);
+            let mut proof: Value = serde_json::from_slice(&cause.atelier_proof).unwrap();
+            proof["stash"] = json!({"key":key,"revision":"revision","count":stash,"quantity_before":100,"entry":"01010101-0101-7001-8001-010101010101","previous":"01010101-0101-7001-8001-010101010102"});
+            cause.atelier_proof = serde_json::to_vec(&proof).unwrap();
+            (cause, value)
+        };
+        for (position, fee, inputs, stash, key) in [
+            (2, 1_000_000, json!([lesser(1)]), 1, "oteryn:item.tibia.i46625"),
+            (2, 1_000_000, json!([]), 2, "oteryn:item.tibia.i46625"),
+            (3, 5_000_000, json!([greater(1)]), 2, "oteryn:item.tibia.i46626"),
+        ] {
+            let (cause, value) = stashed(position, fee, inputs, stash, key);
+            assert_eq!(check(&cause, &value, "Reshape"), Ok(()));
+        }
+        for (position, fee, inputs, stash, key) in [
+            (2, 1_000_000, json!([lesser(1)]), 2, "oteryn:item.tibia.i46625"),
+            (3, 5_000_000, json!([greater(1)]), 2, "oteryn:item.tibia.i46625"),
+        ] {
+            let (cause, value) = stashed(position, fee, inputs, stash, key);
+            assert_eq!(
+                check(&cause, &value, "Reshape"),
+                Err(AuditError::InvalidInput)
+            );
+        }
     }
 
     #[test]

@@ -18,15 +18,39 @@ async fn footprint(h: &Harness) -> TestResult<(i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_atelier_item_records),(SELECT count(*) FROM game_item_fee_burns),(SELECT balance FROM game_account_bank_balances WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid)").bind(id(40).as_slice()).bind(id(42).as_slice()).fetch_one(&h.pool).await?)
 }
 
+async fn stashed_lesser(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT coalesce(sum(quantity),0)::bigint FROM game_character_stash_balances
+         WHERE character_id=encode($1,'hex')::uuid AND definition_key='oteryn:item.tibia.i46625'",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+async fn carried_small_stacks(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances
+         WHERE item_instance_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)",
+    )
+    .bind(id(148).as_slice())
+    .bind(id(151).as_slice())
+    .bind(id(154).as_slice())
+    .fetch_one(&h.pool)
+    .await?)
+}
+
 pub(super) async fn exercise(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
+    admitted: &crate::gameplay_transport::connection::AdmittedSession,
 ) -> TestResult {
     let content = fixture::MechanicContent;
     let resources = Box::new(AtelierResources {
         content: &content,
         coins: fee_request(2, 1)?.change,
         fragment: definition("oteryn:item.tibia.i46625"),
+        supply_stash: false,
     });
     let session = crate::bestiary_postgres_harness::fence(1)?.game_session_id;
     // The paid scenario unlocked its first initial Regular gem; it keeps two modifiers.
@@ -52,6 +76,7 @@ pub(super) async fn exercise(
             content: &content,
             coins: fee_request(2, 1)?.change,
             fragment: definition("oteryn:item.tibia.i46626"),
+            supply_stash: false,
         })),
     };
     advance_ex_action(owner)?;
@@ -148,6 +173,103 @@ pub(super) async fn exercise(
         assert_eq!(cause.service_key, "oteryn:atelier.reshape");
         assert!(!cause.atelier_proof.is_empty());
     }
+
+    // Owner decision WU26-10: away from a depot only carried fragments count; at a
+    // depot with the Supply Stash open, carried fragments go first and the stash
+    // pays the remainder. Move every carried lesser fragment into the stash.
+    let carried = lesser_fragments(h).await?;
+    super::wire_paid::stow_asset_command(owner, admitted, 229, u32::try_from(carried)?, 160)
+        .await?;
+    assert_eq!(stashed_lesser(h).await?, carried);
+    let still_carried: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id)
+         WHERE i.definition_production_key='oteryn:item.tibia.i46625' AND i.lifecycle=1 AND e.character_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(still_carried, 0, "no lesser fragment is left in the bag");
+    let at_depot = |supply_stash: bool| {
+        Some(Box::new(AtelierResources {
+            content: &content,
+            coins: resources.coins.clone(),
+            fragment: resources.fragment.clone(),
+            supply_stash,
+        }))
+    };
+    let away = AtelierRequest {
+        occurrence: id(165),
+        expected_atelier_revision: stored(h).await?.revision,
+        mutation: AtelierMutation::Reshape { gem, position: 1 },
+        resources: at_depot(false),
+    };
+    let before = stored(h).await?;
+    let fp = footprint(h).await?;
+    advance_ex_action(owner)?;
+    assert!(matches!(
+        owner
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(away))
+            .await
+            .map_err(debug)?,
+        GemBuildOutcome::Atelier(AtelierOutcome::Refused)
+    ));
+    assert_eq!(stored(h).await?, before);
+    assert_eq!(footprint(h).await?, fp);
+    assert_eq!(stashed_lesser(h).await?, carried);
+
+    // At the depot with nothing carried the stash pays both fragments.
+    let from_stash = AtelierRequest {
+        occurrence: id(166),
+        expected_atelier_revision: before.revision,
+        mutation: AtelierMutation::Reshape { gem, position: 2 },
+        resources: at_depot(true),
+    };
+    advance_ex_action(owner)?;
+    let outcome = owner
+        .execute_gem_atelier(session, GemBuildCommand::Atelier(from_stash))
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(
+            outcome,
+            GemBuildOutcome::Atelier(AtelierOutcome::Committed { .. })
+        ),
+        "{outcome:?}"
+    );
+    assert_eq!(stashed_lesser(h).await?, carried - 2);
+    let debited: i64 = sqlx::query_scalar(
+        "SELECT (r.stash_input->>'count')::bigint FROM game_atelier_item_records r
+         JOIN game_character_stash_entries e ON e.atelier_transaction_id=r.transaction_id
+         WHERE r.cause='RESHAPE' AND r.occurrence=encode($1,'hex')::uuid AND e.amount=2",
+    )
+    .bind(id(166).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(debited, 2);
+
+    // Carried fragments go first: the stash is untouched while the bag holds enough.
+    fixture::small_fragment_stacks(h).await?;
+    let bag = carried_small_stacks(h).await?;
+    let carried_first = AtelierRequest {
+        occurrence: id(167),
+        expected_atelier_revision: stored(h).await?.revision,
+        mutation: AtelierMutation::Reshape { gem, position: 2 },
+        resources: at_depot(true),
+    };
+    advance_ex_action(owner)?;
+    let outcome = owner
+        .execute_gem_atelier(session, GemBuildCommand::Atelier(carried_first))
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(
+            outcome,
+            GemBuildOutcome::Atelier(AtelierOutcome::Committed { .. })
+        ),
+        "{outcome:?}"
+    );
+    assert_eq!(carried_small_stacks(h).await?, bag - 2);
+    assert_eq!(stashed_lesser(h).await?, carried - 2);
 
     // A locked gem must be unlocked first: the redraw refuses without custody.
     let lock = AtelierRequest {

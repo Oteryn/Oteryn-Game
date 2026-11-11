@@ -180,7 +180,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         .with_wheel(self.premium_coordinator)
                 });
             {
-                let runtime = self.runtime.lock().await;
+                let mut runtime = self.runtime.lock().await;
                 let binding = runtime.binding();
                 if admitted.world_id != binding.world_id()
                     || binding.channel_id() != Some(admitted.channel_id)
@@ -205,6 +205,17 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // Pinned native definitions and the ordinary backpack/coin owner supply all
                 // economic facts. Missing resources do not hide an already committed receipt.
+                // Mod Reshaping may draw on the Supply Stash only at a depot locker,
+                // read from the live position at commit time (owner decision WU26-10).
+                let supply_stash = matches!(
+                    request.mutation,
+                    crate::durability::character_atelier::AtelierMutation::Reshape { .. }
+                ) && admitted.runtime_actor.is_some_and(|actor| {
+                    super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
+                        .as_ref()
+                        .and_then(super::depot::locker)
+                        .is_some()
+                });
                 if let Some(content) = &content {
                     request.resources = atelier_wire_resources(
                         self,
@@ -213,6 +224,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         content,
                         admitted.game_session_id,
                         &request,
+                        supply_stash,
                     );
                 }
             }
@@ -600,6 +612,7 @@ fn atelier_wire_resources<'a>(
     content: &'a dyn crate::durability::item_loop_move::ItemLoopContent,
     session: crate::foundation::GameSessionId,
     request: &crate::durability::character_atelier::AtelierRequest<'_>,
+    supply_stash: bool,
 ) -> Option<Box<crate::durability::character_atelier::AtelierResources<'a>>> {
     use crate::durability::character_atelier::{AtelierMutation, AtelierResources};
     use oteryn_gameplay_progression::atelier::{FragmentKind, GemQuality};
@@ -651,6 +664,7 @@ fn atelier_wire_resources<'a>(
             production_key: key.into(),
             revision_ref: index.revision(key)?.into(),
         },
+        supply_stash,
     }))
 }
 
