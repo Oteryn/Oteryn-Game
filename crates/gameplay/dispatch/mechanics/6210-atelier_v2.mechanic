@@ -1,0 +1,7 @@
+name=atelier_v2
+commands=6210,6211,6212,6213
+[route]
+match routing::atelier::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

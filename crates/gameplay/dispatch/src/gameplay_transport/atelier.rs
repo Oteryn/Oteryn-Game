@@ -2,6 +2,8 @@
 
 #[path = "atelier/resources.rs"]
 mod resources;
+#[path = "atelier/v2.rs"]
+mod v2;
 #[path = "atelier/workshop.rs"]
 mod workshop;
 
@@ -39,6 +41,22 @@ pub enum AtelierWireReply {
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn atelier_wire(
+        &self,
+        admitted: super::connection::AdmittedSession,
+        kind: u32,
+        payload: &[u8],
+    ) -> AtelierWireReply {
+        use oteryn_protocol_oteryn::atelier::v2 as wire;
+        if (wire::COMMAND_TYPE_ATELIER_V2_QUERY..=wire::COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL)
+            .contains(&kind)
+        {
+            self.atelier_v2_wire(admitted, kind, payload).await
+        } else {
+            self.atelier_v1_wire(admitted, kind, payload).await
+        }
+    }
+
+    async fn atelier_v1_wire(
         &self,
         admitted: super::connection::AdmittedSession,
         kind: u32,

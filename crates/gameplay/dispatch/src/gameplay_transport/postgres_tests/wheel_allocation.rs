@@ -21,6 +21,8 @@ use oteryn_protocol_oteryn::{
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+#[path = "wheel_allocation/atelier_v2.rs"]
+mod atelier_v2;
 #[path = "wheel_allocation/capacity.rs"]
 mod capacity;
 
@@ -29,12 +31,21 @@ async fn send(
     admitted: &mut AdmittedSession,
     body: &[u8],
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
+    send_kind(owner, admitted, wire::COMMAND_TYPE_WHEEL_ALLOCATION, body).await
+}
+
+async fn send_kind(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    command_type: u32,
+    body: &[u8],
+) -> TestResult<(CommandStatus, Vec<u8>)> {
     let command = admitted.continuity.next_command_id;
     let frame = encode_client_command(
         admitted.continuity.connection_generation,
         &ClientCommandValue {
             command_id: command,
-            command_type: wire::COMMAND_TYPE_WHEEL_ALLOCATION,
+            command_type,
             payload: body,
         },
     )
@@ -131,6 +142,11 @@ fn wheel_allocation_postgres_gift_trigger_snapshot_receipts_and_relogin() -> Tes
 }
 
 #[test]
+fn wheel_allocation_postgres_atelier_v2_replace_vessel_accepts_refuses_and_replays() -> TestResult {
+    run_wheel_case(Some(WheelExtensionCase::ReplaceVessel))
+}
+
+#[test]
 fn wheel_allocation_postgres_capacity_uses_current_allocation_and_live_premium_at_commit()
 -> TestResult {
     run_wheel_case(Some(WheelExtensionCase::Capacity))
@@ -142,6 +158,7 @@ enum WheelExtensionCase {
     Unsocket,
     Gift,
     Capacity,
+    ReplaceVessel,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -426,6 +443,14 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
             let stored = h.root.read_character_atelier(&authority, fence.character_id)
                 .await.map_err(debug)?.ok_or("socketed Atelier")?;
             assert_eq!(stored.gems.values().filter(|gem| gem.vessel).count(), 1);
+            if matches!(transition, WheelExtensionCase::ReplaceVessel) {
+                atelier_v2::replace_vessel(&h, &mut owner, &mut admitted, socketed).await?;
+                eprintln!("WHEEL_REPLACE_VESSEL POSTGRES_CASE_COMPLETED");
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             next_fresh_wheel_action(&mut owner)?;
             let stale_revision = wire::WheelAllocationRequest { occurrence: id(173), ..save.clone() };
             assert_eq!(send(&owner, &mut admitted, &wire::encode_wheel_request(&stale_revision).map_err(debug)?).await?,
@@ -571,7 +596,9 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                     assert_eq!(send(&restarted, &mut admitted, &[8, 0]).await?, reply(false, 2, points)?);
                     ([None; 4], 2)
                 }
-                WheelExtensionCase::Capacity => return Err("capacity case already handled".into()),
+                WheelExtensionCase::Capacity | WheelExtensionCase::ReplaceVessel => {
+                    return Err("case already handled".into());
+                }
             };
             let conflicting = wire::WheelAllocationRequest {
                 vessels: Some([None; 4]), ..save
@@ -591,7 +618,9 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                 WheelExtensionCase::Socket => eprintln!("WHEEL_SOCKET POSTGRES_CASE_COMPLETED"),
                 WheelExtensionCase::Unsocket => eprintln!("WHEEL_UNSOCKET POSTGRES_CASE_COMPLETED"),
                 WheelExtensionCase::Gift => eprintln!("WHEEL_GIFT POSTGRES_CASE_COMPLETED"),
-                WheelExtensionCase::Capacity => return Err("capacity case already handled".into()),
+                WheelExtensionCase::Capacity | WheelExtensionCase::ReplaceVessel => {
+                    return Err("case already handled".into());
+                }
             }
             drop(restarted);
             drop(owner);
