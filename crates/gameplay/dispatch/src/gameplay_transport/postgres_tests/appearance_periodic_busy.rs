@@ -158,7 +158,9 @@ impl FreshAdmissionAuthority for ProjectionOwner<'_, '_, '_, '_> {
                 // reusing the originally rejected offset 1 still fails below.
                 self.item_offset.set(2);
             }
-            Err(ObservationError::Unavailable) => self.unavailable.set(self.unavailable.get() + 1),
+            Err(ObservationError::Unavailable | ObservationError::RespawnPending) => {
+                self.unavailable.set(self.unavailable.get() + 1)
+            }
             Ok(_) => {}
         }
         result

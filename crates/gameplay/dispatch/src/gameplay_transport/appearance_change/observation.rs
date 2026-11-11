@@ -14,7 +14,16 @@ pub struct Observation {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ObservationError {
     HolderBusy,
+    /// A Character between a durable death and its respawn placement: its appearance state
+    /// is fenced until the placement consumes the pending respawn. Not a lost observer.
+    RespawnPending,
     Unavailable,
+}
+
+/// Why one attempt's durable read produced no value.
+pub(super) enum ReadFailure {
+    Durable(crate::durability::DurabilityError),
+    RespawnPending,
 }
 
 pub(in crate::gameplay_transport) async fn observe(
@@ -45,13 +54,10 @@ pub(in crate::gameplay_transport) async fn observe_result(
         operator_event("event=appearance_observation_failed class=visibility");
         return Err(ObservationError::Unavailable);
     }
-    let _foreground = admission
-        .root
-        .foreground_demand()
-        .map_err(|_| {
-            operator_event("event=appearance_observation_failed class=fence");
-            ObservationError::Unavailable
-        })?;
+    let _foreground = admission.root.foreground_demand().map_err(|_| {
+        operator_event("event=appearance_observation_failed class=fence");
+        ObservationError::Unavailable
+    })?;
     {
         // Monster profiles hold both guards while using the durable holder. Wait
         // for that existing owner before starting the command's one-second retry
@@ -63,15 +69,22 @@ pub(in crate::gameplay_transport) async fn observe_result(
     retry
         .retry_durability("appearance_observation", async || {
             let mut failure = None;
-            let observation =
-                observe_once(admission, observer, session, empty_outfit, &entities, &mut failure)
-                    .await;
+            let observation = observe_once(
+                admission,
+                observer,
+                session,
+                empty_outfit,
+                &entities,
+                &mut failure,
+            )
+            .await;
             // All runtime/spell guards belong to observe_once and have dropped
             // before retry_durability can wait for the holder. Its durable reads
             // acquire with try_issue_root/try_issue_semantic_pass, never a wait.
             match failure {
-                Some(error) => Err(error),
-                None => Ok(observation),
+                Some(ReadFailure::Durable(error)) => Err(error),
+                Some(ReadFailure::RespawnPending) => Ok(Err(ObservationError::RespawnPending)),
+                None => Ok(observation.ok_or(ObservationError::Unavailable)),
             }
         })
         .await
@@ -79,12 +92,11 @@ pub(in crate::gameplay_transport) async fn observe_result(
             crate::durability::DurabilityError::RootUnavailable => ObservationError::HolderBusy,
             _ => ObservationError::Unavailable,
         })?
-        .ok_or(ObservationError::Unavailable)
 }
 
 fn read_result<T>(
     result: Result<Option<T>, crate::durability::DurabilityError>,
-    failure: &mut Option<crate::durability::DurabilityError>,
+    failure: &mut Option<ReadFailure>,
     class: &'static str,
 ) -> Option<T> {
     match result {
@@ -92,6 +104,19 @@ fn read_result<T>(
         Err(error) => {
             // A durable error belongs to the existing retry owner, not a logical
             // refusal. A busy attempt must not emit diagnostics on every retry.
+            *failure = Some(ReadFailure::Durable(error));
+            None
+        }
+    }
+}
+
+fn read_state_result<T>(
+    result: Result<Option<T>, ReadFailure>,
+    failure: &mut Option<ReadFailure>,
+) -> Option<T> {
+    match result {
+        Ok(value) => note_none(value, "state"),
+        Err(error) => {
             *failure = Some(error);
             None
         }
@@ -100,7 +125,9 @@ fn read_result<T>(
 
 fn note_none<T>(value: Option<T>, class: &'static str) -> Option<T> {
     if value.is_none() {
-        operator_event(&format!("event=appearance_observation_failed class={class}"));
+        operator_event(&format!(
+            "event=appearance_observation_failed class={class}"
+        ));
     }
     value
 }
@@ -111,7 +138,7 @@ async fn observe_once(
     session: GameSessionId,
     empty_outfit: bool,
     entities: &[wire::EntityRef],
-    failure: &mut Option<crate::durability::DurabilityError>,
+    failure: &mut Option<ReadFailure>,
 ) -> Option<Observation> {
     let (context, content) = note_none(admission.appearance_context(), "content")?;
     let own_fence = read_result(
@@ -119,10 +146,9 @@ async fn observe_once(
         failure,
         "fence",
     )?;
-    let own = read_result(
+    let own = read_state_result(
         house::read_state(admission, own_fence, content.earned_grant_keys()).await,
         failure,
-        "state",
     )?;
     let catalogue = note_none(
         super::catalogue::catalogue(
@@ -138,8 +164,7 @@ async fn observe_once(
         return note_none(None, "fence");
     }
     let states = admission.states.spell_states.lock().await;
-    let (census, hirelings) =
-        note_none(house::census(&runtime, observer, session), "visibility")?;
+    let (census, hirelings) = note_none(house::census(&runtime, observer, session), "visibility")?;
     let mut bindings = Vec::new();
     let now = admission.owner_now().get();
     for &entity in entities {
@@ -240,10 +265,9 @@ async fn observe_once(
         {
             return note_none(None, "fence");
         }
-        let current = read_result(
+        let current = read_state_result(
             house::read_state(admission, fence, content.earned_grant_keys()).await,
             failure,
-            "state",
         )?;
         let in_house = runtime.house_actor_state(*actor, target_session).is_ok();
         let player = if in_house {
@@ -337,10 +361,9 @@ async fn observe_once(
         }
         // The selection and root are re-read after observer preparation. Runtime pin,
         // incarnation and condition state stay locked through this bounded DB read.
-        if read_result(
+        if read_state_result(
             house::read_state(admission, fence, content.earned_grant_keys()).await,
             failure,
-            "state",
         )? != current
         {
             return note_none(None, "revision");

@@ -551,7 +551,9 @@ where
         }
         // The discarded candidate consumed no appearance, visibility or item
         // cursor. Independent clock/weather deltas below still get their turn.
-        Err(ObservationError::HolderBusy) => {}
+        // A pending respawn fences the dead Character's appearance only until its
+        // placement; the next refresh observes it again.
+        Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => {}
         Err(ObservationError::Unavailable) => return Err(ServeEnd::Disconnected),
     }
     // CLOCK-1 (§11.3): a due domain 18 delta, at most one per 10,000 ms.

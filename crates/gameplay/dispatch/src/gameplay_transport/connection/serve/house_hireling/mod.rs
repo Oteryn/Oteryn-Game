@@ -418,7 +418,11 @@ impl State {
                 .await;
             let (_, revision) = match projection {
                 Ok(published) => published,
-                Err(ObservationError::HolderBusy) if periodic => return Ok(()),
+                Err(ObservationError::HolderBusy | ObservationError::RespawnPending)
+                    if periodic =>
+                {
+                    return Ok(());
+                }
                 Err(_) => return Err(ServeEnd::Disconnected),
             };
             self.spatial_revision = revision;
