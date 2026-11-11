@@ -1444,6 +1444,100 @@ fn extend_callbacks(
     Ok(updated)
 }
 
+/// Recover the complete reward definition captured before Citizen NPC activation.
+/// The current loader still installs NPC prerequisites before active rewards.
+pub(super) fn retain_outfit_reward_predecessor(
+    before_npc: QuestStateCatalogue,
+    active: &mut QuestStateCatalogue,
+) -> Result<(), String> {
+    const QUEST: &str = "oteryn:quest.outfit_and_addon_quests";
+    if before_npc.content_revision != active.content_revision {
+        return Err("outfit reward predecessor content revision".into());
+    }
+    let before = (
+        before_npc
+            .definition_hash(QUEST)
+            .ok_or("outfit reward predecessor missing definition")?,
+        before_npc
+            .tracks
+            .values()
+            .filter(|track| track.quest == QUEST)
+            .map(|track| (track.key.clone(), track.initial))
+            .collect::<BTreeMap<_, _>>(),
+    );
+    if active
+        .definition_hash(QUEST)
+        .is_none_or(|hash| hash == before.0)
+    {
+        return Err("outfit reward predecessor missing NPC successor".into());
+    }
+    // Foreign rewards can write Outfit tracks through exact participant effects.
+    // Use the same validated source and constructor as the active reward owner.
+    let document = embedded_document()?;
+    let callbacks = document
+        .callbacks
+        .into_iter()
+        .filter(|callback| {
+            callback.quest == QUEST
+                || callback
+                    .participants
+                    .iter()
+                    .any(|participant| participant.quest == QUEST)
+        })
+        .collect();
+    let complete = extend_callbacks(before_npc, callbacks, document.tracks)?;
+    let complete = (
+        complete
+            .definition_hash(QUEST)
+            .ok_or("outfit reward predecessor missing reward definition")?,
+        complete
+            .tracks
+            .values()
+            .filter(|track| track.quest == QUEST)
+            .map(|track| (track.key.clone(), track.initial))
+            .collect::<BTreeMap<_, _>>(),
+    );
+    if complete.0 == before.0
+        || before
+            .1
+            .iter()
+            .any(|(key, value)| complete.1.get(key) != Some(value))
+    {
+        return Err("outfit reward predecessor changed existing defaults".into());
+    }
+    let registered = active
+        .npc_legacy
+        .get(QUEST)
+        .ok_or("outfit NPC predecessor missing")?;
+    let retained = active
+        .predecessors
+        .get(QUEST)
+        .and_then(|entries| entries.iter().find(|entry| entry.hash == before.0));
+    if retained.is_some_and(|entry| entry.defaults != before.1) {
+        return Err("outfit reward predecessor conflicting defaults".into());
+    }
+    if registered == &complete {
+        return retained
+            .map(|_| ())
+            .ok_or_else(|| "outfit reward predecessor missing retained capture".into());
+    }
+    if registered != &before {
+        return Err("outfit NPC predecessor differs from captured catalogue".into());
+    }
+    // Keep the exact declaration-only pin already accepted by the current loader,
+    // including its own absent-track defaults. No stored rows or pins are changed.
+    if retained.is_none() {
+        active.predecessors.entry(QUEST.into()).or_default().push(
+            super::NpcDefinitionPredecessor {
+                hash: before.0,
+                defaults: before.1,
+            },
+        );
+    }
+    active.npc_legacy.insert(QUEST.into(), complete);
+    Ok(())
+}
+
 /// Exact primary state operation shared by lowering and bound admission validation.
 pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
@@ -2812,3 +2906,250 @@ mod map_mark_tests;
 
 #[cfg(test)]
 mod multiple_rewards_tests;
+
+#[cfg(test)]
+mod outfit_reward_predecessor_tests {
+    use super::*;
+
+    const QUEST: &str = "oteryn:quest.outfit_and_addon_quests";
+
+    fn fixture() -> Result<(QuestStateCatalogue, QuestStateCatalogue), String> {
+        let lowered = super::super::loader::parse_quest_state(
+            include_str!("../../../../../content/quests/missions/quest-state.json"),
+            "outfit-predecessor",
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let bindings = lowered
+            .catalogue()
+            .tracks
+            .keys()
+            .filter_map(|key| {
+                lowered
+                    .source_track(key)
+                    .map(|source| (key.clone(), source.to_owned()))
+            })
+            .collect();
+        let before = declare_tracks(lowered.catalogue().clone())?;
+        let active = super::super::npc_rules::extend(before.clone(), &bindings)?;
+        Ok((before, active))
+    }
+
+    fn complete_rewards(before: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+        let document = embedded_document()?;
+        let owned = document
+            .callbacks
+            .iter()
+            .filter(|callback| callback.quest == QUEST)
+            .count();
+        assert_eq!(owned, 112);
+        let participants = document
+            .callbacks
+            .iter()
+            .flat_map(|callback| {
+                callback
+                    .participants
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, participant)| participant.quest == QUEST)
+                    .map(move |(index, _)| participant_key(&callback.key, index))
+            })
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            participants,
+            BTreeSet::from([
+                "oteryn:quest-reward/l5-norseman-base/participant/0".into(),
+                "oteryn:quest-reward/l5-norseman-first-reward/participant/0".into(),
+                "oteryn:quest-reward/l5-norseman-second-reward/participant/0".into(),
+                "oteryn:quest-reward/l6-citizen-rook-backpack/participant/0".into(),
+                "oteryn:quest-reward/l6-citizen-rook-backpack-start/participant/0".into(),
+            ])
+        );
+        extend_callbacks(
+            before.clone(),
+            document
+                .callbacks
+                .into_iter()
+                .filter(|callback| {
+                    callback.quest == QUEST
+                        || callback
+                            .participants
+                            .iter()
+                            .any(|participant| participant.quest == QUEST)
+                })
+                .collect(),
+            document.tracks,
+        )
+    }
+
+    #[test]
+    fn outfit_reward_predecessors_keep_full_pins_defaults_and_active_definitions()
+    -> Result<(), String> {
+        let (before, mut active) = fixture()?;
+        let old_active = active.clone();
+        let declared = active
+            .npc_legacy
+            .get(QUEST)
+            .ok_or("captured Outfit")?
+            .clone();
+        let rewards = complete_rewards(&before)?;
+        let full_hash = rewards.definition_hash(QUEST).ok_or("full Outfit")?;
+        let full_defaults = rewards
+            .tracks
+            .values()
+            .filter(|track| track.quest == QUEST)
+            .map(|track| (track.key.clone(), track.initial))
+            .collect::<BTreeMap<_, _>>();
+        let hex = |hash: &[u8; 32]| {
+            hash.iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        };
+        assert_eq!(
+            hex(&declared.0),
+            "8ae9fff068d9af51c1be88777aad3ac82e5c6551314a5ac185b17ce766a6ef1f"
+        );
+        assert_eq!(
+            hex(&full_hash),
+            "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8"
+        );
+        assert_eq!((declared.1.len(), full_defaults.len()), (51, 52));
+        assert!(
+            declared
+                .1
+                .iter()
+                .all(|(key, value)| full_defaults.get(key) == Some(value))
+        );
+        let navigator = "oteryn:quest-progress/navigator";
+        assert!(!declared.1.contains_key(navigator));
+        assert_eq!(full_defaults.get(navigator), Some(&-1));
+
+        retain_outfit_reward_predecessor(before.clone(), &mut active)?;
+        assert_eq!(
+            active.npc_legacy.get(QUEST),
+            Some(&(full_hash, full_defaults.clone()))
+        );
+        for (hash, defaults) in [(&declared.0, &declared.1), (&full_hash, &full_defaults)] {
+            assert_eq!(
+                super::super::npc_rules::legacy_defaults(&active, QUEST, hash),
+                Some(defaults)
+            );
+            let mut altered = *hash;
+            altered[0] ^= 1;
+            assert!(super::super::npc_rules::legacy_defaults(&active, QUEST, &altered).is_none());
+            for foreign in [
+                "oteryn:quest.the_ice_islands_quest",
+                "oteryn:quest.foreign",
+                "oteryn:quest.dawnport_quest",
+            ] {
+                assert!(super::super::npc_rules::legacy_defaults(&active, foreign, hash).is_none());
+            }
+            // The durable consumers fill only missing rows with these defaults.
+            let track = rewards
+                .tracks
+                .values()
+                .find(|track| {
+                    track.quest == QUEST
+                        && defaults.contains_key(&track.key)
+                        && track.initial != track.max
+                })
+                .ok_or("existing progress track")?;
+            let key = &track.key;
+            let mut stored = BTreeMap::from([(key.clone(), track.max)]);
+            for (key, value) in defaults {
+                stored.entry(key.clone()).or_insert(*value);
+            }
+            assert_eq!(stored.get(key), Some(&track.max));
+            assert!(
+                defaults
+                    .iter()
+                    .filter(|(other, _)| *other != key)
+                    .all(|(key, value)| stored.get(key) == Some(value))
+            );
+        }
+
+        let mut without_compatibility = active.clone();
+        without_compatibility.npc_legacy = old_active.npc_legacy.clone();
+        without_compatibility.predecessors = old_active.predecessors.clone();
+        assert_eq!(without_compatibility, old_active);
+        assert_eq!(
+            active.npc_legacy.keys().collect::<Vec<_>>(),
+            old_active.npc_legacy.keys().collect::<Vec<_>>()
+        );
+        let mut old_other = old_active.npc_legacy.clone();
+        let mut new_other = active.npc_legacy.clone();
+        old_other.remove(QUEST);
+        new_other.remove(QUEST);
+        assert_eq!(new_other, old_other);
+        let mut old_other = old_active.predecessors.clone();
+        let mut new_other = active.predecessors.clone();
+        old_other.remove(QUEST);
+        new_other.remove(QUEST);
+        assert_eq!(new_other, old_other);
+        let once = active.clone();
+        retain_outfit_reward_predecessor(before, &mut active)?;
+        assert_eq!(active, once);
+        Ok(())
+    }
+
+    #[test]
+    fn outfit_reward_predecessor_refuses_foreign_or_incomplete_capture_atomically()
+    -> Result<(), String> {
+        let (before, active) = fixture()?;
+        let declared = active
+            .npc_legacy
+            .get(QUEST)
+            .ok_or("captured Outfit")?
+            .clone();
+        let mut accepted = active.clone();
+        retain_outfit_reward_predecessor(before.clone(), &mut accepted)?;
+        for case in 0..7 {
+            let mut invalid = active.clone();
+            match case {
+                0 => {
+                    invalid.npc_legacy.remove(QUEST);
+                }
+                1 => {
+                    invalid.npc_legacy.get_mut(QUEST).ok_or("capture")?.0[0] ^= 1;
+                }
+                2 => {
+                    *invalid
+                        .npc_legacy
+                        .get_mut(QUEST)
+                        .ok_or("capture")?
+                        .1
+                        .values_mut()
+                        .next()
+                        .ok_or("default")? += 1;
+                }
+                3 => {
+                    let mut defaults = declared.1.clone();
+                    defaults.insert("oteryn:quest-progress/navigator".into(), 0);
+                    invalid.predecessors.entry(QUEST.into()).or_default().push(
+                        super::super::NpcDefinitionPredecessor {
+                            hash: declared.0,
+                            defaults,
+                        },
+                    );
+                }
+                4 => {
+                    invalid
+                        .npc_legacy
+                        .insert(QUEST.into(), accepted.npc_legacy[QUEST].clone());
+                }
+                5 => {
+                    invalid.content_revision = "foreign-content".into();
+                }
+                _ => {
+                    invalid.hashes.insert(QUEST.into(), declared.0);
+                }
+            }
+            let unchanged = invalid.clone();
+            assert!(
+                retain_outfit_reward_predecessor(before.clone(), &mut invalid).is_err(),
+                "case {case}"
+            );
+            assert_eq!(invalid, unchanged, "case {case}");
+        }
+        Ok(())
+    }
+}
