@@ -121,8 +121,8 @@ BEGIN
   old_part:='count_needed INT; fee BIGINT;';
   IF position(old_part IN body)=0 THEN RAISE EXCEPTION 'missing Atelier guard declaration anchor'; END IF;
   body:=replace(body,old_part,'count_needed INT; fee BIGINT; reshape_at INT;');
-  -- The fee names the position; at most one gem changes, and only in that modifier.
-  -- A redraw of the same modifier leaves the gem unchanged and still pays.
+  -- The fee names the position; exactly one gem changes, and only in that modifier.
+  -- A redraw never keeps the modifier it replaces, so an unchanged gem is refused.
   old_part:=' ELSIF a.kind=''GRADE_UP'' THEN';
   IF position(old_part IN body)=0 THEN RAISE EXCEPTION 'missing Atelier grade branch anchor'; END IF;
   new_part:=$arm$ ELSIF a.kind='RESHAPE' THEN
@@ -133,7 +133,7 @@ BEGIN
   IF reshape_at IS NULL
     OR (SELECT array_agg(e.key ORDER BY e.key) FROM jsonb_each(a.outcome_json->'gems') e)
        IS DISTINCT FROM (SELECT array_agg(e.key ORDER BY e.key) FROM jsonb_each(before_state->'gems') e)
-    OR (SELECT count(*) FROM jsonb_each(a.outcome_json->'gems') e WHERE e.value IS DISTINCT FROM before_state->'gems'->e.key)>1
+    OR (SELECT count(*) FROM jsonb_each(a.outcome_json->'gems') e WHERE e.value IS DISTINCT FROM before_state->'gems'->e.key)<>1
     OR EXISTS(SELECT 1 FROM jsonb_each(a.outcome_json->'gems') e
        WHERE e.value IS DISTINCT FROM before_state->'gems'->e.key
         AND ((e.value-'mods') IS DISTINCT FROM (before_state->'gems'->e.key)-'mods'
@@ -142,7 +142,7 @@ BEGIN
          OR jsonb_array_length(e.value->'mods')<reshape_at
          OR EXISTS(SELECT 1 FROM generate_series(0,jsonb_array_length(e.value->'mods')-1) i
             WHERE i<>reshape_at-1 AND e.value->'mods'->i IS DISTINCT FROM before_state->'gems'->e.key->'mods'->i))) THEN
-   RAISE EXCEPTION 'Atelier reshape must redraw one modifier of one unlocked gem' USING ERRCODE='23514';
+   RAISE EXCEPTION 'Atelier reshape must replace one modifier of one unlocked gem' USING ERRCODE='23514';
   END IF;
  ELSIF a.kind='GRADE_UP' THEN$arm$;
   body:=replace(body,old_part,new_part);

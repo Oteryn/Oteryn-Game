@@ -49,8 +49,9 @@ Lock and paid requests run through the v1 Atelier writer unchanged.
 
 Reshaping requires the temple and Premium, an unlocked gem and the position's price: 125,000
 gold and one lesser fragment, 1,000,000 gold and two lesser fragments, or 5,000,000 gold and
-three greater fragments. The new modifier is drawn from the position's reveal pool; the two
-basic positions never hold the same modifier. The gem keeps its identity, quality and slot.
+three greater fragments. The new modifier is drawn from the position's reveal pool minus the
+modifier the position holds now, so the result always differs; the two basic positions never
+hold the same modifier. The gem keeps its identity, quality and slot.
 Outside the temple or without Premium the reply is `refused=true` with nothing written.
 
 Reshape runs through the v1 Atelier writer as receipt kind `RESHAPE`: the modifier draw, the
@@ -59,7 +60,7 @@ fragment BURNs and the receipt commit in one session-generation fenced transacti
 Fragments come from carried containers first. While the character stands at a depot locker
 (Supply Stash open) the stash pays the remainder through its ledger; away from a depot only
 carried fragments count, and a shortfall is `refused=true` with nothing written. Migration 2771
-binds receipt, fee and fragments: the fee names the position, and at most one modifier of one
+binds receipt, fee and fragments: the fee names the position, and exactly one modifier of one
 unlocked gem changes, only at that position. The same occurrence and intent returns its
 recorded result.
 

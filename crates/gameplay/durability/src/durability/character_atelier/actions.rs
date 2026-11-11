@@ -137,6 +137,9 @@ pub(super) async fn apply(
             else {
                 return Ok(false);
             };
+            // The choices exclude the modifier the position holds now. Every pool has
+            // another modifier, so an empty list is invalid content (the bound-0 draw
+            // fails the transaction), never a player refusal.
             let root = draw_root(tx, fence, "gem_reshape", data.revision()).await?;
             let index = draw(
                 &root,

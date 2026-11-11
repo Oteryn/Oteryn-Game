@@ -123,6 +123,9 @@ pub(super) async fn exercise(
         );
         let kept = usize::from(2 - position);
         assert_eq!(new.mods[kept], old.mods[kept]);
+        // The redraw never keeps the modifier it replaces.
+        let paid = usize::from(position - 1);
+        assert_ne!(new.mods[paid], old.mods[paid]);
         assert_eq!(after.gold, 0);
         assert!(after.unrevealed.is_empty() && after.fragments.is_empty());
 
