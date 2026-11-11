@@ -517,6 +517,19 @@ schedule_check(
     check=True,
 )
 
+# Check both committed Rotten custody and composition with earlier loot owners.
+schedule_check(
+    [
+        sys.executable,
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc2_rotten_loot_items",
+    ],
+    cwd=ROOT / "tools/content-schema/native-gameplay",
+    check=True,
+)
+
 # Core Item admission is a separate accepted data overlay, retained by every regeneration.
 schedule_check(
     [

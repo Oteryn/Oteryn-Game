@@ -1,4 +1,5 @@
 """Six source admissions preserve every accepted record outside their explicit scope."""
+import copy
 import hashlib
 import json
 import unittest
@@ -38,6 +39,56 @@ class RottenItemAdmissionTests(unittest.TestCase):
                         self.assertEqual(definitions[key]['semantics'][group]['value']['weight'],
                                          {'state': 'KNOWN', 'value': 450})
                         continue
+                    if group == 'physical' and key in {
+                            'oteryn:item.tibia.i43501', 'oteryn:item.tibia.i43502',
+                            'oteryn:item.tibia.i43503', 'oteryn:item.tibia.i43504'}:
+                        # The earlier BossYield owner retains its source weight;
+                        # canonical reference weights remain independently fixed.
+                        expected = copy.deepcopy(definitions[key]['semantics'][group])
+                        self.assertEqual(expected['value']['weight'],
+                                         {'state': 'KNOWN', 'value': 150})
+                        expected['value']['weight'] = {'state': 'KNOWN', 'value': 0}
+                        self.assertEqual(profiles[key]['semantics'][group], expected)
+                        continue
                     self.assertEqual(definitions[key]['semantics'][group], profiles[key]['semantics'][group])
         self.assertEqual(digest({k: v for k, v in definitions.items() if k not in keys}), CANONICAL_OUTSIDE)
         self.assertEqual(digest({k: v for k, v in profiles.items() if k not in keys}), NATIVE_OUTSIDE)
+
+    def test_boss_yield_custody_survives_real_rotten_capture(self):
+        import boss_reward_yield_profiles as boss
+        from qualification_inputs import appearance_input_scope
+
+        canonical_inputs = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in
+                            (ROOT / 'content/items/definitions').glob('items-*.json')}
+        selected = {f'oteryn:item.tibia.i{i}' for i in (43501, 43502, 43503, 43504)}
+        generated = {'profiles': b'{"records":[]}', 'manifest': b'{"item_profiles":{}}'}
+        order = lambda row: row['production_definition']['production_key']
+        with appearance_input_scope():
+            boss.admit(ROOT, generated, 'profiles', 'manifest', order, boss.corpses.encode)
+            before = {row['production_definition']['production_key']: row
+                      for row in json.loads(generated['profiles'])['records']}
+            self.assertEqual(len(before), 46)
+            self.assertTrue(selected <= before.keys())
+            tool.admit_native(ROOT, generated, 'profiles', 'manifest', order, boss.corpses.encode)
+            records = json.loads(generated['profiles'])['records']
+            actual = {row['production_definition']['production_key']: row for row in records}
+            self.assertEqual(len(records), 48)
+            self.assertEqual(len(actual), len(records))
+            self.assertEqual(set(actual) - set(before), {
+                'oteryn:item.tibia.i43899', 'oteryn:item.tibia.i43900'})
+            for key, row in before.items():
+                self.assertEqual(actual[key], row, key)
+            self.assertEqual(json.loads(generated['manifest'])['item_profiles']['sha256'],
+                             hashlib.sha256(generated['profiles']).hexdigest())
+        definitions = {row['definition']['identity']['key']: row['definition']
+                       for path in canonical_inputs
+                       for row in json.loads(path.read_bytes())['records']
+                       if row['definition']['identity']['key'] in selected}
+        self.assertEqual(set(definitions), selected)
+        for key in selected:
+            expected = copy.deepcopy(definitions[key]['semantics']['physical'])
+            self.assertEqual(expected['value']['weight'], {'state': 'KNOWN', 'value': 150})
+            expected['value']['weight'] = {'state': 'KNOWN', 'value': 0}
+            self.assertEqual(actual[key]['semantics']['physical'], expected, key)
+        for path, expected_hash in canonical_inputs.items():
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), expected_hash, str(path))
