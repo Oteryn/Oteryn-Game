@@ -1,0 +1,70 @@
+{
+  "batch": "gerimor-assignments-main-c77-integration",
+  "state": "COMPILING_CHECKPOINT; POST_MERGE_TESTS_PENDING",
+  "parent_lane_sha": "36d3a545137769b5c62a7349a789a586ae9fec0a",
+  "main_sha": "c77d436d8",
+  "whole_quest_qualified": false,
+  "scope": "Seven initial Gerimor assignments only; bosses, final access and rewards remain unqualified.",
+  "source": {
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "path": "data-global/npc/gerimor.lua",
+    "sha256": "bf0fba86d07bb8a70d6242c2cc748fbb137cc7b583b47f0886530b6b5c584b2f"
+  },
+  "pre_merge_proof": {
+    "postgres_version": 180006,
+    "red_seconds": 44.791193812,
+    "red_error": "missing source cult menu: []",
+    "green_seconds": 45.519532968,
+    "quest_units_passed": 320,
+    "quest_unit_seconds": 17.26,
+    "authorer_passed": 2,
+    "authorer_seconds": 0.866
+  },
+  "merge_facts": {
+    "world_chest_access_selectors": 59,
+    "distinct_equipment_profiles": 3827,
+    "named_main_overlap_ids": [
+      1791,
+      1948,
+      2822,
+      2823,
+      2848,
+      3593,
+      5102,
+      5103,
+      21982
+    ],
+    "strict_outside_rotten_canonical": "a36cccacd5536b476e508e0b1d2936657c80485d62c9f0df962c3865c2876130",
+    "strict_outside_rotten_native": "a64f6741e8bf27700dab39a0545dbe0b524b34f65542bf8b58a4ce63dd44a3bc"
+  },
+  "completed_gates": {
+    "workspace_all_targets": "PASS 3m51s",
+    "fmt": "PASS",
+    "world_pin_refresh": "PASS; current compiler built from merged source",
+    "native_generated_files": 45,
+    "duplicate_migrations": "PASS",
+    "reward_capture_compatibility_tests": 6,
+    "ledger_supported_unqualified_keys": 283
+  },
+  "pending": [
+    "post-merge Gerimor PostgreSQL",
+    "post-merge quest and client-assets units",
+    "dispatch non-PostgreSQL unit run",
+    "changed-crate clippy"
+  ],
+  "cadence_decision": "Owner PREPUSH-2 cadence exception: publish compiling integration after generation, all-target check and fmt; pending test runs continue without runtime source mutations.",
+  "artifacts": {
+    "content/dialogues/quest-rules-supplemental/questpc2-gerimor.json": "93c301b9d46246cb08035ec4d830b841a4c0275fcb74ef2e6d993f8d47dd5661",
+    "content/items/definitions/spell-native-profiles.json": "37fca33b1ab17c21c4f5ff60ae4561897b2d7a089a53f5a7a5113f02cdfab925",
+    "content/items/definitions/srx1-item-updates.json": "a7427f85a3b6f900b1801d9b7538a24b8ac80a3bab861da27dc68661bb4e3e9a",
+    "content/world/placements/index.json": "40541fff8fe4847590700b6253de57506e9ad84b2b88c62841d0bbe546827303",
+    "content/world/pins/oteryn.json": "2ec365eeb4cd93f4ab85c0db436abf00370559e2f69006576cc5af631f36eae4"
+  },
+  "logs": {
+    "/tmp/questpc2b-gerimor-red.log": "bb44f0ba2d71485333af884e32dac7d527a05fad9c61709c3d849fbf00dfb9a8",
+    "/tmp/questpc2b-gerimor-green.log": "46558820e87805ef8025804e6e9f92e3bf4613059fd88ad3b2ca284afcf98222",
+    "/tmp/questpc2b-gerimor-quest-units.log": "f141d4017802a8a07b768727fa0e15a2a2ce37ae85040109fe27e877aa9c26b8",
+    "/tmp/questpc2b-gerimor-workspace-check.log": "d9e3ee9e4ce017c98c2149fc3ed6db9627e1481b4e9fdfdf27c827dfadde13c5",
+    "/tmp/questpc2b-gerimor-pin-refresh.log": "567a698d55f6c8be55a348737d9a3bf9989018217019429d51d3382d5e694012"
+  }
+}

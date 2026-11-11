@@ -17,7 +17,7 @@ import build_source_item_profiles as native
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = 'tools/content-schema/native-gameplay/tool-item-profiles.json'
-IDS = {593, 594, 606, 608, 609, 615, 867, 868, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
+IDS = {593, 594, 606, 608, 609, 615, 867, 868, 1791, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
 
 
 def build(directory, ids=None):

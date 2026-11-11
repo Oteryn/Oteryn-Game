@@ -1,0 +1,26 @@
+{
+  "basis": "HEAD1fa04bbb vs current uncommitted tree; counts of support, never whole-quest certification",
+  "reward_claims": {
+    "before": {
+      "dispatch_pg_qualified": 11,
+      "not_playable": 28,
+      "supported_unqualified": 297
+    },
+    "after": {
+      "dispatch_pg_qualified": 11,
+      "not_playable": 16,
+      "supported_unqualified": 309
+    }
+  },
+  "native_container_recipes": {
+    "before": 67,
+    "after": 73
+  },
+  "ready_plain_claims": {
+    "before": 220,
+    "after": 228
+  },
+  "changed_product_and_durable_evidence_files": 90,
+  "new_whole_quests_certified": 0,
+  "new_pg_completion_markers": 0
+}

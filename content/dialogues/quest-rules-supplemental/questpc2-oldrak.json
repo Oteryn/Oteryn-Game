@@ -1,0 +1,177 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.questpc2-oldrak-demon-oak",
+  "quest": "oteryn:quest.demon_oak",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+      "quest": "oteryn:quest.demon_oak",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/oldrak.lua:103-121"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_demon_oak/progress",
+      "quest": "oteryn:quest.demon_oak",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/oldrak.lua:103-121"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/demon_oak/oldrak/offer",
+      "quest": "oteryn:quest.demon_oak",
+      "npc": "oteryn:npc.oldrak",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "demon oak"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "How do you know? Did you go into the infested area?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/oldrak.lua:102-105"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/demon_oak/oldrak/finish",
+      "quest": "oteryn:quest.demon_oak",
+      "npc": "oteryn:npc.oldrak",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "demon oak"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You chopped down the demon oak?!? Unbelievable!! Let's hope it doesn't come back. As long as evil is still existent in the soil of the plains, it won't be over. Still, the demons suffered a setback, that's for sure. ...",
+        "For your brave action, I tell you a secret which has been kept for many many years. There is an old house south of the location where you found the demon oak. There should be a grave with the name 'Yesim Adeit' somewhere close by. ...",
+        "It belongs to a Daramian nobleman named 'Teme Saiyid'. I knew him well and he told me -almost augured- that someone will come who is worthy to obtain his treasure. I'm sure this 'someone' is you. Good luck in finding it!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/oldrak.lua:108-114"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/demon_oak/oldrak/mission-noop",
+      "quest": "oteryn:quest.demon_oak",
+      "npc": "oteryn:npc.oldrak",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "demon oak"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/oldrak.lua:102-115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/demon_oak/oldrak/mission-accept",
+      "quest": "oteryn:quest.demon_oak",
+      "npc": "oteryn:npc.oldrak",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "A demon oak?!? <mumbles some blessings> May the gods be on our side. You'll need a {hallowed axe} to harm that tree. Bring me a simple {axe} and I'll prepare it for you."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/progress",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/oldrak.lua:116-121"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/demon_oak/oldrak/decline",
+      "quest": "oteryn:quest.demon_oak",
+      "npc": "oteryn:npc.oldrak",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "What a pity! Let me know when you managed to get in there. Maybe I can help you when we know what we are dealing with."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/oldrak.lua:151-153"
+      ],
+      "topics": [
+        1
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/oldrak.lua",
+      "sha256": "dc124275de082d9f39bc2f802b31f823646548153fe0e248417dc54f7b0eba40",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    }
+  ]
+}

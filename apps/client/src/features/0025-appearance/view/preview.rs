@@ -39,13 +39,16 @@ impl PreviewAssets {
     fn mount_metadata(root: &Path) -> Result<([u8; 32], BTreeMap<String, u32>), String> {
         // Presentation metadata is accepted only when its normalized document matches the server's digest.
         // It never adds choices to the server-owned catalogue or grants an entitlement.
+        // Match the native cosmetics owner's 16 MiB input bound. The source
+        // authoring packet includes provenance for the full mount catalogue.
+        const MAX_METADATA_BYTES: u64 = 16 * 1024 * 1024;
         let mut bytes = Vec::new();
         std::fs::File::open(root.join("content/cosmetics/outfits/authoring.json"))
             .map_err(|e| e.to_string())?
-            .take(2 * 1024 * 1024 + 1)
+            .take(MAX_METADATA_BYTES + 1)
             .read_to_end(&mut bytes)
             .map_err(|e| e.to_string())?;
-        if bytes.len() > 2 * 1024 * 1024 {
+        if bytes.len() as u64 > MAX_METADATA_BYTES {
             return Err("Appearance metadata exceeds its bound".into());
         }
         let mut value: serde_json::Value =

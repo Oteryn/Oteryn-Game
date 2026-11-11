@@ -3,6 +3,7 @@
     unsafe_code,
     reason = "Child HWNDs and callback state are owned by one UI thread"
 )]
+use oteryn_client::hud_error::{HudInitError, HudPart};
 use oteryn_client::play::PlayLink;
 use std::ptr::{null, null_mut};
 use windows_sys::Win32::{
@@ -61,7 +62,7 @@ unsafe extern "system" fn bar_proc(
     }
 }
 impl ProficiencyHud {
-    pub(super) fn new(parent: HWND) -> Option<Self> {
+    pub(super) fn new(parent: HWND) -> Result<Self, HudInitError> {
         unsafe {
             let root = CreateWindowExW(
                 0,
@@ -78,7 +79,7 @@ impl ProficiencyHud {
                 null(),
             );
             if root.is_null() {
-                return None;
+                return Err(super::last_error(HudPart::ProficiencyRoot));
             }
             let mut hud = Self {
                 root,
@@ -108,6 +109,9 @@ impl ProficiencyHud {
                 null_mut(),
                 null(),
             );
+            if hud.bar.is_null() {
+                return Err(super::last_error(HudPart::ProficiencyProgress));
+            }
             hud.label = CreateWindowExW(
                 0,
                 wide("BUTTON").as_ptr(),
@@ -122,6 +126,9 @@ impl ProficiencyHud {
                 null_mut(),
                 null(),
             );
+            if hud.label.is_null() {
+                return Err(super::last_error(HudPart::ProficiencyLabel));
+            }
             hud.icon = CreateWindowExW(
                 0,
                 wide("BUTTON").as_ptr(),
@@ -136,11 +143,8 @@ impl ProficiencyHud {
                 null_mut(),
                 null(),
             );
-            if [hud.bar, hud.label, hud.icon]
-                .iter()
-                .any(|hwnd| hwnd.is_null())
-            {
-                return None;
+            if hud.icon.is_null() {
+                return Err(super::last_error(HudPart::ProficiencyButton));
             }
             SendMessageW(hud.bar, PBM_SETRANGE32, 0, 100);
             if SetWindowSubclass(
@@ -150,9 +154,9 @@ impl ProficiencyHud {
                 (&mut *hud.actions as *mut Actions) as usize,
             ) == 0
             {
-                return None;
+                return Err(super::last_error(HudPart::ProficiencySubclass));
             }
-            Some(hud)
+            Ok(hud)
         }
     }
     pub(super) fn update(&mut self, link: &PlayLink, rect: Option<[u16; 4]>) {

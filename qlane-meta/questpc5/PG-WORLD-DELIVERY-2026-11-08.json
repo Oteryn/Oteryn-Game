@@ -1,0 +1,52 @@
+{
+  "scope": "shared authored world item delivery and retained authored NPC/carried/native-kill paths; no whole quest qualification",
+  "source_sha": "aa85b250027fa68c88c391f6cda490f0764dbf02",
+  "main_merged": "6f61ac15d",
+  "postgresql_cases": [
+    {
+      "case": "qengine-rewards-authored-kills-burst",
+      "seconds": 118.672859553,
+      "success": true
+    },
+    {
+      "case": "qengine-rewards-authored-kills",
+      "seconds": 122.94132645,
+      "success": true
+    },
+    {
+      "case": "qengine-rewards-authored-world-rewards-full",
+      "seconds": 66.639098846,
+      "success": true
+    },
+    {
+      "case": "qengine-rewards-authored-bindings",
+      "seconds": 121.746132478,
+      "success": true
+    },
+    {
+      "case": "qengine-rewards-authored-world-rewards",
+      "seconds": 65.492766496,
+      "success": true
+    },
+    {
+      "case": "qengine-rewards-l12-dragon-slayer-story",
+      "seconds": 123.873045429,
+      "success": true
+    }
+  ],
+  "selected_passed": 6,
+  "failed": 0,
+  "duration_seconds": 364.679,
+  "build_seconds": 633,
+  "log": "/tmp/qengine2-main6f-own-pg.log",
+  "original_world_red": {
+    "seconds": 49.876,
+    "marker_seconds": 49.823465016,
+    "error": "unknown field item_reward in CallbackEffects"
+  },
+  "quest_units": {
+    "passed": 320,
+    "seconds": 40.75
+  },
+  "encoding_regression": "distinct threshold tag11 and published main bound-set tag7"
+}

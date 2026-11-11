@@ -23,7 +23,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -258,7 +258,7 @@ def main() -> int:
     if len(pages) != len(titles):
         print(f"FAIL fetched {len(pages)} of {len(titles)} pages", file=sys.stderr)
         return 1
-    snapshot = build_snapshot(pages, datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+    snapshot = build_snapshot(pages, datetime.now(UTC).strftime("%Y-%m-%d"))
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_bytes(canonical(snapshot))
     print(

@@ -1,0 +1,65 @@
+{
+  "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+  "merge_conflicts": "27 derived JSON files structurally reconciled and regenerated; no unresolved paths",
+  "constructors": {
+    "world_change_none": 9,
+    "test_assertions_changed": false
+  },
+  "workspace_check": {
+    "state": "PASS",
+    "duration": "3m33s",
+    "log": "/tmp/questpc7-main-next-workspace.log"
+  },
+  "fmt": {
+    "state": "PASS",
+    "log": "/tmp/questpc7-main-next-confirmed-fmt.log"
+  },
+  "focused_python": {
+    "placements": {
+      "passed": 14,
+      "seconds": 0.576
+    },
+    "goblin": {
+      "passed": 3,
+      "seconds": 10.675
+    }
+  },
+  "source_receipt": {
+    "reviewed_changes": 28,
+    "frozen_cores_unchanged": true,
+    "compiler_pin": "33932f1e4f9deb69f06d5994320eb4e1c00cf7d0c4df0e2a17e2f0cd34412daa",
+    "method": "existing amend_itemhold_source_receipt verifier and outputs with exact recorded previous pin; guard code unchanged"
+  },
+  "generators": {
+    "quest_tree": "PASS",
+    "quest_views_and_lane_callbacks": "PASS",
+    "native_providers": "PASS",
+    "tree_registration": "PASS",
+    "pin_refresh": "PASS",
+    "broad_world_materializer": "Stopped during redundant base-World reconstruction; not claimed green"
+  },
+  "world_digest": "cf412119b1943d9736515677e09f2d2fb22191384ed43f4945fc132ecb0c561d",
+  "shared_migrations": "0999-1008 byte-exact main",
+  "lane_migrations": [
+    "1280_quest_native_reward_initialization.sql",
+    "1281_quest_corruptor_lifecycle.sql",
+    "1282_quest_native_npc_revision.sql",
+    "1283_quest_viola_rewards.sql",
+    "1284_npc_quest_item_exchange.sql",
+    "1285_fathers_burden_xp_proof_name.sql",
+    "1286_quest_repeatable_exchanges.sql",
+    "1287_quest_world_item_rewards.sql",
+    "1288_quest_backpack_outputs.sql"
+  ],
+  "incoming_qworld_migrations": [
+    "1320_world_change_calendar.sql",
+    "1321_world_change_occurrence_decisions.sql",
+    "1322_world_change_decision_required.sql"
+  ],
+  "duplicate_migrations": "PASS",
+  "whole_scope_counts": {
+    "previously_qualified": 21,
+    "active": 4
+  },
+  "postgres": "No new PG run claimed; prior unchanged Goblin intro/tool mechanic proof retained; CI owns full suites under latest owner rule"
+}

@@ -1,0 +1,132 @@
+{
+  "scope": "Complete retained authored Fibula supplement; original source well/six claims remain qualified. No foreign/excluded scope reopened.",
+  "decision": "Use an explicit Dermot expedition confirmation as the chosen Oteryn terminal adaptation. Reuse native map portal, Character level, capped personal native death goals and the six immutable original RewardClaim receipts. No duplicate cache loot or final fee.",
+  "engine": "Optional bounded minimum_level, required_claims and completes participants share the existing locked Character Quest transaction. Earned checks start at the eight-key bounded canonical claim index and join exact immutable MINT transaction receipts.",
+  "reuse_check": "qengine2 a585529d7 has track participants but lacks these terminal fields; its MINT also uses the canonical callback key for repeated sales. Existing fee reuse from33b640335 is retained; no unrelated lane merged.",
+  "repeat_fix": "The post-completion sale exposed a real once-only MINT refusal on the second repeat. Paid repeatable claim identities now bind exact GameSession/command. Forward migration1097 preserves all source proof arms and requires the matching positive atomic payment. Ordinary unpaid claim identities are unchanged.",
+  "migration_number": "Repository tooling read origin/main max1095 and open-PR holds969; this branch already owns1096, so1097 is free.",
+  "postgres": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "red": {
+      "cases": 2,
+      "duration_seconds": 59.12,
+      "outer_markers_seconds": [
+        59.108177914,
+        59.116334657
+      ],
+      "failure": "Fibula terminal completion is not bound"
+    },
+    "secondary_red": {
+      "duration_seconds": 357.11,
+      "failure": "Terminal completion/replay succeeded, then another paid repeat refused because MINT re-used its once-only canonical claim."
+    },
+    "green_completion": {
+      "cases": 2,
+      "duration_seconds": 388.97,
+      "outer_markers_seconds": {
+        "complete": 388.963793142,
+        "missing_claims": 224.49223514
+      },
+      "inner_markers_seconds": {
+        "complete": 322.951460083,
+        "missing_claims": 161.286325125
+      },
+      "assertions": [
+        "raw native portal framed StepIn and replay",
+        "western source Key3980 exact native custody",
+        "eight origin-bound native credited deaths and refusal/replay/cap assertions",
+        "all six exact source cache claims via framed movement and USE",
+        "all claims/kills below level50 refuse unchanged",
+        "level50/eight kills with five missing caches refuse unchanged",
+        "completion receipt and completed flag without new loot/payment",
+        "terminal replay unchanged",
+        "three initial paid purchases plus another paid key after completion, completed flag preserved"
+      ]
+    },
+    "green_sales": {
+      "cases": 3,
+      "duration_seconds": 185.51,
+      "outer_markers_seconds": {
+        "cash": 175.659425845,
+        "bank": 179.631430988,
+        "full": 185.507284139
+      },
+      "inner_markers_seconds": {
+        "cash": 58.952745684,
+        "bank": 74.762813996,
+        "full": 61.822856125
+      },
+      "assertions": "Three actual paid purchases with exact key3940 and 6000 total price; literal replay of each; full backpack rolls back source, MINT and bank fee."
+    },
+    "discarded_attempts": "Fixture unsigned floor/sorted-sector failures were not PG proof. Indexed diagnostic rebuild was cancelled before PG after tracing the once-only MINT cause; no pass is claimed from it."
+  },
+  "fixture_boundary": "Exact source selectors, positions, native portal attributes and native lethal origins are preserved. Walkable corridor ground is test-only; native level gate and both raw wells have separate prior real PG proofs. No fixture quest flag, claimed cache or credited kill is seeded.",
+  "checks": {
+    "cargo_check": "three changed crates all-target/all-feature passed4m18s",
+    "clippy": "three changed crates all-target/all-feature -D warnings passed7m39s including build-lock wait",
+    "quest_units": "268 passed15.00s, including bounded/deduplicated/family/lowercase claim guard rejection",
+    "authoring": "13 Python tests passed9.221s; qengine_rewards.py --check and quest_tree_authoring.py content --check passed",
+    "format": "three packages cargo fmt --check and seven mounted-file rustfmt checks passed",
+    "pin": "repository tooling pin-refresh/pin-check passed; unchanged World77d515155be0a03af5dc4fb6abfbfaec9795660aa15e512efdad033f2908c5b0",
+    "caller_scan": "Only RewardCallback literal outside its declaration is qengine_access fixture; all three default fields supplied. No workflow/repository-tool edits, dependencies, binaries, test skips or weakened assertions."
+  },
+  "independent_review": {
+    "state": "complete; no significant findings",
+    "candidate": "6eac53e5d7bd58bd1ff5009a9780f98f95fa872c",
+    "evidence": "cloud-independent-review-verification.json"
+  },
+  "logs": {
+    "pg-red": {
+      "path": "/tmp/questpc6-root-fibula-completion-pg-red.log",
+      "sha256": "378993b586d5435fc30a088dbcb2509f5ea163d4a72d72135b14213f81475851"
+    },
+    "green": {
+      "path": "/tmp/questpc6-root-fibula-completion-green.log",
+      "sha256": "7f36bc8a8ff412c62108627b60c70205b2eedbdb53ce788c3061d5a901966416"
+    },
+    "repeat-green": {
+      "path": "/tmp/questpc6-root-fibula-completion-repeat-green.log",
+      "sha256": "a835843eb0ac2c9bbe08ed167bfc1b7869f0ee2c0b6237599bf429b262ec29d2"
+    },
+    "purchase-regression": {
+      "path": "/tmp/questpc6-root-fibula-completion-purchase-regression.log",
+      "sha256": "4943385971c8c6ec471eec244b356f8e93dd5e9b8d35a706888689ea9217d466"
+    },
+    "python-final": {
+      "path": "/tmp/questpc6-root-fibula-completion-python-final.log",
+      "sha256": "e904062d9f38305fbf23eb0d236b8c6fb19a373a7431dbb8a49dde98f6e6094a"
+    },
+    "generator-check": {
+      "path": "/tmp/questpc6-root-fibula-completion-generator-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "mounted-fmt": {
+      "path": "/tmp/questpc6-root-fibula-completion-mounted-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "final-fmt": {
+      "path": "/tmp/questpc6-root-fibula-completion-final-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "pin-refresh": {
+      "path": "/tmp/questpc6-root-fibula-completion-pin-refresh.log",
+      "sha256": "6f5f5b50684374903c2c2afa153bd42c902d3bef06c7bd79aa1ea35d8c789fef"
+    },
+    "final-check": {
+      "path": "/tmp/questpc6-root-fibula-completion-final-check.log",
+      "sha256": "c342074b1bec9d4179c121963b6d63d4422ffa88a5de03743e93ffab5f7ae41c"
+    },
+    "final-clippy": {
+      "path": "/tmp/questpc6-root-fibula-completion-final-clippy.log",
+      "sha256": "c44a8ca5e2eec7c896401e68f68b4bfd5a2df6d57183effb036b9664f1259777"
+    },
+    "final-quest-units": {
+      "path": "/tmp/questpc6-root-fibula-completion-final-quest-units.log",
+      "sha256": "ca87c98375a8380039ba0abe31573e82363779560f083620507d0afb313ca922"
+    },
+    "pin-check": {
+      "path": "/tmp/questpc6-root-fibula-completion-pin-check.log",
+      "sha256": "456b00ff9a18b84b48680508b96ae70e0bb07cc58b9f0e538d00f9ed34345bca"
+    }
+  }
+}

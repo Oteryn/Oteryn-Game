@@ -10,6 +10,8 @@ import copy
 import hashlib
 import json
 
+from native_profile_composition import encode_native_profile
+
 
 def owners(root):
     result = {}
@@ -53,7 +55,7 @@ def project(document, admitted):
 def apply_native(root, generated, path, manifest_path, canonical):
     document = json.loads(generated[path])
     project(document, owners(root))
-    data = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    data = encode_native_profile(document)
     generated[path] = data
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(data).hexdigest()

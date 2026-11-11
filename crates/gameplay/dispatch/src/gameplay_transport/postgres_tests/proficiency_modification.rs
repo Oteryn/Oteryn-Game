@@ -71,20 +71,33 @@ fn scenario_with_state(project_state: bool) -> TestResult {
         let map = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
             .map_err(debug)?;
         let cells = map.movement_cells(room.movement_cells()).map_err(debug)?;
-        // Pair bundle-backed cells with that bundle's frame and map identity.
-        // A production-room map pin is foreign to this teleport-map fixture.
+        // Pair the qualified room and runtime with this teleport bundle's frame
+        // and map identity, rather than the production room's map pin.
         let frame_digest = map.frame_binding_digest(world);
-        let pin = crate::foundation::ChannelContentPin::from_activation(
+        let room = room
+            .bundle_view(
+                cells.clone(),
+                frame_digest,
+                map.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: 5,
+                    y: 1,
+                    floor: 8,
+                },
+            )
+            .ok_or("proficiency bundle room")?;
+        // Zone facts must be qualified against the same bundle as the runtime.
+        let channel_pin = crate::foundation::ChannelContentPin::from_activation(
             world,
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
             frame_digest,
-            map.map_revision_digest(),
+            room.map_revision_digest(),
             (5, 1, 8),
         );
         let deps = Dependencies::with_content(
-            pin,
+            channel_pin,
             room,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;

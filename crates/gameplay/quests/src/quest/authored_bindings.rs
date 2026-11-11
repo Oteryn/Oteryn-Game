@@ -1,0 +1,344 @@
+//! Explicit native stage bindings for authored recipes. Names and recipe prose never select a target.
+//!
+//! A binding set belongs to the same immutable catalogue as its tracks and transitions.
+//! The ordinary NPC/world/kill owners remain the only execution and durable-write paths.
+pub(crate) mod embedded;
+pub mod kills;
+pub use kills::KillCounter;
+
+use super::reward_callbacks::RewardCallback;
+use super::world_callbacks::Callback;
+use super::{QuestStateCatalogue, QuestTrack, QuestTransition};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::collections::BTreeSet;
+
+pub const MAX_BINDING_BYTES: usize = 8 * 1024 * 1024;
+pub const MAX_BOUND_QUESTS: usize = 128;
+pub const MAX_BOUND_STAGES: usize = 1024;
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Track {
+    pub key: String,
+    pub initial: i64,
+    pub minimum: i64,
+    pub maximum: i64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Trigger {
+    NpcDialogue { callback: Box<RewardCallback> },
+    CarriedUse { callback: Box<RewardCallback> },
+    MapUse { callback: Box<Callback> },
+    StepIn { callback: Box<Callback> },
+    Kill { counter: Box<KillCounter> },
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Stage {
+    pub key: String,
+    pub completes: bool,
+    pub trigger: Trigger,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct BoundQuest {
+    pub quest: String,
+    pub recipe_sha256: String,
+    pub tracks: Vec<Track>,
+    pub stages: Vec<Stage>,
+    pub sources: Vec<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default)]
+#[serde(deny_unknown_fields)]
+pub struct Bindings {
+    pub schema: u16,
+    pub quests: Vec<BoundQuest>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) struct RuntimeBindings {
+    pub(super) source: Bindings,
+    pub(super) world: Vec<Callback>,
+}
+
+impl Bindings {
+    /// Parse a closed, finite native binding document. This alone grants no gameplay authority.
+    pub fn parse(bytes: &[u8]) -> Result<Self, String> {
+        if bytes.len() > MAX_BINDING_BYTES {
+            return Err("authored binding byte bound".into());
+        }
+        let bindings: Self = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+        bindings.validate()?;
+        Ok(bindings)
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
+        if self.schema != 1
+            || self
+                .quests
+                .iter()
+                .flat_map(|q| &q.stages)
+                .filter(|s| matches!(s.trigger, Trigger::Kill { .. }))
+                .count()
+                > kills::MAX_KILL_BINDINGS
+            || self.quests.len() > MAX_BOUND_QUESTS
+            || self.quests.iter().map(|q| q.stages.len()).sum::<usize>() > MAX_BOUND_STAGES
+        {
+            return Err("authored binding bounds/schema".into());
+        }
+        let mut quests = BTreeSet::new();
+        let mut transitions = BTreeSet::new();
+        for quest in &self.quests {
+            if !super::valid_quest_key(&quest.quest)
+                || !quest.quest.starts_with("oteryn:quest.")
+                || !quests.insert(&quest.quest)
+                || quest.tracks.is_empty()
+                || quest.tracks.len() > 128
+                || quest.stages.is_empty()
+                || quest.stages.len() > 128
+                || !digest(&quest.recipe_sha256)
+                || quest.sources.is_empty()
+                || quest.sources.len() > 16
+                || quest
+                    .sources
+                    .iter()
+                    .any(|s| s.is_empty() || s.len() > 1024 || !s.is_ascii())
+            {
+                return Err("authored quest identity/source/bounds".into());
+            }
+            let mut tracks = BTreeSet::new();
+            for track in &quest.tracks {
+                if !super::valid_quest_key(&track.key)
+                    || !tracks.insert(&track.key)
+                    || !(track.minimum <= track.initial && track.initial <= track.maximum)
+                {
+                    return Err("authored track identity/bounds".into());
+                }
+            }
+            let mut stages = BTreeSet::new();
+            for stage in &quest.stages {
+                if stage.key.is_empty()
+                    || stage.key.len() > 128
+                    || !stage.key.is_ascii()
+                    || !stages.insert(&stage.key)
+                {
+                    return Err("authored stage identity".into());
+                }
+                if let Trigger::Kill { counter } = &stage.trigger {
+                    counter.validate(quest)?;
+                    if !transitions.insert(&counter.key) {
+                        return Err("authored kill binding collision".into());
+                    }
+                    continue;
+                }
+                let (key, owner, storage) = match &stage.trigger {
+                    Trigger::Kill { .. } => continue,
+                    Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
+                        super::reward_callbacks::validate_callbacks(std::slice::from_ref(
+                            callback.as_ref(),
+                        ))?;
+                        if !callback.participants.is_empty()
+                            || !callback.state_ops.is_empty()
+                            || matches!(&stage.trigger, Trigger::NpcDialogue { .. })
+                                != callback.carried_item.is_none()
+                        {
+                            return Err("authored dialogue/carried trigger mismatch".into());
+                        }
+                        (&callback.key, &callback.quest, &callback.storage)
+                    }
+                    Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
+                        super::world_callbacks::validate_callbacks(std::slice::from_ref(
+                            callback.as_ref(),
+                        ))?;
+                        if callback
+                            .state_operations
+                            .iter()
+                            .any(|operation| !tracks.contains(&operation.track))
+                        {
+                            return Err("authored foreign clock track".into());
+                        }
+                        let expected = if matches!(&stage.trigger, Trigger::MapUse { .. }) {
+                            super::world_callbacks::Trigger::Use
+                        } else {
+                            super::world_callbacks::Trigger::StepIn
+                        };
+                        if callback.trigger != expected {
+                            return Err("authored world trigger mismatch".into());
+                        }
+                        (&callback.key, &callback.quest, &callback.storage)
+                    }
+                };
+                if owner != &quest.quest
+                    || !transitions.insert(key)
+                    || (storage.is_empty()
+                        && !matches!(&stage.trigger,
+                        Trigger::MapUse { callback } | Trigger::StepIn { callback }
+                        if !callback.state_operations.is_empty()))
+                    || storage.iter().any(|s| {
+                        !tracks.contains(&s.track)
+                            || quest
+                                .tracks
+                                .iter()
+                                .find(|t| t.key == s.track)
+                                .is_none_or(|t| {
+                                    s.minimum < t.minimum
+                                        || s.maximum > t.maximum
+                                        || !(t.minimum..=t.maximum).contains(&s.set)
+                                })
+                    })
+                {
+                    return Err("authored foreign/unbounded stage".into());
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Compose explicit bindings with existing state. Every binding contributes to its quest hash.
+    pub fn attach(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+        if let Some(evidence) = &base.native_recipe_evidence {
+            evidence.verify(self)?;
+        }
+        let mut normalized = self.clone();
+        for quest in &mut normalized.quests {
+            for stage in &mut quest.stages {
+                match &mut stage.trigger {
+                    Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
+                        callback.completes = stage.completes;
+                    }
+                    Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
+                        callback.completes = stage.completes;
+                    }
+                    _ => {}
+                }
+            }
+        }
+        normalized.attach_normalized(base)
+    }
+
+    fn attach_normalized(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+        self.validate()?;
+        let mut tracks: Vec<_> = base.tracks.values().cloned().collect();
+        let mut transitions: Vec<_> = base.transitions.values().cloned().collect();
+        for quest in &self.quests {
+            for t in &quest.tracks {
+                tracks.push(QuestTrack {
+                    key: t.key.clone(),
+                    quest: quest.quest.clone(),
+                    initial: t.initial,
+                    min: t.minimum,
+                    max: t.maximum,
+                });
+            }
+            for stage in &quest.stages {
+                if let Trigger::Kill { counter } = &stage.trigger {
+                    transitions.push(QuestTransition {
+                        key: counter.key.clone(),
+                        quest: quest.quest.clone(),
+                        effects: counter.effects(),
+                        completes: stage.completes,
+                        experience: None,
+                        world_change: None,
+                    });
+                    continue;
+                }
+                let mut transition = match &stage.trigger {
+                    Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
+                        super::reward_callbacks::primary_transition(callback)?
+                    }
+                    Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
+                        super::world_callbacks::primary_transition(callback)?
+                    }
+                    Trigger::Kill { .. } => continue,
+                };
+                transition.completes = stage.completes;
+                transitions.push(transition);
+            }
+        }
+        let mut catalogue =
+            QuestStateCatalogue::new(base.content_revision.clone(), tracks, transitions)
+                .map_err(|e| format!("{e:?}"))?;
+        if base.authored_bindings.is_some() {
+            return Err("compose all authored bindings in one immutable set".into());
+        }
+        catalogue.native_recipe_evidence = base.native_recipe_evidence.clone();
+        catalogue.npc_legacy = base.npc_legacy.clone();
+        catalogue.predecessors = base.predecessors.clone();
+        for (key, hash) in &base.hashes {
+            if !self.quests.iter().any(|quest| &quest.quest == key) {
+                catalogue.hashes.insert(key.clone(), *hash);
+            }
+        }
+        for quest in &self.quests {
+            let before = catalogue
+                .hashes
+                .get_mut(&quest.quest)
+                .ok_or("authored quest hash")?;
+            let mut hash = Sha256::new()
+                .chain_update(*before)
+                .chain_update(b"authored-native-bindings-v1");
+            if let Some(previous) = base.hashes.get(&quest.quest) {
+                hash.update(previous);
+            }
+            hash.update(serde_json::to_vec(quest).map_err(|e| e.to_string())?);
+            *before = hash.finalize().into();
+            // New authored semantics must not silently inherit an NPC-only revision migration.
+            catalogue.npc_legacy.remove(&quest.quest);
+            catalogue.predecessors.remove(&quest.quest);
+        }
+        let mut world = super::world_callbacks::load()?;
+        world.extend(self.world_callbacks().cloned());
+        if world.len() > MAX_BOUND_STAGES
+            || world.iter().map(|c| &c.key).collect::<BTreeSet<_>>().len() != world.len()
+        {
+            return Err("authored/base world binding collision or bound".into());
+        }
+        catalogue.authored_bindings = Some(std::sync::Arc::new(RuntimeBindings {
+            source: self.clone(),
+            world,
+        }));
+        // Reject collisions with retained callbacks before this catalogue can be admitted.
+        super::reward_callbacks::load_for(&catalogue)?;
+        Ok(catalogue)
+    }
+
+    pub fn reward_callbacks(&self) -> impl Iterator<Item = &RewardCallback> {
+        self.quests
+            .iter()
+            .flat_map(|q| &q.stages)
+            .filter_map(|s| match &s.trigger {
+                Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
+                    Some(callback.as_ref())
+                }
+                _ => None,
+            })
+    }
+    pub fn world_callbacks(&self) -> impl Iterator<Item = &Callback> {
+        self.quests
+            .iter()
+            .flat_map(|q| &q.stages)
+            .filter_map(|s| match &s.trigger {
+                Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
+                    Some(callback.as_ref())
+                }
+                _ => None,
+            })
+    }
+}
+
+fn digest(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        && value.bytes().any(|b| b != b'0')
+}
+
+#[cfg(test)]
+mod tests;

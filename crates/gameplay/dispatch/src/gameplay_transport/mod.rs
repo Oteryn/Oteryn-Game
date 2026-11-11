@@ -30,6 +30,7 @@ pub mod bulletin;
 mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
+mod bundle_ladder;
 mod bundle_map_position;
 mod cake_event;
 mod capabilities;
@@ -72,6 +73,7 @@ mod endgame_entry;
 mod entity_names;
 mod equipment_move;
 mod equipment_reflection;
+mod falcon_chests;
 mod field_removal;
 mod first_vocation_vitals;
 pub mod fresh_evidence;
@@ -159,6 +161,9 @@ mod pvp_expert;
 mod pvp_live;
 mod quest_admission;
 mod quest_callbacks;
+mod quest_death_loot;
+mod quest_disguise;
+mod quest_kill_objectives;
 mod quest_kills;
 mod quest_log_source;
 mod quest_timer_cycle;
@@ -206,6 +211,7 @@ mod timed_item_wire;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
+mod viola_book;
 mod vip_presence;
 mod vocation_choice;
 pub mod weapon_proficiency;
@@ -600,6 +606,9 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// Origin of the owner clock cooldowns are measured on: process-local and monotonic, never a
     /// client or wall-clock time (spell cast §2).
     pub clock_origin: std::time::Instant,
+    /// Explicit receipt rollout configuration for isolated composed-owner fixtures.
+    #[cfg(test)]
+    pub test_step_wait_receipts: Option<bool>,
     pub states: std::sync::Arc<channel_states::ChannelSessionStates>,
     /// Exact native owners retained for committed activity entry, return and recovery.
     pub activity_runtimes: std::sync::Arc<activity_runtime::ActivityRuntimeRegistry<'a>>,
@@ -1282,7 +1291,57 @@ fn earned_notice(
 /// One structured stderr event line for the operator, as the node's own events are written
 /// (OPS-NODE-BOOT-01 D6).
 fn operator_event(line: &str) {
-    eprintln!("oteryn-game-server {line}");
+    operator_event_with_trace(line, connection::diagnostic_connection_trace());
+}
+
+fn format_connection_trace(trace: [u8; 16]) -> String {
+    format!(
+        "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+        trace[0],
+        trace[1],
+        trace[2],
+        trace[3],
+        trace[4],
+        trace[5],
+        trace[6],
+        trace[7],
+        trace[8],
+        trace[9],
+        trace[10],
+        trace[11],
+        trace[12],
+        trace[13],
+        trace[14],
+        trace[15],
+    )
+}
+
+fn operator_event_with_trace(line: &str, trace: Option<[u8; 16]>) {
+    let mut parts = line.split_whitespace();
+    let Some(event) = parts.next().and_then(|part| part.strip_prefix("event=")) else {
+        oteryn_error_codes::emit(
+            "oteryn-game-server",
+            &oteryn_error_codes::Line::new(
+                oteryn_error_codes::Level::Warn,
+                "gameplay_transport",
+                "transport_diagnostic",
+            )
+            .detail(line),
+        );
+        return;
+    };
+    let trace = trace.map(format_connection_trace);
+    let mut diagnostic =
+        oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "gameplay_transport", event);
+    if let Some(trace) = trace.as_deref() {
+        diagnostic = diagnostic.trace(trace);
+    }
+    for part in parts {
+        if let Some((key, value)) = part.split_once('=') {
+            diagnostic = diagnostic.field(key, oteryn_error_codes::FieldValue::Token(value));
+        }
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &diagnostic);
 }
 
 /// Same-session grace from the authoritative `ControlLossEpoch` boundary: registry row

@@ -32,8 +32,13 @@ pub fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error
             }
             println!("cargo:rerun-if-changed={}", recipes.display());
         }
-        let module = module.to_str().ok_or("source harness path is not UTF-8")?;
-        writeln!(mounts, "#[path = {module:?}]\npub mod {quest};")?;
+        if quest == "hot_cuisine" {
+            // The durable NPC owner and this source harness share one module.
+            writeln!(mounts, "pub use crate::quest::hot_cuisine;")?;
+        } else {
+            let module = module.to_str().ok_or("source harness path is not UTF-8")?;
+            writeln!(mounts, "#[path = {module:?}]\npub mod {quest};")?;
+        }
     }
     std::fs::write(out.join("quest_batch3_a_modules.rs"), mounts)?;
     Ok(())

@@ -563,6 +563,7 @@ fn scenario(canonical: bool) -> TestResult {
                     current = movement.commit_cardinal(current, next).map_err(debug)?;
                 }
             }
+            let before_find = admitted;
             let (_, found) =
                 support::exchange(&owner, &mut admitted, 6 + index as u64, 73, &request(3, 0))
                     .await?;
@@ -570,11 +571,47 @@ fn scenario(canonical: bool) -> TestResult {
             assert_eq!(count(&found), index as u8 + 1);
             assert_eq!(found[9], u8::from(index == 6));
             assert_eq!(percentage(&found), if index == 6 { 50 } else { 0 });
+            assert_eq!(
+                owner
+                    .states
+                    .tutorial_sessions
+                    .take(admitted.game_session_id),
+                (index == 6).then(|| {
+                    oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(
+                        "Subarea discovered! All seven points of interest found.".into(),
+                    )
+                }),
+                "T187: only a committed seventh Find emits a discovery notice"
+            );
+            if index == 6 {
+                let GuildReply::Payload(replay) = owner
+                    .cyclopedia_command(before_find, 12, 73, &request(3, 0))
+                    .await
+                else {
+                    return Err("seventh Find receipt".into());
+                };
+                assert_eq!(replay, found);
+                assert!(
+                    owner
+                        .states
+                        .tutorial_sessions
+                        .take(admitted.game_session_id)
+                        .is_none(),
+                    "T187: replaying a committed Find cannot repeat the banner"
+                );
+            }
         }
         let (_, discovered) = support::exchange(&owner, &mut admitted, 13, 72, &[]).await?;
         assert_eq!(discovered[9], 1);
         assert_eq!(percentage(&discovered), 50);
         assert_eq!(discovered[29], 0);
+        assert!(
+            owner
+                .states
+                .tutorial_sessions
+                .take(admitted.game_session_id)
+                .is_none()
+        );
         assert_eq!(
             support::exchange(&owner, &mut admitted, 14, 73, &request(4, 0))
                 .await?
@@ -762,6 +799,14 @@ fn scenario(canonical: bool) -> TestResult {
         assert_eq!(reset_pois[9], 0, "the reset starts a fresh POI run");
         assert_eq!(count(&reset_pois), 0);
         assert_eq!(percentage(&reset_pois), 0);
+        assert!(
+            owner
+                .states
+                .tutorial_sessions
+                .take(admitted.game_session_id)
+                .is_none(),
+            "T187: resetting completed POIs cannot emit a discovery banner"
+        );
         let reset_progress: serde_json::Value =
             sqlx::query_scalar("SELECT progress->'subareas'->'2' FROM game_character_cyclopedia")
                 .fetch_one(&h.pool)

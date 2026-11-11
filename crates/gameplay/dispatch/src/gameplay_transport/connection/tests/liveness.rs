@@ -67,11 +67,21 @@ fn a_silent_refused_session_with_an_actor_closes_after_the_bound() -> Result<(),
         let (mut server, mut client) = tokio::io::duplex(1 << 16);
         // The client keeps its transport open but never writes.
         let end = serve_admitted(&mut server, refused()?, &authority, FAST).await;
-        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+        assert!(matches!(
+            end,
+            ConnectionEnd::AdmittedThenClosed(_, FoundationProtocolError::NotSupported)
+        ));
         drop(server);
         let mut output = Vec::new();
         client.read_to_end(&mut output).await?;
-        assert!(output.is_empty());
+        let frames = split_frames(&output)?;
+        assert_eq!(frames.len(), 1);
+        let envelope = decode_wire_envelope(&frames[0])?;
+        assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+        assert_eq!(
+            oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?.error_code,
+            FoundationProtocolError::NotSupported.code()
+        );
         assert!(authority.steps.borrow().is_empty());
         Ok(())
     })

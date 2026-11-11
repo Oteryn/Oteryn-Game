@@ -1,0 +1,80 @@
+[
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "fmt",
+      "--all"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-fmt-final.log"
+  },
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "check",
+      "--locked",
+      "--workspace",
+      "--all-targets"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-check-final.log"
+  },
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "clippy",
+      "--locked",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "-p",
+      "oteryn-gameplay-quests",
+      "-p",
+      "oteryn-game-server",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-clippy-final.log"
+  },
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "oteryn-gameplay-durability",
+      "--lib",
+      "durability::quest_state::tests::"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-quest-state-final.log"
+  },
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--lib",
+      "gameplay_transport::grizzly_kills::tests::"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-grizzly-final.log"
+  },
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--lib",
+      "gameplay_transport::npc_command::quest_dialogue::publication_tests::"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-dialogue-final.log"
+  }
+]

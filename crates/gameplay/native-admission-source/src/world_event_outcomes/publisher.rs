@@ -290,11 +290,22 @@ impl<C: ReportClock, S: LeagueStore, K: LeagueSink, F: EpochFence> Publisher<C, 
                 };
                 if let Err(error) = result {
                     // Closed diagnostic vocabulary; never log a record, native evidence or id.
-                    eprintln!(
-                        "family={} operation=publish result={} timing_ms={}",
-                        self.family,
-                        error.code().name,
-                        self.clock.elapsed().saturating_sub(start).as_millis()
+                    let elapsed = self.clock.elapsed().saturating_sub(start);
+                    oteryn_error_codes::emit(
+                        "oteryn-game-server",
+                        &oteryn_error_codes::Line::new(
+                            oteryn_error_codes::Level::Warn,
+                            "admission",
+                            "world_event_outcome_publish",
+                        )
+                        .code(error.code())
+                        .field("family", oteryn_error_codes::FieldValue::Token(self.family))
+                        .field(
+                            "ms",
+                            oteryn_error_codes::FieldValue::U64(
+                                u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX),
+                            ),
+                        ),
                     );
                 }
                 next_delivery = self.clock.elapsed() + Duration::from_secs(delay);

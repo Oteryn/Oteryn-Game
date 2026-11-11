@@ -20,15 +20,19 @@ impl BulletinSource {
         let path = self.path.clone();
         tokio::time::timeout(
             Duration::from_millis(200),
-            tokio::task::spawn_blocking(move || {
-                let _permit = permit;
-                let file = std::fs::File::open(path).ok()?;
-                let mut document = String::new();
-                file.take(oteryn_protocol_oteryn::bulletin::MAX_DOCUMENT_BYTES as u64 + 1)
-                    .read_to_string(&mut document)
-                    .ok()?;
-                valid(&document).then_some(document)
-            }),
+            oteryn_task_supervisor::spawn_blocking_lifecycle_supervised(
+                "bulletin_load",
+                None,
+                move || {
+                    let _permit = permit;
+                    let file = std::fs::File::open(path).ok()?;
+                    let mut document = String::new();
+                    file.take(oteryn_protocol_oteryn::bulletin::MAX_DOCUMENT_BYTES as u64 + 1)
+                        .read_to_string(&mut document)
+                        .ok()?;
+                    valid(&document).then_some(document)
+                },
+            ),
         )
         .await
         .ok()?

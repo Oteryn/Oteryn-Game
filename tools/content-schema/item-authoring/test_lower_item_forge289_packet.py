@@ -129,9 +129,7 @@ class Forge289(unittest.TestCase):
         self.assertEqual(context.check()["status"], "PASS")
         original = json.loads(context.read_context()["old165_bindings"]["raw_utf8"])
         packet = json.loads(forge.OUTPUT.read_bytes())
-        with tempfile.TemporaryDirectory(
-            prefix="forge289-aggregate-", dir=forge.ROOT.parent
-        ) as directory:
+        with tempfile.TemporaryDirectory(prefix="forge289-aggregate-") as directory:
             root = Path(directory)
             for name in ("tools", "docs", "content"):
                 (root / name).symlink_to(forge.ROOT / name, target_is_directory=True)
@@ -162,7 +160,7 @@ class Forge289(unittest.TestCase):
         # entirely disposable source tree. A historical rebuild must not replace
         # any source-tree output, even when its bytes differ from old165 output.
         with tempfile.TemporaryDirectory(
-            prefix="forge289-formal-isolation-", dir=forge.ROOT.parent
+            prefix="forge289-formal-isolation-"
         ) as directory:
             root = Path(directory)
             shutil.copytree(

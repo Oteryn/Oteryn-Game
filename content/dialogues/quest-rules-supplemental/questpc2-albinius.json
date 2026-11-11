@@ -1,0 +1,1173 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.questpc2-albinius-tomes",
+  "quest": "oteryn:quest.forgotten_knowledge_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_death",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:260-280"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_earth",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:238-258"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_golden",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:194-214"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_violet",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:216-236"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:116-124"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/shapers",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "shapers"
+      ],
+      "guards": [],
+      "reply": [
+        "The {Shapers} were an advanced civilisation, well versed in art, construction, language and exploration of our world in their time. ...",
+        "The foundations of this {temple} are testament to their genius and advanced understanding of complex problems. They were master craftsmen and excelled in magic."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:105-110"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/temple",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "temple"
+      ],
+      "guards": [],
+      "reply": [
+        "The temple has been restored to its former glory, yet we strife to live and praise in the {Shaper} ways. Do you still need me to take some old {tomes} from you my child?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:112-115"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/already",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You already offered enough tomes for us to study and rebuild this temple. Thank you, my child."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:116-120"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/contribute",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i23986",
+          "count": 5,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Thank you very much for your contribution, child. Your first step in the ways of the {Shapers} has been taken."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i23986",
+          "count": 5,
+          "optional": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:120-124"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/missing",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i23986",
+          "count": 5,
+          "op": "lt"
+        }
+      ],
+      "reply": [
+        "You need 5 heavy old tome."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:120-128"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/decline",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "I understand. Return to me if you change your mind, my child."
+      ],
+      "effects": [
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:129-132"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "yes"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/tomes",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "tomes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "If you have some old shaper tomes I would {buy} them."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:134-137"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/holy-offer",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "holy portal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You may pass this portal if you have 50 incantation notes as offering. Do you have the incantation notes with you?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:194-214"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/holy-prerequisite",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "holy portal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Sorry, first you need to bring my Heavy Old Tomes."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:194-214"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/holy-already",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_golden",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I'm sorry, you don't have enough incantation notes. Return if you can offer fifty of them."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:194-214"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/holy-missing",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_golden",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i18929",
+          "count": 50,
+          "op": "lt"
+        }
+      ],
+      "reply": [
+        "I'm sorry, you don't have enough incantation notes. Return if you can offer fifty of them."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:194-214"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/holy-accept",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_golden",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i18929",
+          "count": 50,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Thank you for your offering. You may pass the Portal to the Powers of Holy now."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i18929",
+          "count": 50,
+          "optional": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_golden",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:194-214"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/holy-decline",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "In this case I'm sorry, you may not pass this portal."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:194-214"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "yes"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/energy-offer",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "energy portal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You may pass this portal if you have 50 marsh stalker feathers as offering. Do you have the marsh stalker feathers with you?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:216-236"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/energy-prerequisite",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "energy portal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Sorry, first you need to bring my Heavy Old Tomes."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:216-236"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/energy-already",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_violet",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I'm sorry, you don't have enough marsh stalker feathers. Return if you can offer fifty of them."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:216-236"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        4
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/energy-missing",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_violet",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i17462",
+          "count": 50,
+          "op": "lt"
+        }
+      ],
+      "reply": [
+        "I'm sorry, you don't have enough marsh stalker feathers. Return if you can offer fifty of them."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:216-236"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        4
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/energy-accept",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_violet",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i17462",
+          "count": 50,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Thank you for your offering. You may pass the Portal to the Powers of Energy now."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i17462",
+          "count": 50,
+          "optional": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_violet",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:216-236"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        4
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/energy-decline",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "In this case I'm sorry, you may not pass this portal."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:216-236"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "yes"
+      ],
+      "topics": [
+        4
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/earth-offer",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "earth portal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You may pass this portal if you have 50 acorns as offering. Do you have the acorns with you?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:238-258"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/earth-prerequisite",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "earth portal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Sorry, first you need to bring my Heavy Old Tomes."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:238-258"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/earth-already",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_earth",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I'm sorry, you don't have enough acorns. Return if you can offer fifty of them."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:238-258"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        5
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/earth-missing",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_earth",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i10296",
+          "count": 50,
+          "op": "lt"
+        }
+      ],
+      "reply": [
+        "I'm sorry, you don't have enough acorns. Return if you can offer fifty of them."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:238-258"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        5
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/earth-accept",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_earth",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i10296",
+          "count": 50,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Thank you for your offering. You may pass the Portal to the Powers of Earth now."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i10296",
+          "count": 50,
+          "optional": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_earth",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:238-258"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        5
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/earth-decline",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "In this case I'm sorry, you may not pass this portal."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:238-258"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "yes"
+      ],
+      "topics": [
+        5
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/death-offer",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "death portal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You may pass this portal if you have 50 pelvis bones as offering. Do you have the pelvis bones with you?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:260-280"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/death-prerequisite",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "death portal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Sorry, first you need to bring my Heavy Old Tomes."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:260-280"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/death-already",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_death",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I'm sorry, you don't have enough pelvis bones. Return if you can offer fifty of them."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:260-280"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        6
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/death-missing",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_death",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i11481",
+          "count": 50,
+          "op": "lt"
+        }
+      ],
+      "reply": [
+        "I'm sorry, you don't have enough pelvis bones. Return if you can offer fifty of them."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:260-280"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        6
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/death-accept",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_death",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i11481",
+          "count": 50,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Thank you for your offering. You may pass the Portal to the Powers of Death now."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i11481",
+          "count": 50,
+          "optional": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_death",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:260-280"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal"
+      ],
+      "topics": [
+        6
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/death-decline",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "In this case I'm sorry, you may not pass this portal."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:260-280"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "ice portal",
+        "yes"
+      ],
+      "topics": [
+        6
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/albinius.lua",
+      "sha256": "1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    }
+  ]
+}

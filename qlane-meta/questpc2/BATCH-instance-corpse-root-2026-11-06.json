@@ -1,0 +1,133 @@
+{
+  "batch_id": "instance-corpse-root-2026-11-06",
+  "base_sha": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+  "branch": "claude/happy-davinci-ijz3wy-questpc2",
+  "entries": [
+    "Soul War Quest",
+    "Rotten Blood Quest",
+    "Primal Ordeal Quest (inherited shared-mechanism regression)"
+  ],
+  "scope": "Generic durable physical Instance corpse root MINT from a retained real native death. Isolated Item definition; source-native room, creature mechanic, Item admission and automatic combat-drain composition are not qualified.",
+  "whole_quest_qualifications": 0,
+  "baseline": {
+    "passed": 5,
+    "failed": 0,
+    "ignored": 0,
+    "duration_seconds": 374.3,
+    "log": "/tmp/questpc2-baseline-online.log"
+  },
+  "red": {
+    "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib l3_instance_endgame_soul_war_native_death_progresses_once -- --nocapture --test-threads=1",
+    "duration_seconds": 74.45,
+    "error": "AuthorityRejected",
+    "postgres_version": 180006,
+    "marker": "INSTANCE_CORPSE_MINT POSTGRES_CASE_OBSERVED server_version_num=180006",
+    "log": "/tmp/questpc2-corpse-red-marked.log"
+  },
+  "intermediate_repair": {
+    "error": "DUR-03 item MINT reservation is immutable except its work-unit charge",
+    "cause": "PostgreSQL stored generated columns are unset in NEW during BEFORE triggers. Compare every writable field while excluding only the unassignable derived scope key from both sides. The receipt materialization guard needs the same treatment.",
+    "log": "/tmp/questpc2-corpse-green-attempt.log"
+  },
+  "changes": [
+    "Retain the sealed death runtime scope in the existing MINT cause; use a nonnullable generated tagged scope key for full reservation/receipt equality. No Instance borrows its origin Channel.",
+    "Independently prove the exact current assignment and node incarnation for fresh writes; retain existing historical replay and logical work-unit budget. Wrong Instance and same-UUID Channel permits cannot charge or commit.",
+    "Write the exact typed Ground scope, corpse attribution, reservation and existing audit outbox atomically. Extend installed proof chains instead of copying and dropping later item-owner arms.",
+    "Add optional death-reference field 6 for Instance ID. Legacy Channel intent bindings, cause-lock bytes and audit goldens remain unchanged; the envelope repeats the exact scope.",
+    "Run the generic root owner against real Soul War, Rotten Blood and Primal native deaths using isolated Item data; retain all existing source reward, progression, late refusal and replay assertions."
+  ],
+  "green": {
+    "instance_pg": {
+      "passed": 5,
+      "failed": 0,
+      "ignored": 0,
+      "duration_seconds": 398.74,
+      "log": "/tmp/questpc2-corpse-final-pg.log"
+    },
+    "channel_pg": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "duration_seconds": 9.68,
+      "log": "/tmp/questpc2-corpse-channel-pg.log"
+    },
+    "audit_units": {
+      "passed": 30,
+      "failed": 0,
+      "ignored": 0,
+      "duration_seconds": 0.21,
+      "log": "/tmp/questpc2-corpse-audit-units.log"
+    },
+    "markers": [
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=1039",
+      "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=87426",
+      "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED",
+      "INSTANCE_CORPSE_MINT POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "INSTANCE_CORPSE_MINT POSTGRES_CASE_COMPLETED elapsed_ms=210",
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.the_primal_menace elapsed_ms=444",
+      "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.the_primal_menace elapsed_ms=74655",
+      "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED",
+      "INSTANCE_CORPSE_MINT POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "INSTANCE_CORPSE_MINT POSTGRES_CASE_COMPLETED elapsed_ms=70",
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.bakragore elapsed_ms=236",
+      "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.bakragore elapsed_ms=76395",
+      "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED",
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_megalomania_green elapsed_ms=273",
+      "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_megalomania_green elapsed_ms=78824",
+      "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED",
+      "INSTANCE_CORPSE_MINT POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "INSTANCE_CORPSE_MINT POSTGRES_CASE_COMPLETED elapsed_ms=101",
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=430",
+      "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=80087",
+      "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED"
+    ],
+    "check": {
+      "command": "cargo check --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-features",
+      "duration_seconds": 98,
+      "exit_code": 0,
+      "log": "/tmp/questpc2-corpse-check-final.log"
+    },
+    "clippy": {
+      "command": "cargo clippy --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-targets --all-features -- -D warnings",
+      "duration_seconds": 304,
+      "exit_code": 0,
+      "log": "/tmp/questpc2-corpse-clippy.log"
+    },
+    "format": "cargo fmt --all; cargo fmt --all -- --check; explicit changed-module rustfmt --check: exit 0",
+    "registry_and_whitespace": "python3 tools/contracts/registry_fragments.py; git diff --check: exit 0"
+  },
+  "number_check": {
+    "main_sha": "91afbe0ba1",
+    "migration": 1024,
+    "note": "1024 is absent from refreshed main and open-PR held numbers, and from the inspected quest lane branches. Existing published 1020-1023 are preserved.",
+    "log": "/tmp/questpc2-number-check-current.log"
+  },
+  "source_boundary": "Existing Game DUR-03 and native Instance Ground/assignment owners; no new donor facts or source quest grants authored in this batch.",
+  "self_review": [
+    "Read the complete product diff, new migration and helper against the repository checklist. Tagged full cause identity, immutable writable fields, current scope/node fencing and same-scope corpse ancestry remain required.",
+    "No new table, role, privilege, command, capability or competing value owner. Existing reservation locks, receipt reconciliation, scope-local capacities and Type2 transaction deadlines are retained.",
+    "Every existing test assertion remains; the new tests exercise genuine native dispatch before the generic durable call, exact persisted audit decode, invalid-scope refusal and original receipt replay.",
+    "No workflow/repository-tool edits, generated pin edits, donor copies, binary additions, credentials, subagents or external messages. No independent-review, freeze, PR or readiness claim."
+  ],
+  "next": "Continue immediately with exact source corpse Item admission and native combat/Content composition, corpse-loot/nested ownership and source-native room/boss mechanics; then the remaining owned L3 quests. No external engine deferral.",
+  "next_source_evidence": {
+    "path": "imports/canary/items-xml/items.xml",
+    "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "lines": [
+      63232,
+      73137,
+      76397
+    ],
+    "scope": "Read-only next-batch investigation; no Item admission in this batch."
+  }
+}

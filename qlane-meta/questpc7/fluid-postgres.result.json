@@ -1,0 +1,14 @@
+{
+  "command": "QPC_SLOT=3 /home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --test character_authority_postgres filled_fluid_claims_commit_root_and_children_and_replay_without_refilling -- --nocapture",
+  "exit": 101,
+  "passed": 0,
+  "failed": 1,
+  "test_duration_seconds": 0.0,
+  "postgres_case_completed": false,
+  "failure": "Connection refused (os error 111)",
+  "log_lifetime_seconds": 217.841,
+  "log_lifetime_basis": "log creation to final output write",
+  "cargo_reported_build_duration": "3m 54s",
+  "wall_duration_seconds": null,
+  "wall_duration_note": "The invocation did not capture a monotonic wall timer; log lifetime is retained separately."
+}

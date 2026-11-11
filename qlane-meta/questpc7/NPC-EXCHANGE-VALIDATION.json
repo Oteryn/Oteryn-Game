@@ -1,0 +1,210 @@
+{
+  "batch": "ordered NPC carried exchange mechanism; no whole-quest promotion",
+  "branch": "claude/happy-davinci-ijz3wy-questpc7",
+  "parent": "96b478e86678c7607a9a2154f72fe6c91d354188",
+  "scope_entries": [
+    "Exchange Quests",
+    "Hot Cuisine Quest",
+    "Hunting for Tokens Quest"
+  ],
+  "whole_quests_qualified": 0,
+  "postgres_version": "18.6",
+  "red": [
+    {
+      "test": "npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay",
+      "seconds": 37.98,
+      "failure": "Refused(StageMismatch) with complete source ingredients",
+      "log": "/tmp/questpc7-exchange-red-writer.log"
+    },
+    {
+      "test": "fathers_burden_eight_handins_cape_experience_and_replay",
+      "seconds": 68.67,
+      "failure": "SQLSTATE 42702: column reference amount is ambiguous in game_father_values_proven",
+      "log": "/tmp/questpc7-material-father-constraints.log"
+    }
+  ],
+  "green_postgres": [
+    {
+      "test": "npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay",
+      "seconds": 38.928897695,
+      "marker": "NPC_EXCHANGE POSTGRES_STARTED version=18.6; NPC_EXCHANGE POSTGRES_CASE_COMPLETED three_source_recipes",
+      "log": "/tmp/questpc7-postrepair-exchange-pg.log"
+    },
+    {
+      "test": "fathers_burden_eight_handins_cape_experience_and_replay",
+      "seconds": 71.399531252,
+      "marker": "POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay",
+      "log": "/tmp/questpc7-father-xp-name-green.log"
+    }
+  ],
+  "retained_atomic_legacy_cases": {
+    "tests": 2,
+    "seconds": 139.38,
+    "log": "/tmp/questpc7-final-father-atomic-pg.log"
+  },
+  "focused_python_tests": 13,
+  "native_profiles": {
+    "added": 49,
+    "removed": 0,
+    "existing_changed": [
+      "oteryn:item.tibia.i139: unknown container and stack limit custody facts only"
+    ]
+  },
+  "reuse": {
+    "branch": "claude/happy-davinci-ijz3wy-qengine2",
+    "sha": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+    "path": "tools/content-migration/qengine_reward_item_profiles.py",
+    "adaptations": [
+      "Tereban eight exact material operands",
+      "preserve known native custody facts and other semantic owners",
+      "preserve current manifest version when cosmetics absent"
+    ]
+  },
+  "checks": [
+    {
+      "check": "exchange-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "npc_item_exchanges_consume_exact",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 39.187,
+      "log": "/tmp/questpc7-postrepair-exchange-pg.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "exit_code": 0,
+      "seconds": 163.111,
+      "log": "/tmp/questpc7-postrepair-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "exit_code": 0,
+      "seconds": 49.423,
+      "log": "/tmp/questpc7-postrepair-world.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "exit_code": 0,
+      "seconds": 18.222,
+      "log": "/tmp/questpc7-postrepair-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "seconds": 42.563,
+      "log": "/tmp/questpc7-postrepair-clippy.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-material-pin-check"
+      ],
+      "exit_code": 0,
+      "seconds": 129.084,
+      "log": "/tmp/questpc7-postrepair-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 12.151,
+      "log": "/tmp/questpc7-postrepair-fmt.log"
+    }
+  ],
+  "additional_checks": [
+    {
+      "command": "cargo check --locked -p oteryn-game-server",
+      "exit_code": 0,
+      "log": "/tmp/questpc7-server-check.log"
+    },
+    {
+      "command": "python3 tools/content-migration/register_spell_families.py --check",
+      "exit_code": 0,
+      "log": "/tmp/questpc7-material-register-check.log"
+    },
+    {
+      "command": "python3 tools/content-migration/quest_batch3_item_profiles.py --source-root /tmp/questpc7-recipe-source --check",
+      "exit_code": 0,
+      "log": "/tmp/questpc7-material-profile-check.log"
+    },
+    {
+      "command": "cargo clippy --locked -p oteryn-game-server --all-targets --all-features -- -D warnings",
+      "exit_code": 0,
+      "duration": "2m26s",
+      "log": "/tmp/questpc7-server-clippy.log"
+    }
+  ],
+  "invariants": [
+    "Father acceptance remains one eleven-track transaction",
+    "source-selected exact quantities and subtypes",
+    "all debits and output/progress share one transaction",
+    "rollback on insufficient backpack capacity",
+    "durable response replay and conflicting binding rejection",
+    "stale lease rejected",
+    "no binary or donor dump committed",
+    "no workflow or repository-tool edits"
+  ]
+}

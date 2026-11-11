@@ -1748,9 +1748,14 @@ async fn backoff_within(attempt: &mut u32, budget: Option<tokio::time::Instant>)
 
 /// Re-establish the durability holder after any reported demand, and at a
 /// fixed interval well inside the 30-minute holder lifetime (D3 step 2).
-async fn maintain(root: DurabilityRoot, stop: CancellationToken) {
+async fn maintain(
+    root: DurabilityRoot,
+    stop: CancellationToken,
+    heartbeat: oteryn_task_supervisor::Heartbeat,
+) {
     let mut since = tokio::time::Instant::now();
     while !stop.is_cancelled() {
+        heartbeat.beat();
         if first(tokio::time::sleep(MAINTENANCE_POLL), stop.cancelled())
             .await
             .is_none()
@@ -2574,13 +2579,24 @@ fn control_health(root: &DurabilityRoot) -> String {
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .clone();
+    let stalled_tasks = oteryn_task_supervisor::supervised_tasks()
+        .into_iter()
+        .filter(|task| task.is_stalled(Duration::from_secs(30)))
+        .map(|task| {
+            serde_json::json!({
+                "name": task.name,
+                "age_ms": task.age_ms,
+                "since_beat_ms": task.since_beat_ms,
+            })
+        })
+        .collect::<Vec<_>>();
     serde_json::json!({
         "readiness": root.is_ready(),
         "db_pool": if root.is_ready() { "ready" } else { "unavailable" },
         "platform": "unknown",
         "tick_ms": null,
         "connections": 0,
-        "stalled_tasks": [],
+        "stalled_tasks": stalled_tasks,
         "last_errors": last_errors,
     })
     .to_string()
@@ -2837,15 +2853,25 @@ pub async fn run_with_npc_data_project(
     let signalled = CancellationToken::new();
     let watcher = {
         let signalled = signalled.clone();
-        tokio::spawn(async move {
-            termination().await;
-            signalled.cancel();
-        })
+        oteryn_task_supervisor::spawn_lifecycle_supervised(
+            "termination_watcher",
+            None,
+            async move {
+                termination().await;
+                signalled.cancel();
+            },
+        )
     };
     // D3 step 2.
     let root = connect_root(&config.database, effective_uid()).await?;
     let stop_maintenance = CancellationToken::new();
-    let maintenance = tokio::spawn(maintain(root.clone(), stop_maintenance.clone()));
+    let maintenance_root = root.clone();
+    let maintenance_stop = stop_maintenance.clone();
+    let maintenance = oteryn_task_supervisor::spawn_supervised_with_heartbeat(
+        "durability_maintenance",
+        None,
+        move |heartbeat| maintain(maintenance_root, maintenance_stop, heartbeat),
+    );
     let result = boot_and_serve(&root, &material, bundle, npc_boot, &signalled).await;
     stop_maintenance.cancel();
     let _ = maintenance.await;
@@ -2907,41 +2933,7 @@ fn boot_bundle_items(
     channel: ChannelId,
     gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> Result<crate::map::boot::BundleWorld, BootError> {
-    use crate::content::{ReferenceItemField, ReferenceItemType};
-    let index = gameplay.and_then(|state| state.item_index());
-    let item = |key: &str| {
-        let index = index?;
-        let revision = index.revision(key)?;
-        let reference = index.definition_ref("Item", key, revision)?;
-        let profile = gameplay
-            .and_then(|state| state.item_policy(key, revision))
-            .map(|policy| policy.record());
-        let pickupable = profile.is_some_and(|profile| {
-            matches!(
-                &profile.semantics.physical,
-                ReferenceItemField::Known(physical)
-                    if physical.pickupable == ReferenceItemField::Known(true)
-            )
-        });
-        // MAP-DOOR-1: doorhood is the content profile's `item_type`, never an appearance id.
-        let door = profile.is_some_and(|profile| {
-            matches!(
-                &profile.semantics.classification,
-                ReferenceItemField::Known(classification)
-                    if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
-            )
-        });
-        let attributes = profile.map(|profile| &profile.attributes);
-        Some(crate::map::facts::ItemDefinition {
-            reference,
-            solid: attributes.and_then(|attributes| attributes.blocks_movement),
-            blocks_projectile: attributes
-                .and_then(|attributes| attributes.blocks_projectile)
-                .unwrap_or(true),
-            pickupable,
-            door,
-        })
-    };
+    let item = |key: &str| crate::map::boot::native_item_definition(gameplay, key);
     checked
         .boot(world, channel, item)
         .map_err(BootError::WorldBundle)

@@ -54,7 +54,14 @@ pub(super) async fn run_case(
     let session = admitted.game_session_id;
     progression_case::fixture_vocation(owner, admitted, "monk").await?;
     elite(owner, admitted, true).await?;
-    let initial = full_board(owner, admitted, 7, 0, "").await?;
+    full_board(owner, admitted, 7, 0, "").await?;
+    // Rerolls now require a token. Seed a completed offer, then grant that token
+    // through the real claim owner before testing the Elite reroll.
+    token_case::completed_fixture(harness, None).await?;
+    let token_claim = full_board(owner, admitted, 9, 0, "").await?;
+    assert_eq!((token_claim.refusal, token_claim.bounty.rerolls), (0, 1));
+    let initial = full_board(owner, admitted, 4, 0, "").await?;
+    let rarity_before = fixture_board_data(harness).await?.bounty.rarity;
     assert_eq!(initial.refusal, 0);
     assert_eq!(initial.bounty.offers.len(), 3);
     assert!(
@@ -65,11 +72,14 @@ pub(super) async fn run_case(
             .all(|task| task.elite && task.dust > 0)
     );
     let rerolled = full_board(owner, admitted, 11, 0, "").await?;
-    assert_eq!(rerolled.refusal, 0);
+    assert_eq!((rerolled.refusal, rerolled.bounty.rerolls), (0, 0));
     assert_eq!(rerolled.bounty.offers.len(), 3);
     let reloaded = fixture_board_data(harness).await?;
     for task in &initial.bounty.offers {
-        assert_eq!(reloaded.bounty.rarity.get(&task.race), Some(&1));
+        assert_eq!(
+            reloaded.bounty.rarity.get(&task.race).copied(),
+            Some(rarity_before.get(&task.race).copied().unwrap_or(0) + 1)
+        );
     }
     println!("<T201> POSTGRES_CASE_COMPLETED: elite_preference_and_per_character_rarity_reload");
 
@@ -222,7 +232,7 @@ pub(super) async fn run_case(
         );
         assert_eq!(
             claim.bounty_points,
-            u64::from(platinum.points) * if premium { 2 } else { 1 }
+            token_claim.bounty_points + u64::from(platinum.points) * if premium { 2 } else { 1 }
         );
     }
     println!("<T201> POSTGRES_CASE_COMPLETED: platinum_claim_real_xp_and_premium_only_dust_replay");

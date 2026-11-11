@@ -2,6 +2,27 @@
 use super::*;
 
 impl<S: SessionStream> Session<S> {
+    pub(super) fn terminal_protocol_error(
+        &self,
+        envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+    ) -> Result<Option<SessionError>, SessionError> {
+        if envelope.message_type() != MessageType::ProtocolError {
+            return Ok(None);
+        }
+        let error = decode_protocol_error(envelope.payload())?;
+        if error.connection_trace.is_some()
+            && !self
+                .selected_capabilities
+                .contains(&oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
+        {
+            return Err(FoundationProtocolError::MalformedEnvelope.into());
+        }
+        Ok(Some(SessionError::ServerProtocolError {
+            code: error.error_code,
+            connection_trace: error.connection_trace,
+        }))
+    }
+
     pub(super) fn ensure_usable(&self) -> Result<(), SessionError> {
         if self.unusable {
             Err(SessionError::SessionUnusable)
@@ -31,10 +52,12 @@ impl<S: SessionStream> Session<S> {
             .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
             .await?;
         let (payload, detail) = self.item_result_payload(&result.payload)?;
-        let disposition = world_spatial::decode_step_result_paced(
+        let disposition = world_spatial::decode_step_result_profile(
             payload,
             self.is_selected(CAPABILITY_PACED_MOVEMENT_V1),
-        )?;
+            self.is_selected(world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1),
+        )?
+        .disposition;
         check_status_pairing(
             result.command_id,
             result.status,
@@ -342,6 +365,9 @@ impl<S: SessionStream> Session<S> {
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;
+            if let Some(error) = self.terminal_protocol_error(&envelope)? {
+                return Err(error);
+            }
             if envelope.message_type() == MessageType::SnapshotBegin {
                 let source = self.join_snapshot.game_session_id;
                 self.replace_snapshot(envelope.payload()).await?;

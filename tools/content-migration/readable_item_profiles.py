@@ -9,6 +9,8 @@ import argparse
 import copy
 import hashlib
 import json
+
+from native_profile_composition import encode_native_profile
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -137,7 +139,7 @@ def apply_native(root, generated, profile_path, manifest_path, order, canonical)
             group["value"][field] = {"state": "KNOWN", "value": value}
         record["semantics"]["readable_writeable"] = group
     document["records"].sort(key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     generated[PATH] = expected
     manifest = json.loads(generated[manifest_path])

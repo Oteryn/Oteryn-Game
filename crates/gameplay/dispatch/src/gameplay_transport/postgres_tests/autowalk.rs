@@ -685,6 +685,22 @@ fn next(
         D::East => at.x += 1,
         D::South => at.y += 1,
         D::West => at.x -= 1,
+        D::NorthEast => {
+            at.x += 1;
+            at.y -= 1;
+        }
+        D::SouthEast => {
+            at.x += 1;
+            at.y += 1;
+        }
+        D::SouthWest => {
+            at.x -= 1;
+            at.y += 1;
+        }
+        D::NorthWest => {
+            at.x -= 1;
+            at.y -= 1;
+        }
     }
     at
 }
@@ -1050,11 +1066,13 @@ async fn pick_origin(
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
     };
+    // The independent pickup shares the non-blocking durability holder with
+    // served movement. Serialize its reservation preflight under the same lane.
+    let permit = owner.spell_lane_permit().await.ok_or("lane")?;
     let mut candidate = root
         .freeze_map_item_mint(authority, owner.holder, fence, request)
         .await
         .map_err(|error| format!("independent pickup freeze: {error:?}"))?;
-    let permit = owner.spell_lane_permit().await.ok_or("lane")?;
     assert!(matches!(
         root.commit_map_item_mint(&permit, authority, owner.holder, fence, &mut candidate)
             .await

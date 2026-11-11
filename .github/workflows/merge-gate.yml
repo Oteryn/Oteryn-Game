@@ -101,7 +101,7 @@ jobs:
               errors.append('merge gate only accepts pull requests targeting main')
           if re.fullmatch(r'[0-9a-f]{40}', base_sha) is None:
               errors.append('pull request base SHA is invalid')
-          if not isinstance(changed_files, int) or changed_files < 0:
+          if type(changed_files) is not int or changed_files < 0:
               errors.append('pull request changed_files count is invalid')
           complete = type(changed_files) is int and 0 <= changed_files <= 300
           files: list[str] = []
@@ -142,8 +142,14 @@ jobs:
                   errors.append('pull request base moved during scope classification')
               if pull_after_files.get('base', {}).get('ref') != 'main':
                   errors.append('pull request base ref changed during scope classification')
-              if pull_after_files.get('changed_files') != changed_files:
-                  errors.append('pull request file count changed during scope classification')
+              changed_files_after = pull_after_files.get('changed_files')
+              if type(changed_files_after) is not int or changed_files_after < 0:
+                  errors.append('pull request changed_files count is invalid')
+              elif changed_files_after != changed_files:
+                  # Mutable summary drift invalidates transported file evidence, not
+                  # the fenced commits. Trusted-base routing recovers their Git diff
+                  # or selects FULL when that immutable enumeration is unavailable.
+                  complete = False
 
           if errors:
               for error in errors:

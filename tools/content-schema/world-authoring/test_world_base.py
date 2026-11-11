@@ -1032,9 +1032,13 @@ class ConvertAndValidateTest(unittest.TestCase):
         original_regions = {
             r["path"]: (self.root / r["path"]).read_bytes() for r in index["regions"]
         }
+        stale = self.summary()
+        stale["bytes_on_disk"] = 0
+        stale["item_attributes"] = {}
+        (self.root / validate.SUMMARY).write_bytes(validate.canonical(stale))
         with mock.patch.object(convert, "SOURCE", {"files": [pin]}):
             actual = json.loads(convert.palette_summary(self.root, self.root))
-            expected = self.summary()
+            expected = self.summary(self.out)
             self.assertEqual(
                 actual["palette"]["families"]["terrain"],
                 {"entries": 1, "occurrences": 2},
@@ -1621,6 +1625,31 @@ class ConvertAndValidateTest(unittest.TestCase):
         index["regions"][0]["tiles"] += 1
         self.write_index(index)
         self.assertTrue(any("decoded 4 tiles" in e for e in self.errors()))
+
+    def test_authored_props_require_exact_registered_files_and_digests(self):
+        path = f"{validate.DIRECTORY}/authored-fixture.json"
+        raw = b'{"schema":1}\n'
+        (self.root / path).write_bytes(raw)
+        index = self.index()
+        pin = {"path": path, "sha256": validate.hashlib.sha256(raw).hexdigest()}
+        index["authored_props"] = [pin]
+        self.write_index(index)
+        self.assertEqual(self.errors(), [])
+        for pins in (
+            [],
+            [pin, pin],
+            [pin | {"path": "../escape.json"}],
+            [pin | {"sha256": "0" * 64}],
+            [pin | {"extra": True}],
+        ):
+            with self.subTest(pins=pins):
+                index["authored_props"] = pins
+                self.write_index(index)
+                self.assertTrue(self.errors())
+        index["authored_props"] = [pin]
+        self.write_index(index)
+        (self.root / path).write_bytes(raw + b" ")
+        self.assertTrue(self.errors())
 
     def test_pinned_totals_and_non_canonical_index(self):
         self.assertTrue(validate.validate(self.root, {"tiles": 1, "items": 1}))

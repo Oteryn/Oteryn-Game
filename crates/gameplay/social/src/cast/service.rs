@@ -92,7 +92,11 @@ impl CastService {
         let owner = CastOwner::new(capacity)?;
         let (tx, rx) = mpsc::channel(capacity.min(256));
         let origin = std::time::Instant::now();
-        tokio::spawn(run(owner, root, node, access, rx, origin));
+        oteryn_task_supervisor::spawn_supervised_with_heartbeat(
+            "cast_service",
+            None,
+            move |heartbeat| run(owner, root, node, access, rx, origin, heartbeat),
+        );
         Ok(Self { tx, origin })
     }
     pub fn clock(&self) -> (u64, u64) {
@@ -126,6 +130,7 @@ async fn run(
     access: Arc<access::CastAccessClient>,
     mut rx: mpsc::Receiver<Request>,
     clock: std::time::Instant,
+    heartbeat: oteryn_task_supervisor::Heartbeat,
 ) {
     // Canary livestream.cpp:249 starts the live service explicitly. S17 additionally
     // requires a consent-worker lease: retry only a busy durable holder, never
@@ -156,6 +161,7 @@ async fn run(
     let mut announced = std::collections::HashSet::new();
     let mut freshness = std::collections::HashMap::new();
     'worker: loop {
+        heartbeat.beat();
         let mut request =
             match tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await {
                 Ok(Some(request)) => Some(request),
@@ -504,7 +510,7 @@ pub async fn apply_durable(
     access: &impl preferences::PreferencesStore,
     accounts: &HashMap<GameSessionId, [u8; 16]>,
     mut op: Operation,
-    now: u64,
+    mut now: u64,
     privacy_version: i64,
 ) -> Result<Reply, Error> {
     match &mut op {
@@ -522,6 +528,7 @@ pub async fn apply_durable(
                 .settings;
         }
         Operation::Join(a) | Operation::Renew(_, a) => {
+            let started = std::time::Instant::now();
             let target = owner
                 .casts
                 .iter()
@@ -529,13 +536,14 @@ pub async fn apply_durable(
                 .map(|(t, _)| t)
                 .ok_or(Error::Unavailable)?;
             let account = accounts.get(target).ok_or(Error::Unavailable)?;
-            if root
-                .cast_account_banned(node, *account, a.account)
-                .await
-                .map_err(|_| Error::Unavailable)?
-            {
+            if account_banned(root, node, *account, a.account).await? {
                 return Err(Error::Unavailable);
             }
+            // Waiting for the holder cannot extend either the incoming grant or
+            // the current observer lease that `join`/`renew` checks via `tick`.
+            let elapsed =
+                u64::try_from(started.elapsed().as_millis()).map_err(|_| Error::Unavailable)?;
+            now = now.checked_add(elapsed).ok_or(Error::Unavailable)?;
         }
         Operation::Ban(facts, revision, id) => {
             let target = facts.authority.current_game_session_id();
@@ -566,4 +574,33 @@ pub async fn apply_durable(
         _ => {}
     }
     apply(owner, op, now, privacy_version)
+}
+
+async fn account_banned(
+    root: &DurabilityRoot,
+    node: &NodeIncarnationProof,
+    owner: [u8; 16],
+    subject: [u8; 16],
+) -> Result<bool, Error> {
+    use oteryn_gameplay_durability::durability::DurabilityError;
+    use std::time::Duration;
+    use tokio::time::Instant;
+
+    // A busy holder has not read the ban table. Use the same bounded command
+    // window as audit persistence; a storage or authority failure remains final.
+    let deadline = Instant::now() + Duration::from_secs(1);
+    loop {
+        match root.cast_account_banned(node, owner, subject).await {
+            Ok(banned) => return Ok(banned),
+            Err(DurabilityError::RootUnavailable) if Instant::now() < deadline => {
+                let now = Instant::now();
+                root.wait_holder_retry(
+                    now + Duration::from_millis(2),
+                    (now + Duration::from_millis(50)).min(deadline),
+                )
+                .await;
+            }
+            Err(_) => return Err(Error::Unavailable),
+        }
+    }
 }

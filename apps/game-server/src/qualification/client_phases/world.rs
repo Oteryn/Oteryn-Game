@@ -153,6 +153,10 @@ fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> 
         StepDirection::East => CardinalStep::East,
         StepDirection::South => CardinalStep::South,
         StepDirection::West => CardinalStep::West,
+        StepDirection::NorthEast => CardinalStep::NorthEast,
+        StepDirection::SouthEast => CardinalStep::SouthEast,
+        StepDirection::SouthWest => CardinalStep::SouthWest,
+        StepDirection::NorthWest => CardinalStep::NorthWest,
     };
     let position = |(x, y, z): (i32, i32, i32)| {
         Some(TilePos {

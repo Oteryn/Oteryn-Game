@@ -1,0 +1,169 @@
+{
+  "scope": "Generic pinned-recipe NPC placement and native contact actor admission only; full Grimvale remains ACTIVE",
+  "reused_from": "70a0d92afcb095f792af7ab6409793320842c3af",
+  "test": "questpc7_grimvale_native_contacts",
+  "postgres": "18.6",
+  "red_seconds": 41.1128287,
+  "red_log": "/tmp/questpc7-grimvale-contacts-red2.log",
+  "red_point": "No published placement for canonical Rhargu after actual PG fixture initialization",
+  "green": "PASS",
+  "authoring_tests": 11,
+  "choices": [
+    {
+      "npc": "rhargu",
+      "cell": [
+        33138,
+        32353,
+        -5
+      ],
+      "appearance": 4559,
+      "source": "content/world/placements/region-z05-x129-y126.b3",
+      "sha256": "60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062"
+    },
+    {
+      "npc": "domizian",
+      "cell": [
+        33140,
+        32353,
+        -5
+      ],
+      "appearance": 4559,
+      "source": "content/world/placements/region-z05-x129-y126.b3",
+      "sha256": "60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062"
+    }
+  ],
+  "green_seconds": 74.382453038,
+  "green_log": "/tmp/questpc7-grimvale-contacts-green.log",
+  "native_compiler": {
+    "test": "chosen_grimvale_contacts_pass_native_map_collision_admission",
+    "seconds": 18.83,
+    "result": "PASS; both canonical NPCs realized at chosen native cells"
+  },
+  "checks": [
+    {
+      "check": "placement-generation",
+      "command": [
+        "python3",
+        "tools/content-schema/npc-authoring/convert_placements.py",
+        "--check"
+      ],
+      "seconds": 0.248,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-contacts-placement-generation.log"
+    },
+    {
+      "check": "author",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/npc-authoring",
+        "-p",
+        "test*placements.py"
+      ],
+      "seconds": 0.41,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-contacts-author.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-world-bundle-compiler"
+      ],
+      "seconds": 96.401,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-contacts-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 180.202,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-contacts-clippy.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 120.323,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-contacts-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-grimvale-contacts-pin-check"
+      ],
+      "seconds": 127.489,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-contacts-pin-check.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 176.684,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-contacts-world.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.02,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-grimvale-contacts-fmt.log"
+    }
+  ],
+  "pending": [],
+  "mechanism": "QUALIFIED; pinned recipe placements and native actor admission only"
+}

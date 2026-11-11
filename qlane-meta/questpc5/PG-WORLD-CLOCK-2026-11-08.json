@@ -1,0 +1,51 @@
+{
+  "feature": "world_callback_transaction_clock_operations",
+  "scope": "shared engine only; requesting lane retains Threatened Dreams ownership; no packet quest promoted",
+  "postgres_version": "18.6",
+  "dispatch": "real admitted USE and STEP frames",
+  "test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/world_callback_clocks.rs",
+  "cases": [
+    {
+      "test": "world_callback_clock_full_bag_rolls_back_timestamp_dispatch_postgres",
+      "marker": "qengine-rewards-world-clock-full",
+      "duration_seconds": 66.894592149
+    },
+    {
+      "test": "world_callback_clock_mint_cooldown_and_replay_dispatch_postgres",
+      "marker": "qengine-rewards-world-clock",
+      "duration_seconds": 62.911933117
+    }
+  ],
+  "red_seconds": [
+    58.197645125,
+    71.403533167
+  ],
+  "red_error": "unknown field state_operations",
+  "guarantees": [
+    "database transaction Unix seconds",
+    "literal1800000second cooldown",
+    "early refusal",
+    "elapsed repeat MINT",
+    "command replay no duplicate",
+    "full backpack rolls back timestamp and reward",
+    "same transaction for clock and MINT receipt"
+  ],
+  "validation": "Actual PG proof precedes encounter main merge; current post-merge crate units and PG cases remain pending under PREPUSH-2 cadence exception. Engine remains IN_PROGRESS.",
+  "pg_tested_base_sha": "9b8e7b6bc76ea73406ff9b90f89ba438cf5bf40d",
+  "integration_main_sha": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+  "publication_gates": {
+    "workspace_all_targets": "PASS8m51s",
+    "fmt_all_check": "PASS",
+    "authoring_checks": "PASS",
+    "authoring_units": "103modules1122testsPASS",
+    "item_mount_equivalence": "34111Items252MountsPASS",
+    "world_metadata": "PASS",
+    "regeneration_and_pins": "PASS",
+    "duplicate_migrations": "PASS",
+    "post_merge_runtime": "PENDING under authorized cadence exception",
+    "quests_unit_suite": "327PASS46.308s,0skipped"
+  },
+  "historical_test_source_commit": "790996f8e52fef43fe728ec3af4309078f319cd4",
+  "historical_test_sha256": "84d1edaa9db37aed0ea783deb9c94e3eee228eefd441aae9981b4ee8f5c3bbd5",
+  "current_witness_state": "RERUN_PENDING after removing redundant identity error conversion; assertions unchanged; historical timings do not qualify current witness"
+}

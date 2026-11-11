@@ -223,7 +223,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
             &none
         } else if let Some(map) = self.bundle_map() {
-            bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
+            bundle_doors = crate::map::floor::BundleDoors(&map.facts);
             &bundle_doors
         } else {
             legacy = self.door.lock().await.blocking_cells().clone();
@@ -321,6 +321,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::movement::CardinalStep::East => StepDirection::East,
                     crate::movement::CardinalStep::South => StepDirection::South,
                     crate::movement::CardinalStep::West => StepDirection::West,
+                    crate::movement::CardinalStep::NorthEast => StepDirection::NorthEast,
+                    crate::movement::CardinalStep::SouthEast => StepDirection::SouthEast,
+                    crate::movement::CardinalStep::SouthWest => StepDirection::SouthWest,
+                    crate::movement::CardinalStep::NorthWest => StepDirection::NorthWest,
                 })
                 .collect(),
         }))
@@ -352,6 +356,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     StepDirection::East => (1, 0),
                     StepDirection::South => (0, 1),
                     StepDirection::West => (-1, 0),
+                    StepDirection::NorthEast => (1, -1),
+                    StepDirection::SouthEast => (1, 1),
+                    StepDirection::SouthWest => (-1, 1),
+                    StepDirection::NorthWest => (-1, -1),
                 };
                 expected.revision().checked_add(1) == Some(current.revision())
                     && expected.context() == current.context()

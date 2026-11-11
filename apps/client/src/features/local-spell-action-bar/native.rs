@@ -8,6 +8,7 @@ mod events;
 #[path = "native/panes.rs"]
 mod panes;
 use events::Actions;
+use oteryn_client::hud_error::{HudInitError, HudPart};
 use oteryn_client::play::{HudAction, HudPanel};
 use windows_sys::Win32::{
     Foundation::HWND,
@@ -41,23 +42,27 @@ fn wide(text: &str) -> Vec<u16> {
         .collect()
 }
 impl Hud {
-    pub(super) fn new(window: &Window) -> Option<Self> {
-        let RawWindowHandle::Win32(handle) = window.window_handle().ok()?.as_raw() else {
-            return None;
+    pub(super) fn new(window: &Window) -> Result<Self, HudInitError> {
+        let RawWindowHandle::Win32(handle) = window
+            .window_handle()
+            .map_err(|_| HudInitError::new(HudPart::WindowHandle, 0))?
+            .as_raw()
+        else {
+            return Err(HudInitError::new(HudPart::WindowHandle, 0));
         };
         let common = INITCOMMONCONTROLSEX {
             dwSize: std::mem::size_of::<INITCOMMONCONTROLSEX>() as u32,
             dwICC: ICC_PROGRESS_CLASS,
         };
         if unsafe { InitCommonControlsEx(&common) } == 0 {
-            return None;
+            return Err(last_error(HudPart::CommonControls));
         }
         let actions = Actions::default();
         let panes = HudPanel::ALL
             .into_iter()
             .map(|id| panes::Pane::new(handle.hwnd.get() as HWND, id, actions.clone()))
-            .collect::<Option<Vec<_>>>()?;
-        Some(Self {
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self {
             proficiency: proficiency::ProficiencyHud::new(handle.hwnd.get() as HWND)?,
             panes,
             actions,
@@ -74,6 +79,12 @@ impl Hud {
             pane.hide();
         }
     }
+}
+
+fn last_error(part: HudPart) -> HudInitError {
+    HudInitError::new(part, unsafe {
+        windows_sys::Win32::Foundation::GetLastError()
+    })
 }
 impl super::Application {
     pub(super) fn update_hud(&mut self) {

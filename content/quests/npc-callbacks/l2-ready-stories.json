@@ -1,0 +1,787 @@
+{
+  "schema": 1,
+  "tracks": [],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/l2-efreet-enlist",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "npc": "oteryn:npc.baa_leal",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Listen! Since our base of operations is set in this isolated spot we depend on supplies from outside. These supplies are crucial for us to win the war. ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/baa_leal.lua:115:sha256:92c51f8e789a74a87a28ba5f50e9ee570d728885214d349b113d9992d97a38e7"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-efreet-finish",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "npc": "oteryn:npc.malor",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/door_to_marid_territory",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/efreet_ally",
+      "reply": [
+        "But that's in the future. For now, I will confine myself to give you the permission to trade with my people whenever you want to. ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/malor.lua:142:sha256:abcae4a2c7ba46ea369355a0c31e905189a3489c18bba843d06f9a0310cc09ec",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/malor.lua:147:sha256:abcae4a2c7ba46ea369355a0c31e905189a3489c18bba843d06f9a0310cc09ec"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-efreet-lamp-issue",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "npc": "oteryn:npc.the_orc_king",
+      "keywords": [
+        "malor"
+      ],
+      "topic": 31,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/door_to_lamp",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3231",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I was waiting for this day! Take the lamp and let Malor feel my wrath!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_orc_king.lua:105:sha256:f3150f54d1eaa69191179ce8a78f4d8ce94d10653120f2aa8ff2b969340c5b5a"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-efreet-lamp-mission",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "npc": "oteryn:npc.malor",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Once you have found the lamp you must enter Ashta'daramai again. Sneak into Gabel's personal chambers and exchange his sleeping lamp with Fa'hradin's lamp! ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/malor.lua:127:sha256:abcae4a2c7ba46ea369355a0c31e905189a3489c18bba843d06f9a0310cc09ec"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission02",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-efreet-supplies",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "npc": "oteryn:npc.partos",
+      "keywords": [
+        "supplies"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I won't tell you anything! Shove off!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/partos.lua:65:sha256:3daaacdba17e06a3dd4c465d281ddc91299a17bfda1f81aed8a9deec0ceb1b21"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-efreet-tear-mission",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "npc": "oteryn:npc.alesar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission02",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/door_to_marid_territory",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "All right then, human. Have you ever heard of the {'Tears of Daraman'}? ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/alesar.lua:151:sha256:8fe5c7989b23914657f82c45fa4ba37399115923b5d37f29cb52a56a089bed20"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-efreet-tear-return",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "npc": "oteryn:npc.alesar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission02",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3233",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "So you have made it? You have really managed to steal a Tear of Daraman? ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/alesar.lua:173:sha256:8fe5c7989b23914657f82c45fa4ba37399115923b5d37f29cb52a56a089bed20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-efreet-thief-report",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "npc": "oteryn:npc.baa_leal",
+      "keywords": [
+        "partos"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 6,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You found the thief! Excellent work, soldier! You are doing well - for a human, that is. Here - take this as a reward. ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/baa_leal.lua:141:sha256:92c51f8e789a74a87a28ba5f50e9ee570d728885214d349b113d9992d97a38e7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-marid-cheese-request",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.rata_mari",
+      "keywords": [
+        "spyreport",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/rata_mari",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "All right - listen - I know Fa'hradin would not approve of this, but I can't help it. I need some cheese! I need it now! ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rata_mari.lua:71:sha256:52b9519ffbe155def52c4dda3b239f6b1ea3c60ff8dce3263c566a41abf9a7d5"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-marid-cookbook",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.bo_ques",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3234",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3029",
+        "count": 3,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The book! You have it! Let me see! <browses the book> ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bo_ques.lua:151:sha256:f7411cdf67e737205972effae878a6234a534b53b88143fa4e3b2d34e1a8f94e"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-marid-enlist",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.bo_ques",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission01",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Fine! Even though I know so many recipes, I'm looking for the description of some dwarven meals. ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bo_ques.lua:134:sha256:f7411cdf67e737205972effae878a6234a534b53b88143fa4e3b2d34e1a8f94e"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-marid-finish",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.gabel",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/door_to_efreet_territory",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/marid_ally",
+      "reply": [
+        "Know, that from now on you are considered one of us and are welcome to trade with Haroun and Nah'bob whenever you want to!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gabel.lua:131:sha256:4691a0a07d65bc9972acc3641e8c89fc0476c7a3033c128a51801e19fdbedeaa",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gabel.lua:136:sha256:4691a0a07d65bc9972acc3641e8c89fc0476c7a3033c128a51801e19fdbedeaa"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-marid-lamp-issue",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.the_orc_king",
+      "keywords": [
+        "malor"
+      ],
+      "topic": 32,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/door_to_lamp",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3231",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I was waiting for this day! Take the lamp and let Malor feel my wrath!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_orc_king.lua:105:sha256:f3150f54d1eaa69191179ce8a78f4d8ce94d10653120f2aa8ff2b969340c5b5a"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-marid-lamp-mission",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.gabel",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Once you have acquired the lamp you must enter Mal'ouquah again. Sneak into Malor's personal chambersand exchange his sleeping lamp with Fa'hradin's lamp! ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gabel.lua:119:sha256:4691a0a07d65bc9972acc3641e8c89fc0476c7a3033c128a51801e19fdbedeaa"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-marid-spy-mission",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.fa_hradin",
+      "keywords": [
+        "mission",
+        "spy report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/door_to_efreet_territory",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I need you to infiltrate Mal'ouqhah, contact our man there and get his latest spyreport. The password is {PIEDPIPER}. Remember it well! ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/fa_hradin.lua:99:sha256:dc5aac1a85ed07799591dfce7f31d8c0cf1f16494903a1756e3a480ee269aa47"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission01",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-marid-spy-report",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.fa_hradin",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3232",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You really have made it? You have the report? How come you did not get slaughtered? I must say I'm impressed. Your race will never cease to surprise me. ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/fa_hradin.lua:119:sha256:dc5aac1a85ed07799591dfce7f31d8c0cf1f16494903a1756e3a480ee269aa47"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/rata_mari",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-marid-spy-report-issue",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.rata_mari",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/rata_mari",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3607",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3232",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Meep! Meep! Great! Here is the spyreport for you!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rata_mari.lua:89:sha256:52b9519ffbe155def52c4dda3b239f6b1ea3c60ff8dce3263c566a41abf9a7d5"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-white-raven-brooch",
+      "quest": "oteryn:quest.the_white_raven_monastery_quest",
+      "npc": "oteryn:npc.dalbrect",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/passage",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3205",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you! I shall consider you my friend from now on! Just let me know if you {need} something!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dalbrect.lua:61-98:sha256:d190924b57571638bdd5b8a26444b773460b64eec318398e06cda53f96788e86"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-white-raven-catacombs",
+      "quest": "oteryn:quest.the_white_raven_monastery_quest",
+      "npc": "oteryn:npc.costello",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you very much! From now on you may open the warded doors to the catacombs."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/costello.lua:52-84:sha256:c23199cb756541cd4972e8d156a69b722d775c6f71a05a9acd369b7744b9d5e8",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dalbrect.lua:97-98:sha256:d190924b57571638bdd5b8a26444b773460b64eec318398e06cda53f96788e86"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-white-raven-diary",
+      "quest": "oteryn:quest.the_white_raven_monastery_quest",
+      "npc": "oteryn:npc.costello",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3212",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3214",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have done our order a great favour by giving this diary to me! Take this blessed Ankh."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/costello.lua:63-93:sha256:c23199cb756541cd4972e8d156a69b722d775c6f71a05a9acd369b7744b9d5e8"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    }
+  ]
+}

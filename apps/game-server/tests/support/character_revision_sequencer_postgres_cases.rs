@@ -107,6 +107,14 @@ struct Database {
 
 impl Database {
     async fn create(admin_url: String, name: &str) -> TestResult<Self> {
+        Self::create_from(admin_url, name, None).await
+    }
+
+    async fn create_from(
+        admin_url: String,
+        name: &str,
+        template: Option<&str>,
+    ) -> TestResult<Self> {
         if !admin_url.starts_with("postgresql://oteryn_test_admin:")
             || !admin_url.rsplit_once('@').is_some_and(|(_, host)| {
                 host.strip_prefix("127.0.0.1:")
@@ -125,9 +133,21 @@ impl Database {
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
         admin
             .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {name}"
+                "CREATE DATABASE {name}{}",
+                template
+                    .map(|name| format!(" TEMPLATE {name}"))
+                    .unwrap_or_default()
             ))))
             .await?;
+        if template.is_some() {
+            // CREATE DATABASE copies schema ACLs, but not the database's own
+            // ACL. Preserve migration 0006's cross-database isolation boundary.
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "REVOKE CONNECT ON DATABASE {name} FROM PUBLIC"
+                ))))
+                .await?;
+        }
         admin.close().await?;
         let prefix = admin_url
             .strip_suffix("/postgres")
@@ -145,6 +165,17 @@ impl Database {
         oteryn_gameplay_durability::GAME_MIGRATOR
             .run(&mut connection)
             .await?;
+        let public_connect: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM pg_database d, \
+             LATERAL aclexplode(COALESCE(d.datacl,acldefault('d',d.datdba))) a \
+             WHERE d.datname=current_database() AND a.grantee=0 AND a.privilege_type='CONNECT')",
+        )
+        .fetch_one(&mut connection)
+        .await?;
+        assert!(
+            !public_connect,
+            "fixture databases deny cross-database PUBLIC access"
+        );
         connection.close().await?;
         Ok(Self {
             admin_url,
@@ -191,6 +222,28 @@ async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationP
     root.register_node_incarnation(&secret, &launch, node)
         .await
         .map_err(debug)
+}
+
+/// A fully migrated, unseeded database, scoped to one catalogue sweep. Every
+/// clone is an independent database and still verifies the migration ledger.
+#[allow(
+    dead_code,
+    reason = "only catalogue sweep targets share migration setup"
+)]
+pub(super) struct MigratedDatabaseTemplate(Database);
+
+#[allow(
+    dead_code,
+    reason = "only catalogue sweep targets share migration setup"
+)]
+impl MigratedDatabaseTemplate {
+    pub(super) async fn create(admin: String) -> TestResult<Self> {
+        Ok(Self(Database::create(admin, "catalogue_template").await?))
+    }
+
+    pub(super) async fn cleanup(self) -> TestResult {
+        self.0.cleanup().await
+    }
 }
 
 pub(super) struct Harness {
@@ -266,6 +319,39 @@ impl Harness {
         starter: &str,
     ) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
+        Self::create_on_database(database, initialized, seed_session, creation, starter).await
+    }
+
+    #[allow(
+        dead_code,
+        reason = "only catalogue sweep targets share migration setup"
+    )]
+    pub(super) async fn create_from_template(
+        admin: String,
+        tag: &str,
+        template: &MigratedDatabaseTemplate,
+    ) -> TestResult<Self> {
+        if admin != template.0.admin_url {
+            return Err("migration template belongs to another PostgreSQL cluster".into());
+        }
+        let database = Database::create_from(admin, tag, Some(&template.0.name)).await?;
+        Self::create_on_database(
+            database,
+            false,
+            false,
+            CreationFixture::Historical,
+            "starter-1",
+        )
+        .await
+    }
+
+    async fn create_on_database(
+        database: Database,
+        initialized: bool,
+        seed_session: bool,
+        creation: CreationFixture,
+        starter: &str,
+    ) -> TestResult<Self> {
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
         let pool = sqlx::PgPool::connect(&database.url).await?;

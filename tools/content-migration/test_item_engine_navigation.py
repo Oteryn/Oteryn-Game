@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import item_engine_navigation as nav
+from qualification_inputs import _AppearanceView
 
 
 class EngineNavigationTests(unittest.TestCase):
@@ -28,11 +29,19 @@ class EngineNavigationTests(unittest.TestCase):
 
     def args(self, entry=None):
         entry = entry or self.entries[0]
+        inputs = (
+            copy.deepcopy(self.inputs[0]),
+            {
+                label: _AppearanceView(rows.copy())
+                for label, rows in self.inputs[1].items()
+            },
+            *(_AppearanceView(rows.copy()) for rows in self.inputs[2:]),
+        )
         return [
             copy.deepcopy(entry),
             copy.deepcopy(self.client[entry["appearance_id"]]),
             copy.deepcopy(self.definitions[entry["target"]["key"]]),
-            copy.deepcopy(self.inputs),
+            inputs,
             set(),
         ]
 

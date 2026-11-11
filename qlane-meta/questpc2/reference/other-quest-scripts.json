@@ -1,0 +1,194 @@
+[
+  {
+    "name": "actions_calassa_comb_door.lua",
+    "path": "data-global/scripts/quests/others/actions_calassa_comb_door.lua",
+    "sha": "681712d6aee7c245d6cd6df92b69bbc6f2291ac8",
+    "size": 600,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_calassa_comb_door.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_calassa_comb_door.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/681712d6aee7c245d6cd6df92b69bbc6f2291ac8",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_calassa_comb_door.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_calassa_comb_door.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/681712d6aee7c245d6cd6df92b69bbc6f2291ac8",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_calassa_comb_door.lua"
+    }
+  },
+  {
+    "name": "actions_deeper_banuta_shortcut.lua",
+    "path": "data-global/scripts/quests/others/actions_deeper_banuta_shortcut.lua",
+    "sha": "8619e2be4150a16dbf2f124a3ff1c1654baa6a91",
+    "size": 680,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_deeper_banuta_shortcut.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_deeper_banuta_shortcut.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8619e2be4150a16dbf2f124a3ff1c1654baa6a91",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_deeper_banuta_shortcut.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_deeper_banuta_shortcut.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8619e2be4150a16dbf2f124a3ff1c1654baa6a91",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_deeper_banuta_shortcut.lua"
+    }
+  },
+  {
+    "name": "actions_ectoplasm_container.lua",
+    "path": "data-global/scripts/quests/others/actions_ectoplasm_container.lua",
+    "sha": "46c65505a373ffd41515f9ccd319f6a2e800f8a8",
+    "size": 953,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_ectoplasm_container.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_ectoplasm_container.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/46c65505a373ffd41515f9ccd319f6a2e800f8a8",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_ectoplasm_container.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_ectoplasm_container.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/46c65505a373ffd41515f9ccd319f6a2e800f8a8",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_ectoplasm_container.lua"
+    }
+  },
+  {
+    "name": "actions_exterminator_flask.lua",
+    "path": "data-global/scripts/quests/others/actions_exterminator_flask.lua",
+    "sha": "8f2eca8dcc6f4896b22f6bd54246978bbdf63d1b",
+    "size": 1214,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_exterminator_flask.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_exterminator_flask.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8f2eca8dcc6f4896b22f6bd54246978bbdf63d1b",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_exterminator_flask.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_exterminator_flask.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8f2eca8dcc6f4896b22f6bd54246978bbdf63d1b",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_exterminator_flask.lua"
+    }
+  },
+  {
+    "name": "actions_fire_bug.lua",
+    "path": "data-global/scripts/quests/others/actions_fire_bug.lua",
+    "sha": "ce4ab188125de7783997dcb26113255aa36c55db",
+    "size": 6745,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_fire_bug.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_fire_bug.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/ce4ab188125de7783997dcb26113255aa36c55db",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_fire_bug.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_fire_bug.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/ce4ab188125de7783997dcb26113255aa36c55db",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_fire_bug.lua"
+    }
+  },
+  {
+    "name": "actions_gooey_mass.lua",
+    "path": "data-global/scripts/quests/others/actions_gooey_mass.lua",
+    "sha": "ffc2fed37f2c511328dee745f019450ab4d41a87",
+    "size": 2534,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_gooey_mass.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_gooey_mass.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/ffc2fed37f2c511328dee745f019450ab4d41a87",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_gooey_mass.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_gooey_mass.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/ffc2fed37f2c511328dee745f019450ab4d41a87",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_gooey_mass.lua"
+    }
+  },
+  {
+    "name": "actions_hellgate_lever.lua",
+    "path": "data-global/scripts/quests/others/actions_hellgate_lever.lua",
+    "sha": "81d3c8e7f52fab06d9d3041e23056589df4448c1",
+    "size": 909,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_hellgate_lever.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_hellgate_lever.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/81d3c8e7f52fab06d9d3041e23056589df4448c1",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_hellgate_lever.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_hellgate_lever.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/81d3c8e7f52fab06d9d3041e23056589df4448c1",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_hellgate_lever.lua"
+    }
+  },
+  {
+    "name": "actions_holy_water.lua",
+    "path": "data-global/scripts/quests/others/actions_holy_water.lua",
+    "sha": "e7999c835bad35a6e22585556eade326ed77e4a1",
+    "size": 5488,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_holy_water.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_holy_water.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/e7999c835bad35a6e22585556eade326ed77e4a1",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_holy_water.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_holy_water.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/e7999c835bad35a6e22585556eade326ed77e4a1",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_holy_water.lua"
+    }
+  },
+  {
+    "name": "actions_orc_edron_lever.lua",
+    "path": "data-global/scripts/quests/others/actions_orc_edron_lever.lua",
+    "sha": "5ea6b92c364876d78c1722dcf169eecb8939c90d",
+    "size": 518,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_orc_edron_lever.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_orc_edron_lever.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/5ea6b92c364876d78c1722dcf169eecb8939c90d",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_orc_edron_lever.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_orc_edron_lever.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/5ea6b92c364876d78c1722dcf169eecb8939c90d",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_orc_edron_lever.lua"
+    }
+  },
+  {
+    "name": "actions_serpentine_tower_lever.lua",
+    "path": "data-global/scripts/quests/others/actions_serpentine_tower_lever.lua",
+    "sha": "debc4358c3650999543d8e4c337e2c7dbc9935c5",
+    "size": 992,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_serpentine_tower_lever.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_serpentine_tower_lever.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/debc4358c3650999543d8e4c337e2c7dbc9935c5",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_serpentine_tower_lever.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_serpentine_tower_lever.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/debc4358c3650999543d8e4c337e2c7dbc9935c5",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_serpentine_tower_lever.lua"
+    }
+  },
+  {
+    "name": "actions_serpentine_tower_torch.lua",
+    "path": "data-global/scripts/quests/others/actions_serpentine_tower_torch.lua",
+    "sha": "0e918435656e385c94ebf012941cbc059452749a",
+    "size": 437,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_serpentine_tower_torch.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_serpentine_tower_torch.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/0e918435656e385c94ebf012941cbc059452749a",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_serpentine_tower_torch.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_serpentine_tower_torch.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/0e918435656e385c94ebf012941cbc059452749a",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_serpentine_tower_torch.lua"
+    }
+  },
+  {
+    "name": "actions_steal_from_thieves.lua",
+    "path": "data-global/scripts/quests/others/actions_steal_from_thieves.lua",
+    "sha": "641bbf9c9534867a82a2df35488814e50c92c681",
+    "size": 661,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_steal_from_thieves.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_steal_from_thieves.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/641bbf9c9534867a82a2df35488814e50c92c681",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_steal_from_thieves.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others/actions_steal_from_thieves.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/641bbf9c9534867a82a2df35488814e50c92c681",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_steal_from_thieves.lua"
+    }
+  }
+]
