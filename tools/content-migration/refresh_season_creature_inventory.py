@@ -23,12 +23,29 @@ def validate_inventory(root, rows, native, schedules):
     key = 'oteryn:creature.thaian'
     canonical = [row for row in rows if row['definition']['identity']['key'] == key]
     active = [row for row in native if row['profile']['target']['key'] == key]
+    # The typed World writer omits empty immunities and a null reference level.
+    # world_project_v2_to_tree restores reference_level=None in Creature shards.
+    # Derive that complete tree form from source; native rows remain raw-exact.
+    canonical_authoring = cake.source_profile(profiles['Creature'])['data']
+    canonical_authoring['profile']['details'].setdefault('reference_level', None)
     if (len(canonical) != 1 or len(active) != 1
             or canonical[0]['definition'] != records['Creature']
-            or canonical[0]['authoring'] != profiles['Creature']['data']
+            or canonical[0]['authoring'] not in (
+                profiles['Creature']['data'], canonical_authoring)
             or active[0]['profile'] != profiles['Creature']
             or active[0]['behavior'] != profiles['Behavior']):
-        raise ValueError('Thaian source authoring closure')
+        raise ValueError('Thaian source authoring closure: ' + json.dumps({
+            'source': packet['source'],
+            'counts': {'canonical': len(canonical), 'native': len(active)},
+            'expected': {
+                'definition': records['Creature'],
+                'canonical_authoring_forms': [
+                    profiles['Creature']['data'], canonical_authoring],
+                'native_profile': profiles['Creature'],
+                'native_behavior': profiles['Behavior'],
+            },
+            'observed': {'canonical': canonical, 'native': active},
+        }, sort_keys=True, separators=(',', ':')))
     behavior = active[0]['behavior']['data']['profile']
     attacks = behavior.get('attacks', [])
     if len(attacks) != 1 or behavior.get('defenses', []):
