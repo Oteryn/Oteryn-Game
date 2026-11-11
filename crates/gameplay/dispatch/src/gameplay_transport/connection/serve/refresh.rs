@@ -1,6 +1,7 @@
 //! Periodic state refreshes and chase progression.
 
 use super::*;
+use crate::gameplay_transport::appearance_change::observation::ObservationError;
 
 pub(super) async fn serene<S, A>(
     stream: &mut S,
@@ -499,9 +500,9 @@ where
     else {
         return Err(ServeEnd::Disconnected);
     };
-    let Some((to_sequence, to_revision)) = session
+    let projection = session
         .appearances
-        .refresh(
+        .refresh_result(
             stream,
             authority,
             session.actor,
@@ -512,39 +513,48 @@ where
             session.sequence,
             session.revision,
         )
-        .await
-    else {
-        return Err(ServeEnd::Disconnected);
-    };
-    session.sequence = to_sequence;
-    session.revision = to_revision;
-    session.admitted.continuity.spatial_revision = session.revision;
-    party_skull::refresh(stream, authority, session).await?;
-    // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
-    if let (Some(view), Some(items)) = (session.world_map.as_mut(), session.item_view.as_mut()) {
-        let update = world_map_frames(
-            authority,
-            session.actor,
-            session.generation,
-            session.sequence,
-            view,
-            items,
-        )
         .await;
-        session.admitted.continuity.item_view = items.continuity();
-        let Some(update) = update else {
-            return Err(ServeEnd::Disconnected);
-        };
-        if let Some((next_sequence, frames)) = update {
-            session.sequence = next_sequence;
-            session.admitted.continuity.server_sequence = session.sequence;
-            session.admitted.continuity.world_map_revision = view.revision();
-            for frame in frames {
-                if write_frame(stream, &frame).await.is_err() {
+    match projection {
+        Ok((to_sequence, to_revision)) => {
+            session.sequence = to_sequence;
+            session.revision = to_revision;
+            session.admitted.continuity.spatial_revision = session.revision;
+            party_skull::refresh(stream, authority, session).await?;
+            // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
+            if let (Some(view), Some(items)) =
+                (session.world_map.as_mut(), session.item_view.as_mut())
+            {
+                let update = world_map_frames(
+                    authority,
+                    session.actor,
+                    session.generation,
+                    session.sequence,
+                    view,
+                    items,
+                )
+                .await;
+                session.admitted.continuity.item_view = items.continuity();
+                let Some(update) = update else {
                     return Err(ServeEnd::Disconnected);
+                };
+                if let Some((next_sequence, frames)) = update {
+                    session.sequence = next_sequence;
+                    session.admitted.continuity.server_sequence = session.sequence;
+                    session.admitted.continuity.world_map_revision = view.revision();
+                    for frame in frames {
+                        if write_frame(stream, &frame).await.is_err() {
+                            return Err(ServeEnd::Disconnected);
+                        }
+                    }
                 }
             }
         }
+        // The discarded candidate consumed no appearance, visibility or item
+        // cursor. Independent clock/weather deltas below still get their turn.
+        // A pending respawn fences the dead Character's appearance only until its
+        // placement; the next refresh observes it again.
+        Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => {}
+        Err(ObservationError::Unavailable) => return Err(ServeEnd::Disconnected),
     }
     // CLOCK-1 (§11.3): a due domain 18 delta, at most one per 10,000 ms.
     if session

@@ -4,7 +4,10 @@
 use oteryn_protocol_oteryn::logout::{LogoutResult, MAX_LOGOUT_RETRY_AFTER_MS};
 
 use super::connection::{AdmittedSession, ControllerBinding, GraceExpiryResult};
-use super::{ComposedFreshAdmission, FenceHold, ReleaseAttempt, TerminalRelease, UnendedSettle};
+use super::{
+    AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, FenceHold, ReleaseAttempt,
+    TerminalRelease, UnendedSettle, operator_event,
+};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
 /// What the connection does after one logout command.
@@ -94,6 +97,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// them is settled by the release's own saves, as for a closed client whose deadline just
     /// ended.
     pub(super) async fn logout_session(&self, admitted: AdmittedSession) -> LogoutReply {
+        let Ok(_foreground) = self.root.foreground_demand() else {
+            operator_event("event=logout_busy stage=foreground_demand");
+            return LogoutReply::Result(LogoutResult::Busy);
+        };
         let (actor, controller) = match self.logout_preflight(admitted).await {
             Ok(proven) => proven,
             Err(reply) => return reply,
@@ -104,6 +111,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             actor.runtime_scope(),
             crate::foundation::RuntimeScopeRefV1::Instance { .. }
         ) {
+            operator_event("event=logout_busy stage=activity_scope");
             return LogoutReply::Result(LogoutResult::Busy);
         }
         self.release_logout(admitted, actor, controller).await
@@ -114,32 +122,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
     ) -> Result<(ExactActorRef, ControllerBinding), LogoutReply> {
         let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+            operator_event("event=logout_busy stage=admitted_binding");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         };
         let session = admitted.game_session_id;
         let Some(zones) = self.logout_zones(actor).await else {
+            operator_event("event=logout_busy stage=zones_before_reconcile");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         };
         if zones.no_logout {
             return Err(LogoutReply::NoLogout);
         }
         if self.states.newhaven_travel.held(session) {
+            operator_event("event=logout_busy stage=newhaven_travel");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         }
         if !self
             .reconcile_spells_before_control_loss(actor, session)
             .await
         {
+            operator_event("event=logout_busy stage=spell_reconcile");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         }
         if !self.refresh_pvp_locks(actor, session).await {
             // An unreadable fence or PvP row proves no fight deadline. Close through the
             // ordinary unknown/control-loss path without authorizing a terminal release.
+            operator_event("event=logout_unknown stage=pvp_refresh kind=unknown");
             return Err(LogoutReply::Unknown);
         }
         // Reconciliation can finish a retained spell relocation. Use its current cell
         // for both zone checks instead of carrying a pre-reconciliation PZ exception.
         let Some(zones) = self.logout_zones(actor).await else {
+            operator_event("event=logout_busy stage=zones_after_reconcile");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         };
         if zones.no_logout {
@@ -276,6 +290,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let release = TerminalRelease::Logout(controller.transport);
         // Nothing is fenced yet when no transition id can be minted.
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
+            operator_event("event=logout_busy stage=release_fence");
             return LogoutReply::Result(LogoutResult::Busy);
         };
         let mut hold = FenceHold::new(session, token);
@@ -297,29 +312,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // The session is not this logout's to end, and its fence is lifted.
             ReleaseAttempt::Done(GraceExpiryResult::NotApplicable) => {
+                operator_event("event=logout_busy stage=release_not_applicable");
                 LogoutReply::Result(LogoutResult::Busy)
             }
             // A refused fence, or a committed release whose actor could not be removed: the
             // lifecycle reconciles from the row.
-            ReleaseAttempt::Done(GraceExpiryResult::Unknown) => LogoutReply::Unknown,
+            ReleaseAttempt::Done(GraceExpiryResult::Unknown) => {
+                operator_event("event=logout_unknown stage=release_attempt kind=unknown");
+                LogoutReply::Unknown
+            }
             ReleaseAttempt::Retry => match self.settle_unended(&store, actor, &mut hold).await {
-                UnendedSettle::Lifted => LogoutReply::Result(LogoutResult::Busy),
+                UnendedSettle::Lifted => {
+                    operator_event("event=logout_busy stage=release_retry_lifted");
+                    LogoutReply::Result(LogoutResult::Busy)
+                }
                 UnendedSettle::Terminal => {
                     match self
                         .retire_reconciled(controller.account_id, session, actor)
                         .await
                     {
                         GraceExpiryResult::Released => LogoutReply::Result(LogoutResult::Accepted),
-                        _ => LogoutReply::Unknown,
+                        _ => {
+                            operator_event("event=logout_unknown stage=retire kind=unknown");
+                            LogoutReply::Unknown
+                        }
                     }
                 }
                 UnendedSettle::Unknown => {
                     self.states.fence_holders.keep(hold);
+                    operator_event("event=logout_unknown stage=logout_settle kind=unknown");
                     LogoutReply::Unknown
                 }
             },
             ReleaseAttempt::Unknown => {
                 self.states.fence_holders.keep(hold);
+                operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                 LogoutReply::Unknown
             }
         }
@@ -337,7 +364,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let session = admitted.game_session_id;
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let Ok(current) = store.current_session(session).await else {
+        let Ok(budget) = AdmissionRetryBudget::for_foreground_command(self.root) else {
+            return GraceExpiryResult::Unknown;
+        };
+        let Ok(current) = budget
+            .retry_durability("terminal_session", async || {
+                store.current_session(session).await
+            })
+            .await
+        else {
             return GraceExpiryResult::Unknown;
         };
         if current.session_state() != GameSessionState::Terminal {
@@ -361,19 +396,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.release_premium(controller.account_id, session);
             // This already-gone path only forgot fences; keep broader retirement cleanup separate.
             self.states.fence_holders.forget(session);
-            let absent = {
-                let runtime = self.runtime.lock().await;
-                runtime
-                    .prove_player_session_absent_in(session, current.current_runtime_scope())
-                    .ok()
-                    .flatten()
-            };
-            let Some(absent) = absent else {
-                return GraceExpiryResult::Unknown;
-            };
-            if self
-                .root
-                .acknowledge_account_closure_offline(self.character, self.holder, absent)
+            if AdmissionRetryBudget::for_command(self.root)
+                .retry_durability("account_closure", async || {
+                    let absent = {
+                        let runtime = self.runtime.lock().await;
+                        runtime
+                            .prove_player_session_absent_in(
+                                session,
+                                current.current_runtime_scope(),
+                            )
+                            .ok()
+                            .flatten()
+                    }
+                    .ok_or(crate::durability::DurabilityError::CommitRejected)?;
+                    self.root
+                        .acknowledge_account_closure_offline(self.character, self.holder, absent)
+                        .await
+                })
                 .await
                 .is_err()
             {
@@ -406,5 +445,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         self.release_orphaned_kills(session).await;
+    }
+}
+
+impl AdmissionRetryBudget<'_> {
+    /// Retry only a holder acquisition failure. Storage and ambiguous commit failures
+    /// retain their original outcome; neither is evidence that replay is safe.
+    /// Each attempt returns its own future, without borrowing mutable callback
+    /// state, so the retry remains usable from boxed Send activity futures.
+    pub(super) async fn retry_durability<T, F, Fut>(
+        &self,
+        stage: &'static str,
+        mut step: F,
+    ) -> Result<T, crate::durability::DurabilityError>
+    where
+        F: FnMut() -> Fut,
+        Fut: std::future::Future<Output = Result<T, crate::durability::DurabilityError>>,
+    {
+        use crate::durability::DurabilityError;
+        loop {
+            match step().await {
+                Ok(value) => return Ok(value),
+                Err(error) => {
+                    if matches!(error, DurabilityError::RootUnavailable)
+                        && self
+                            .retries_unavailable(AdmissionRefusal::Unavailable)
+                            .await
+                    {
+                        continue;
+                    }
+                    let kind = match &error {
+                        DurabilityError::RootUnavailable => "holder_busy",
+                        DurabilityError::Database(_)
+                        | DurabilityError::Migration(_)
+                        | DurabilityError::SchemaIncompatible(_) => "storage",
+                        DurabilityError::RootPassDeadlineExceeded => "deadline",
+                        DurabilityError::CommitOutcomeUnknown => "commit_unknown",
+                        DurabilityError::SessionUseAuthorization(_)
+                        | DurabilityError::CommitRejected => "authority",
+                        DurabilityError::InvalidStoredState
+                        | DurabilityError::InvalidConfiguration
+                        | DurabilityError::AdmissionGameSessionLedgerExhausted => "invalid_state",
+                        DurabilityError::Unavailable | DurabilityError::RootTaskFailed => {
+                            "unavailable"
+                        }
+                    };
+                    operator_event(&format!(
+                        "event=session_durability_failed stage={stage} kind={kind}"
+                    ));
+                    return Err(error);
+                }
+            }
+        }
     }
 }

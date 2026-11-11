@@ -25,6 +25,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         held: &mut Option<FenceHold>,
     ) -> GraceExpiryResult {
+        operator_event("event=control_loss_grace stage=entry");
+        // Record only the first pending result at each fixed stage of this call.
+        // Successful saves and retries do not consume the diagnostic budget.
+        let mut pending_stages = std::collections::BTreeSet::new();
+        let mut pending = |stage: &'static str| {
+            if pending_stages.insert(stage) {
+                operator_event(&format!(
+                    "event=control_loss_grace stage={stage} kind=pending"
+                ));
+            }
+        };
         let Some(actor) = admitted.runtime_actor else {
             return GraceExpiryResult::NotApplicable;
         };
@@ -44,6 +55,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // One hold across the attempts of an epoch, so a retry is counted once.
         let mut settled_death = None;
+        // The grace/combat wait does not request preference. Once release work
+        // starts, retain it across the existing attempts and their backoff.
+        let mut foreground = None;
         let mut attempts = 0;
         while attempts < EXPIRY_ATTEMPTS {
             // Timeout/defeat may return an offline actor while its original
@@ -57,12 +71,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.states.fence_holders.release(hold);
                 }
                 *held = None;
+                pending("activity_successor");
                 return GraceExpiryResult::Unknown;
             }
             // Poll captured staff decisions while the original grace is held.
             // A forced release owns the same exact epoch; it does not expire it early.
             match Box::pin(self.release_staff_session(admitted)).await {
                 GraceExpiryResult::NotApplicable => {}
+                GraceExpiryResult::Unknown => {
+                    pending("staff_release");
+                    return GraceExpiryResult::Unknown;
+                }
                 result => return result,
             }
             let facts = {
@@ -75,7 +94,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let mark = match facts {
                 Ok(facts) => facts.control_loss,
-                Err(_) => return GraceExpiryResult::Unknown,
+                Err(_) => {
+                    // Retirement can remove the actor before its offline acknowledgement
+                    // succeeds. Retry that exact terminal cleanup, not the release write.
+                    // Missing/stale native facts alone never prove terminality or absence
+                    // in the current scope; the existing reconciler checks both.
+                    return match self.reconcile_terminal_session(admitted).await {
+                        GraceExpiryResult::Released => GraceExpiryResult::Released,
+                        _ => {
+                            pending("terminal_session");
+                            GraceExpiryResult::Unknown
+                        }
+                    };
+                }
             };
             // The lost epoch was resumed: nothing is this transition's to release.
             let Some(ControlLossMark {
@@ -123,14 +154,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             attempts += 1;
             // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
             // Each hold step runs the melee pass; the whole hold counts as one attempt.
-            if self.hold_while_in_fight(actor, session).await {
+            if self
+                .hold_while_in_fight_releasing_demand(actor, session, &mut foreground)
+                .await
+            {
+                pending("combat_hold");
                 while self.hold_while_in_fight(actor, session).await {}
                 continue;
+            }
+            if foreground.is_none() {
+                let Ok(demand) = self.root.foreground_demand() else {
+                    pending("foreground_demand");
+                    return GraceExpiryResult::Unknown;
+                };
+                foreground = Some(demand);
             }
             if !self
                 .settle_released_death(actor, session, &mut settled_death)
                 .await
             {
+                pending("death_save");
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
@@ -139,6 +182,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // remain the existing owner. Return before fencing the actor:
                 // a frozen release cannot also reserve a native transfer.
                 if hold.held {
+                    pending("activity_return");
                     return GraceExpiryResult::Unknown;
                 }
                 match self
@@ -150,16 +194,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     Ok(super::super::native_activity::NativeActivityOutcome::Committed(commit)) => {
                         if self.publish_activity_commit(&commit).is_err() {
+                            pending("activity_publish");
                             return GraceExpiryResult::Unknown;
                         }
                         self.states.fence_holders.release(hold);
                         *held = None;
                         // The outer lifecycle resolves the real fresh origin
                         // owner. It retains the original expired loss deadline.
+                        pending("activity_successor");
                         return GraceExpiryResult::Unknown;
                     }
                     Ok(super::super::native_activity::NativeActivityOutcome::Refused(_))
                     | Err(()) => {
+                        pending("activity_return");
                         tokio::time::sleep(next_backoff()).await;
                         continue;
                     }
@@ -167,12 +214,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // The local release fence closes the live lease used to install a successor.
             if !self.reconcile_pending_item_effects(actor, session).await {
+                pending("item_effects");
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
             match self.fence_transition(actor, hold, false).await {
                 FenceStep::Fenced => {}
                 FenceStep::Wait => {
+                    pending("release_fence");
                     tokio::time::sleep(next_backoff()).await;
                     continue;
                 }
@@ -181,30 +230,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.release_orphaned_kills(session).await;
                     return GraceExpiryResult::NotApplicable;
                 }
-                FenceStep::Refused(_) => return GraceExpiryResult::Unknown,
+                FenceStep::Refused(_) => {
+                    pending("release_fence");
+                    return GraceExpiryResult::Unknown;
+                }
             }
             if self.save_familiar_at_actor_end(actor, session, None).await
                 == actor_spell::FamiliarLogoutSave::Unknown
-                || self.save_spell_training(actor, session, true).await
-                    == actor_spell::TrainingSave::Unknown
             {
+                pending("familiar_save");
+                tokio::time::sleep(next_backoff()).await;
+                continue;
+            }
+            if self.save_spell_training(actor, session, true).await
+                == actor_spell::TrainingSave::Unknown
+            {
+                pending("training_save");
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
             // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
             // before the release can end the Character lease.
-            if !self.save_wheel_gift(actor, session, true).await
-                || self.save_monk_state(&admitted, actor).await == monk_save::MonkSave::Unknown
-            {
+            if !self.save_wheel_gift(actor, session, true).await {
+                pending("wheel_gift");
+                tokio::time::sleep(next_backoff()).await;
+                continue;
+            }
+            if self.save_monk_state(&admitted, actor).await == monk_save::MonkSave::Unknown {
+                pending("monk_save");
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
             if !super::super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await
             {
+                pending("gourmet_checkpoint");
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
             if !self.save_conditions_at_actor_end(actor, session).await {
+                pending("condition_save");
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
@@ -212,7 +276,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // drain sends nothing, and the lifecycle retries the expiry behind its backoff.
             let kills = match self.seal_kill_rewards(session).await {
                 KillRelease::Send(mark) => mark,
-                KillRelease::Deferred => return GraceExpiryResult::Unknown,
+                KillRelease::Deferred => {
+                    pending("kill_rewards");
+                    return GraceExpiryResult::Unknown;
+                }
             };
             // CHAR-POSITION-0 §3.2 "At logout": the release writes the fenced actor's cell.
             let pause = match self
@@ -231,15 +298,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             self.settle_kill_release(kills, ReleaseEnd::Committed).await;
                             let result = self.retire_reconciled(account, session, actor).await;
                             self.forget_kill_release(kills).await;
+                            if result == GraceExpiryResult::Unknown {
+                                pending("retire");
+                            }
                             return result;
                         }
                         UnendedSettle::Unknown => {
+                            pending("release_not_applicable");
                             self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
                             next_backoff()
                         }
                     }
                 }
                 Ok(ExpiredLossReleaseV1::NotExpired { deadline, now }) => {
+                    pending("release_not_expired");
                     #[cfg(test)]
                     monk_save::postgres_tests::record_not_expired();
                     match self.settle_unended(&store, actor, hold).await {
@@ -252,9 +324,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             self.settle_kill_release(kills, ReleaseEnd::Committed).await;
                             let result = self.retire_reconciled(account, session, actor).await;
                             self.forget_kill_release(kills).await;
+                            if result == GraceExpiryResult::Unknown {
+                                pending("retire");
+                            }
                             return result;
                         }
                         UnendedSettle::Unknown => {
+                            pending("release_settle");
                             self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
                             next_backoff()
                         }
@@ -266,11 +342,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.release_premium(account, session);
                     let result = self.retire(session, actor).await;
                     self.forget_kill_release(kills).await;
+                    if result == GraceExpiryResult::Unknown {
+                        pending("retire");
+                    }
                     return result;
                 }
                 // Unknown outcome: keep the fence and the kill mark; the retry reconciles from
                 // the durable row.
                 Err(_) => {
+                    pending("release_commit");
                     self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
                     next_backoff()
                 }

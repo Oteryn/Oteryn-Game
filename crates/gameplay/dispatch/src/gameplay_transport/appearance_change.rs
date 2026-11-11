@@ -306,6 +306,7 @@ macro_rules! authority_methods {
         fn appearance_available(&self) -> bool { false }
         fn appearance_observation(&self, _actor: crate::foundation::ExactActorRef, _session: crate::foundation::GameSessionId, _entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Option<$crate::gameplay_transport::appearance_change::observation::Observation>> { async { None } }
         fn appearance_observation_projected(&self, actor: crate::foundation::ExactActorRef, session: crate::foundation::GameSessionId, _empty_outfit: bool, entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Option<$crate::gameplay_transport::appearance_change::observation::Observation>> { self.appearance_observation(actor, session, entities) }
+        fn appearance_observation_projected_result(&self, actor: crate::foundation::ExactActorRef, session: crate::foundation::GameSessionId, empty_outfit: bool, entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Result<$crate::gameplay_transport::appearance_change::observation::Observation, $crate::gameplay_transport::appearance_change::observation::ObservationError>> { async move { self.appearance_observation_projected(actor, session, empty_outfit, entities).await.ok_or($crate::gameplay_transport::appearance_change::observation::ObservationError::Unavailable) } }
         fn appearance_change(&self, _actor: crate::foundation::ExactActorRef, _command: $crate::gameplay_transport::connection::UseCommand, _change: oteryn_protocol_oteryn::appearance::Change) -> impl std::future::Future<Output=Option<oteryn_protocol_oteryn::appearance::ChangeResult>> { async { Some(oteryn_protocol_oteryn::appearance::ChangeResult::Rejected) } }
     };
 }
@@ -331,6 +332,15 @@ macro_rules! composed_methods {
             entities: Vec<EntityRef>,
         ) -> Option<appearance_change::observation::Observation> {
             appearance_change::observation::observe(self, actor, session, empty_outfit, entities).await
+        }
+        async fn appearance_observation_projected_result(
+            &self,
+            actor: ExactActorRef,
+            session: GameSessionId,
+            empty_outfit: bool,
+            entities: Vec<EntityRef>,
+        ) -> Result<appearance_change::observation::Observation, appearance_change::observation::ObservationError> {
+            appearance_change::observation::observe_result(self, actor, session, empty_outfit, entities).await
         }
         async fn appearance_change(
             &self,

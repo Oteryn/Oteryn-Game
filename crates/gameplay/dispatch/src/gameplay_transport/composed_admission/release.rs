@@ -61,6 +61,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return GraceExpiryResult::Unknown;
             }
         }
+        // Keep preference through the existing release attempts, after any
+        // combat hold has ended; a single busy read must not drop the demand.
+        let Ok(_foreground) = self.root.foreground_demand() else {
+            return GraceExpiryResult::Unknown;
+        };
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
             return GraceExpiryResult::Unknown;
         };
@@ -236,30 +241,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .training_release_store(releasing, admitted, logout.is_some())
             .await
         else {
+            self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
             return ReleaseAttempt::Retry;
         };
-        let outcome = match release {
-            TerminalRelease::Abandoned(transport) => {
-                releasing
-                    .release_abandoned_session(session, &account_id, transport)
-                    .await
-            }
-            TerminalRelease::CapabilityMismatch(epoch) => {
-                releasing
-                    .release_capability_mismatch(session, &account_id, epoch)
-                    .await
-            }
-            TerminalRelease::StaffKickLost(epoch) => {
-                releasing
-                    .release_staff_lost_session(session, &account_id, epoch)
-                    .await
-            }
-            TerminalRelease::Logout(transport) | TerminalRelease::StaffKick(transport) => {
-                releasing
-                    .release_logout_session(session, &account_id, transport)
-                    .await
-            }
-        };
+        let outcome = AdmissionRetryBudget::for_command(self.root)
+            .retry_durability("release_commit", async || match release {
+                TerminalRelease::Abandoned(transport) => {
+                    releasing
+                        .release_abandoned_session(session, &account_id, transport)
+                        .await
+                }
+                TerminalRelease::CapabilityMismatch(epoch) => {
+                    releasing
+                        .release_capability_mismatch(session, &account_id, epoch)
+                        .await
+                }
+                TerminalRelease::StaffKickLost(epoch) => {
+                    releasing
+                        .release_staff_lost_session(session, &account_id, epoch)
+                        .await
+                }
+                TerminalRelease::Logout(transport) | TerminalRelease::StaffKick(transport) => {
+                    releasing
+                        .release_logout_session(session, &account_id, transport)
+                        .await
+                }
+            })
+            .await;
         if ends_session(&outcome) {
             // PREM-1b (D476): the session is over, whether abandoned, mismatched or logged out;
             // its Premium pulls stop, as at grace expiry.
@@ -328,7 +336,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return GraceExpiryResult::NotApplicable;
         };
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let current = match store.current_session(admitted.game_session_id).await {
+        // Grace expiry polls this before every release attempt: a busy holder is waited
+        // for in turn, or the poll loses it to steady holder use and the release never runs.
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        let current = match retry
+            .retry_durability("staff_release", || {
+                store.current_session(admitted.game_session_id)
+            })
+            .await
+        {
             Ok(current) => current,
             Err(_) => return GraceExpiryResult::Unknown,
         };
@@ -352,9 +368,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     return GraceExpiryResult::NotApplicable;
                 };
-                match self
-                    .root
-                    .staff_lost_session_kicked(self.character, self.holder, fence, account, epoch)
+                match retry
+                    .retry_durability("staff_release", || {
+                        self.root.staff_lost_session_kicked(
+                            self.character,
+                            self.holder,
+                            fence,
+                            account,
+                            epoch,
+                        )
+                    })
                     .await
                 {
                     Ok(true) => TerminalRelease::StaffKickLost(epoch),
@@ -364,9 +387,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => return GraceExpiryResult::NotApplicable,
         };
-        match self
-            .root
-            .staff_live_status(self.character, self.holder, fence)
+        match retry
+            .retry_durability("staff_release", || {
+                self.root
+                    .staff_live_status(self.character, self.holder, fence)
+            })
             .await
         {
             Ok(status) if status.banned || status.kicked => {}
