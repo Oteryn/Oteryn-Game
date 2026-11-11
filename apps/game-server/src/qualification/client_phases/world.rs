@@ -275,6 +275,8 @@ include!("full_row_g35_mount.rs");
 include!("full_row_g36_mount.rs");
 include!("full_row_g37_mount.rs");
 include!("full_row_g38_mount.rs");
+include!("full_row_g39_mount.rs");
+include!("full_row_g40_mount.rs");
 include!("full_row_i17a_mount.rs");
 include!("full_row_i17b_mount.rs");
 include!("full_row_i17c_mount.rs");
@@ -1798,6 +1800,14 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     }
     if e2e_row_selected(305) {
         full_row_g38::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(306) {
+        full_row_g39::run_packet(clients).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(307) {
+        full_row_g40::run_packet(clients).await;
         release_row_characters(clients).await;
     }
     let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
