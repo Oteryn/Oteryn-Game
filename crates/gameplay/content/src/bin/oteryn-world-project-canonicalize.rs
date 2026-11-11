@@ -264,8 +264,8 @@ mod tests {
         let limits = npc_catalogue_preproduction_limits().project;
         let legacy = CanonicalProjectDocuments::from_draft(
             ProjectDraft {
-                project_revision: "test-r1".into(),
-                package_key: "oteryn:content.canonicalize-test".into(),
+                project_revision: "canonicalize-unit-r1".into(),
+                package_key: "oteryn:content.canonicalize-unit-proof".into(),
                 semantic_schema_version: "reference-schema-v1".into(),
                 licensing_metadata: "license:project-owned-v1".into(),
                 world_id: "0123456789ab70cd8ef0123456789abc".into(),
@@ -273,8 +273,8 @@ mod tests {
                 records: vec![ProjectReferenceRecord::Item {
                     identity: DefinitionIdentityDocument {
                         family: "Item".into(),
-                        key: "oteryn:reference.item.canonicalize-test".into(),
-                        revision: "test-r1".into(),
+                        key: "oteryn:reference.item.canonicalize-unit-proof".into(),
+                        revision: "definition-r1".into(),
                     },
                     client_projection: ProjectionDocument::ClientSafe,
                     materializable: true,
