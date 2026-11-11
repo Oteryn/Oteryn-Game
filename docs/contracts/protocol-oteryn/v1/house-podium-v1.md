@@ -57,8 +57,10 @@ podium flags `PODIUM_SHOW_PLATFORM`, `PODIUM_SHOW_OUTFIT` and
   followed by the same three bytes; an empty podium stays `0`.
 
 The flags are stored with the direction in the display variant (no new
-storage). A display stored without flags, including every display set by a
-session without 489, reads as all three shown. Flags are presentation only:
+storage). A set from a session without 489 keeps the display's stored flags;
+a podium's first display set without flags takes Crystal's new-podium default,
+platform shown and outfit and mount hidden. A display stored before capability
+489 has no flags and reads as all three shown. Flags are presentation only:
 they grant no ownership and do not change the content or ownership checks.
 Sessions without 489 send and receive byte-identical V1 payloads. The command
 175 registry bound is 190 bytes: a V1 request is at most 187 bytes and the
