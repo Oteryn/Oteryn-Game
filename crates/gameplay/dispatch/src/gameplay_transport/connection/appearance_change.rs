@@ -7,6 +7,15 @@ use oteryn_protocol_oteryn::appearance as wire;
 use oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1;
 use std::collections::BTreeMap;
 
+fn note_none<T>(value: Option<T>, class: &'static str) -> Option<T> {
+    if value.is_none() {
+        crate::gameplay_transport::operator_event(&format!(
+            "event=appearance_initial_failed class={class}"
+        ));
+    }
+    value
+}
+
 #[derive(Clone, Default)]
 pub(super) struct SessionAppearance {
     selected: bool,
@@ -148,40 +157,51 @@ impl SessionAppearance {
         item_view: Option<&mut SessionItemView>,
     ) -> Option<(u32, Vec<u8>)> {
         let mut item_view = item_view;
-        let mut snapshot = view
-            .snapshot(channel, &mut |entities| {
+        let mut snapshot = note_none(
+            view.snapshot(channel, &mut |entities| {
                 attach_spatial_handles(item_view.as_deref_mut(), entities)
             })
-            .ok()?;
+            .ok(),
+            "mappings",
+        )?;
         if self.selected {
             self.select_hirelings(channel);
             let players = self.players(&snapshot.entities);
-            let observation = authority
-                .appearance_observation_projected(
-                    actor,
-                    admitted.game_session_id,
-                    self.empty_outfit,
-                    players.clone(),
-                )
-                .await?;
-            self.upserts(observation, &players)?;
-            self.attach(&mut snapshot.entities)?;
-            let payload = wire::Snapshot {
-                catalogue: self.catalogue.clone()?,
-                bindings: self.bindings.values().cloned().collect(),
-                high_water: self.high_water,
-            }
-            .encode()
-            .ok()?;
+            let observation = note_none(
+                authority
+                    .appearance_observation_projected(
+                        actor,
+                        admitted.game_session_id,
+                        self.empty_outfit,
+                        players.clone(),
+                    )
+                    .await,
+                "observation",
+            )?;
+            note_none(self.upserts(observation, &players), "mappings")?;
+            note_none(self.attach(&mut snapshot.entities), "attach")?;
+            let payload = note_none(
+                wire::Snapshot {
+                    catalogue: note_none(self.catalogue.clone(), "encode")?,
+                    bindings: self.bindings.values().cloned().collect(),
+                    high_water: self.high_water,
+                }
+                .encode()
+                .ok(),
+                "encode",
+            )?;
             self.snapshot = Some(payload.into());
             self.revision = 1;
         }
-        encode_visibility_snapshot_lit(
-            admitted.continuity.selected_capabilities.as_slice(),
-            &snapshot,
-            view.lights(),
+        note_none(
+            encode_visibility_snapshot_lit(
+                admitted.continuity.selected_capabilities.as_slice(),
+                &snapshot,
+                view.lights(),
+            )
+            .ok(),
+            "encode",
         )
-        .ok()
     }
     pub(super) fn domain<'a>(&'a self, domains: &mut Vec<DomainSnapshot<'a>>) {
         if let Some(payload) = &self.snapshot {

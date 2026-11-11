@@ -425,7 +425,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // returning Unknown here would let its next call discard a committed loss as
         // already reconnectable. Every pass remains bounded; only reads and this
         // idempotent native publication repeat, never the loss write or its deadline.
+        operator_event("event=control_loss_publication stage=entry");
+        let mut pending_reported = false;
         loop {
+            let mut native_pending = false;
             let reconciliation = store.reconcile_fresh_loss(original).await;
             #[cfg(test)]
             if matches!(
@@ -503,10 +506,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if recorded.is_ok() {
                         return ControlLossResult::Recorded;
                     }
+                    native_pending = true;
                 }
             }
             // No runtime/state guard is retained while the holder or native
             // reservation becomes available. Grace keeps the original origin.
+            if !pending_reported {
+                operator_event(if native_pending {
+                    "event=control_loss_publication stage=native_publication kind=pending"
+                } else {
+                    "event=control_loss_publication stage=loss_readback kind=pending"
+                });
+                pending_reported = true;
+            }
             tokio::time::sleep(RECONCILE_BACKOFF).await;
         }
     }

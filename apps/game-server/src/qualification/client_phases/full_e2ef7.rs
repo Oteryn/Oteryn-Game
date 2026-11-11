@@ -771,6 +771,13 @@ impl ClockRow {
             .all(|action| self.passed.contains(action))
     }
 
+    fn reconnect_due(&self, session_elapsed: Duration, accelerated: bool) -> bool {
+        session_elapsed >= Duration::from_secs(90)
+            || (accelerated
+                && self.passed.contains("full-cycle")
+                && !self.passed.contains("fresh-admission"))
+    }
+
     // Pure validation is shared by epoch attribution and the single committed
     // observation. A rejected candidate cannot add minutes or emit evidence.
     fn validate_observation(
@@ -993,9 +1000,10 @@ fn qualification_elapsed(started: std::time::Instant, offset: Duration) -> Durat
     started.elapsed().saturating_add(qualification_offset().saturating_sub(offset))
 }
 
-// A 90s session can contain its admission epoch and at most two 75s
-// advances. Retain silent epochs: a naturally emitted frame can still be in
-// the TLS queue when the next explicit advance is applied.
+// Retain the last observed epoch and at most two unobserved 75s advances:
+// 150s necessarily owes an hourly delta before another advance is allowed.
+// A silent epoch may still have a natural frame queued in TLS. Only epochs
+// already excluded by observe() can be discarded, independently of relogging.
 struct ClockEpochs {
     offsets: [Duration; 3],
     len: usize,
@@ -1019,9 +1027,13 @@ impl ClockEpochs {
             return Err("world-clock injected offset moved backwards".into());
         }
         if offset != current {
-            if self.len == self.offsets.len() {
+            let retained = self.len - self.observed;
+            if retained == self.offsets.len() {
                 return Err("world-clock session exceeded its bounded offset epochs".into());
             }
+            self.offsets.copy_within(self.observed..self.len, 0);
+            self.len = retained;
+            self.observed = 0;
             self.offsets[self.len] = offset;
             self.len += 1;
         }
@@ -1112,10 +1124,12 @@ async fn clock_journey(
     let started = std::time::Instant::now();
     row.started = Some(started);
     let offset = qualification_offset();
+    let accelerated = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some();
     let mut previous_session = None;
     // The real-clock mode takes one hour; the disposable build advances facts.
-    // Short sessions also avoid idle-removal: each logout is real and each new
-    // admission proves the World clock continues independently of the session.
+    // Idle-removal uses real monotonic time, not the injected World offset.
+    // Keep the same 90s wall cadence, with one fresh admission after an early
+    // accelerated cycle to prove the clock continues independently of sessions.
     for tag in 0xb0..=0xdf {
         *connection = Some(connect_world(clients, tag).await?);
         let client = connection.as_mut().ok_or("world-clock admission absent")?;
@@ -1134,18 +1148,8 @@ async fn clock_journey(
         if previous_session.is_some() {
             row.pass("fresh-admission");
         }
-        let reconnect_at = qualification_elapsed(started, offset) + Duration::from_secs(90);
+        let admitted_at = std::time::Instant::now();
         loop {
-            advance_qualification_time(qualification_step())?;
-            epochs.record(qualification_offset())?;
-            service_clock_advance(
-                client,
-                row,
-                &mut epochs,
-                started,
-                std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some(),
-            )
-            .await?;
             // A completed journey's final logout is checked by run_packet.
             // Cancellation drops its uncertain connection and leaves logout unproven.
             if CLOCK_ACTIONS
@@ -1155,9 +1159,12 @@ async fn clock_journey(
             {
                 return Ok(());
             }
-            if qualification_elapsed(started, offset) >= reconnect_at {
+            if row.reconnect_due(admitted_at.elapsed(), accelerated) {
                 break;
             }
+            advance_qualification_time(qualification_step())?;
+            epochs.record(qualification_offset())?;
+            service_clock_advance(client, row, &mut epochs, started, accelerated).await?;
         }
         logout(client).await?;
         previous_session = Some(current_session);
@@ -3452,6 +3459,27 @@ async fn hunt_one(client: &mut DevClientSession, world: &BundleWorld) -> TestRes
         })
         .copied()
         .ok_or("ordinary rat route reached endpoint but no adjacent live creature frame")?;
+    let modes = attacks::FightModes {
+        chase: attacks::ChaseMode::Chase,
+        ..attacks::FightModes::DEFAULT
+    };
+    let reply = client.session_mut().set_fight_modes(&modes).await?;
+    if reply.disposition != attacks::AttackIntentDisposition::Ok {
+        return Err(format!("starter chase mode refused: {reply:?}").into());
+    }
+    // The mode command can service movement updates before the attack starts.
+    let target = client
+        .world_entities()
+        .and_then(|entities| entities.get(&target.entity))
+        .copied()
+        .ok_or("ordinary hunt target left visibility before attack")?;
+    let mut last_position = target.position;
+    let mut last_health_percent = match target.detail {
+        oteryn_dev_client::EntityDetail::Actor { health_percent, .. } => health_percent,
+        _ => return Err("ordinary hunt target has no protocol health".into()),
+    };
+    let mut damaged = false;
+    client.take_events();
     let reply = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -3460,58 +3488,96 @@ async fn hunt_one(client: &mut DevClientSession, world: &BundleWorld) -> TestRes
         return Err(format!("starter attack refused: {reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
-    loop {
+    let corpse = loop {
         client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
+        for event in client.take_events() {
+            if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event {
+                for updated in delta.value.update.iter().chain(&delta.value.enter) {
+                    if updated.entity != target.entity {
+                        continue;
+                    }
+                    last_position = updated.position;
+                    if let oteryn_dev_client::EntityDetail::Actor { health_percent, .. } =
+                        updated.detail
+                    {
+                        damaged |= health_percent < last_health_percent;
+                        last_health_percent = health_percent;
+                    }
+                }
+            }
+        }
         let alive = client
             .world_entities()
-            .is_some_and(|es| es.iter().any(|e| e.entity == target.entity));
-        if !alive {
-            break;
+            .is_some_and(|es| es.get(&target.entity).is_some());
+        if damaged
+            && !alive
+            && let Some(corpse) = client
+                .world_entities()
+                .and_then(|es| {
+                    es.iter().find(|e| {
+                        e.kind == oteryn_dev_client::EntityKind::Corpse
+                            && e.position == last_position
+                    })
+                })
+                .copied()
+        {
+            break corpse;
         }
         if tokio::time::Instant::now() >= deadline {
             client.session_mut().attack_target(None).await?;
             return Err(format!(
-                "starter attack produced no kill in 45s;target={:?};vitals={:?}",
+                "starter attack produced no proven kill in 45s;target={:?};last_position={last_position:?};damage_observed={damaged};last_health_percent={last_health_percent};target_present={alive};vitals={:?}",
                 target.entity,
                 client.actor_vitals()
             )
             .into());
         }
+    };
+    let stopped = client.session_mut().attack_target(None).await?;
+    if stopped.disposition != attacks::AttackIntentDisposition::Ok {
+        return Err(format!("starter attack stop refused: {stopped:?}").into());
     }
-    client.session_mut().attack_target(None).await?;
     // Loot only a real nearby corpse; custody comes from native MOVE results.
-    let corpse = client
-        .world_entities()
-        .and_then(|es| {
-            es.iter().find(|e| {
-                e.kind == oteryn_dev_client::EntityKind::Corpse && e.position == target.position
+    let oteryn_dev_client::EntityDetail::Object {
+        item_handle: Some(handle),
+        ..
+    } = corpse.detail
+    else {
+        return Err("killed creature corpse has no server-issued item handle".into());
+    };
+    let used = client.use_item(handle).await?;
+    if used.status != CommandStatus::Accepted
+        || used.disposition != native::world_object::UseDisposition::Committed
+    {
+        return Err(format!("ordinary corpse USE refused: {used:?}").into());
+    }
+    while client
+        .open_container()
+        .is_none_or(|view| view.container_handle != Some(handle))
+    {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(
+                "killed creature corpse has no matching native container before hunt deadline"
+                    .into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+    let entries = client
+        .open_container()
+        .ok_or("killed creature corpse has no native container")?
+        .entries
+        .clone();
+    for item in entries {
+        let reply = client
+            .move_item(&native::item_view::ItemMoveIntent {
+                source: item.handle,
+                destination: native::item_view::ItemMoveDestination::MainBackpack,
             })
-        })
-        .and_then(|e| {
-            if let oteryn_dev_client::EntityDetail::Object { item_handle, .. } = e.detail {
-                item_handle
-            } else {
-                None
-            }
-        });
-    if let Some(corpse) = corpse {
-        client.use_item(corpse).await?;
-        let entries = client
-            .open_container()
-            .ok_or("killed creature corpse has no native container")?
-            .entries
-            .clone();
-        for item in entries {
-            let reply = client
-                .move_item(&native::item_view::ItemMoveIntent {
-                    source: item.handle,
-                    destination: native::item_view::ItemMoveDestination::MainBackpack,
-                })
-                .await?;
-            if reply.outcome != native::item_view::ItemMoveOutcome::Moved {
-                return Err(format!("ordinary loot refused: {reply:?}").into());
-            }
+            .await?;
+        if reply.outcome != native::item_view::ItemMoveOutcome::Moved {
+            return Err(format!("ordinary loot refused: {reply:?}").into());
         }
     }
     Ok(())

@@ -464,11 +464,27 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
     let lifecycle = async {
         let mut wait = lost.wait;
         let mut backoff = RECONCILE_BACKOFF;
+        let mut previous_result = None;
         loop {
-            match authority
+            let result = authority
                 .lose_control(lost.session, wait, lost.reset.as_ref())
-                .await
-            {
+                .await;
+            if previous_result != Some(result) {
+                operator_event(match result {
+                    ControlLossResult::Recorded => "event=control_loss_result kind=recorded",
+                    ControlLossResult::ResumedHistory => {
+                        "event=control_loss_result kind=resumed_history"
+                    }
+                    ControlLossResult::Terminal => "event=control_loss_result kind=terminal",
+                    ControlLossResult::Unknown => "event=control_loss_result kind=unknown",
+                    ControlLossResult::NotApplicable => {
+                        "event=control_loss_result kind=not_applicable"
+                    }
+                    ControlLossResult::Refused => "event=control_loss_result kind=refused",
+                });
+                previous_result = Some(result);
+            }
+            match result {
                 ControlLossResult::Recorded => {
                     // KILL-REWARD-COMP-1 §1.3: an unknown expiry keeps its fence, kill mark and
                     // parked kills, and runs again behind the backoff, unbounded in count.
