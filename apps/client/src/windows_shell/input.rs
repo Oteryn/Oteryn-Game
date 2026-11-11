@@ -49,7 +49,13 @@ impl Application {
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
             for action in custom_actions {
-                play.link.custom_hotkey_action(&play.view, &action);
+                if let crate::play::CustomAction::Utility { action } = action {
+                    if self.settings.run_utility(&play.link, action) {
+                        let _ = self.settings.capture(&mut play.view);
+                    }
+                } else {
+                    play.link.custom_hotkey_action(&play.view, &action);
+                }
             }
             if let Some(window) = &self.window {
                 window.set_cursor(if play.view.preferences().cursor_crosshair {
@@ -177,6 +183,12 @@ impl Application {
             };
             let mut render_failed = false;
             for click in clicks {
+                if click.toggle_attack {
+                    if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
+                        play.view.attack_toggle_click(tile, &play.link);
+                    }
+                    continue;
+                }
                 if !click.secondary && suppress_primary {
                     continue;
                 }

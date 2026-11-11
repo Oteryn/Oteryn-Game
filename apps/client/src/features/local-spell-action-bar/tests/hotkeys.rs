@@ -13,7 +13,8 @@ fn custom_text_keys_persist_and_do_not_repeat_or_steal_chat_letters()
     assert!(link.assign_bar_action(
         0,
         BarAction::Text {
-            text: "A saved greeting".into()
+            text: "A saved greeting".into(),
+            send_automatically: true
         }
     ));
     assert!(link.bind_action_key(0, "SUPER+ALT+F12"));

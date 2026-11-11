@@ -154,3 +154,31 @@ fn item_hotkeys_persist_per_character_and_negotiate_smart_sources()
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[test]
+fn t041_object_selector_and_smart_option_persist() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = play_channel();
+    outbox.hotkey_equip_initialize(true);
+    outbox.hotkey_equip_items(vec![256, 512]);
+    // The selector only offers carried items and a slot clears with 0.
+    assert!(link.hotkey_equip_assign(3, 512));
+    assert_eq!(
+        link.hotkey_equip_panel().bindings[3].map(std::num::NonZeroU32::get),
+        Some(512)
+    );
+    assert!(!link.hotkey_equip_assign(4, 999));
+    link.set_smart_equip(false);
+    let path = std::env::temp_dir().join(format!("t041-item-hotkeys-{}.json", std::process::id()));
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    settings.sync_item_hotkeys(&link);
+    let saved = crate::play::SettingsState::new(Some(path.clone()));
+    assert!(!saved.preferences.item_hotkeys.smart);
+    assert_eq!(
+        saved.preferences.item_hotkeys.bindings[3].map(std::num::NonZeroU32::get),
+        Some(512)
+    );
+    assert!(link.hotkey_equip_assign(3, 0));
+    assert!(link.hotkey_equip_panel().bindings[3].is_none());
+    let _ = std::fs::remove_file(path);
+    Ok(())
+}

@@ -91,6 +91,11 @@ mod cursor_direction_tests {
         );
     }
 }
+/// Highest item upgrade tier an Equip hotkey can be bound to.
+pub const MAX_UPGRADE_TIER: u8 = 10;
+fn send_by_default() -> bool {
+    true
+}
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", deny_unknown_fields)]
 pub enum BarAction {
@@ -106,9 +111,15 @@ pub enum BarAction {
     },
     Equip {
         definition: NonZeroU32,
+        /// Upgrade tier the hotkey is bound to (0 = any); the equip request carries no tier yet.
+        #[serde(default)]
+        upgrade_tier: u8,
     },
     Text {
         text: String,
+        /// `true` sends the text at once, `false` inserts it into the chat input.
+        #[serde(default = "send_by_default")]
+        send_automatically: bool,
     },
     Use {
         definition: NonZeroU32,
@@ -136,9 +147,10 @@ fn valid_leaf(action: &BarAction) -> bool {
                 && words.len() <= 128
                 && !name.chars().chain(words.chars()).any(char::is_control)
         }
-        BarAction::Text { text } => {
+        BarAction::Text { text, .. } => {
             !text.trim().is_empty() && text.len() <= 1020 && !text.contains('\0')
         }
+        BarAction::Equip { upgrade_tier, .. } => *upgrade_tier <= MAX_UPGRADE_TIER,
         BarAction::Multi { .. } | BarAction::Passive { .. } => false,
         _ => true,
     }
@@ -211,7 +223,7 @@ impl PlayLink {
     }
 }
 pub(in crate::play) fn set_action(mailbox: &mut Mailbox, slot: usize, action: BarAction) -> bool {
-    if let BarAction::Equip { definition } = &action
+    if let BarAction::Equip { definition, .. } = &action
         && !mailbox.hotkey_equip.items.contains(&definition.get())
     {
         return false;
@@ -250,7 +262,15 @@ impl SettingsState {
 }
 
 pub(in crate::play) fn activate(link: &PlayLink, slot: NonZeroU32) -> bool {
-    activate_shared(&mut lock(&link.mailbox), &link.commands, slot)
+    let (handled, insert) = {
+        let mut mailbox = lock(&link.mailbox);
+        let handled = activate_shared(&mut mailbox, &link.commands, slot);
+        (handled, mailbox.custom_chat_paste.is_some())
+    };
+    if insert {
+        link.open_chat();
+    }
+    handled
 }
 pub(in crate::play) fn activate_shared(
     mailbox: &mut Mailbox,
@@ -345,7 +365,7 @@ fn activate_inner(
         BarAction::Use { definition, mode } => {
             super::item_actions::use_item(mailbox, commands, definition, mode)
         }
-        BarAction::Equip { definition } => {
+        BarAction::Equip { definition, .. } => {
             mailbox.hotkey_equip.item_definition = definition.get();
             if let Some(command) =
                 oteryn_client_ui::hotkey_equip::control_request(&mut mailbox.hotkey_equip)
@@ -357,7 +377,18 @@ fn activate_inner(
                 mailbox.spell_bar.feedback = "Session unavailable".into();
             }
         }
-        BarAction::Text { text } => {
+        BarAction::Text {
+            text,
+            send_automatically: false,
+        } => {
+            use oteryn_client_ui::chat::ComposerMode;
+            mailbox.chat.text.clone_from(&text);
+            mailbox.custom_chat_paste = Some(text);
+            if mailbox.chat.console.mode == ComposerMode::Off {
+                mailbox.chat.console.mode = ComposerMode::Temporary;
+            }
+        }
+        BarAction::Text { text, .. } => {
             let draft = std::mem::replace(&mut mailbox.chat.text, text);
             crate::play::feature_0007_chat::input::enqueue(
                 mailbox,
@@ -384,8 +415,16 @@ pub(in crate::play) fn label(mailbox: &Mailbox, action: &BarAction) -> String {
             super::amount::visible_count(mailbox, definition.get())
                 .map_or_else(|| "?".into(), |count| count.to_string())
         ),
-        BarAction::Equip { definition } => format!(
-            "Equip {definition}\n{}\nVisible: {}",
+        BarAction::Equip {
+            definition,
+            upgrade_tier,
+        } => format!(
+            "Equip {definition}{}\n{}\nVisible: {}",
+            if *upgrade_tier == 0 {
+                String::new()
+            } else {
+                format!(" (tier {upgrade_tier})")
+            },
             if mailbox.hotkey_equip.items.contains(&definition.get()) {
                 "Carried"
             } else {
@@ -394,7 +433,13 @@ pub(in crate::play) fn label(mailbox: &Mailbox, action: &BarAction) -> String {
             super::amount::visible_count(mailbox, definition.get())
                 .map_or_else(|| "?".into(), |count| count.to_string())
         ),
-        BarAction::Text { text } => format!("Say: {text}"),
+        BarAction::Text {
+            text,
+            send_automatically,
+        } => format!(
+            "{}: {text}",
+            if *send_automatically { "Say" } else { "Insert" }
+        ),
         BarAction::Passive { ability } => match ability {
             PassiveAbility::BattleInstinct => mailbox.battle_instinct_status.snapshot.map_or_else(
                 || "Battle Instinct\nUnknown".into(),
@@ -487,7 +532,7 @@ fn action_ready(mailbox: &Mailbox, action: &BarAction) -> bool {
                 .iter()
                 .find(|entry| entry.rune_item == Some(definition.get()))
         }
-        BarAction::Equip { definition } => {
+        BarAction::Equip { definition, .. } => {
             return mailbox.hotkey_equip.items.contains(&definition.get())
                 && !mailbox.hotkey_equip.pending;
         }

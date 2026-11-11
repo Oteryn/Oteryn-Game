@@ -78,7 +78,8 @@ fn named_custom_profiles_restore_owner_bar_keys_and_mixed_assignments()
     assert!(link.assign_bar_action(
         35,
         BarAction::Text {
-            text: "First profile".into()
+            text: "First profile".into(),
+            send_automatically: true
         }
     ));
     assert!(link.bind_action_key(35, "SUPER+F9"));
@@ -105,13 +106,14 @@ fn named_custom_profiles_restore_owner_bar_keys_and_mixed_assignments()
         Some("SUPER+F9")
     );
     assert!(
-        matches!(first.bar_actions.0.get(&35), Some(BarAction::Text { text }) if text == "First profile")
+        matches!(first.bar_actions.0.get(&35), Some(BarAction::Text { text, .. }) if text == "First profile")
     );
     // A pending older live edit cannot overwrite the explicitly loaded snapshot.
     assert!(link.assign_bar_action(
         35,
         BarAction::Text {
-            text: "Pending old edit".into()
+            text: "Pending old edit".into(),
+            send_automatically: true
         }
     ));
     settings.apply(first);
@@ -121,7 +123,8 @@ fn named_custom_profiles_restore_owner_bar_keys_and_mixed_assignments()
     assert!(link.assign_bar_action(
         35,
         BarAction::Text {
-            text: "Queued after selection".into()
+            text: "Queued after selection".into(),
+            send_automatically: true
         }
     ));
     settings.load_custom_hotkey_profile("First")?;

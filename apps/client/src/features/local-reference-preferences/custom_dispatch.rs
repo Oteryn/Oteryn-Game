@@ -68,7 +68,49 @@ impl PlayLink {
                 ));
             }
         }
+        choices.extend(
+            super::UtilityAction::ALL
+                .into_iter()
+                .map(|action| (action.label().into(), CustomAction::Utility { action })),
+        );
         choices
+    }
+
+    /// Session-level utility actions; preference actions run in `SettingsState::run_utility`.
+    pub fn utility_action(&self, action: super::UtilityAction) -> bool {
+        use super::UtilityAction;
+        match action {
+            UtilityAction::ClearOldestMessage => {
+                let mut mailbox = lock(&self.mailbox);
+                if mailbox.chat.lines.is_empty() {
+                    return false;
+                }
+                mailbox.chat.lines.remove(0);
+                true
+            }
+            UtilityAction::ShowIgnoreList => {
+                self.chat_show_lists();
+                true
+            }
+            UtilityAction::ToggleServerMessages => {
+                self.chat_console_filter();
+                true
+            }
+            UtilityAction::ChangeCharacter => {
+                self.request_logout();
+                true
+            }
+            UtilityAction::BugReport => {
+                self.bug_report_open();
+                true
+            }
+            UtilityAction::QuickLootArea => {
+                self.quick_loot_action(oteryn_client_ui::quick_loot::Action::LootAll)
+            }
+            UtilityAction::ToggleCreatureHuds
+            | UtilityAction::ToggleFpsLagIndicator
+            | UtilityAction::NextHotkeyPreset => false,
+        }
     }
 
     pub fn custom_hotkey_action(&self, _view: &PlayView, action: &CustomAction) -> bool {
@@ -108,6 +150,7 @@ impl PlayLink {
                 self.cast_spell_slot(slot);
                 true
             }
+            CustomAction::Utility { action } => self.utility_action(*action),
             CustomAction::Text { text, send } => {
                 use oteryn_client_ui::chat::{ComposerMode, Mode};
                 let mut mailbox = lock(&self.mailbox);

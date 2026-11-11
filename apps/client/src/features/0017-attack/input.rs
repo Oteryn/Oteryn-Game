@@ -1,6 +1,34 @@
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::battle::{self, Action};
+use oteryn_renderer::TileCoord;
+impl crate::play::PlayView {
+    /// Alt+click on an opponent: stops the attack when it is the current target, else attacks it.
+    pub fn attack_toggle_click(&self, tile: TileCoord, link: &PlayLink) -> bool {
+        let Some(target) = self
+            .scene
+            .target_at(tile)
+            .and_then(|target| target.entity)
+            .filter(|target| {
+                self.entities.iter().any(|entity| {
+                    entity.entity == *target && entity.kind == oteryn_session::EntityKind::Creature
+                })
+            })
+        else {
+            return false;
+        };
+        let attacking = lock(&link.mailbox)
+            .battle
+            .combat
+            .is_some_and(|state| state.target == Some(target));
+        link.request_combat(if attacking {
+            crate::combat_input::CombatCommand::Stop
+        } else {
+            crate::combat_input::CombatCommand::Attack(target)
+        });
+        true
+    }
+}
 impl PlayLink {
     pub fn battle_request(&self, action: Action) {
         let mut mailbox = lock(&self.mailbox);
