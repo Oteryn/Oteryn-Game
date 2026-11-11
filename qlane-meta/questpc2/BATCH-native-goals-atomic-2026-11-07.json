@@ -1,0 +1,45 @@
+{
+  "batch_id": "native-goals-atomic-2026-11-07",
+  "state": "GREEN_COMPOSITION_SLICE",
+  "lifecycle": "AUTHORING",
+  "base_sha": "5a26f9a0e",
+  "scope": "Six exact-origin native defender goals reuse sealed native XP/Quest transaction; whole Elvenbane remains unfinished.",
+  "red": {
+    "postgres_version": 180006,
+    "seconds": 75.68,
+    "assertion": "exact-origin goal must commit with XP before any deferred queue drain",
+    "observed": "None, expected Some(true)",
+    "log": "/tmp/questpc2-exact-goal-atomic-red-pg.log"
+  },
+  "checks": {
+    "cargo_check": "PASS durability+dispatch, 1m32s",
+    "log": "/tmp/questpc2-exact-goal-atomic-final-check.log",
+    "fmt": "PASS",
+    "authority_pg_seconds": 5.77,
+    "defender_pg_cases": 2,
+    "defender_pg_seconds": 85.11,
+    "clippy_seconds": 144,
+    "head_check_seconds": 143
+  },
+  "pending": [
+    "Add focused stale-captured eligibility/retry PostgreSQL proof and close any terminal replay gap without granting capped progress.",
+    "Activate exact goal cohort from earned actual basement landing; source-wire six-defender combat, atomic seven-item treasure/replay and source exit/journal.",
+    "Continue remaining27 owned unfinished entries; no final while scope remains."
+  ],
+  "implementation": [
+    "Capture sealed native death and immutable source origin with original coherent snapshot.",
+    "Commit native goals using original XP transaction fresh-death audit, principal/current session fence, bounded phase/counter/prerequisite evaluation and shared Quest persistence.",
+    "Remove independent pre-XP native goal write; retain ordinary corpse/loot and Grizzly behavior.",
+    "Refresh coherent recipient snapshots after settlement and invalidate Character cursors for uncertain commits.",
+    "Generic Command and arbitrary CreatureDeath UUID cannot write native goal keys."
+  ],
+  "self_review": "AUTHORING; focused verification pending, no whole quest/readiness claim.",
+  "latest_red": {
+    "postgres_version": 180006,
+    "seconds": 82.9,
+    "log": "/tmp/questpc2-exact-goal-atomic-memory-recovered-pg.log",
+    "error": "quest receipt is not at the current Character root revision",
+    "finding": "Two native quest writes advance one Character twice; SQL permits one receipt per revision and requires final root revision. Compose bounded effects once; retain guards."
+  },
+  "resolution_batch": "BATCH-native-objective-composition-2026-11-07.json"
+}

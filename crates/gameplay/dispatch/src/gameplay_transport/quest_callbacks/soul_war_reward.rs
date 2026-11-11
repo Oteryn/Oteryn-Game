@@ -201,6 +201,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let request = RewardClaimMintRequest {
+                backpack_outputs: false,
                 command: CommandRef::new(command.game_session_id, id),
                 claim: TypedDefinitionRef {
                     family: "RewardClaim".into(),
@@ -212,6 +213,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 quantity: 1,
                 contents: Vec::new(),
                 root_text: None,
+                root_fluid_subtype: None,
+                root_charges_remaining: None,
                 backpack,
                 content_revision: format!(
                     "sha256:{}",

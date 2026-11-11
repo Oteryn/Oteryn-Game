@@ -1,0 +1,101 @@
+{
+  "schema": "OTERYN_QUESTPC2_BATCH_EVIDENCE/v1",
+  "main": "78294c081",
+  "source_checkpoint": "e3802b39f",
+  "lifecycle": "AUTHORING",
+  "freeze_after_successful_push": true,
+  "scope": "Integrate collector main while preserving both main quest work and all lane logic; no whole-quest qualification.",
+  "migrations": [
+    "1240_al_dee_item_exchange.sql",
+    "1241_uzgod_obsidian_knife_exchange.sql",
+    "1242_seymour_present_exchange.sql",
+    "1243_native_encounter_progression_scope.sql",
+    "1244_instance_corpse_mint.sql"
+  ],
+  "migration_renumbering": "None required; own range1240-1244 preserved, main migrations retained, duplicate checkPASS on resolved staged tree.",
+  "conflicts": {
+    "runtime": "Preserved both guard/effect sets; adapted new default fields and borrowed native fixture owners without replacing production authority.",
+    "loot": "3360Item rows merged by exact identity and three-way field equality; both sets retained, five overlapping rows agree and preserve main stack facts.",
+    "portable_corpses": {
+      "source_ids": [
+        3990,
+        4103,
+        4104
+      ],
+      "full_main_record_sha256": "e944c1030d8f9fe7206f967b1632e9a9c92c1ce53750b6dfcada0c97afb536a9",
+      "red": "3source conflicts, regressionRED5.162s",
+      "green": "6/6PASS61.103s, full native record preservation and atomic conflicting-fact refusal."
+    },
+    "derived": "Regenerate content providers, Prey, registered authoring stages, central lists and pins with repo tooling."
+  },
+  "workspace_check": {
+    "intermediate": "PASS2m21s after merge compile repairs; final post-generation checkPENDING",
+    "initial_failures": "Missing Selector.position_aliases, QuestWorldContext.party, NpcTradeRequest fluid/full-charge options; fixture owner type mismatch; merged test formatting. All corrected together.",
+    "final": "PASS7m23s --workspace --all-targets",
+    "after_migration_composition": "PASS3m11s --workspace --all-targets"
+  },
+  "generation": "PASS canonical/native providers and all registered authoring stages; real Prey15cases/776creatures; Rust model build3m01s",
+  "pending_units": {
+    "oteryn-client": "apps/client",
+    "oteryn-game-server": "apps/game-server",
+    "oteryn-client-assets": "crates/client-assets",
+    "oteryn-client-domain": "crates/client-domain",
+    "oteryn-client-ui": "crates/client-ui",
+    "oteryn-gameplay-combat": "crates/gameplay/combat",
+    "oteryn-gameplay-content": "crates/gameplay/content",
+    "oteryn-gameplay-dispatch": "crates/gameplay/dispatch",
+    "oteryn-gameplay-durability": "crates/gameplay/durability",
+    "oteryn-gameplay-encounters": "crates/gameplay/encounters",
+    "oteryn-gameplay-entities": "crates/gameplay/entities",
+    "oteryn-gameplay-monster-ai": "crates/gameplay/monster-ai",
+    "oteryn-gameplay-npc": "crates/gameplay/npc",
+    "oteryn-gameplay-quests": "crates/gameplay/quests",
+    "oteryn-gameplay-world": "crates/gameplay/world",
+    "oteryn-protocol-oteryn": "crates/protocol-oteryn",
+    "oteryn-session": "crates/session",
+    "oteryn-architecture-check": "tools/architecture-check"
+  },
+  "pg": "Fresh expanded16cases include main Yeo barter; rebuilding embedded ledger after SQL composition fix.",
+  "resource_recovery": "Retired inactive lane caches and prior-tree executables; no active cache or test data removed. No tests weakened/skipped/deleted.",
+  "clippy": "PASS3m43s, alltargets5changed owner crates, -Dwarnings",
+  "item_mount_equivalence": "PASS34111Items/252Mounts/27508creature_profiles",
+  "world_metadata": "PASS",
+  "source_regressions": {
+    "portable_corpses": "6/6PASS61.103s",
+    "own_source_facts": "3/3PASS6.294s",
+    "loot_adapters": "2/2PASS1.051s",
+    "strict_outside_fingerprints": "GREEN0.597s after accepted-main rebase; old HEAD proof reproduced first",
+    "new_canonical_outside_sha256": "a36cccacd5536b476e508e0b1d2936657c80485d62c9f0df962c3865c2876130",
+    "new_native_outside_sha256": "6e4be634a432d164970ce0188c2b362b0eeceb9d43ce0ef52056d8d839d6370e",
+    "full_portable_main_records": "3/3exact SHAe944c1030d8f9fe7206f967b1632e9a9c92c1ce53750b6dfcada0c97afb536a9"
+  },
+  "central_generation": "PASS item audit tags, quest binding evidence and completion matrix; source metadata stays honest",
+  "pin_refresh": "PASS using rebuilt current main compiler; root main preproduction fields synchronized by main repair",
+  "fmt": "PASS cargo fmt --all --check",
+  "pg_build_retry": "Initial post-check compilation failed ENOSPC before executing tests; completed check/clippy caches retired, focused run restarted unchanged withjobs1.",
+  "pg_red": {
+    "cases": 15,
+    "passed_pure": 3,
+    "failed_pg_setup": 12,
+    "seconds": 40.154,
+    "root_cause": "migration1333 missing opposite-side NPC line guard after lane1240 textual rewrite",
+    "exact_error": "while executing migration 1333: error returned from database: missing opposite-side NPC line guard at line 3909"
+  },
+  "migration_composition_fix": {
+    "changed_only": [
+      1240,
+      1241,
+      1242
+    ],
+    "main_1333_unchanged": true,
+    "opposite_side_guard": "Keep main original substring; compose exact side3 item-only exception and explicit no-coin guard.",
+    "typed_definition_guard": "Keep main RHS intact for Yeo; LHS maps only exact ordinal-specific exchange input keys, mismatches becomeNULL and refuse.",
+    "independent_plain_input_and_cooldown_guards": "All existing Al Dee/Uzgod/Seymour predicates retained.",
+    "all_migrations_on_pg": "PASS3.001s PG180006 through1349; four retained guard queries true."
+  },
+  "changed_crate_unit_state": "Prior18-crate unit build interrupted before execution when migration error was collected; fresh full unit run pending under PREPUSH-2 cadence exception.",
+  "registration_replay": "PASS1test134.322s, all45native generated outputs byte-identical.",
+  "fmt_after_migration_composition": "PASS",
+  "publication_state": "COMPILES_AND_SCHEMA_GREEN_RUNTIME_PG_AND_FULL_UNITS_PENDING",
+  "cadence_exception": "Owner PREPUSH-2: when step3 is not complete in budget, publish after steps1,2,4 and explicitly name pending tests. Fresh16focused cases (13runtimePG+3pure) rebuilding; full18changed-crate units pending. No runtimePG success inferred from schema-only proof."
+}

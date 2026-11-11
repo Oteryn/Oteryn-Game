@@ -73,6 +73,10 @@ A PR is mergeable when all of these hold on its **current** head SHA:
    batch from the members left on the new `main` and test it again.
 3. Changes whose paths select no PostgreSQL leg (client, docs, tools/CI,
    test-only fixes of `main`) need only (1); their own CI is then complete.
+4. The PR has its Codex review (`oteryn-review` §5): a
+   `Codex review <SHA>` line in the report or a PR comment, and every
+   confirmed P0/P1 from it fixed on the head being merged. A PR without it is
+   not merged; the merger runs the review first.
 
 Merge with squash and pass the full 40-character head SHA. After the merge,
 watch the post-merge `Game Merge Queue gate` run on the new `main`, and check

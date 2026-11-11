@@ -52,6 +52,8 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
             imported_charms: self.imported_charms,
             states: (ChannelSessionStates::default()).into(),
             clock_origin: std::time::Instant::now(),
+            #[cfg(test)]
+            test_step_wait_receipts: None,
             revision_sequencer:
                 (crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new())
                     .into(),

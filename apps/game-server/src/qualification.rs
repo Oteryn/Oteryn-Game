@@ -1358,6 +1358,15 @@ fn node_boot_seam_against_running_node() -> TestResult {
         .build()?
         .block_on(async {
             let url = required("NODE_BOOT_DATABASE_URL")?;
+            let world_path = std::env::var_os("NODE_BOOT_WORLD_BUNDLE");
+            let packet_accounts = if world_path.is_some() {
+                Some([
+                    required("NODE_BOOT_PACKET_ACCOUNT_ID")?,
+                    required("NODE_BOOT_PACKET_SECOND_ACCOUNT_ID")?,
+                ])
+            } else {
+                None
+            };
             let world = crate::node::uuid_bytes(&required("NODE_BOOT_WORLD_ID")?)
                 .ok_or("invalid NODE_BOOT_WORLD_ID")?;
             let channel = crate::node::uuid_bytes(&required("NODE_BOOT_CHANNEL_ID")?)
@@ -1368,14 +1377,32 @@ fn node_boot_seam_against_running_node() -> TestResult {
             )?);
             let mut database = sqlx::PgConnection::connect(&url).await?;
             let mut characters = Vec::new();
-            for account in &accounts {
-                let character: Vec<u8> = sqlx::query_scalar(
+            let mut account_ids = std::collections::BTreeSet::new();
+            let mut character_ids = std::collections::BTreeSet::new();
+            for account in accounts.iter().chain(packet_accounts.iter().flatten()) {
+                let account_id = crate::node::uuid_bytes(account)
+                    .ok_or("invalid node-boot fixture AccountId")?;
+                if !account_ids.insert(account_id) {
+                    return Err("node-boot fixture Accounts must be distinct".into());
+                }
+                let found: Vec<Vec<u8>> = sqlx::query_scalar(
                     "SELECT uuid_send(character_id) FROM game_character_roots WHERE account_id = $1::uuid",
                 )
                 .bind(account)
-                .fetch_one(&mut database)
+                .fetch_all(&mut database)
                 .await?;
-                characters.push(<[u8; 16]>::try_from(character.as_slice())?);
+                let [character] = found.as_slice() else {
+                    return Err(format!(
+                        "node-boot fixture Account must own exactly one Character: account={account} count={}",
+                        found.len()
+                    )
+                    .into());
+                };
+                let character = <[u8; 16]>::try_from(character.as_slice())?;
+                if !character_ids.insert(character) {
+                    return Err("node-boot fixture Characters must be distinct".into());
+                }
+                characters.push(character);
             }
             let scope_generation: String = sqlx::query_scalar(
                 "SELECT ownership_generation::text FROM game_runtime_scope_assignments \
@@ -1386,14 +1413,17 @@ fn node_boot_seam_against_running_node() -> TestResult {
             .fetch_one(&mut database)
             .await?;
             database.close().await?;
-            evidence("node_boot characters=2 source=control_socket assignment=operator");
+            evidence(&format!(
+                "node_boot characters={} source=control_socket assignment=operator",
+                characters.len()
+            ));
             let clients = SeamClients {
                 address: required("NODE_BOOT_ADDRESS")?.parse()?,
                 certificate: &certificate,
                 signing: &signing,
                 key_id: &key_id,
                 accounts: &accounts,
-                characters: &characters,
+                characters: &characters[..accounts.len()],
                 world,
                 channel,
                 scope_generation: scope_generation.parse()?,
@@ -1406,8 +1436,23 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 runtime: None,
                 recovery: &recovery_key()?,
             };
-            if let Some(path) = std::env::var_os("NODE_BOOT_WORLD_BUNDLE") {
-                client_world::journeys(&clients, std::path::Path::new(&path)).await
+            if let Some(path) = world_path {
+                let packet_accounts = packet_accounts
+                    .as_ref()
+                    .ok_or("World packet Accounts are not configured")?;
+                let packet_clients = SeamClients {
+                    accounts: packet_accounts,
+                    characters: &characters[accounts.len()..],
+                    ..clients
+                };
+                for (role, pair) in [("core", &clients), ("packets", &packet_clients)] {
+                    evidence(&format!(
+                        "node_boot_fixture role={role} character_0={} character_1={} accounts=distinct characters=distinct",
+                        uuid_text(&pair.characters[0]),
+                        uuid_text(&pair.characters[1]),
+                    ));
+                }
+                client_world::journeys(&clients, &packet_clients, std::path::Path::new(&path)).await
             } else {
                 seam_clients(clients).await
             }

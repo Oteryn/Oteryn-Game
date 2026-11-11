@@ -1,0 +1,138 @@
+[
+  {
+    "name": "endgame-regression",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--lib",
+      "endgame_entry_postgres_real_dispatch_cannot_allocate_or_reset_without_w02",
+      "--",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 5.583,
+    "postgres_executed": true,
+    "passed": true,
+    "log": ".questpc2/l3-endgame-regression.log"
+  },
+  {
+    "name": "ordinary-admission-regression",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--lib",
+      "boss_activity_postgres_real_wire_native_entry_and_scope_barrier",
+      "--",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 70.879,
+    "postgres_executed": true,
+    "passed": true,
+    "log": ".questpc2/l3-ordinary-admission-regression.log"
+  },
+  {
+    "name": "endgame-units",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-encounters",
+      "--lib",
+      "endgame_entry",
+      "--",
+      "--nocapture"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 64.887,
+    "postgres_executed": null,
+    "passed": true,
+    "log": ".questpc2/l3-endgame-units.log"
+  },
+  {
+    "name": "clippy",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "clippy",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-durability",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--all-targets",
+      "--all-features",
+      "--quiet",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 231.497,
+    "postgres_executed": null,
+    "passed": true,
+    "log": ".questpc2/l3-clippy.log"
+  },
+  {
+    "name": "fmt",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 16.053,
+    "postgres_executed": null,
+    "passed": true,
+    "log": ".questpc2/l3-fmt.log"
+  },
+  {
+    "name": "new-module-fmt",
+    "command": [
+      "rustfmt",
+      "--edition",
+      "2024",
+      "--config",
+      "skip_children=true",
+      "--check",
+      "crates/gameplay/durability/src/durability/activity_handoff/boss_room/quest_entry.rs"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 0.054,
+    "postgres_executed": null,
+    "passed": true,
+    "log": ".questpc2/l3-new-module-fmt.log"
+  },
+  {
+    "name": "whitespace",
+    "command": [
+      "git",
+      "diff",
+      "7aa809818",
+      "--check",
+      "--",
+      "crates",
+      ".questpc2/RESUME.md",
+      ".questpc2/QUEST-STATUS.json"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 0.083,
+    "postgres_executed": null,
+    "passed": true,
+    "log": ".questpc2/l3-whitespace.log"
+  }
+]

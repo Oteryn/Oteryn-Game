@@ -126,7 +126,7 @@ use super::world_spatial::{
     ChannelEntity, DELTA_TYPE_WORLD_SPATIAL_V1, EntityLights, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
     STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, SessionVisibility, StepDirection, StepDisposition,
     VisibilityUpdate, VisibleKind, WorldSpatialEntity, WorldSpatialError, WorldSpatialObservation,
-    decode_step_intent, encode_step_outcome, encode_visibility_delta_lit,
+    decode_step_intent_selected, encode_step_outcome, encode_visibility_delta_lit,
     encode_visibility_snapshot_lit, encode_world_spatial, moved_step_wait_ms,
     step_wait_receipts_enabled, too_early_step_wait_ms,
 };
@@ -441,6 +441,8 @@ pub enum FirstEntryOutcome {
     RefusedStaleAuthority,
     /// Current authority could not be read; nothing was written.
     RefusedUnavailable,
+    /// Positioned and otherwise initialized, but final spell repair must be retried on resume.
+    AwaitingSpellRepair,
     /// The Channel owner refused the write; nothing was written.
     RefusedByChannel,
 }

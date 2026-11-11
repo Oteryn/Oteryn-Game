@@ -723,10 +723,9 @@ mod e2ef1 {
         })
         .await?;
         let saved = peer.world_spatial().actor_position;
-        if peer.session_mut().logout().await?.result
-            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-        {
-            return Err("pushed peer logout refused".into());
+        let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(peer).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("pushed peer logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
         }
         // The caller reconnects this peer after the row and checks this exact saved cell.
         evidence(&format!("E2EF1_PUSH_SAVED position={saved:?}"));
@@ -810,6 +809,10 @@ mod e2ef1 {
                     StepDirection::East => (1, 0),
                     StepDirection::South => (0, 1),
                     StepDirection::West => (-1, 0),
+                    StepDirection::NorthEast => (1, -1),
+                    StepDirection::SouthEast => (1, 1),
+                    StepDirection::SouthWest => (-1, 1),
+                    StepDirection::NorthWest => (-1, -1),
                 };
                 at.x.checked_add_signed(dx) == Some(object.at.x)
                     && at.y.checked_add_signed(dy) == Some(object.at.y)
@@ -842,6 +845,10 @@ mod e2ef1 {
             StepDirection::East => StepDirection::West,
             StepDirection::South => StepDirection::North,
             StepDirection::West => StepDirection::East,
+            StepDirection::NorthEast => StepDirection::SouthWest,
+            StepDirection::SouthEast => StepDirection::NorthWest,
+            StepDirection::SouthWest => StepDirection::NorthEast,
+            StepDirection::NorthWest => StepDirection::SouthEast,
         };
         if client.step_retrying(reverse).await?.disposition != StepDisposition::Moved
             || client.world_spatial().actor_position != before
@@ -1004,13 +1011,12 @@ mod e2ef1 {
     pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
         loop {
-            if client.session_mut().logout().await?.result
-                == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-            {
+            let logout = client.session_mut().logout().await?;
+            if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
                 return Ok(());
             }
             if tokio::time::Instant::now() >= deadline {
-                return Err("movement logout lock did not settle".into());
+                return Err(format!("movement logout lock did not settle: {logout:?}").into());
             }
             pump(client).await?;
         }

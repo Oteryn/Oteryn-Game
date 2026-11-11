@@ -1,0 +1,25 @@
+{
+  "log": ".questpc/restart4-story-reward-pg-2.log",
+  "log_sha256": "d10dd7f496f6734b51ae5335e4c2424c0c53dc66a4dfa73266d32cfc170f8285",
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--all-features",
+    "--lib",
+    "--",
+    "quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_replay_and_refusal",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "exit": 0,
+  "duration_seconds": 122.221,
+  "test_results": {
+    "quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_replay_and_refusal": "ok"
+  },
+  "qualified_cohorts": 1,
+  "qualified_quests": 5
+}

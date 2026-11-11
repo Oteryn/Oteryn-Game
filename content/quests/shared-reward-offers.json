@@ -22,6 +22,74 @@
       ]
     },
     {
+      "npc": "oteryn:npc.alesar",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission02",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ],
+      "reply": [
+        "Anyway. Are you prepared to embark on a dangerous mission for us?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.alesar",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission02",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "requires": [],
+      "reply": [
+        "Did you find the tear of Daraman?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.amanda",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
       "npc": "oteryn:npc.amber",
       "keywords": [
         "addon",
@@ -272,6 +340,157 @@
       "storage": [],
       "reply": [
         "Choose the base, shield or helmet."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.baa_leal",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "reply": [
+        "Since you are no djinn, there is something you could help us with. Are you interested, human?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.baa_leal",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "requires": [],
+      "reply": [
+        "Did you find the thief of our supplies?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.baa_leal",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "requires": [],
+      "reply": [
+        "Finally! What is his name then?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bo_ques",
+      "keywords": [
+        "cookbook"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "requires": [],
+      "reply": [
+        "Do you have the cookbook of the dwarven kitchen with you? Can I have it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bo_ques",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission01",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "reply": [
+        "Hmmm... now that we talk about it. There is something you could help me with. Are you interested?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.brewster",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
       ]
     },
     {
@@ -632,6 +851,72 @@
       ]
     },
     {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.costello",
+      "keywords": [
+        "diary"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Do you want me to inspect a diary?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.costello",
+      "keywords": [
+        "fugio"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Perhaps you are willing to investigate this matter?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
       "npc": "oteryn:npc.costello",
       "keywords": [
         "holy water"
@@ -692,6 +977,46 @@
       ]
     },
     {
+      "npc": "oteryn:npc.dalbrect",
+      "keywords": [
+        "brooch"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/passage",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "What? You want me to examine a brooch?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dalbrect",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/passage",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Can it be? I recognize my family's arms! Please give that brooch to me."
+      ]
+    },
+    {
       "npc": "oteryn:npc.dedoras",
       "keywords": [
         "addon"
@@ -746,6 +1071,78 @@
       ],
       "reply": [
         "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "expedition"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Buy the dungeon key first. The deeper expedition is for adventurers of level 50 or higher."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "expedition"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Defeat eight Dragons or Dragon Lords in the final cavern and recover every equipment cache. Are you ready to report your expedition?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "expedition"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Your expedition is complete. You can still buy another dungeon key."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "key"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Do you want to buy the dungeon key for 2000 gold?"
       ]
     },
     {
@@ -1216,6 +1613,76 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.fa_hradin",
+      "keywords": [
+        "mission",
+        "spy report"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "requires": [],
+      "reply": [
+        "Did you already retrieve the spyreport?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gabel",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "reply": [
+        "Think carefully, human, for this mission will bring you into real danger. Are you prepared to do us that final favour?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gabel",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "requires": [],
+      "reply": [
+        "Have you found Fa'hradin's lamp and placed it in Malor's personal chambers?"
       ]
     },
     {
@@ -2163,6 +2630,106 @@
       ]
     },
     {
+      "npc": "oteryn:npc.isimov",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.kasmir",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "base outfit"
+      ],
+      "topic": 0,
+      "next_topic": 101,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The basic Golden outfit costs 100000 gold. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "boots and gloves"
+      ],
+      "topic": 0,
+      "next_topic": 102,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The Golden boots and gloves costs 50000 gold. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "golden helmet"
+      ],
+      "topic": 0,
+      "next_topic": 103,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The Golden helmet costs 50000 gold. Do you agree?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.king_tibianus",
       "keywords": [
         "outfit",
@@ -2376,6 +2943,74 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.maealil",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.malor",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission02",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ],
+      "reply": [
+        "But think carefully, human, for this mission will bring you close to certain death. Are you prepared to embark on this mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.malor",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "requires": [],
+      "reply": [
+        "Have you found Fa'hradin's lamp and placed it in Malor's personal chambers?"
       ]
     },
     {
@@ -3201,6 +3836,94 @@
       ]
     },
     {
+      "npc": "oteryn:npc.quentin",
+      "keywords": [
+        "finish prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The prayer may bless your wooden stake only once."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.quentin",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rahkem",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rata_mari",
+      "keywords": [
+        "spyreport",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/rata_mari",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "reply": [
+        "Ok, have you brought me the cheese, I've asked for?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.razan",
       "keywords": [
         "ape fur"
@@ -3848,6 +4571,80 @@
       ]
     },
     {
+      "npc": "oteryn:npc.the_orc_king",
+      "keywords": [
+        "lamp"
+      ],
+      "topic": 0,
+      "next_topic": 31,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/door_to_lamp",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "reply": [
+        "Who do you want to trap in this cursed lamp?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_orc_king",
+      "keywords": [
+        "lamp"
+      ],
+      "topic": 0,
+      "next_topic": 32,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/door_to_lamp",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "reply": [
+        "Who do you want to trap in this cursed lamp?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tibra",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
       "npc": "oteryn:npc.tom",
       "keywords": [
         "paws",
@@ -3865,6 +4662,26 @@
       ],
       "reply": [
         "Have you brought 50 bear paws and 50 wolf paws?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tyrias",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
       ]
     },
     {
@@ -4165,6 +4982,26 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.yberius",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
       ]
     },
     {

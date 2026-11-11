@@ -1,0 +1,8 @@
+{
+  "crates/gameplay/dispatch/src/gameplay_transport/paced_movement/special_movement.rs": "220d45393270e4c43dbc71badadb9fec136671a5b7083d1f5ccfa49ad5486150",
+  "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pressure_plate_sewer.rs": "21d8bbf4fd8f7c3376ccb7cb92f3b0fda26f77a8133ef4da500ce6cdead59a35",
+  "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs": "f3a2621b7be0771dfcd2808e00cf9a56c0bbbb0a0895a0d7a47f6424cf00b9df",
+  "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs": "39cc8872d2101275e60236a17fc7af667d4f3f2c6efaab8451080b2a6aa3dd19",
+  "crates/gameplay/world/src/map/facts.rs": "0d0c626a05757689245be8bae918b93665013c26c3be6bfdcf12d5b547b4a906",
+  "crates/gameplay/world/src/map/facts/quest_callbacks.rs": "a2b427bc55d05ca9a5d6304b979a7c453245d47a1e85a7027d698801f64cfa29"
+}

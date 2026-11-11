@@ -1,0 +1,104 @@
+{
+  "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+  "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+  "frozen_previous_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+  "quest": "oteryn:quest.targuna_quest",
+  "whole_quest_qualified": false,
+  "scope": "Only free once-only Sterling acceptance; selected9-stage recipe remains unfinished. Four retained NPC name/position enrichments preserve existing facts; served scope adds only Sterling.",
+  "source_evidence": {
+    "selected_recipe": "content/quests/definitions/quests-00200-00299.json:1 /records/79/definition/oteryn_recipe/payload/recipe",
+    "npc_facts": "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json:1 pageids66775-66778, exact revid/sha checks in producer",
+    "placement": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:1 /candidates identity=oteryn:npc.sterling, Crystal definition_sha256=3069d6f8265d9b414aedc6c50460268d5c3e98c0a65257cc48c54750e44516a9",
+    "placement_cell": [
+      31928,
+      31903,
+      7
+    ]
+  },
+  "decisions": [
+    "Reuse admitted promotion candidate and agreeing retained BR coordinate; no guessed NPC or Item identity.",
+    "Preserve both retained Emiliana positions and all unowned NPC fields; do not activate later Targuna contacts.",
+    "Oteryn first-contact speech derives from selected recipe; not claimed as donor quotations.",
+    "No Premium/level gate, reward, completion or taming inferred by first contact.",
+    "No foreign migration or old frozen-branch engine code is copied."
+  ],
+  "red": {
+    "case": "questpc5_targuna_sterling_first_contact_commits_once_without_reward_or_completion",
+    "duration_seconds": 43.216368381,
+    "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-questpc5-targuna-sterling success=false",
+    "error": "Targuna Sterling retained position absent",
+    "log": "/tmp/questpc5-n2-contact-red-pg.log"
+  },
+  "authoring_tests": {
+    "contact": "RED missing module then2PASS0.215s",
+    "npc_facts": "2PASS exact preservation/idempotence/conflict checks",
+    "placement": "RED0versus1 then1PASS0.118s"
+  },
+  "green_pg": {
+    "case": "questpc5_targuna_sterling_first_contact_commits_once_without_reward_or_completion",
+    "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "duration_seconds": 122.354090168,
+    "success": true,
+    "marker": "TARGUNA_FIRST_CONTACT_PROVEN stage=0 receipts=1 rewards=0 completes=false",
+    "log": "/tmp/questpc5-n2-contact-green-pg-conversation.log"
+  },
+  "previous_frozen_validation": "2914/2914RustcrateunitsPASS3256.114s, zero failures; not pushed to frozen branch.",
+  "fixture_correction": {
+    "postgres": "18.6",
+    "red_durations_seconds": [
+      120.199762343,
+      127.427800978
+    ],
+    "error": "Test expected native floor -7 in a runtime LocalPosition that uses legacy z=7. The existing classic fixture was not at fault.",
+    "evidence": "crates/gameplay/entities/src/carrier/npc_actor.rs:96-105 documents and implements native -z to legacy z conversion.",
+    "fix": "Keep explicit exact-source fixture NpcPlacement floor=-7/north and assert runtime cell31928,31903,7. Acceptance and replay use existing wire fixture; own progress reader preserves unset -1.",
+    "rerun": "pending /tmp/questpc5-n2-contact-green-pg-runtime-floor.log"
+  },
+  "review": "Read producers, callback/greeting/placement generated deltas, NPC preservation tests, dispatch hooks and PG test against checklist. No production engine, migrations, value grants, protocol, boot or serve code changed. Donor composition assertions preserved for exact original cohort; new authored callback asserted separately.",
+  "prepush_checks": {
+    "workspace_all_targets": "PASS current conversation/capability fixture, cargo check --workspace --all-targets10m02s including lock wait",
+    "quest_authoring_checks": "PASS exact CI checks on107625470",
+    "content_tree": "PASS postmerge materialized97/97 world_markers10 successor_files1257",
+    "item_mount_equivalence": "PASS postmerge34111Items252Mounts,28759creatures; native44outputs/equipment3792 fresh",
+    "npc_source_units": "2 PASS15.329s",
+    "placement_units": "1 PASS0.261s",
+    "duplicates": "PASS final staged-tree dup-migrations.sh; no lane migrations added",
+    "authoring_unit_rerun": "PASS postmerge104modules1121tests0failures",
+    "pins": "PASS current compiler serial pin-refresh and pin-check; digest d6d7fd368e9357d41d5bab875356b154b7ee11cbd82f38087d8f882533c924f9",
+    "clippy": "PASS dispatch/content all-targets -D warnings, current fixture3m35s including lock wait; preceding identical run13m28s including lock wait",
+    "own_pg": "PASS PG18.6 122.354090168s, source placement, once acceptance, literal replay, fresh focused duplicate, zero reward/completion",
+    "fmt": "PASS cargo fmt --all --check and explicit new PG-file rustfmt --check",
+    "crate_units": "PASS current branch all2261 dispatch/content/quests unit cases3466.760s; ownPG proof separately recorded. Earlier pending cadence exception resolved.",
+    "placement_regression": "PASS9tests0.564s"
+  },
+  "main_sync": "Fast-forward to107625470 (SRVENC/ENCX and node-boot fix), both local producer hooks auto-merged without conflicts; refresh affected providers/pins and rerun merged-tree checks. Pre-merge Rust crate-test invocation cancelled before test execution.",
+  "checkpoint": "First-contact mechanic QUALIFIED by real PG18.6 proof and all shipping checks. Whole nine-stage Targuna quest remains UNFINISHED. Remaining broader crate units run under the owner cadence exception.",
+  "wire_fixture_red": {
+    "postgres": "18.6",
+    "duration_seconds": 85.208293662,
+    "error": "Malformed: first command response had no NPC payload because NPC service capability was not selected",
+    "fix": "Select NPC_SERVICE_V1=3 through existing offered-capability/SelectedCapabilities APIs after installing NPC service; do not bypass the gate",
+    "log": "/tmp/questpc5-n2-contact-green-pg-runtime-floor.log",
+    "rerun": "/tmp/questpc5-n2-contact-green-pg-capability-final.log"
+  },
+  "conversation_fixture_red": {
+    "postgres": "18.6",
+    "seconds": 106.820341344,
+    "error": "NoConversation versus Ok when greeting and mission were sent in separate short-lived connections",
+    "fix": "Reuse qengine_rewards::wire_reward(..., false), keeping greeting/acceptance in one real connection; literal replay uses the committed command id. Re-greet before fresh duplicate refusal so missing focus cannot satisfy the negative case.",
+    "log": "/tmp/questpc5-n2-contact-green-pg-conversation.log",
+    "green": {
+      "case": "questpc5_targuna_sterling_first_contact_commits_once_without_reward_or_completion",
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "duration_seconds": 122.354090168,
+      "success": true,
+      "marker": "TARGUNA_FIRST_CONTACT_PROVEN stage=0 receipts=1 rewards=0 completes=false",
+      "log": "/tmp/questpc5-n2-contact-green-pg-conversation.log"
+    }
+  },
+  "n3_evidence_context": {
+    "historical_implementation_branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+    "pushed_head": "5a6807859d3238c1133fca7eab705a2b3bd5906c",
+    "scope": "Historical partial-boundary validation. These tests/code are awaiting collector integration and are not an n3/main whole-quest qualification."
+  }
+}

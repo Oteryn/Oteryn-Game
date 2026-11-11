@@ -81,7 +81,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(map) = self.bundle_map() else {
             return false;
         };
-        let closed = crate::map::floor::BundleDoors(map.facts.doors());
+        let closed = crate::map::floor::BundleDoors(&map.facts);
         let Ok(expected) = runtime.read_actor_position(actor) else {
             return false;
         };

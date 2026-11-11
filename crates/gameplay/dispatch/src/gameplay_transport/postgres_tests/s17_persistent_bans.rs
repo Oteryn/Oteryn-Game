@@ -55,22 +55,24 @@ fn s17_persistent_ban_survives_cast_restart_and_is_owner_scoped() -> TestResult 
 
                 use oteryn_gameplay_social::cast::{service::{apply_durable,Operation,Reply},test_support::admission,Error};
                 let mut cast=CastOwner::new(50)?;
+                let cast_clock=std::time::Instant::now();
+                let now=||u64::try_from(cast_clock.elapsed().as_millis());
                 let mut accounts=std::collections::HashMap::new();
                 accounts.insert(f.authority.current_game_session_id(),[1;16]);
-                let Reply::State(live)=apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Start(f,Settings::default(),[1;16]),0,0).await? else {return Err("start reply".into());};
+                let Reply::State(live)=apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Start(f,Settings::default(),[1;16]),now()?,0).await? else {return Err("start reply".into());};
                 cast.persist_audit(&h.root,&h.node).await?;
-                let Reply::Observer(first)=apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Join(admission(live,[4;16],[4;16],1)),0,0).await? else {return Err("join reply".into());};
-                let Reply::Observer(second)=apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Join(admission(live,[4;16],[5;16],1)),0,0).await? else {return Err("second join reply".into());};
+                let Reply::Observer(first)=apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Join(admission(live,[4;16],[4;16],1)),now()?,0).await? else {return Err("join reply".into());};
+                let Reply::Observer(second)=apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Join(admission(live,[4;16],[5;16],1)),now()?,0).await? else {return Err("second join reply".into());};
                 cast.persist_audit(&h.root,&h.node).await?;
-                assert!(apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Ban(f,live.revision+1,first),0,0).await.is_err());
-                apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Ban(f,live.revision,first),0,0).await?;
+                assert!(apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Ban(f,live.revision+1,first),now()?,0).await.is_err());
+                apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Ban(f,live.revision,first),now()?,0).await?;
                 cast.persist_audit(&h.root,&h.node).await?;
                 assert!(cast.leave(first).is_err());assert!(cast.leave(second).is_err());
                 assert_eq!(cast.take_releases().len(),2);
-                assert!(matches!(apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Join(admission(live,[4;16],[6;16],1)),0,0).await,Err(Error::Unavailable)));
+                assert!(matches!(apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Join(admission(live,[4;16],[6;16],1)),now()?,0).await,Err(Error::Unavailable)));
                 cast.target_gone(f.authority.current_game_session_id());
-                let fresh=cast.start(f,Settings::default(),0)?;
-                assert!(matches!(apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Join(admission(fresh,[4;16],[7;16],1)),0,0).await,Err(Error::Unavailable)));
+                let fresh=cast.start(f,Settings::default(),now()?)?;
+                assert!(matches!(apply_durable(&mut cast,&h.root,&h.node,&Preferences,&accounts,Operation::Join(admission(fresh,[4;16],[7;16],1)),now()?,0).await,Err(Error::Unavailable)));
 
                 let grants:bool=sqlx::query_scalar("SELECT has_table_privilege('oteryn_game_runtime','game_cast_account_bans','SELECT,INSERT') AND NOT has_table_privilege('oteryn_game_runtime','game_cast_account_bans','DELETE') AND has_table_privilege('oteryn_game_control','game_cast_account_bans','SELECT')").fetch_one(&h.pool).await?;
                 assert!(grants);

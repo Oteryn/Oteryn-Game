@@ -36,13 +36,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> (StepOutcome, Option<Duration>) {
         if !self.resume_dawnport_departure(actor, session).await {
+            operator_event("event=step_rejected_dawnport");
             return (StepOutcome::rejected(), None);
         }
         if !self.ensure_source_map_initialized().await {
+            operator_event("event=step_rejected_source_map");
             return (StepOutcome::rejected(), None);
         }
         // DEATH-2 §4.2: a dead player takes no input until its respawn.
         if self.states.spell_states.lock().await.is_dead(actor) {
+            operator_event("event=step_rejected_dead");
             return (StepOutcome::rejected(), None);
         }
         use crate::movement::{CardinalStep, MovementError};
@@ -51,19 +54,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => CardinalStep::East,
             StepDirection::South => CardinalStep::South,
             StepDirection::West => CardinalStep::West,
+            StepDirection::NorthEast => CardinalStep::NorthEast,
+            StepDirection::SouthEast => CardinalStep::SouthEast,
+            StepDirection::SouthWest => CardinalStep::SouthWest,
+            StepDirection::NorthWest => CardinalStep::NorthWest,
         };
         // Preflight SQL shares the field owner's bounded durability holder.
         // Take the lane before those reads so a concurrent field turn cannot
         // exhaust the holder or invalidate their player-state predecessor.
         let Some(mut permit) = self.spell_lane_permit().await else {
+            operator_event("event=step_rejected_lane");
             return (StepOutcome::rejected(), None);
         };
         if !self.refresh_pvp_locks(actor, session).await {
+            operator_event("event=step_rejected_pvp_locks");
             return (StepOutcome::rejected(), None);
         }
         self.refresh_cyclopedia_speed(actor, session).await;
         let equipment = self.read_movement_equipment(actor, session).await;
         let optional_pvp = self.special_movement_policy(&permit, actor, session).await;
+        // Checkout may wait for background durability work. Never wait under
+        // the Channel runtime or spell-state guards; SQL work itself runs once.
+        let field_pass = if self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .is_some()
+            && !(self.bundle_map().is_some()
+                && self
+                    .required_capabilities
+                    .effective()
+                    .binary_search(&30)
+                    .is_err())
+        {
+            self.acquire_field_step_pass().await
+        } else {
+            Err(crate::gameplay_transport::connection::AdmissionRefusal::Rejected)
+        };
         // Lock order (§1.2): the lane before any Channel guard.
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
@@ -87,9 +113,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.borrow_movement_position().read(actor) != Ok(expected)
             })
         {
+            operator_event("event=step_rejected_stale_position");
             return (StepOutcome::rejected(), None);
         }
         if states.has_pending_spell_commit(actor, session) {
+            operator_event("event=step_rejected_pending_spell");
             return (StepOutcome::rejected(), None);
         }
         // Resolve steering before any direction-dependent field/floor read. Pass
@@ -105,7 +133,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     None,
                 );
             }
-            Err(_) => return (StepOutcome::rejected(), None),
+            Err(_) => {
+                operator_event("event=step_rejected_drome");
+                return (StepOutcome::rejected(), None);
+            }
         };
         // The closed bundle doors are read live per candidate cell, not collected per step: a
         // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
@@ -118,7 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
             &none
         } else if let Some(map) = self.bundle_map() {
-            bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
+            bundle_doors = crate::map::floor::BundleDoors(&map.facts);
             &bundle_doors
         } else {
             legacy = self.door.lock().await.blocking_cells().clone();
@@ -165,6 +196,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             self.step_with_field_ingress(
                 &mut permit,
+                field_pass,
                 &mut runtime,
                 &mut states,
                 actor,
@@ -278,7 +310,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 None,
             ),
-            Err(_) => (StepOutcome::rejected(), None),
+            Err(error) => {
+                // Only the closed variant name is operator evidence; payloads can
+                // contain actor/cell facts and must never enter this event.
+                operator_event(match error {
+                    MovementError::Actor(_) => "event=step_rejected_movement kind=Actor",
+                    MovementError::SnapshotMismatch => {
+                        "event=step_rejected_movement kind=SnapshotMismatch"
+                    }
+                    MovementError::ContextMismatch => {
+                        "event=step_rejected_movement kind=ContextMismatch"
+                    }
+                    MovementError::ScopeMismatch => {
+                        "event=step_rejected_movement kind=ScopeMismatch"
+                    }
+                    MovementError::CoordinateOverflow => {
+                        "event=step_rejected_movement kind=CoordinateOverflow"
+                    }
+                    MovementError::Cell(_) => "event=step_rejected_movement kind=Cell",
+                    MovementError::Blocked => "event=step_rejected_movement kind=Blocked",
+                    MovementError::CapacityExceeded => {
+                        "event=step_rejected_movement kind=CapacityExceeded"
+                    }
+                    MovementError::NotQualified => "event=step_rejected_movement kind=NotQualified",
+                });
+                (StepOutcome::rejected(), None)
+            }
         }
     }
 }
@@ -303,4 +360,34 @@ mod snowbunny_operation_tests {
         );
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), &'static str> {
+    let source = include_str!("paced_movement.rs");
+    let body = source
+        .split("#[cfg(test)]")
+        .next()
+        .ok_or("production body")?;
+    for branch in [
+        "dawnport",
+        "source_map",
+        "dead",
+        "lane",
+        "pvp_locks",
+        "stale_position",
+        "pending_spell",
+        "drome",
+        "movement",
+    ] {
+        assert!(
+            body.contains(&format!("event=step_rejected_{branch}")),
+            "{branch}"
+        );
+    }
+    assert!(include_str!("field_step_ingress.rs").contains("event=step_rejected_holder_busy"));
+    assert_eq!(body.matches("StepOutcome::rejected()").count(), 9);
+    assert_eq!(body.matches("operator_event(").count(), 10);
+    Ok(())
 }

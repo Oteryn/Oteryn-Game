@@ -5,6 +5,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
+        // Recovery routing runs before the scoped owner is selected. Keep the
+        // same root preference across that handoff and every later readback.
+        let _foreground = self
+            .root
+            .foreground_demand()
+            .map_err(|_| AdmissionRefusal::Unavailable)?;
         let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
         if let Some(admitted) = self.recover_activity_session(&budget, &attempt).await? {
             return Ok(admitted);
@@ -52,7 +58,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await?;
         let recovered_transfer = transferred.is_some();
-        let admitted = if let Some(admitted) = transferred {
+        let mut admitted = if let Some(admitted) = transferred {
             admitted
         } else {
             loop {
@@ -76,6 +82,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         };
+        // NBGRANT: only the final spell repair was pending on this positioned actor.
+        // Complete it under the new controller's current fence before making it playable;
+        // other refused entry participants retain their own refusal and are never promoted.
+        if admitted.first_entry == FirstEntryOutcome::AwaitingSpellRepair
+            && let Some(fence) = admitted.item_fence
+        {
+            let retry = AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root);
+            let repaired = retry
+                .retry_unavailable(async || {
+                    use spell_character_facts::{CastFactsLoad, load_character_cast_facts};
+                    match load_character_cast_facts(self.root, self.character, fence.character_id)
+                        .await
+                    {
+                        CastFactsLoad::NoVocation { .. } => Ok(()),
+                        CastFactsLoad::Ready {
+                            facts,
+                            character_revision,
+                        } if self
+                            .reconcile_automatic_spells(
+                                fence.character_id,
+                                admitted.game_session_id,
+                                character_revision,
+                                facts.level,
+                                facts.vocation,
+                            )
+                            .await =>
+                        {
+                            Ok(())
+                        }
+                        _ => Err(AdmissionRefusal::Unavailable),
+                    }
+                })
+                .await;
+            if repaired.is_ok() {
+                admitted.first_entry = FirstEntryOutcome::Reconciled;
+            }
+        }
         self.finish_resumed_session(admitted, recovered_transfer)
             .await;
         Ok(admitted)

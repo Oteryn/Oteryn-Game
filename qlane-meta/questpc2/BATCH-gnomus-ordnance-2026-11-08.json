@@ -1,0 +1,54 @@
+{
+  "batch": "gnomus-ordnance-admission",
+  "base": "3886f31acd21f3a2ee5ca26530109bbcc5911f81",
+  "main": "3209d3d61",
+  "whole_quest_qualified": false,
+  "source": {
+    "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "source": "data-global/npc/gnomus.lua:119-176",
+    "source_sha256": "04ce96e16bbfd9f6fa6b114b377643b1bb71c3df33f05c2b1e1d0d5e40bdc5a1",
+    "red_pg_version": 180006,
+    "red_seconds": 48.837227127,
+    "red_error": "source ordnance briefing missing:[];0lines instead of5",
+    "state": "QUALIFIED_INITIAL_ORDNANCE_ADMISSION_SLICE; whole quest IN_PROGRESS",
+    "scope": "Initial ordnance admission only; no escort, points, reward or warzone qualification.",
+    "green_pg_version": 180006,
+    "green_seconds": 60.63736262,
+    "quest_units": {
+      "passed": 324,
+      "seconds": 32.51
+    }
+  },
+  "postgres": {
+    "version_num": 180006,
+    "red_seconds": 48.837227127,
+    "green_seconds": 60.63736262,
+    "passed": 1
+  },
+  "units": {
+    "quests": {
+      "passed": 324,
+      "seconds": 32.51
+    },
+    "authorer": {
+      "passed": 2,
+      "seconds": 0.928
+    },
+    "dispatch": {
+      "passed": 1613,
+      "seconds": 995.337,
+      "context": "Initial published Gnomus content, before four-portal and confirmation-boundary extension."
+    }
+  },
+  "workspace_check": "PASS5m55s",
+  "logs": {
+    "/tmp/questpc2b-gnomus-red-pg.log": "bad31543d7d20f50d8577e5155251e2320a6aa2678956255a32d6b9040a88393",
+    "/tmp/questpc2b-gnomus-green-pg.log": "eb71047421d0c04de5c83483007a324d154675a1bf8b39fb52a6a54434efe70f",
+    "/tmp/questpc2b-gnomus-quest-units.log": "d44c1fdf3ea48f66c82580c35438339283c5ea0a3e85a5645e5c4ce17697e577",
+    "/tmp/questpc2b-gnomus-authorer.log": "462eabd9556d2f051f3c21b2f89cd8403cec86922f36e4df22af39db27892955",
+    "/tmp/questpc2b-gnomus-workspace-check.log": "70ffa6c5080b490e9a42fd65d24514e0cde6dceb8087867a456a3c89b4698a9d"
+  },
+  "clippy": "quests+dispatch alltargets/allfeatures -Dwarnings PASS2m31s",
+  "fmt_generation_pins_duplicates": "PASS; world digest unchanged2f5895585ad48276acbad63bd32c2f65f020448dea7df51e76b47cd76d9ae21d",
+  "workspace_final_repeat": "PASS6m24s including build queue"
+}

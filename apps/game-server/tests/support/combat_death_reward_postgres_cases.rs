@@ -614,6 +614,7 @@ fn input(
     character_revision: u64,
 ) -> TestResult<CreatureDeathRewardInput<2>> {
     Ok(CreatureDeathRewardInput {
+        tutorial_corruptor: None,
         corpse_item: corpse_item_ref(),
         loot_table_ref: rat_loot_table_ref(),
         loot_table,
@@ -1571,6 +1572,7 @@ mod kill_reward_live {
                 .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
                 .await;
             let input = CreatureDeathRewardInput {
+                tutorial_corruptor: None,
                 corpse_item: pin.corpse,
                 loot_table_ref: pin.table_ref,
                 loot_table: pin.admitted,

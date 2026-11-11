@@ -1,10 +1,14 @@
 //! W19d: ordinary USE, atomic source effects, exact replay, and fail-closed canonical admission.
+#[path = "item_cosmetics/glider.rs"]
+mod glider;
 #[path = "item_cosmetics/ot_only.rs"]
 mod ot_only;
 #[path = "item_cosmetics/packet.rs"]
 mod packet;
 #[path = "item_cosmetics/positive.rs"]
 mod positive;
+#[path = "item_cosmetics/stock.rs"]
+mod stock;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
@@ -34,13 +38,50 @@ fn run_case(ground: bool, afflicted: bool) -> TestResult {
 }
 
 fn run_all(ground: bool, afflicted: bool, case: Option<positive::Case>) -> TestResult {
+    run_configuration(ground, afflicted, case, false, None)
+}
+
+pub(super) fn run_stock_random_outfit() -> TestResult {
+    run_configuration(false, false, Some(positive::Case::RandomOutfit), true, None)
+}
+
+pub(super) fn run_stock_named_outfit(name: &'static str) -> TestResult {
+    run_configuration(
+        false,
+        false,
+        Some(positive::Case::RandomOutfit),
+        true,
+        Some(name),
+    )
+}
+
+pub(super) fn run_stock_glider(ground: bool, missing: bool) -> TestResult {
+    run_configuration(
+        ground,
+        false,
+        Some(positive::Case::Glider { missing }),
+        true,
+        None,
+    )
+}
+
+fn run_configuration(
+    ground: bool,
+    afflicted: bool,
+    case: Option<positive::Case>,
+    stock: bool,
+    wanted: Option<&'static str>,
+) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         eprintln!("W19 POSTGRES_CASE_COMPLETED status=SKIPPED no_admin_url");
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(ground, afflicted, case, None).map_err(|error| error.to_string()))?
+        .spawn(move || {
+            scenario(ground, afflicted, case, stock, wanted, None)
+                .map_err(|error| error.to_string())
+        })?
         .join()
         .map_err(|_| "cosmetic scenario thread")??;
     Ok(())
@@ -50,9 +91,12 @@ fn scenario(
     ground: bool,
     afflicted: bool,
     case: Option<positive::Case>,
+    stock: bool,
+    wanted: Option<&'static str>,
     ot_only: Option<u32>,
 ) -> TestResult {
     let key = match case {
+        Some(positive::Case::Glider { .. }) => "oteryn:item.tibia.i21897",
         Some(
             positive::Case::Parts
             | positive::Case::OmittedGrant
@@ -98,12 +142,28 @@ fn scenario(
         } else if production {
             let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../../content/spells.manifest.json");
-            Some(
-                crate::content::native_gameplay::NativeGameplayInput::from_manifest(&path)
-                    .map_err(debug)?
-                    .cosmetics
-                    .bytes,
-            )
+            let bytes = crate::content::native_gameplay::NativeGameplayInput::from_manifest(&path)
+                .map_err(debug)?
+                .cosmetics
+                .bytes;
+            if matches!(case, Some(positive::Case::ProductionOtOnly)) {
+                // This negative case needs complete production mappings without
+                // source acquisition. The production doll now has an explicit
+                // admission; stock::random_outfit covers that positive route.
+                let mut packet: serde_json::Value = serde_json::from_slice(&bytes)?;
+                packet["authoring"]["document"]["item_acquisitions"] = serde_json::json!([]);
+                let promotions = packet["authoring"]["promotions"]
+                    .as_array_mut()
+                    .ok_or("cosmetic promotions")?;
+                let admission = promotions
+                    .iter_mut()
+                    .find(|row| row["path"] == "/item_acquisitions")
+                    .ok_or("production acquisition promotion")?;
+                admission["value"] = serde_json::json!([]);
+                Some(serde_json::to_vec(&packet)?)
+            } else {
+                Some(bytes)
+            }
         } else {
             match case {
                 Some(_) => Some(packet::cosmetics_packet()?),
@@ -113,10 +173,16 @@ fn scenario(
                 ),
             }
         };
-        let (controller, pin) =
+        let (controller, pin) = if stock {
+            super::death_ml_loss_composed::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?
+        } else {
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
                 deps.admitted.world_id, None, cosmetic_packet.as_deref(),
-            );
+            )
+        };
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         if case.is_none() && ot_only.is_none() {
@@ -127,7 +193,24 @@ fn scenario(
         } else {
             assert!(native.cosmetics().is_some(), "explicit admitted authoring");
         }
-        assert!(oteryn_gameplay_items::item_cosmetics::rule(key).is_some());
+        if matches!(case, Some(positive::Case::ProductionOtOnly)) {
+            let catalogue =
+                oteryn_gameplay_items::item_cosmetics::catalogue().ok_or("cosmetic rules")?;
+            let key = "oteryn:item.tibia.i6579";
+            let rule = oteryn_gameplay_items::item_cosmetics::rule(key).ok_or("doll rule")?;
+            let cosmetics = native.cosmetics().ok_or("complete production cosmetics")?;
+            assert!(
+                oteryn_gameplay_items::item_cosmetics::qualify_rule(catalogue, rule, cosmetics).is_ok(),
+                "the refusal must not come from a missing random outcome"
+            );
+            assert!(
+                !oteryn_gameplay_items::item_cosmetics::source_policy_allows(rule, Some(cosmetics), key),
+                "this case deliberately has no acquisition admission"
+            );
+        }
+        if !matches!(case, Some(positive::Case::Glider { .. })) {
+            assert!(oteryn_gameplay_items::item_cosmetics::rule(key).is_some());
+        }
         if ot_only.is_some() {
             ot_only::qualify_complete_pool(native)?;
         }
@@ -266,6 +349,27 @@ fn scenario(
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         let mut contents = match case {
+            Some(positive::Case::Glider { missing }) => {
+                let mut pieces = vec![
+                    (key, 1),
+                    ("oteryn:item.tibia.i21898", 1),
+                    ("oteryn:item.tibia.i21906", 1),
+                    ("oteryn:item.tibia.i21902", 1),
+                    ("oteryn:item.tibia.i21899", 1),
+                    ("oteryn:item.tibia.i21905", 1),
+                    ("oteryn:item.tibia.i21901", 1),
+                ];
+                if missing {
+                    pieces.retain(|(key, _)| *key != "oteryn:item.tibia.i21898");
+                } else {
+                    // Retain a second complete recipe to prove already-owned no-spend.
+                    pieces.extend(pieces.clone());
+                }
+                if ground {
+                    pieces.splice(0..0, [(key, 1), (bag, 1)]);
+                }
+                pieces
+            }
             Some(
                 positive::Case::Parts
                 | positive::Case::OmittedGrant
@@ -296,9 +400,26 @@ fn scenario(
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
-        admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
-                .ok_or("offers")?;
+        let offered = if stock {
+            crate::gameplay_transport::appearance_change::offer::offered(
+                owner.offered_capabilities(),
+                owner.appearance_available(),
+            )
+        } else {
+            owner.offered_capabilities().to_vec()
+        };
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            &offered,
+            if stock {
+                &[3, 4, 6, 11, 15, 18, 25]
+            } else {
+                &[4, 6, 11, 15, 18]
+            },
+        )
+        .ok_or("offers")?;
+        if stock {
+            assert!(admitted.continuity.selected_capabilities.contains(25));
+        }
         let source = id(71);
         if ground {
             let target = {
@@ -323,11 +444,15 @@ fn scenario(
                 .await?;
             sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(source.as_slice()).execute(&mut *tx).await?;
-            if afflicted {
-                // Six real carried ingredients below the inner bag. The only visible
+            if afflicted || matches!(case, Some(positive::Case::Glider { .. })) {
+                // Real carried ingredients below the inner bag. The only visible
                 // handle for 12551 is now the actual Ground trigger, regardless of
                 // snapshot domain ordering; the shared USE helper cannot pick a bag entry.
-                for (offset, item) in (73_u8..=78).enumerate() {
+                let last = match case {
+                    Some(positive::Case::Glider { missing: false }) => 86,
+                    _ => 78,
+                };
+                for (offset, item) in (73_u8..=last).enumerate() {
                     let item = id(item);
                     sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
                         .bind(item.as_slice()).execute(&mut *tx).await?;
@@ -348,7 +473,11 @@ fn scenario(
             tx.commit().await?;
         }
         if let Some(case) = case {
-            positive::execute(&owner, &harness, admitted, case, reference).await?;
+            if let Some(name) = wanted {
+                stock::random_outfit(&owner, &harness, admitted, reference, Some(name)).await?;
+            } else {
+                positive::execute(&owner, &harness, admitted, case, reference).await?;
+            }
             drop(owner);
             drop(authority);
             drop(seal);
@@ -435,7 +564,8 @@ fn srx4_ot_cosmetic_items_refuse_with_complete_synthetic_catalogue_on_postgres()
             std::thread::Builder::new()
                 .stack_size(256 << 20)
                 .spawn(move || {
-                    scenario(ground, false, None, Some(item)).map_err(|e| e.to_string())
+                    scenario(ground, false, None, false, None, Some(item))
+                        .map_err(|e| e.to_string())
                 })?
                 .join()
                 .map_err(|_| "OT exclusion thread")??;

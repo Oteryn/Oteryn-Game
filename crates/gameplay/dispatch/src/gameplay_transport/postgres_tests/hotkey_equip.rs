@@ -420,6 +420,10 @@ fn scenario_options_impl(
             .await
         };
         let pool = &harness.pool;
+        let owner_clock = coalescing.then(|| owner.freeze_owner_clock_for_test());
+        let clock_states = owner.states.clone();
+        let transport_clock_paused = std::cell::Cell::new(false);
+        let paused = &transport_clock_paused;
         let exercise = async move {
             loop {
                 let frame = item_look::read_frame(&mut client).await?;
@@ -530,8 +534,14 @@ fn scenario_options_impl(
                 assert_eq!(equipped_count(pool).await?, 1);
             }
             if coalescing {
-                // Queue the whole burst before polling the server. A reply and SQL
-                // round-trip between 2 and 3 can consume the native 200 ms cooldown.
+                // Keep real SQL work inside one controlled native cooldown. Neither
+                // receipt reads nor a loaded runner can advance the paused clocks.
+                let advance_owner_clock = || {
+                    clock_states
+                        .test_owner_time
+                        .fetch_add(201_000, std::sync::atomic::Ordering::Relaxed);
+                };
+                // Queue the whole burst before polling the server.
                 // Only 5 may toggle the sword back; 3 and 4 have no durable receipt.
                 for command_id in 2..=5 {
                     let frame = protocol::encode_client_command(
@@ -569,6 +579,16 @@ fn scenario_options_impl(
                             break;
                         }
                     }
+                    if command_id == 4 {
+                        advance_owner_clock();
+                        // Release the final press after the original 200 ms boundary.
+                        tokio::time::advance(std::time::Duration::from_millis(201)).await;
+                        // Both replacements are proven. Real Tokio time also handles a
+                        // final press whose already-due timer is registered after this step.
+                        if paused.replace(false) {
+                            tokio::time::resume();
+                        }
+                    }
                 }
                 assert_eq!(equipped_count(pool).await?, 0);
                 // The immutable receipt proves the initial one-slot equip even
@@ -583,6 +603,7 @@ fn scenario_options_impl(
                 assert_eq!(initial_equips, 1);
                 let cancelled_receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_receipts WHERE command_id IN (3,4)").fetch_one(pool).await?;
                 assert_eq!(cancelled_receipts, 0);
+                advance_owner_clock();
                 assert_eq!(
                     send(&mut client, 6, &request, protocol::CommandStatus::Accepted).await?,
                     ItemMoveOutcome::Moved
@@ -667,7 +688,26 @@ fn scenario_options_impl(
             client.shutdown().await?;
             Ok::<(), Box<dyn std::error::Error>>(())
         };
-        tokio::time::timeout(std::time::Duration::from_secs(45), drive(serve, exercise)).await??;
+        let mut paused_clock = if coalescing {
+            Some(PausedCoalescingClock::new(&transport_clock_paused).await?)
+        } else {
+            None
+        };
+        let connection =
+            tokio::time::timeout(std::time::Duration::from_secs(45), drive(serve, exercise));
+        if let Some(clock) = paused_clock.as_mut() {
+            tokio::select! {
+                biased;
+                result = &mut clock.watchdog => {
+                    result?;
+                    return Err("hotkey coalescing exceeded its 45 s real-time deadline".into());
+                }
+                result = connection => { result??; }
+            }
+        } else {
+            connection.await??;
+        }
+        drop(paused_clock);
         // A newly composed owner reads the stored item by identity, independent of the wire view.
         let mut reloaded = deps.owner(&harness, &authority);
         reloaded.active_generation = Some(generation);
@@ -696,7 +736,9 @@ fn scenario_options_impl(
                             command_id: 1,
                             item_fence: Some(fence),
                         },
-                        protocol::hotkey_equip::Request { definition: reference },
+                        protocol::hotkey_equip::Request {
+                            definition: reference
+                        },
                         true,
                     )
                     .await,
@@ -745,7 +787,10 @@ fn scenario_options_impl(
                 }
                 _ => return Err("swap mode".into()),
             }
-            eprintln!("HOTKEYC_POSTGRES_EXECUTED elapsed={:?}", started_at.elapsed());
+            eprintln!(
+                "HOTKEYC_POSTGRES_EXECUTED elapsed={:?}",
+                started_at.elapsed()
+            );
             return Ok(());
         }
         if extra_quiver {
@@ -844,18 +889,58 @@ fn scenario_options_impl(
                 .bind(id(100).as_slice()).bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
             assert_eq!(unchanged, ("1".into(), 1));
         }
-        eprintln!("PG_MARKER hotkey-real-route pouch={pouch} foreign={foreign} managed={managed} elapsed={:?}", started_at.elapsed());
+        eprintln!(
+            "PG_MARKER hotkey-real-route pouch={pouch} foreign={foreign} managed={managed} elapsed={:?}",
+            started_at.elapsed()
+        );
         if coalescing {
             eprintln!(
                 "PKG7_POSTGRES_EXECUTED: burst 3,4,5; zero cancelled receipts; replay 6; durable reload; PostgreSQL 18.6"
             );
         }
         drop(reloaded);
+        drop(owner_clock);
         drop(owner);
         drop(authority);
         drop(seal);
         harness.cleanup().await
     })
+}
+
+struct PausedCoalescingClock<'a> {
+    // Dropping the sender releases the worker on success, error and panic.
+    _release: std::sync::mpsc::Sender<()>,
+    watchdog: tokio::task::JoinHandle<()>,
+    paused: &'a std::cell::Cell<bool>,
+}
+
+impl<'a> PausedCoalescingClock<'a> {
+    async fn new(paused: &'a std::cell::Cell<bool>) -> TestResult<Self> {
+        let (release, released) = std::sync::mpsc::channel();
+        let (ready, started) = tokio::sync::oneshot::channel();
+        // Tokio 1.53.1 inhibits paused-clock auto-advance while a blocking task
+        // exists. A blocking receive leaves PostgreSQL I/O live without spinning.
+        let watchdog = tokio::task::spawn_blocking(move || {
+            let _ = ready.send(());
+            let _ = released.recv_timeout(std::time::Duration::from_secs(45));
+        });
+        started.await?;
+        tokio::time::pause();
+        paused.set(true);
+        Ok(Self {
+            _release: release,
+            watchdog,
+            paused,
+        })
+    }
+}
+
+impl Drop for PausedCoalescingClock<'_> {
+    fn drop(&mut self) {
+        if self.paused.replace(false) {
+            tokio::time::resume();
+        }
+    }
 }
 
 async fn equipped_count(pool: &sqlx::PgPool) -> TestResult<i64> {

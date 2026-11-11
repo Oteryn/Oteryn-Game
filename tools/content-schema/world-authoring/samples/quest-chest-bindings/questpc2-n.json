@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.kv.naginata",
+      "position": [
+        32346,
+        32063,
+        12
+      ],
+      "appearance": 2472,
+      "unique": 6135,
+      "source_line": 1628
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.nightmare_teddy_quest",
+      "position": [
+        33444,
+        32605,
+        11
+      ],
+      "appearance": 2433,
+      "unique": 6305,
+      "source_line": 2878
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.noblearmor1",
+      "position": [
+        32451,
+        32048,
+        8
+      ],
+      "appearance": 2472,
+      "unique": 6132,
+      "source_line": 1603
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.noblearmor2",
+      "position": [
+        32455,
+        32048,
+        8
+      ],
+      "appearance": 2472,
+      "unique": 6133,
+      "source_line": 1610
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": [
+    {
+      "position": [
+        32353,
+        32073,
+        11
+      ],
+      "appearance": 1646,
+      "action": 1040,
+      "source_line": 76,
+      "claims": [
+        "oteryn:reward-claim.kv.naginata"
+      ]
+    },
+    {
+      "position": [
+        32448,
+        32042,
+        8
+      ],
+      "appearance": 6264,
+      "action": 1035,
+      "source_line": 66,
+      "claims": [
+        "oteryn:reward-claim.kv.noblearmor1",
+        "oteryn:reward-claim.kv.noblearmor2"
+      ]
+    }
+  ],
+  "item_source_sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+  "item_access": [
+    {
+      "position": [
+        32356,
+        32074,
+        10
+      ],
+      "appearance": 1791,
+      "action": 40031,
+      "source_line": 2612,
+      "claims": [
+        "oteryn:reward-claim.kv.naginata"
+      ]
+    }
+  ]
+}

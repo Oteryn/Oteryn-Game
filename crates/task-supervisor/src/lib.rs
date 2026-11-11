@@ -68,6 +68,42 @@ where
     tokio::spawn(async move { guard.run_preserving(make_future(heartbeat)).await })
 }
 
+/// Run blocking work on Tokio's blocking pool, supervised, while preserving its output and panics.
+pub fn spawn_blocking_lifecycle_supervised<F, T>(
+    name: &'static str,
+    trace: Option<String>,
+    operation: F,
+) -> JoinHandle<T>
+where
+    F: FnOnce() -> T + Send + 'static,
+    T: Send + 'static,
+{
+    let guard = global().register(name, trace, TaskKind::Blocking, false);
+    tokio::task::spawn_blocking(move || guard.run_blocking_preserving(operation))
+}
+
+/// Run work on a dedicated OS thread named `name`, supervised, while preserving its output and
+/// panics for [`std::thread::JoinHandle::join`].
+///
+/// # Errors
+///
+/// Returns the operating-system error when the thread cannot be created.
+pub fn spawn_thread_supervised<F, T>(
+    name: &'static str,
+    stack_size: usize,
+    operation: F,
+) -> std::io::Result<std::thread::JoinHandle<T>>
+where
+    F: FnOnce() -> T + Send + 'static,
+    T: Send + 'static,
+{
+    let guard = global().register(name, None, TaskKind::Thread, false);
+    std::thread::Builder::new()
+        .name(name.to_owned())
+        .stack_size(stack_size)
+        .spawn(move || guard.run_blocking_preserving(operation))
+}
+
 /// Return the process-wide live-task snapshot for operations health output.
 #[must_use]
 pub fn supervised_tasks() -> Vec<TaskInfo> {
@@ -81,6 +117,8 @@ pub enum TaskKind {
     Async,
     /// Work executed on Tokio's blocking pool.
     Blocking,
+    /// Work executed on a dedicated OS thread.
+    Thread,
 }
 
 impl TaskKind {
@@ -88,6 +126,7 @@ impl TaskKind {
         match self {
             Self::Async => "async",
             Self::Blocking => "blocking",
+            Self::Thread => "thread",
         }
     }
 }
@@ -440,6 +479,20 @@ impl TaskGuard {
         })
         .await
         {
+            Ok(value) => {
+                self.finish_preserving("ok");
+                value
+            }
+            Err(payload) => {
+                self.panic_line(payload.as_ref());
+                self.finish_preserving("err");
+                std::panic::resume_unwind(payload)
+            }
+        }
+    }
+
+    fn run_blocking_preserving<F: FnOnce() -> T, T>(self, operation: F) -> T {
+        match std::panic::catch_unwind(AssertUnwindSafe(operation)) {
             Ok(value) => {
                 self.finish_preserving("ok");
                 value
@@ -862,5 +915,45 @@ mod tests {
         assert!(!snapshot[0].expected_idle);
         first.abort();
         second.abort();
+    }
+
+    #[tokio::test]
+    async fn global_blocking_task_preserves_value_and_panic() {
+        let value = spawn_blocking_lifecycle_supervised("blocking_value", None, || 7_u8);
+        assert_eq!(value.await.unwrap(), 7);
+        let panic = spawn_blocking_lifecycle_supervised("blocking_panic", None, || {
+            std::panic::resume_unwind(Box::new("static panic"))
+        });
+        assert!(panic.await.unwrap_err().is_panic());
+    }
+
+    #[test]
+    fn global_thread_keeps_name_registers_and_preserves_panic() {
+        let (entered, wait_entered) = std::sync::mpsc::channel();
+        let (release, wait_release) = std::sync::mpsc::channel::<()>();
+        let thread = spawn_thread_supervised("supervised-thread", 1 << 20, move || {
+            entered.send(()).unwrap();
+            wait_release.recv().unwrap();
+            std::thread::current().name().map(str::to_owned)
+        })
+        .unwrap();
+        wait_entered.recv().unwrap();
+        assert!(
+            supervised_tasks()
+                .iter()
+                .any(|task| task.name == "supervised-thread" && task.kind == TaskKind::Thread)
+        );
+        release.send(()).unwrap();
+        assert_eq!(thread.join().unwrap().as_deref(), Some("supervised-thread"));
+        assert!(
+            !supervised_tasks()
+                .iter()
+                .any(|task| task.name == "supervised-thread")
+        );
+        let panic = spawn_thread_supervised("supervised-panic", 1 << 20, || {
+            std::panic::resume_unwind(Box::new("static panic"))
+        })
+        .unwrap();
+        assert!(panic.join().is_err());
     }
 }

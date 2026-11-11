@@ -39,6 +39,21 @@ class RewardItemAdmissionTests(unittest.TestCase):
         self.assertEqual(definition["semantics"]["stack"]["value"]["stack_max"], UNKNOWN)
         self.assertTrue(definition["materializable"])
 
+    def test_existing_proven_stack_absence_is_not_downgraded_to_unknown(self):
+        entry, appearance, definition = self.fixture()
+        definition['semantics'] = {'stack': known({
+            'stackable': known(False), 'stack_max': {'state': 'NOT_APPLICABLE'}})}
+        enrich(definition, item_facts(entry, appearance), entry['xml'])
+        self.assertEqual(definition['semantics']['stack']['value']['stack_max'],
+                         {'state': 'NOT_APPLICABLE'})
+
+    def test_unknown_source_maximum_does_not_authorize_conflicting_known_value(self):
+        entry, appearance, definition = self.fixture()
+        definition['semantics'] = {'stack': known({
+            'stackable': known(False), 'stack_max': known(50)})}
+        with self.assertRaisesRegex(ValueError, 'EXISTING_FACT_CONFLICT'):
+            enrich(definition, item_facts(entry, appearance), entry['xml'])
+
     def test_b3_stack_maximum_is_100(self):
         entry, appearance, definition = self.fixture({"flags.cumulative": True})
         enrich(definition, item_facts(entry, appearance), entry["xml"])
@@ -111,6 +126,46 @@ class RewardItemAdmissionTests(unittest.TestCase):
         enrich(definition, item_facts(entry, appearance), entry["xml"])
         self.assertFalse(definition["materializable"])
         self.assertEqual(definition["semantics"]["charges"]["value"]["count"], known(5))
+
+    def test_full_charge_quest_items_reuse_the_existing_timed_instance_owner(self):
+        defaults = {3048: 20, 3054: 200, 3056: 200, 3081: 5, 3082: 50, 3083: 150,
+                    3084: 250, 3085: 200, 3284: 1}
+        for item_id, charges in defaults.items():
+            with self.subTest(item_id=item_id):
+                entry, appearance, definition = self.fixture(attrs={"charges": str(charges)})
+                definition['identity']['key'] = f'oteryn:item.tibia.i{item_id}'
+                facts = item_facts(entry, appearance)
+                enrich(definition, facts, entry['xml'])
+                self.assertTrue(definition['materializable'])
+                self.assertEqual(definition['semantics']['charges']['value']['count'], known(charges))
+                self.assertIn('INSTANCE_CHARGE_ATTRIBUTE_LOWERING_MISSING', facts['holds'],
+                              'retain the original source capture diagnostic')
+
+    def test_exact_reward_fluid_items_reuse_the_existing_instance_owner(self):
+        for item_id in (2874, 2881, 2882):
+            entry, appearance, definition = self.fixture({'flags.liquidcontainer': True})
+            definition['identity']['key'] = f'oteryn:item.tibia.i{item_id}'
+            facts = item_facts(entry, appearance)
+            enrich(definition, facts, entry['xml'])
+            self.assertTrue(definition['materializable'])
+            self.assertEqual(definition['semantics']['fluid'],
+                             known({'fluid_type': {'state': 'NOT_APPLICABLE'}}))
+            self.assertIn('INSTANCE_FLUID_SUBTYPE_LOWERING_MISSING', facts['holds'])
+
+    def test_reward_fluid_admission_preserves_a_sibling_charge_hold(self):
+        entry, appearance, definition = self.fixture(
+            {'flags.liquidcontainer': True}, {'charges': '5'})
+        definition['identity']['key'] = 'oteryn:item.tibia.i2874'
+        enrich(definition, item_facts(entry, appearance), entry['xml'])
+        self.assertFalse(definition['materializable'])
+
+    def test_full_charge_admission_does_not_discard_a_sibling_fluid_hold(self):
+        entry, appearance, definition = self.fixture(
+            {'flags.liquidcontainer': True}, {'charges': '200'})
+        definition['identity']['key'] = 'oteryn:item.tibia.i3085'
+        facts = item_facts(entry, appearance)
+        enrich(definition, facts, entry['xml'])
+        self.assertFalse(definition['materializable'])
 
     def test_existing_charge_admission_is_retained_without_clearing_hold(self):
         entry, appearance, definition = self.fixture(attrs={"charges": "5"})

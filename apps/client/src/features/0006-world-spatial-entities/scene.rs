@@ -87,9 +87,9 @@ impl Scene {
             let direction = if is_own {
                 match self.facing {
                     StepDir::North => 0,
-                    StepDir::East => 1,
+                    StepDir::East | StepDir::NorthEast | StepDir::SouthEast => 1,
                     StepDir::South => 2,
-                    StepDir::West => 3,
+                    StepDir::West | StepDir::NorthWest | StepDir::SouthWest => 3,
                 }
             } else {
                 match entity.detail {

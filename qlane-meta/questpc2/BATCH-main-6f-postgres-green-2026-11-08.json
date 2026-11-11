@@ -1,0 +1,155 @@
+{
+  "merge_head": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+  "checkpoint_head": "ac543a383ed8b055f53588ee01af5179a8e1d6a6",
+  "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-f89a081bc5464778",
+  "binary_sha256": "2860c2056131c29605f0398ac8bac2d5e91bba71152a4918b7d0d685f5edf5b5",
+  "postgres_version": "180006",
+  "cases": [
+    {
+      "name": "gameplay_transport::capabilities::tests::selection_tests::the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6",
+      "pg": false,
+      "postgres_version": null,
+      "seconds": 0.019283,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-main-6f-case-the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6.log",
+      "log_sha256": "748e10c65810532af90631b7bfafaec9afbe20d9705e03a148ef9e5682ca0d2c",
+      "retained_markers": []
+    },
+    {
+      "name": "gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
+      "pg": false,
+      "postgres_version": null,
+      "seconds": 40.427362,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-main-6f-case-equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes.log",
+      "log_sha256": "e45df5b062a944a3a070b124c5192aac2fd88055852740aabd548a6353da69b7",
+      "retained_markers": []
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::questpc2_hero_rathleton::questpc2_hero_four_pipe_greetings_grant_only_their_own_access_once",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 68.458122,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-main-6f-case-questpc2_hero_four_pipe_greetings_grant_only_their_own_access_once.log",
+      "log_sha256": "263fb6ac7ab5da3ba5a646dcc357d004f7ccfafbdd5f18a70be064a162d1ba2c",
+      "retained_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::questpc2_hero_rathleton::questpc2_hero_four_pipe_greetings_grant_only_their_own_access_once ... QUESTPC2_HERO_POSTGRES_SERVER_VERSION=180006",
+        "QUESTPC2_HERO_POSTGRES_COMPLETED duration=68.416327604s success=true"
+      ]
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_source_acceptance_is_atomic_and_replay_bound",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 67.579396,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-main-6f-case-catalogue_npc_source_acceptance_is_atomic_and_replay_bound.log",
+      "log_sha256": "47b827751447b4cfa55a88c938ee1ccedb02625b7797e6d3f4600d602c712280",
+      "retained_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_source_acceptance_is_atomic_and_replay_bound ... POSTGRES_CASE_COMPLETED catalogue_npc_source_acceptance_is_atomic_and_replay_bound 67.534012556s"
+      ]
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_general_xp_handin_runs_in_real_dispatch",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 68.107571,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-main-6f-case-catalogue_npc_general_xp_handin_runs_in_real_dispatch.log",
+      "log_sha256": "5bf11ba2b23a9477c6a1744b4979b2db386a5589e7fff267afa2f7a25007787b",
+      "retained_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_general_xp_handin_runs_in_real_dispatch ... POSTGRES_CASE_COMPLETED catalogue_npc_general_xp_handin_runs_in_real_dispatch 68.061686419s"
+      ]
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::boss_activity::l3_instance_endgame_rotten_blood_native_death_progresses_once",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 60.424258,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-main-6f-case-l3_instance_endgame_rotten_blood_native_death_progresses_once.log",
+      "log_sha256": "1b15932dee4269d0731574b3cc57902725df6d8afb0ca33016222f8c2fbe52f4",
+      "retained_markers": [
+        "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.bakragore elapsed_ms=286",
+        "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.bakragore elapsed_ms=60235",
+        "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED"
+      ]
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::annihilator_route::annihilator_source_route_genuine_party_entry",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 74.31185,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-main-6f-case-annihilator_source_route_genuine_party_entry.log",
+      "log_sha256": "bab08a356fe930f09d05bcecf077d0c8920b87cf03e897397a5851df58d42068",
+      "retained_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::annihilator_route::annihilator_source_route_genuine_party_entry ... ANNIHILATOR_ROUTE POSTGRES_CASE_OBSERVED server_version_num=180006",
+        "ANNIHILATOR_ROUTE POSTGRES_CASE_COMPLETED members=4 creatures=6 elapsed_ms=73275"
+      ]
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::questpc2_oldrak::questpc2_oldrak_source_confirmation_decline_and_finish_are_durable",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 67.788523,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-main-6f-case-questpc2_oldrak_source_confirmation_decline_and_finish_are_durable.log",
+      "log_sha256": "b4d33837ab9aad7872d12ca04d4da5c5692cef1c046f6d7e25d7d23a3ceb0be8",
+      "retained_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::questpc2_oldrak::questpc2_oldrak_source_confirmation_decline_and_finish_are_durable ... QUESTPC2_OLDRAK_POSTGRES_SERVER_VERSION=180006",
+        "QUESTPC2_OLDRAK_POSTGRES_COMPLETED duration=67.741377687s success=true"
+      ]
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::elvenbane_route::elvenbane_source_basement_and_poison_route",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 74.317633,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-main-6f-case-elvenbane_source_basement_and_poison_route.log",
+      "log_sha256": "8abb1368d3467c4052efd67121c10b3e1b15288161f3f9598785eb737eeca59f",
+      "retained_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::elvenbane_route::elvenbane_source_basement_and_poison_route ... ANNIHILATOR_ROUTE POSTGRES_CASE_OBSERVED server_version_num=180006",
+        "ELVENBANE_EXPLORATION POSTGRES_CASE_OBSERVED server_version_num=180006",
+        "ELVENBANE_EXPLORATION POSTGRES_CASE_COMPLETED basement=earned poison=earned dragon_floor=earned elapsed_ms=10332"
+      ]
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::l6_floor_assembly::l6_floor_assembly_final_drop_consumes_seven_and_creates_one_helmet",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 35.546521,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-main-6f-case-l6_floor_assembly_final_drop_consumes_seven_and_creates_one_helmet.log",
+      "log_sha256": "4c8360007d3322c78199ca632407a1635323226158230f834cb763e46a1c4f76",
+      "retained_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::l6_floor_assembly::l6_floor_assembly_final_drop_consumes_seven_and_creates_one_helmet ... POSTGRES_CASE_STARTED l6-floor-assembly",
+        "POSTGRES_DATABASE_READY l6_floor_assembly",
+        "POSTGRES_CASE_COMPLETED l6-floor-assembly duration=35.523003782s"
+      ]
+    }
+  ],
+  "total_seconds": 286.300574,
+  "all_passed": true,
+  "scope": "Eight real PostgreSQL regressions plus cap371/raw-equipment assertions on pushed merge ac543a383; no new whole quest qualification.",
+  "full_suites": "Pending CI; no full dispatch/durability suite pass claimed.",
+  "workspace_check": "PASS current-head cargo check --workspace --all-targets 2m56s",
+  "source_unchanged_since_checkpoint": true,
+  "generated_refresh": "PASS all applicable central authorers, equipment3820, coverage283, binding evidence and pins; no runtime/source changes versus tested checkpoint",
+  "fmt": "PASS",
+  "duplicate_migrations": "PASS"
+}

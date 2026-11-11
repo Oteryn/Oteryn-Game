@@ -30,7 +30,14 @@ fn imbuement_wire_dispatch_reads_the_carried_item_and_fails_closed_without_write
 #[test]
 fn imbuement_wire_dispatch_applies_and_clears_at_a_shrine_in_one_fenced_transaction() -> TestResult
 {
-    spawn(true, false)
+    let started = std::time::Instant::now();
+    let result = spawn(true, false);
+    eprintln!(
+        "IMBUEMENT_BASIC POSTGRES_CASE_COMPLETED duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
 }
 
 #[test]
@@ -84,6 +91,10 @@ fn scenario(shrine: bool, elapsed: bool, details: bool, catalogue: bool) -> Test
             "imbuement_wire"
         };
         let harness = Harness::create_with_admission_seed(admin, name, true, false).await?;
+        let version: String = sqlx::query_scalar("SHOW server_version")
+            .fetch_one(&harness.pool)
+            .await?;
+        eprintln!("IMBUEMENT_BASIC POSTGRES_STARTED version={version}");
         super::reset();
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -745,7 +756,7 @@ async fn seed_imbuement(harness: &Harness) -> TestResult {
     Ok(())
 }
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     sword_ref: NonZeroU32,
     admitted: AdmittedSession,

@@ -17,9 +17,11 @@ use super::{
 use crate::domain::bestiary::BestiaryRace;
 use crate::domain::bosstiary::{BosstiaryBoss, progress};
 use oteryn_gameplay_domain::domain::loot_data::{
-    GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, LootDefinitionRef, LootSelectionAlgorithm,
-    LootTableDefinition, LootTableEntry,
+    LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
 };
+
+#[path = "creature_reward_empty_corpse.rs"]
+mod empty_corpse;
 
 pub const LOOT_TABLES_SCHEMA: &str = "OTERYN_NATIVE_LOOT_TABLES/v1";
 /// The record bound of each list of the loot section.
@@ -60,8 +62,8 @@ pub enum NoSettlementReason {
     LootTableMissing,
     /// The creature profile names no corpse Item.
     CorpseItemMissing,
-    /// The corpse Item is not an admitted, materializable container, or an ordinary
-    /// corpse exceeds `GAMEITEM01-CORPSE-CONTAINER-ENTRIES`.
+    /// The corpse Item is not admitted or exceeds this settlement path's container bound.
+    /// Declared slots are independent of the actual entry/loot-plan count budgets.
     CorpseItemInadmissible,
     /// A loot table entry names an Item that is not admitted and materializable.
     LootItemInadmissible,
@@ -87,6 +89,7 @@ impl NoSettlementReason {
 pub struct CreatureRewardTable {
     rows: HashMap<String, Result<Arc<CreatureRewardRow>, NoSettlementReason>>,
     bosses: HashMap<String, BosstiaryBoss>,
+    reward_boss_corpses: HashMap<String, Arc<CreatureRewardRow>>,
     forge_sliver: Option<LootDefinitionRef>,
     daily_boss_equipment: HashSet<String>,
     encounter_facts: BTreeMap<String, CreatureEncounterFacts>,
@@ -97,6 +100,12 @@ impl CreatureRewardTable {
     /// Native encounter facts, independent of ordinary corpse loot admission.
     pub fn encounter_facts(&self, creature: &str) -> Option<&CreatureEncounterFacts> {
         self.encounter_facts.get(creature)
+    }
+
+    /// Empty physical corpse admission for reward bosses, independent of private loot.
+    /// This never admits a personal reward table or an ordinary creature's loot.
+    pub fn reward_boss_corpse(&self, creature: &str) -> Option<Arc<CreatureRewardRow>> {
+        self.reward_boss_corpses.get(creature).cloned()
     }
 
     /// Mintable Item references already admitted by this generation's existing loot owner.
@@ -490,13 +499,37 @@ impl CreatureRewardTable {
                             .get(&target.key)
                             .filter(|race| race.definition_revision() == target.revision)
                             .cloned();
-                        row(profile, *loot, &tables, &items, race).map(|mut row| {
+                        row(profile, *loot, &tables, &items, race, 30).map(|mut row| {
                             row.boss = boss_metadata(profile, &target.key);
                             row
                         })
                     })
                     .map(Arc::new);
                 (target.key.clone(), row)
+            })
+            .collect();
+        let reward_boss_corpses = creatures
+            .records
+            .iter()
+            .filter_map(|record| {
+                let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+                    return None;
+                };
+                if !profile.details.as_ref()?.system_eligibility.reward_boss {
+                    return None;
+                }
+                let target = &record.profile.target;
+                // Require an explicit native binding even though physical reward-boss
+                // corpses never carry that binding's private loot.
+                bindings.get(target.key.as_str())?;
+                let race = races
+                    .get(&target.key)
+                    .filter(|race| race.definition_revision() == target.revision)
+                    .cloned();
+                let mut corpse =
+                    empty_corpse::reward_boss_row(profile, &tables, &items, race).ok()?;
+                corpse.boss = boss_metadata(profile, &target.key);
+                Some((target.key.clone(), Arc::new(corpse)))
             })
             .collect();
         let bosses = creatures
@@ -576,6 +609,7 @@ impl CreatureRewardTable {
         Self {
             rows,
             bosses,
+            reward_boss_corpses,
             forge_sliver,
             daily_boss_equipment: HashSet::new(),
             encounter_facts,
@@ -597,6 +631,7 @@ fn row(
     tables: &HashMap<&SectionRef, &SectionLootTable>,
     items: &HashMap<&SectionRef, &SectionItemFacts>,
     race: Option<BestiaryRace>,
+    maximum_corpse_capacity: u32,
 ) -> Result<CreatureRewardRow, NoSettlementReason> {
     let xp_amount = i64::try_from(profile.experience.unwrap_or(0))
         .map(ExactI64::new)
@@ -622,8 +657,7 @@ fn row(
                 && profile.details.as_ref().is_some_and(|details| {
                     details.system_eligibility.reward_boss
                 }))
-                || (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u64)
-                    .contains(&u64::from(*capacity))
+                || (1..=maximum_corpse_capacity).contains(capacity)
                 // Exact retained Seacrest source capacity is36. This value is not
                 // retained in the reward row or used as a runtime loot budget;
                 // actual planned/minted entries keep their independent30limit.
@@ -763,7 +797,8 @@ mod private_loot_tests {
                 None,
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
-                None
+                None,
+                30,
             )
             .is_ok()
         );
@@ -779,7 +814,8 @@ mod private_loot_tests {
                 None,
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
-                None
+                None,
+                30,
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
         );
@@ -797,7 +833,8 @@ mod private_loot_tests {
                     None,
                     &HashMap::new(),
                     &HashMap::from([(&corpse, &facts)]),
-                    None
+                    None,
+                    30,
                 ),
                 Err(NoSettlementReason::CorpseItemInadmissible)
             );
@@ -810,7 +847,8 @@ mod private_loot_tests {
                 None,
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
-                None
+                None,
+                30,
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
         );

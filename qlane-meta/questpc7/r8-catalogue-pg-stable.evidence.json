@@ -1,0 +1,804 @@
+{
+  "log": ".questpc/r8-catalogue-pg-stable.log",
+  "test": "gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal",
+  "target": "cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib",
+  "expected_claims": 132,
+  "expected_placements": 140,
+  "completed_markers": 0,
+  "qualified_claims": 0,
+  "test_result_lines": [],
+  "claims": {
+    "oteryn:reward-claim.kv.adoreduh": {
+      "quest": "canary:quest/adorned_uh_rune_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.alawars_vault1": {
+      "quest": "canary:quest/alawar_s_vault_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.alawars_vault2": {
+      "quest": "canary:quest/alawar_s_vault_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id4502": {
+      "quest": "canary:quest/alawar_s_vault_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach": {
+      "quest": "canary:quest/an_interest_in_botany_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "expected_placements": 3,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "expected_placements": 3,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons": {
+      "quest": "canary:quest/barbarian_arena_quest",
+      "expected_placements": 3,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.barbarianaxe1": {
+      "quest": "canary:quest/barbarian_axe_quest",
+      "expected_placements": 2,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.battleaxe": {
+      "quest": "canary:quest/battle_axe_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.bear_chest2": {
+      "quest": "canary:quest/bear_room_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.bear_chest3": {
+      "quest": "canary:quest/bear_room_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id4601": {
+      "quest": "canary:quest/bear_room_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.simon_the_beggars_favorite_staff": {
+      "quest": "canary:quest/beggar_outfits_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.behemothquest1": {
+      "quest": "canary:quest/behemoth_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.behemothquest2": {
+      "quest": "canary:quest/behemoth_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.behemothquest3": {
+      "quest": "canary:quest/behemoth_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.behemothquest4": {
+      "quest": "canary:quest/behemoth_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls": {
+      "quest": "canary:quest/berserker_treasure_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.blackknight1": {
+      "quest": "canary:quest/black_knight_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.blackknight2": {
+      "quest": "canary:quest/black_knight_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id5010": {
+      "quest": "canary:quest/black_knight_quest",
+      "expected_placements": 2,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.bloodherb": {
+      "quest": "canary:quest/blood_herb_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.captain_iglues": {
+      "quest": "canary:quest/captain_iglues_treasure_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge1": {
+      "quest": "canary:quest/children_of_the_revolution_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge2": {
+      "quest": "canary:quest/children_of_the_revolution_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.flask_of_extra_greasy_oil": {
+      "quest": "canary:quest/children_of_the_revolution_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.circleroom1": {
+      "quest": "canary:quest/circle_room_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.circleroom2": {
+      "quest": "canary:quest/circle_room_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.combatknife": {
+      "quest": "canary:quest/combat_knife_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.crusaderhelmet": {
+      "quest": "canary:quest/crusader_helmet_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.crystalwand1": {
+      "quest": "canary:quest/crystal_wand_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.crystalwand2": {
+      "quest": "canary:quest/crystal_wand_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.petrified_scream_quest": {
+      "quest": "canary:quest/cults_of_tibia_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_5.darashia_dragon": {
+      "quest": "canary:quest/darashia_dragon_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.darkarmor": {
+      "quest": "canary:quest/dark_armor_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u10_50.dark_trails.reward05_gloth_and_belongings": {
+      "quest": "canary:quest/dark_trails_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u10_50.dark_trails.reward10_gloth_and_belongings": {
+      "quest": "canary:quest/dark_trails_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u10_50.dark_trails.reward_small_notebook": {
+      "quest": "canary:quest/dark_trails_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.deadarcher": {
+      "quest": "canary:quest/dead_archer_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.deeperfibula1": {
+      "quest": "canary:quest/deeper_fibula_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.deeperfibula2": {
+      "quest": "canary:quest/deeper_fibula_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.deeperfibula3": {
+      "quest": "canary:quest/deeper_fibula_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.deeperfibula5": {
+      "quest": "canary:quest/deeper_fibula_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id3980": {
+      "quest": "canary:quest/deeper_fibula_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.demonaring1": {
+      "quest": "canary:quest/demona_ring_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.demonaring2": {
+      "quest": "canary:quest/demona_ring_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.desert1": {
+      "quest": "canary:quest/desert_dungeon_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.devilhemet1": {
+      "quest": "canary:quest/devil_helmet_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.devilhemet2": {
+      "quest": "canary:quest/devil_helmet_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.devilhemet3": {
+      "quest": "canary:quest/devil_helmet_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id3610": {
+      "quest": "canary:quest/devil_helmet_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id3667": {
+      "quest": "canary:quest/devil_helmet_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.doublehero1": {
+      "quest": "canary:quest/double_hero_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.doublehero2": {
+      "quest": "canary:quest/double_hero_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.doublet": {
+      "quest": "canary:quest/doublet_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.draconia2": {
+      "quest": "canary:quest/draconia_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id3008": {
+      "quest": "canary:quest/draconia_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.dragoncorpse": {
+      "quest": "canary:quest/dragon_corpse_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1": {
+      "quest": "canary:quest/dragon_tower_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2": {
+      "quest": "canary:quest/dragon_tower_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book": {
+      "quest": "canary:quest/dreamer_s_challenge_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond": {
+      "quest": "canary:quest/dreamer_s_challenge_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u7_8.druid_outfits.wolf_tooth_chain": {
+      "quest": "canary:quest/druid_outfits_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.edrongoblin2": {
+      "quest": "canary:quest/edron_goblin_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u7_5.elephant_tusk": {
+      "quest": "canary:quest/elephant_tusk_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id3800": {
+      "quest": "canary:quest/emperor_s_cookies_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id3802": {
+      "quest": "canary:quest/emperor_s_cookies_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.explorerbrooch": {
+      "quest": "canary:quest/explorer_brooch_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.fanfare": {
+      "quest": "canary:quest/fanfare_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id3520": {
+      "quest": "canary:quest/fanfare_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones": {
+      "quest": "canary:quest/ferumbras_ascension_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night": {
+      "quest": "canary:quest/ferumbras_ascension_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth": {
+      "quest": "canary:quest/ferumbras_ascension_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.fireaxe2": {
+      "quest": "canary:quest/fire_axe_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.fishing_box": {
+      "quest": "canary:quest/fishing_box_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.halls_of_hope.reward1": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.halls_of_hope.reward2": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.halls_of_hope.reward3": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.halls_of_hope.reward4": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.halls_of_hope.reward5": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.ghostsilver_lantern_quest": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.imbuing_crystal_quest": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.painting_of_agirl_quest": {
+      "quest": "canary:quest/forgotten_knowledge_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.geomancer": {
+      "quest": "canary:quest/geomancer_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.ghoulroom2": {
+      "quest": "canary:quest/ghoul_room_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id3600": {
+      "quest": "canary:quest/ghoul_room_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.goblintemple": {
+      "quest": "canary:quest/goblin_temple_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.griffinshield1": {
+      "quest": "canary:quest/griffin_shield_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.griffinshield2": {
+      "quest": "canary:quest/griffin_shield_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.griffinshield3": {
+      "quest": "canary:quest/griffin_shield_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.heavenblossom": {
+      "quest": "canary:quest/heaven_blossom_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01": {
+      "quest": "canary:quest/hidden_threats_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02": {
+      "quest": "canary:quest/hidden_threats_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file": {
+      "quest": "canary:quest/hidden_threats_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow": {
+      "quest": "canary:quest/hunter_outfits_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya": {
+      "quest": "canary:quest/inukaya_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.ironhamer": {
+      "quest": "canary:quest/iron_hammer_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.ironhelmet": {
+      "quest": "canary:quest/iron_helmet_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.ironore": {
+      "quest": "canary:quest/iron_ore_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.isleofthemists": {
+      "quest": "canary:quest/isle_of_the_mists_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.katanacorpse1": {
+      "quest": "canary:quest/katana_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.katanacorpse2": {
+      "quest": "canary:quest/katana_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.key.id4603": {
+      "quest": "canary:quest/katana_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest": {
+      "quest": "canary:quest/knight_outfits_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum": {
+      "quest": "canary:quest/koshei_the_deathless_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines": {
+      "quest": "canary:quest/lion_trophy_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_5.lone_medusa": {
+      "quest": "canary:quest/lone_medusa_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.longsword1": {
+      "quest": "canary:quest/longsword_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.longsword2": {
+      "quest": "canary:quest/longsword_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.longsword3": {
+      "quest": "canary:quest/longsword_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.madmageroom1": {
+      "quest": "canary:quest/mad_mage_room_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.madmageroom2": {
+      "quest": "canary:quest/mad_mage_room_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.minohell1": {
+      "quest": "canary:quest/minotaur_hell_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.minohell2": {
+      "quest": "canary:quest/minotaur_hell_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.minohell3": {
+      "quest": "canary:quest/minotaur_hell_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.minotaurleatherquest": {
+      "quest": "canary:quest/minotaur_leather_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.kv.mintwallincyclops": {
+      "quest": "canary:quest/mintwallin_cyclops_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim": {
+      "quest": "crystalserver:quest/berserk_potion_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir": {
+      "quest": "crystalserver:quest/frost_dragon_quest",
+      "expected_placements": 1,
+      "completed_placements": [],
+      "all_placements_completed": false
+    }
+  }
+}

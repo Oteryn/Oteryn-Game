@@ -6,7 +6,7 @@
 )]
 use super::super::ComposedFreshAdmission;
 use super::{ChannelSpellStates, SpellCastIntent, SpellCastOutcome};
-use crate::durability::character_familiar::FamiliarStateRequest;
+use crate::durability::character_familiar::{FamiliarCleanEndResolution, FamiliarStateRequest};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::foundation::{ExactActorRef, GameSessionId};
 use crate::spell::cast::PlayerSpellState;
@@ -24,6 +24,11 @@ static FAMILIAR_LAST_OWNER_LOCK_MICROS: std::sync::atomic::AtomicU64 =
 static FAMILIAR_MAX_OWNER_LOCK_MICROS: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(0);
 struct FamiliarOwnerTurnMeasurement(std::time::Instant);
+#[cfg(test)]
+tokio::task_local! {
+    static FAMILIAR_CLEAN_END_FAULT: Option<bool>;
+    static FAMILIAR_CLEAN_END_WRITES: std::cell::Cell<usize>;
+}
 impl Drop for FamiliarOwnerTurnMeasurement {
     fn drop(&mut self) {
         let elapsed = u64::try_from(self.0.elapsed().as_micros()).unwrap_or(u64::MAX);
@@ -76,7 +81,7 @@ pub struct PreparedFamiliarCast {
     physical: Option<crate::foundation::StagedSpellBatch>,
 }
 /// Exact genuine actor-end intent retained before a possibly ambiguous durable write.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PreparedFamiliarLogout {
     actor: ExactActorRef,
     session: GameSessionId,
@@ -84,6 +89,61 @@ pub struct PreparedFamiliarLogout {
     fence: CurrentCharacterGameplayFence,
     request: FamiliarStateRequest,
     before: PlayerSpellState,
+}
+#[cfg(test)]
+impl PreparedFamiliarLogout {
+    pub(in crate::gameplay_transport) fn test_original(
+        &self,
+    ) -> (
+        FamiliarActorEnd,
+        CurrentCharacterGameplayFence,
+        FamiliarStateRequest,
+    ) {
+        (self.end, self.fence, self.request.clone())
+    }
+
+    pub(in crate::gameplay_transport) fn test_set_fence(
+        &mut self,
+        fence: CurrentCharacterGameplayFence,
+    ) {
+        self.fence = fence;
+    }
+}
+#[cfg(test)]
+impl PreparedFamiliarLogout {
+    /// The retained save of an earlier actor end whose outcome stayed unknown.
+    pub(in crate::gameplay_transport) fn retained(
+        actor: ExactActorRef,
+        session: GameSessionId,
+        end: FamiliarActorEnd,
+        fence: CurrentCharacterGameplayFence,
+        before: PlayerSpellState,
+        policy_digest: [u8; 32],
+    ) -> Result<Self, String> {
+        use crate::durability::character_familiar::{
+            DurableFamiliarState, FamiliarStateOccurrence,
+        };
+        let after = DurableFamiliarState {
+            last_logout_unix: 1,
+            ..DurableFamiliarState::default()
+        };
+        Ok(Self {
+            actor,
+            session,
+            end,
+            fence,
+            request: FamiliarStateRequest {
+                occurrence: FamiliarStateOccurrence::from_bytes(end.occurrence(actor, session))
+                    .map_err(|error| format!("{error:?}"))?,
+                before: DurableFamiliarState::default(),
+                after,
+                content_revision: "content:1".into(),
+                policy_revision: "policy:1".into(),
+                policy_digest,
+            },
+            before,
+        })
+    }
 }
 /// The genuine actor end a familiar save belongs to: the expired grace of the exact control-loss
 /// epoch, or LOGOUT-WIRE-1's own logout of an ACTIVE session on its exact current transport.
@@ -217,6 +277,15 @@ pub(in crate::gameplay_transport) fn prune_familiar_returns(
 }
 impl ChannelSpellStates {
     pub fn has_pending_familiar(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.has_pending_familiar_cast(actor, session)
+            || self.has_retained_familiar_logout(actor, session)
+    }
+    /// A paid or lifecycle familiar commit whose outcome is unknown.
+    pub(super) fn has_pending_familiar_cast(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
         self.pending_familiars
             .iter()
             .any(|v| v.is_for(actor, session))
@@ -224,10 +293,17 @@ impl ChannelSpellStates {
                 .pending_familiar_lifecycle
                 .iter()
                 .any(|v| v.actor == actor && v.session == session)
-            || self
-                .pending_familiar_logouts
-                .iter()
-                .any(|v| v.actor == actor && v.session == session)
+    }
+    /// An actor-end save whose outcome is unknown. Only the next actor end resolves it: a later
+    /// logout attempt's release or the grace expiry supersedes it (`save_familiar_logout`).
+    pub(super) fn has_retained_familiar_logout(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        self.pending_familiar_logouts
+            .iter()
+            .any(|v| v.actor == actor && v.session == session)
     }
 }
 
@@ -352,6 +428,16 @@ fn logout_owner(
                 // A logging-out actor is still controlled: no control-loss mark.
                 FamiliarActorEnd::Logout(..) => v.control_loss.is_none(),
             })
+}
+
+fn same_familiar_writer(
+    original: CurrentCharacterGameplayFence,
+    mut current: CurrentCharacterGameplayFence,
+) -> bool {
+    // Compare writer identity only. This value is never sent to a writer: a
+    // receipt's old global revision cannot replace the independent current read.
+    current.expected_character_revision = original.expected_character_revision;
+    current == original
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Source Login composition after the real first-entry owners have been installed.
@@ -520,6 +606,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         end: FamiliarActorEnd,
     ) -> FamiliarLogoutSave {
         use crate::durability::character_familiar::{FamiliarCleanEndProof, FamiliarStateOutcome};
+        let retained = self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .pending_familiar_logouts
+            .iter()
+            .find(|p| p.actor == actor && p.session == session)
+            .cloned();
+        if let Some(original) = retained {
+            // Grace expiry owns only its exact epoch; a new logout cannot
+            // discard or replay an earlier actor end's uncertain write.
+            if original.end != end {
+                return FamiliarLogoutSave::Unknown;
+            }
+            return match self.reconcile_familiar_actor_end(original).await {
+                Some(FamiliarCleanEndResolution::Committed(_)) => FamiliarLogoutSave::Saved,
+                // A later legal attempt may prepare a new snapshot only after
+                // this read proved that the original did not commit.
+                Some(FamiliarCleanEndResolution::Absent) | None => FamiliarLogoutSave::Unknown,
+            };
+        }
         let Some(content) = self.active_generation.and_then(|a| a.native_gameplay()) else {
             return FamiliarLogoutSave::NotApplicable;
         };
@@ -555,27 +663,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return FamiliarLogoutSave::FencedOut;
         }
-        // A logout save whose outcome was unknown is superseded once the actor ends another
-        // way (a grace expiry, or a later logout attempt): it is never resent, and the
-        // expected Character revision in both fences lets at most one of them commit.
-        states.pending_familiar_logouts.retain(|v| {
-            v.actor != actor
-                || v.session != session
-                || v.end == end
-                || !matches!(v.end, FamiliarActorEnd::Logout(..))
-        });
-        let prepared = if let Some(retained) = states
-            .pending_familiar_logouts
-            .iter()
-            .find(|p| p.actor == actor && p.session == session)
-            .cloned()
-        {
-            if retained.end != end || states.get(&runtime, actor, session) != Some(&retained.before)
-            {
-                return FamiliarLogoutSave::Unknown;
-            }
-            retained
-        } else {
+        let prepared = {
             // A pending paid/lifecycle cast must resolve before actor-end can snapshot it.
             if states.has_pending_familiar(actor, session) {
                 return FamiliarLogoutSave::Unknown;
@@ -679,6 +767,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             FamiliarActorEnd::Logout(transport, _) => FamiliarCleanEndProof::Logout(transport),
             FamiliarActorEnd::GraceExpiry(epoch) => FamiliarCleanEndProof::GraceExpiry(epoch),
         };
+        #[cfg(test)]
+        let held_for_test = FAMILIAR_CLEAN_END_FAULT
+            .try_with(|fault| {
+                (*fault == Some(false))
+                    .then(|| self.root.try_issue_semantic_pass().ok())
+                    .flatten()
+            })
+            .ok()
+            .flatten();
+        #[cfg(test)]
+        let _ = FAMILIAR_CLEAN_END_WRITES.try_with(|writes| writes.set(writes.get() + 1));
         let outcome = self
             .root
             .commit_character_familiar_clean_end(
@@ -689,6 +788,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 proof,
             )
             .await;
+        #[cfg(test)]
+        if let Some(held) = held_for_test {
+            assert!(matches!(
+                &outcome,
+                Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable
+                ))
+            ));
+            assert!(held.run(|_, _| Box::pin(async { Ok(()) })).await.is_ok());
+        }
+        #[cfg(test)]
+        if matches!(&outcome, Ok(FamiliarStateOutcome::Committed(_)))
+            && FAMILIAR_CLEAN_END_FAULT
+                .try_with(|fault| *fault == Some(true))
+                .unwrap_or(false)
+        {
+            return FamiliarLogoutSave::Unknown;
+        }
         let committed = match outcome {
             Ok(
                 FamiliarStateOutcome::Committed(value)
@@ -715,6 +832,102 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .pending_familiar_logouts
             .retain(|v| v.actor != actor || v.session != session || v.end != end);
         FamiliarLogoutSave::Saved
+    }
+
+    /// Logout preflight and control loss resolve only an ACTIVE transport's
+    /// retained logout. A grace-expiry marker belongs to its existing epoch owner.
+    pub(in crate::gameplay_transport) async fn reconcile_pending_familiar_logout(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let original = self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .pending_familiar_logouts
+            .iter()
+            .find(|p| p.actor == actor && p.session == session)
+            .cloned();
+        let Some(original) = original else {
+            return true;
+        };
+        matches!(original.end, FamiliarActorEnd::Logout(..))
+            && self.reconcile_familiar_actor_end(original).await.is_some()
+    }
+
+    async fn reconcile_familiar_actor_end(
+        &self,
+        original: PreparedFamiliarLogout,
+    ) -> Option<FamiliarCleanEndResolution> {
+        let (actor, session, end) = (original.actor, original.session, original.end);
+        let fresh = self
+            .familiar_logout_fence(session, end)
+            .await
+            .into_save()
+            .ok()?;
+        if !same_familiar_writer(original.fence, fresh) {
+            return None;
+        }
+        let resolution = self
+            .root
+            .reconcile_familiar_clean_end(self.character, original.fence, original.request.clone())
+            .await
+            .ok()?;
+        // The historical receipt is never current authority. Re-read the
+        // session/lease/scope independently; unrelated Character writes may have
+        // advanced its global revision without changing this familiar result.
+        let fresh = self
+            .familiar_logout_fence(session, end)
+            .await
+            .into_save()
+            .ok()?;
+        let minimum_revision = match &resolution {
+            FamiliarCleanEndResolution::Committed(revision) => *revision,
+            FamiliarCleanEndResolution::Absent => original.fence.expected_character_revision,
+        };
+        if !same_familiar_writer(original.fence, fresh)
+            || fresh.expected_character_revision.get() < minimum_revision.get()
+        {
+            return None;
+        }
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if !logout_owner(&runtime, &fresh, actor, session, end)
+            || runtime.content_pin().server_artifact_digest() != original.request.policy_digest
+            || states.get(&runtime, actor, session).is_none()
+        {
+            return None;
+        }
+        let index = states
+            .pending_familiar_logouts
+            .iter()
+            .position(|p| p == &original)?;
+        // Consume only the proven outcome of this exact original. In particular,
+        // never install its old PlayerSpellState over the current live state.
+        states.pending_familiar_logouts.remove(index);
+        Some(resolution)
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) async fn test_familiar_clean_end_probe<
+        F: std::future::Future,
+    >(
+        &self,
+        future: F,
+        unknown_after_commit: Option<bool>,
+    ) -> (F::Output, usize) {
+        FAMILIAR_CLEAN_END_WRITES
+            .scope(
+                std::cell::Cell::new(0),
+                FAMILIAR_CLEAN_END_FAULT.scope(unknown_after_commit, async {
+                    let result = future.await;
+                    let writes = FAMILIAR_CLEAN_END_WRITES.with(std::cell::Cell::get);
+                    (result, writes)
+                }),
+            )
+            .await
     }
     fn first_active_familiar_profile(&self) -> Option<&crate::spell::native::CompiledNativeSpell> {
         let mut index = 1;

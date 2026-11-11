@@ -1,0 +1,450 @@
+{
+  "branch": "claude/happy-davinci-ijz3wy-questpc5-n2-n3",
+  "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+  "total": 23,
+  "done_historical_pushed": 13,
+  "waiting_engine": 10,
+  "blocked": 0,
+  "active_or_unreviewed": 0,
+  "rows": [
+    {
+      "order": 1,
+      "quest": "20 Years a Cook Quest",
+      "canonical": "oteryn:quest.authored.20_years_a_cook_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "Fenced item-on-world-target relocation of one exact live Creature with quest progress.",
+      "evidence": {
+        "state": "WAITING-ENGINE",
+        "owner": "ENGENC / QENGINE2",
+        "feature": "Fenced item-on-world-target relocation of one exact live Creature with quest progress.",
+        "evidence": "CallbackEffectSet supports player teleport; live Creature relocation is still a separate engine request.",
+        "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+        "checked_engine_heads": {
+          "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+          "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+          "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+        },
+        "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+      }
+    },
+    {
+      "order": 2,
+      "quest": "Tutorial",
+      "canonical": "oteryn:quest.tutorial",
+      "state": "WAITING-ENGINE",
+      "reason": "Claimant-fenced credit for actual loot pickup from the exact killed Creature.",
+      "evidence": {
+        "state": "WAITING-ENGINE",
+        "owner": "ENGITEM / QENGINE2",
+        "feature": "Claimant-fenced credit for actual loot pickup from the exact killed Creature.",
+        "evidence": "ENGENC4ffd19f3 changes private boss-loot admission, not the quest pickup/provenance bridge. Kill alone or inventory presence is insufficient.",
+        "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+        "checked_engine_heads": {
+          "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+          "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+          "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+        },
+        "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+      }
+    },
+    {
+      "order": 3,
+      "quest": "Newhaven Legion Helmet Quest",
+      "canonical": "oteryn:quest.newhaven_legion_helmet_quest",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 4,
+      "quest": "Newhaven Quest",
+      "canonical": "oteryn:quest.newhaven_quest",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 5,
+      "quest": "Nimmersatt's Lair",
+      "canonical": "oteryn:quest.authored.nimmersatt_s_lair",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 6,
+      "quest": "Nomads Land Quest",
+      "canonical": "oteryn:quest.authored.nomads_land_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "Literal readable reward text and fenced mutable Ground stack/order predicates.",
+      "evidence": {
+        "state": "WAITING-ENGINE",
+        "owner": "ENGITEM / QENGINE2",
+        "feature": "Literal readable reward text and fenced mutable Ground stack/order predicates.",
+        "evidence": "ItemReward exposes item/count/contents; WorldRequirement exposes only position/immovable appearance. Preserve existing pickup/drop ownership.",
+        "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+        "checked_engine_heads": {
+          "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+          "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+          "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+        },
+        "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+      }
+    },
+    {
+      "order": 7,
+      "quest": "Nomads Mini World Change",
+      "canonical": "oteryn:quest.authored.nomads_mini_world_change",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 8,
+      "quest": "Noodles is Gone Mini World Change",
+      "canonical": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 9,
+      "quest": "Opticording Sphere Quest",
+      "canonical": "oteryn:quest.opticording_sphere_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "Read-only Bigfoot rank>=2 prerequisite alongside a local World quest transition.",
+      "evidence": {
+        "state": "WAITING-ENGINE",
+        "owner": "QENGINE2",
+        "feature": "Read-only Bigfoot rank>=2 prerequisite alongside a local World quest transition.",
+        "evidence": "Existing preserve is not an arbitrary foreign quest read; do not write/fabricate the Bigfoot rank.",
+        "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+        "checked_engine_heads": {
+          "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+          "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+          "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+        },
+        "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+      }
+    },
+    {
+      "order": 10,
+      "quest": "Oramond Quest",
+      "canonical": "oteryn:quest.oramond_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "Quest-cycle-scoped repeatable World MINT and authored World transaction-clock integration.",
+      "evidence": {
+        "state": "WAITING-ENGINE",
+        "owner": "QENGINE2 / ENGITEM",
+        "feature": "Quest-cycle-scoped repeatable World MINT and authored World transaction-clock integration.",
+        "evidence": "QENGINE2 world_callback_transaction_clock_operations is IN_PROGRESS with post-merge validation pending; fixture-only ENGITEM clock is not delivery of the authored World API.",
+        "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+        "checked_engine_heads": {
+          "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+          "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+          "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+        },
+        "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+      }
+    },
+    {
+      "order": 11,
+      "quest": "Ornamented Shield Quest",
+      "canonical": "oteryn:quest.ornamented_shield_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "Exact nested native reward leaf selection under the original once-only chest ledger.",
+      "evidence": {
+        "state": "WAITING-ENGINE",
+        "owner": "ENGITEM / QENGINE2",
+        "feature": "Exact nested native reward leaf selection under the original once-only chest ledger.",
+        "evidence": "Need shield3424 from UID6062 source bag while retaining the source claim and excluding key3702/extras; no parallel MINT.",
+        "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+        "checked_engine_heads": {
+          "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+          "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+          "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+        },
+        "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+      }
+    },
+    {
+      "order": 12,
+      "quest": "Overhunting World Change",
+      "canonical": "oteryn:quest.overhunting_world_change",
+      "state": "WAITING-ENGINE",
+      "reason": "Claimant-attributed real capture/pickup credit and personal daily quest clock/cycle integration.",
+      "evidence": {
+        "state": "WAITING-ENGINE",
+        "owner": "ENGENC / ENGITEM / QENGINE2",
+        "feature": "Claimant-attributed real capture/pickup credit and personal daily quest clock/cycle integration.",
+        "evidence": "Reuse existing wolf trap and World contribution owner; do not add a second global counter or substitute a presence check.",
+        "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+        "checked_engine_heads": {
+          "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+          "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+          "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+        },
+        "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+      }
+    },
+    {
+      "order": 13,
+      "quest": "Power Ring Quest",
+      "canonical": "oteryn:quest.power_ring_quest",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 14,
+      "quest": "Present Quest",
+      "canonical": "oteryn:quest.present_quest",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 15,
+      "quest": "Targuna Quest",
+      "canonical": "oteryn:quest.targuna_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "Fenced personal NPC map marker plus quest-guarded object taming with atomic progress.",
+      "evidence": {
+        "state": "WAITING-ENGINE",
+        "owner": "ENGNPC / ENGITEM / QENGINE2",
+        "feature": "Fenced personal NPC map marker plus quest-guarded object taming with atomic progress.",
+        "evidence": "NpcRuleEffect::MapMark is a source-rule no-op, RewardCallback has no native marker delivery, and TamingRule has no quest progress transaction. Two earlier contact boundaries are pushed, not whole-quest qualification.",
+        "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+        "checked_engine_heads": {
+          "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+          "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+          "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+        },
+        "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+      }
+    },
+    {
+      "order": 16,
+      "quest": "The Explorer Society Quest",
+      "canonical": "oteryn:quest.the_explorer_society_quest",
+      "state": "WAITING-ENGINE",
+      "reason": "Recipe-scoped nondecaying specimen variant preserving the original timed Item.",
+      "evidence": {
+        "state": "WAITING-ENGINE",
+        "owner": "ENGITEM",
+        "feature": "Recipe-scoped nondecaying specimen variant preserving the original timed Item.",
+        "evidence": "Selected course removes decay; original specimen4837 has600000ms lifetime. Do not overwrite its known temporal semantics globally.",
+        "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+        "checked_engine_heads": {
+          "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+          "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+          "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+        },
+        "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+      }
+    },
+    {
+      "order": 17,
+      "quest": "The Queen of the Banshees Quest",
+      "canonical": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 18,
+      "quest": "Demon Helmet Quest",
+      "canonical": "oteryn:quest.demon_helmet_quest",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 19,
+      "quest": "Devil Helmet Quest",
+      "canonical": "oteryn:quest.devil_helmet_quest",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 20,
+      "quest": "Formorgar Mines Hoist Quest",
+      "canonical": "oteryn:quest.formogar_mine_hoist",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 21,
+      "quest": "Last Creep Standing",
+      "canonical": "oteryn:quest.authored.last_creep_standing",
+      "state": "WAITING-ENGINE",
+      "reason": "Observed temporary disguise, matching portal predicate, restoration on exit.",
+      "evidence": {
+        "state": "WAITING-ENGINE",
+        "owner": "ENGNPC / QENGINE2",
+        "feature": "Observed temporary disguise, matching portal predicate, restoration on exit.",
+        "evidence": "QENGINE2 item_look_disguise_restore remains QUEUED; preserve questpc8 reusable groundwork without declaring the complete eight-disguise route playable.",
+        "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+        "checked_engine_heads": {
+          "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+          "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+          "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60"
+        },
+        "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+      }
+    },
+    {
+      "order": 22,
+      "quest": "Serpentine Tower Quest",
+      "canonical": "oteryn:quest.serpentine_tower_quest",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    },
+    {
+      "order": 23,
+      "quest": "Thais Lighthouse Quest",
+      "canonical": "oteryn:quest.thais_lighthouse_quest",
+      "state": "DONE",
+      "reason": "Previously whole-quest qualified and pushed on frozen questpc5; collector integration is pending.",
+      "evidence": {
+        "state": "DONE",
+        "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+        "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+        "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+        "on_current_main": false,
+        "decision": "Do not redo finished work; consume collector integration when it reaches main."
+      }
+    }
+  ],
+  "new_gameplay_claims": false,
+  "earlier_branches_frozen": true,
+  "notes": "All23 packet rows reconciled in order; no quest outside this packet started. Earlier implementation branches remain unmodified. Qualified engine capabilities already present were not misclassified as pending; the missing boundaries listed are distinct.",
+  "validation": {
+    "scope": "metadata-only reconciliation; no new gameplay qualification",
+    "main_merge": "origin/main 1076254706e4ddc05a6d0a1aba0c1777af2038ac; already up to date",
+    "workspace_all_targets": "PASS; 4m 40s",
+    "fmt_all_check": "PASS",
+    "ledger_integrity": "PASS; 23 unique packet rows, 13 historical DONE, 10 WAITING-ENGINE",
+    "duplicate_migrations": "PASS staged tree",
+    "generation": "native content, quest bindings, completion matrix, talk candidates, item audit tags, world metadata; no generated differences",
+    "unit_and_pg": "No changed crate, runtime, content or pinned test; historical proof remains explicitly historical",
+    "world_pins": "PASS pin-refresh and pin-check; existing digest unchanged"
+  },
+  "continuation_engine_recheck": {
+    "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf",
+    "main_unchanged": false,
+    "other_engine_heads_unchanged": true,
+    "result": "ENGNPC adds paid travel confirmation ownership; main adds login challenge and client settings. Neither adds any of the ten missing quest contracts.",
+    "post_merge_validation": {
+      "main": "e9276ad7e",
+      "workspace_all_targets": "PASS 3m48s",
+      "fmt": "PASS",
+      "generation": "PASS no changes",
+      "pin_refresh_and_check": "PASS",
+      "duplicate_migrations": "PASS",
+      "unit_and_pg": "No authored crate, content or PG changes; no new gameplay qualification"
+    },
+    "latest_main": "e9276ad7e"
+  },
+  "ship_scope": {
+    "branch": "claude/happy-davinci-ijz3wy-questpc5-n2-n3",
+    "main": "a16f19676",
+    "gameplay_diff_files": 0,
+    "done_quests_shipped_here": 0,
+    "historical_done_on_frozen_branch": 13,
+    "waiting_engine": 10,
+    "architecture": "PASS workspace-boundaries",
+    "workspace_check": "PASS 4m02s",
+    "fmt": "PASS",
+    "generation_and_pins": "PASS no changes",
+    "pg_stories": "None run: original thirteen historical stories are absent from this branch",
+    "clippy": "No authored changed Rust crates"
+  }
+}

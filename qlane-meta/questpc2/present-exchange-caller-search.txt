@@ -1,0 +1,11 @@
+crates/gameplay/durability/src/durability/npc_trade.rs:789:                            else if request.cause.npc_key == present_exchange::NPC { pick_exchange::plan_with_input(&request, capacity, &entries, present_exchange::input()) }
+crates/gameplay/durability/src/durability/npc_trade/present_exchange.rs:44:    pub async fn exchange_present_for_helmet(
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:147:        pick_exchange::plan_with_input(&value, 1, &entries, present_exchange::input()).unwrap();
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:152:        pick_exchange::plan_with_input(&value, 0, &entries, present_exchange::input()),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:157:        pick_exchange::plan_with_input(&value, 1, &entries, present_exchange::input()),
+crates/gameplay/durability/src/durability/npc_trade/pick_exchange.rs:41:    plan_with_input(request, capacity, entries, input())
+crates/gameplay/durability/src/durability/npc_trade/pick_exchange.rs:44:pub(super) fn plan_with_input(
+crates/gameplay/durability/src/durability/npc_trade_audit/pick_exchange.rs:13:pub(super) fn check_recipe(
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/npc_item_exchanges.rs:295:            .exchange_present_for_helmet(
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:49:mod npc_item_exchanges;
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:620:    if let Some(outcome) = npc_item_exchanges::talk(admission, actor, command, &intent).await {
