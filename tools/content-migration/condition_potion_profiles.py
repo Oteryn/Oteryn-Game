@@ -12,6 +12,8 @@ import json
 import sys
 from pathlib import Path
 
+from native_profile_composition import encode_native_profile
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
@@ -159,7 +161,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if existing.intersection(keys):
         raise ValueError('CONDITION_POTION_PROFILE_DUPLICATE')
     document['records'] = sorted(document['records'] + records, key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = digest(raw)
     manifest_raw = canonical(manifest)

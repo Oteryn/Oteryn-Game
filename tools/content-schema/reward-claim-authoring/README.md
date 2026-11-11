@@ -37,6 +37,17 @@ texts, random choices and achievements are later children.
   Duplicate legacy unique ids are server-scoped and recorded with every claim/position;
   validation rejects missing or stale collision diagnostics. Position bindings remain authoritative.
 
+## Poison Daggers target reward
+
+Poison Daggers Quest uses the target's two daggers and thirty poison arrows.
+The [Wiki quest](https://tibia.fandom.com/wiki/Poison_Daggers_Quest) and
+[spoiler](https://tibia.fandom.com/wiki/Poison_Daggers_Quest/Spoiler), captured
+2026-11-06, agree with both pinned donors' comments, while their numeric recipe
+contains only one dagger. `poison_daggers.py` corrects only UID6068 at the exact
+source position and recipe. It keeps the original donor in `source_variant`
+and emits two quantity1 children through the existing container reward owner.
+A changed source recipe, position or container fails closed.
+
 ## D277 charged source rewards
 
 Architect ruling [5933264015](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015)
@@ -160,3 +171,18 @@ python tools/content-schema/reward-claim-authoring/reward_claim_variant_migratio
 python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content --check
 python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py --check
 ```
+
+## Authored native selectors
+
+The runtime binder also accepts an explicitly authored `source_binding` with
+`project_position` and `native_ordinal` instead of `legacy_unique_ids`. The ordinal
+is zero based among top-level entries, excluding nested container contents. The
+binder verifies the exact cell, ordinal and `appearance_tibia_id` against the pinned
+base map. Missing entries, ambiguous palette appearances, mixed selector namespaces
+and malformed ordinals remain unserved. It never falls back from a missing donor UID.
+
+This selector uses the existing claim reservation, fenced mint and receipt replay
+owners. It does not supply stage progress or qualify a quest completion graph, and
+it changes no source charge or fluid rules. The source-pilot generator continues
+to emit its original donor selectors; authored records must declare their native
+selector explicitly in their own authoring input.

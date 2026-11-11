@@ -1,0 +1,59 @@
+{
+  "lane": "questpc2",
+  "branch": "claude/happy-davinci-ijz3wy-questpc2b",
+  "state": "FOCUSED_GREEN_COMPILING_CHECKPOINT_UNIT_FAILURE_COLLECTION_PENDING",
+  "quest": "Hero of Rathleton Quest",
+  "whole_quest_qualified": false,
+  "implementation": "Eight-line local helper suppresses commits when all planned track values are unchanged; complete atomic write retained if any value changes. Existing main NPC program reused unchanged.",
+  "red": {
+    "postgres": 180006,
+    "duration_seconds": 66.353,
+    "actual_receipts": 8,
+    "expected_receipts": 4
+  },
+  "green": {
+    "postgres": 180006,
+    "nextest_run_id": "65b0be14-5e79-4e5a-b63b-7eb4d94fda40",
+    "total_seconds": 171.891,
+    "cases": {
+      "hero_four_pipe_greetings": 67.778,
+      "father_atomic_eleven_track_acceptance": 104.107,
+      "npc_xp_handin": 108.588
+    }
+  },
+  "checks": {
+    "workspace_all_targets": "PASS 7m48s including build-lock wait",
+    "clippy_changed_crate_all_targets_all_features": "PASS 11m11s including build-lock wait",
+    "fmt": "PASS",
+    "native_generated_outputs": "45 exact,130.564s",
+    "central_lists": "regenerated",
+    "pins": "regenerated",
+    "duplicate_migrations": "PASS staged tree"
+  },
+  "unit_tests": {
+    "crate": "oteryn-gameplay-dispatch",
+    "state": "RUNNING_WITH_REPORTED_FAILURE",
+    "postgres_environment": "unset for unit run; focused PG above ran separately",
+    "log": "/tmp/questpc2b-hero-dispatch-units.log",
+    "known_failure": "capabilities::tests::selection_tests::the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6",
+    "exact_failure": "capability_selection_tests.rs:371: assert!(gate.contains(\"BUNDLE_WORLD_OFFERED_CAPABILITIES\"), \"{id}\"); id=371",
+    "publication_decision": "Owner PREPUSH-2 cadence exception: publish source with passing own PG and compile checks; collect all unit failures and fix together next. No full unit success claimed."
+  },
+  "logs_sha256": {
+    "/tmp/questpc2b-hero-pipes-baseline.log": "4eb17eff1e3439dc65a94ec66c178b24bbe7a51a96fc1a4a47ae7cd54c4ebbb5",
+    "/tmp/questpc2b-hero-pipes-green.log": "f6fe20b26fc60e85b38a40aca22ef595b1241cdf0450e119b83815add8ba1cd4",
+    "/tmp/questpc2b-hero-final-workspace-check.log": "e57767d9bdfde46322d963d1b5d5565a772f1a85cbbbfe67c4bf1e2038f7a004",
+    "/tmp/questpc2b-hero-clippy.log": "6a7a468ababe121f6c810d4cf2362d99182e5b682220db4ae07865ef99684fe6",
+    "/tmp/questpc2b-hero-final-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/tmp/questpc2b-hero-generated-replay.log": "8986207772f4fe8958b50b8f4533db344bb10cfacadbc8f9cdd9f7d51a350f29",
+    "/tmp/questpc2b-hero-central-generation.log": "a9c9d52b8ca126daa8d5bd7513952c16bb90bac5ff74d7764a796cf3bb0060d2",
+    "/tmp/questpc2b-hero-pin-refresh.log": "c04a99aebb400cf672c5a124ab144ef74949e57980b9f938021a934d79884721"
+  },
+  "migrations_unchanged": [
+    "1240_al_dee_item_exchange.sql",
+    "1241_uzgod_obsidian_knife_exchange.sql",
+    "1242_seymour_present_exchange.sql",
+    "1243_native_encounter_progression_scope.sql",
+    "1244_instance_corpse_mint.sql"
+  ]
+}

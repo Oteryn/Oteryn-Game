@@ -52,6 +52,7 @@ class QuestTreeTests(unittest.TestCase):
                 for path in index['shards'] for r in tool.read(root, path)['records']}
         source = {d['identity']['key']: d for d in tool.claim_catalogue(root)}
         expected = {
+            'oteryn:reward-claim.kv.draconia1': ['item'],
             'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
             'oteryn:reward-claim.kv.present_box': ['item'],
             'oteryn:reward-claim.kv.triangletower': ['item'],

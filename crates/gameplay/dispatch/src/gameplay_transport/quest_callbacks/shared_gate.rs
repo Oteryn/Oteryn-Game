@@ -37,6 +37,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             reset_epoch: self.reset_epoch,
             actor_placement: actor.placement_identity(),
             movement_revision: expected.revision(),
+            party: Vec::new(),
         };
         let context = if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
             let pending = records.entry(session).or_insert(Pending {
@@ -50,6 +51,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 origin: None,
                 context: None,
                 ingress_settled: false,
+                participants: Vec::new(),
             });
             pending.context.get_or_insert(context).clone()
         } else {

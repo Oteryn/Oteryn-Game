@@ -115,3 +115,25 @@ fn authoritative_window_clears_ground_but_preserves_distant_exploration() {
     map.observe(&snapshot(100, 0));
     assert!(!map.cells.contains_key(&(-7, 100, 200)));
 }
+
+#[test]
+fn create_mark_hotkey_adds_mark_at_player_position() -> Result<(), Box<dyn std::error::Error>> {
+    let mut map = Minimap::default();
+    assert!(map.create_mark_at((100, 200, -7))?);
+    assert_eq!(map.markers.len(), 1);
+    assert_eq!(
+        (map.markers[0].x, map.markers[0].y, map.markers[0].floor),
+        (100, 200, -7)
+    );
+    assert_eq!(map.markers[0].label, "Mark");
+    Ok(())
+}
+#[test]
+fn create_mark_hotkey_edits_existing_mark() -> Result<(), Box<dyn std::error::Error>> {
+    let mut map = Minimap::default();
+    map.edit_marker(100, 200, -7, "Gate".into(), 2)?;
+    assert!(!map.create_mark_at((100, 200, -7))?);
+    assert_eq!(map.markers.len(), 1);
+    assert_eq!(map.markers[0].label, "Gate");
+    Ok(())
+}

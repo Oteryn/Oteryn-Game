@@ -1,0 +1,204 @@
+apps/game-server/src/node/serve/qualification_fixture.rs:114:    use crate::durability::reward_claim_mint::{RewardClaimMintOutcome, RewardClaimMintRequest};
+apps/game-server/src/node/serve/qualification_fixture.rs:154:        let request = RewardClaimMintRequest {
+apps/game-server/src/node/serve/qualification_fixture.rs:170:            root_fluid_subtype: None,
+crates/gameplay/content/src/content/world_reward_claims.rs:285:        return Ok(Err(LeftOut::OwnerExcluded));
+crates/gameplay/content/src/content/world_reward_claims.rs:291:        return Ok(Err(LeftOut::Variant));
+crates/gameplay/content/src/content/world_reward_claims.rs:294:        return Ok(Err(LeftOut::NotReady));
+crates/gameplay/content/src/content/world_reward_claims.rs:325:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:344:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:353:        return Ok(Err(LeftOut::ItemNotAdmitted));
+crates/gameplay/content/src/content/world_reward_claims.rs:1080:            Ok(Err(LeftOut::ItemNotAdmitted))
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:493:            ("oteryn:reward-claim.kv.variant", LeftOut::Variant),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:494:            ("oteryn:reward-claim.kv.waiting", LeftOut::NotReady),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:495:            ("oteryn:reward-claim.kv.hours", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:496:            ("oteryn:reward-claim.kv.container", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:497:            ("oteryn:reward-claim.kv.two", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:498:            ("oteryn:reward-claim.kv.grant", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:580:                LeftOut::UnencodedField
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:582:            ("oteryn:reward-claim.kv.zero", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:583:            ("oteryn:reward-claim.kv.wide", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:584:            ("oteryn:reward-claim.kv.container", LeftOut::Variant),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:585:            ("oteryn:reward-claim.kv.stack", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:586:            ("oteryn:reward-claim.kv.plain_key", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:607:            LeftOut::ItemNotAdmitted
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:674:            .filter(|(_, why)| *why == LeftOut::NotReady)
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:35:    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:582:        request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:596:        request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:805:) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:806:    RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:814:        root_fluid_subtype: None,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:825:fn coins(command: CommandRef, claim_key: &str, quantity: u32) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:1080:        let cases: Vec<(RewardClaimMintRequest, RewardClaimRefusal)> = vec![
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:1716:        let key = RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2181:    mut request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2183:) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2360:        let request = || -> TestResult<RewardClaimMintRequest> {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2846:    ) -> TestResult<RewardClaimMintRequest> {
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:114:            "SELECT fluid_subtype FROM game_item_fluid_states \
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:124:fn a_map_source_fill_persists_the_donor_fluid_subtype() -> TestResult {
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:152:            fluid_subtype: MANA,
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:162:            "SELECT fluid_subtype,splash_item_id, expires_at BETWEEN clock_timestamp()+interval '9 seconds' AND clock_timestamp()+interval '10 seconds' FROM game_item_fluid_splashes WHERE transaction_id=encode($1,'hex')::uuid")
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:357:                "INSERT INTO game_item_fluid_states(item_instance_id, world_id, fluid_subtype, \
+apps/game-server/tests/support/item_use_postgres_cases/item_use_fluid_tests.rs:372:                 INSERT INTO game_item_fluid_states(item_instance_id, world_id, fluid_subtype, \
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:2:use crate::durability::reward_claim_mint::RewardClaimMintContent;
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:7:    mut request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:50:            root.root_fluid_subtype = Some(6);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:52:            assert_eq!(sqlx::query_scalar::<_, i16>("SELECT fluid_subtype FROM game_item_fluid_states WHERE item_instance_id=encode($1,'hex')::uuid")
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:65:            root.root_fluid_subtype = Some(15);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:68:            bag.contents = vec![RewardClaimMintContent {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:70:                key_number: None, text: None, fluid_subtype: Some(15),
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:76:            assert_eq!(sqlx::query_scalar::<_, i16>("SELECT f.fluid_subtype FROM game_item_fluid_states f JOIN game_item_nested_entries e USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid")
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:84:            for (offset, body) in [(5_u64, "RETURN NULL;"), (6, "NEW.fluid_subtype := 7; RETURN NEW;")] {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:90:                bad.root_fluid_subtype = Some(6);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:92:                    bad.root_fluid_subtype = None;
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:94:                    bad.contents = vec![RewardClaimMintContent {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:96:                        key_number: None, text: None, fluid_subtype: Some(6),
+crates/gameplay/social/src/interaction/chest_use.rs:67:    RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/social/src/interaction/chest_use.rs:296:) -> Result<(ChildOccurrenceRef, RewardClaimMintRequest), ChestUseError> {
+crates/gameplay/social/src/interaction/chest_use.rs:311:    let mint_request = RewardClaimMintRequest {
+crates/gameplay/social/src/interaction/chest_use.rs:319:        root_fluid_subtype: None,
+crates/gameplay/items/src/loot_plan.rs:94:    pub fn fluid_subtype(&self) -> Option<u8> {
+crates/gameplay/items/src/loot_plan.rs:1580:        assert_eq!(fluid.entries[0].fluid_subtype(), Some(5));
+crates/gameplay/items/src/loot_plan.rs:1584:        assert_eq!(plan(&table)?.entries[0].fluid_subtype(), None);
+crates/gameplay/items/src/loot_plan.rs:1588:        assert_eq!(wide.entries[0].fluid_subtype(), None);
+crates/gameplay/items/src/loot_plan.rs:1593:        assert_eq!(stack.entries[0].fluid_subtype(), None);
+crates/gameplay/items/src/loot_plan.rs:1599:        assert_eq!(charged.entries[0].fluid_subtype(), None);
+crates/gameplay/items/src/loot_plan.rs:1604:        assert_eq!(plain.entries[0].fluid_subtype(), None);
+crates/gameplay/dispatch/src/gameplay_transport/item_use.rs:834:                    fluid_subtype: before,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:623:    ) -> Option<crate::durability::reward_claim_mint::RewardClaimMintRequest> {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:626:            RewardClaimMintContent, RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:661:            contents.push(RewardClaimMintContent {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:666:                fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:677:        Some(RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:689:            root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:11:    RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:156:                            RewardClaimMintContent {
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:161:                                fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:169:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:181:                    root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:6:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:67:        let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:79:            root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:9:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:15:    request: RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:203:            let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:215:                root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:9:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:105:        let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:117:            root_fluid_subtype: None,
+crates/gameplay/quests/src/quest/batch3_a/hot_cuisine/tests.rs:76:fn wrong_fluid_subtype_does_not_consume_or_progress() -> Result<(), NpcRuleError> {
+crates/gameplay/combat/src/combat/death_reward.rs:557:                    fluid_subtype: entry.fluid_subtype(),
+crates/gameplay/combat/src/combat/death_reward.rs:645:                fluid_subtype: entry.fluid_subtype(),
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:487:    sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,7,encode($3,'hex')::uuid)")
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:511:    sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,10,encode($3,'hex')::uuid)")
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:515:        Ok(sqlx::query_scalar("SELECT fluid_subtype FROM game_item_fluid_states WHERE item_instance_id = encode($1,'hex')::uuid")
+crates/gameplay/durability/src/durability/item_transfer.rs:1498:        "SELECT item_instance_id::text, fluid_subtype FROM game_item_fluid_states \
+crates/gameplay/durability/src/durability/item_transfer.rs:1508:                u8::try_from(row.try_get::<i16, _>("fluid_subtype")?)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:7:    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:248:    let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:263:        root_fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:150:pub struct RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:157:    pub fluid_subtype: Option<u8>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:162:pub struct RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:176:    pub contents: Vec<RewardClaimMintContent>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:180:    pub root_fluid_subtype: Option<u8>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:354:    request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:458:    request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:504:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:517:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:532:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1021:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1376:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1456:fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1546:fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -> Result<[u8; 33]> {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1830:    fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1832:        RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1847:            root_fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1864:        let with = |transition: Option<&str>, achievement| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1878:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1900:        let key = |number: Option<u16>| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1910:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1914:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1918:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1932:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1933:        let with_quest = |number| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1982:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2011:        filled.root_fluid_subtype = Some(6);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2018:        wine.root_fluid_subtype = Some(15);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2026:                "empty subtype" => changed.root_fluid_subtype = Some(0),
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2037:        bag.contents = vec![RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2042:            fluid_subtype: Some(6),
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2046:        bag.contents[0].fluid_subtype = Some(15);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2051:        bag.contents[0].fluid_subtype = Some(0);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2061:            RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2066:                fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2068:            RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2073:                fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2127:        container.contents = vec![RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2131:            fluid_subtype: None,
+crates/gameplay/durability/src/durability/item_craft.rs:255:                    let ingredient = sqlx::query("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref,(SELECT f.fluid_subtype FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id FOR UPDATE) AS fluid_subtype FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
+crates/gameplay/durability/src/durability/item_craft.rs:266:                            ingredient_fluid_subtype(
+crates/gameplay/durability/src/durability/item_craft.rs:267:                                row.try_get::<Option<i16>, _>("fluid_subtype").ok()?,
+crates/gameplay/durability/src/durability/item_craft.rs:494:fn ingredient_fluid_subtype(stored: Option<i16>) -> Option<u32> {
+crates/gameplay/durability/src/durability/item_craft.rs:503:    fn cooking_fluid_subtype_comes_from_fluid_state() {
+crates/gameplay/durability/src/durability/item_craft.rs:504:        assert_eq!(ingredient_fluid_subtype(Some(9)), Some(9));
+crates/gameplay/durability/src/durability/item_craft.rs:505:        assert_eq!(ingredient_fluid_subtype(None), None);
+crates/gameplay/durability/src/durability/item_craft.rs:506:        assert_eq!(ingredient_fluid_subtype(Some(-1)), None);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:8:use crate::durability::reward_claim_mint::RewardClaimMintRequest;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:455:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:470:                    root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:600:    use crate::durability::reward_claim_mint::{RewardClaimMintRequest, RewardClaimMintError, RewardClaimRefusal};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:637:    let mut request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:642:        root_fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint/arena.rs:17:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/arena.rs:102:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:11:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:25:pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:80:pub(super) fn capacity(request: &RewardClaimMintRequest) -> Option<i16> {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:122:pub(super) fn plan(request: &RewardClaimMintRequest, reservation: &Reservation) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:126:fn plan_for_transaction(request: &RewardClaimMintRequest, transaction: &[u8; 16]) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:153:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:171:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/monk.rs:13:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/grizzly.rs:13:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/grizzly.rs:46:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:12:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:111:fn validate_soul_war_request(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:130:        character: CharacterId, request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:6:pub(super) fn plan(request: &RewardClaimMintRequest) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:8:        std::iter::once((0, request.root_fluid_subtype))
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:14:                    .map(|(index, child)| (index + 1, child.fluid_subtype)),
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:23:pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:29:        request.root_fluid_subtype,
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:37:            child.fluid_subtype,
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:59:    for (ordinal, subtype) in std::iter::once((0, frozen.request.root_fluid_subtype)).chain(
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:65:            .map(|(index, child)| (index + 1, child.fluid_subtype)),
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:78:        sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid)")
+crates/gameplay/durability/src/durability/item_mint.rs:204:    pub fluid_subtype: Option<u8>,
+crates/gameplay/durability/src/durability/item_mint.rs:1418:            if let Some(fluid) = entry.fluid_subtype {
+crates/gameplay/durability/src/durability/item_mint.rs:1838:    let Some(fluid) = placement.fluid_subtype.filter(|fluid| *fluid != 0) else {
+crates/gameplay/durability/src/durability/item_mint.rs:1842:        "INSERT INTO game_item_fluid_loot_mints(item_instance_id, transaction_id, fluid_subtype) \
+crates/gameplay/durability/src/durability/item_mint.rs:1851:        "INSERT INTO game_item_fluid_states(item_instance_id, world_id, fluid_subtype, \
+crates/gameplay/durability/src/durability/item_mint.rs:2234:            fluid_subtype: None,
+crates/gameplay/durability/src/durability/item_mint.rs:2252:            fluid_subtype: None,
+crates/gameplay/durability/src/durability/item_mint.rs:2263:    fn corpse_loot_binding_covers_the_fluid_subtype() {
+crates/gameplay/durability/src/durability/item_mint.rs:2266:            fluid_subtype: Some(subtype),
+crates/gameplay/durability/src/durability/item_mint.rs:2297:            fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/summer_corpse_capacity.rs:87:            fluid_subtype: None,
+crates/gameplay/durability/src/durability/item_use/carried_inventory.rs:192:                  i.quantity, i.lifecycle, k.key_number, f.fluid_subtype AS fluid \
+crates/gameplay/durability/src/durability/item_use/fluid.rs:41:    pub fluid_subtype: u8,
+crates/gameplay/durability/src/durability/item_use/fluid.rs:50:    pub fluid_subtype: u8,
+crates/gameplay/durability/src/durability/item_use/fluid.rs:105:                    let rows = sqlx::query("SELECT placement,fluid_subtype,splash_item_id FROM game_item_fluid_splashes WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND expires_at>clock_timestamp() ORDER BY placement,transaction_id LIMIT 256")
+crates/gameplay/durability/src/durability/item_use/fluid.rs:111:                            fluid_subtype: u8::try_from(row.try_get::<i16, _>("fluid_subtype")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+crates/gameplay/durability/src/durability/item_use/fluid.rs:172:                || s.fluid_subtype == 0
+crates/gameplay/durability/src/durability/item_use/fluid.rs:302:                    (SELECT f.fluid_subtype FROM game_item_fluid_states f \
+crates/gameplay/durability/src/durability/item_use/fluid.rs:331:             fluid_subtype,splash_item_id,created_at,expires_at) SELECT encode($1,'hex')::uuid,\
+crates/gameplay/durability/src/durability/item_use/fluid.rs:339:        .bind(i16::from(splash.fluid_subtype))
+crates/gameplay/durability/src/durability/item_use/fluid.rs:378:            "INSERT INTO game_item_fluid_states(item_instance_id, world_id, fluid_subtype, \
+crates/gameplay/durability/src/durability/item_use/fluid.rs:387:            "UPDATE game_item_fluid_states SET fluid_subtype = $3, \
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:486:            let fluids: Vec<(i16, bool)> = sqlx::query_as("SELECT s.fluid_subtype, EXISTS(SELECT 1 FROM game_item_corpse_container_entries e WHERE e.item_instance_id=s.item_instance_id) FROM game_item_fluid_states s JOIN game_item_fluid_loot_mints m ON m.item_instance_id=s.item_instance_id AND m.transaction_id=s.last_transaction_id AND m.fluid_subtype=s.fluid_subtype")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:598:            fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:200:            sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,game_character_uuid_v7())")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:284:                assert_eq!(sqlx::query_scalar::<_, i16>("SELECT fluid_subtype FROM game_item_fluid_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?, 1);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quick_loot.rs:221:                            fluid_subtype: None,

@@ -1,0 +1,22 @@
+{
+  "before": {
+    "coverage": {
+      "dispatch_pg_qualified": 11,
+      "not_playable": 28,
+      "supported_unqualified": 297
+    },
+    "reward_claims": 336,
+    "native_container_recipes": 67,
+    "plain_ready_claims": 220
+  },
+  "after": {
+    "coverage": {
+      "dispatch_pg_qualified": 11,
+      "not_playable": 16,
+      "supported_unqualified": 309
+    },
+    "reward_claims": 336,
+    "native_container_recipes": 73,
+    "plain_ready_claims": 228
+  }
+}

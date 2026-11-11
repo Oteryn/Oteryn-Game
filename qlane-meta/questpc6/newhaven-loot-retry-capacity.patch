@@ -1,0 +1,89 @@
+--- a/crates/gameplay/combat/src/combat/death_reward.rs
++++ b/crates/gameplay/combat/src/combat/death_reward.rs
+@@ -489,14 +489,17 @@
+         if claim.source_outputs().len() != claim.items().len() {
+             return Err(CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput));
+         }
+-        let guaranteed_count = u32::try_from(claim.items().len())
++        let mut ordinary_ordinal = u32::try_from(claim.items().len())
+             .map_err(|_| CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
+-        // Guarantee slots are stable even if an ordinary draw changes. Child
+-        // ordinals stay relative to their own parent, as in the original plan.
++        // Extra event rolls already follow the appended guarantees. Compact
++        // ordinary root slots instead of adding N to those existing positions.
+         for entry in &mut plan.entries {
+-            if entry.parent.is_none() {
+-                entry.placement_ordinal = entry.placement_ordinal.checked_add(guaranteed_count)
++            if entry.parent.is_none()
++                && !claim.source_outputs().any(|(_, source)| source == entry.draw_ordinal)
++            {
++                ordinary_ordinal = ordinary_ordinal.checked_add(1)
+                     .ok_or(CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
++                entry.placement_ordinal = ordinary_ordinal;
+             }
+         }
+         for (offset, (id, source)) in claim.source_outputs().enumerate() {
+--- a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
+@@ -1043,6 +1043,31 @@
+         }
+         state.reserved_loot_mints += extra;
+         state.extra_loot_mints.push((death, extra));
++        true
++    }
++
++    /// Top up this death's existing take and extra reservations to its frozen
++    /// exact plan, under the same scope counter lock used by take/release.
++    fn ensure_loot_mint_reservation(
++        &self,
++        death: CreatureDeathOccurrenceKey,
++        initial: usize,
++        required: usize,
++    ) -> bool {
++        let mut state = self.state();
++        if !state.in_flight.iter().any(|(held, _, _, _)| *held == death) {
++            return false;
++        }
++        let held = initial + state.extra_loot_mints.iter()
++            .filter(|(held, _)| *held == death).map(|(_, extra)| *extra).sum::<usize>();
++        let extra = required.saturating_sub(held);
++        if check_inflight_loot_mint_capacity(state.reserved_loot_mints, extra).is_err() {
++            return false;
++        }
++        state.reserved_loot_mints += extra;
++        if extra > 0 {
++            state.extra_loot_mints.push((death, extra));
++        }
+         true
+     }
+
+@@ -2255,6 +2280,7 @@
+                 admission: self,
+                 fence,
+                 event_rates: taken.event_rates,
++                initial_loot_mints: taken.loot_mints,
+             }
+             .settle(entry, taken.inflight_before())
+             .await;
+@@ -2354,6 +2380,7 @@
+     }
+ }
+ struct DurableKillSettle<'s, 'a, 'f, 'g> {
++    initial_loot_mints: usize,
+     event_rates: oteryn_gameplay_foundation::scheduled_events::EventRates,
+     admission: &'s ComposedFreshAdmission<'a, 'f, 'g>,
+     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+@@ -2837,11 +2864,11 @@
+             };
+         };
+         // The cached first table can contain more ordinary rolls than this
+-        // retry's live modifiers reserved. Charge the full bounded plan as extra;
++        // retry's live modifiers reserved. Charge only its positive shortfall;
+         // the existing take and extras are both released on every requeue/end.
+         if tutorial_corruptor.is_some()
+             && !admission.states.attack.lock().await.kills()
+-                .reserve_extra_loot_mints(entry.facts.death,
++                .ensure_loot_mint_reservation(entry.facts.death, self.initial_loot_mints,
+                     plan_creature_loot(loot_plan_seed(entry.facts.death), &row.loot_table_ref, &loot_table)
+                         .map_or(oteryn_gameplay_items::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX, |plan| plan.entries.len()))
+         {

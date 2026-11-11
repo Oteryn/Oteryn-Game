@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/fibula-key-first",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "fee": {
+        "gold": 2000,
+        "include_bank": true
+      },
+      "give": {
+        "item": "oteryn:item.tibia.i2968",
+        "count": 1,
+        "contents": [],
+        "key_number": 3940
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here it is."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dermot.lua:66-81:sha256:efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/fibula-key-repeat",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "fee": {
+        "gold": 2000,
+        "include_bank": true
+      },
+      "repeatable": true,
+      "give": {
+        "item": "oteryn:item.tibia.i2968",
+        "count": 1,
+        "contents": [],
+        "key_number": 3940
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here it is."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dermot.lua:66-81:sha256:efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/fibula-complete",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/fibula/cavern_kills",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        }
+      ],
+      "completes": true,
+      "minimum_level": 50,
+      "required_claims": [
+        "oteryn:reward-claim.kv.deeperfibula1",
+        "oteryn:reward-claim.kv.deeperfibula2",
+        "oteryn:reward-claim.kv.deeperfibula3",
+        "oteryn:reward-claim.kv.deeperfibula4",
+        "oteryn:reward-claim.kv.deeperfibula5",
+        "oteryn:reward-claim.quest.key.id3980"
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have completed the deeper Fibula expedition. The recovered equipment is yours."
+      ],
+      "sources": [
+        "owner:questpc6:chosen-recipe:tools/content-schema/quest-authoring/samples/completion242/recipes.json:6863-7011:sha256:6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+        "game:content/quests/definitions/quests-00000-00099.json:1#/records/20/definition/claims:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6"
+      ]
+    }
+  ]
+}

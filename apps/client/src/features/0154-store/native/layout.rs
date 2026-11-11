@@ -103,7 +103,14 @@ pub(super) unsafe fn create(hwnd: HWND) -> Layout {
             [730, 300, 280, 110],
             WS_BORDER | WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
         );
-        control(hwnd, "BUTTON", "Toggle Cosmetic Tokens / coins", 17, [730, 415, 280, 28], WS_TABSTOP);
+        control(
+            hwnd,
+            "BUTTON",
+            "Toggle Cosmetic Tokens / coins",
+            17,
+            [730, 415, 280, 28],
+            WS_TABSTOP,
+        );
         let buy = control(
             hwnd,
             "BUTTON",

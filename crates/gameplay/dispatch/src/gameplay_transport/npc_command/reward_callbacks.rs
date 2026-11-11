@@ -44,7 +44,8 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
 ) -> Option<Step> {
-    let callbacks = reward_callbacks::load().ok()?;
+    let catalogue = admission.quest_catalogue.as_deref()?;
+    let callbacks = reward_callbacks::load_for(catalogue).ok()?;
     #[cfg(test)]
     let callbacks = admission
         .states
@@ -64,11 +65,40 @@ pub(super) fn prepare(
         return None;
     }
     offers.offers.extend(authored.offers);
+    let chosen: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/chosen-reward-offers.json"
+    ))
+    .ok()?;
+    if chosen.schema != 1 {
+        return None;
+    }
+    offers.offers.extend(chosen.offers);
     if offers.schema != 1
         || offers.offers.len() > 512
         || offers.offers.iter().any(|o| o.requires.len() > 8)
     {
         return None;
+    }
+    let context = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent,
+    )?;
+    let text = intent.text.trim().to_ascii_lowercase();
+    if text == "no"
+        || (!matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
+            && offers
+                .offers
+                .iter()
+                .any(|offer| offer.npc == context.2 && offer.keywords.contains(&text)))
+    {
+        let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
+        sessions
+            .get_mut(&command.game_session_id)?
+            .quest_dialogue
+            .reward_request = (text != "no").then_some(context);
     }
     let catalogue = admission.quest_catalogue.as_deref()?;
     quest_dialogue::prepare(
@@ -128,6 +158,22 @@ pub(super) fn prepare(
                     reply: offer.reply.clone(),
                 });
             }
+            // Earlier stages may share the terminal reward's keyword. Grizzly's
+            // dedicated native dialogue and admitted programmes retain those stages;
+            // the locked reward writer still proves every source predicate.
+            if context.2 == oteryn_gameplay_quests::quest::grizzly_adams::NPC
+                || oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
+                    .ok()
+                    .and_then(|source| {
+                        source
+                            .admitted_for_npc(&context.2, catalogue)
+                            .ok()
+                            .flatten()
+                    })
+                    .is_some()
+            {
+                return None;
+            }
             // A unique exchange owns its exact keyword even before eligibility.
             // Let the locked writer return the stage refusal, rather than falling
             // through to an unrelated legacy dialogue with the same text.
@@ -148,4 +194,47 @@ pub(super) fn prepare(
             })
         },
     )
+}
+
+/// A recognized reward confirmation may not fall through to ordinary dialogue
+/// when every native quest owner declined it. Greeting words retain their owner.
+pub(super) fn unhandled_confirmation(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> bool {
+    let text = intent.text.trim().to_ascii_lowercase();
+    if matches!(text.as_str(), "hi" | "hello" | "bye" | "farewell") {
+        return false;
+    }
+    let Some(context) = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent,
+    ) else {
+        return false;
+    };
+    if admission.has_pending_paid_confirmation(command, intent, &context) {
+        return false;
+    }
+    let Ok(sessions) = admission.states.npc_conversations.sessions.lock() else {
+        return true;
+    };
+    let Some(state) = sessions.get(&command.game_session_id) else {
+        return false;
+    };
+    let topic = state.quest_dialogue.topic(&context).number;
+    let requested = state.quest_dialogue.reward_request.as_ref() == Some(&context);
+    drop(sessions);
+    reward_callbacks::load().is_ok_and(|callbacks| {
+        callbacks.iter().any(|callback| {
+            callback.npc == context.2
+                && (callback.topic == topic || requested)
+                && callback.keywords.contains(&text)
+        })
+    })
 }

@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_corruptor quest_world_callbacks::literal_uses:: quest_world_callbacks_stag_fixture_refreshes_security_after_runtime_publication catalogue_npc_father_ catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal viola_mission_yes viola_book_postgres_real_use_repeat_replay_refusal_and_fences --test-threads=2 --nocapture",
+  "exit": 101,
+  "duration_seconds": 1140.391
+}

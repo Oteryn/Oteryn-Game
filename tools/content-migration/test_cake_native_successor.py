@@ -50,8 +50,8 @@ class CakeNativeSuccessorTests(unittest.TestCase):
                         successor.read_project_document(root, member['locator'])
 
     def test_actual_generated_provider_contains_complete_canonical_cake(self):
-        baseline = importer.baseline_outputs(importer.ROOT)
-        result = compose.compose(importer.ROOT, baseline, current.outputs(importer.ROOT, baseline))
+        import register_spell_families
+        result = register_spell_families.outputs(importer.ROOT)
         creatures = json.loads(result[compose.CREATURES])
         cake, = [row for row in creatures['records']
                  if row['profile']['target']['key'] == 'oteryn:creature.cake_golem']
@@ -84,15 +84,15 @@ class CakeNativeSuccessorTests(unittest.TestCase):
         self.assertEqual(undefined['data']['profile']['damage_type'], 'undefined')
 
     def test_substituted_empty_cake_loot_is_rejected(self):
-        original_read = successor.read_canonical
+        original_read = successor.read_derived_shard
         def substituted(path):
-            document, pin = original_read(path)
+            document = original_read(path)
             if path.parent == importer.ROOT / 'content/loot':
                 for row in document['records']:
                     if row['definition']['identity']['key'] == 'oteryn:loot.creature.cake_golem':
                         row['definition']['entries'] = []
-            return document, pin
-        with patch.object(successor, 'read_canonical', side_effect=substituted):
+            return document
+        with patch.object(successor, 'read_derived_shard', side_effect=substituted):
             with self.assertRaisesRegex(ValueError, 'CANONICAL_LOOT_MISMATCH'):
                 successor.loot_successor(importer.ROOT, {'records': []})
 

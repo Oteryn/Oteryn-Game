@@ -26,10 +26,12 @@ mod batches;
 mod boss_dialogue;
 #[path = "grizzly_npc/progression.rs"]
 mod progression;
+#[path = "grizzly_npc/questpc8_campaign.rs"]
+pub(super) mod questpc8_campaign;
 #[path = "grizzly_npc/shop.rs"]
 mod shop;
 #[path = "grizzly_npc/wire.rs"]
-mod wire;
+pub(super) mod wire;
 use shop::rank_shop;
 
 #[test]
@@ -57,6 +59,54 @@ fn grizzly_npc_wire_task_xp_crosses_level_50_and_unlocks_live_promotion() -> Tes
     postgres_case(4)
 }
 
+#[test]
+fn questpc8_grizzly_production_placement_native_join_and_task() -> TestResult {
+    let started = std::time::Instant::now();
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e::scenario_thread::run("questpc8-grizzly-placement", || scenario(6))?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED questpc8_grizzly_production_placement_native_join_and_task duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+fn production_placement() -> TestResult<NpcPlacement> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let index: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/world/npc-placements/index.json"),
+    )?)?;
+    let mut placements = Vec::new();
+    for shard in index["shards"].as_array().ok_or("NPC shards")? {
+        let document: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            root.join(shard.as_str().ok_or("NPC shard path")?),
+        )?)?;
+        for record in document["records"].as_array().ok_or("NPC records")? {
+            let d = &record["declaration"];
+            if d["npc"] == quest::NPC {
+                assert_eq!(d["direction"], "north");
+                let c = &d["cell"];
+                placements.push(NpcPlacement {
+                    x: u16::try_from(c["x"].as_u64().ok_or("NPC x")?)?,
+                    y: u16::try_from(c["y"].as_u64().ok_or("NPC y")?)?,
+                    floor: -i8::try_from(c["floor"].as_u64().ok_or("NPC floor")?)?,
+                    direction: MovementFacing::North,
+                });
+            }
+        }
+    }
+    assert_eq!(
+        placements.len(),
+        1,
+        "production world must place one Grizzly Adams"
+    );
+    let p = placements.pop().ok_or("Grizzly placement")?;
+    assert_eq!((p.x, p.y, p.floor), (32693, 32767, -6));
+    Ok(p)
+}
+
 fn postgres_case(case: u8) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         eprintln!("GRIZZLY_NPC_POSTGRES_CASE_SKIPPED no_admin_url");
@@ -78,6 +128,14 @@ fn scenario(case: u8) -> TestResult {
         reset();
         let h = Harness::create_with_admission_seed(admin, "grizzly_npc_wire", true, false).await?;
         prepare_current_session(&h).await?;
+        let production = if case == 6 {
+            eprintln!(
+                "POSTGRES_CASE_STARTED questpc8_grizzly_production_placement after PostgreSQL fixture initialization"
+            );
+            Some(production_placement()?)
+        } else {
+            None
+        };
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -90,7 +148,20 @@ fn scenario(case: u8) -> TestResult {
         let (controller, pin) =
             super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
         let active = controller.active().ok_or("active content")?;
-        let bundle = wire::world(world)?;
+        let bundle = if case == 5 {
+            super::grizzly_boss::world::source_rooms(
+                [1, 3, 19]
+                    .into_iter()
+                    .map(|id| quest::boss(id).ok_or("campaign boss"))
+                    .collect::<Result<Vec<_>, _>>()?,
+            )?
+        } else {
+            if let Some(ref placement) = production {
+                wire::world_at(world, Some(placement))?
+            } else {
+                wire::world(world)?
+            }
+        };
         let cells = bundle
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -133,14 +204,29 @@ fn scenario(case: u8) -> TestResult {
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
-            bundle.frame_binding_digest(world),
+            if case == 5 {
+                pin.frame_binding().digest()
+            } else {
+                bundle.frame_binding_digest(world)
+            },
             bundle.map_revision_digest(),
-            (2, 0, 7),
+            if case == 5 {
+                (32607, 32714, 8)
+            } else if let Some(p) = production {
+                (
+                    i32::from(p.x) - 1,
+                    i32::from(p.y),
+                    i16::from(p.floor.unsigned_abs()),
+                )
+            } else {
+                (2, 0, 7)
+            },
         );
-        let deps = Dependencies::with_content(
+        let deps = Dependencies::with_content_and_capacity(
             channel_pin,
             crate::content::qualify_native_entry_room(world).map_err(debug)?,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
+            if case == 5 { 5 } else { 2 },
         )?;
         let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
         h.root
@@ -158,6 +244,15 @@ fn scenario(case: u8) -> TestResult {
             Some(h.root.clone()),
         );
         let mut owner = deps.owner(&h, &authority);
+        if case == 5 {
+            super::grizzly_boss::world::activate(
+                &h,
+                active.identity().server_artifact_digest(),
+                active.identity().client_artifact_digest(),
+                pin.frame_binding().digest(),
+            )
+            .await?;
+        }
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
         let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -275,12 +370,12 @@ fn scenario(case: u8) -> TestResult {
                     &NpcPlacementTable {
                         npcs: vec![NpcPlacements {
                             key: quest::NPC.into(),
-                            placements: vec![NpcPlacement {
-                                x: u16::try_from(at.x + 1)?,
+                            placements: vec![production.unwrap_or(NpcPlacement {
+                                x: u16::try_from(at.x + if case == 5 { -1 } else { 1 })?,
                                 y: u16::try_from(at.y)?,
                                 floor: -i8::try_from(at.floor)?,
                                 direction: MovementFacing::South,
-                            }],
+                            })],
                         }],
                     },
                     |_| true,
@@ -371,7 +466,26 @@ fn scenario(case: u8) -> TestResult {
         }
         owner.premium_coordinator = Some(&premium);
         owner.admit_premium(id(40), admitted.game_session_id);
-        if case == 4 {
+        if case == 6 {
+            wire::talk(
+                &mut owner,
+                &mut admitted,
+                npc,
+                &[(3, "hi"), (4, "crocodiles"), (5, "yes"), (5, "yes")],
+            )
+            .await?;
+            assert_eq!(
+                value(&owner, &authority, quest::QUEST_STORAGE_BASE + 1).await?,
+                1
+            );
+            assert_eq!(
+                value(&owner, &authority, quest::KILL_COUNTER_BASE + 1).await?,
+                0
+            );
+        } else if case == 5 {
+            questpc8_campaign::exercise(&mut owner, &mut admitted, npc, &h, &authority, &journal)
+                .await?;
+        } else if case == 4 {
             progression::live_level(&mut owner, &mut admitted, npc, &h, &authority, initial_xp)
                 .await?;
         } else if case == 3 {

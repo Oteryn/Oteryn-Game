@@ -20,7 +20,12 @@ pub(super) unsafe fn handle(
     unsafe {
         for (id, note) in actions {
             if id == 17 && note == 0 {
-                let tokens = !link.store_panel().catalogue.as_ref().and_then(|p| p.offers.first()).is_some_and(|o| o.currency == "COSMETIC_TOKEN");
+                let tokens = !link
+                    .store_panel()
+                    .catalogue
+                    .as_ref()
+                    .and_then(|p| p.offers.first())
+                    .is_some_and(|o| o.currency == "COSMETIC_TOKEN");
                 link.store_payment(tokens);
                 continue;
             }
@@ -79,12 +84,7 @@ pub(super) unsafe fn handle(
                     ) == IDYES
                     && let Some(quote) = &quote
                 {
-                    link.store_confirm_purchase(
-                        quote,
-                        &text(name),
-                        &text(sex),
-                        &text(identity),
-                    );
+                    link.store_confirm_purchase(quote, &text(name), &text(sex), &text(identity));
                 }
                 continue;
             }

@@ -44,6 +44,57 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_read_only_step_remote_teleport_is_a_closed_predicate(self):
+        row = callback('formogar_mine_hoist', 'hoist-remote')
+        row['return_on_failure'] = True
+        row['storage'] = [{'track': 'oteryn:quest-progress/fixture/instruction',
+                           'minimum': 1, 'maximum': 1, 'set': 1, 'read_only': True}]
+        row['remote_teleport'] = {
+            'position': {'x': 32156, 'y': 31125, 'floor': -10},
+            'appearance': 2772,
+            'destination': {'x': 32157, 'y': 31125, 'floor': -11},
+        }
+        tool.validate_callback(row, 'formogar_mine_hoist')
+        for invalid in ('appearance', 'position', 'destination', 'no_gate', 'mutation', 'no_default', 'no_return'):
+            bad = copy.deepcopy(row)
+            if invalid == 'appearance':
+                bad['remote_teleport']['appearance'] = 0
+            elif invalid in ('position', 'destination'):
+                bad['remote_teleport'][invalid]['floor'] = 1
+            elif invalid == 'no_gate':
+                bad['storage'] = []
+            elif invalid == 'mutation':
+                bad['storage'][0]['preserve'] = True
+            elif invalid == 'no_return':
+                bad['return_on_failure'] = False
+            else:
+                bad['teleport'] = None
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                tool.validate_callback(bad, 'formogar_mine_hoist')
+
+    def test_passage_state_guard_requires_a_reversible_removal_lever(self):
+        row = callback('cults_of_tibia', 'guarded-passage')
+        row.update(trigger='use', lever=[2772, 2773], reversible=True)
+        row['passages'] = [{
+            'position': {'x': 101, 'y': 200, 'floor': -7},
+            'appearance': 389, 'require_state': True,
+        }]
+        tool.validate_callback(row, 'cults_of_tibia')
+        for invalid in ('non_boolean', 'replacement', 'one_way', 'no_lever', 'step'):
+            bad = copy.deepcopy(row)
+            if invalid == 'non_boolean':
+                bad['passages'][0]['require_state'] = 1
+            elif invalid == 'replacement':
+                bad['passages'][0]['replacement'] = 390
+            elif invalid == 'one_way':
+                bad['reversible'] = False
+            elif invalid == 'no_lever':
+                bad['lever'] = None
+            else:
+                bad['trigger'] = 'step_in'
+                bad['lever'] = None
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                tool.validate_callback(bad, 'cults_of_tibia')
     def test_callback_source_presentation_is_bounded_and_validated(self):
         row = callback('waterfall', 'waterfall-presentation')
         row['facing'] = 2

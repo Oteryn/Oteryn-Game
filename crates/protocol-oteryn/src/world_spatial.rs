@@ -26,6 +26,9 @@ pub const MAX_STEP_RESULT_BYTES: usize = 4;
 pub const MAX_PACED_STEP_RESULT_BYTES: usize = 8;
 /// The largest `step_wait_ms`: the step-speed table maximum (speed 10, ground speed 1000).
 pub const MAX_STEP_WAIT_MS: u32 = 111_150;
+/// Opt-in eight-neighbour native movement; cardinal facing/state payloads remain unchanged.
+pub const CAPABILITY_DIAGONAL_MOVEMENT_V1: u32 = 371;
+pub const MAX_DIAGONAL_STEP_WAIT_MS: u32 = MAX_STEP_WAIT_MS * 3;
 /// A `MOVED` step duration is a whole number of server beats.
 pub const STEP_WAIT_BEAT_MS: u32 = 50;
 pub const MAX_WORLD_SPATIAL_PAYLOAD_BYTES: usize = 64;
@@ -43,6 +46,19 @@ pub enum StepDirection {
     East = 2,
     South = 3,
     West = 4,
+    NorthEast = 5,
+    SouthEast = 6,
+    SouthWest = 7,
+    NorthWest = 8,
+}
+
+impl StepDirection {
+    pub const fn is_diagonal(self) -> bool {
+        matches!(
+            self,
+            Self::NorthEast | Self::SouthEast | Self::SouthWest | Self::NorthWest
+        )
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -146,14 +162,34 @@ fn read_single_enum(input: &[u8], maximum: usize) -> Result<u64, WorldSpatialErr
     value.ok_or(WorldSpatialError::Malformed)
 }
 
+/// Legacy profile: diagonal enum values still fail closed.
 pub fn decode_step_intent(payload: &[u8]) -> Result<StepDirection, WorldSpatialError> {
+    decode_step_intent_profile(payload, false)
+}
+
+/// Diagonal values require the negotiated native diagonal movement profile.
+pub fn decode_step_intent_profile(
+    payload: &[u8],
+    diagonals: bool,
+) -> Result<StepDirection, WorldSpatialError> {
     match read_single_enum(payload, MAX_STEP_INTENT_BYTES)? {
         1 => Ok(StepDirection::North),
         2 => Ok(StepDirection::East),
         3 => Ok(StepDirection::South),
         4 => Ok(StepDirection::West),
+        5 if diagonals => Ok(StepDirection::NorthEast),
+        6 if diagonals => Ok(StepDirection::SouthEast),
+        7 if diagonals => Ok(StepDirection::SouthWest),
+        8 if diagonals => Ok(StepDirection::NorthWest),
         _ => Err(WorldSpatialError::Malformed),
     }
+}
+
+pub fn decode_step_intent_selected(
+    selected: &[u32],
+    payload: &[u8],
+) -> Result<StepDirection, WorldSpatialError> {
+    decode_step_intent_profile(payload, selected.contains(&CAPABILITY_DIAGONAL_MOVEMENT_V1))
 }
 
 pub fn encode_step_intent(direction: StepDirection) -> Vec<u8> {
@@ -172,15 +208,23 @@ pub fn encode_step_result(disposition: StepDisposition) -> Vec<u8> {
 }
 
 /// Whether `result` may be sent to a session; `paced` is whether it selected capability 13.
-fn check_step_result(result: StepResult, paced: bool) -> Result<(), WorldSpatialError> {
+fn check_step_result(
+    result: StepResult,
+    paced: bool,
+    diagonals: bool,
+) -> Result<(), WorldSpatialError> {
+    let maximum = if diagonals {
+        MAX_DIAGONAL_STEP_WAIT_MS
+    } else {
+        MAX_STEP_WAIT_MS
+    };
     let wait = result.step_wait_ms;
     let valid = match result.disposition {
         StepDisposition::Blocked | StepDisposition::Rejected => wait == 0,
         StepDisposition::Moved => {
-            wait == 0
-                || (paced && wait <= MAX_STEP_WAIT_MS && wait.is_multiple_of(STEP_WAIT_BEAT_MS))
+            wait == 0 || (paced && wait <= maximum && wait.is_multiple_of(STEP_WAIT_BEAT_MS))
         }
-        StepDisposition::TooEarly => paced && wait <= MAX_STEP_WAIT_MS,
+        StepDisposition::TooEarly => paced && wait <= maximum,
     };
     if valid {
         Ok(())
@@ -197,7 +241,15 @@ pub fn encode_step_result_paced(
     result: StepResult,
     paced: bool,
 ) -> Result<Vec<u8>, WorldSpatialError> {
-    check_step_result(result, paced)?;
+    encode_step_result_profile(result, paced, false)
+}
+
+pub fn encode_step_result_profile(
+    result: StepResult,
+    paced: bool,
+    diagonals: bool,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    check_step_result(result, paced, diagonals)?;
     let mut output = encode_step_result(result.disposition);
     if result.step_wait_ms != 0 {
         push_tag(&mut output, 2, 0);
@@ -230,6 +282,14 @@ pub fn decode_step_result_paced(
 pub fn decode_step_result_receipt(
     payload: &[u8],
     paced: bool,
+) -> Result<StepResult, WorldSpatialError> {
+    decode_step_result_profile(payload, paced, false)
+}
+
+pub fn decode_step_result_profile(
+    payload: &[u8],
+    paced: bool,
+    diagonals: bool,
 ) -> Result<StepResult, WorldSpatialError> {
     let maximum = if paced {
         MAX_PACED_STEP_RESULT_BYTES
@@ -268,7 +328,7 @@ pub fn decode_step_result_receipt(
         disposition,
         step_wait_ms,
     };
-    check_step_result(result, paced)?;
+    check_step_result(result, paced, diagonals)?;
     Ok(result)
 }
 
@@ -373,12 +433,77 @@ pub fn encode_step_outcome(
         disposition,
         step_wait_ms,
     };
-    encode_step_result_paced(result, true).unwrap_or_else(|_| encode_step_result(disposition))
+    encode_step_result_profile(
+        result,
+        true,
+        selected_capabilities.contains(&CAPABILITY_DIAGONAL_MOVEMENT_V1),
+    )
+    .unwrap_or_else(|_| encode_step_result(disposition))
 }
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+
+    #[test]
+    fn diagonal_profile_preserves_legacy_wire_and_pacing_bounds() {
+        for direction in [
+            StepDirection::NorthEast,
+            StepDirection::SouthEast,
+            StepDirection::SouthWest,
+            StepDirection::NorthWest,
+        ] {
+            let wire = encode_step_intent(direction);
+            assert!(decode_step_intent(&wire).is_err());
+            assert!(decode_step_intent_selected(&[], &wire).is_err());
+            assert_eq!(
+                decode_step_intent_selected(&[CAPABILITY_DIAGONAL_MOVEMENT_V1], &wire),
+                Ok(direction)
+            );
+        }
+        for bad in [
+            vec![],
+            vec![8, 0],
+            vec![8, 9],
+            vec![8, 5, 8, 5],
+            vec![16, 5],
+        ] {
+            assert!(decode_step_intent_profile(&bad, true).is_err());
+        }
+        let result = StepResult {
+            disposition: StepDisposition::Moved,
+            step_wait_ms: MAX_DIAGONAL_STEP_WAIT_MS,
+        };
+        assert!(encode_step_result_paced(result, true).is_err());
+        let wire = encode_step_result_profile(result, true, true).expect("diagonal receipt");
+        assert!(decode_step_result_receipt(&wire, true).is_err());
+        assert!(decode_step_result_profile(&wire, false, true).is_err());
+        assert_eq!(decode_step_result_profile(&wire, true, true), Ok(result));
+        for duration in [MAX_DIAGONAL_STEP_WAIT_MS + 1, MAX_DIAGONAL_STEP_WAIT_MS - 1] {
+            assert!(
+                encode_step_result_profile(
+                    StepResult {
+                        step_wait_ms: duration,
+                        ..result
+                    },
+                    true,
+                    true
+                )
+                .is_err()
+            );
+        }
+        assert_eq!(
+            encode_step_outcome(
+                &[
+                    CAPABILITY_PACED_MOVEMENT_V1,
+                    CAPABILITY_DIAGONAL_MOVEMENT_V1
+                ],
+                result.disposition,
+                result.step_wait_ms
+            ),
+            wire
+        );
+    }
     use super::*;
     use serde_json::Value;
 

@@ -16,6 +16,13 @@ use tokio::io::AsyncWriteExt;
 pub(super) fn world(
     world: crate::foundation::WorldId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    world_at(world, None)
+}
+
+pub(super) fn world_at(
+    world: crate::foundation::WorldId,
+    placement: Option<&NpcPlacement>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut bundle = oteryn_world_bundle::bundle::read(&bytes)?;
     bundle.manifest.palette.truncate(1);
@@ -26,6 +33,42 @@ pub(super) fn world(
             tile.items.retain(|item| item.palette == 0);
         }
     }
+    let start = if let Some(p) = placement {
+        let dx = p.x.checked_sub(3).ok_or("placement x")?;
+        for sector in &mut bundle.sectors {
+            sector.floor = p.floor;
+            for tile in &mut sector.tiles {
+                tile.x += dx;
+                tile.y += p.y;
+            }
+            sector.sx = sector.tiles[0].x / 32;
+            sector.sy = sector.tiles[0].y / 32;
+            assert!(
+                sector
+                    .tiles
+                    .iter()
+                    .all(|t| t.x / 32 == sector.sx && t.y / 32 == sector.sy)
+            );
+        }
+        bundle.manifest.world = oteryn_world_bundle::bundle::Extent {
+            min_x: (p.x / 32) * 32,
+            min_y: (p.y / 32) * 32,
+            max_x: (p.x / 32) * 32 + 32,
+            max_y: (p.y / 32) * 32 + 32,
+            floors: vec![p.floor],
+        };
+        crate::map::overlay::TilePos {
+            x: p.x - 1,
+            y: p.y,
+            floor: p.floor,
+        }
+    } else {
+        crate::map::overlay::TilePos {
+            x: 2,
+            y: 0,
+            floor: -7,
+        }
+    };
     let bytes =
         oteryn_world_bundle::writer::write(&bundle.manifest, &bundle.sectors, &Default::default())?;
     pins.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
@@ -35,11 +78,7 @@ pub(super) fn world(
         &crate::map::boot::BootPins {
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
-            start: crate::map::overlay::TilePos {
-                x: 2,
-                y: 0,
-                floor: -7,
-            },
+            start,
         },
         world,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
@@ -50,7 +89,7 @@ pub(super) fn world(
 
 /// Keep one conversation for a complete choice/confirmation sequence. A new connection
 /// greets again; session command receipts still deduplicate repeated command ids.
-pub(super) async fn talk(
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -67,7 +106,7 @@ pub(super) async fn talk(
     .await
 }
 
-pub(super) async fn talk_refused(
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn talk_refused(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
