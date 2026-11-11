@@ -212,6 +212,11 @@ const INVENTORY: &[Entry] = &[
                 "gameplay_transport/postgres_tests/srx3_megalomania_step.rs",
                 2,
             ),
+            // The Outburst diagnostic requalifies its current source context before reading it.
+            (
+                "gameplay_transport/postgres_tests/srx3_native_source_cast.rs",
+                1,
+            ),
             ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
             ("gameplay_transport/postgres_tests/srx3_rotten_portal.rs", 1),
             (
@@ -1058,6 +1063,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/primal_menace_native.rs",
         1,
     ),
+    // The proficiency fixture binds its Bundle combat view and withholds qualification.
+    (
+        "gameplay_transport/postgres_tests/proficiency_modification.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
     // QUESTPC4 source callback and reset fixtures bind their explicit source room.
     (
@@ -1072,6 +1082,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     // S10 source NPC fixtures supply combat only; qualified room remains None.
     ("gameplay_transport/postgres_tests/s10_travel.rs", 1),
     ("gameplay_transport/postgres_tests/s10_wandering.rs", 1),
+    // Soul War's Bundle fixture supplies combat only, never qualification.
+    ("gameplay_transport/postgres_tests/soul_war.rs", 1),
     // I14 special-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/special_potions.rs", 1),
     // Soulpit's production owner and PG fixture both withhold qualification.

@@ -25,6 +25,60 @@ PIN = '9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d'
 PROVENANCE = 'crystal-9f5a72c-quest-rewards-v1'
 DECISION = 'owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06'
 
+# These independently registered documents retain their existing greeting owner.
+# Zalamon's chosen opening is explicitly authored; M10 and M13 retain source text.
+REWARD_GREETING_OWNERS = {
+    'oteryn:npc.zalamon': 'content/dialogues/quests/chosen-reward-greetings.json',
+    'oteryn:npc.henricus': 'content/dialogues/quests/qnpcfx-m10-greetings.json',
+    'oteryn:npc.rafzan': 'content/dialogues/quests/m13-goblin-greetings.json',
+}
+
+
+def reward_greetings(callbacks, inputs, *, root=None):
+    root = ROOT if root is None else root
+    owners = {}
+    for path in sorted(set(REWARD_GREETING_OWNERS.values())):
+        try:
+            document = json.loads((root / path).read_bytes())
+        except (OSError, ValueError) as error:
+            raise ValueError('reward greeting owner document: ' + path) from error
+        if not isinstance(document, dict) or document.get('schema') != 1 or not isinstance(document.get('npcs'), list):
+            raise ValueError('reward greeting owner schema: ' + path)
+        for row in document['npcs']:
+            if not isinstance(row, dict) or not isinstance(row.get('npc'), str):
+                raise ValueError('reward greeting owner row: ' + path)
+            npc = row['npc']
+            if npc not in REWARD_GREETING_OWNERS:
+                continue
+            if REWARD_GREETING_OWNERS[npc] != path or npc in owners:
+                raise ValueError('reward greeting owner conflict: ' + npc)
+            if any(not isinstance(row.get(field), str) or not row[field] for field in ('greet', 'farewell', 'walkaway')):
+                raise ValueError('reward greeting owner payload: ' + npc)
+            owners[npc] = path
+    if set(owners) != set(REWARD_GREETING_OWNERS):
+        raise ValueError('reward greeting owner missing: ' + ', '.join(sorted(set(REWARD_GREETING_OWNERS) - set(owners))))
+
+    greetings = []
+    npcs = {c['npc'] for c in callbacks} | {'oteryn:npc.' + npc for npc in ('alesar', 'yaman', 'haroun', 'nah_bob')}
+    for npc in sorted(npcs - owners.keys()):
+        path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
+        messages={}
+        citations=[]
+        for field,constant in [('greet','GREET'),('farewell','FAREWELL'),('walkaway','WALKAWAY')]:
+            matches=list(re.finditer(r'npcHandler:setMessage\(MESSAGE_'+constant+r',\s*"([^"\n]*)"\)',inputs.get(path,inputs['data/npclib/npc_system/npc_handler.lua']).decode()))
+            origin=path
+            # Conditional NPC messages belong to their functional selectors.
+            # Use the source handler's neutral default when no unique static message exists.
+            if len(matches)!=1:
+                origin='data/npclib/npc_system/npc_handler.lua'
+                matches=list(re.finditer(r'\[MESSAGE_'+constant+r'\]\s*=\s*"([^"\n]*)"',inputs[origin].decode()))
+            if len(matches)!=1: raise ValueError('ambiguous NPC greeting '+npc+field)
+            messages[field]=matches[0].group(1)
+            line=inputs[origin][:matches[0].start()].count(b'\n')+1
+            citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
+        greetings.append({'npc':npc,**messages,'sources':citations})
+    return greetings
+
 
 def encoded(value):
     return (json.dumps(value, ensure_ascii=False, indent=2) + '\n').encode()
@@ -1071,24 +1125,7 @@ def build():
         'bags':[{'constant':'QENGINE_GNOMISH_SUPPLY','bag':'oteryn:item.tibia.i15698','playable':True,
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
-    greetings=[]
-    for npc in sorted({c['npc'] for c in callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks} | {'oteryn:npc.'+npc for npc in ('alesar','yaman','haroun','nah_bob')}):
-        path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
-        messages={}
-        citations=[]
-        for field,constant in [('greet','GREET'),('farewell','FAREWELL'),('walkaway','WALKAWAY')]:
-            matches=list(re.finditer(r'npcHandler:setMessage\(MESSAGE_'+constant+r',\s*"([^"\n]*)"\)',inputs.get(path,inputs['data/npclib/npc_system/npc_handler.lua']).decode()))
-            origin=path
-            # Conditional NPC messages belong to their functional selectors.
-            # Use the source handler's neutral default when no unique static message exists.
-            if len(matches)!=1:
-                origin='data/npclib/npc_system/npc_handler.lua'
-                matches=list(re.finditer(r'\[MESSAGE_'+constant+r'\]\s*=\s*"([^"\n]*)"',inputs[origin].decode()))
-            if len(matches)!=1: raise ValueError('ambiguous NPC greeting '+npc+field)
-            messages[field]=matches[0].group(1)
-            line=inputs[origin][:matches[0].start()].count(b'\n')+1
-            citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
-        greetings.append({'npc':npc,**messages,'sources':citations})
+    greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))

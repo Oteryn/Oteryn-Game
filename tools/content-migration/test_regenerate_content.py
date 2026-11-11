@@ -531,6 +531,59 @@ def downstream_quest_commands():
     ))
 
 
+def test_rotten_death_witnesses_follow_final_native_provider_before_consumers() -> None:
+    native = ("python3", "tools/content-migration/register_spell_families.py")
+    witness = ("python3", "tools/content-schema/native-gameplay/build_srx3_rotten_blood_witness.py")
+    death = ("python3", "tools/content-schema/native-gameplay/build_srx3_rotten_death_events.py", "--refresh-native-pin")
+    rooms = ("python3", "tools/content-schema/quest-authoring/grizzly_rooms.py")
+    check = ("python3", "fixture/final_check.py", "--check")
+
+    def require_final_native(command, events):
+        if command == witness:
+            assert native in events[:-1], "Rotten witness requires the final native provider"
+        if command == death:
+            assert events[-2] == witness, "death pin requires the strict Rotten witness first"
+        if command == rooms:
+            assert witness in events[:-1] and death in events[:-1], "consumers need both fresh Rotten pins"
+
+    for checks in (False, True):
+        events = []
+        assert full_generation_trace(events, require_final_native, checks=checks) == 0
+        assert events.count(witness) == events.count(death) == 1
+        final_native = max(i for i, command in enumerate(events) if command == native)
+        assert final_native < events.index(witness) < events.index(death) < events.index(rooms)
+        assert not any("--source-root" in command or "--tree" in command for command in events)
+        if checks:
+            assert events.index(death) < events.index(check)
+
+
+def test_rotten_death_witness_refusal_stops_every_later_consumer() -> None:
+    chain = (
+        ("python3", "tools/content-migration/register_spell_families.py"),
+        ("python3", "tools/content-schema/native-gameplay/build_srx3_rotten_blood_witness.py"),
+        ("python3", "tools/content-schema/native-gameplay/build_srx3_rotten_death_events.py", "--refresh-native-pin"),
+        ("python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"),
+    )
+    check = ("python3", "fixture/final_check.py", "--check")
+    for checks in (False, True):
+        for index, refused in enumerate(chain[:3]):
+            def refuse(command, _events):
+                if command == refused:
+                    raise subprocess.CalledProcessError(1, list(command))
+
+            events = []
+            try:
+                full_generation_trace(events, refuse, checks=checks)
+            except subprocess.CalledProcessError as error:
+                assert error.cmd == list(refused)
+            else:
+                raise AssertionError("a refused native witness must stop regeneration")
+            assert events.count(refused) == 1
+            assert not any(command in events for command in chain[index + 1:])
+            assert ("world-metadata",) not in events
+            assert check not in events
+
+
 def test_downstream_quest_producers_follow_inputs_and_precede_consumers() -> None:
     commands = downstream_quest_commands()
     native = ("python3", "tools/content-migration/register_spell_families.py")
@@ -631,8 +684,147 @@ def test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_ch
             assert check not in events
 
 
+def item_index_fixture(root: Path) -> tuple[dict, list[str]]:
+    shards = []
+    for start, count in ((0, 500), (500, 2)):
+        end = start + count - 1
+        path = f"content/items/definitions/items-{start:05d}-{end:05d}.json"
+        shards.append(path)
+        write(root, path, {
+            "schema": "OTERYN_ITEM_AUTHORING_SHARD/v1", "family": "Item",
+            "source_legacy_role": "content/world/definitions/reference.json",
+            "shard": {"index": start // 500, "start": start, "end": end, "count": count},
+            "records": [{"definition": {"kind": "Item", "identity": {
+                "family": "Item", "key": f"oteryn:item.fixture.i{ordinal}", "revision": "r1",
+            }}, "authoring": {"preserved_fixture_fact": ordinal}}
+                for ordinal in range(start, end + 1)],
+        })
+    index = {
+        "schema": "OTERYN_FAMILY_INDEX/v1", "family": "Item",
+        "record_count": 501, "shard_size": 500,
+        "shards": [shards[0], "content/items/definitions/items-00500-00500.json"],
+        "legacy_source": {"path": "content/world/definitions/reference.json", "git_blob_sha": "pinned-source"},
+        "attached_authoring_entries": 7, "attached_editor_entries": 3,
+        "attached_source_bindings": 5,
+        "spell_imports": [{"path": "content/items/definitions/spell-native-profiles.json", "sha256": "pinned-overlay"}],
+    }
+    write(root, "content/items/index.json", index)
+    return index, shards
+
+
+def test_materializer_bootstraps_complete_item_index_before_running() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        index, shards = item_index_fixture(root)
+        before = {path: (root / path).read_bytes() for path in shards}
+        expected = {**index, "record_count": 502, "shards": shards}
+        world = root / "content/world"
+        world.mkdir()
+        calls = []
+
+        def materialize(command):
+            calls.append(command)
+            assert json.loads((root / "content/items/index.json").read_bytes()) == expected, \
+                "materializer must receive the complete actual Item inventory"
+            assert all((root / path).is_file() for path in expected["shards"])
+            assert command[:7] == ["cargo", "run", "--locked", "-p", "oteryn-game-server", "--example", "materialize_content_world_project_v2"]
+            output = Path(command[command.index("--output-root") + 1])
+            output.mkdir()
+            (output / "project.json").write_bytes(b"{}\n")
+
+        with patch.object(rc, "ROOT", root), patch.object(rc, "WORLD", world), \
+                patch.object(rc, "export_predecessor") as export, \
+                patch.object(rc, "document_locators", return_value=["project.json"]), \
+                patch.object(rc, "run", side_effect=materialize):
+            rc.materialize_world()
+        assert len(calls) == 1
+        export.assert_called_once()
+        assert (world / "project.json").read_bytes() == b"{}\n"
+        assert {path: (root / path).read_bytes() for path in shards} == before
+        # Only the three canonical inventory fields may change; source pins and
+        # independently registered overlays remain the original evidence.
+        actual = json.loads((root / "content/items/index.json").read_bytes())
+        fields = {"record_count", "shard_size", "shards"}
+        assert {key: value for key, value in actual.items() if key not in fields} == {
+            key: value for key, value in index.items() if key not in fields
+        }
+
+
+def test_item_inventory_rejects_incomplete_or_ambiguous_shards_before_materialization() -> None:
+    for invalid in ("gap", "overlap", "duplicate", "count", "bool", "name", "schema", "family", "empty"):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            _index, shards = item_index_fixture(root)
+            tail = json.loads((root / shards[-1]).read_bytes())
+            if invalid == "gap":
+                (root / shards[0]).unlink()
+            elif invalid == "overlap":
+                write(root, "content/items/definitions/items-00500-00502.json", tail)
+            elif invalid == "duplicate":
+                first = json.loads((root / shards[0]).read_bytes())["records"][0]
+                tail["records"][0] = first
+            elif invalid == "count":
+                tail["shard"]["count"] = 3
+            elif invalid == "bool":
+                tail["shard"]["index"] = True
+            elif invalid == "name":
+                (root / shards[-1]).rename(root / "content/items/definitions/items-tail.json")
+            elif invalid == "schema":
+                tail["schema"] = "unqualified"
+            elif invalid == "family":
+                tail["records"][0]["definition"]["identity"]["family"] = "Creature"
+            else:
+                for path in shards:
+                    (root / path).unlink()
+            if invalid in {"duplicate", "count", "bool", "schema", "family"}:
+                write(root, shards[-1], tail)
+            before = {path: path.read_bytes() for path in root.rglob("*.json")}
+            with patch.object(rc, "ROOT", root), \
+                    patch.object(rc, "export_predecessor") as export, \
+                    patch.object(rc, "run") as run:
+                try:
+                    rc.materialize_world()
+                except ValueError as error:
+                    assert "ITEM_INDEX_" in str(error), str(error)
+                else:
+                    raise AssertionError("invalid Item inventory reached materialization: " + invalid)
+            export.assert_not_called()
+            run.assert_not_called()
+            assert {path: path.read_bytes() for path in root.rglob("*.json")} == before
+
+
+def test_item_inventory_emitter_matches_converter_format_and_explicit_output_set() -> None:
+    from item_tree_index import item_index_fields
+    from world_project_v2_to_tree import canonical_bytes
+
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        index, shards = item_index_fixture(root)
+        expected = {"record_count": 502, "shard_size": 500, "shards": shards}
+        assert item_index_fields(root) == expected
+        assert item_index_fields(root, shards) == expected
+        assert canonical_bytes({**index, **item_index_fields(root)}) == canonical_bytes({**index, **expected})
+        # The converter removes its superseded tail after index emission. Its
+        # explicit freshly written output list must exclude that old file;
+        # bootstrap has no such list and must reject overlapping actual shards.
+        stale = "content/items/definitions/items-00500-00500.json"
+        write(root, stale, {"superseded": True})
+        assert item_index_fields(root, shards) == expected
+        try:
+            item_index_fields(root)
+        except ValueError as error:
+            assert "ITEM_INDEX_" in str(error)
+        else:
+            raise AssertionError("bootstrap silently selected one of two tails")
+
+
 def main() -> None:
     tests = [
+        test_materializer_bootstraps_complete_item_index_before_running,
+        test_item_inventory_rejects_incomplete_or_ambiguous_shards_before_materialization,
+        test_item_inventory_emitter_matches_converter_format_and_explicit_output_set,
+        test_rotten_death_witnesses_follow_final_native_provider_before_consumers,
+        test_rotten_death_witness_refusal_stops_every_later_consumer,
         test_downstream_quest_producers_follow_inputs_and_precede_consumers,
         test_downstream_quest_producer_refusal_stops_later_work,
         test_donor_feedback_guard_rejects_empty_duplicate_or_stale_inputs_before_capture,

@@ -573,6 +573,11 @@ impl KillSettlementQueue {
             entry.row = row.clone();
             if let (Some(boss), Some(reward)) = (&mut entry.boss_reward, &row) {
                 boss.reward = Arc::clone(reward);
+                // A later source form still has only the private reward route.
+                // Keep its full table above; the physical corpse stays empty.
+                if let Some(physical) = &mut entry.row {
+                    Arc::make_mut(physical).loot_table.entries.clear();
+                }
             }
         };
         for entry in state.queued.iter_mut().filter(|entry| matches(entry)) {

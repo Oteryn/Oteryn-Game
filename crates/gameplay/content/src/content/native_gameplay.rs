@@ -1223,24 +1223,6 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("ITEMHOLD-Q Wiki identity collision"));
         }
-        // M34: existing canonical quest Item identities use their own pinned
-        // Wiki revisions and the admitted client appearances, never donor IDs.
-        for (item, revision) in [
-            (50335, 1143035),
-            (50336, 1143038),
-            (50337, 1143037),
-            (50338, 1143036),
-        ] {
-            let binding = serde_json::from_value(serde_json::json!({
-                "source_key": "oteryn:source.tibiawiki", "source_revision": format!("fandom-r{revision}"),
-                "identity_namespace": "tibiawiki/item_id", "external_id": item.to_string(),
-                "target": {"family":"Item", "key":format!("oteryn:item.tibia.i{item}"), "revision":"definition-r1"},
-                "disposition":"EXACT"
-            })).map_err(|_| invalid("M34 exact Wiki identity"))?;
-            if admitted.insert(item.to_string(), binding).is_some() {
-                return Err(invalid("M34 Wiki identity collision"));
-            }
-        }
         // W02: Crystal201189f items.cpp:163-174 indexes ItemType by the exact
         // appearance.id. Appearance48416 is independently captured by
         // boss_reward_item_profiles.py; the existing canonical identity is reused.

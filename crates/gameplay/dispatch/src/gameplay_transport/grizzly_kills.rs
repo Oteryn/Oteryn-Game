@@ -469,12 +469,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         runtime: &ChannelRuntimeV1,
         session: GameSessionId,
     ) {
-        let (snapshot, hit_snapshot) = self.grizzly_kill_snapshots_in_turn(&runtime, session);
+        let (snapshot, hit_snapshot) = self.grizzly_kill_snapshots_in_turn(runtime, session);
         let attack = self.states.attack.lock().await;
         let Ok(mut cache) = attack.kills().1.lock() else {
             return;
         };
-        if !cache.hits.install(&runtime, session, hit_snapshot) {
+        if !cache.hits.install(runtime, session, hit_snapshot) {
             super::operator_event("quest_hit_snapshot_capacity_refused");
         }
         cache.sessions.retain(|snapshot| {

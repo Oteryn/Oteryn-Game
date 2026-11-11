@@ -32,7 +32,7 @@ fn srx3_native_creature_icons_real_session_retains_player_outfit_bindings() -> R
             ])
             .map_err(|error| format!("{error:?}"))?,
         };
-        let fields = wire::EntityFields::selected(&[6, 371]);
+        let fields = wire::EntityFields::selected(&[6, wire::CAPABILITY_NATIVE_CREATURE_ICONS_V1]);
         let snapshot = wire::WorldSpatialEntitiesSnapshot {
             content_generation: CONTENT_GENERATION,
             actor_position: at(0, 0),
@@ -62,7 +62,7 @@ fn srx3_native_creature_icons_real_session_retains_player_outfit_bindings() -> R
             join_peer_with(
                 &mut server,
                 CLIENT_SUPPORTED_CAPABILITIES,
-                &[6, 25, 371],
+                &[6, 25, wire::CAPABILITY_NATIVE_CREATURE_ICONS_V1],
                 &[],
                 (SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, bytes),
                 &[domain],

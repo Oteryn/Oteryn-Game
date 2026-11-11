@@ -14,10 +14,10 @@ from collections import Counter
 from typing import Any
 
 from item_taxonomy import build_taxonomy, taxonomy_inputs
+from item_tree_index import ITEM_SHARD_SIZE, item_index_fields
 
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
-ITEM_SHARD_SIZE = 500
 ADMISSION_MAIN = "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c"
 REVISION = "tree-npc-reviewed-definitions-r1"
 FIELD_CENSUS = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
@@ -502,9 +502,7 @@ def main() -> int:
     write("content/items/index.json", {
         "schema": "OTERYN_FAMILY_INDEX/v1",
         "family": "Item",
-        "record_count": len(item_records),
-        "shard_size": ITEM_SHARD_SIZE,
-        "shards": item_shards,
+        **item_index_fields(ROOT, item_shards),
         "legacy_source": {
             "path": "content/world/definitions/reference.json",
             "git_blob_sha": git_blob_sha(LEGACY / "definitions" / "reference.json"),

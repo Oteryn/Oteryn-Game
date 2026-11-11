@@ -798,6 +798,14 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
     let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
+        if callback
+            .item_on_target
+            .as_ref()
+            .is_some_and(|item| item.selected_instance)
+            && !callback.requires_world_admission
+        {
+            return Err("selected callback source requires World admission".into());
+        }
         if callback.item_reward.is_some() && callback.effects.item_reward.is_some() {
             return Err("duplicate item reward participant".into());
         }
@@ -1268,6 +1276,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                                 .starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
                         || source
                             .starts_with("crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:")
+                        || (callback.quest == super::kill_objectives::QUEST
+                            && source == "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2551-2580#sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca")
                 }))
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 let accepted: BTreeSet<_> = std::iter::once(item.item.as_str())

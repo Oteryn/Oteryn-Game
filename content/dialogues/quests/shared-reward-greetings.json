@@ -453,17 +453,6 @@
       ]
     },
     {
-      "npc": "oteryn:npc.henricus",
-      "greet": "Greetings, fellow {believer} |PLAYERNAME|!",
-      "farewell": "Always be on guard, |PLAYERNAME|!",
-      "walkaway": "This ungraceful haste is most suspicious!",
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:394:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:395:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:396:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
-      ]
-    },
-    {
       "npc": "oteryn:npc.hjaern",
       "greet": "Be greeted, |PLAYERNAME|. The {spiritual} world looks upon you and your deeds.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -772,17 +761,6 @@
       ]
     },
     {
-      "npc": "oteryn:npc.rafzan",
-      "greet": "Greetings, |PLAYERNAME|.",
-      "farewell": "Good bye, |PLAYERNAME|.",
-      "walkaway": "Good bye.",
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
-      ]
-    },
-    {
       "npc": "oteryn:npc.rahkem",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Good bye, |PLAYERNAME|.",
@@ -1066,17 +1044,6 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:169:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:171:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:170:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.zalamon",
-      "greet": "Not many travellerzz zzezze dayzz. I hope you bring good newzz.",
-      "farewell": "Good bye, |PLAYERNAME|.",
-      "walkaway": "Good bye.",
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/zalamon.lua:421:sha256:6e4413732e7aee8b72a3263798aa50268139a80d04c5f47e4f3b35e51d645465",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
       ]
     },
     {

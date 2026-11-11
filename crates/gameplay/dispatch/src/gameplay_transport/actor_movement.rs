@@ -596,7 +596,9 @@ mod tests {
     #[test]
     fn qn6_diagonal_duration_is_tripled_and_fits_the_wire_ceiling() -> Result<(), String> {
         use oteryn_protocol_oteryn::world_spatial::{
-            MAX_STEP_WAIT_MS, StepDisposition, StepResult, decode_step_result_receipt,
+            CAPABILITY_DIAGONAL_MOVEMENT_V1, CAPABILITY_PACED_MOVEMENT_V1,
+            MAX_DIAGONAL_STEP_WAIT_MS, MAX_STEP_WAIT_MS, StepDisposition, StepResult,
+            decode_step_result_profile, decode_step_result_receipt, encode_step_outcome,
             encode_step_result_paced,
         };
         struct SlowestGround;
@@ -612,6 +614,11 @@ mod tests {
         };
         let cardinal = duration_onto(&SlowestGround, at, Some(10), CardinalStep::East)
             .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(cardinal.as_millis(), u128::from(MAX_STEP_WAIT_MS));
+        let selected = [
+            CAPABILITY_PACED_MOVEMENT_V1,
+            CAPABILITY_DIAGONAL_MOVEMENT_V1,
+        ];
         for direction in [
             CardinalStep::NorthEast,
             CardinalStep::SouthEast,
@@ -628,10 +635,17 @@ mod tests {
                 disposition: StepDisposition::Moved,
                 step_wait_ms: u32::try_from(diagonal.as_millis()).map_err(|e| e.to_string())?,
             };
-            assert_eq!(receipt.step_wait_ms, MAX_STEP_WAIT_MS);
-            let bytes = encode_step_result_paced(receipt, true).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(receipt.step_wait_ms, MAX_DIAGONAL_STEP_WAIT_MS);
+            assert!(encode_step_result_paced(receipt, true).is_err());
+            let bytes = encode_step_outcome(&selected, receipt.disposition, receipt.step_wait_ms);
+            assert!(decode_step_result_receipt(&bytes, true).is_err());
             assert_eq!(
-                decode_step_result_receipt(&bytes, true).map_err(|e| format!("{e:?}"))?,
+                decode_step_result_profile(
+                    &bytes,
+                    selected.contains(&CAPABILITY_PACED_MOVEMENT_V1),
+                    selected.contains(&CAPABILITY_DIAGONAL_MOVEMENT_V1),
+                )
+                .map_err(|e| format!("{e:?}"))?,
                 receipt
             );
         }

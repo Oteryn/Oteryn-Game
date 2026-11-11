@@ -666,7 +666,13 @@ fn validate_document_with_capacity(
         return Err("reward callback bounds".into());
     }
     let mut declarations = BTreeSet::new();
-    let external = external_track_owners()?;
+    // Journal callbacks are validated while their owner catalogue is initializing.
+    // Only writable declarations need cross-catalogue ownership discovery.
+    let external = if document.tracks.iter().any(|track| track.writable) {
+        external_track_owners()?
+    } else {
+        &[]
+    };
     for track in &document.tracks {
         if !slug(&track.key, "oteryn:", b"._/:-", 128)
             || !slug(&track.quest, "oteryn:", b"._/:-", 128)

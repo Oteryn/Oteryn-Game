@@ -91,6 +91,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         }
         if document.quest == super::questpc2_gnomus_source::QUEST
             && !super::questpc2_gnomus_source::custody(document)
+            && !super::questpc2_gnomus_source::legacy_custody(document)
         {
             return Err(invalid("Gnomus source custody"));
         }

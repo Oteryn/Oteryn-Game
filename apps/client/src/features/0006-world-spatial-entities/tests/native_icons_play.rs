@@ -3,7 +3,10 @@ use super::*;
 use crate::play::{PlayLink, PlayView, play_channel, run_session};
 use oteryn_session::test_support::wire;
 type Error = Box<dyn std::error::Error + Send + Sync>;
-const CAPS: &[u32] = &[6, 371];
+const CAPS: &[u32] = &[
+    6,
+    wire::world_spatial_entities::CAPABILITY_NATIVE_CREATURE_ICONS_V1,
+];
 fn id(value: u8) -> [u8; 16] {
     let mut id = [value; 16];
     id[6] = 0x70;

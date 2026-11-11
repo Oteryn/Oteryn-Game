@@ -36,6 +36,33 @@ pub(super) fn reference<'a>(quest: &str, source: &'a str) -> Option<&'a str> {
         .filter(|reference| reference.starts_with("data-global/npc/gnomus.lua:"))
 }
 
+/// The retained measurements owner predates the separate ordnance programme.
+/// Its original source pin and citations remain independent of that supplement.
+pub(super) fn legacy_custody(document: &NpcRuleDocument) -> bool {
+    let sources = [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97",
+    ];
+    document.program_key.is_none()
+        && document.quest == QUEST
+        && document.source_files.len() == 1
+        && document.source_files.iter().all(|file| {
+            file.revision == "201189f871d23597b82caf88fd611454a2ddefb8"
+                && file.path == PATH
+                && file.sha256 == SHA
+        })
+        && document
+            .rules
+            .iter()
+            .all(|rule| rule.npc == "oteryn:npc.gnomus")
+        && document
+            .tracks
+            .iter()
+            .flat_map(|track| &track.sources)
+            .chain(document.rules.iter().flat_map(|rule| &rule.sources))
+            .all(|source| sources.contains(&source.as_str()))
+}
+
 #[cfg(test)]
 #[path = "questpc2_gnomus_source_tests.rs"]
 mod tests;

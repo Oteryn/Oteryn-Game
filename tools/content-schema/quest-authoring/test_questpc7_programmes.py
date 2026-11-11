@@ -389,7 +389,15 @@ class FeasterPrefix(unittest.TestCase):
         self.assertEqual(apparatus['offerings'][0]['item'],'oteryn:item.tibia.i3661')
         self.assertEqual(apparatus['item_reward']['item'],'oteryn:item.tibia.i32584')
         self.assertEqual([r['give']['item'] for r in rewards if r.get('give')],['oteryn:item.tibia.i32582','oteryn:item.tibia.i32225','oteryn:item.tibia.i32226'])
-        self.assertTrue(all(r['requirements']['min_level']==250 and r['requirements']['premium'] for r in worlds+rewards))
+        phase_keys={'oteryn:quest-callback/questpc7-feaster-entry','oteryn:quest-callback/questpc7-feaster-purification-entry'}
+        for row in worlds+rewards:
+            if row['key'] in phase_keys:
+                self.assertEqual(row['minimum_level'],250)
+                self.assertEqual(row['admission'],{'premium':True})
+                self.assertTrue(row['requires_world_admission'])
+                self.assertNotIn('requirements',row)
+            else:
+                self.assertTrue(row['requirements']['min_level']==250 and row['requirements']['premium'])
 
     def test_anchored_props_have_ground_only_source_constructors(self):
         import questpc7_props
@@ -402,3 +410,122 @@ class FeasterPrefix(unittest.TestCase):
             self.assertEqual(row['admission'],{'materializable':True,'stack_class':'NonStackable','legal_destinations':['Ground']})
             for field in ['movable','pickupable']:
                 self.assertEqual(row['semantics']['physical']['value'][field],{'state':'KNOWN','value':False})
+
+
+class FeasterRouteOwnership(unittest.TestCase):
+    KEYS = {
+        'oteryn:quest-callback/questpc7-feaster-entry',
+        'oteryn:quest-callback/questpc7-feaster-purification-entry',
+    }
+    SHARD = 'content/quests/definitions/quests-00100-00199.json'
+    PHASE_OUTPUT = 'content/quests/world-callbacks/feaster-phase-routes.json'
+
+    def test_phase_entries_replay_the_complete_accepted_contract(self):
+        import questpc7_feaster_programme as feaster
+        worlds, objectives, rewards = feaster.build(q.ROOT)
+        expected = json.loads((q.ROOT / self.PHASE_OUTPUT).read_bytes())['callbacks']
+        self.assertEqual([row for row in worlds if row['key'] in self.KEYS], expected)
+        self.assertEqual((len(worlds), len(objectives), len(rewards)), (13, 0, 4))
+        original = json.loads((q.ROOT / 'content/quests/questpc7-world-callbacks.json').read_bytes())['callbacks']
+        self.assertEqual(
+            [row for row in worlds if row['key'] not in self.KEYS],
+            [row for row in original if row['quest'] == feaster.QUEST and row['key'] not in self.KEYS],
+        )
+
+    def build_changed_shard(self, change):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        import questpc7_feaster_programme as feaster
+        document = json.loads((q.ROOT / self.SHARD).read_bytes())
+        change(document)
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            path = root / self.SHARD
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps(document, ensure_ascii=False), encoding='utf-8')
+            return feaster.build(root)
+
+    def test_full_definition_drift_cannot_inherit_the_historical_witness(self):
+        import questpc7_feaster_programme as feaster
+        for mutation in ('later_stage', 'display_name', 'revision'):
+            with self.subTest(mutation=mutation):
+                def change(document):
+                    definition = next(row['definition'] for row in document['records']
+                                      if row['definition']['identity']['key'] == feaster.QUEST)
+                    if mutation == 'later_stage':
+                        definition['oteryn_recipe']['payload']['recipe']['stages'][-1]['count'] += 1
+                    elif mutation == 'display_name':
+                        definition['display_name'] = 'Changed Feaster definition'
+                    else:
+                        definition['identity']['revision'] = 'quest-r2'
+                with self.assertRaisesRegex(ValueError, 'QUESTPC7_FEASTER_DEFINITION_DRIFT'):
+                    self.build_changed_shard(change)
+
+    def test_neighbor_change_keeps_only_the_two_historical_route_witnesses(self):
+        import questpc7_feaster_programme as feaster
+        before, _, before_rewards = feaster.build(q.ROOT)
+        def change(document):
+            neighbor = next(row['definition'] for row in document['records']
+                            if row['definition']['identity']['key'] != feaster.QUEST)
+            neighbor['display_name'] = 'Unrelated neighboring definition'
+        after, _, after_rewards = self.build_changed_shard(change)
+        for old, new in zip(before + before_rewards, after + after_rewards, strict=True):
+            if old['key'] in self.KEYS:
+                self.assertEqual(new, old)
+            else:
+                self.assertNotEqual(new['sources'][0], old['sources'][0])
+                new = copy.deepcopy(new)
+                new['sources'] = old['sources']
+                self.assertEqual(new, old)
+
+    def test_integration_preserves_112_callbacks_under_two_disjoint_owners(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock, patch
+        import questpc7_feaster_programme as feaster
+        import questpc7_integration as integration
+        original = json.loads((q.ROOT / 'content/quests/questpc7-world-callbacks.json').read_bytes())['callbacks']
+        unrelated = [row for row in original if row['quest'] != feaster.QUEST]
+        self.assertEqual(len(unrelated), 99)
+        worlds, _, _ = feaster.build(q.ROOT)
+        worlds = unrelated + worlds
+        unchanged = copy.deepcopy(worlds)
+        planned_props = {'content/world/placements/index.json': b'fixture index'}
+        modules = {
+            'questpc7_knowledge': SimpleNamespace(build=Mock(return_value={'schema': 1, 'rules': []})),
+            'questpc7_props': SimpleNamespace(outputs=Mock(return_value=planned_props)),
+            'questpc7_smith_programme': SimpleNamespace(placements=Mock()),
+        }
+        loader = Mock(side_effect=lambda name, path: modules[name])
+        with patch('questpc7_index_witness.rebind') as rebind:
+            result = integration.outputs(q.ROOT, {}, 'fixture pin', loader, (worlds, [], []))
+        rebind.assert_called_once_with(q.ROOT, worlds, planned_props)
+        main = json.loads(result['content/quests/questpc7-world-callbacks.json'])['callbacks']
+        phase = json.loads(result[self.PHASE_OUTPUT])['callbacks']
+        self.assertEqual((len(main), len(phase)), (110, 2))
+        self.assertEqual(main, [row for row in unchanged if row['key'] not in self.KEYS])
+        self.assertEqual(phase, [row for row in unchanged if row['key'] in self.KEYS])
+        main_keys = {row['key'] for row in main}
+        phase_keys = {row['key'] for row in phase}
+        self.assertEqual(phase_keys, self.KEYS)
+        self.assertTrue(main_keys.isdisjoint(phase_keys))
+        self.assertEqual(len(main_keys | phase_keys), 112)
+        self.assertEqual(worlds, unchanged)
+        self.assertEqual(result['content/world/placements/index.json'], b'fixture index')
+
+    def test_missing_or_duplicate_phase_owner_stops_before_other_producers(self):
+        from unittest.mock import Mock
+        import questpc7_feaster_programme as feaster
+        import questpc7_integration as integration
+        worlds, _, _ = feaster.build(q.ROOT)
+        for key in sorted(self.KEYS):
+            for mutation in ('missing', 'duplicate'):
+                with self.subTest(key=key, mutation=mutation):
+                    rows = copy.deepcopy(worlds)
+                    if mutation == 'missing':
+                        rows = [row for row in rows if row['key'] != key]
+                    else:
+                        rows.append(copy.deepcopy(next(row for row in rows if row['key'] == key)))
+                    loader = Mock()
+                    with self.assertRaisesRegex(ValueError, 'QUESTPC7_FEASTER_PHASE_OWNERSHIP_DRIFT'):
+                        integration.outputs(q.ROOT, {}, 'fixture pin', loader, (rows, [], []))
+                    loader.assert_not_called()

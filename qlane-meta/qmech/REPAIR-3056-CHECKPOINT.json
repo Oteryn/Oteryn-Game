@@ -3,7 +3,7 @@
   "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
   "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
   "parents": {
-    "previous_published_head": "2e66d733b595fd0ed0ad08ee11947bea629d2c8a",
+    "previous_published_head": "eaa76472491899677438dd21ff3b91f20cb2b74c",
     "integrated_main": "f01f18582443f482b7adcfaf32cae3f9d3616876"
   },
   "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
@@ -57,26 +57,47 @@
     }
   ],
   "last_checkpoint_execution": {
-    "head": "2e66d733b595fd0ed0ad08ee11947bea629d2c8a",
-    "merge_run": 42948846350,
-    "generator_run": 42948846608,
-    "generator_job": 130288094213,
-    "generator_result": "Quest prerequisites passed. Rust materializer compilation failed on the optional loot reference and repeated damage_shares move in kill_reward.rs. Materialization, pin refresh, export and upload were not reached; artifact inventory was empty.",
-    "generator_log_sha256": "b6609566eee05d1ea6ecc35445b8ead166904ebd775d1be4cbfda6a5dd3b227c",
-    "rust_policy_result": "Actual cache-miss execution passed in job 130288640175.",
-    "rust_result": "Strict Clippy failed on the unreachable AI diagonal pattern. All three unit shards failed cargo test --no-run with the same 17 compiler diagnostics and two unreachable-pattern warnings; zero test cases executed. Native entry failed on the two kill_reward errors before runtime qualification.",
-    "repair_scope": "Correct optional loot references and the rowless participation ledger, remove unreachable duplicated branches, and adapt the merged test helpers to current tuple, coordinate, optional deadline/view and party-session contracts without changing existing assertions.",
-    "qualification": "Source checks do not establish a passing Rust build, complete generated content or PostgreSQL qualification.",
-    "rust_unit_job_ids": [
-      130288640235,
-      130288640117,
-      130288640333
+    "head": "eaa76472491899677438dd21ff3b91f20cb2b74c",
+    "merge_run": 42951225666,
+    "generator_run": 42951225652,
+    "generator_job": 130295734196,
+    "generator_result": "Quest prerequisites passed and the materializer compiled in 2m46s. Its executable exited with NotFound before materialization completed. Source diagnosis found that the retained Item index referenced absent items-34000-34110.json while the complete approved tail is items-34000-34121.json. Final pins, export and upload were not reached; artifact inventory was empty.",
+    "generator_log_sha256": "41ea69ac705c471080ad84aaba21663761e58a25b1674c9cac4c0779d0845194",
+    "rust_policy_result": "Actual cache-miss execution passed in job130296449750.",
+    "clippy_result": "Actual strict Clippy failed on two unconstructed private Premium adapters and two unnecessary Grizzly runtime borrows. All four source diagnostics are addressed in this checkpoint; no successor execution is claimed.",
+    "rust_unit_result": "All three shards compiled and executed real nextest cases. Their exact identity union contains12542 executions:11829 passed and713 failed, with no overlap between shards. Every shard selected67 packages without result-cache reuse. These are unit results, not PostgreSQL execution.",
+    "rust_unit_jobs": [
+      {
+        "job_id": 130296449872,
+        "executed": 4190,
+        "passed": 3943,
+        "failed": 247,
+        "log_sha256": "068a88d46e86aad910e3c97a4b089187ddc466858a3337243c4604ddcb4accdf"
+      },
+      {
+        "job_id": 130296449848,
+        "executed": 4233,
+        "passed": 3999,
+        "failed": 234,
+        "log_sha256": "e8dc537da04d912a67270342e0e35afb8281f3eff3c5780f58ed9677d203c803"
+      },
+      {
+        "job_id": 130296449866,
+        "executed": 4119,
+        "passed": 3887,
+        "failed": 232,
+        "log_sha256": "a4800b955f4912720d54f94c4d1a520992a8a9fe72d84d5bbb4f40a01c0bd3e3"
+      }
     ],
-    "rust_unit_log_sha256s": [
-      "8b1ea74a6ff0633d316ed909c70ece540d9f056b0ad26ef2b8f6546ba0f35162",
-      "d87d2d7afd24f04f889235c8cb3add1ebcaaa75a9a6bca255f577b4ba7fed01a",
-      "a1b66951f04657a3b064b9d582ffb6528bbd3227e89706837512dab23710a0e5"
-    ]
+    "native_entry": {
+      "run_id": 42951225683,
+      "job_id": 130295733994,
+      "result": "Actual compilation and three tests passed; zero failed, ignored or filtered. This qualifies only Native entry on the recorded parent head.",
+      "log_sha256": "6ef6c127a8d2a5c0871adbd37cf90efb3e27b2d351bae51de2da17d480ef8e2b"
+    },
+    "boss_inventory": "The actual fixture ran in shard3 but failed while parsing the native manifest: Item updates discriminator, bounds or base pin. It did not reach NATIVE_REWARD_BOSS_QUALIFICATION; no current admission totals are available.",
+    "qualification": "This is a source repair checkpoint. Full canonical generation, successor Rust execution and final PostgreSQL qualification remain pending.",
+    "rust_unit_not_executed_from_inventory": 33
   },
   "followup_source_repair": {
     "parent": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
@@ -188,5 +209,309 @@
     "bundle_views": "Require successful Option-returning bundle views in Rotten and Soul War fixtures; original cells, scope digests and start coordinates remain unchanged.",
     "personal_encounter": "Initialize the additional party-session list as empty for the existing personal Asura callback, which has no party_transfer. This matches current production Pending creation; all fence assertions remain unchanged.",
     "verification": "Bounded full-file inverse, actual helper/source contract checks, Syn parsing and scoped formatting passed. Independent source peers review each frozen repair group before publication; no Rust or PostgreSQL execution is claimed."
+  },
+  "item_inventory_bootstrap_repair": {
+    "cause": "The incoming-main Item index retained34111 records and a nonexistent tail name while approved merged definitions contain34122 records across69 range shards.",
+    "repair": "Use the same canonical three inventory fields in the converter and a validated bootstrap before the materializer. The bootstrap scans the entire existing range set; the converter supplies its exact newly emitted list before its existing superseded-shard cleanup.",
+    "preserved": "All69 shard blobs, all34122 ordered records and unique keys, all source pins and overlay registrations are unchanged. Only record_count and the final index path change.",
+    "checks": "Actual focused dispatcher suite26/26 passed, including failing prior-order regressions for Item bootstrap and final Rotten providers. All24 checks from the first bootstrap packet remain AST/order identical. Independent source peer passed.",
+    "validation_boundary": "The shared emitter validates full canonical identities. The existing later native registration and ItemDefinitionIndex retain their stricter unique-key requirements.",
+    "remaining": "Full canonical generation on the successor runner has not executed."
+  },
+  "private_reward_source_profile_repair": {
+    "cause": "A changed source creature profile replaced the previously empty physical corpse row with a full loot table after a full private boss reward had already been frozen.",
+    "repair": "After retaining the full new private reward, clear only the physical copy through Arc::make_mut. The full cache row, participants, source death time, unchanged-type Gut modifiers and nonboss path remain unchanged.",
+    "reachable_source_path": "The Megalomania source timer can select the Blue profile before deferred death BEGIN, and registered HP-zero transformation is admitted only with the committed lethal receipt.",
+    "current_input_limit": "The recorded parent native data refuses both required corpse Items. This is a source-invariant repair for restored canonical admission, not a reproduced exploit against that stale artifact.",
+    "regression": "Authored real-fixture regression covers queued and parked deaths, actual profile update and same-BEGIN retries. It has been parsed and independently source-reviewed, but not compiled or executed."
+  },
+  "rust_diagnostic_cleanup": {
+    "premium": "Delete only the two unconstructed private QuestPremium/QuestRewardPremium adapters and their impls. Current callers already use the shared optional coordinator; all permission and premium guards remain unchanged.",
+    "grizzly": "Pass the existing &ChannelRuntimeV1 directly at exactly two calls; owner/session identity, lock order and snapshots are unchanged.",
+    "checks": "Full-file inverse, actual caller-contract checks, Syn parsing, scoped formatting and independent source peers passed; Clippy execution on the successor remains pending."
+  },
+  "protocol_fixture_integration_repair": {
+    "scope": "Seven test files; runtime codec, client dispatch and session implementations remain byte-identical.",
+    "diagonal": "Use negotiated371 for directions5–8 and13+371 for the333450ms diagonal receipt. Preserve four direction cases, the three-times duration proof and explicit legacy refusal. Ordinary paced receipt ceiling remains111150ms.",
+    "icons": "Use the existing native-creature-icons capability372;371 remains diagonal movement.",
+    "goldens": "Two ordinary111150ms receipt fixtures use the actual protobuf varint ae e4 06, matching integrated main. All existing boundary and refusal assertions remain.",
+    "qualification": "Source inverse, parsing, formatting and independent peer passed. This maps11 actual failed test identities; a successor run is required."
+  },
+  "quest_source_admission_repair": {
+    "elvenbane": "Restore the exact quest and complete chest.lua source-SHA allowance already present in integrated main. Producer and callback JSON remain unchanged; no broad provenance exception is added.",
+    "selected_tool": "Typed registry now rejects selected_instance without requires_world_admission before considering shared selectors. Existing parser, storage partition and overlap tests remain unchanged.",
+    "gnomus": "Preserve the original strict ordnance supplement custody and reference parser. Accept the retained measurements owner only through its separate exact absent-program-key,201189 revision,path,SHA,NPC and two-citation shape.",
+    "gnomus_regressions": "Three authored tests load both actual JSON documents and cover12 source/identity removal or mutation cases. The original five negative cases are unchanged. New Rust tests have not executed.",
+    "owner_initialization": "Discover external reward-track owners only for writable declarations. Journal callback validation supplies no declarations; the prior unconditional lookup reentered the OWNERS/DOCUMENT initializer chain after Elven admission. Writable owner existence and same-quest checks, read-only rules and all existing tests retain their exact bytes.",
+    "qualification": "Independent source reviews passed. The initializer cycle is proven from the source call chain; no executed deadlock reproduction or successful successor runtime test is claimed."
+  },
+  "fixture_inventory_repair": {
+    "bundle_gates": "Add exactly three existing one-count fixture entries: proficiency_modification and soul_war construct SeamRooms(None,Some(combat)); the Outburst diagnostic requalifies its current source context before its read-only gate lookup. Strict inventory equality, negative assertions and gate metadata remain unchanged.",
+    "endgame_retry": "The three Megalomania color fixtures use the existing accepted244800-second/68-hour policy. All aliases resolve to the same Purple encounter; runtime policy and boundary rejection assertions are unchanged.",
+    "qualification": "Source-level verification only; no PostgreSQL result."
+  },
+  "final_rotten_capture_generation_repair": {
+    "cause": "Both the27-record Rotten witness and six-policy death capture retained an earlier Creature definitions pin. The death capture refresh producer was absent from the dispatcher.",
+    "repair": "Move the existing witness27 build immediately after the final native provider write, then call build_srx3_rotten_death_events.py --refresh-native-pin. Run both before later consumers; each producer error stops the dispatcher.",
+    "source_guards": "All27 reviewed creature body hashes and canonical bindings are unchanged. The death refresh retains the immutable source capture digest and changes only its derived native pin; no source recapture or source-root override is introduced.",
+    "checks": "Two new actual dispatcher regressions failed before the order change; all26 lightweight checks passed in1.21seconds. Source and independent peer verification passed. The producers themselves have not executed locally."
+  },
+  "authored_item_admission_repair": {
+    "cause": "Four superseded unconditional M34 Wiki binding insertions collided with the exact first-party constructors already supplied by integrated main.",
+    "repair": "Remove only the18-line duplicate Wiki insertion block for50335–50338. The canonical first-party admission owner and its imported-binding collision refusal remain unchanged.",
+    "proof": "Each current profile has one exact declared first-party admission. Neither the Crystal table nor candidate table claims these four identities. Canonical registration installs authored constructors before the later engclaim provider, which preserves existing identities.",
+    "preserved": "Exact profile digest, qualification, plain custody, Wiki weight facts and the existing four positive/twenty mutation cases retain their bytes. No generated data or pin was changed by this repair.",
+    "qualification": "Source inverse, parser, formatting and independent peer passed; actual activation and Rust test rerun remain pending."
+  },
+  "npc_greeting_ownership_repair": {
+    "cause": "Merged source producers registered three NPC greetings twice. The existing runtime correctly refused the entire duplicated registry.",
+    "owners": {
+      "oteryn:npc.zalamon": "chosen authored route",
+      "oteryn:npc.henricus": "dedicated qnpcfx-m10",
+      "oteryn:npc.rafzan": "dedicated m13"
+    },
+    "repair": "The shared producer requires exactly one entry in each explicit owner document and omits only these three shared rows. It refuses absent, duplicated, wrong-NPC or relocated owner entries.",
+    "data": "Shared99→96 and complete registry126rows/123identities→123rows/123identities. All96 retained rows, order, texts and citations, three owner documents and five callback documents remain unchanged. Zalamon remains an explicit authored approximation.",
+    "checks": "Observed real duplicate failure before repair; six focused Python tests passed in16.695seconds, and the narrow canonical greeting producer ran in18.319seconds. Independent peer passed. The strict runtime duplicate guard remains unchanged; no Rust result is claimed."
+  },
+  "feaster_entry_ownership_repair": {
+    "cause": "The merged questpc7 document rebuilt two legacy Feaster entries that did not satisfy the closed runtime shape and duplicated the two separately mounted approved phase routes.",
+    "source_binding": "The complete Feaster definition at index41 is identical in historical2caf6670, approved87da, integrated main and the current head. Its canonical SHA256 is e2b60e02a8e07240b63cf05d88567ff18f0b3b7cb595228d3747f48bf9cd9bbe. The producer checks that entire definition before retaining the existing historical shard witness; no runtime source guard is relaxed.",
+    "repair": "Translate only the two entry rows to their approved level250, Premium and World-admission shape, and assign both exactly once to the already mounted feaster-phase-routes output. The main output retains110 callbacks; the phase output retains2. The partition refuses missing or duplicate owned entries.",
+    "preserved": "The other11 Feaster callbacks, four NPC rewards, other99 main callbacks and all actions, keys, destinations, receipts and storage semantics retain their contents. The closed Rust production guard, phase handling, source definitions and generated JSON are unchanged in this source checkpoint.",
+    "checks": "Six focused Python tests passed in1.448seconds after an observed failing prior implementation. These execute the actual bounded Feaster build and integration output partition with unrelated heavy helpers mocked. The encoded two-route output equals the existing approved output. Python parsing, Rust syntax parsing, scoped formatting and diff checks passed.",
+    "rust_coverage": "The positive fixture now parses both documents, requires110+2 callbacks with disjoint keys and preserves the112 total. All four existing negative cases and the rest of that Rust file are byte-identical.",
+    "qualification": "Independent bounded source peer passed. Actual canonical110+2 generation and Rust execution remain pending; no generated JSON was hand-edited."
+  },
+  "source_review_at_checkpoint": {
+    "base_head": "eaa76472491899677438dd21ff3b91f20cb2b74c",
+    "source_files": 32,
+    "scope": "Bounded author checks and independent source reviews. These do not represent successor Rust execution, full canonical generation, PostgreSQL qualification, or new Codex approval.",
+    "groups": [
+      {
+        "name": "premium_dead",
+        "source_count": 2,
+        "source_files": [
+          {
+            "path": "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs",
+            "sha256": "eee7e581c65e7f086e83a4754c6e01c3f55edeb10a6dc6e19559fda5857bc7b0"
+          },
+          {
+            "path": "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator/promotion_gate.rs",
+            "sha256": "151b871af3277ed0e52f5d52a64706bea9b5ce48c08ca60e175448bd6d0a1bb4"
+          }
+        ],
+        "author_manifest_sha256": "e2b934d37cff9a9d3302382053ef37d103d13973dd1ec305a1d8271acf07a5ec",
+        "independent_peer_sha256": "700f635634f6623cae022928ed0d2cdf8e7af7d2148e8f99067fd000c7fa7832"
+      },
+      {
+        "name": "private_drop",
+        "source_count": 2,
+        "source_files": [
+          {
+            "path": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs",
+            "sha256": "7a6b7862782e5985651533c439141c41ec8124b71fd8eeffd96f279cb61ba20e"
+          },
+          {
+            "path": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs",
+            "sha256": "cfee9e844f95a2c3ba5bc5a737f446a348dd6f3e952322be928da27b6dc5538c"
+          }
+        ],
+        "author_manifest_sha256": "3d4403c4339083061c638b237bf3c29c5a05be17eb456afc18c0d073bcbe32c3",
+        "independent_peer_sha256": "fa580c572740df0535af9523e928ea60951dbf4fc8aa13e2bffd3e00755ee30d"
+      },
+      {
+        "name": "grizzly_borrow",
+        "source_count": 1,
+        "source_files": [
+          {
+            "path": "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills.rs",
+            "sha256": "64cd417511588b53c1ce88de627099e95ed03c4675149c68ab83350fb920857b"
+          }
+        ],
+        "author_manifest_sha256": "d1c9b49d7a71dee9855b23c88dc80bb4c609af0c2579c97b52324ed1e24c2571",
+        "independent_peer_sha256": "1aaa0c61f5744deb82fa794964b8563c1baf87eca3dc2cc5daa62d8a7e0e53ac"
+      },
+      {
+        "name": "item_bootstrap_and_final_rotten_pins",
+        "source_count": 5,
+        "source_files": [
+          {
+            "path": "tools/content-migration/item_tree_index.py",
+            "sha256": "6e7bc86ebec09e690fd9c14af2685f570b46bcb2d3236d1114562908e4c853b0"
+          },
+          {
+            "path": "tools/content-migration/regenerate_content.py",
+            "sha256": "99f39acd1432973292e8174cb2d0ef9608ae4ed732faaaa3692392eba447d3ca"
+          },
+          {
+            "path": "tools/content-migration/test_regenerate_content.py",
+            "sha256": "439a27179ebad132014997812c2317a133508e37bc5614db3b58d0bdeaada2a5"
+          },
+          {
+            "path": "tools/content-migration/world_project_v2_to_tree.py",
+            "sha256": "090c89ee68df92f27ca84a3a0a9d88061ab9be4e0b9f588b45f9b9076e1630df"
+          },
+          {
+            "path": "content/items/index.json",
+            "sha256": "58d09313e88dd9f457147821d71a99bcbe269809d1b1e4191a7af50e1415d9d1"
+          }
+        ],
+        "author_manifest_sha256": "349ce999e6396baf45a812fbe397ad462ce727f8f1feac62db016132f51b49fe",
+        "independent_peer_sha256": "a7100ce8e5ceec9152e59dbd3acd70e596250e9ca4841ad9e78948a46ea4a5ba"
+      },
+      {
+        "name": "protocol_fixtures",
+        "source_count": 7,
+        "source_files": [
+          {
+            "path": "crates/protocol-oteryn/src/world_spatial.rs",
+            "sha256": "5cb1dc38ac549f9357794ece23454f5fc36c0b6b9e1485a894bd1fb2359dd7d6"
+          },
+          {
+            "path": "apps/client/src/features/0013-paced-movement/tests/play.rs",
+            "sha256": "ed1d9134c542053c1ff50d30d64f4efe093b8635413cb412f04cda045c826714"
+          },
+          {
+            "path": "crates/protocol-oteryn/src/world_spatial_entities/soulpit_icon_tests.rs",
+            "sha256": "a4cd5b50923fe2ddb96edcac703093de793114a857b365f1c1fd39831c249f66"
+          },
+          {
+            "path": "apps/client/src/features/0006-world-spatial-entities/tests/native_icons.rs",
+            "sha256": "fdc72159558d4ab35572c35096a2c045f3292eba1fb266a3548d3c406e210948"
+          },
+          {
+            "path": "apps/client/src/features/0006-world-spatial-entities/tests/native_icons_play.rs",
+            "sha256": "3893a9eabc29bc57c54621cdcb6d2a45d1271fae68456d5230929172900c59af"
+          },
+          {
+            "path": "crates/session/src/tests/appearance_session_tests/native_icons.rs",
+            "sha256": "7052022a8a2ca19faa061590f56f97b2d3d201734c0c504462ce79103dd8989f"
+          },
+          {
+            "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_movement.rs",
+            "sha256": "63d141b6284edce7c92b858f13434c5a491b575c550679388de88ca9ba8e2548"
+          }
+        ],
+        "author_manifest_sha256": "6056275542662b965ca89b5aa9159734c42275560f3a0cb816abbe252f1a8849",
+        "independent_peer_sha256": "0f535fad1777d54839d3e642ed9f38afbd6ef04e8aebd8d797519be383e6a236"
+      },
+      {
+        "name": "bundle_inventory",
+        "source_count": 1,
+        "source_files": [
+          {
+            "path": "crates/gameplay/dispatch/src/gameplay_transport/bundle_gates_tests.rs",
+            "sha256": "1e30f7f5d0a0d8bff3cf6fed362de28bdc3636a3154be7aed7f87a125511a6f8"
+          }
+        ],
+        "author_manifest_sha256": "a45391a446d70f45f18560956e8692f6ffbcb278a807ce97e91e85569fc3b2c5",
+        "independent_peer_sha256": "765f081f807385b263f5aa0067489006f0bdac2fe568d99b525232f050a92149"
+      },
+      {
+        "name": "quest_admission",
+        "source_count": 4,
+        "source_files": [
+          {
+            "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+            "sha256": "6320ff7b7c75b6ac0a6c04e8b73770b8cfc40e61754bb80251d0f7f44a389534"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/validate.rs",
+            "sha256": "6af06a2e1fbdf578d4a778bf41461456cc5ff767f4de29281fbcc0901f23392d"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/questpc2_gnomus_source.rs",
+            "sha256": "335c1b9870d0ae76b1f7cdadc05f6f89eb7770652af0d954ce3c0bff4c227451"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/questpc2_gnomus_source_tests.rs",
+            "sha256": "7569b9577d8781029a19c36345342c6dcead89e93f07a8cc30815ffd9ba9ce8e"
+          }
+        ],
+        "author_manifest_sha256": "e547db0c4e9b519a1d626aea040a0300900ece999de884c0eab97e1392414577",
+        "independent_peer_sha256": "faba5cadf2297b16d7693f72c3037ada59c0bbac77c1be76ab2d0440af6875e7"
+      },
+      {
+        "name": "reward_owner_init",
+        "source_count": 1,
+        "source_files": [
+          {
+            "path": "crates/gameplay/quests/src/quest/reward_callbacks.rs",
+            "sha256": "9c14ee1c64abbe099fe365074ac60ff8d88cd1ce195f98e8f1182131540d6b6c"
+          }
+        ],
+        "author_manifest_sha256": "0bb1f0f28caf43153f25e3ea6be29624d7d38d1b786701f28fc50a89fb838494",
+        "independent_peer_sha256": "1304a82b8cebc8dbe2734c4d5a7ada1d007aa989eec957064f8ef54abe6a2659"
+      },
+      {
+        "name": "endgame_retry_fixture",
+        "source_count": 1,
+        "source_files": [
+          {
+            "path": "crates/gameplay/dispatch/src/gameplay_transport/endgame_room_policy.rs",
+            "sha256": "91e5879b736fa7e7b945a22a89e56d077c5170842cec4e447e87dbe3cde414a6"
+          }
+        ],
+        "author_manifest_sha256": "bb5a561b5f4025b23888441eb538766babbb1e8d9dd9f97dea42aff003647166",
+        "independent_peer_sha256": "dadf619c2fedc5c43cccb5309df4cee9204a23b8281fcdb7c19e33fc62811a6c"
+      },
+      {
+        "name": "authored_item_admission",
+        "source_count": 1,
+        "source_files": [
+          {
+            "path": "crates/gameplay/content/src/content/native_gameplay.rs",
+            "sha256": "d3afdeaffbc010408bdab96f545a67d46bc1fb3d74b834d6bc487c13bd9a7e1d"
+          }
+        ],
+        "author_manifest_sha256": "aea880cd74f1bf7f47905a81c101e164bde7e29724bd6ca9ee839cefacad5f9e",
+        "independent_peer_sha256": "fa3388f8371c03d98d228681d18cb2b5270e72f4788a719b38fd0b84f5261031"
+      },
+      {
+        "name": "npc_greetings",
+        "source_count": 3,
+        "source_files": [
+          {
+            "path": "tools/content-schema/quest-authoring/qengine_rewards.py",
+            "sha256": "f7f85c2bd56f7655835a374e7a183007588ae3432f75000920b3045c43f01b8c"
+          },
+          {
+            "path": "tools/content-schema/quest-authoring/test_reward_greeting_ownership.py",
+            "sha256": "173546779d780db3a620a5eeb1dc141fa1d97ee40eca7d986b10bcdb0ee283cf"
+          },
+          {
+            "path": "content/dialogues/quests/shared-reward-greetings.json",
+            "sha256": "13ed22d9ff8411cfbd79b2b6d4728151bc55785840797941ad2b4b763679e408"
+          }
+        ],
+        "author_manifest_sha256": "3f5e854e7be343a984c530a8e7eeddf586f677c6bb445b4d6ff8649aaa16ca1b",
+        "independent_peer_sha256": "b20c6e13c806f44047a8457d5e95f6f43f7fb2058f165bb5a5649f22adae6c37"
+      },
+      {
+        "name": "feaster_owner",
+        "source_count": 4,
+        "source_files": [
+          {
+            "path": "tools/content-schema/quest-authoring/questpc7_feaster_programme.py",
+            "sha256": "8aec8f4bc7a8a3080b56731b76adbeb604d385b381359ae225f555849fcaeb7f"
+          },
+          {
+            "path": "tools/content-schema/quest-authoring/questpc7_integration.py",
+            "sha256": "6dc0d280ebf7a6cd87638fd5679397de9e229fc5515ae810801ce28f0b0e5504"
+          },
+          {
+            "path": "tools/content-schema/quest-authoring/test_questpc7_programmes.py",
+            "sha256": "5559b690621226153553aa57fe4b6d4ddc361206485d0c9475311379d5a6af9b"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/world_callbacks/outfit_tests.rs",
+            "sha256": "539079030d347fb261eedd772ea7f2f353a35e274b1d1be3d82d1b78e1822342"
+          }
+        ],
+        "author_manifest_sha256": "1f779169e12bcf3a2ab054a8691b65bc175cfb29ce86869389e440262accc9b5",
+        "independent_peer_sha256": "e2be603e8fde7216b8a1df48cdac32f9bef8710111bf0da18028a125b56db352"
+      }
+    ]
   }
 }

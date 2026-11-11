@@ -53,6 +53,8 @@ import tempfile
 import tarfile
 from pathlib import Path
 
+from item_tree_index import item_index_fields
+
 ROOT = Path(__file__).resolve().parents[2]
 WORLD = ROOT / "content/world"
 PIN_PATH = "apps/game-server/tests/content_world_project_repository.rs"
@@ -494,7 +496,24 @@ def export_predecessor(destination: Path) -> None:
         target.write_bytes(blob)
 
 
+def bootstrap_item_index() -> None:
+    """Repair derived inventory metadata before the materializer reads Item shards."""
+    path = ROOT / "content/items/index.json"
+    original = path.read_bytes()
+    index = json.loads(original)
+    if (not isinstance(index, dict) or index.get("schema") != "OTERYN_FAMILY_INDEX/v1"
+            or index.get("family") != "Item"):
+        raise ValueError("ITEM_INDEX_SCHEMA")
+    # Keep every source pin and overlay registration. Only the inventory fields
+    # come from the complete, validated existing shard set, without rewriting it.
+    index.update(item_index_fields(ROOT))
+    encoded = (json.dumps(index, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    if encoded != original:
+        path.write_bytes(encoded)
+
+
 def materialize_world() -> None:
+    bootstrap_item_index()
     with tempfile.TemporaryDirectory() as temp:
         output = Path(temp) / "world"
         predecessor = Path(temp) / "predecessor"
@@ -777,8 +796,8 @@ def main() -> int:
     # Native policies seal the complete regenerated creature root. Keep their
     # bounded, independently reviewed source witnesses in the same generation.
     native = "tools/content-schema/native-gameplay/"
-    for name in ("build_srx3_soul_war_witness.py", "build_srx3_rotten_blood_witness.py",
-                 "build_srx3_primal_witness.py", "build_srx3_soul_war_attacks.py",
+    for name in ("build_srx3_soul_war_witness.py", "build_srx3_primal_witness.py",
+                 "build_srx3_soul_war_attacks.py",
                  "build_srx3_omrafir_attacks.py", "build_srx3_w01_prepare_death.py"):
         run(["python3", native + name])
     for name in ("build_srx3_soul_war_death_events.py", "build_native_death_event_witness.py"):
@@ -798,6 +817,10 @@ def main() -> int:
     # Claims above may add complete native container recipes. Rebuild their
     # Item closure only after those final claims exist, before census and pins.
     run(["python3", "tools/content-migration/register_spell_families.py"])
+    # Both Rotten witnesses bind the final Creature root and retain their
+    # reviewed source-body guards; this refresh does not recapture donor source.
+    run(["python3", native + "build_srx3_rotten_blood_witness.py"])
+    run(["python3", native + "build_srx3_rotten_death_events.py", "--refresh-native-pin"])
     # Room provenance includes the native Item provider, including NPC inputs.
     # Refresh after all native/map producers, before freshness checks and staging.
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])

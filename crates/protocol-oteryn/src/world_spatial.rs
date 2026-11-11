@@ -627,7 +627,7 @@ mod tests {
             (
                 StepDisposition::Moved,
                 MAX_STEP_WAIT_MS,
-                &[0x08, 0x01, 0x10, 0x8a, 0xad, 0x14],
+                &[0x08, 0x01, 0x10, 0xae, 0xe4, 0x06],
                 &[0x08, 0x01],
             ),
             (StepDisposition::Moved, 0, &[0x08, 0x01], &[0x08, 0x01]),
@@ -823,7 +823,7 @@ mod tests {
         // The largest receipt is 6 bytes (tag, disposition, tag, 3-byte varint).
         assert_eq!(
             encode_step_result_paced(paced(StepDisposition::Moved, MAX_STEP_WAIT_MS), true),
-            Ok(vec![0x08, 0x01, 0x10, 0x8a, 0xad, 0x14])
+            Ok(vec![0x08, 0x01, 0x10, 0xae, 0xe4, 0x06])
         );
         // Field order is free on the wire.
         assert_eq!(
@@ -1032,13 +1032,22 @@ mod tests {
     fn qn6_diagonal_step_values_round_trip() {
         for value in 5..=8 {
             let bytes = [8, value];
-            let direction = decode_step_intent(&bytes);
+            assert_eq!(
+                decode_step_intent(&bytes),
+                Err(WorldSpatialError::Malformed)
+            );
+            assert_eq!(
+                decode_step_intent_selected(&[], &bytes),
+                Err(WorldSpatialError::Malformed)
+            );
+            let direction = decode_step_intent_selected(&[CAPABILITY_DIAGONAL_MOVEMENT_V1], &bytes);
             assert!(direction.is_ok(), "diagonal {value} must be admitted");
             if let Ok(direction) = direction {
                 assert_eq!(encode_step_intent(direction), bytes);
             }
         }
         assert!(decode_step_intent(&[8, 9]).is_err());
+        assert!(decode_step_intent_selected(&[CAPABILITY_DIAGONAL_MOVEMENT_V1], &[8, 9]).is_err());
     }
 }
 

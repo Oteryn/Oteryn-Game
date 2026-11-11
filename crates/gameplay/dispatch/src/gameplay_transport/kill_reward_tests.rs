@@ -1584,6 +1584,247 @@ fn srx3_source_death_wait_precedes_loot_capacity_reservation_and_take() {
 }
 
 #[test]
+fn srx3_source_profile_change_keeps_boss_loot_private_in_queued_and_parked_deaths() {
+    std::thread::Builder::new()
+        .name("srx3-private-source-drop".into())
+        .stack_size(64 << 20)
+        .spawn(|| {
+            use crate::foundation::{
+                ChannelContentPin, CharacterLease, CommandId, CommandRef, MovementLocalPosition,
+                NodeId, OwnerDamageCommand, RuntimeScopeRefV1,
+            };
+
+            const GREEN: &str = "oteryn:creature.goshnar_s_megalomania_green";
+            const BLUE: &str = "oteryn:creature.goshnar_s_megalomania_blue";
+            const NOW_US: u64 = 200_000;
+            let world = WorldId::decode(&id(1)).expect("World");
+            let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json");
+            let native = crate::content::native_gameplay::retained_callback_native_fixture_at(
+                world, &manifest,
+            );
+            // Refuse stale canonical data; no fixture changes Item admission or loot.
+            let green = native
+                .reward_table()
+                .row(GREEN)
+                .expect("admitted source Green reward");
+            let blue = native
+                .reward_table()
+                .row(BLUE)
+                .expect("admitted source Blue reward");
+            assert!(!green.loot_table.entries.is_empty());
+            assert!(!blue.loot_table.entries.is_empty());
+
+            for parked in [false, true] {
+                let pin = ChannelContentPin::from_activation(
+                    world,
+                    1,
+                    native.source_digest(),
+                    [2; 32],
+                    [3; 32],
+                    [4; 32],
+                    (33710, 31634, 14),
+                );
+                let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
+                    RuntimeScopeRefV1::instance(world, id(if parked { 72 } else { 71 }))
+                        .expect("Instance"),
+                    NodeId::decode(&id(3)).expect("Node"),
+                    1,
+                    1,
+                    1,
+                    "runtime-scope-assignment:1",
+                    8,
+                    pin,
+                )
+                .expect("current owner");
+                runtime
+                    .install_companion_policies(native.policies().clone())
+                    .expect("unchanged native policies under their actual source digest");
+                let session = session(50);
+                let reservation = runtime
+                    .reserve_fresh_session(session)
+                    .expect("Player reservation");
+                let player = runtime
+                    .commit_fresh_session(reservation)
+                    .expect("actual Player");
+                runtime
+                    .initialize_first_entry_position(player)
+                    .expect("Player position");
+                let character = CharacterId::decode(&id(51)).expect("Character");
+                runtime
+                    .bind_attacker_lease(
+                        player,
+                        session,
+                        CharacterLease::new(character, 1).expect("current lease"),
+                    )
+                    .expect("bound Player lease");
+                let policy = runtime
+                    .companion_policy(GREEN)
+                    .expect("actual Green policy");
+                assert_eq!(policy.reward_boss, Some(true));
+                let boss = runtime
+                    .admit_pinned_monster_lab_creature(
+                        MovementLocalPosition {
+                            x: 33710,
+                            y: 31634,
+                            floor: 14,
+                        },
+                        GREEN,
+                        policy.maximum_health,
+                    )
+                    .expect("source boss incarnation");
+                runtime
+                    .install_creature_policy(boss, GREEN)
+                    .expect("source callbacks");
+                let queue = KillSettlementQueue::default();
+                if parked {
+                    assert!(matches!(queue.seal((session, 1)), Seal::Sealed(_)));
+                }
+                let hit = runtime
+                    .borrow_exact_actor_commit_at_us(NOW_US)
+                    .commit_damage_for_bound_attacker(
+                        boss,
+                        player,
+                        CommandRef::new(session, CommandId::new(1).expect("command")),
+                        0,
+                        OwnerDamageCommand {
+                            target: GREEN.as_bytes(),
+                            occurrence: b"private-source-drop:lethal",
+                            binding: b"private-source-drop:lethal\0current",
+                            damage: policy.maximum_health,
+                        },
+                    )
+                    .expect("canonical credited lethal");
+                assert!(hit.applied && hit.health_before > 0 && hit.health_after == 0);
+                record_creature_kill(
+                    &mut runtime,
+                    KillSink {
+                        prey: None,
+                        activity: &[],
+                        queue: &queue,
+                        rewards: native.reward_table(),
+                        charms: None,
+                    },
+                    boss,
+                    CapturedRewardPrincipal {
+                        character,
+                        lease_generation: 1,
+                        session,
+                        actor: player,
+                    },
+                    NOW_US / 1000,
+                    Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(NOW_US)),
+                );
+                let captured = || {
+                    let state = queue.state();
+                    if parked {
+                        assert!(state.queued.is_empty());
+                        assert_eq!(state.releasing.len(), 1);
+                        assert_eq!(state.releasing[0].parked.len(), 1);
+                        state.releasing[0].parked[0].0.clone()
+                    } else {
+                        assert_eq!(state.queued.len(), 1);
+                        state.queued.front().expect("queued actual death").clone()
+                    }
+                };
+                let original = captured();
+                assert!(original.source_death_pending);
+                assert!(
+                    original
+                        .row
+                        .as_ref()
+                        .expect("physical row")
+                        .loot_table
+                        .entries
+                        .is_empty()
+                );
+                let frozen = original
+                    .boss_reward
+                    .as_ref()
+                    .expect("actual private boss reward");
+                assert_eq!(frozen.reward, green);
+                assert_eq!(frozen.participants.len(), 1);
+                assert_eq!(frozen.participants[0].character, character);
+                assert!(frozen.participants[0].contribution.damage_dealt > 0);
+
+                // The real source phase accepts this HP-zero actor before BEGIN.
+                let before = runtime
+                    .companion_snapshot_including_dead(boss)
+                    .expect("dead Green");
+                let change = runtime
+                    .prepare_soul_war_megalomania_profile_change(&before, BLUE)
+                    .expect("source HP-zero form change");
+                let after = runtime
+                    .commit_creature_profile_transformation(change)
+                    .expect("Blue");
+                assert_eq!(after.health, 0);
+                assert_eq!(after.state.policy.reward_boss, Some(true));
+                let notice = runtime
+                    .next_source_creature_death()
+                    .expect("source FIFO")
+                    .expect("actual lethal notice");
+                let begin = runtime
+                    .begin_source_creature_death(&notice)
+                    .expect("actual BEGIN");
+                assert_eq!(begin.definition_key(), BLUE);
+                assert!(begin.has_reward_damage_credit());
+                for _ in 0..2 {
+                    queue
+                        .freeze_source_drop_profile(&runtime, &begin, &native)
+                        .expect("first freeze and same-BEGIN replay");
+                    let current = captured();
+                    assert_eq!(current.creature, BLUE);
+                    assert!(current.source_death_pending);
+                    let physical = current.row.as_ref().expect("physical source corpse");
+                    assert_eq!(physical.corpse_item, blue.corpse_item);
+                    assert_eq!(physical.loot_table_ref, blue.loot_table_ref);
+                    assert_eq!(physical.xp_amount, blue.xp_amount);
+                    assert!(
+                        physical.loot_table.entries.is_empty(),
+                        "private source loot must not re-enter either physical queue route"
+                    );
+                    let private = current
+                        .boss_reward
+                        .as_ref()
+                        .expect("retained private reward");
+                    assert_eq!(private.reward, blue);
+                    assert_eq!(private.participants, frozen.participants);
+                    assert_eq!(private.died_at_unix_ms, frozen.died_at_unix_ms);
+                    assert!(
+                        !blue.loot_table.entries.is_empty(),
+                        "shared native row is immutable"
+                    );
+                    let replay = queue
+                        .freeze_boss_death(&runtime, boss, &[], Arc::clone(&green))
+                        .expect("existing contribution cache");
+                    assert_eq!(
+                        &replay, private,
+                        "cache retains the complete Blue private reward"
+                    );
+                    let plan = plan_creature_loot(
+                        loot_plan_seed(current.facts.death),
+                        physical
+                            .loot_table_ref
+                            .as_ref()
+                            .expect("actual table identity"),
+                        &physical.loot_table,
+                    )
+                    .expect("actual physical planner");
+                    assert!(plan.entries.is_empty());
+                    assert_eq!(
+                        queue.counts().2,
+                        0,
+                        "source pending cannot reserve loot MINTs"
+                    );
+                }
+            }
+        })
+        .expect("source regression thread")
+        .join()
+        .expect("source regression result");
+}
+
+#[test]
 fn core_prefix_prunes_departed_head_and_conditionally_takes_its_successor() {
     let queue = KillSettlementQueue::default();
     let first = pending(2, 50, 3, 0);
