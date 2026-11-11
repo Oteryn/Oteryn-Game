@@ -998,6 +998,12 @@ impl DurabilityRoot {
         } else {
             None
         };
+        let legacy_world_claim = callback
+            .as_ref()
+            .map(oteryn_gameplay_quests::quest::world_callbacks::legacy_world_claim)
+            .transpose()
+            .map_err(|_| CharacterProgressionError::InvalidInput)?
+            .flatten();
         let world_reward = callback.as_ref().and_then(|c| c.item_reward().as_ref());
         let world_disguise = callback
             .as_ref()
@@ -1928,7 +1934,7 @@ impl DurabilityRoot {
                         } else { super::super::reward_claim_mint::quest::QuestMintClaim::Once };
                         if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
                             || admission.weights.generation_digest() != admission.native.source_digest()
-                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,claim,reward,admission,None).await?.is_none()
+                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,claim,reward,admission,legacy_world_claim).await?.is_none()
 
                         { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     }

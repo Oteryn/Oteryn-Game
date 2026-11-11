@@ -60,6 +60,8 @@ mod guarded_routes;
 #[cfg(test)]
 mod ice_islands_tests;
 mod imported_explore;
+mod legacy_world_claims;
+pub use legacy_world_claims::legacy_world_claim;
 mod live_admission;
 mod native_trials;
 #[cfg(test)]

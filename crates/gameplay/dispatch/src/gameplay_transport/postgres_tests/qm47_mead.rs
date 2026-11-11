@@ -10,10 +10,7 @@ use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::AdmittedSession;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
-use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
-    barbarian_mead as mead, world_callbacks,
-};
+use oteryn_gameplay_quests::quest::{QuestStateCatalogue, barbarian_mead as mead, world_callbacks};
 use std::sync::Arc;
 
 #[test]
@@ -50,63 +47,33 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     let base = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    // M48 owns the shared questline through a physical binding. Arrange Sven's
-    // accepted round as fixture initials, without a generic write to that track.
+    // M48 owns the shared questline through a physical binding. Sven's accepted
+    // round is historical fixture data, not a generic transition on that track.
     let tracks = mead::NATIVE_TRACKS
         .into_iter()
         .map(|k| base.track(k).cloned().ok_or("mead track"))
         .collect::<Result<Vec<_>, _>>()?;
-    let setup = QuestTransition {
-        key: "oteryn:quest-transition/m47-fixture-round".into(),
-        quest: mead::QUEST.into(),
-        // Sven writes questline, mission and total; the streak is absent on first entry.
-        effects: [
-            (mead::TRACKS[0], 2),
-            (mead::TRACKS[1], 2),
-            (mead::TRACKS[3], 0),
-        ]
-        .into_iter()
-        .map(|(track, value)| QuestEffect {
-            track: track.into(),
-            from: QuestComparison::Between(-1, i64::MAX),
-            effect: QuestEffectKind::Set(value),
-        })
-        .collect(),
-        completes: false,
-        experience: None,
-        world_change: None,
-    };
-    let seed = |key: &str, values: [i64; 4]| QuestTransition {
-        key: key.into(),
-        effects: mead::TRACKS
-            .into_iter()
-            .zip(values)
-            .map(|(track, value)| QuestEffect {
-                track: track.into(),
-                from: QuestComparison::Between(-1, i64::MAX),
-                effect: QuestEffectKind::Set(value),
-            })
-            .collect(),
-        ..setup.clone()
-    };
-    let passed = seed("oteryn:quest-transition/m47-fixture-passed", [3, 3, 9, 17]);
-    let exhausted = seed(
-        "oteryn:quest-transition/m47-fixture-exhausted",
-        [2, 2, 4, 21],
-    );
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             base.content_revision(),
             tracks,
-            vec![
-                setup.clone(),
-                passed.clone(),
-                exhausted.clone(),
-                world_callbacks::primary_transition(callback)?,
-            ],
+            vec![world_callbacks::primary_transition(callback)?],
         )
         .map_err(debug)?,
     );
+    // Sven writes questline, mission and total; the streak remains absent on first entry.
+    super::qengine_outfit_stories::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[
+            (mead::TRACKS[0].into(), 2),
+            (mead::TRACKS[1].into(), 2),
+            (mead::TRACKS[3].into(), 0),
+        ],
+        125,
+    )
+    .await?;
     let request = |key: &str, n| -> TestResult<QuestTransitionRequest> {
         Ok(QuestTransitionRequest {
             transition_key: key.into(),
@@ -279,34 +246,18 @@ pub(super) async fn exercise(
             value
         );
     }
-    for (seed, n, line, message) in [
+    for (values, n, line, message) in [
         (
-            &passed,
+            [3, 3, 9, 17],
             7100,
             3,
             "You already passed the test, no need to torture yourself anymore.",
         ),
-        (&exhausted, 7200, 1, "Ask Sven for another round."),
+        ([2, 2, 4, 21], 7200, 1, "Ask Sven for another round."),
     ] {
-        let setup_request = QuestTransitionRequest {
-            transition_key: seed.key.clone(),
-            cause: QuestCause::Command(CommandRef::new(
-                admitted.game_session_id,
-                CommandId::new(n).map_err(debug)?,
-            )),
-        };
-        assert!(matches!(
-            slot.commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                setup_request,
-                catalogue.clone()
-            )
-            .await?,
-            QuestTransitionOutcome::Committed(_)
-        ));
+        drop(slot);
+        seed_sven_state(h, owner, admitted, values).await?;
+        slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let attempt = request(mead::KEY, n + 1)?;
         let outcome = slot
             .commit_world_callback(
@@ -532,5 +483,53 @@ pub(super) async fn exercise(
             .displayed_temporary_appearance_at(expiry)
             .is_none()
     );
+    Ok(())
+}
+
+/// Arrange Sven's external state after the initial prerequisite seed and real USEs.
+/// Reuse their current revision so the bounded random loop cannot level up from fixture XP.
+pub(super) async fn seed_sven_state(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    values: [i64; 4],
+) -> TestResult {
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
+    for (key, value) in mead::TRACKS.into_iter().zip(values) {
+        let track = catalogue.track(key).ok_or("canonical mead track")?;
+        assert_eq!(track.quest, mead::QUEST);
+        assert!((track.min..=track.max).contains(&value));
+    }
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "Sven fixture fence")?
+        .ok_or("Sven fixture fence")?;
+    assert!(fence.expected_character_revision.get() > 1);
+    let _slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (key, value) in mead::TRACKS.into_iter().zip(values) {
+        let changed = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND character_revision=$5::text::numeric ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision WHERE game_character_quest_tracks.quest_key=EXCLUDED.quest_key")
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(key)
+            .bind(mead::QUEST)
+            .bind(value)
+            .bind(fence.expected_character_revision.get().to_string())
+            .execute(&mut *tx)
+            .await?;
+        assert_eq!(changed.rows_affected(), 1);
+    }
+    tx.commit().await?;
+    let stored = owner
+        .root
+        .read_character_quest_state(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?;
+    for (key, value) in mead::TRACKS.into_iter().zip(values) {
+        assert_eq!(stored.tracks().get(key), Some(&value));
+    }
     Ok(())
 }

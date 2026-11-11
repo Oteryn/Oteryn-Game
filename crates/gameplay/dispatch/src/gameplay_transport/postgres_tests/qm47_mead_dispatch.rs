@@ -8,8 +8,7 @@ use crate::durability::quest_state::{
 use crate::foundation::{CommandId, CommandRef};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
-    barbarian_mead as mead,
+    QuestStateCatalogue, barbarian_mead as mead,
     world_callbacks::{Callback, Position},
 };
 use oteryn_protocol_oteryn::{
@@ -66,7 +65,6 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let base = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
     // Arrange Sven's external accepted state with one sip left and the winning streak at 8.
-    let seed = round_seed("round", [2, 2, 8, 20]);
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             base.content_revision(),
@@ -74,16 +72,24 @@ pub(super) async fn exercise(
                 .into_iter()
                 .map(|key| base.track(key).cloned().ok_or("track"))
                 .collect::<Result<Vec<_>, _>>()?,
-            vec![
-                seed.clone(),
-                round_seed("passed", [3, 3, 9, 17]),
-                round_seed("exhausted", [2, 2, 4, 21]),
-                base.transition(mead::KEY).ok_or("transition")?.clone(),
-            ],
+            vec![base.transition(mead::KEY).ok_or("transition")?.clone()],
         )
         .map_err(debug)?,
     );
     owner.quest_catalogue = Some(catalogue.clone());
+    let prerequisites = mead::TRACKS
+        .into_iter()
+        .zip([2, 2, 8, 20])
+        .map(|(key, value)| (key.to_owned(), value))
+        .collect::<Vec<_>>();
+    super::qengine_outfit_stories::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &prerequisites,
+        125,
+    )
+    .await?;
     let key =
         oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 2).ok_or("barrel key")?;
     let mut placement = owner
@@ -101,33 +107,15 @@ pub(super) async fn exercise(
     let mut won = false;
     // Randomness stays server-owned. Exercise both branches with a bounded number of real uses.
     for attempt in 0..128 {
-        let n = 8000 + attempt;
+        if attempt > 0 {
+            super::qm47_mead::seed_sven_state(h, owner, admitted, [2, 2, 8, 20]).await?;
+        }
         let command = attempt + 1;
         let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
             placement: placement.clone(),
             expected_revision: owner.bundle_map().ok_or("map")?.facts.object_revision(key),
         })
         .map_err(debug)?;
-        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        assert!(matches!(
-            slot.commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                QuestTransitionRequest {
-                    transition_key: seed.key.clone(),
-                    cause: QuestCause::Command(CommandRef::new(
-                        session,
-                        CommandId::new(n).map_err(debug)?
-                    ))
-                },
-                catalogue.clone()
-            )
-            .await?,
-            QuestTransitionOutcome::Committed(_)
-        ));
-        drop(slot);
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(2))
@@ -284,25 +272,6 @@ pub(super) async fn exercise(
     Err("native mead did not exercise both outcomes in 128 uses".into())
 }
 
-fn round_seed(name: &str, values: [i64; 4]) -> QuestTransition {
-    QuestTransition {
-        key: format!("oteryn:quest-transition/m47-native-fixture-{name}"),
-        quest: mead::QUEST.into(),
-        effects: mead::TRACKS
-            .into_iter()
-            .zip(values)
-            .map(|(track, value)| QuestEffect {
-                track: track.into(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(value),
-            })
-            .collect(),
-        completes: false,
-        experience: None,
-        world_change: None,
-    }
-}
-
 async fn round_states(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -321,35 +290,16 @@ async fn round_states(
         .digest()
         .to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    for (name, values, message) in [
+    for (initial, values, message) in [
         (
-            "passed",
+            [3, 3, 9, 17],
             [3, 3, 9, 17],
             "You already passed the test, no need to torture yourself anymore.",
         ),
-        ("exhausted", [1, 1, 4, 21], "Ask Sven for another round."),
+        ([2, 2, 4, 21], [1, 1, 4, 21], "Ask Sven for another round."),
     ] {
         let command = admitted.continuity.next_command_id;
-        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        assert!(matches!(
-            slot.commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                QuestTransitionRequest {
-                    transition_key: format!("oteryn:quest-transition/m47-native-fixture-{name}"),
-                    cause: QuestCause::Command(CommandRef::new(
-                        admitted.game_session_id,
-                        CommandId::new(10000 + command).map_err(debug)?,
-                    )),
-                },
-                catalogue.clone(),
-            )
-            .await?,
-            QuestTransitionOutcome::Committed(_)
-        ));
-        drop(slot);
+        super::qm47_mead::seed_sven_state(h, owner, admitted, initial).await?;
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(2))
