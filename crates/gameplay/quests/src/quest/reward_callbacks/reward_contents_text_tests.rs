@@ -69,6 +69,8 @@ fn nested_reward_text_refuses_ambiguous_or_unbounded_child_plans() {
 #[test]
 fn legacy_literal_reward_string_encoding_stays_unchanged() -> Result<(), String> {
     let reward = ItemReward {
+        key_number: None,
+        backpack_outputs: Vec::new(),
         premium: false,
         item: "oteryn:item.tibia.i2833".into(),
         count: 1,

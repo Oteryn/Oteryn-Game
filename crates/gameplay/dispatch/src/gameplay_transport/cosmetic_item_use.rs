@@ -133,23 +133,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        // NX-5 owner scope excludes Crystal's OT-only random addon/mount actions.
-        // Historical receipts above remain readable; no new source is spent.
-        if matches!(
-            rule.mode,
-            oteryn_gameplay_items::item_cosmetics::Mode::RandomOutfit
-                | oteryn_gameplay_items::item_cosmetics::Mode::RandomMount
-        ) {
-            return Ok(Some(UseOutcome {
-                disposition: UseDisposition::NotPossible,
-                ..UseOutcome::rejected()
-            }));
+        // OT-only captures remain refused unless this active catalogue explicitly
+        // promotes the exact source item, donor and complete native rule bytes.
+        let source_allowed = oteryn_gameplay_items::item_cosmetics::source_policy_allows(
+            rule,
+            native.cosmetics(),
+            &definition.production_key,
+        );
+        if !source_allowed
+            && matches!(
+                rule.mode,
+                oteryn_gameplay_items::item_cosmetics::Mode::RandomOutfit
+                    | oteryn_gameplay_items::item_cosmetics::Mode::RandomMount
+            )
+        {
+            return Ok(Some(outcome(UseDisposition::NotPossible)));
         }
-
         if let Some(receipt) = replay {
             return Ok(Some(outcome(receipt.disposition)));
         }
-        if rule.donor.starts_with("data-crystal/scripts/special/") {
+        if !source_allowed {
             return Ok(Some(outcome(UseDisposition::NotPossible)));
         }
         if intent.use_with.is_some()

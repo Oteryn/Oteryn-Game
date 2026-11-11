@@ -231,6 +231,8 @@ impl<const N: usize> RewardProgressionBinding<N> {
 /// Complete semantic input of one death's reward composition.
 #[derive(Debug, Clone)]
 pub struct CreatureDeathRewardInput<const N: usize> {
+    /// Trusted one-shot Newhaven gear; consumed in the atomic corpse/loot transaction.
+    pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
     /// The corpse `ItemInstance`'s definition, supplied by the caller exactly
     /// as the loot definitions are (Content binding of `i00005801` waits on
     /// the Content revision, D3-7).
@@ -420,12 +422,9 @@ pub fn loot_plan_seed(death: CreatureDeathOccurrenceKey) -> LootPlanDeathKey {
     }
 }
 
-/// A death has no durable placement rule yet (out of scope; owned by a
-/// future Ground/room placement decision). This builds the smallest
-/// defensible `GroundPlacement`: the corpse's own local position, and a
-/// `corpse_ref` that is a canonical big-endian encoding of the exact death
-/// key, so two entries of the same death always frame to the same
-/// placement and two different deaths never collide.
+/// Place the corpse at the native death's captured position. The reference
+/// encodes the exact death scope and actor generation, preserving Channel
+/// bytes and tagging Instance custody separately for deterministic replay.
 fn ground_placement(
     death: CreatureDeathOccurrenceKey,
     corpse: MovementLocalPosition,
@@ -467,9 +466,12 @@ async fn settle_loot(
     inflight_before_this_death: usize,
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
     corpse_race: Option<BestiaryRace>,
+    tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
 ) -> Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError> {
     let (corpse_item, loot_table_ref) = match (corpse_item, loot_table_ref) {
-        (None, None) if loot_table.entries.is_empty() => return Ok(None),
+        (None, None) if loot_table.entries.is_empty() && tutorial_corruptor.is_none() => {
+            return Ok(None);
+        }
         (Some(corpse), Some(table)) => (corpse, table),
         _ => {
             return Err(CombatDeathRewardLootError::Corpse(
@@ -477,8 +479,62 @@ async fn settle_loot(
             ));
         }
     };
-    let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
+    let mut plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
+    if let Some(claim) = &tutorial_corruptor {
+        if claim.source_outputs().len() != claim.items().len() {
+            return Err(CombatDeathRewardLootError::Corpse(
+                ItemMintError::InvalidInput,
+            ));
+        }
+        let mut ordinary_ordinal = u32::try_from(claim.items().len())
+            .map_err(|_| CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
+        // Extra event rolls already follow the appended guarantees. Compact
+        // ordinary root slots instead of adding N to those existing positions.
+        for entry in &mut plan.entries {
+            if entry.parent.is_none()
+                && !claim
+                    .source_outputs()
+                    .any(|(_, source)| source == entry.draw_ordinal)
+            {
+                ordinary_ordinal =
+                    ordinary_ordinal
+                        .checked_add(1)
+                        .ok_or(CombatDeathRewardLootError::Corpse(
+                            ItemMintError::InvalidInput,
+                        ))?;
+                entry.placement_ordinal = ordinary_ordinal;
+            }
+        }
+        for (offset, (id, source)) in claim.source_outputs().enumerate() {
+            let entry = plan
+                .entries
+                .iter_mut()
+                .find(|entry| entry.parent.is_none() && entry.draw_ordinal == source)
+                .ok_or(CombatDeathRewardLootError::Corpse(
+                    ItemMintError::InvalidInput,
+                ))?;
+            if entry.item.production_key != format!("oteryn:item.tibia.i{id}")
+                || entry.quantity != 1
+            {
+                return Err(CombatDeathRewardLootError::Corpse(
+                    ItemMintError::InvalidInput,
+                ));
+            }
+            // A replay's guaranteed causes do not change when ordinary loot
+            // gains/loses a stamina, event or duplex roll before preparation.
+            let purpose = crate::durability::tutorial_corruptor::guarantee_purpose(id);
+            if purpose.len() > entry.purpose_key.len() {
+                return Err(CombatDeathRewardLootError::Plan(
+                    crate::combat::LootPlanError::PlanBytesExceeded,
+                ));
+            }
+            entry.purpose_key = purpose;
+            entry.draw_ordinal = u32::try_from(offset)
+                .map_err(|_| CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
+            entry.placement_ordinal = entry.draw_ordinal + 1;
+        }
+    }
     // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.
     if plan
         .entries
@@ -529,7 +585,7 @@ async fn settle_loot(
         .freeze_item_mint(session.authority, session.node, corpse_request)
         .await
         .map_err(CombatDeathRewardLootError::Corpse)?;
-    if plan.entries.iter().any(|entry| entry.parent.is_some()) {
+    if tutorial_corruptor.is_some() || plan.entries.iter().any(|entry| entry.parent.is_some()) {
         let mut children = Vec::with_capacity(plan.entries.len());
         for entry in &plan.entries {
             let parent = match entry.parent {
@@ -580,6 +636,7 @@ async fn settle_loot(
                 &mut children,
                 top_damage_character_id,
                 ground.boss_spawn.clone(),
+                tutorial_corruptor,
             )
             .await
             .map_err(CombatDeathRewardLootError::Corpse)?;
@@ -829,6 +886,7 @@ async fn settle_creature_death_rewards_inner<const N: usize>(
         input.inflight_loot_mints_before_this_death,
         &mut committed_loot,
         corpse_race,
+        input.tutorial_corruptor.clone(),
     )
     .await;
 

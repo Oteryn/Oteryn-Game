@@ -7,6 +7,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools/content-schema/native-gameplay'))
 from build_spell_item_identities import historical_binding_bytes
 
+from native_profile_composition import encode_native_profile
+
 PATH = "tools/content-schema/native-gameplay/hireling-item-profiles.json"
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
 CATALOGUE = "crates/gameplay/domain/src/domain/hireling/catalogue/generated.rs"
@@ -35,6 +37,7 @@ MERGED_MAIN_NATIVE_WEIGHTS = {
     "oteryn:item.tibia.i10454": (115, 114, 27704),
     "oteryn:item.tibia.i18924": (510, 509, 38605),
     "oteryn:item.tibia.i27598": (230, 229, 52453),
+    "oteryn:item.tibia.i32228": (20, 250, 60653),
 }
 
 # ANSWER Q15A (PR2783 comment6549542080): this one virtual Hireling
@@ -181,7 +184,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if key in taxonomy:
             existing[key]["authoring"]["taxonomy"] = copy.deepcopy(taxonomy[key])
     document["records"] = sorted(existing.values(), key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(raw).hexdigest()

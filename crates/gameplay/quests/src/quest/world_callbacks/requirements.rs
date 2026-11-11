@@ -15,7 +15,7 @@ impl Callback {
             && self.actor_kind == ActorKind::Player
             && matches!(self.trigger, Trigger::Use | Trigger::StepIn)
             && self.storage.iter().any(|state| !state.preserve)
-            && self.state_ops.is_empty()
+            && self.operation_count() == 0
             && !self.reversible
             && !self.opening_only
             && self.lever.is_none()

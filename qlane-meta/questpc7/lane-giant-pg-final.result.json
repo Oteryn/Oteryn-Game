@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--lib",
+    "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+    "--",
+    "--nocapture"
+  ],
+  "exit": 0,
+  "duration_seconds": 222.61
+}

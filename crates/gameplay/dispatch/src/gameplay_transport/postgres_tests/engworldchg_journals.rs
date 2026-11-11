@@ -650,7 +650,10 @@ pub(super) async fn use_marker_at_depth(
     .map_err(debug)
 }
 
-pub(super) fn scene(entry: &Callback, marker: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+pub(super) fn scene(
+    entry: &Callback,
+    marker: &Callback,
+) -> TestResult<crate::map::boot::BundleWorld> {
     if entry.key.contains("/fury_gates/") {
         return super::engworldchg_fury::scene(entry, marker);
     }

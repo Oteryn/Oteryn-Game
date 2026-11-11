@@ -235,6 +235,30 @@ def apply_primal_item_admissions(definitions, root=ROOT):
     module.apply_admissions(definitions, root)
 
 
+def apply_encounter_corpse_admissions(definitions, root=ROOT):
+    spec = importlib.util.spec_from_file_location(
+        "encounter_corpse_items", root / "tools/content-schema/native-gameplay/encounter_corpse_items.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.apply_admissions(definitions, root)
+    spec = importlib.util.spec_from_file_location(
+        "native_goal_corpse_items", root / "tools/content-schema/native-gameplay/native_goal_corpse_items.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.apply_admissions(definitions, root)
+
+    spec = importlib.util.spec_from_file_location(
+        "native_goal_loot_items", root / "tools/content-schema/native-gameplay/native_goal_loot_items.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.apply_admissions(definitions, root)
+    sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
+    import questpc2_soul_loot_items
+    questpc2_soul_loot_items.apply_admissions(definitions, root)
+    import questpc2_rotten_loot_items
+    questpc2_rotten_loot_items.apply_admissions(definitions, root)
+
+
 def main() -> int:
     # D1093: canonical cosmetics are tree-first. Validate before writing any derived output;
     # historical identity-only Mount/Outfit packets are never reinterpreted as authored facts.
@@ -275,6 +299,7 @@ def main() -> int:
     apply_admissions(item_records, ROOT)
     apply_summer_item_admissions(item_records)
     apply_primal_item_admissions(item_records)
+    apply_encounter_corpse_admissions(item_records)
     from amber_item_semantics import apply_container_fact
     apply_container_fact(item_records, ROOT)
     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
@@ -289,6 +314,8 @@ def main() -> int:
     extend_cradle_references(item_records, ROOT)
     from cake_bridge_reference import extend_records as extend_cake_bridge_reference
     extend_cake_bridge_reference(item_records, ROOT)
+    from encounter_loot_item_admissions import apply_admissions as apply_encounter_loot_admissions
+    apply_encounter_loot_admissions(item_records, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(item_records, ROOT)
     from tainted_talisman import apply_admissions as apply_tainted_talisman
@@ -782,6 +809,8 @@ def main() -> int:
     # ITEMHOLD-Q changes shared shards, but no selected shop/potion record.
     # Repin only after proving the old digest and every selected row against
     # the exact pre-change base; ordinary source-capture validation stays strict.
+    import questpc2_soul_loot_items
+    questpc2_soul_loot_items.refresh_input_pins(ROOT)
     from grizzly_shop_profiles import refresh_canonical_input_pins
     refresh_canonical_input_pins(ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb')
     import condition_potion_profiles

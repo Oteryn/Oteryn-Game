@@ -6,6 +6,8 @@ and tools/skinning.lua marble tiers. Keep the existing tool/gathering packets in
 import argparse
 import hashlib
 import json
+
+from native_profile_composition import encode_native_profile
 from pathlib import Path
 import subprocess
 import sys
@@ -66,7 +68,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if {row['production_definition']['production_key'] for row in document['records']} & set(keys):
         raise ValueError('HARVEST_ITEM_PROFILE_DUPLICATE')
     document['records'] = sorted(document['records'] + records, key=order)
-    data = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    data = encode_native_profile(document)
     generated[profile_path] = data
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(data).hexdigest()

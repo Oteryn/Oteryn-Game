@@ -1037,12 +1037,14 @@ async fn pick_origin(
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
     };
+    // The independent pickup shares the non-blocking durability holder with
+    // served movement. Serialize its reservation preflight under the same lane.
+    let permit = owner.spell_lane_permit().await.ok_or("lane")?;
     let mut candidate = owner
         .root
         .freeze_map_item_mint(owner.character, owner.holder, fence, request)
         .await
-        .map_err(debug)?;
-    let permit = owner.spell_lane_permit().await.ok_or("lane")?;
+        .map_err(|error| format!("independent pickup freeze: {error:?}"))?;
     assert!(matches!(
         owner
             .root
@@ -1054,7 +1056,7 @@ async fn pick_origin(
                 &mut candidate
             )
             .await
-            .map_err(debug)?,
+            .map_err(|error| format!("independent pickup commit: {error:?}"))?,
         MapItemMintOutcome::Committed(_)
     ));
     owner.states.loop_ground.invalidate();

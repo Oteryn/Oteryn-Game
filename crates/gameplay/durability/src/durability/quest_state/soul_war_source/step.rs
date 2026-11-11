@@ -332,6 +332,7 @@ impl SoulWarSourceStep {
             reset_epoch: self.epoch,
             actor_placement: self.actor.placement_identity(),
             movement_revision: self.movement.revision(),
+            party: Vec::new(),
         }
     }
     pub(in crate::durability) fn matches_context(

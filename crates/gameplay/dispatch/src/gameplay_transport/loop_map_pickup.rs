@@ -63,7 +63,12 @@ pub(super) async fn move_map_item(
             let reach = door_origin.map_or((at.at.x, at.at.y, at.at.floor), |from| {
                 (i32::from(from.x), i32::from(from.y), i16::from(from.floor))
             });
-            let spatial_position = match drop_cell(at.map.overlay.base(), reach, to) {
+            let cell = if door_origin.is_some() {
+                source_drop_cell(at.map.overlay.base(), reach, to)
+            } else {
+                drop_cell(at.map.overlay.base(), reach, to)
+            };
+            let spatial_position = match cell {
                 Ok(cell) => cell,
                 Err(result) => return result,
             };
@@ -250,8 +255,8 @@ pub(super) async fn move_map_item(
         (Ok(x), Ok(y), Ok(floor)) => TilePos { x, y, floor },
         _ => return LoopMoveResult::TooFar,
     };
-    // An automatic step-out consequence reaches from its proven departed tile,
-    // including a step whose landing teleported the player farther away.
+    // A qualified source consequence reaches from its proven scripted origin,
+    // including authored scene cells and a step-out followed by teleport.
     if !pickup::within_reach(door_origin.unwrap_or(player), pos) {
         return LoopMoveResult::TooFar;
     }

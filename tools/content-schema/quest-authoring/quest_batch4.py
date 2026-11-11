@@ -64,8 +64,8 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'sources', 'facing', 'effects',
-    'requires_world_admission',
+    'success_message', 'native_rule', 'failure_teleport', 'remote_teleport',
+    'sources', 'facing', 'effects', 'requires_world_admission',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -174,10 +174,10 @@ def text_message(value, context):
 def provenance(value, context, *, outfit=False):
     require(isinstance(value, list) and value, context + ': empty provenance')
     for reference in value:
-        if outfit and isinstance(reference,str):
-            pinned=re.fullmatch(r'crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:(data-global/[a-zA-Z0-9_./-]+\.lua):sha256:[a-f0-9]{64}',reference)
+        if outfit and isinstance(reference, str):
+            pinned = re.fullmatch(r'crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:(data-global/[a-zA-Z0-9_./-]+\.lua):sha256:[a-f0-9]{64}', reference)
             if pinned:
-                require('..' not in pinned.group(1).split('/'),context + ': invalid source path')
+                require('..' not in pinned.group(1).split('/'), context + ': invalid source path')
                 continue
         match = SOURCE.fullmatch(reference) if isinstance(reference, str) else None
         require(match is not None, context + ': callback source must use the exact Crystal pin and line')
@@ -242,7 +242,7 @@ def validate_effects(callback, context):
             require(integer(effect['effect'],1,65535), context + ': invalid effect')
         require(callback.get('native_rule') is None or not effects, context + ': native rule has unrelated effects')
         effects = {}
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'scripted_teleport'}
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'reward_door', 'party_transfer', 'quest_completion', 'scripted_teleport'}
     fields(effects, set(), allowed, context + ': effects')
     if 'scripted_teleport' in effects:
         require(type(effects['scripted_teleport']) is bool, context + ': invalid scripted teleport')
@@ -251,15 +251,37 @@ def validate_effects(callback, context):
                     and isinstance(callback.get('selector', {}).get('native'), dict)
                     and callback.get('actor_kind', 'player') == 'player',
                     context + ': scripted teleport requires native player destination')
-    require(legacy_facing is None or effects.get('facing') is None,
-            context + ': conflicting destination facings')
-    outfit = effects.get('outfit_reward')
+    require(not (callback.get('outfit_reward') is not None and effects.get('outfit_reward') is not None),
+            context + ': duplicate outfit participant')
+    outfit = callback.get('outfit_reward', effects.get('outfit_reward'))
+    require(callback.get('native_rule') is None or outfit is None,
+            context + ': native rule has unrelated outfit reward')
+    require(legacy_facing is None or effects.get('facing') is None, context + ': conflicting destination facings')
+    completion = effects.get('quest_completion')
+    if completion is not None:
+        fields(completion, set(), {'claimed_rewards'}, context + ': completion')
+        claims = completion.get('claimed_rewards', [])
+        require(isinstance(claims, list) and len(claims) <= 8
+                and all(isinstance(key, str) and valid_key(key)
+                        and key.startswith('oteryn:reward-claim.') for key in claims)
+                and len(set(claims)) == len(claims), context + ': completion claims')
+        require(callback['storage'] and any(
+                    not storage.get('preserve', False)
+                    and not storage['minimum'] <= storage['set'] <= storage['maximum']
+                    for storage in callback['storage'])
+                and not callback['reversible'] and callback.get('native_rule') is None
+                and callback.get('monk_reward') is None
+                and all(effects.get(field) is None for field in (
+                    'portals', 'item_cycle', 'encounter', 'reward_door',
+                    'party_transfer', 'outfit_reward')) and outfit is None, context + ': incompatible completion')
+
     if outfit is not None:
         fields(outfit, {'outfit','addons'}, {'outfit','addons'}, context + ': outfit reward')
         require(isinstance(outfit['outfit'],str) and len(outfit['outfit'])<=160
                 and re.fullmatch(r'oteryn:outfit\.[a-z0-9_]+',outfit['outfit']) is not None
                 and integer(outfit['addons'],0,3), context + ': invalid outfit reward')
         require(callback['trigger']=='use' and callback['storage']
+                and not any(s.get('read_only', False) for s in callback['storage'])
                 and any(not s.get('preserve',False) and not s['minimum']<=s['set']<=s['maximum']
                         for s in callback['storage']), context + ': repeatable outfit reward')
     transform = effects.get('transform')
@@ -276,11 +298,47 @@ def validate_effects(callback, context):
         fields(magic, {'position', 'effect'}, {'position', 'effect'}, context + ': magic')
         position(magic['position'], context + ': magic')
         require(integer(magic['effect'], 1, 65535), context + ': invalid magic effect')
-    operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter'))
+    operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter', 'reward_door', 'party_transfer'))
     require(operations <= 1 and (operations == 0 or callback['trigger'] == 'use'
-            and callback.get('lever') is not None and not callback['storage']
+            and callback.get('lever') is not None and (not callback['storage'] or effects.get('party_transfer') is not None)
             and not callback['passages'] and callback.get('teleport') is None),
             context + ': incompatible map effects')
+    party = effects.get('party_transfer')
+    if party is not None:
+        fields(party, {'activation_appearance', 'stations'}, {'activation_appearance', 'stations'}, context + ': party transfer')
+        require(integer(party['activation_appearance'], 1, 65535)
+                and party['activation_appearance'] in callback['lever']
+                and callback.get('reversible') is True and callback['storage']
+                and callback.get('minimum_level') is None and callback.get('experience') is None
+                and callback.get('monk_reward') is None and callback.get('native_rule') is None
+                and callback.get('item_on_target') is None
+                and all(effects.get(field) is None for field in ('outfit_reward', 'transform', 'facing', 'magic')),
+                context + ': incompatible party transfer')
+        require(isinstance(party['stations'], list) and 1 <= len(party['stations']) <= MAX_EFFECTS
+                and len(callback['offerings']) == len(party['stations']), context + ': party bounds')
+        origins, destinations, altars = set(), set(), set()
+        for station in party['stations']:
+            names = {'from', 'to', 'vocation', 'offering'}
+            fields(station, names, names, context + ': party station')
+            origin = position(station['from'], context + ': party origin')
+            destination = position(station['to'], context + ': party destination')
+            altar = position(station['offering'], context + ': party altar')
+            require(origin not in origins and destination not in destinations and altar not in altars
+                    and origin != destination and station['vocation'] in ('sorcerer','druid','paladin','knight','monk')
+                    and sum(o['position'] == station['offering'] and o['count'] == 1 for o in callback['offerings']) == 1,
+                    context + ': invalid or duplicated party station')
+            origins.add(origin)
+            destinations.add(destination)
+            altars.add(altar)
+    reward_door = effects.get('reward_door')
+    if reward_door is not None:
+        fields(reward_door, {'claim'}, {'claim'}, context + ': reward door')
+        require(valid_key(reward_door['claim']) and reward_door['claim'].startswith('oteryn:reward-claim.')
+                and callback.get('reversible') is True and callback['selector'].get('action') is not None
+                and callback.get('item_on_target') is None and not callback['offerings']
+                and effects.get('outfit_reward') is None and effects.get('transform') is None
+                and effects.get('facing') is None and effects.get('magic') is None,
+                context + ': incompatible reward door')
     pair = effects.get('portals')
     if pair is not None:
         fields(pair, {'appearance', 'portals'}, {'appearance', 'portals', 'lifetime_us'}, context + ': pair')
@@ -369,16 +427,30 @@ def validate_callback(callback, directory):
                 key + ': invalid lever')
     if callback.get('teleport') is not None:
         position(callback['teleport'], key + ': teleport')
+    remote = callback.get('remote_teleport')
+    if remote is not None:
+        fields(remote, {'position', 'appearance', 'destination'},
+               {'position', 'appearance', 'destination'}, key + ': remote teleport')
+        position(remote['position'], key + ': remote object')
+        position(remote['destination'], key + ': remote destination')
+        require(integer(remote['appearance'], 1, 65535)
+                and callback['trigger'] == 'step_in' and callback['storage']
+                and all(entry.get('read_only', False) for entry in callback['storage']),
+                key + ': remote teleport requires a read-only STEP gate')
     if callback.get('facing') is not None:
         require(integer(callback['facing'], 0, 3) and callback.get('teleport') is not None,
                 key + ': invalid facing')
+    if callback.get('failure_teleport') is not None:
+        position(callback['failure_teleport'], key + ': failure_teleport')
+        require(callback['trigger'] == 'step_in' and callback['return_on_failure'],
+                key + ': failure teleport requires a returning STEP')
     for field in ('passages', 'storage', 'offerings'):
         require(isinstance(callback[field], list) and len(callback[field]) <= MAX_EFFECTS,
                 key + ': invalid or excessive ' + field)
     seen = set()
     for storage in callback['storage']:
         fields(storage, {'track', 'minimum', 'maximum', 'set'},
-               {'track', 'minimum', 'maximum', 'set', 'preserve', 'increment'}, key + ': storage')
+               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only', 'increment', 'at_least', 'set_if'}, key + ': storage')
         require(valid_key(storage['track']) and storage['track'] not in seen, key + ': duplicate or invalid track')
         seen.add(storage['track'])
         require(all(integer(storage[field], -(2 ** 63), 2 ** 63 - 1) for field in ('minimum', 'maximum', 'set'))
@@ -387,15 +459,41 @@ def validate_callback(callback, directory):
         require(type(storage.get('increment', False)) is bool, key + ': invalid increment')
         if storage.get('increment', False):
             require(storage['set'] > 0 and not storage.get('preserve', False)
+                    and not storage.get('read_only', False)
                     and callback.get('native_rule') is None
                     and storage['maximum'] <= 2 ** 63 - 1 - storage['set'], key + ': invalid increment')
+        require(type(storage.get('at_least', False)) is bool, key + ': invalid at_least')
+        if storage.get('at_least', False):
+            require(not storage.get('preserve', False) and not storage.get('increment', False)
+                    and callback.get('native_rule') is None, key + ': invalid at_least')
+        if storage.get('set_if') is not None:
+            require(integer(storage['set_if'], storage['minimum'], storage['maximum'])
+                    and not storage.get('preserve', False) and not storage.get('read_only', False)
+                    and not storage.get('increment', False) and not storage.get('at_least', False)
+                    and callback.get('native_rule') is None, key + ': invalid conditional set')
+        require(type(storage.get('read_only', False)) is bool, key + ': invalid read_only')
+    if any(entry.get('read_only', False) for entry in callback['storage']):
+        require(all(entry.get('read_only', False) and not entry.get('preserve', False)
+                    for entry in callback['storage'])
+                and not (callback['trigger'] == 'step_in' and not callback['return_on_failure'])
+                and callback.get('teleport') is not None
+                and not callback.get('lever') and not callback['passages']
+                and not callback['offerings'] and not callback.get('item_on_target')
+                and callback.get('minimum_level') is None and callback.get('experience') is None
+                and callback.get('monk_reward') is None and callback.get('native_rule') is None,
+                key + ': invalid read-only callback')
     seen = set()
     for passage in callback['passages']:
-        fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement', 'create_on_close'}, key + ': passage')
+        fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement', 'require_state', 'create_on_close'}, key + ': passage')
         location = position(passage['position'], key + ': passage')
         require(location not in seen and integer(passage['appearance'], 0, 65535), key + ': invalid or duplicate passage')
         seen.add(location)
         nullable_id(passage.get('replacement'), key + ': passage replacement')
+        require(type(passage.get('require_state', False)) is bool, key + ': invalid passage state guard')
+        if passage.get('require_state', False):
+            require(callback['trigger'] == 'use' and callback.get('lever') is not None
+                    and callback['reversible'] and passage.get('replacement') is None,
+                    key + ': passage state guard requires a reversible removal lever')
         create = passage.get('create_on_close')
         if create is not None:
             require(integer(create, 1, 65535) and create != passage['appearance']

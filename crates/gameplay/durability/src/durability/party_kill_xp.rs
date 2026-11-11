@@ -107,6 +107,13 @@ pub(crate) fn decoded_death_scope(
     Some((scope, generation))
 }
 
+/// The same decoder fences XP and its native encounter descendants. Scope kind
+/// is part of identity, including when Channel and Instance UUID bytes coincide.
+pub(crate) fn death_matches_fence(death: &[u8], fence: &CurrentCharacterGameplayFence) -> bool {
+    decoded_death_scope(death)
+        == Some((fence.runtime_scope, fence.scope_ownership_generation.get()))
+}
+
 /// Holds the death lock through planning; an existing receipt is terminal data, never a grant.
 pub async fn reconcile_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
@@ -471,6 +478,46 @@ mod scoped_death_tests {
             5_u64.to_be_bytes().as_slice(),
         ]
         .concat()
+    }
+
+    #[test]
+    fn native_death_fence_keeps_scope_kind_world_and_generation() -> std::result::Result<(), String>
+    {
+        use crate::foundation::{ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
+        let channel = channel_bytes();
+        let mut instance = vec![2];
+        instance.extend_from_slice(&channel);
+        let (channel_scope, generation) = decoded_death_scope(&channel).ok_or("channel source")?;
+        let (instance_scope, _) = decoded_death_scope(&instance).ok_or("Instance source")?;
+        let mut fence = CurrentCharacterGameplayFence {
+            character_id: CharacterId::from_bytes(id(3)).map_err(|e| format!("{e:?}"))?,
+            game_session_id: GameSessionId::decode(&id(4)).map_err(|e| format!("{e:?}"))?,
+            connection_generation: ConnectionGeneration::new(1).map_err(|e| format!("{e:?}"))?,
+            character_lease_generation: 1,
+            runtime_scope: channel_scope,
+            scope_ownership_generation: ScopeOwnershipGeneration::new(generation)
+                .map_err(|e| format!("{e:?}"))?,
+            expected_character_revision: crate::domain::CharacterRevision::new(1)
+                .map_err(|e| format!("{e:?}"))?,
+        };
+        assert!(death_matches_fence(&channel, &fence));
+        assert!(!death_matches_fence(&instance, &fence));
+        fence.runtime_scope = instance_scope;
+        assert!(death_matches_fence(&instance, &fence));
+        assert!(!death_matches_fence(&channel, &fence));
+        let mut foreign = instance.clone();
+        foreign[1..17].copy_from_slice(&id(9));
+        assert!(!death_matches_fence(&foreign, &fence));
+        foreign = instance.clone();
+        foreign[0] = 1;
+        assert!(!death_matches_fence(&foreign, &fence));
+        for length in 0..instance.len() {
+            assert!(!death_matches_fence(&instance[..length], &fence));
+        }
+        fence.scope_ownership_generation =
+            ScopeOwnershipGeneration::new(generation + 1).map_err(|e| format!("{e:?}"))?;
+        assert!(!death_matches_fence(&instance, &fence));
+        Ok(())
     }
 
     #[test]

@@ -1,0 +1,1970 @@
+[
+  {
+    "name": "25_years_of _tibia_quest",
+    "path": "data-global/scripts/quests/25_years_of _tibia_quest",
+    "sha": "44ca2e1bb49fbae994eacd8daddac5944102b258",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/25_years_of%20_tibia_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/25_years_of%20_tibia_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/44ca2e1bb49fbae994eacd8daddac5944102b258",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/25_years_of%20_tibia_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/44ca2e1bb49fbae994eacd8daddac5944102b258",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/25_years_of%20_tibia_quest"
+    }
+  },
+  {
+    "name": "a_piece_of_cake",
+    "path": "data-global/scripts/quests/a_piece_of_cake",
+    "sha": "8abcbf7a4561c3612e9adb5545afa9656684015c",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/a_piece_of_cake?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/a_piece_of_cake",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/8abcbf7a4561c3612e9adb5545afa9656684015c",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/a_piece_of_cake?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/8abcbf7a4561c3612e9adb5545afa9656684015c",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/a_piece_of_cake"
+    }
+  },
+  {
+    "name": "a_pirates_tail_quest",
+    "path": "data-global/scripts/quests/a_pirates_tail_quest",
+    "sha": "c9320f46b65232ab980528d4e033aa4561676685",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/a_pirates_tail_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/a_pirates_tail_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c9320f46b65232ab980528d4e033aa4561676685",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/a_pirates_tail_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c9320f46b65232ab980528d4e033aa4561676685",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/a_pirates_tail_quest"
+    }
+  },
+  {
+    "name": "adventures_of_galthen",
+    "path": "data-global/scripts/quests/adventures_of_galthen",
+    "sha": "a2d0d1cc2266cae7096801212c864a89196b686f",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/adventures_of_galthen?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/adventures_of_galthen",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a2d0d1cc2266cae7096801212c864a89196b686f",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/adventures_of_galthen?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a2d0d1cc2266cae7096801212c864a89196b686f",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/adventures_of_galthen"
+    }
+  },
+  {
+    "name": "alawars_vault",
+    "path": "data-global/scripts/quests/alawars_vault",
+    "sha": "77e009704e5871564aa964efb9fb30088be1bb21",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/alawars_vault?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/alawars_vault",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/77e009704e5871564aa964efb9fb30088be1bb21",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/alawars_vault?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/77e009704e5871564aa964efb9fb30088be1bb21",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/alawars_vault"
+    }
+  },
+  {
+    "name": "an_uneasy_alliance",
+    "path": "data-global/scripts/quests/an_uneasy_alliance",
+    "sha": "768364c8372f8532db3faec9c00039e753c47fee",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/an_uneasy_alliance?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/an_uneasy_alliance",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/768364c8372f8532db3faec9c00039e753c47fee",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/an_uneasy_alliance?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/768364c8372f8532db3faec9c00039e753c47fee",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/an_uneasy_alliance"
+    }
+  },
+  {
+    "name": "assassin_outfit",
+    "path": "data-global/scripts/quests/assassin_outfit",
+    "sha": "2c094b870283d414a8f4de445f6b3ec49295b279",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/assassin_outfit?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/assassin_outfit",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/2c094b870283d414a8f4de445f6b3ec49295b279",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/assassin_outfit?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/2c094b870283d414a8f4de445f6b3ec49295b279",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/assassin_outfit"
+    }
+  },
+  {
+    "name": "barbarian_test",
+    "path": "data-global/scripts/quests/barbarian_test",
+    "sha": "087a86c8219c7c3f82d9689a7753b2d35e8810cb",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/barbarian_test?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/barbarian_test",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/087a86c8219c7c3f82d9689a7753b2d35e8810cb",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/barbarian_test?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/087a86c8219c7c3f82d9689a7753b2d35e8810cb",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/barbarian_test"
+    }
+  },
+  {
+    "name": "behemoth",
+    "path": "data-global/scripts/quests/behemoth",
+    "sha": "3b7488610ac1c0cab24305faa2533cf97a4285a4",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/behemoth?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/behemoth",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3b7488610ac1c0cab24305faa2533cf97a4285a4",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/behemoth?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3b7488610ac1c0cab24305faa2533cf97a4285a4",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/behemoth"
+    }
+  },
+  {
+    "name": "between_the_lines",
+    "path": "data-global/scripts/quests/between_the_lines",
+    "sha": "ca29e4c4c674c39c24a34762138d3363c428c71a",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/between_the_lines?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/between_the_lines",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/ca29e4c4c674c39c24a34762138d3363c428c71a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/between_the_lines?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/ca29e4c4c674c39c24a34762138d3363c428c71a",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/between_the_lines"
+    }
+  },
+  {
+    "name": "bigfoot_burden",
+    "path": "data-global/scripts/quests/bigfoot_burden",
+    "sha": "6b2b2ad090f9e90cab1f48cdf8320943bb67b2e2",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/bigfoot_burden?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/bigfoot_burden",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/6b2b2ad090f9e90cab1f48cdf8320943bb67b2e2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/bigfoot_burden?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/6b2b2ad090f9e90cab1f48cdf8320943bb67b2e2",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/bigfoot_burden"
+    }
+  },
+  {
+    "name": "blood_brothers_quest",
+    "path": "data-global/scripts/quests/blood_brothers_quest",
+    "sha": "b45fc4b651311a829607e18b0b1049cf29b4e14d",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/blood_brothers_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/b45fc4b651311a829607e18b0b1049cf29b4e14d",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/blood_brothers_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/b45fc4b651311a829607e18b0b1049cf29b4e14d",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest"
+    }
+  },
+  {
+    "name": "candia_bosses",
+    "path": "data-global/scripts/quests/candia_bosses",
+    "sha": "7e9104c843759b0ed7105ae4e0e6d86fc6926204",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/candia_bosses?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/candia_bosses",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/7e9104c843759b0ed7105ae4e0e6d86fc6926204",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/candia_bosses?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/7e9104c843759b0ed7105ae4e0e6d86fc6926204",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/candia_bosses"
+    }
+  },
+  {
+    "name": "chayenne_realm",
+    "path": "data-global/scripts/quests/chayenne_realm",
+    "sha": "65ed933d00d1bc474da97d1d79551ce4170ace10",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/chayenne_realm?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/chayenne_realm",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/65ed933d00d1bc474da97d1d79551ce4170ace10",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/chayenne_realm?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/65ed933d00d1bc474da97d1d79551ce4170ace10",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/chayenne_realm"
+    }
+  },
+  {
+    "name": "children_of_the_revolution",
+    "path": "data-global/scripts/quests/children_of_the_revolution",
+    "sha": "d7032c511829ea925403ff17114d17447e18fe35",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/children_of_the_revolution?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/children_of_the_revolution",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/d7032c511829ea925403ff17114d17447e18fe35",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/children_of_the_revolution?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/d7032c511829ea925403ff17114d17447e18fe35",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/children_of_the_revolution"
+    }
+  },
+  {
+    "name": "cradle_of_monsters",
+    "path": "data-global/scripts/quests/cradle_of_monsters",
+    "sha": "8faccebb403ab1783fe7abe4f7f75769dafc1c67",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/cradle_of_monsters?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/cradle_of_monsters",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/8faccebb403ab1783fe7abe4f7f75769dafc1c67",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/cradle_of_monsters?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/8faccebb403ab1783fe7abe4f7f75769dafc1c67",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/cradle_of_monsters"
+    }
+  },
+  {
+    "name": "cults_of_tibia",
+    "path": "data-global/scripts/quests/cults_of_tibia",
+    "sha": "ab3bf7776d21efba3b021c10cafbfc6bf83901d4",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/cults_of_tibia?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/cults_of_tibia",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/ab3bf7776d21efba3b021c10cafbfc6bf83901d4",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/cults_of_tibia?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/ab3bf7776d21efba3b021c10cafbfc6bf83901d4",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/cults_of_tibia"
+    }
+  },
+  {
+    "name": "dangerous_depth",
+    "path": "data-global/scripts/quests/dangerous_depth",
+    "sha": "a621d2ea38d3b6e7b5260da310d53d05da904ee5",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/dangerous_depth?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dangerous_depth",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a621d2ea38d3b6e7b5260da310d53d05da904ee5",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/dangerous_depth?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a621d2ea38d3b6e7b5260da310d53d05da904ee5",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dangerous_depth"
+    }
+  },
+  {
+    "name": "dark_trails",
+    "path": "data-global/scripts/quests/dark_trails",
+    "sha": "1fe5e0159bfef89cc80a73c06cedd114f42fe71b",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/dark_trails?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dark_trails",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/1fe5e0159bfef89cc80a73c06cedd114f42fe71b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/dark_trails?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/1fe5e0159bfef89cc80a73c06cedd114f42fe71b",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dark_trails"
+    }
+  },
+  {
+    "name": "dawnport",
+    "path": "data-global/scripts/quests/dawnport",
+    "sha": "7513aceb19f5ed2fe6f104a531a7b3a2ce1174c4",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/dawnport?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/7513aceb19f5ed2fe6f104a531a7b3a2ce1174c4",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/dawnport?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/7513aceb19f5ed2fe6f104a531a7b3a2ce1174c4",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport"
+    }
+  },
+  {
+    "name": "deeper_fibula",
+    "path": "data-global/scripts/quests/deeper_fibula",
+    "sha": "e42b77d131b813f51de10ebe1f3ae74e471fd045",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/deeper_fibula?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/deeper_fibula",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/e42b77d131b813f51de10ebe1f3ae74e471fd045",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/deeper_fibula?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/e42b77d131b813f51de10ebe1f3ae74e471fd045",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/deeper_fibula"
+    }
+  },
+  {
+    "name": "deeplings_worldchange",
+    "path": "data-global/scripts/quests/deeplings_worldchange",
+    "sha": "c2d64a76cce3dcfeda0a53a914a221efd0b4e049",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/deeplings_worldchange?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/deeplings_worldchange",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c2d64a76cce3dcfeda0a53a914a221efd0b4e049",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/deeplings_worldchange?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c2d64a76cce3dcfeda0a53a914a221efd0b4e049",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/deeplings_worldchange"
+    }
+  },
+  {
+    "name": "demon_helmet",
+    "path": "data-global/scripts/quests/demon_helmet",
+    "sha": "66567726c33cb6f8981aa59932a6954757bc766c",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/demon_helmet?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/demon_helmet",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/66567726c33cb6f8981aa59932a6954757bc766c",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/demon_helmet?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/66567726c33cb6f8981aa59932a6954757bc766c",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/demon_helmet"
+    }
+  },
+  {
+    "name": "demon_oak",
+    "path": "data-global/scripts/quests/demon_oak",
+    "sha": "3cbc0c4730afef3f132cccb0a4cdcbd194662bf6",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/demon_oak?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/demon_oak",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3cbc0c4730afef3f132cccb0a4cdcbd194662bf6",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/demon_oak?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3cbc0c4730afef3f132cccb0a4cdcbd194662bf6",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/demon_oak"
+    }
+  },
+  {
+    "name": "desert_dungeon_quest",
+    "path": "data-global/scripts/quests/desert_dungeon_quest",
+    "sha": "0f3e889000f686677c1114f012bc4a8ed3b18007",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/desert_dungeon_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/desert_dungeon_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/0f3e889000f686677c1114f012bc4a8ed3b18007",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/desert_dungeon_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/0f3e889000f686677c1114f012bc4a8ed3b18007",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/desert_dungeon_quest"
+    }
+  },
+  {
+    "name": "devil_helmet",
+    "path": "data-global/scripts/quests/devil_helmet",
+    "sha": "b42b095a406b3ec6914ae231c51a4bf1fed5b447",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/devil_helmet?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/devil_helmet",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/b42b095a406b3ec6914ae231c51a4bf1fed5b447",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/devil_helmet?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/b42b095a406b3ec6914ae231c51a4bf1fed5b447",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/devil_helmet"
+    }
+  },
+  {
+    "name": "draconia",
+    "path": "data-global/scripts/quests/draconia",
+    "sha": "463236e3e0ec4aec70928c46e5a6d8757dcb4500",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/draconia?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/draconia",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/463236e3e0ec4aec70928c46e5a6d8757dcb4500",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/draconia?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/463236e3e0ec4aec70928c46e5a6d8757dcb4500",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/draconia"
+    }
+  },
+  {
+    "name": "dreamers_challenge_quest",
+    "path": "data-global/scripts/quests/dreamers_challenge_quest",
+    "sha": "c315259eaaf9a03ed9e38bdbb44ae2ae8a0f8376",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/dreamers_challenge_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dreamers_challenge_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c315259eaaf9a03ed9e38bdbb44ae2ae8a0f8376",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/dreamers_challenge_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c315259eaaf9a03ed9e38bdbb44ae2ae8a0f8376",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dreamers_challenge_quest"
+    }
+  },
+  {
+    "name": "druid_outfits_quest",
+    "path": "data-global/scripts/quests/druid_outfits_quest",
+    "sha": "e07539e48e9286a5d0828f948c43a39cef7b0f19",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/druid_outfits_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/druid_outfits_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/e07539e48e9286a5d0828f948c43a39cef7b0f19",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/druid_outfits_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/e07539e48e9286a5d0828f948c43a39cef7b0f19",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/druid_outfits_quest"
+    }
+  },
+  {
+    "name": "edron_rope",
+    "path": "data-global/scripts/quests/edron_rope",
+    "sha": "85c6b490636cdaf93c2b74c73029e41731fe1274",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/edron_rope?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/edron_rope",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/85c6b490636cdaf93c2b74c73029e41731fe1274",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/edron_rope?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/85c6b490636cdaf93c2b74c73029e41731fe1274",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/edron_rope"
+    }
+  },
+  {
+    "name": "elemental_spheres",
+    "path": "data-global/scripts/quests/elemental_spheres",
+    "sha": "62b651171848146b0827774c68317a16c6196a0c",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/elemental_spheres?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/62b651171848146b0827774c68317a16c6196a0c",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/elemental_spheres?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/62b651171848146b0827774c68317a16c6196a0c",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres"
+    }
+  },
+  {
+    "name": "extension_mota",
+    "path": "data-global/scripts/quests/extension_mota",
+    "sha": "a5e08a5bb347813992df17e51c4cec3f7bc39a6b",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/extension_mota?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/extension_mota",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a5e08a5bb347813992df17e51c4cec3f7bc39a6b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/extension_mota?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a5e08a5bb347813992df17e51c4cec3f7bc39a6b",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/extension_mota"
+    }
+  },
+  {
+    "name": "fathers_burden",
+    "path": "data-global/scripts/quests/fathers_burden",
+    "sha": "b0aedd62b9049d8f8f3549458afb15b2134154f0",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/fathers_burden?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/fathers_burden",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/b0aedd62b9049d8f8f3549458afb15b2134154f0",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/fathers_burden?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/b0aedd62b9049d8f8f3549458afb15b2134154f0",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/fathers_burden"
+    }
+  },
+  {
+    "name": "feaster_of_souls",
+    "path": "data-global/scripts/quests/feaster_of_souls",
+    "sha": "006e83ebf086a516b3001a681704ee10cc88adab",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/feaster_of_souls?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/feaster_of_souls",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/006e83ebf086a516b3001a681704ee10cc88adab",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/feaster_of_souls?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/006e83ebf086a516b3001a681704ee10cc88adab",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/feaster_of_souls"
+    }
+  },
+  {
+    "name": "ferumbras_ascension",
+    "path": "data-global/scripts/quests/ferumbras_ascension",
+    "sha": "3a66f09b5c8e6052682a4b0f7655f3bcb7c414be",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/ferumbras_ascension?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/ferumbras_ascension",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3a66f09b5c8e6052682a4b0f7655f3bcb7c414be",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/ferumbras_ascension?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3a66f09b5c8e6052682a4b0f7655f3bcb7c414be",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/ferumbras_ascension"
+    }
+  },
+  {
+    "name": "forgotten_knowledge",
+    "path": "data-global/scripts/quests/forgotten_knowledge",
+    "sha": "3f8b8d3471d7b61b150d3ab16ba6aaa8f019395b",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/forgotten_knowledge?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/forgotten_knowledge",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3f8b8d3471d7b61b150d3ab16ba6aaa8f019395b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/forgotten_knowledge?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3f8b8d3471d7b61b150d3ab16ba6aaa8f019395b",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/forgotten_knowledge"
+    }
+  },
+  {
+    "name": "formogar_mine_hoist",
+    "path": "data-global/scripts/quests/formogar_mine_hoist",
+    "sha": "bdec47e8d3dc87689bb80181b7807ece9532edd4",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/formogar_mine_hoist?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/formogar_mine_hoist",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/bdec47e8d3dc87689bb80181b7807ece9532edd4",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/formogar_mine_hoist?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/bdec47e8d3dc87689bb80181b7807ece9532edd4",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/formogar_mine_hoist"
+    }
+  },
+  {
+    "name": "giant_smithhammer",
+    "path": "data-global/scripts/quests/giant_smithhammer",
+    "sha": "403da50608953f94cb859f2098a5ad05cb304617",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/giant_smithhammer?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/giant_smithhammer",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/403da50608953f94cb859f2098a5ad05cb304617",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/giant_smithhammer?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/403da50608953f94cb859f2098a5ad05cb304617",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/giant_smithhammer"
+    }
+  },
+  {
+    "name": "grave_danger",
+    "path": "data-global/scripts/quests/grave_danger",
+    "sha": "01cc358abfc7e83bd872cfe8e26ef7da0062837b",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/grave_danger?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/grave_danger",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/01cc358abfc7e83bd872cfe8e26ef7da0062837b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/grave_danger?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/01cc358abfc7e83bd872cfe8e26ef7da0062837b",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/grave_danger"
+    }
+  },
+  {
+    "name": "grimvale",
+    "path": "data-global/scripts/quests/grimvale",
+    "sha": "f6515fff444c9a75e13abfda3952c5d3ae573ba0",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/grimvale?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/grimvale",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/f6515fff444c9a75e13abfda3952c5d3ae573ba0",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/grimvale?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/f6515fff444c9a75e13abfda3952c5d3ae573ba0",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/grimvale"
+    }
+  },
+  {
+    "name": "heart_of_destruction",
+    "path": "data-global/scripts/quests/heart_of_destruction",
+    "sha": "0d2db2acf3087a26226cc5d21ccd2fb336577ae4",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/heart_of_destruction?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/heart_of_destruction",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/0d2db2acf3087a26226cc5d21ccd2fb336577ae4",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/heart_of_destruction?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/0d2db2acf3087a26226cc5d21ccd2fb336577ae4",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/heart_of_destruction"
+    }
+  },
+  {
+    "name": "hero_of_rathleton",
+    "path": "data-global/scripts/quests/hero_of_rathleton",
+    "sha": "1c423384ba62c86d3b74353fae31d739ee7b1958",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/hero_of_rathleton?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/hero_of_rathleton",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/1c423384ba62c86d3b74353fae31d739ee7b1958",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/hero_of_rathleton?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/1c423384ba62c86d3b74353fae31d739ee7b1958",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/hero_of_rathleton"
+    }
+  },
+  {
+    "name": "hidden_threats",
+    "path": "data-global/scripts/quests/hidden_threats",
+    "sha": "011fd266519399a9649ba2705fbe52117e186c14",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/hidden_threats?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/hidden_threats",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/011fd266519399a9649ba2705fbe52117e186c14",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/hidden_threats?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/011fd266519399a9649ba2705fbe52117e186c14",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/hidden_threats"
+    }
+  },
+  {
+    "name": "hot_cuisine",
+    "path": "data-global/scripts/quests/hot_cuisine",
+    "sha": "8a2b35c980da21bd510780cbf7848a3eab29a81e",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/hot_cuisine?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/hot_cuisine",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/8a2b35c980da21bd510780cbf7848a3eab29a81e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/hot_cuisine?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/8a2b35c980da21bd510780cbf7848a3eab29a81e",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/hot_cuisine"
+    }
+  },
+  {
+    "name": "hunter_outfits_quest",
+    "path": "data-global/scripts/quests/hunter_outfits_quest",
+    "sha": "d0e0994c915aa3f8e6a24b1286f3197531bb4e28",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/hunter_outfits_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/hunter_outfits_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/d0e0994c915aa3f8e6a24b1286f3197531bb4e28",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/hunter_outfits_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/d0e0994c915aa3f8e6a24b1286f3197531bb4e28",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/hunter_outfits_quest"
+    }
+  },
+  {
+    "name": "in_service_of_yalahar",
+    "path": "data-global/scripts/quests/in_service_of_yalahar",
+    "sha": "4ddb01d3897830a929a3b7d22926241abc2512cf",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/in_service_of_yalahar?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/in_service_of_yalahar",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/4ddb01d3897830a929a3b7d22926241abc2512cf",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/in_service_of_yalahar?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/4ddb01d3897830a929a3b7d22926241abc2512cf",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/in_service_of_yalahar"
+    }
+  },
+  {
+    "name": "killing_in_the_name_of",
+    "path": "data-global/scripts/quests/killing_in_the_name_of",
+    "sha": "f436e6d547d68d821785e1b7752ee1b52512eded",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/killing_in_the_name_of?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/killing_in_the_name_of",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/f436e6d547d68d821785e1b7752ee1b52512eded",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/killing_in_the_name_of?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/f436e6d547d68d821785e1b7752ee1b52512eded",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/killing_in_the_name_of"
+    }
+  },
+  {
+    "name": "kilmaresh",
+    "path": "data-global/scripts/quests/kilmaresh",
+    "sha": "fc4a2355a85a4dc795f739ee5564aacba2fd7296",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/kilmaresh?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/kilmaresh",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/fc4a2355a85a4dc795f739ee5564aacba2fd7296",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/kilmaresh?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/fc4a2355a85a4dc795f739ee5564aacba2fd7296",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/kilmaresh"
+    }
+  },
+  {
+    "name": "koshei_the_deathless_quest",
+    "path": "data-global/scripts/quests/koshei_the_deathless_quest",
+    "sha": "f7c00ad4a40943f71e8a92ce8fdc19020343b1c2",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/koshei_the_deathless_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/koshei_the_deathless_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/f7c00ad4a40943f71e8a92ce8fdc19020343b1c2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/koshei_the_deathless_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/f7c00ad4a40943f71e8a92ce8fdc19020343b1c2",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/koshei_the_deathless_quest"
+    }
+  },
+  {
+    "name": "krailos",
+    "path": "data-global/scripts/quests/krailos",
+    "sha": "01f9c15845fd01667b42e0dc694c5dde38f62422",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/krailos?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/krailos",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/01f9c15845fd01667b42e0dc694c5dde38f62422",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/krailos?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/01f9c15845fd01667b42e0dc694c5dde38f62422",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/krailos"
+    }
+  },
+  {
+    "name": "lions_rock",
+    "path": "data-global/scripts/quests/lions_rock",
+    "sha": "a1f239bd8bd4847d0e66d620c86b36c0cbb64f7c",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/lions_rock?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/lions_rock",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a1f239bd8bd4847d0e66d620c86b36c0cbb64f7c",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/lions_rock?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a1f239bd8bd4847d0e66d620c86b36c0cbb64f7c",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/lions_rock"
+    }
+  },
+  {
+    "name": "liquid_black",
+    "path": "data-global/scripts/quests/liquid_black",
+    "sha": "c3bc1e4a40cfc5e4d60c0223f9b9a9a9fa040148",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/liquid_black?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c3bc1e4a40cfc5e4d60c0223f9b9a9a9fa040148",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/liquid_black?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c3bc1e4a40cfc5e4d60c0223f9b9a9a9fa040148",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black"
+    }
+  },
+  {
+    "name": "marapur",
+    "path": "data-global/scripts/quests/marapur",
+    "sha": "26614e6ef9337f370fcfc46cf0c137b99b8f2a58",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/marapur?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/marapur",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/26614e6ef9337f370fcfc46cf0c137b99b8f2a58",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/marapur?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/26614e6ef9337f370fcfc46cf0c137b99b8f2a58",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/marapur"
+    }
+  },
+  {
+    "name": "mintwallin_quest",
+    "path": "data-global/scripts/quests/mintwallin_quest",
+    "sha": "db147cfe31c89fb316a54b75a3a03d60997238a6",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/mintwallin_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/mintwallin_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/db147cfe31c89fb316a54b75a3a03d60997238a6",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/mintwallin_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/db147cfe31c89fb316a54b75a3a03d60997238a6",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/mintwallin_quest"
+    }
+  },
+  {
+    "name": "mysterious_ornate",
+    "path": "data-global/scripts/quests/mysterious_ornate",
+    "sha": "86b83a0569143bbcc9cd6744de420edb1ddf01d3",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/mysterious_ornate?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/mysterious_ornate",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/86b83a0569143bbcc9cd6744de420edb1ddf01d3",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/mysterious_ornate?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/86b83a0569143bbcc9cd6744de420edb1ddf01d3",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/mysterious_ornate"
+    }
+  },
+  {
+    "name": "newhaven",
+    "path": "data-global/scripts/quests/newhaven",
+    "sha": "126b5895945fcf7175d3fd7515797ef63dac82d8",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/126b5895945fcf7175d3fd7515797ef63dac82d8",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/126b5895945fcf7175d3fd7515797ef63dac82d8",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven"
+    }
+  },
+  {
+    "name": "no_rest_for_the_wicked",
+    "path": "data-global/scripts/quests/no_rest_for_the_wicked",
+    "sha": "7b744807ef337101cbef3542c827cdc28788a368",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/no_rest_for_the_wicked?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/no_rest_for_the_wicked",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/7b744807ef337101cbef3542c827cdc28788a368",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/no_rest_for_the_wicked?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/7b744807ef337101cbef3542c827cdc28788a368",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/no_rest_for_the_wicked"
+    }
+  },
+  {
+    "name": "oramond",
+    "path": "data-global/scripts/quests/oramond",
+    "sha": "2de43fb88d8389b8046e8d04b000243b941ff3db",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/oramond?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/oramond",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/2de43fb88d8389b8046e8d04b000243b941ff3db",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/oramond?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/2de43fb88d8389b8046e8d04b000243b941ff3db",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/oramond"
+    }
+  },
+  {
+    "name": "others",
+    "path": "data-global/scripts/quests/others",
+    "sha": "865adabea94390db8f39f80a892b5493411c2516",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/865adabea94390db8f39f80a892b5493411c2516",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/others?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/865adabea94390db8f39f80a892b5493411c2516",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others"
+    }
+  },
+  {
+    "name": "parchment_room",
+    "path": "data-global/scripts/quests/parchment_room",
+    "sha": "c87f227d667cbca4ede9a662b2283aa270ff34f5",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/parchment_room?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/parchment_room",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c87f227d667cbca4ede9a662b2283aa270ff34f5",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/parchment_room?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c87f227d667cbca4ede9a662b2283aa270ff34f5",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/parchment_room"
+    }
+  },
+  {
+    "name": "primal_ordeal_quest",
+    "path": "data-global/scripts/quests/primal_ordeal_quest",
+    "sha": "d504842c9f0b67d3fc7320324c8fc59ba742ad7e",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/primal_ordeal_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/primal_ordeal_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/d504842c9f0b67d3fc7320324c8fc59ba742ad7e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/primal_ordeal_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/d504842c9f0b67d3fc7320324c8fc59ba742ad7e",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/primal_ordeal_quest"
+    }
+  },
+  {
+    "name": "raging_mage_tower",
+    "path": "data-global/scripts/quests/raging_mage_tower",
+    "sha": "5040d29866e5dab236f1a99c574bc644d474d81f",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/raging_mage_tower?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/raging_mage_tower",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/5040d29866e5dab236f1a99c574bc644d474d81f",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/raging_mage_tower?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/5040d29866e5dab236f1a99c574bc644d474d81f",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/raging_mage_tower"
+    }
+  },
+  {
+    "name": "rookgaard_quests",
+    "path": "data-global/scripts/quests/rookgaard_quests",
+    "sha": "189d54cd81c487e9cfc1612b1f696c0daffff0ed",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/rookgaard_quests?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rookgaard_quests",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/189d54cd81c487e9cfc1612b1f696c0daffff0ed",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/rookgaard_quests?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/189d54cd81c487e9cfc1612b1f696c0daffff0ed",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rookgaard_quests"
+    }
+  },
+  {
+    "name": "roshamuul_quest",
+    "path": "data-global/scripts/quests/roshamuul_quest",
+    "sha": "a324ba5d8566b8c07183a023997eefe165c999ad",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/roshamuul_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/roshamuul_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a324ba5d8566b8c07183a023997eefe165c999ad",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/roshamuul_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a324ba5d8566b8c07183a023997eefe165c999ad",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/roshamuul_quest"
+    }
+  },
+  {
+    "name": "rotten_blood_quest",
+    "path": "data-global/scripts/quests/rotten_blood_quest",
+    "sha": "5d79e42eb54297368ae525b3ce9ad17f4cc10af1",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/rotten_blood_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/5d79e42eb54297368ae525b3ce9ad17f4cc10af1",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/rotten_blood_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/5d79e42eb54297368ae525b3ce9ad17f4cc10af1",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest"
+    }
+  },
+  {
+    "name": "rottin_wood_and_married_men",
+    "path": "data-global/scripts/quests/rottin_wood_and_married_men",
+    "sha": "3089ed2a4fb2a4009995024d9c1c45534837ea9e",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/rottin_wood_and_married_men?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rottin_wood_and_married_men",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3089ed2a4fb2a4009995024d9c1c45534837ea9e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/rottin_wood_and_married_men?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3089ed2a4fb2a4009995024d9c1c45534837ea9e",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rottin_wood_and_married_men"
+    }
+  },
+  {
+    "name": "sea_of_light",
+    "path": "data-global/scripts/quests/sea_of_light",
+    "sha": "a3a5ed6a52b3f986e0d66c46d7cc767580ae8bd6",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/sea_of_light?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/sea_of_light",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a3a5ed6a52b3f986e0d66c46d7cc767580ae8bd6",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/sea_of_light?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a3a5ed6a52b3f986e0d66c46d7cc767580ae8bd6",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/sea_of_light"
+    }
+  },
+  {
+    "name": "secret_service",
+    "path": "data-global/scripts/quests/secret_service",
+    "sha": "19ca78114cb1d6f31df7da70fe73cc90644d9cb8",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/secret_service?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/secret_service",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/19ca78114cb1d6f31df7da70fe73cc90644d9cb8",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/secret_service?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/19ca78114cb1d6f31df7da70fe73cc90644d9cb8",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/secret_service"
+    }
+  },
+  {
+    "name": "shadows_of_yalahar_quest",
+    "path": "data-global/scripts/quests/shadows_of_yalahar_quest",
+    "sha": "6f3e72ba82ea110df88b48b42bb5cdd81e90f92e",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/shadows_of_yalahar_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/shadows_of_yalahar_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/6f3e72ba82ea110df88b48b42bb5cdd81e90f92e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/shadows_of_yalahar_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/6f3e72ba82ea110df88b48b42bb5cdd81e90f92e",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/shadows_of_yalahar_quest"
+    }
+  },
+  {
+    "name": "soul_war",
+    "path": "data-global/scripts/quests/soul_war",
+    "sha": "057ca3d03703322acfc77827a3fc7b65531a7062",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/soul_war?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/soul_war",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/057ca3d03703322acfc77827a3fc7b65531a7062",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/soul_war?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/057ca3d03703322acfc77827a3fc7b65531a7062",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/soul_war"
+    }
+  },
+  {
+    "name": "soulpit",
+    "path": "data-global/scripts/quests/soulpit",
+    "sha": "87bf6a34032832422b8e31c1a350246e10f4b182",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/soulpit?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/soulpit",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/87bf6a34032832422b8e31c1a350246e10f4b182",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/soulpit?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/87bf6a34032832422b8e31c1a350246e10f4b182",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/soulpit"
+    }
+  },
+  {
+    "name": "spike_tasks",
+    "path": "data-global/scripts/quests/spike_tasks",
+    "sha": "506be626f197faf49c86581a76a9977ca2901d80",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/spike_tasks?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/spike_tasks",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/506be626f197faf49c86581a76a9977ca2901d80",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/spike_tasks?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/506be626f197faf49c86581a76a9977ca2901d80",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/spike_tasks"
+    }
+  },
+  {
+    "name": "spirit_hunters",
+    "path": "data-global/scripts/quests/spirit_hunters",
+    "sha": "a457a784f5af83a4770e0cb8ebc6b7aa22dd6dbd",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/spirit_hunters?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/spirit_hunters",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a457a784f5af83a4770e0cb8ebc6b7aa22dd6dbd",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/spirit_hunters?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a457a784f5af83a4770e0cb8ebc6b7aa22dd6dbd",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/spirit_hunters"
+    }
+  },
+  {
+    "name": "svargrond_arena",
+    "path": "data-global/scripts/quests/svargrond_arena",
+    "sha": "21c358c448ba3f0a4521dd8c81ae602494d6c383",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/svargrond_arena?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/svargrond_arena",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/21c358c448ba3f0a4521dd8c81ae602494d6c383",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/svargrond_arena?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/21c358c448ba3f0a4521dd8c81ae602494d6c383",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/svargrond_arena"
+    }
+  },
+  {
+    "name": "targuna",
+    "path": "data-global/scripts/quests/targuna",
+    "sha": "42612d0f7c6efbd10d1663e45e6d86bff070c9d6",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/targuna?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/targuna",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/42612d0f7c6efbd10d1663e45e6d86bff070c9d6",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/targuna?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/42612d0f7c6efbd10d1663e45e6d86bff070c9d6",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/targuna"
+    }
+  },
+  {
+    "name": "thais_lighthouse",
+    "path": "data-global/scripts/quests/thais_lighthouse",
+    "sha": "41ac6411bab9da603b100bb9c5b976a03300122f",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/thais_lighthouse?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_lighthouse",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/41ac6411bab9da603b100bb9c5b976a03300122f",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/thais_lighthouse?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/41ac6411bab9da603b100bb9c5b976a03300122f",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_lighthouse"
+    }
+  },
+  {
+    "name": "thais_quest",
+    "path": "data-global/scripts/quests/thais_quest",
+    "sha": "415bd604197aa9de87139a2d21d21a66d3ac9a27",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/thais_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/415bd604197aa9de87139a2d21d21a66d3ac9a27",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/thais_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/415bd604197aa9de87139a2d21d21a66d3ac9a27",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_quest"
+    }
+  },
+  {
+    "name": "the_ancient_tombs",
+    "path": "data-global/scripts/quests/the_ancient_tombs",
+    "sha": "0e027c41352149843641b2b7cf5b78e9c93574c9",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_ancient_tombs?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_ancient_tombs",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/0e027c41352149843641b2b7cf5b78e9c93574c9",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_ancient_tombs?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/0e027c41352149843641b2b7cf5b78e9c93574c9",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_ancient_tombs"
+    }
+  },
+  {
+    "name": "the_annihilator",
+    "path": "data-global/scripts/quests/the_annihilator",
+    "sha": "04f07a828859c1e07a1414d1c9f0f86cac0ef352",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_annihilator?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_annihilator",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/04f07a828859c1e07a1414d1c9f0f86cac0ef352",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_annihilator?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/04f07a828859c1e07a1414d1c9f0f86cac0ef352",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_annihilator"
+    }
+  },
+  {
+    "name": "the_ape_city",
+    "path": "data-global/scripts/quests/the_ape_city",
+    "sha": "3397870fd6564f0be543d46e66dea4b0799fbcf1",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_ape_city?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_ape_city",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3397870fd6564f0be543d46e66dea4b0799fbcf1",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_ape_city?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3397870fd6564f0be543d46e66dea4b0799fbcf1",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_ape_city"
+    }
+  },
+  {
+    "name": "the_cursed_crystal",
+    "path": "data-global/scripts/quests/the_cursed_crystal",
+    "sha": "a120dff0758292e48f5bf673a0cec6d292c70a1b",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_cursed_crystal?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_cursed_crystal",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a120dff0758292e48f5bf673a0cec6d292c70a1b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_cursed_crystal?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a120dff0758292e48f5bf673a0cec6d292c70a1b",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_cursed_crystal"
+    }
+  },
+  {
+    "name": "the_djinn_war_quest",
+    "path": "data-global/scripts/quests/the_djinn_war_quest",
+    "sha": "8936993eddf1eb711e53c75574e870a5d3a11b0a",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_djinn_war_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_djinn_war_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/8936993eddf1eb711e53c75574e870a5d3a11b0a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_djinn_war_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/8936993eddf1eb711e53c75574e870a5d3a11b0a",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_djinn_war_quest"
+    }
+  },
+  {
+    "name": "the_dream_courts",
+    "path": "data-global/scripts/quests/the_dream_courts",
+    "sha": "a0e0bc86796e310be43d86609ce47a7dc0e39e29",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_dream_courts?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_dream_courts",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a0e0bc86796e310be43d86609ce47a7dc0e39e29",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_dream_courts?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a0e0bc86796e310be43d86609ce47a7dc0e39e29",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_dream_courts"
+    }
+  },
+  {
+    "name": "the_explorer_society",
+    "path": "data-global/scripts/quests/the_explorer_society",
+    "sha": "cd3d37a2c7c840c9713fc8259b961820d7de2288",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_explorer_society?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_explorer_society",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/cd3d37a2c7c840c9713fc8259b961820d7de2288",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_explorer_society?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/cd3d37a2c7c840c9713fc8259b961820d7de2288",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_explorer_society"
+    }
+  },
+  {
+    "name": "the_first_dragon",
+    "path": "data-global/scripts/quests/the_first_dragon",
+    "sha": "89cf0de38d99d00275654326a5c91ac1a698417e",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_first_dragon?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_first_dragon",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/89cf0de38d99d00275654326a5c91ac1a698417e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_first_dragon?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/89cf0de38d99d00275654326a5c91ac1a698417e",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_first_dragon"
+    }
+  },
+  {
+    "name": "the_gravedigger_of_drefia",
+    "path": "data-global/scripts/quests/the_gravedigger_of_drefia",
+    "sha": "5edfebb642e56d8805ee3792d41c7a58c600470b",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_gravedigger_of_drefia?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_gravedigger_of_drefia",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/5edfebb642e56d8805ee3792d41c7a58c600470b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_gravedigger_of_drefia?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/5edfebb642e56d8805ee3792d41c7a58c600470b",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_gravedigger_of_drefia"
+    }
+  },
+  {
+    "name": "the_great_dragon_hunt_quest",
+    "path": "data-global/scripts/quests/the_great_dragon_hunt_quest",
+    "sha": "74059d2a0fe5e5a995e20b395ca8d468c2508808",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_great_dragon_hunt_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_great_dragon_hunt_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/74059d2a0fe5e5a995e20b395ca8d468c2508808",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_great_dragon_hunt_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/74059d2a0fe5e5a995e20b395ca8d468c2508808",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_great_dragon_hunt_quest"
+    }
+  },
+  {
+    "name": "the_hidden_city_of_beregar",
+    "path": "data-global/scripts/quests/the_hidden_city_of_beregar",
+    "sha": "1adf27ba008d972698447fea38e7f37614fa638a",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_hidden_city_of_beregar?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_hidden_city_of_beregar",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/1adf27ba008d972698447fea38e7f37614fa638a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_hidden_city_of_beregar?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/1adf27ba008d972698447fea38e7f37614fa638a",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_hidden_city_of_beregar"
+    }
+  },
+  {
+    "name": "the_hunt_for_the_sea_serpent",
+    "path": "data-global/scripts/quests/the_hunt_for_the_sea_serpent",
+    "sha": "2933283b2b117139e61c1fc4be2385bb83022341",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_hunt_for_the_sea_serpent?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_hunt_for_the_sea_serpent",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/2933283b2b117139e61c1fc4be2385bb83022341",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_hunt_for_the_sea_serpent?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/2933283b2b117139e61c1fc4be2385bb83022341",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_hunt_for_the_sea_serpent"
+    }
+  },
+  {
+    "name": "the_ice_islands_quest",
+    "path": "data-global/scripts/quests/the_ice_islands_quest",
+    "sha": "3f0fc71b25bb4a34c4113a6d03221869f65e7f28",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_ice_islands_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_ice_islands_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3f0fc71b25bb4a34c4113a6d03221869f65e7f28",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_ice_islands_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3f0fc71b25bb4a34c4113a6d03221869f65e7f28",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_ice_islands_quest"
+    }
+  },
+  {
+    "name": "the_inquisition_quest",
+    "path": "data-global/scripts/quests/the_inquisition_quest",
+    "sha": "1f5a9ee59a2ce7afafc918cf8d5a1067a522f392",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_inquisition_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_inquisition_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/1f5a9ee59a2ce7afafc918cf8d5a1067a522f392",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_inquisition_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/1f5a9ee59a2ce7afafc918cf8d5a1067a522f392",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_inquisition_quest"
+    }
+  },
+  {
+    "name": "the_isle_of_evil_quest",
+    "path": "data-global/scripts/quests/the_isle_of_evil_quest",
+    "sha": "c66eecac9ac4102fc299fa5ed611aa5995f95191",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_isle_of_evil_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_isle_of_evil_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c66eecac9ac4102fc299fa5ed611aa5995f95191",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_isle_of_evil_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/c66eecac9ac4102fc299fa5ed611aa5995f95191",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_isle_of_evil_quest"
+    }
+  },
+  {
+    "name": "the_lost_brother",
+    "path": "data-global/scripts/quests/the_lost_brother",
+    "sha": "cfba21d36f8eba32c0785d564a9c63a12cad5415",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_lost_brother?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_lost_brother",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/cfba21d36f8eba32c0785d564a9c63a12cad5415",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_lost_brother?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/cfba21d36f8eba32c0785d564a9c63a12cad5415",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_lost_brother"
+    }
+  },
+  {
+    "name": "the_new_frontier",
+    "path": "data-global/scripts/quests/the_new_frontier",
+    "sha": "384c2d60888bb64e271eaadf41fc16a5b65c68cb",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_new_frontier?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_new_frontier",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/384c2d60888bb64e271eaadf41fc16a5b65c68cb",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_new_frontier?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/384c2d60888bb64e271eaadf41fc16a5b65c68cb",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_new_frontier"
+    }
+  },
+  {
+    "name": "the_order_of_lion_quest",
+    "path": "data-global/scripts/quests/the_order_of_lion_quest",
+    "sha": "65d8513f7889ae1e20f87310de048b11e4a73308",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_order_of_lion_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_order_of_lion_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/65d8513f7889ae1e20f87310de048b11e4a73308",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_order_of_lion_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/65d8513f7889ae1e20f87310de048b11e4a73308",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_order_of_lion_quest"
+    }
+  },
+  {
+    "name": "the_order_of_the_stag",
+    "path": "data-global/scripts/quests/the_order_of_the_stag",
+    "sha": "3d8d0bd1acdd41aebf0d730fb6174b220c182e0f",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_order_of_the_stag?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_order_of_the_stag",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3d8d0bd1acdd41aebf0d730fb6174b220c182e0f",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_order_of_the_stag?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3d8d0bd1acdd41aebf0d730fb6174b220c182e0f",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_order_of_the_stag"
+    }
+  },
+  {
+    "name": "the_outlaw_camp",
+    "path": "data-global/scripts/quests/the_outlaw_camp",
+    "sha": "280af21db916c3b08aa6f8516de9ef76ecd4cc18",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_outlaw_camp?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_outlaw_camp",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/280af21db916c3b08aa6f8516de9ef76ecd4cc18",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_outlaw_camp?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/280af21db916c3b08aa6f8516de9ef76ecd4cc18",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_outlaw_camp"
+    }
+  },
+  {
+    "name": "the_paradox_tower",
+    "path": "data-global/scripts/quests/the_paradox_tower",
+    "sha": "37a2becb3d8bdcf38a6f81e706d5d9edd19c2e70",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_paradox_tower?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_paradox_tower",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/37a2becb3d8bdcf38a6f81e706d5d9edd19c2e70",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_paradox_tower?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/37a2becb3d8bdcf38a6f81e706d5d9edd19c2e70",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_paradox_tower"
+    }
+  },
+  {
+    "name": "the_pits_of_inferno_quest",
+    "path": "data-global/scripts/quests/the_pits_of_inferno_quest",
+    "sha": "29a1e5602a6bec3f5143983341274d9abb09b753",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_pits_of_inferno_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_pits_of_inferno_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/29a1e5602a6bec3f5143983341274d9abb09b753",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_pits_of_inferno_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/29a1e5602a6bec3f5143983341274d9abb09b753",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_pits_of_inferno_quest"
+    }
+  },
+  {
+    "name": "the_postman_missions_quest",
+    "path": "data-global/scripts/quests/the_postman_missions_quest",
+    "sha": "07f49095eff505242e17c25aeac36c3d3050cd49",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_postman_missions_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_postman_missions_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/07f49095eff505242e17c25aeac36c3d3050cd49",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_postman_missions_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/07f49095eff505242e17c25aeac36c3d3050cd49",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_postman_missions_quest"
+    }
+  },
+  {
+    "name": "the_primal_ordeal",
+    "path": "data-global/scripts/quests/the_primal_ordeal",
+    "sha": "e3a1e390760f24779338a5fa387cfd6e4fd3a741",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_primal_ordeal?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_primal_ordeal",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/e3a1e390760f24779338a5fa387cfd6e4fd3a741",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_primal_ordeal?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/e3a1e390760f24779338a5fa387cfd6e4fd3a741",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_primal_ordeal"
+    }
+  },
+  {
+    "name": "the_queen_of_the_banshees",
+    "path": "data-global/scripts/quests/the_queen_of_the_banshees",
+    "sha": "202078e6917859d7f9ac21419f9b556d2e00ca1e",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_queen_of_the_banshees?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_queen_of_the_banshees",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/202078e6917859d7f9ac21419f9b556d2e00ca1e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_queen_of_the_banshees?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/202078e6917859d7f9ac21419f9b556d2e00ca1e",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_queen_of_the_banshees"
+    }
+  },
+  {
+    "name": "the_rookie_guard",
+    "path": "data-global/scripts/quests/the_rookie_guard",
+    "sha": "347d479e1d2417d5a6b6e1302c82ca5a9bb8b3a6",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_rookie_guard?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_rookie_guard",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/347d479e1d2417d5a6b6e1302c82ca5a9bb8b3a6",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_rookie_guard?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/347d479e1d2417d5a6b6e1302c82ca5a9bb8b3a6",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_rookie_guard"
+    }
+  },
+  {
+    "name": "the_secret_library_quest",
+    "path": "data-global/scripts/quests/the_secret_library_quest",
+    "sha": "3c87f8d6da4940fc897cdf6bbd9a2521fe2864dd",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_secret_library_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_secret_library_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3c87f8d6da4940fc897cdf6bbd9a2521fe2864dd",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_secret_library_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/3c87f8d6da4940fc897cdf6bbd9a2521fe2864dd",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_secret_library_quest"
+    }
+  },
+  {
+    "name": "the_shattered_isles_quest",
+    "path": "data-global/scripts/quests/the_shattered_isles_quest",
+    "sha": "699cc970cadbe0f20a2e47df2a799abaa59e7799",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_shattered_isles_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_shattered_isles_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/699cc970cadbe0f20a2e47df2a799abaa59e7799",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_shattered_isles_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/699cc970cadbe0f20a2e47df2a799abaa59e7799",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_shattered_isles_quest"
+    }
+  },
+  {
+    "name": "the_spike_tasks",
+    "path": "data-global/scripts/quests/the_spike_tasks",
+    "sha": "4dce25d972e2f873e8e3cfe8e318b734c1d15eed",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_spike_tasks?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_spike_tasks",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/4dce25d972e2f873e8e3cfe8e318b734c1d15eed",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_spike_tasks?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/4dce25d972e2f873e8e3cfe8e318b734c1d15eed",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_spike_tasks"
+    }
+  },
+  {
+    "name": "the_tainted_soul",
+    "path": "data-global/scripts/quests/the_tainted_soul",
+    "sha": "e094d984659780f7016ddec30f5e29a944f926e0",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_tainted_soul?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_tainted_soul",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/e094d984659780f7016ddec30f5e29a944f926e0",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_tainted_soul?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/e094d984659780f7016ddec30f5e29a944f926e0",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_tainted_soul"
+    }
+  },
+  {
+    "name": "the_thieves_guild_quest",
+    "path": "data-global/scripts/quests/the_thieves_guild_quest",
+    "sha": "2272f17dfd1f037dc7b025847f01f964a8f0c459",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_thieves_guild_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_thieves_guild_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/2272f17dfd1f037dc7b025847f01f964a8f0c459",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_thieves_guild_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/2272f17dfd1f037dc7b025847f01f964a8f0c459",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_thieves_guild_quest"
+    }
+  },
+  {
+    "name": "the_travelling_trader",
+    "path": "data-global/scripts/quests/the_travelling_trader",
+    "sha": "91f8da539bf81eb4fbdaa0b99876d3d9b11b2063",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_travelling_trader?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_travelling_trader",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/91f8da539bf81eb4fbdaa0b99876d3d9b11b2063",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_travelling_trader?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/91f8da539bf81eb4fbdaa0b99876d3d9b11b2063",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_travelling_trader"
+    }
+  },
+  {
+    "name": "the_way_of_the_monk",
+    "path": "data-global/scripts/quests/the_way_of_the_monk",
+    "sha": "a3b869855203ef5388e550fa5c6cf3ce6385c40f",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_way_of_the_monk?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_way_of_the_monk",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a3b869855203ef5388e550fa5c6cf3ce6385c40f",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/the_way_of_the_monk?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/a3b869855203ef5388e550fa5c6cf3ce6385c40f",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_way_of_the_monk"
+    }
+  },
+  {
+    "name": "their_masters_voice",
+    "path": "data-global/scripts/quests/their_masters_voice",
+    "sha": "afde2529b1e067da130aa10409a830f7cd9f6c98",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/their_masters_voice?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/their_masters_voice",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/afde2529b1e067da130aa10409a830f7cd9f6c98",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/their_masters_voice?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/afde2529b1e067da130aa10409a830f7cd9f6c98",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/their_masters_voice"
+    }
+  },
+  {
+    "name": "threatened_dreams_quest",
+    "path": "data-global/scripts/quests/threatened_dreams_quest",
+    "sha": "7578aeda20bc52beff7374983bceec2fd13de50e",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/threatened_dreams_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/threatened_dreams_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/7578aeda20bc52beff7374983bceec2fd13de50e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/threatened_dreams_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/7578aeda20bc52beff7374983bceec2fd13de50e",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/threatened_dreams_quest"
+    }
+  },
+  {
+    "name": "tibia_tales",
+    "path": "data-global/scripts/quests/tibia_tales",
+    "sha": "bfa702b500e8ba37ef5703066c33981dee908755",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/tibia_tales?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/tibia_tales",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/bfa702b500e8ba37ef5703066c33981dee908755",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/tibia_tales?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/bfa702b500e8ba37ef5703066c33981dee908755",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/tibia_tales"
+    }
+  },
+  {
+    "name": "tinder_box_quest_chyllfroest",
+    "path": "data-global/scripts/quests/tinder_box_quest_chyllfroest",
+    "sha": "ae175c67aec72fea4faf8133665a24f9cd4e4cc9",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/tinder_box_quest_chyllfroest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/tinder_box_quest_chyllfroest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/ae175c67aec72fea4faf8133665a24f9cd4e4cc9",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/tinder_box_quest_chyllfroest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/ae175c67aec72fea4faf8133665a24f9cd4e4cc9",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/tinder_box_quest_chyllfroest"
+    }
+  },
+  {
+    "name": "to_blind_the_enemy_quest",
+    "path": "data-global/scripts/quests/to_blind_the_enemy_quest",
+    "sha": "689c725c846de346c24576ba0f1f210cb7a0de09",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/to_blind_the_enemy_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/to_blind_the_enemy_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/689c725c846de346c24576ba0f1f210cb7a0de09",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/to_blind_the_enemy_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/689c725c846de346c24576ba0f1f210cb7a0de09",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/to_blind_the_enemy_quest"
+    }
+  },
+  {
+    "name": "tower_defence_quest",
+    "path": "data-global/scripts/quests/tower_defence_quest",
+    "sha": "6e86657559c7733fc1b8b167749126973f56ca94",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/tower_defence_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/tower_defence_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/6e86657559c7733fc1b8b167749126973f56ca94",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/tower_defence_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/6e86657559c7733fc1b8b167749126973f56ca94",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/tower_defence_quest"
+    }
+  },
+  {
+    "name": "triangle_tower_quest",
+    "path": "data-global/scripts/quests/triangle_tower_quest",
+    "sha": "4309ef0db8231e19c65f44faa82d619dbbfe5487",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/triangle_tower_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/triangle_tower_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/4309ef0db8231e19c65f44faa82d619dbbfe5487",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/triangle_tower_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/4309ef0db8231e19c65f44faa82d619dbbfe5487",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/triangle_tower_quest"
+    }
+  },
+  {
+    "name": "troll_sabotage",
+    "path": "data-global/scripts/quests/troll_sabotage",
+    "sha": "d7ca59dbd64087920b96ef7a6e720934aded5238",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/troll_sabotage?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/troll_sabotage",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/d7ca59dbd64087920b96ef7a6e720934aded5238",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/troll_sabotage?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/d7ca59dbd64087920b96ef7a6e720934aded5238",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/troll_sabotage"
+    }
+  },
+  {
+    "name": "unnatural_selection",
+    "path": "data-global/scripts/quests/unnatural_selection",
+    "sha": "9f8c7711eb346b78f331961d04a8fc6ba5c50368",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/unnatural_selection?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/unnatural_selection",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/9f8c7711eb346b78f331961d04a8fc6ba5c50368",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/unnatural_selection?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/9f8c7711eb346b78f331961d04a8fc6ba5c50368",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/unnatural_selection"
+    }
+  },
+  {
+    "name": "waterfall",
+    "path": "data-global/scripts/quests/waterfall",
+    "sha": "b223427e136d24d653ed85b113696692e482cf65",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/waterfall?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/waterfall",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/b223427e136d24d653ed85b113696692e482cf65",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/waterfall?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/b223427e136d24d653ed85b113696692e482cf65",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/waterfall"
+    }
+  },
+  {
+    "name": "what_a_foolish_quest",
+    "path": "data-global/scripts/quests/what_a_foolish_quest",
+    "sha": "ef27480ea201ce55edfd468221e3183751bc6891",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/what_a_foolish_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/what_a_foolish_quest",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/ef27480ea201ce55edfd468221e3183751bc6891",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/what_a_foolish_quest?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/ef27480ea201ce55edfd468221e3183751bc6891",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/what_a_foolish_quest"
+    }
+  },
+  {
+    "name": "white_pearl",
+    "path": "data-global/scripts/quests/white_pearl",
+    "sha": "0dc814b85050412110a26d91f5c0de292d258d47",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/white_pearl?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/white_pearl",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/0dc814b85050412110a26d91f5c0de292d258d47",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/white_pearl?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/0dc814b85050412110a26d91f5c0de292d258d47",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/white_pearl"
+    }
+  },
+  {
+    "name": "wrath_of_the_emperor",
+    "path": "data-global/scripts/quests/wrath_of_the_emperor",
+    "sha": "5f9e8fb6ea074c238bc5834e60c39638a3e0ee0b",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/wrath_of_the_emperor?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/5f9e8fb6ea074c238bc5834e60c39638a3e0ee0b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/wrath_of_the_emperor?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/5f9e8fb6ea074c238bc5834e60c39638a3e0ee0b",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor"
+    }
+  }
+]

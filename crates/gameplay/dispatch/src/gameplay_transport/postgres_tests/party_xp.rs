@@ -1640,7 +1640,8 @@ async fn scenario(
 
 #[path = "party_xp/support.rs"]
 mod support;
-use support::{initialize_build, join_two};
+pub(super) use support::initialize_build;
+use support::join_two;
 
 #[path = "party_xp/task_board.rs"]
 mod task_board;

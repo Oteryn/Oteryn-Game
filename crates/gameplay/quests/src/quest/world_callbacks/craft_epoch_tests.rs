@@ -20,6 +20,9 @@ fn spent_material_counter_can_own_repeatable_crafting_rewards() -> Result<(), St
     callback.world_requirements.clear();
     callback.state_ops.clear();
     callback.storage = vec![Storage {
+        add: None,
+        read_only: false,
+        set_if: None,
         track: "oteryn:quest-progress/qready1-craft/grind".into(),
         minimum: 0,
         maximum: 1_000_000,

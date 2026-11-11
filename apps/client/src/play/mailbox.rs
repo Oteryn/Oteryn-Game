@@ -138,6 +138,7 @@ pub(super) struct Mailbox {
     pub(super) tracked_custom_ability: Option<u32>,
     pub(super) custom_hotkey_feedback: Option<String>,
     pub(super) battle_lists: super::feature_0017_attack::view::BattleListsState,
+    pub(super) diagonal_movement_selected: bool,
     pub(super) own_actor_identity: Option<[u8; 16]>,
     pub(super) activity_scope: Option<oteryn_session::activity_scope::ActivityScopeSnapshot>,
     pub(super) scope_pending: bool,

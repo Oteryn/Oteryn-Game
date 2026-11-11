@@ -30,3 +30,30 @@ impl PlayView {
         self.rebuild()
     }
 }
+
+impl crate::play::Outbox {
+    pub(in crate::play) fn diagonal_movement_initialize(&self, selected: bool) {
+        crate::play::mailbox::lock(&self.0).diagonal_movement_selected = selected;
+    }
+}
+impl PlayView {
+    pub fn diagonal_movement_input(
+        &mut self,
+        link: &crate::play::PlayLink,
+        events: &[oteryn_input_actions::NormalizedInputEvent],
+    ) -> bool {
+        let selected = {
+            let mailbox = crate::play::mailbox::lock(&link.mailbox);
+            mailbox.diagonal_movement_selected && !mailbox.world_input_blocked()
+        };
+        if selected
+            && let Some(direction) =
+                oteryn_client_ui::diagonal_movement::keypad_step(events, selected)
+        {
+            self.arrow(direction);
+            true
+        } else {
+            false
+        }
+    }
+}

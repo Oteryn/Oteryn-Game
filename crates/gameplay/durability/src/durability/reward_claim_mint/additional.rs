@@ -42,9 +42,12 @@ pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
         ));
     }
     // This first sibling bridge grants ordinary Items. Preserve the existing
-    // filled-container fluid/text/key owners; do not silently omit modifiers.
+    // filled-container fluid/charge/text/key owners; do not silently omit modifiers.
     if request.additional_items.iter().any(|item| {
-        item.fluid_subtype.is_some() || item.key_number.is_some() || item.text.is_some()
+        item.fluid_subtype.is_some()
+            || item.charges_remaining.is_some()
+            || item.key_number.is_some()
+            || item.text.is_some()
     }) {
         return Err(RewardClaimMintError::InvalidInput);
     }

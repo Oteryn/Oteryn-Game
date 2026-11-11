@@ -7490,7 +7490,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "bd7668d3388e49cc2020f1f2b1a8fdd10265e7c7caa4cc041d62b51802fd14f5",
+        "canonical_definition_sha256": "e50697416806b125c685b39a722f859878bfa9cc2c975c208209a8fba8516eb9",
         "canonical_name": "magic plate armor",
         "canonical_path": "content/items/definitions/items-20500-20999.json",
         "wiki_observations": [
@@ -8172,7 +8172,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "84edeae8bc2a15bd7498450ac919bae01eaf6f4e161f889a202f37d3d41cb724",
+        "canonical_definition_sha256": "0bbcc7aa57820f2718b64cdac1f385e304ea395528a2ff2296d399227c48974b",
         "canonical_name": "dragon scale mail",
         "canonical_path": "content/items/definitions/items-20500-20999.json",
         "wiki_observations": [
@@ -8679,7 +8679,7 @@
       },
       "evidence_status": "DERIVED_SELECTED_OVER_STALE_HELPER",
       "identity_evidence": {
-        "canonical_definition_sha256": "1ae8e52727cf5625eae19cb8ceb685774b551949fdd4abc8e495557f12cccaff",
+        "canonical_definition_sha256": "f13bfcf17051c8845c24916241fd0a4d9953aafc72dca39a7260f714ac9555a2",
         "canonical_name": "royal helmet",
         "canonical_path": "content/items/definitions/items-20500-20999.json",
         "wiki_observations": [
@@ -9730,7 +9730,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "c91b41c3b11f276099d64481a158d032e199ec10f64eb87cbf378676a6992f8d",
+        "canonical_definition_sha256": "6c0b4abef13fba55ddaae46af2fb6e28da3199850f5d82c22094bbbad5ba63eb",
         "canonical_name": "mastermind shield",
         "canonical_path": "content/items/definitions/items-20500-20999.json",
         "wiki_observations": [
@@ -9841,7 +9841,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "989c1b3528fd846868a5cd3813ab166442cec7dd50858ca318cea7f8baba0085",
+        "canonical_definition_sha256": "a4b6b019d3a39a88463ec10ce44495349181c75d58a0a4b867e63d5e0899311a",
         "canonical_name": "dragon shield",
         "canonical_path": "content/items/definitions/items-20500-20999.json",
         "wiki_observations": [
@@ -13630,7 +13630,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "5edecf38b02fd3d9a1fc7e9bcfb9e55050bf4433226ac18176b8dc759bcc020f",
+        "canonical_definition_sha256": "5103bd8f93fdb6166507950ea9b3fe318893fcdbab2057fa3c112a905d3bbf89",
         "canonical_name": "demonrage sword",
         "canonical_path": "content/items/definitions/items-31000-31499.json",
         "wiki_observations": [
@@ -14484,7 +14484,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "f10ed47e257f3feb6afe80ba5d68418fea27c22f2c2af5cca55136f4bef0dc55",
+        "canonical_definition_sha256": "a78068672bd10226c71f3229d62d2ba8083480ebcb97e40c71e96390961506f4",
         "canonical_name": "dragon slayer",
         "canonical_path": "content/items/definitions/items-31000-31499.json",
         "wiki_observations": [
@@ -16889,7 +16889,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "cb8bda5f983ac0602e67d8f22249bb14b98047cf391c7dc5f130ccb86ecccfe2",
+        "canonical_definition_sha256": "414aa17dc3aadb975571c59a415599200a7f3c93842918ccce8df3fe57090aaa",
         "canonical_name": "dragonbone staff",
         "canonical_path": "content/items/definitions/items-31000-31499.json",
         "wiki_observations": [

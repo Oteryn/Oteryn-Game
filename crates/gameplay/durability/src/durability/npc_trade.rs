@@ -32,6 +32,10 @@
 use oteryn_gameplay_economy::npc_trade as rules;
 mod grizzly;
 pub mod yeo;
+mod obsidian_knife;
+mod pick_exchange;
+mod present_exchange;
+mod quest_shop;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
 };
@@ -59,7 +63,7 @@ use super::item_transfer::{
 use super::item_transfer_audit::{ITEM_LIFECYCLE_RETIRED, OneItemCommandRefV1};
 use super::npc_trade_audit::{
     LINE_COIN_BURN, LINE_COIN_MINT, LINE_ITEM_BURN, LINE_ITEM_MINT, NpcTradeEventIdentity,
-    OneItemNpcTradeCauseV1, OneItemNpcTradeLineV1, OneItemNpcTradeV1, SIDE_BUY, SIDE_SELL,
+    OneItemNpcTradeCauseV1, OneItemNpcTradeLineV1, OneItemNpcTradeV1, SIDE_BUY, SIDE_EXCHANGE, SIDE_SELL,
     encode_npc_trade_event,
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
@@ -73,6 +77,7 @@ use sqlx::Row;
 type Result<T> = std::result::Result<T, NpcTradeError>;
 const REQUEST_BINDING_VERSION: u8 = 1;
 mod hireling;
+mod quest_access;
 pub(super) mod sell_hireling;
 pub use hireling::{HirelingPackageSelection, HirelingTradeSelection};
 
@@ -90,6 +95,7 @@ struct TradeCommitOptions<'a> {
 pub enum NpcTradeSide {
     Buy,
     Sell,
+    Exchange,
 }
 
 impl NpcTradeSide {
@@ -97,6 +103,7 @@ impl NpcTradeSide {
         match self {
             Self::Buy => SIDE_BUY,
             Self::Sell => SIDE_SELL,
+            Self::Exchange => SIDE_EXCHANGE,
         }
     }
 }
@@ -337,7 +344,12 @@ fn is_coin(definition: &TypedDefinitionRef) -> bool {
 /// backpack declaring a capacity within `GAMEITEM01-CONTAINER-ENTRIES-MAX`. A sell-all names one
 /// unit of a count-1 SELL offer; its total and units come from the plan (`None` here).
 fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u32)>> {
-    validate_sell_bound(request, sell_all, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
+    if request.cause.side == NpcTradeSide::Exchange {
+        if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::validate(request, sell_all)?; }
+        else if request.cause.npc_key == present_exchange::NPC { present_exchange::validate(request, sell_all)?; }
+        else { pick_exchange::validate(request, sell_all)?; }
+    }
+    validate_sell_bound(request,sell_all,rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
 }
 
 fn validate_sell_bound(
@@ -685,6 +697,7 @@ impl DurabilityRoot {
                     let side = match row.try_get::<i16, _>("side")? {
                         1 => NpcTradeSide::Buy,
                         2 => NpcTradeSide::Sell,
+                        3 => NpcTradeSide::Exchange,
                         _ => return Err(DurabilityError::InvalidStoredState),
                     };
                     let receipt = NpcTradeReceipt {
@@ -874,7 +887,11 @@ impl DurabilityRoot {
                     }
                     let house_key=if hireling.is_some() {Some(super::house_hireling::audit::read_key(&mut tx,&fence).await?)} else {None};
 
-                    if !grizzly::permitted(&mut tx, fence.character_id, &request).await? {
+                    if !grizzly::permitted(&mut tx, fence.character_id, &request).await?
+                        || !quest_shop::permitted(&mut tx, fence.character_id, &request).await? {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
+                    }
+                    if !quest_access::permitted(&mut tx, fence.character_id, &request).await? {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }
                     let backpack = sqlx::query(
@@ -925,6 +942,18 @@ impl DurabilityRoot {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }
                     let entries = lock_entries(&mut tx, &backpack, world_id, request.fluid_subtype.unwrap_or(0), &request.item.definition.production_key).await?;
+                    if request.cause.side == NpcTradeSide::Exchange {
+                        let knife = request.cause.npc_key == obsidian_knife::NPC;
+                        if knife && !obsidian_knife::ready(&mut tx, fence.character_id).await? {
+                            return Ok(Err(NpcTradeError::RequirementNotMet));
+                        }
+                        let fits = if knife {
+                            pick_exchange::fits(&mut tx, fence, *weights, &[obsidian_knife::steel(), obsidian_knife::lance()], obsidian_knife::knife()).await?
+                        } else if request.cause.npc_key == present_exchange::NPC {
+                            pick_exchange::fits(&mut tx, fence, *weights, &[present_exchange::input()], present_exchange::output()).await?
+                        } else { pick_exchange::fits(&mut tx, fence, *weights, &[pick_exchange::input()], pick_exchange::output()).await? };
+                        if !fits { return Ok(Err(NpcTradeError::DoesNotFit)); }
+                    }
                     if matches!(hireling,Some(hireling::Extra::Package(_))) && entries.len()>=capacity {
                         return Ok(Err(NpcTradeError::DoesNotFit));
                     }
@@ -934,6 +963,11 @@ impl DurabilityRoot {
                             .map(|plan| (plan, total, units)),
                         (Some((total, units)), NpcTradeSide::Sell) => plan_sell(&request, total, units, capacity, &entries)
                             .map(|plan| (plan, total, units)),
+                        (Some(_), NpcTradeSide::Exchange) => {
+                            if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::plan(&request, capacity, &entries) }
+                            else if request.cause.npc_key == present_exchange::NPC { pick_exchange::plan_with_input(&request, capacity, &entries, present_exchange::input()) }
+                            else { pick_exchange::plan(&request, capacity, &entries) }
+                        }.map(|plan| (plan, 0, 1)),
                     }};
                     let (mut plan, total, units) = match plan {
                         Ok(plan) => plan,
@@ -1091,7 +1125,13 @@ fn trade_message(
     (quantity, total, sell_all): (u32, u64, bool),
     plan: &Plan,
 ) -> OneItemNpcTradeV1 {
-    let definition = |line: &NpcTradeLine| yeo::definition(request, line);
+    let definition = |line: &NpcTradeLine| match line.coin {
+        Some(coin) => request.coins.of(coin),
+        None if request.cause.side == NpcTradeSide::Exchange && line.kind == NpcTradeLineKind::ItemBurn => {
+            if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::input_for(line, &plan.lines) } else if request.cause.npc_key == present_exchange::NPC { present_exchange::input() } else { pick_exchange::input() }
+        },
+        None => yeo::definition(request, line),
+    };
     let state = |line: &NpcTradeLine, quantity: u32| OneItemStateV1 {
         item_instance_id: line.item_instance_id.to_vec(),
         world_id: world_id.as_bytes().to_vec(),
@@ -1376,6 +1416,7 @@ async fn load_trade(
     let side = match row.try_get::<i16, _>("side")? {
         1 => NpcTradeSide::Buy,
         2 => NpcTradeSide::Sell,
+        3 => NpcTradeSide::Exchange,
         _ => return Err(DurabilityError::InvalidStoredState),
     };
     let lines = sqlx::query(

@@ -94,6 +94,9 @@ pub(crate) async fn grant_content_outfit(
     Ok(granted)
 }
 
+/// The canonical mapping was checked against the current native generation before
+/// entering this transaction. All selected bits and the base share the quest receipt.
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum QuestOutfitGrant {
     /// Crystal 201189f data-global/npc/flickering_soul.lua:122-138.

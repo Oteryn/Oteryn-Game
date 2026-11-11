@@ -1,0 +1,120 @@
+{
+  "lane": "questpc2",
+  "branch": "claude/happy-davinci-ijz3wy-questpc2b",
+  "state": "GREEN_NPC_SLICE",
+  "quest": "The Demon Oak Quest",
+  "whole_quest_qualified": false,
+  "scope": [
+    "source mission offer and explicit confirmation",
+    "decline clears confirmation topic",
+    "synchronous Progress1then2 coalesces into one final-value receipt",
+    "repeat confirmation never adds a state receipt",
+    "Done1 finish returns exact three source lines and writesDone2"
+  ],
+  "not_qualified": [
+    "defender waves",
+    "hallowed axe grant and fee",
+    "whole quest completion"
+  ],
+  "source": {
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "path": "data-global/npc/oldrak.lua",
+    "sha256": "dc124275de082d9f39bc2f802b31f823646548153fe0e248417dc54f7b0eba40",
+    "lines": "102-124,151-153"
+  },
+  "source_admission": "Exact single NPC/file/revision/hash and all references checked; no general9frevision bypass. Existing NPC rule engine reused. Local source helper41lines; authorer49lines.",
+  "red": {
+    "duration_seconds": 64.388,
+    "postgres_server_version": 180006,
+    "failure": "expected infested-area mission offer absent"
+  },
+  "green_pg": {
+    "duration_seconds": 78.620190488,
+    "postgres_server_version": 180006,
+    "case": "questpc2_oldrak_source_confirmation_decline_and_finish_are_durable",
+    "finish_precondition": "Canonical done/action_1 transition through real fenced writer; explicitly not proof of earning the missing wave encounter."
+  },
+  "checks": {
+    "quest_crate_units": "290/290PASS40.501s,0skipped",
+    "authoring_tests": "2/2PASS0.701s",
+    "workspace_all_targets": "PASS11m44s including build lock wait",
+    "clippy_quests_dispatch_all_targets_all_features": "PASS7m24s including build lock wait",
+    "fmt": "PASS",
+    "native_outputs": "45exact139.986s",
+    "central_lists_and_pins": "regenerated",
+    "full_dispatch_suite": "pending CI under PREPUSH-2cadenceexception"
+  },
+  "failure_collection": "Initial39questunit failures one missing per-file custody allowance; fixed. Next289/290, stale exact activation set updated for intentional new program. Final290/290. All original legacy/hash/rollback assertions retained.",
+  "main_merge_fallback": {
+    "merged_main": "b3864f14a0035a582ef80f1da7d2a931691dd035",
+    "attempted_main": "83acbdac3",
+    "command": "git merge --no-commit origin/main",
+    "result": "Automatic merge failed; fix conflicts and then commit the result.",
+    "conflict_count": 44,
+    "decision": "Owner15minuteconflictfallback: abort unsafe merge attempt, preserve local compiling5251c82d6checkpoint, publish after validation. Retry integration next.",
+    "paths": [
+      "content/interactions/reward_claims/reward-claim-variants-00000-00099.json",
+      "content/items/definitions/spell-native-profiles.json",
+      "content/items/definitions/srx1-item-updates.json",
+      "content/spells.manifest.json",
+      "content/world/pins/oteryn.json",
+      "content/world/placements/index.json",
+      "crates/client-assets/src/world.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_callbacks.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/underwater_drowning.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs",
+      "crates/gameplay/durability/src/durability/quest_state/writer.rs",
+      "crates/gameplay/durability/src/durability/quest_world_callback.rs",
+      "crates/gameplay/quests/src/quest/fire_feathered_native.rs",
+      "crates/gameplay/quests/src/quest/hive_access.rs",
+      "crates/gameplay/quests/src/quest/rotten_blood.rs",
+      "crates/gameplay/quests/src/quest/schrodinger_island.rs",
+      "crates/gameplay/quests/src/quest/shared_world_progress.rs",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs",
+      "deploy/synology-game/preprod-topology.toml",
+      "docs/agents/evidence/quest-claim-qualification.json",
+      "docs/repository/QUEST_CALLBACK_COVERAGE.json",
+      "qlane-meta/qengine2/QUEST-STATUS.json",
+      "tools/content-migration/key_door_item_profiles.py",
+      "tools/content-migration/quest_callback_profiles.py",
+      "tools/content-migration/regenerate_content.py",
+      "tools/content-migration/test_key_door_item_profiles.py",
+      "tools/content-migration/test_quest_callback_profiles.py",
+      "tools/content-schema/native-gameplay/build_key_door_profiles.py",
+      "tools/content-schema/native-gameplay/key-door-item-profiles.json",
+      "tools/content-schema/quest-authoring/check_quest_claim_qualification.py",
+      "tools/content-schema/quest-authoring/quest_batch4.py",
+      "tools/content-schema/quest-authoring/quest_callback_coverage.py",
+      "tools/content-schema/quest-authoring/samples/binding_packets/index.json",
+      "tools/content-schema/quest-authoring/samples/binding_packets/rewards/chosen-reward-item-candidates.json",
+      "tools/content-schema/quest-authoring/samples/binding_packets/rewards/perquest-352.json",
+      "tools/content-schema/quest-authoring/samples/binding_packets/rewards/reward-holds.json",
+      "tools/content-schema/quest-authoring/samples/binding_packets/rewards/reward-only-105.json",
+      "tools/content-schema/quest-authoring/samples/completion-matrix/all373.json",
+      "tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py",
+      "tools/content-schema/world-authoring/convert_world_base.py",
+      "tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
+    ]
+  },
+  "own_migrations_unchanged": [
+    "1240_al_dee_item_exchange.sql",
+    "1241_uzgod_obsidian_knife_exchange.sql",
+    "1242_seymour_present_exchange.sql",
+    "1243_native_encounter_progression_scope.sql",
+    "1244_instance_corpse_mint.sql"
+  ],
+  "logs_sha256": {
+    "/tmp/questpc2b-oldrak-red.log": "9d4790fcda165ea1d5f4011a1e006380290ec745927426aae836c9efc890c5aa",
+    "/tmp/questpc2b-oldrak-final-pg.log": "6c88493bffc39b819dcb26ec5c840f5db265b31c7f5f3b28f015970f75b79e36",
+    "/tmp/questpc2b-oldrak-final-quest-units.log": "be46cf302e7162a62720a87bf01582224a337a05104c3477edc47ecb6eaa9ff8",
+    "/tmp/questpc2b-oldrak-final-workspace.log": "1f76644e709ce90159878ae43e8b39cbd5aad04fc015bf8a02f29f974e2eb18d",
+    "/tmp/questpc2b-oldrak-clippy.log": "edaee3db3d5e839c25d1f72043fc89027ff16f21307e17b9764e1e8e610b8125",
+    "/tmp/questpc2b-oldrak-native-generation.log": "76b527692eba3da2183dad91a4c18adfc1f51a64f9762cd727c9278299015000",
+    "/tmp/questpc2b-oldrak-final-authoring-tests.log": "2f909a506479f32ce6ff91e4e0a0b681d0d32581afa6e3fd6cced76a87141a87",
+    "/tmp/questpc2b-oldrak-final-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/tmp/questpc2b-oldrak-final-pin-refresh.log": "be837c3a68b4b4935666363aa14af779c96607a05fa62da3f90fc3a41f871834"
+  }
+}

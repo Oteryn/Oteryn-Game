@@ -685,15 +685,6 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 5022));
                 return Ok(());
             }
-            let start = {
-                let mut runtime = deps.runtime.lock().await;
-                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
-                runtime.relocate_arena_player(deps.actor, admitted.game_session_id, before,
-                    crate::foundation::MovementLocalPosition { x: x - 5, y, floor: 7 }).map_err(debug)?;
-                runtime.read_actor_position(deps.actor).map_err(debug)?
-            };
-            let _ = owner.ordinary_paced_step(deps.actor, admitted.game_session_id,
-                oteryn_protocol_oteryn::world_spatial::StepDirection::West, Some(start), None).await;
             let advanced = if native_portals {
                 owner.drain_monster_melee().await;
                 let stored: (i32, i32) = sqlx::query_as(
@@ -756,6 +747,15 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 );
                 command(&owner, &mut admitted, A::Status).await?
             } else {
+                let start = {
+                    let mut runtime = deps.runtime.lock().await;
+                    let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                    runtime.relocate_arena_player(deps.actor, admitted.game_session_id, before,
+                        crate::foundation::MovementLocalPosition { x: x - 5, y, floor: 7 }).map_err(debug)?;
+                    runtime.read_actor_position(deps.actor).map_err(debug)?
+                };
+                let _ = owner.ordinary_paced_step(deps.actor, admitted.game_session_id,
+                    oteryn_protocol_oteryn::world_spatial::StepDirection::West, Some(start), None).await;
                 command(&owner, &mut admitted, A::Status).await?
             };
             assert_eq!(advanced.disposition, D::Applied, "pit {pit}: {advanced:?}");

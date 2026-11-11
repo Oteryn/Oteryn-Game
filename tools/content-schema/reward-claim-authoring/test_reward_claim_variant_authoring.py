@@ -31,20 +31,27 @@ class CanonicalVariantTests(unittest.TestCase):
                         self.assertTrue(q['item']['key'].startswith('oteryn:item.tibia.i'))
                         self.assertEqual(q['item'], self.items[q['item']['key']]['identity'])
 
-    def test_plain_231_definition_records_remain_exact_and_readiness_224_7(self):
+    def test_plain_231_definition_records_remain_exact_and_readiness_228_3(self):
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
         self.assertEqual(index['plain_record_count'], 231)
         self.assertEqual(index['native_authored_records'], 9)
         self.assertEqual(index['record_count'] - index['native_authored_records'], 336)
-        self.assertEqual(index['readiness']['ready'] - index['native_authored_records'], 224)
-        self.assertEqual(index['readiness']['waiting_item_semantics'], 7)
+        self.assertEqual(index['readiness']['ready'] - index['native_authored_records'], 228)
+        self.assertEqual(index['readiness']['waiting_item_semantics'], 3)
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
 
     def test_source_complete_is_not_native_or_item_complete(self):
         self.assertTrue(any(r['definition']['readiness'] == 'waiting_implementation' for r in self.records))
-        held = [r['definition'] for r in self.records if any(g['category'] == 'item' for g in r['definition']['data_holds'])]
+        # Every current Item is resolved. Losing a bound Item must still be
+        # refused rather than promote a source-complete reward to readiness.
+        items = dict(self.items)
+        key = self.packet['records'][0]['item_bindings'][0]['canonical_item']['key']
+        del items[key]
+        with self.assertRaisesRegex(ValueError, 'canonical variant Item identity/revision changed'):
+            variants.derive_definitions(self.packet, items, plain.stack_problem)
+        held = [r['definition'] for r in self.records if r['definition']['data_holds']]
         self.assertTrue(held)
         self.assertTrue(all(d['readiness'] == 'waiting_data' for d in held))
 
@@ -64,12 +71,36 @@ class CanonicalVariantTests(unittest.TestCase):
                 if charge['data_status'] == 'CONFLICT':
                     found += 1
                     if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield':
-                        self.assertFalse(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
-                        self.assertTrue(d['native_contents']['placements'])
+                        # Crystal 201189f8 chest.lua:1051 UID6063 grants [3083, 1].
+                        self.assertEqual(d['data_holds'], [])
+                        self.assertEqual(d['native_contents']['placements'][0]['contents'][2]['charges_remaining'], 1)
                     else:
                         self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
                     self.assertNotEqual(charge['source_raw_argument'], charge['definition_charges']['value'])
         self.assertEqual(found, 3)
+
+    def test_ornamented_source_reconciliation_requires_the_exact_donor_recipe(self):
+        key = 'canary:reward-claim/kv/ornamentedshield'
+        original = next(r for r in self.packet['records'] if r['source_claim']['identity']['key'] == key)
+        for mutation in ('charge', 'sibling', 'position', 'hold'):
+            row = copy.deepcopy(original)
+            placement = row['source_claim']['placements'][0]
+            if mutation == 'charge':
+                placement['reward']['items'][2]['count'] = 2
+                row['charge_dispositions'][0]['source_raw_argument'] = 2
+            elif mutation == 'sibling':
+                placement['reward']['items'][0]['count'] = 2
+            elif mutation == 'position':
+                placement['position']['x'] += 1
+            else:
+                row['source_data']['missing'].append({'code': 'SOURCE_PLACEMENT_BINDING_MISSING',
+                                                     'placement_index': 0})
+            with self.subTest(mutation=mutation):
+                record, = variants.derive_definitions({'records': [row]}, self.items, plain.stack_problem)
+                definition = record['definition']
+                self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in definition['data_holds']))
+                self.assertNotIn('native_contents', definition)
+                self.assertEqual(definition['readiness'], 'waiting_data')
 
     def test_covered_fields_text_key_random_container_cooldown_retained(self):
         seen = set()
@@ -130,10 +161,27 @@ class CanonicalVariantTests(unittest.TestCase):
 
     def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
         errors = variants.native_lowering_errors(self.records)
-        # ITEMHOLD-Q, QUESTPC4 and the scoped Dreamer water vial retain source witnesses.
-        # Fire Axe, Draconia and Goblin Temple retain complete source-qualified bags.
-        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 74)
-        self.assertEqual(len(errors), 31)
+        # Keep all immutable source dispositions; only complete qualified
+        # container/leaf recipes cross the native boundary.
+        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 78)
+        self.assertEqual(len(errors), 27)
+        # Combined ITEMHOLD-Q and QUESTPC4 admissions retain the same source witnesses.
+        self.assertEqual(len(self.records), 105)
+        admitted = {r['definition']['identity']['key']: r['definition']['native_contents']
+                    for r in self.records if 'native_contents' in r['definition']}
+        for key, uid, root, items in (
+                ('desert2', 6158, 2857, [3084, 3098, 3046, 3077]),
+                ('draconia1', 6023, 2853, [3284, 3297])):
+            contents = admitted['oteryn:reward-claim.kv.' + key]
+            self.assertEqual(contents['source_sha256'],
+                             'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757')
+            self.assertEqual(len(contents['placements']), 1)
+            placement = contents['placements'][0]
+            self.assertEqual((placement['unique_id'], placement['capacity']), (uid, 8))
+            self.assertEqual(placement['root']['key'], f'oteryn:item.tibia.i{root}')
+            self.assertEqual([(r['item']['key'], r['count']) for r in placement['contents']],
+                             [(f'oteryn:item.tibia.i{i}', 1) for i in items])
+
         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
 
     def test_committed_family_reproduces_with_separate_holds(self):

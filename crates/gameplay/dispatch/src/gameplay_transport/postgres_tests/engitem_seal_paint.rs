@@ -467,6 +467,7 @@ async fn legacy_fresh_refused(
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .revision(),
+            party: Vec::new(),
         }
         .with_selected_tool(selected, intent)
         .ok_or("legacy tool context")?

@@ -36,12 +36,32 @@ def compile_callbacks(existing, previous, shards):
             # ANSWER R-CALLBACK-SCHEMA=B: do not silently lower a held field
             # into a different operation accepted by the current contract.
             # https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355
-            declined = {'failure_teleport', 'success_message', 'success_say'} & row.keys()
+            declined = {'success_say'} & row.keys()
             storage_extensions = any(
-                set(state) - {'track', 'minimum', 'maximum', 'set'}
+                set(state) - {'track', 'minimum', 'maximum', 'set', 'read_only', 'set_if'}
                 for state in row.get('storage', [])
             )
-            if declined or storage_extensions:
+            failure = row.get('failure_teleport')
+            if failure is not None and (
+                row.get('trigger') != 'step_in' or row.get('return_on_failure') is not True
+                or not isinstance(failure, dict) or set(failure) != {'x', 'y', 'floor'}
+                or any(type(failure[axis]) is not int or not 0 <= failure[axis] <= 65535
+                       for axis in ('x', 'y'))
+                or type(failure['floor']) is not int or not -15 <= failure['floor'] <= 0
+            ):
+                raise ValueError(f'held callback contract extension: {row["key"]}')
+            conditional_extensions = any(
+                state.get('set_if') is not None and (
+                    type(state['set_if']) is not int
+                    or not -(2 ** 63) <= state['set_if'] <= 2 ** 63 - 1
+                    or type(state.get('minimum')) is not int
+                    or type(state.get('maximum')) is not int
+                    or not state['minimum'] <= state['set_if'] <= state['maximum']
+                    or state.get('preserve', False) or state.get('read_only', False)
+                    or row.get('native_rule') is not None
+                ) for state in row.get('storage', [])
+            )
+            if declined or storage_extensions or conditional_extensions:
                 raise ValueError(f'held callback contract extension: {row["key"]}')
             if row['key'] in keys:
                 raise ValueError(f'duplicate callback key: {row["key"]}')
@@ -52,7 +72,7 @@ def compile_callbacks(existing, previous, shards):
             callbacks.append(row)
         sources.append({'path': path, 'keys': sorted(source_keys)})
     # Runtime adds one existing Rotten Blood altar. Keep its reserved slot.
-    if len(callbacks) >= 256:
+    if len(callbacks) >= 512:
         raise ValueError('callback budget including existing Rotten Blood altar')
     return {'schema': 1, 'callbacks': sorted(callbacks, key=lambda row: row['key'])}, {'schema': SCHEMA, 'sources': sources}
 
@@ -68,6 +88,20 @@ def outputs(root):
     # sibling is outside this closed input set.
     paths += sorted((root / 'tools/content-schema/quest-authoring/batch3_c/world').glob('*.json'))
     shards = {path.relative_to(root).as_posix(): read(path) for path in paths}
+    # QUESTPC: exact literal USEs and genuine read-only Stag guards now have
+    # production owners. Historical held records remain source evidence.
+    choices = {
+        'content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json': None,
+        'content/quests/world-callbacks-held/batch3-b-a_pirates_tail_quest.json': {'oteryn:quest-callback/pirates-tail-cheesy-exit'},
+        'tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json': None,
+    }
+    for name, keys in choices.items():
+        callbacks = [row for row in read(root / name)['callbacks']
+                     if keys is None or row['key'] in keys]
+        expected = 1 if keys else 4
+        if len(callbacks) != expected:
+            raise ValueError(f'QUESTPC callback source changed: {name}')
+        shards[name] = {'schema': 1, 'callbacks': callbacks}
     world, index = compile_callbacks(read(root / WORLD), index, shards)
     encode = lambda value: json.dumps(value, ensure_ascii=False, indent=2) + '\n'
     return {WORLD: encode(world), INDEX: encode(index)}

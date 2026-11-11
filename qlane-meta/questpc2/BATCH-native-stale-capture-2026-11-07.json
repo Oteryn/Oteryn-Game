@@ -1,0 +1,40 @@
+{
+  "batch_id": "native-stale-capture-2026-11-07",
+  "state": "GREEN_TERMINAL_REPLAY_SLICE",
+  "lifecycle": "AUTHORING",
+  "base_sha": "ccc5bfd13",
+  "scope": "Native captured progress capped/advanced before XP settlement has durable no-grant replay; not whole Elvenbane qualification.",
+  "red": {
+    "postgres_version": 180006,
+    "seconds": 74.83,
+    "error": "Second XP settlement AuthorityRejected after first settlement had no Quest receipt.",
+    "log": "/tmp/questpc2-native-stale-capture-red-pg.log"
+  },
+  "green": {
+    "postgres_version": 180006,
+    "cases": 2,
+    "seconds": 152.8,
+    "fresh_case_marker_ms": 197,
+    "stale_case_marker_ms": 148,
+    "check_seconds": 36.58,
+    "clippy_seconds": 39.2,
+    "check_scope": "durability+dispatch",
+    "clippy_scope": "all-targets all-features -D warnings",
+    "fmt": "PASS",
+    "log": "/tmp/questpc2-native-stale-capture-green-pg.log",
+    "check_log": "/tmp/questpc2-native-stale-capture-check.log",
+    "clippy_log": "/tmp/questpc2-native-stale-capture-clippy.log"
+  },
+  "implementation": [
+    "If every captured component now refuses by stage/cap, seal one read-only bounded current-phase effect under the original component binding in the fresh XP transaction.",
+    "Retain already-earned counters without rewriting them, advancing them or opening future credit. Receipt replay precedes fresh-grant authorization; fresh audit guard unchanged.",
+    "Isolated fixture freezes real native source death then explicitly advances prior progress before settlement; not an earned combat/whole-quest claim.",
+    "Original fresh-case objective receipt/phase/replay and counter1/same-XP xmin assertions remain. Stale case adds counter1/prior-transaction retention, same-XP terminal receipt and repeated settlement proof."
+  ],
+  "self_review": "No SQL guard, migration, resource bound or original assertion weakened. Current phase checked against catalogue bounds; terminal receipt uses existing same-quest single-revision persistence and replay binding. No full suite/content/pin edits.",
+  "next": [
+    "Actual source basement landing activates exact goal cohort, with earned traversal PostgreSQL RED/GREEN.",
+    "Real wire six-defender combat, atomic seven-item treasure/replay/capacity, source exit and journal; qualify full Elvenbane.",
+    "Continue remaining27 owned entries; push every green step and within15minutes."
+  ]
+}

@@ -12,6 +12,45 @@ from world_project_v2_to_tree import CREATURE_FAMILIES, git_blob_sha
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def validate_inventory(root, rows, native, schedules):
+    """Retain main's exact cohort while qualifying the branch's one Thaian."""
+    from questpc7_thaian_authoring import PACKET
+    packet, _ = cake.read_canonical(root / PACKET)
+    if packet['source']['page_id'] != 48123 or packet['source']['revision'] != 445240:
+        raise ValueError('Thaian source authoring revision')
+    profiles = {row['target']['family']: row for row in packet['profiles']}
+    records = {row['identity']['family']: row for row in packet['records']}
+    key = 'oteryn:creature.thaian'
+    canonical = [row for row in rows if row['definition']['identity']['key'] == key]
+    active = [row for row in native if row['profile']['target']['key'] == key]
+    if (len(canonical) != 1 or len(active) != 1
+            or canonical[0]['definition'] != records['Creature']
+            or canonical[0]['authoring'] != profiles['Creature']['data']
+            or active[0]['profile'] != profiles['Creature']
+            or active[0]['behavior'] != profiles['Behavior']):
+        raise ValueError('Thaian source authoring closure')
+    behavior = active[0]['behavior']['data']['profile']
+    attacks = behavior.get('attacks', [])
+    if len(attacks) != 1 or behavior.get('defenses', []):
+        raise ValueError('Thaian exact melee schedule')
+    ability = [row for row in active[0]['attack_definitions']['profiles']
+               if row['target'] == attacks[0]['ability']]
+    if len(ability) != 1 or ability[0]['data']['profile']['details']['kind'] != 'Melee':
+        raise ValueError('Thaian exact melee ability')
+    # Thaian extends the canonical Cake cohort; independently qualified
+    # native-only Fugue and Elemental bodies retain their exact schedule proofs.
+    from engenc2_fugue_profile import inventory_extension
+    extra_native, extra_schedules = inventory_extension(root, native)
+    from engenc_elemental_profiles import inventory_extension as elemental_inventory
+    elemental_native, elemental_schedules = elemental_inventory(native)
+    extra_native += elemental_native
+    extra_schedules += elemental_schedules
+    if (len(rows) - 1 != 1863 + 1 or len(native) != len(rows) + extra_native
+            or schedules - 1 != 7201 + 4 + extra_schedules):
+        raise ValueError('Non-seasonal canonical inventory changed; review its source first')
+    return 1
+
+
 def generated(root):
     read = lambda path: json.loads((root / path).read_bytes())
     index = read('content/creatures/definitions/index.json')
@@ -36,16 +75,9 @@ def generated(root):
         raise ValueError('Cake source schedule inventory')
     schedules = sum(len(row['behavior']['data']['profile'].get(key, []))
                     for row in native for key in ('attacks', 'defenses'))
-    # M28's native-only Fugue is separate from the canonical Cake corpus.
-    # Admit its four schedules only after exact full-body source qualification.
-    from engenc2_fugue_profile import inventory_extension
-    extra_native, extra_schedules = inventory_extension(root, native)
+    thaian_melee = validate_inventory(root, rows, native, schedules)
     from engenc_elemental_profiles import inventory_extension as elemental_inventory
-    elemental_native, elemental_schedules = elemental_inventory(native)
-    extra_native += elemental_native
-    extra_schedules += elemental_schedules
-    if len(rows) != 1863 + 1 or len(native) != len(rows) + extra_native or schedules != 7201 + 4 + extra_schedules:
-        raise ValueError('Non-seasonal canonical inventory changed; review its source first')
+    elemental_native, _ = elemental_inventory(native)
     result = {}
 
     def replace(path, pattern, replacement):
@@ -69,7 +101,7 @@ def generated(root):
     # Keep the pre-existing unsupported set at116: no new source gap is admitted.
     path = 'crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs'
     replace(path, r'\("melee:Ok\(\(\)\)", [0-9_]+\)',
-            f'("melee:Ok(())", {1689 + 1})')
+            f'("melee:Ok(())", {1689 + 1 + thaian_melee})')
     replace(path, r'\("spell:Ok\(\(\)\)", [0-9_]+\)',
             f'("spell:Ok(())", {4198 + len(behavior["attacks"]) - 1})')
     if '("spell:Err(UnsupportedShape)", 116)' not in result[path]:

@@ -31,6 +31,8 @@ pub(crate) fn reset_callback() -> super::world_callbacks::Callback {
     callback.quest = super::dreamer_fire_bug::QUEST.into();
     callback.trigger = Trigger::StepIn;
     callback.selector = Selector {
+        position_aliases: Vec::new(),
+        ordinal: None,
         native: None,
         position: None,
         unique: Some(9234),
@@ -43,6 +45,7 @@ pub(crate) fn reset_callback() -> super::world_callbacks::Callback {
     callback.passages = TREES
         .into_iter()
         .map(|position| Passage {
+            require_state: false,
             position,
             appearance: 3636,
             replacement: None,

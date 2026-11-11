@@ -193,7 +193,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         };
-        let closed = crate::map::floor::BundleDoors(map.facts.doors());
+        let closed = crate::map::floor::BundleDoors(&map.facts);
         let pz_blocked =
             crate::gameplay_transport::pvp_live::pz_blocked(&states, actor, session, now);
         let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(

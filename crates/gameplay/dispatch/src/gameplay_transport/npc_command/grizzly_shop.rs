@@ -73,8 +73,9 @@ impl NpcConversations {
                     key,
                     offer,
                     state.grizzly_shop_points,
-                ) && (key != crate::content::npc_catalogue::grizzly_shop::NPC
-                    || state.grizzly_shop_items.contains(&offer.item.key))
+                ) && super::quest_shop::visible(key, offer, &state.quest_shop_offers)
+                    && (key != crate::content::npc_catalogue::grizzly_shop::NPC
+                        || state.grizzly_shop_items.contains(&offer.item.key))
             })
             .cloned()
             .collect();

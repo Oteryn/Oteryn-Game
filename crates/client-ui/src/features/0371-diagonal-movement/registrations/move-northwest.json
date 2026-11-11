@@ -1,0 +1,15 @@
+{
+  "mechanic": "0371-diagonal-movement",
+  "kind": "keybindings",
+  "id": "0371-diagonal-movement-move-northwest",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "NUMPAD7",
+  "entry": "input.rs::default_diagonal_binding",
+  "not_applicable": {
+    "state": "Position and facing remain the existing authoritative world-spatial state.",
+    "protocol": "The shared session movement codec gates the optional diagonal profile; there is no separate command handler.",
+    "view": "Existing actor rendering displays the movement.",
+    "settings": "The four defaults use the existing shared keybinding preferences."
+  }
+}

@@ -1,0 +1,264 @@
+{
+  "quest": "oteryn:quest.hero_of_rathleton_quest",
+  "test": "questpc7_hero_full_native_investigation",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc7_hero_full_native_investigation -- --nocapture --test-threads=1",
+  "red": {
+    "seconds": 41.471928342,
+    "log": "/tmp/questpc7-hero-red.log",
+    "reason": "selected Hero native entry is absent after real PG harness creation"
+  },
+  "expanded_red": {
+    "seconds": 50.474679451,
+    "log": "/tmp/questpc7-hero-green.log",
+    "reason": "all native kills reached; final reward lacked native blueprint item admission"
+  },
+  "green": {
+    "seconds": 52.375250585,
+    "log": "/tmp/questpc7-hero-access-green.log",
+    "marker": "QUESTPC7_HERO POSTGRES_CASE_COMPLETED duration=52.375250585s success=true",
+    "passed": 1,
+    "failed": 0
+  },
+  "assertions": [
+    "fresh subject, no quest-state seeds",
+    "actual movement voice/evidence/dungeon stage order",
+    "fresh Premium refusal at evidence and reward, zero MINT on refusal",
+    "ten native Glooth Golem lethals, duplicate notification/drain once and bounded respawn",
+    "Professor Maxxen admitted only after ten construct credits",
+    "native Maxxen lethal credit required for final USE",
+    "blueprint21897x1, Glooth Bag21203x4, platinum3035x5 in one atomic reward plan",
+    "once-only programme completion and repeat without additional inventory",
+    "already typed native dungeon-door entitlement is absent initially and granted with final completion"
+  ],
+  "boundary": "Selected finite Oteryn recipe. Original source global machines/FastWay and optional ordinary corpse loot remain outside this programme proof. No new party entitlement is inferred.",
+  "sources": [
+    {
+      "path": "content/world/placements/region-z14-x131-y124.b3",
+      "sha256": "b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
+    },
+    {
+      "path": "imports/canary/items-xml/items.xml",
+      "line": 43242,
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    }
+  ],
+  "validation": {
+    "state": "GREEN",
+    "gates": [
+      {
+        "check": "loader-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "--lib",
+          "loader::tests::"
+        ],
+        "seconds": 5.452,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-loader-units.log"
+      },
+      {
+        "check": "world-callback-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "--lib",
+          "world_callbacks::"
+        ],
+        "seconds": 3.146,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-world-callback-units.log"
+      },
+      {
+        "check": "author",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/content-schema/quest-authoring",
+          "-p",
+          "test_qengine_rewards.py"
+        ],
+        "seconds": 9.859,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-author.log"
+      },
+      {
+        "check": "item-author",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/content-migration",
+          "-p",
+          "test_qengine_reward_item_profiles.py"
+        ],
+        "seconds": 0.248,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-item-author.log"
+      },
+      {
+        "check": "item-generation",
+        "command": [
+          "python3",
+          "tools/content-migration/register_spell_families.py",
+          "--check"
+        ],
+        "seconds": 73.286,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-item-generation.log"
+      },
+      {
+        "check": "generation",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/qengine_rewards.py",
+          "--check"
+        ],
+        "seconds": 7.579,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-generation.log"
+      },
+      {
+        "check": "check",
+        "command": [
+          "cargo",
+          "check",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "-p",
+          "oteryn-gameplay-dispatch"
+        ],
+        "seconds": 85.325,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-check.log"
+      },
+      {
+        "check": "clippy",
+        "command": [
+          "cargo",
+          "clippy",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "-p",
+          "oteryn-gameplay-dispatch",
+          "--all-targets",
+          "--all-features",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "seconds": 199.9,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-clippy.log"
+      },
+      {
+        "check": "pin-refresh",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "seconds": 122.525,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-pin-refresh.log"
+      },
+      {
+        "check": "pin-check",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-check",
+          ".",
+          "/tmp/questpc7-hero-pin-check"
+        ],
+        "seconds": 135.176,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-pin-check.log"
+      },
+      {
+        "check": "content",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "integration_rest",
+          "content_"
+        ],
+        "seconds": 164.453,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-content.log"
+      },
+      {
+        "check": "world",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "content_world_project_repository"
+        ],
+        "seconds": 48.312,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-world.log"
+      },
+      {
+        "check": "fmt",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "seconds": 10.831,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-fmt.log"
+      }
+    ],
+    "test_counts": {
+      "loader": 9,
+      "world_callbacks": 21,
+      "quest_authoring": 23,
+      "item_authoring": 3,
+      "content": 123,
+      "world": 5
+    },
+    "pins": "94fd3d3c36f1d68c1558113a6cba0e8a42e58ea3748b662d18d2c4e829084df6 unchanged; regenerated and checked using repository compiler"
+  },
+  "review": "Reviewed all authored source and generated policy delta: original source callbacks/global state and item instance semantics retained; typed door access earned atomically; exact count updated for four new callbacks; no blocking findings.",
+  "initial_green": {
+    "seconds": 52.154554112,
+    "log": "/tmp/questpc7-hero-green2.log",
+    "marker": "QUESTPC7_HERO POSTGRES_CASE_COMPLETED duration=52.154554112s success=true",
+    "passed": 1,
+    "failed": 0
+  }
+}

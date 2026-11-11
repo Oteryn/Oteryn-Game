@@ -421,14 +421,44 @@ async fn scenario(h: &Harness, inspection: bool, offer_contention: bool) -> Test
                     );
                 }
             }
+            {
+                use crate::gameplay_transport::player_trade::{CheckError, preflight::read_retry};
+                let permit = owner.spell_lane_permit().await.ok_or("inspection lane")?;
+                let held = read_retry(&h.root, async || h.root.try_acquire_ready().map_err(CheckError::from))
+                    .await.map_err(debug)?;
+                // On this current-thread runtime both locks are free before the
+                // first poll. Only the deliberately borrowed DB holder can wait.
+                {
+                    let runtime = owner.runtime.lock().await;
+                    let states = owner.states.spell_states.lock().await;
+                    drop(states);
+                    drop(runtime);
+                }
+                let mut read = std::pin::pin!(owner.inspection_trade_item(
+                    &permit, a_admitted, a.next, true, 0,
+                ));
+                let first = std::future::poll_fn(|cx| std::task::Poll::Ready(
+                    std::future::Future::poll(read.as_mut(), cx),
+                )).await;
+                assert!(first.is_pending(), "busy holder must wait, not hide the current offer: {first:?}");
+                drop(held);
+                let (instance, definition, count) = read.await.ok_or("current counteroffer after holder return")?;
+                assert_eq!(instance, id(93));
+                assert_eq!(definition.production_key, "oteryn:item.tibia.i3604");
+                assert_eq!(count, 3);
+            }
             for (counter, index, expected) in [(false, 0, 1), (true, 0, 1), (true, 1, 2)] {
                 let payload =
                     inspect::encode_request(Request::Trade { counter, index }).map_err(debug)?;
-                let reply = a
-                    .command(inspect::COMMAND_TYPE_INSPECTION, &payload)
-                    .await?;
-                let reply = inspect::decode_reply(&reply).map_err(debug)?;
-                assert_eq!(reply.status, expected, "{reply:?}");
+                // A peer refresh can own the shared holder while this read begins.
+                // It must not turn a current offer into a custody refusal.
+                let (refresh, reply) = super::fixture::join_two(
+                    owner.refresh_staff(b_admitted),
+                    a.command(inspect::COMMAND_TYPE_INSPECTION, &payload),
+                ).await;
+                assert!(refresh, "trade inspection peer refresh");
+                let reply = inspect::decode_reply(&reply?).map_err(debug)?;
+                assert_eq!(reply.status, expected, "counter={counter} index={index}: {reply:?}");
                 if expected == 1 {
                     assert_eq!(reply.items[0].count, 3);
                     assert!(reply.items[0].attributes.iter().any(|(k, _)| k == "Weight"));

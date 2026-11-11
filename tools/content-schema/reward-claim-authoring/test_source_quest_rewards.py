@@ -11,12 +11,12 @@ import reward_claim_variant_authoring as variant
 class SourceQuestRewards(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.items = plain.load_items()
-        # Exercise historical held inputs explicitly: another owner may already
-        # qualify a ring in today's catalogue. Keep every source fact intact.
-        cls.items = copy.deepcopy(cls.items)
-        for item_id in container_native.CHARGED_QUEST_CLAIMS.values():
-            cls.items[f'oteryn:item.tibia.i{item_id}']['materializable'] = False
+        cls.merged_items = plain.load_items()
+        # Replay main's historical Item holds independently of QUESTPC8's
+        # subsequent source-backed global admission of these same identities.
+        cls.items = copy.deepcopy(cls.merged_items)
+        for number in container_native.CHARGED_QUEST_CLAIMS.values():
+            cls.items[f'oteryn:item.tibia.i{number}']['materializable'] = False
         cls.claims = plain.load_json(plain.ROOT / plain.CLAIMS_REL)['claims']
         cls.manifest = plain.load_json(plain.ROOT / plain.MANIFEST_REL)
 
@@ -79,6 +79,7 @@ class SourceQuestRewards(unittest.TestCase):
         self.assertFalse(self.items['oteryn:item.tibia.i3084']['materializable'])
 
     def test_charged_mismatch_stays_held_and_unrelated_quests_keep_their_facts(self):
+        before = copy.deepcopy(self.items)
         changed = copy.deepcopy(self.items)
         changed['oteryn:item.tibia.i3083']['semantics']['charges']['value']['count']['value'] = 149
         rows = self.build(changed)
@@ -89,11 +90,14 @@ class SourceQuestRewards(unittest.TestCase):
         self.assertNotIn('native_contents', life_ring)
         # Full-charge admission must not mutate the source-wide Item catalogue.
         self.assertFalse(self.items['oteryn:item.tibia.i3083']['materializable'])
+        self.assertEqual(self.items, before, 'source catalogue must remain unchanged')
 
     def test_native_charge_admission_requires_exact_profile_and_all_known_facts(self):
         profiles = plain.load_json(plain.ROOT / 'content/items/definitions/spell-native-profiles.json')
         key = 'oteryn:item.tibia.i3083'
-        item = self.items[key]
+        item = copy.deepcopy(self.items[key])
+        # Test admission of a held item even when the merged canonical item is ready.
+        item['materializable'] = False
         original = next(p for p in profiles['records'] if p['production_definition']['production_key'] == key)
         self.assertTrue(container_native.native_charge_item(item, original)['materializable'])
         for mutation in ('identity', 'binding', 'admission', 'charges', 'physical', 'container', 'temporal'):
@@ -123,12 +127,34 @@ class SourceQuestRewards(unittest.TestCase):
                 self.assertFalse(container_native.full_charge_leaf(item, claim, {**position, 'x': position['x'] + 1}, key, charges))
                 self.assertFalse(container_native.full_charge_leaf(item, claim + '_other', position, key, charges))
 
+    def test_merged_charge_admissions_are_idempotent_and_never_mutate_sources(self):
+        before = copy.deepcopy(self.merged_items)
+        for claim in container_native.CHARGED_QUEST_CLAIMS:
+            once = container_native.claim_items(claim, self.merged_items)
+            self.assertEqual(container_native.claim_items(claim, once), once)
+        self.assertEqual(self.merged_items, before)
+        profiles = plain.load_json(plain.ROOT / 'content/items/definitions/spell-native-profiles.json')
+        key = 'oteryn:item.tibia.i3083'
+        profile = copy.deepcopy(next(p for p in profiles['records']
+                                    if p['production_definition']['production_key'] == key))
+        profile['semantics']['charges']['value']['count']['value'] = 149
+        self.assertTrue(self.merged_items[key]['materializable'])
+        self.assertFalse(container_native.native_charge_item(self.merged_items[key], profile)['materializable'])
+        self.assertEqual(self.merged_items, before)
+
     def test_qualification_changes_only_the_merged_owned_claims(self):
-        after = self.build(self.items)
-        variants_after = variant.derive(plain.ROOT, self.items, plain.stack_problem)
+        held_items = copy.deepcopy(self.items)
+        for item in container_native.CHARGED_QUEST_CLAIMS.values():
+            held_items[f'oteryn:item.tibia.i{item}']['materializable'] = False
+        # This historical fixture holds charge Items only; the current empty
+        # vial remains unchanged while exact source-scoped fluid proofs apply.
+        self.assertEqual(held_items['oteryn:item.tibia.i2874'],
+                         self.merged_items['oteryn:item.tibia.i2874'])
+        after = self.build(held_items)
+        variants_after = variant.derive(plain.ROOT, held_items, plain.stack_problem)
         with patch.object(container_native, 'claim_items', side_effect=lambda _key, items: items):
-            before = self.build(self.items)
-            variants_before = variant.derive(plain.ROOT, self.items, plain.stack_problem)
+            before = self.build(held_items)
+            variants_before = variant.derive(plain.ROOT, held_items, plain.stack_problem)
         self.assertEqual({key for key in before if before[key] != after[key]}, {
             'oteryn:reward-claim.kv.timering3', 'oteryn:reward-claim.kv.trollcave1',
             'oteryn:reward-claim.kv.weddingring1',
@@ -136,7 +162,8 @@ class SourceQuestRewards(unittest.TestCase):
         self.assertEqual([r['definition']['identity']['key']
                           for r, old in zip(variants_after, variants_before) if r != old],
                          ['oteryn:reward-claim.kv.desert2', 'oteryn:reward-claim.kv.draconia1',
-                          'oteryn:reward-claim.kv.fireaxe1', 'oteryn:reward-claim.kv.triangletower',
+                          'oteryn:reward-claim.kv.fireaxe1', 'oteryn:reward-claim.kv.goblintemple2',
+                          'oteryn:reward-claim.kv.triangletower',
                           'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine'])
 
 

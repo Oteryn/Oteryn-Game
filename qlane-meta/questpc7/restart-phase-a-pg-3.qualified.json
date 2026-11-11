@@ -1,0 +1,73 @@
+{
+  "log": ".questpc/restart-phase-a-pg-3.log",
+  "test_source_sha256": "ce2010cf61f9269218c6b4c7c90af073b76f45fd2aa590e7f61879b90ebde4e6",
+  "manifest_sha256": "75d210e2d3c22bc2892c77eb5f0d134939e3727c64a41176cc0b6d5c7c30e457",
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--all-features",
+    "--lib",
+    "--",
+    "quest_catalogue_chests_phase_a_12_use_replay_and_refusal",
+    "--test-threads=2",
+    "--nocapture"
+  ],
+  "qualified": {
+    "quest_catalogue_chests_phase_a_12_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/emperor_s_cookies_quest",
+        "canary:quest/life_ring_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.quest.key.id3800": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3800 (32605, 31908, -3) native_source=true duration=3.860197354s",
+            "duration": "3.860197354s",
+            "position": [
+              32605,
+              31908,
+              3
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id3802": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3802 (32599, 31923, -6) native_source=true duration=3.83457468s",
+            "duration": "3.83457468s",
+            "position": [
+              32599,
+              31923,
+              6
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies (32648, 31905, -3) native_source=true duration=3.86239078s",
+            "duration": "3.86239078s",
+            "position": [
+              32648,
+              31905,
+              3
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.lifering": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.lifering (32443, 32238, -11) native_source=true duration=3.871521756s",
+            "duration": "3.871521756s",
+            "position": [
+              32443,
+              32238,
+              11
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

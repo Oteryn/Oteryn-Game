@@ -4,9 +4,17 @@ use super::*;
 fn m40_diagonal_direction_codes_round_trip_without_changing_cardinals() -> Result<(), String> {
     for value in 1..=8 {
         let payload = [8, value];
-        let direction = decode_step_intent(&payload)
+        let direction = decode_step_intent_profile(&payload, true)
             .map_err(|error| format!("native direction {value}: {error:?}"))?;
         assert_eq!(encode_step_intent(direction), payload);
+        if value > 4 {
+            assert_eq!(
+                decode_step_intent(&payload),
+                Err(WorldSpatialError::Malformed)
+            );
+        } else {
+            assert_eq!(decode_step_intent(&payload), Ok(direction));
+        }
     }
     for value in [0, 9, 127, 255] {
         let mut payload = vec![8];

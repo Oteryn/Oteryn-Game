@@ -1,0 +1,110 @@
+{
+  "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+  "state": "FOCUSED_GREEN_2_NATIVE_PG",
+  "checks": {
+    "workspace": {
+      "exit": 0,
+      "seconds": 194.13622917699104
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.744325339008356
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.3382187130046077
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 186.31639243400423
+    },
+    "pg": {
+      "exit": 0,
+      "seconds": 429.3978318669979
+    }
+  },
+  "regeneration": {
+    "placement-check": {
+      "exit": 0,
+      "seconds": 0.3484723250003299
+    },
+    "proof": {
+      "exit": 0,
+      "seconds": 0.42008248600177467
+    },
+    "tree": {
+      "exit": 0,
+      "seconds": 36.93629084799613
+    },
+    "claims": {
+      "exit": 0,
+      "seconds": 2.871340751997195
+    },
+    "bindings": {
+      "exit": 0,
+      "seconds": 15.376640736998525
+    },
+    "completion": {
+      "exit": 0,
+      "seconds": 5.095486877995427
+    },
+    "matrix": {
+      "exit": 0,
+      "seconds": 0.5228457189950859
+    },
+    "native": {
+      "exit": 0,
+      "seconds": 327.96716773499793
+    },
+    "audit": {
+      "exit": 0,
+      "seconds": 0.020480460007092915
+    },
+    "pins": {
+      "exit": 0,
+      "seconds": 127.88155473899678
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.3260672050091671
+    },
+    "chosen": {
+      "exit": 0,
+      "seconds": 0.31039105899981223
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.34257604299637
+    }
+  },
+  "quest_units": {
+    "passed": 355,
+    "seconds": 41.48
+  },
+  "python_tests": {
+    "matrix": 8,
+    "callback_profiles": 17,
+    "equipment_pin_tool": 6
+  },
+  "equipment_union": {
+    "identities": 3924,
+    "own_only": 150,
+    "prior_own_only": 161,
+    "baseline_unchanged": 3663,
+    "post_baseline_unchanged": 205
+  },
+  "conflicts": "All10 resolved retaining main QREADY1/2 and own reward/NPC/corpse/loot producers. Generated files regenerated; exact immutable union retained. No migration changes.",
+  "native_validation": {
+    "state": "PASS both focused PG cases100.047s on exact pushedc0f43b967",
+    "hunt_seconds": 100.044,
+    "dream_seconds": 69.897,
+    "proof": "wrath-imperial-validation.json",
+    "normal_corpse_loot": "Not claimed qualified; current native kill logs retain refusal."
+  },
+  "review": "Independent merge producer/pin-tool review: no blocking findings. Duplicate idempotent QENGINE admission call is nonblocking extra generation work.",
+  "pending": [
+    "remaining dispatch full unit coverage: CI scope"
+  ],
+  "whole_quests_qualified": 21,
+  "whole_quests_total": 23
+}

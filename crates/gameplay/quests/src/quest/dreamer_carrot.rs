@@ -16,6 +16,8 @@ pub(crate) fn callback() -> Callback {
     callback.quest = super::dreamer_fire_bug::QUEST.into();
     callback.trigger = Trigger::StepIn;
     callback.selector = Selector {
+        position_aliases: Vec::new(),
+        ordinal: None,
         native: None,
         position: None,
         unique: Some(2241),

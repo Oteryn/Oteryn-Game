@@ -17,7 +17,7 @@ pub const SNAPSHOT_TYPE_WORLD_SPATIAL_V1: u32 = 1;
 /// (STEP-PACE-WIRE-0), and owns no command type or domain.
 pub const CAPABILITY_PACED_MOVEMENT_V1: u32 = 13;
 /// M40: eight-way steps and the corresponding three-times pacing receipt.
-pub const CAPABILITY_DIAGONAL_MOVEMENT_V1: u32 = 452;
+pub const CAPABILITY_DIAGONAL_MOVEMENT_V1: u32 = 371;
 pub const MAX_DIAGONAL_STEP_WAIT_MS: u32 = MAX_STEP_WAIT_MS * 3;
 
 /// First-child semantic bounds (#642 packet 5853255180).
@@ -28,8 +28,7 @@ pub const MAX_STEP_RESULT_BYTES: usize = 4;
 /// the disposition (2 B) and `step_wait_ms` (tag 1 B, varint at most 3 B), with slack.
 pub const MAX_PACED_STEP_RESULT_BYTES: usize = 8;
 /// The largest `step_wait_ms`: the step-speed table maximum (speed 10, ground speed 1000).
-pub const MAX_STEP_WAIT_MS: u32 = 333_450;
-/// Diagonal steps use three times the cardinal duration.
+pub const MAX_STEP_WAIT_MS: u32 = 111_150;
 /// A `MOVED` step duration is a whole number of server beats.
 pub const STEP_WAIT_BEAT_MS: u32 = 50;
 pub const MAX_WORLD_SPATIAL_PAYLOAD_BYTES: usize = 64;
@@ -181,18 +180,34 @@ fn read_single_enum(input: &[u8], maximum: usize) -> Result<u64, WorldSpatialErr
     value.ok_or(WorldSpatialError::Malformed)
 }
 
+/// Legacy profile: diagonal enum values still fail closed.
 pub fn decode_step_intent(payload: &[u8]) -> Result<StepDirection, WorldSpatialError> {
+    decode_step_intent_profile(payload, false)
+}
+
+/// Diagonal values require the negotiated native diagonal movement profile.
+pub fn decode_step_intent_profile(
+    payload: &[u8],
+    diagonals: bool,
+) -> Result<StepDirection, WorldSpatialError> {
     match read_single_enum(payload, MAX_STEP_INTENT_BYTES)? {
         1 => Ok(StepDirection::North),
         2 => Ok(StepDirection::East),
         3 => Ok(StepDirection::South),
         4 => Ok(StepDirection::West),
-        5 => Ok(StepDirection::NorthEast),
-        6 => Ok(StepDirection::SouthEast),
-        7 => Ok(StepDirection::SouthWest),
-        8 => Ok(StepDirection::NorthWest),
+        5 if diagonals => Ok(StepDirection::NorthEast),
+        6 if diagonals => Ok(StepDirection::SouthEast),
+        7 if diagonals => Ok(StepDirection::SouthWest),
+        8 if diagonals => Ok(StepDirection::NorthWest),
         _ => Err(WorldSpatialError::Malformed),
     }
+}
+
+pub fn decode_step_intent_selected(
+    selected: &[u32],
+    payload: &[u8],
+) -> Result<StepDirection, WorldSpatialError> {
+    decode_step_intent_profile(payload, selected.contains(&CAPABILITY_DIAGONAL_MOVEMENT_V1))
 }
 
 pub fn encode_step_intent(direction: StepDirection) -> Vec<u8> {
@@ -262,6 +277,15 @@ pub fn encode_step_result_with_diagonal(
     Ok(output)
 }
 
+/// The negotiated main profile shares the exact same bounded receipt codec.
+pub fn encode_step_result_profile(
+    result: StepResult,
+    paced: bool,
+    diagonals: bool,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    encode_step_result_with_diagonal(result, paced, diagonals)
+}
+
 /// The command type 1 result of a session without capability 13: `TOO_EARLY` and field 2 fail
 /// closed.
 pub fn decode_step_result(payload: &[u8]) -> Result<StepDisposition, WorldSpatialError> {
@@ -287,7 +311,15 @@ pub fn decode_step_result_receipt(
     payload: &[u8],
     paced: bool,
 ) -> Result<StepResult, WorldSpatialError> {
-    decode_step_result_receipt_with_diagonal(payload, paced, false)
+    decode_step_result_profile(payload, paced, false)
+}
+
+pub fn decode_step_result_profile(
+    payload: &[u8],
+    paced: bool,
+    diagonals: bool,
+) -> Result<StepResult, WorldSpatialError> {
+    decode_step_result_receipt_with_diagonal(payload, paced, diagonals)
 }
 
 /// Decode the negotiated receipt without widening the legacy paced contract.
@@ -438,7 +470,7 @@ pub fn encode_step_outcome(
         disposition,
         step_wait_ms,
     };
-    encode_step_result_with_diagonal(
+    encode_step_result_profile(
         result,
         true,
         selected_capabilities.contains(&CAPABILITY_DIAGONAL_MOVEMENT_V1),
@@ -449,6 +481,66 @@ pub fn encode_step_outcome(
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+
+    #[test]
+    fn diagonal_profile_preserves_legacy_wire_and_pacing_bounds() {
+        for direction in [
+            StepDirection::NorthEast,
+            StepDirection::SouthEast,
+            StepDirection::SouthWest,
+            StepDirection::NorthWest,
+        ] {
+            let wire = encode_step_intent(direction);
+            assert!(decode_step_intent(&wire).is_err());
+            assert!(decode_step_intent_selected(&[], &wire).is_err());
+            assert_eq!(
+                decode_step_intent_selected(&[CAPABILITY_DIAGONAL_MOVEMENT_V1], &wire),
+                Ok(direction)
+            );
+        }
+        for bad in [
+            vec![],
+            vec![8, 0],
+            vec![8, 9],
+            vec![8, 5, 8, 5],
+            vec![16, 5],
+        ] {
+            assert!(decode_step_intent_profile(&bad, true).is_err());
+        }
+        let result = StepResult {
+            disposition: StepDisposition::Moved,
+            step_wait_ms: MAX_DIAGONAL_STEP_WAIT_MS,
+        };
+        assert!(encode_step_result_paced(result, true).is_err());
+        let wire = encode_step_result_profile(result, true, true).expect("diagonal receipt");
+        assert!(decode_step_result_receipt(&wire, true).is_err());
+        assert!(decode_step_result_profile(&wire, false, true).is_err());
+        assert_eq!(decode_step_result_profile(&wire, true, true), Ok(result));
+        for duration in [MAX_DIAGONAL_STEP_WAIT_MS + 1, MAX_DIAGONAL_STEP_WAIT_MS - 1] {
+            assert!(
+                encode_step_result_profile(
+                    StepResult {
+                        step_wait_ms: duration,
+                        ..result
+                    },
+                    true,
+                    true
+                )
+                .is_err()
+            );
+        }
+        assert_eq!(
+            encode_step_outcome(
+                &[
+                    CAPABILITY_PACED_MOVEMENT_V1,
+                    CAPABILITY_DIAGONAL_MOVEMENT_V1
+                ],
+                result.disposition,
+                result.step_wait_ms
+            ),
+            wire
+        );
+    }
     use super::*;
     use serde_json::Value;
 

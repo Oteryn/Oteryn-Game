@@ -266,29 +266,11 @@ pub struct OneItemGroundV1 {
 
 impl OneItemGroundV1 {
     pub fn runtime_scope(&self) -> Result<crate::foundation::RuntimeScopeRefV1, AuditError> {
-        use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
-        check_uuid_v7(&self.world_id)?;
-        let world = WorldId::decode(&self.world_id).map_err(|_| AuditError::InvalidInput)?;
-        match &self.instance_id {
-            None => {
-                check_uuid_v7(&self.channel_id)?;
-                let channel =
-                    ChannelId::decode(&self.channel_id).map_err(|_| AuditError::InvalidInput)?;
-                Ok(RuntimeScopeRefV1::channel(world, channel))
-            }
-            Some(instance) if self.channel_id.is_empty() => {
-                check_uuid_v7(instance)?;
-                RuntimeScopeRefV1::instance(
-                    world,
-                    instance
-                        .as_slice()
-                        .try_into()
-                        .map_err(|_| AuditError::InvalidInput)?,
-                )
-                .map_err(|_| AuditError::InvalidInput)
-            }
-            Some(_) => Err(AuditError::InvalidInput),
-        }
+        decode_runtime_scope(
+            &self.world_id,
+            &self.channel_id,
+            self.instance_id.as_deref(),
+        )
     }
 
     #[must_use]
@@ -321,20 +303,46 @@ pub struct CreatureDeathOccurrenceRefV1 {
     pub actor_local_id: u32,
     #[prost(uint64, tag = "5")]
     pub actor_local_generation: u64,
-    /// Crystal src/creatures/creature.cpp:711-721,777-782: the physical corpse stays in its death Instance.
+    /// Absent for legacy Channel deaths; an Instance carries no Channel ID.
     #[prost(bytes = "vec", optional, tag = "6")]
     pub instance_id: Option<Vec<u8>>,
 }
 
 impl CreatureDeathOccurrenceRefV1 {
     pub fn runtime_scope(&self) -> Result<crate::foundation::RuntimeScopeRefV1, AuditError> {
-        OneItemGroundV1 {
-            world_id: self.world_id.clone(),
-            channel_id: self.channel_id.clone(),
-            instance_id: self.instance_id.clone(),
-            ..Default::default()
+        decode_runtime_scope(
+            &self.world_id,
+            &self.channel_id,
+            self.instance_id.as_deref(),
+        )
+    }
+}
+
+fn decode_runtime_scope(
+    world_id: &[u8],
+    channel_id: &[u8],
+    instance_id: Option<&[u8]>,
+) -> Result<crate::foundation::RuntimeScopeRefV1, AuditError> {
+    use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
+    check_uuid_v7(world_id)?;
+    let world = WorldId::decode(world_id).map_err(|_| AuditError::InvalidInput)?;
+    match &instance_id {
+        None => {
+            check_uuid_v7(channel_id)?;
+            let channel = ChannelId::decode(channel_id).map_err(|_| AuditError::InvalidInput)?;
+            Ok(RuntimeScopeRefV1::channel(world, channel))
         }
-        .runtime_scope()
+        Some(instance) if channel_id.is_empty() => {
+            check_uuid_v7(instance)?;
+            RuntimeScopeRefV1::instance(
+                world,
+                (*instance)
+                    .try_into()
+                    .map_err(|_| AuditError::InvalidInput)?,
+            )
+            .map_err(|_| AuditError::InvalidInput)
+        }
+        Some(_) => Err(AuditError::InvalidInput),
     }
 }
 
@@ -645,7 +653,7 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
     check_definition(after.definition.as_ref())?;
     check_technical_text(&source.typed_cause)?;
     check_uuid_v7(&death.world_id)?;
-    death.runtime_scope()?;
+    let death_scope = death.runtime_scope()?;
     check_definition(source.loot_table.as_ref())?;
     check_content_key(&source.loot_purpose_key)?;
     check_content_key(&source.content_revision)?;
@@ -664,7 +672,7 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
             check_technical_bytes(&ground.native_room_placement_context)?;
             if after.world_id != ground.world_id
                 || death.world_id != ground.world_id
-                || death.runtime_scope()? != ground.runtime_scope()?
+                || death_scope != ground.runtime_scope()?
                 || ground.runtime_scope_ownership_generation != death.scope_ownership_generation
             {
                 return Err(AuditError::InvalidInput);
@@ -788,8 +796,12 @@ pub fn decode_envelope(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemMintV1), 
     let mint = decode_payload(&value.payload)?;
     let scope = mint_scope(&mint)?;
     if value.world_id.as_deref() != Some(scope.world_id().as_bytes().as_slice())
-        || value.channel_id != scope.channel_id().map(|id| id.as_bytes().to_vec())
-        || value.instance_id != scope.instance_id().map(|id| id.to_vec())
+        || value.channel_id.as_deref()
+            != scope
+                .channel_id()
+                .as_ref()
+                .map(|id| id.as_bytes().as_slice())
+        || value.instance_id.as_deref() != scope.instance_id().as_ref().map(|id| id.as_slice())
         || value.game_session_id.is_some()
         || value.command_id.is_some()
         || value.causation.is_some()
@@ -1519,6 +1531,55 @@ pub(super) mod tests {
     }
 
     #[test]
+    fn instance_mint_scope_is_closed_and_matches_both_destinations() {
+        for container in [false, true] {
+            let mut value = if container { corpse_mint(1) } else { mint() };
+            let death = value
+                .source
+                .as_mut()
+                .unwrap()
+                .death_occurrence
+                .as_mut()
+                .unwrap();
+            death.channel_id.clear();
+            death.instance_id = Some(uuid(9));
+            if let Some(ground) = value.destination.as_mut() {
+                ground.channel_id.clear();
+                ground.instance_id = Some(uuid(9));
+            }
+            let wire = encode_mint_event(identity(), value.clone(), Type2EventTuple::V1).unwrap();
+            let (envelope, decoded) = decode_envelope(&wire).unwrap();
+            assert_eq!(decoded, value);
+            assert_eq!(envelope.channel_id, None);
+            assert_eq!(envelope.instance_id, Some(uuid(9)));
+            let mut mixed = value.clone();
+            mixed
+                .source
+                .as_mut()
+                .unwrap()
+                .death_occurrence
+                .as_mut()
+                .unwrap()
+                .channel_id = uuid(2);
+            assert_eq!(check_mint(&mixed), Err(AuditError::InvalidInput));
+            let mut absent = value.clone();
+            absent
+                .source
+                .as_mut()
+                .unwrap()
+                .death_occurrence
+                .as_mut()
+                .unwrap()
+                .instance_id = None;
+            assert_eq!(check_mint(&absent), Err(AuditError::InvalidInput));
+            if let Some(ground) = value.destination.as_mut() {
+                ground.instance_id = Some(uuid(8));
+                assert_eq!(check_mint(&value), Err(AuditError::InvalidInput));
+            }
+        }
+    }
+
+    #[test]
     fn instance_death_mint_audit_keeps_channel_and_instance_identities_disjoint() {
         // Crystal 201189f the_primal_menace.lua:79,94: the reward boss has a
         // physical corpse. Its activity death must retain its actual Instance.
@@ -1786,6 +1847,61 @@ pub(super) mod tests {
             .runtime_scope_ownership_generation = 2;
         assert_eq!(
             encode_mint_event(identity(), other_generation, Type2EventTuple::V1),
+            Err(AuditError::InvalidInput)
+        );
+    }
+
+    #[test]
+    fn instance_mint_preserves_namespace_and_exact_envelope_scope() {
+        let mut value = mint();
+        let ground = value.destination.as_mut().unwrap();
+        ground.channel_id.clear();
+        ground.instance_id = Some(uuid(2));
+        let death = value
+            .source
+            .as_mut()
+            .unwrap()
+            .death_occurrence
+            .as_mut()
+            .unwrap();
+        death.channel_id.clear();
+        death.instance_id = Some(uuid(2));
+        let wire = encode_mint_event(identity(), value.clone(), Type2EventTuple::V1).unwrap();
+        let (envelope, decoded) = decode_envelope(&wire).unwrap();
+        assert_eq!(decoded, value);
+        assert_eq!(envelope.channel_id, None);
+        assert_eq!(envelope.instance_id, Some(uuid(2)));
+
+        let mut foreign = value.clone();
+        foreign.destination.as_mut().unwrap().instance_id = Some(uuid(3));
+        assert_eq!(
+            encode_mint_event(identity(), foreign, Type2EventTuple::V1),
+            Err(AuditError::InvalidInput)
+        );
+        let mut channel_twin = value.clone();
+        let ground = channel_twin.destination.as_mut().unwrap();
+        ground.instance_id = None;
+        ground.channel_id = uuid(2);
+        assert_eq!(
+            encode_mint_event(identity(), channel_twin, Type2EventTuple::V1),
+            Err(AuditError::InvalidInput)
+        );
+        let death = value
+            .source
+            .as_mut()
+            .unwrap()
+            .death_occurrence
+            .as_mut()
+            .unwrap();
+        death.channel_id = uuid(2);
+        assert_eq!(
+            encode_mint_event(identity(), value, Type2EventTuple::V1),
+            Err(AuditError::InvalidInput)
+        );
+        let mut wrong_envelope = envelope;
+        wrong_envelope.channel_id = Some(uuid(2));
+        assert_eq!(
+            decode_envelope(&wrong_envelope.encode_to_vec()),
             Err(AuditError::InvalidInput)
         );
     }
@@ -2231,6 +2347,7 @@ pub(super) mod tests {
                 // W15b container children bind the root transaction's selected Type2 tuple.
                 "crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs",
                 "crates/gameplay/durability/src/durability/reward_claim_mint.rs",
+                "crates/gameplay/durability/src/durability/tutorial_viola.rs",
             ]
         );
         // Every type-2 encoder writes the tuple it is given, never this module's compile-time

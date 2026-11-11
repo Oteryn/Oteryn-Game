@@ -295,9 +295,13 @@ def test_callback_proof_refresh_preserves_reviewed_snapshots() -> None:
         directory = "tools/content-schema/quest-authoring/samples/completion242/"
         callback = "content/quests/world-callbacks.json"
         proof = [{"path": callback, "sha256": "old"}, {"path": "other", "sha256": "kept"}]
-        approval = {"proof_inputs": proof, "approved_core_digests": ["core"], "approved_graphs": ["graph"]}
-        receipt = {"proof_inputs": proof, "changes": ["reviewed"],
+        compiler = "tools/compiler.py"
+        compiler_inputs = [{"path": compiler, "sha256": "old"}]
+        approval = {"compiler_inputs": compiler_inputs, "proof_inputs": proof,
+                    "approved_core_digests": ["core"], "approved_graphs": ["graph"]}
+        receipt = {"compiler_inputs": compiler_inputs, "proof_inputs": proof, "changes": ["reviewed"],
                    "approval": {"path": directory + "source-fix-approval.json", "sha256": "old"}}
+        write(root, compiler, "# merged compiler\n")
         write(root, callback, {"schema": 1, "callbacks": []})
         write(root, directory + "source-fix-approval.json", approval)
         write(root, directory + "source-fix-receipt.json", receipt)
@@ -308,6 +312,9 @@ def test_callback_proof_refresh_preserves_reviewed_snapshots() -> None:
             rc.refresh_quest_callback_proof()
             assert first == [path.read_bytes() for path in paths]
         approval["proof_inputs"][0]["sha256"] = hashlib.sha256((root / callback).read_bytes()).hexdigest()
+        compiler_inputs[0]["sha256"] = sha(root, compiler)
+        assert approval["proof_inputs"] == proof
+        assert receipt["proof_inputs"] == proof
         receipt["approval"]["sha256"] = hashlib.sha256(first[0]).hexdigest()
         assert json.loads(first[0]) == approval
         assert json.loads(first[1]) == receipt
@@ -384,6 +391,9 @@ def test_normal_repin_updates_raw_extent_without_rewriting_history_checks() -> N
         world = root / "content/world"
         write(root, rc.PIN_PATH, PIN_TEST + f'const TREE_SHA256: &str = "{"0" * 64}";\n')
         write(root, "content/world/definitions/reference.json", {})
+        write(root, "content/world/placements/index.json", {"palette": [], "regions": []})
+        client = root / "crates/client-assets/src/world.rs"
+        write(root, str(client.relative_to(root)), f'pub const PLACEMENT_INDEX_SHA256: &str = "{"0" * 64}";\n')
         write(root, "content/world/provenance/imports.json", {"batches": [{"batch_id": key} for key in ["legacy-a", "legacy-b", "g4-item-fx-audio295-raw-evidence-r1", "seasonal-cake-creature-crystal-201189f-r1"]]})
         write(root, "apps/game-server/tests/content_npc_catalogue.rs", f'assert_eq!(catalogue.source_tree_digest(), "{"0" * 64}");\n')
         path = root / "apps/game-server/tests/integration_rest/content_item_fx_audio_raw.rs"
@@ -394,11 +404,38 @@ def test_normal_repin_updates_raw_extent_without_rewriting_history_checks() -> N
         assert 'assert_eq!(batches.len(), 3);' in text
         assert 'assert_eq!(historical.len(), 2);' in text
         assert 'assert_eq!(&batches[..prior.len()], prior.as_slice());' in text
+        placement_sha = hashlib.sha256((world / "placements/index.json").read_bytes()).hexdigest()
+        assert f'pub const PLACEMENT_INDEX_SHA256: &str = "{placement_sha}";' in client.read_text()
+
+def test_source_cohort_includes_installed_successors() -> None:
+    installed = []
+
+    class Measured(Exception):
+        pass
+
+    def measure():
+        assert installed == [rc.ROOT], "measure only the complete installed World"
+        raise Measured
+
+    with patch.object(sys, "argv", ["regenerate_content.py"]), \
+            patch.object(rc, "run"), \
+            patch.object(rc, "refresh_quest_callback_proof"), \
+            patch.object(rc, "materialize_world"), \
+            patch("questpc7_thaian_authoring.install", side_effect=installed.append), \
+            patch.object(rc, "refresh_source_cohort_extent", side_effect=measure):
+        try:
+            rc.main()
+        except Measured:
+            pass
+        else:
+            raise AssertionError("the complete World cohort must be measured")
+
 
 def test_normal_generation_orders_native_callback_producers() -> None:
     commands: list[list[str]] = []
     with (
         patch.object(rc, "run", side_effect=commands.append),
+        patch("questpc7_thaian_authoring.install"),
         patch.multiple(rc, materialize_world=lambda: None,
                        refresh_quest_callback_proof=lambda: None,
                        refresh_source_cohort_extent=lambda: None,
@@ -427,9 +464,89 @@ def test_normal_generation_orders_native_callback_producers() -> None:
         assert commands.index(tree) < commands.index(producer) < commands.index(consumer), (producer, consumer)
 
 
+def full_generation_trace(events, inspect_command) -> int:
+    """Exercise the actual dispatcher without running any producer or Git write."""
+    def record(command):
+        command = tuple(command)
+        events.append(command)
+        inspect_command(command, events)
+
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        for tool in rc.AUTHORING_TOOLS:
+            write(root, tool, "")
+        with patch.object(rc, "ROOT", root), \
+                patch.object(sys, "argv", ["regenerate_content.py", "--no-stage", "--skip-checks"]), \
+                patch.dict(os.environ, {"OTERYN_SPELL_SOURCE_ROOT": ""}), \
+                patch.object(rc, "run", side_effect=record), \
+                patch.object(rc, "unresolved_worktree_paths", return_value=[]) as unresolved, \
+                patch.object(rc, "refresh_quest_callback_proof"), \
+                patch.object(rc, "materialize_world"), \
+                patch("questpc7_thaian_authoring.install"), \
+                patch.object(rc, "refresh_source_cohort_extent"), \
+                patch.object(rc, "repin_rust_inventory"), \
+                patch.object(rc, "refresh_world_metadata", side_effect=lambda: events.append(("world-metadata",))), \
+                patch.object(subprocess, "run", side_effect=AssertionError("unexpected subprocess")):
+            result = rc.main()
+            unresolved.assert_called_once_with()
+        assert not any(command[0] in {"git", "cargo"} for command in events)
+        assert not any("--check" in command for command in events)
+        return result
+
+
+def test_imbuement_candidate_precedes_content_consumers_and_refusal_stops_them() -> None:
+    candidate = ("python3", "tools/content-schema/imbuement-authoring/imbuement_authoring.py", "build")
+    tree = ("python3", "tools/content-migration/world_project_v2_to_tree.py")
+
+    def require_candidate(command, events):
+        if command == tree:
+            assert candidate in events[:-1], "content consumer requires the fresh candidate"
+
+    events = []
+    assert full_generation_trace(events, require_candidate) == 0
+    assert events.count(candidate) == 1
+
+    def refuse_candidate(command, _events):
+        if command == candidate:
+            raise subprocess.CalledProcessError(1, list(command))
+
+    refused = []
+    try:
+        full_generation_trace(refused, refuse_candidate)
+    except subprocess.CalledProcessError as error:
+        assert error.cmd == list(candidate)
+    else:
+        raise AssertionError("a failed candidate producer must stop regeneration")
+    assert tree not in refused, "a refused prerequisite cannot reach its consumer"
+
+
+def test_reward_variant_packet_follows_final_claim_item_and_metadata_inputs() -> None:
+    variant = ("python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py")
+    inputs = (
+        ("python3", "tools/content-migration/world_project_v2_to_tree.py"),
+        ("python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"),
+        ("python3", "tools/content-migration/register_spell_families.py"),
+        ("world-metadata",),
+    )
+
+    def require_final_inputs(command, events):
+        if command == variant:
+            assert all(source in events[:-1] for source in inputs), "variant packet requires final inputs"
+
+    events = []
+    assert full_generation_trace(events, require_final_inputs) == 0
+    assert events.count(variant) == 1, "the variant packet must actually be regenerated"
+    variant_index = events.index(variant)
+    for source in inputs:
+        assert max(index for index, command in enumerate(events) if command == source) < variant_index
+
+
 def main() -> None:
     tests = [
         test_normal_generation_orders_native_callback_producers,
+        test_imbuement_candidate_precedes_content_consumers_and_refusal_stops_them,
+        test_reward_variant_packet_follows_final_claim_item_and_metadata_inputs,
+        test_source_cohort_includes_installed_successors,
         test_normal_repin_updates_raw_extent_without_rewriting_history_checks,
         test_source_cohort_extent_separates_npc_profiles_and_tracks_successors,
         test_no_stage_checks_binary_conflicts_without_decoding,

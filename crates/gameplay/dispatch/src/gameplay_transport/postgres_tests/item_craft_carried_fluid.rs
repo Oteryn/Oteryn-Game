@@ -31,28 +31,56 @@ enum Case {
 }
 
 impl Case {
-    fn keg(self)->bool {matches!(self,Self::Keg|Self::KegLast|Self::KegMove|Self::KegFull|Self::GroundFull|Self::Ground|Self::GroundLast|Self::Nested|Self::NestedLast)}
-    fn last(self)->bool {matches!(self,Self::KegLast|Self::KegFull|Self::GroundFull|Self::GroundLast|Self::NestedLast)}
-    fn ground(self)->bool {matches!(self,Self::Ground|Self::GroundLast|Self::GroundFull)}
-    fn moves(self)->bool {matches!(self,Self::KegMove)}
-    fn nested(self)->bool {matches!(self,Self::Nested|Self::NestedLast)}
+    fn keg(self) -> bool {
+        matches!(
+            self,
+            Self::Keg
+                | Self::KegLast
+                | Self::KegMove
+                | Self::KegFull
+                | Self::GroundFull
+                | Self::Ground
+                | Self::GroundLast
+                | Self::Nested
+                | Self::NestedLast
+        )
+    }
+    fn last(self) -> bool {
+        matches!(
+            self,
+            Self::KegLast | Self::KegFull | Self::GroundFull | Self::GroundLast | Self::NestedLast
+        )
+    }
+    fn ground(self) -> bool {
+        matches!(self, Self::Ground | Self::GroundLast | Self::GroundFull)
+    }
+    fn moves(self) -> bool {
+        matches!(self, Self::KegMove)
+    }
+    fn nested(self) -> bool {
+        matches!(self, Self::Nested | Self::NestedLast)
+    }
 }
 #[test]
-fn srx1_dispenser_full_parent_conserves_flasks_and_charges_postgres()->TestResult {
-    postgres_case(Case::KegFull,"srx1_keg_full_parent")?;
-    postgres_case(Case::GroundFull,"srx1_cask_full_parent")
+fn srx1_dispenser_full_parent_conserves_flasks_and_charges_postgres() -> TestResult {
+    postgres_case(Case::KegFull, "srx1_keg_full_parent")?;
+    postgres_case(Case::GroundFull, "srx1_cask_full_parent")
 }
 
 #[test]
-fn srx1_used_keg_moves_preserve_charge_row_postgres()->TestResult {
-    postgres_case(Case::KegMove,"srx1_used_keg_move")
+fn srx1_used_keg_moves_preserve_charge_row_postgres() -> TestResult {
+    postgres_case(Case::KegMove, "srx1_used_keg_move")
 }
 
 #[test]
-fn srx1_dispenser_ground_and_nested_charge_custody_postgres()->TestResult {
-    for (case,name) in [(Case::Ground,"srx1_cask_ground"),(Case::GroundLast,"srx1_cask_ground_last"),
-        (Case::Nested,"srx1_keg_nested"),(Case::NestedLast,"srx1_keg_nested_last")] {
-        postgres_case(case,name)?;
+fn srx1_dispenser_ground_and_nested_charge_custody_postgres() -> TestResult {
+    for (case, name) in [
+        (Case::Ground, "srx1_cask_ground"),
+        (Case::GroundLast, "srx1_cask_ground_last"),
+        (Case::Nested, "srx1_keg_nested"),
+        (Case::NestedLast, "srx1_keg_nested_last"),
+    ] {
+        postgres_case(case, name)?;
     }
     Ok(())
 }
@@ -122,7 +150,9 @@ fn scenario(case: Case, name: &str) -> TestResult {
         } else {
             "oteryn:item.tibia.i3603"
         };
-        let vessel = if case.ground() { "oteryn:item.tibia.i25880" } else if case.keg() {
+        let vessel = if case.ground() {
+            "oteryn:item.tibia.i25880"
+        } else if case.keg() {
             "oteryn:item.tibia.i25904"
         } else {
             "oteryn:item.tibia.i2874"
@@ -213,7 +243,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
-        owner.rooms=crate::gameplay_transport::SeamRooms::new(None,Some(action_room));
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(action_room));
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -227,10 +257,17 @@ fn scenario(case: Case, name: &str) -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
 
         let mut entries = vec![(flour, 2), (vessel, 1)];
-        if case.nested() {entries.push((bag,1));}
-        if case.moves() {entries.push((flour,2));entries.push((bag,1));}
-        if matches!(case,Case::KegFull|Case::GroundFull) {
-            while entries.len()<20 {entries.push(("oteryn:item.tibia.i3031",1));}
+        if case.nested() {
+            entries.push((bag, 1));
+        }
+        if case.moves() {
+            entries.push((flour, 2));
+            entries.push((bag, 1));
+        }
+        if matches!(case, Case::KegFull | Case::GroundFull) {
+            while entries.len() < 20 {
+                entries.push(("oteryn:item.tibia.i3031", 1));
+            }
         }
         if matches!(case, Case::Full) {
             let policy = native
@@ -251,24 +288,45 @@ fn scenario(case: Case, name: &str) -> TestResult {
         }
         super::item_look::seed_main_backpack(&harness, &entries).await?;
         if case.moves() {
-            let mut tx=harness.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
             sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(73).as_slice()).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,game_character_uuid_v7())")
                 .bind(id(73).as_slice()).bind(id(42).as_slice()).bind(id(74).as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
         }
         if case.ground() || case.nested() {
-            let ground=if case.ground() {
-                let runtime=owner.runtime.lock().await;
-                Some(crate::durability::item_loop_move::LoopGround::from_native_owner(action_room,&runtime,
-                    MovementLocalPosition{x:6,y:0,floor:7},&crate::map::overlay::map_revision(&base)).map_err(debug)?)
-            } else {None};
-            let mut tx=harness.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            let ground = if case.ground() {
+                let runtime = owner.runtime.lock().await;
+                Some(
+                    crate::durability::item_loop_move::LoopGround::from_native_owner(
+                        action_room,
+                        &runtime,
+                        MovementLocalPosition {
+                            x: 6,
+                            y: 0,
+                            floor: 7,
+                        },
+                        &crate::map::overlay::map_revision(&base),
+                    )
+                    .map_err(debug)?,
+                )
+            } else {
+                None
+            };
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
             sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).execute(&mut *tx).await?;
-            if let Some(ground)=ground {
-                let reference=[crate::durability::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX,id(79).as_slice()].concat();
+            if let Some(ground) = ground {
+                let reference = [
+                    crate::durability::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX,
+                    id(79).as_slice(),
+                ]
+                .concat();
                 sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,$4,$5,$6,$7,$8,nextval('game_item_ground_stack_ordinal_seq'))")
                     .bind(id(72).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice()).bind(ground.spatial_position).bind(reference)
                     .bind(ground.map_revision).bind(ground.content_revision).bind(ground.placement_context).execute(&mut *tx).await?;
@@ -276,7 +334,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
                 sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,game_character_uuid_v7())")
                     .bind(id(72).as_slice()).bind(id(42).as_slice()).bind(id(73).as_slice()).execute(&mut *tx).await?;
             }
-            if matches!(case,Case::GroundFull) {
+            if matches!(case, Case::GroundFull) {
                 sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i3031','definition-r1',1,1,encode($3,'hex')::uuid)").bind(id(95).as_slice()).bind(id(42).as_slice()).bind(id(96).as_slice()).execute(&mut *tx).await?;
                 sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1000,encode($5,'hex')::uuid)").bind(id(95).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(97).as_slice()).execute(&mut *tx).await?;
             }
@@ -324,20 +382,39 @@ fn scenario(case: Case, name: &str) -> TestResult {
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
-        let direct=case.ground() || case.nested();
-        let use_command=crate::gameplay_transport::connection::UseCommand{game_session_id:admitted.game_session_id,command_id:1,item_fence:Some(fence)};
-        let (continued,result,actual)=if direct {
-            let result=owner.use_craft(deps.actor,use_command,intent.clone(),Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(71))),Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(72)))).await.ok_or("dispenser production caller")?;
-            (admitted,result.disposition,payload.clone())
-        } else {exchange_carried(
-            &owner,
-            admitted,
-            1,
-            &payload,
-            reference(flour),
-            reference(vessel),
-        )
-        .await? };
+        let direct = case.ground() || case.nested();
+        let use_command = crate::gameplay_transport::connection::UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id: 1,
+            item_fence: Some(fence),
+        };
+        let (continued, result, actual) = if direct {
+            let result = owner
+                .use_craft(
+                    deps.actor,
+                    use_command,
+                    intent.clone(),
+                    Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(
+                        71,
+                    ))),
+                    Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(
+                        72,
+                    ))),
+                )
+                .await
+                .ok_or("dispenser production caller")?;
+            (admitted, result.disposition, payload.clone())
+        } else {
+            exchange_carried(
+                &owner,
+                admitted,
+                1,
+                &payload,
+                reference(flour),
+                reference(vessel),
+            )
+            .await?
+        };
 
         let flour_state: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
         let vessel_state: (i16, i64) = sqlx::query_as("SELECT lifecycle,(SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
@@ -346,142 +423,414 @@ fn scenario(case: Case, name: &str) -> TestResult {
             .await?;
         match case {
             Case::GroundFull => {
-                assert_eq!(result,UseDisposition::NoRoom,"capacity must be checked before any dispenser debit/retirement");
-                assert_eq!(flour_state,(2,1));assert_eq!(vessel_state,(1,0));assert_eq!(craft_records,0);
-                assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_consume_transform_records").fetch_one(&harness.pool).await?,0);
+                assert_eq!(
+                    result,
+                    UseDisposition::NoRoom,
+                    "capacity must be checked before any dispenser debit/retirement"
+                );
+                assert_eq!(flour_state, (2, 1));
+                assert_eq!(vessel_state, (1, 0));
+                assert_eq!(craft_records, 0);
+                assert_eq!(
+                    sqlx::query_scalar::<_, i64>(
+                        "SELECT count(*) FROM game_item_consume_transform_records"
+                    )
+                    .fetch_one(&harness.pool)
+                    .await?,
+                    0
+                );
                 assert_eq!(sqlx::query_as::<_,(i32,String)>("SELECT charges,state_revision::text FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,(1,"1".into()));
-                assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_instances").fetch_one(&harness.pool).await?,initial_instances);
-                assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_timed_state_writes").fetch_one(&harness.pool).await?,0);
+                assert_eq!(
+                    sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_instances")
+                        .fetch_one(&harness.pool)
+                        .await?,
+                    initial_instances
+                );
+                assert_eq!(
+                    sqlx::query_scalar::<_, i64>(
+                        "SELECT count(*) FROM game_item_timed_state_writes"
+                    )
+                    .fetch_one(&harness.pool)
+                    .await?,
+                    0
+                );
             }
-            Case::Keg | Case::KegLast | Case::KegMove | Case::KegFull | Case::Ground | Case::GroundLast | Case::Nested | Case::NestedLast => {
+            Case::Keg
+            | Case::KegLast
+            | Case::KegMove
+            | Case::KegFull
+            | Case::Ground
+            | Case::GroundLast
+            | Case::Nested
+            | Case::NestedLast => {
                 assert_eq!(result, UseDisposition::Committed);
                 let last = case.last();
                 assert_eq!(flour_state, if last { (1, 1) } else { (0, 2) });
-                assert_eq!(vessel_state, if last { (2, 0) } else { (1, i64::from(!direct)) });
+                assert_eq!(
+                    vessel_state,
+                    if last {
+                        (2, 0)
+                    } else {
+                        (1, i64::from(!direct))
+                    }
+                );
                 let potion_stack: (i64, i64) = sqlx::query_as("SELECT coalesce(sum(i.quantity),0)::bigint,count(*) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i236' AND i.lifecycle=1")
                     .bind(id(70).as_slice()).fetch_one(&harness.pool).await?;
                 assert_eq!(potion_stack, (if last { 1 } else { 2 }, 1));
                 let charges: i32 = sqlx::query_scalar("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid")
                     .bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
-                assert_eq!(charges, if last { 1 } else if case.ground() {998} else { 498 });
+                assert_eq!(
+                    charges,
+                    if last {
+                        1
+                    } else if case.ground() {
+                        998
+                    } else {
+                        498
+                    }
+                );
                 let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill'")
                     .fetch_one(&harness.pool).await?;
                 assert_eq!(receipts, 1);
-                if matches!(case,Case::KegFull) {
+                if matches!(case, Case::KegFull) {
                     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(id(70).as_slice()).fetch_one(&harness.pool).await?,20,"the exhausted carried keg frees the final committed slot");
                 }
                 if direct {
-                    let replay=owner.use_craft(deps.actor,use_command,intent.clone(),None,None).await.ok_or("dispenser durable replay")?;
-                    assert_eq!(replay.disposition,UseDisposition::Committed);
+                    let replay = owner
+                        .use_craft(deps.actor, use_command, intent.clone(), None, None)
+                        .await
+                        .ok_or("dispenser durable replay")?;
+                    assert_eq!(replay.disposition, UseDisposition::Committed);
                     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill'").fetch_one(&harness.pool).await?,1);
-                    let custody_sql=if case.ground(){"SELECT count(*) FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid"}else{"SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid"};
-                    let custody:i64=sqlx::query_scalar(custody_sql).bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
-                    assert_eq!(custody,i64::from(!last));
+                    let custody_sql = if case.ground() {
+                        "SELECT count(*) FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid"
+                    } else {
+                        "SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid"
+                    };
+                    let custody: i64 = sqlx::query_scalar(custody_sql)
+                        .bind(id(72).as_slice())
+                        .fetch_one(&harness.pool)
+                        .await?;
+                    assert_eq!(custody, i64::from(!last));
                 } else {
-                let (after_replay, replay, _) =
-                    exchange_carried(&owner, continued, 1, &actual, None, None).await?;
-                assert_eq!(replay, UseDisposition::Committed);
-                let replay_receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill'")
+                    let (after_replay, replay, _) =
+                        exchange_carried(&owner, continued, 1, &actual, None, None).await?;
+                    assert_eq!(replay, UseDisposition::Committed);
+                    let replay_receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill'")
                     .fetch_one(&harness.pool).await?;
-                assert_eq!(replay_receipts, 1);
-                if case.moves() {
-                    let plain=encode_item_use_intent(&UseIntent{target:UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("plain source")?),use_with:None,use_with_map_item:None,use_with_position:None}).map_err(debug)?;
-                    let (_,plain_use,_)=exchange_carried(&owner,after_replay,2,&plain,reference(vessel),None).await?;
-                    assert_eq!(plain_use,UseDisposition::NothingToUse,"a dispenser consumes charges only when filling a matching flask");
-                    let explicit=oteryn_protocol_oteryn::timed_item::encode_timed_item_intent(oteryn_protocol_oteryn::timed_item::TimedItemIntent{
-                        action:oteryn_protocol_oteryn::timed_item::TimedAction::Use,
-                        target:oteryn_protocol_oteryn::item_view::ItemHandle::new(1).ok_or("timed handle")?,expected_revision:1,npc:None}).map_err(debug)?;
-                    let explicit=owner.timed_item_command(deps.actor,crate::gameplay_transport::connection::UseCommand{
-                        game_session_id:fence.game_session_id,command_id:900,item_fence:Some(fence)},&explicit,
-                        Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(72)))).await.ok_or("timed dispenser refusal")?;
-                    assert_eq!(oteryn_protocol_oteryn::timed_item::decode_timed_item_result(&explicit).map_err(debug)?.disposition,
-                        oteryn_protocol_oteryn::timed_item::TimedDisposition::Rejected);
+                    assert_eq!(replay_receipts, 1);
+                    if case.moves() {
+                        let plain = encode_item_use_intent(&UseIntent {
+                            target: UseTarget::Item(
+                                std::num::NonZeroU64::new(1).ok_or("plain source")?,
+                            ),
+                            use_with: None,
+                            use_with_map_item: None,
+                            use_with_position: None,
+                        })
+                        .map_err(debug)?;
+                        let (_, plain_use, _) = exchange_carried(
+                            &owner,
+                            after_replay,
+                            2,
+                            &plain,
+                            reference(vessel),
+                            None,
+                        )
+                        .await?;
+                        assert_eq!(
+                            plain_use,
+                            UseDisposition::NothingToUse,
+                            "a dispenser consumes charges only when filling a matching flask"
+                        );
+                        let explicit =
+                            oteryn_protocol_oteryn::timed_item::encode_timed_item_intent(
+                                oteryn_protocol_oteryn::timed_item::TimedItemIntent {
+                                    action: oteryn_protocol_oteryn::timed_item::TimedAction::Use,
+                                    target: oteryn_protocol_oteryn::item_view::ItemHandle::new(1)
+                                        .ok_or("timed handle")?,
+                                    expected_revision: 1,
+                                    npc: None,
+                                },
+                            )
+                            .map_err(debug)?;
+                        let explicit = owner
+                            .timed_item_command(
+                                deps.actor,
+                                crate::gameplay_transport::connection::UseCommand {
+                                    game_session_id: fence.game_session_id,
+                                    command_id: 900,
+                                    item_fence: Some(fence),
+                                },
+                                &explicit,
+                                Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(
+                                    72,
+                                ))),
+                            )
+                            .await
+                            .ok_or("timed dispenser refusal")?;
+                        assert_eq!(
+                            oteryn_protocol_oteryn::timed_item::decode_timed_item_result(&explicit)
+                                .map_err(debug)?
+                                .disposition,
+                            oteryn_protocol_oteryn::timed_item::TimedDisposition::Rejected
+                        );
 
-                    assert_eq!(sqlx::query_scalar::<_,i32>("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,498);
-                    let before:serde_json::Value=sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
-                    let permit=owner.spell_lane_permit().await.ok_or("move lane")?;
-                    let weights=crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
-                    let moved=owner.root.commit_item_loop_move(&permit,owner.character,owner.holder,&fence,
+                        assert_eq!(sqlx::query_scalar::<_,i32>("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,498);
+                        let before:serde_json::Value=sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
+                        let permit = owner.spell_lane_permit().await.ok_or("move lane")?;
+                        let weights =
+                            crate::gameplay_transport::item_ref_admission::NativeItemWeights(
+                                native,
+                            );
+                        let moved=owner.root.commit_item_loop_move(&permit,owner.character,owner.holder,&fence,
                         crate::foundation::CommandRef::new(fence.game_session_id,crate::foundation::CommandId::new(901).map_err(debug)?),&weights,
                         crate::durability::item_loop_move::LoopMoveRequest{item:id(72),count:None,pickup_cell:None,
                             destination:crate::durability::item_loop_move::LoopDestination::Container(id(74))}).await.map_err(debug)?;
-                    assert!(moved.is_ok(),"a used keg must move through the real loop: {moved:?}");
-                    assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,before);
-                    drop(permit);
-                    let command=crate::gameplay_transport::connection::UseCommand{game_session_id:fence.game_session_id,command_id:902,item_fence:Some(fence)};
-                    let result=owner.use_craft(deps.actor,command,intent.clone(),Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(73))),Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(72)))).await.ok_or("refill after move")?;
-                    assert_eq!(result.disposition,UseDisposition::Committed);
-                    assert_eq!(sqlx::query_scalar::<_,i32>("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,496);
-                    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_timed_state_writes WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,2,"movement must not checkpoint or debit charges");
-                    let frozen:serde_json::Value=sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
-                    let permit=owner.spell_lane_permit().await.ok_or("storage lane")?;
-                    let ground={let runtime=owner.runtime.lock().await;
-                        crate::durability::item_loop_move::LoopGround::from_native_owner(action_room,&runtime,
-                            MovementLocalPosition{x:6,y:0,floor:7},&crate::map::overlay::map_revision(&base)).map_err(debug)?};
-                    for (number,pickup_cell,destination) in [
-                        (903,None,crate::durability::item_loop_move::LoopDestination::Ground(ground.clone())),
-                        (904,Some(ground.spatial_position.clone()),crate::durability::item_loop_move::LoopDestination::MainBackpack)] {
-                        let moved=owner.root.commit_item_loop_move(&permit,owner.character,owner.holder,&fence,
-                            crate::foundation::CommandRef::new(fence.game_session_id,crate::foundation::CommandId::new(number).map_err(debug)?),&weights,
-                            crate::durability::item_loop_move::LoopMoveRequest{item:id(72),count:None,pickup_cell,destination}).await.map_err(debug)?;
-                        assert!(moved.is_ok(),"frozen dispenser Ground roundtrip {number}: {moved:?}");
-                        assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,frozen);
-                    }
-                    for (number,deposit) in [(905,true),(906,false)] {
-                        let moved=owner.root.commit_depot_move(&permit,owner.character,owner.holder,&fence,
-                            crate::foundation::CommandRef::new(fence.game_session_id,crate::foundation::CommandId::new(number).map_err(debug)?),&weights,
-                            crate::durability::item_loop_move::DepotMove{town:1,box_number:1,deposit,request_digest:[if deposit {5} else {6};32],premium:crate::domain::premium::PremiumGate::CLOSED},id(72)).await.map_err(debug)?;
-                        assert!(moved.is_ok(),"frozen dispenser depot roundtrip {number}: {moved:?}");
-                        assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,frozen);
-                    }
-                    // Materialize the corpse through its production owner, including
-                    // the D133 top-damage/exclusivity receipt. Restore only the child's
-                    // historical placement; TRANSFER pickup/replay remains fully guarded.
-                    use crate::durability::item_mint::{ItemMintRequest,ItemMintCause,ItemMintOutcome,GroundPlacement,CORPSE_MATERIALIZATION_PURPOSE_KEY};
-                    let mut corpse=owner.root.freeze_item_mint(owner.character,owner.holder,ItemMintRequest{
-                        cause:ItemMintCause::for_test(owner.world_id,owner.channel_id,fence.scope_ownership_generation,99,1,
-                            crate::durability::item_mint::TypedDefinitionRef{family:"LootTable".into(),production_key:"fixture:loot.srx1-storage".into(),revision_ref:"definition-r1".into()},
-                            CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),0),
-                        item:crate::durability::item_mint::TypedDefinitionRef{family:"Item".into(),production_key:"oteryn:item.tibia.i5973".into(),revision_ref:"definition-r1".into()},quantity:1,
-                        ground:GroundPlacement{spatial_position:ground.spatial_position.clone(),corpse_ref:id(78).to_vec(),map_revision:ground.map_revision.clone(),content_revision:ground.content_revision.clone(),native_room_placement_context:ground.placement_context.clone()},
-                        content_revision:"content-1".into(),ruleset_revision:"ruleset-1".into(),sim_revision:"sim-1".into()}).await.map_err(debug)?;
-                    let corpse=match owner.root.commit_corpse_mint(&permit,owner.character,owner.holder,&mut corpse,*fence.character_id.as_bytes()).await.map_err(debug)? {
-                        ItemMintOutcome::Committed(receipt)=>receipt.item_instance_id,other=>return Err(format!("corpse materialization: {other:?}").into())};
-                    let mut tx=harness.pool.begin().await?;
-                    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-                    sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).execute(&mut *tx).await?;
-                    sqlx::query("INSERT INTO game_item_corpse_container_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+                        assert!(
+                            moved.is_ok(),
+                            "a used keg must move through the real loop: {moved:?}"
+                        );
+                        assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,before);
+                        drop(permit);
+                        let command = crate::gameplay_transport::connection::UseCommand {
+                            game_session_id: fence.game_session_id,
+                            command_id: 902,
+                            item_fence: Some(fence),
+                        };
+                        let result = owner
+                            .use_craft(
+                                deps.actor,
+                                command,
+                                intent.clone(),
+                                Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(
+                                    73,
+                                ))),
+                                Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(
+                                    72,
+                                ))),
+                            )
+                            .await
+                            .ok_or("refill after move")?;
+                        assert_eq!(result.disposition, UseDisposition::Committed);
+                        assert_eq!(sqlx::query_scalar::<_,i32>("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,496);
+                        assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_timed_state_writes WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,2,"movement must not checkpoint or debit charges");
+                        let frozen:serde_json::Value=sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
+                        let permit = owner.spell_lane_permit().await.ok_or("storage lane")?;
+                        let ground = {
+                            let runtime = owner.runtime.lock().await;
+                            crate::durability::item_loop_move::LoopGround::from_native_owner(
+                                action_room,
+                                &runtime,
+                                MovementLocalPosition {
+                                    x: 6,
+                                    y: 0,
+                                    floor: 7,
+                                },
+                                &crate::map::overlay::map_revision(&base),
+                            )
+                            .map_err(debug)?
+                        };
+                        for (number, pickup_cell, destination) in [
+                            (
+                                903,
+                                None,
+                                crate::durability::item_loop_move::LoopDestination::Ground(
+                                    ground.clone(),
+                                ),
+                            ),
+                            (
+                                904,
+                                Some(ground.spatial_position.clone()),
+                                crate::durability::item_loop_move::LoopDestination::MainBackpack,
+                            ),
+                        ] {
+                            let moved = owner
+                                .root
+                                .commit_item_loop_move(
+                                    &permit,
+                                    owner.character,
+                                    owner.holder,
+                                    &fence,
+                                    crate::foundation::CommandRef::new(
+                                        fence.game_session_id,
+                                        crate::foundation::CommandId::new(number).map_err(debug)?,
+                                    ),
+                                    &weights,
+                                    crate::durability::item_loop_move::LoopMoveRequest {
+                                        item: id(72),
+                                        count: None,
+                                        pickup_cell,
+                                        destination,
+                                    },
+                                )
+                                .await
+                                .map_err(debug)?;
+                            assert!(
+                                moved.is_ok(),
+                                "frozen dispenser Ground roundtrip {number}: {moved:?}"
+                            );
+                            assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,frozen);
+                        }
+                        for (number, deposit) in [(905, true), (906, false)] {
+                            let moved = owner
+                                .root
+                                .commit_depot_move(
+                                    &permit,
+                                    owner.character,
+                                    owner.holder,
+                                    &fence,
+                                    crate::foundation::CommandRef::new(
+                                        fence.game_session_id,
+                                        crate::foundation::CommandId::new(number).map_err(debug)?,
+                                    ),
+                                    &weights,
+                                    crate::durability::item_loop_move::DepotMove {
+                                        town: 1,
+                                        box_number: 1,
+                                        deposit,
+                                        request_digest: [if deposit { 5 } else { 6 }; 32],
+                                        premium: crate::domain::premium::PremiumGate::CLOSED,
+                                    },
+                                    id(72),
+                                )
+                                .await
+                                .map_err(debug)?;
+                            assert!(
+                                moved.is_ok(),
+                                "frozen dispenser depot roundtrip {number}: {moved:?}"
+                            );
+                            assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,frozen);
+                        }
+                        // Materialize the corpse through its production owner, including
+                        // the D133 top-damage/exclusivity receipt. Restore only the child's
+                        // historical placement; TRANSFER pickup/replay remains fully guarded.
+                        use crate::durability::item_mint::{
+                            CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause,
+                            ItemMintOutcome, ItemMintRequest,
+                        };
+                        let mut corpse = owner
+                            .root
+                            .freeze_item_mint(
+                                owner.character,
+                                owner.holder,
+                                ItemMintRequest {
+                                    cause: ItemMintCause::for_test(
+                                        owner.world_id,
+                                        owner.channel_id,
+                                        fence.scope_ownership_generation,
+                                        99,
+                                        1,
+                                        crate::durability::item_mint::TypedDefinitionRef {
+                                            family: "LootTable".into(),
+                                            production_key: "fixture:loot.srx1-storage".into(),
+                                            revision_ref: "definition-r1".into(),
+                                        },
+                                        CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+                                        0,
+                                    ),
+                                    item: crate::durability::item_mint::TypedDefinitionRef {
+                                        family: "Item".into(),
+                                        production_key: "oteryn:item.tibia.i5973".into(),
+                                        revision_ref: "definition-r1".into(),
+                                    },
+                                    quantity: 1,
+                                    ground: GroundPlacement {
+                                        spatial_position: ground.spatial_position.clone(),
+                                        corpse_ref: id(78).to_vec(),
+                                        map_revision: ground.map_revision.clone(),
+                                        content_revision: ground.content_revision.clone(),
+                                        native_room_placement_context: ground
+                                            .placement_context
+                                            .clone(),
+                                    },
+                                    content_revision: "content-1".into(),
+                                    ruleset_revision: "ruleset-1".into(),
+                                    sim_revision: "sim-1".into(),
+                                },
+                            )
+                            .await
+                            .map_err(debug)?;
+                        let corpse = match owner
+                            .root
+                            .commit_corpse_mint(
+                                &permit,
+                                owner.character,
+                                owner.holder,
+                                &mut corpse,
+                                *fence.character_id.as_bytes(),
+                            )
+                            .await
+                            .map_err(debug)?
+                        {
+                            ItemMintOutcome::Committed(receipt) => receipt.item_instance_id,
+                            other => {
+                                return Err(format!("corpse materialization: {other:?}").into());
+                            }
+                        };
+                        let mut tx = harness.pool.begin().await?;
+                        sqlx::query("SET LOCAL session_replication_role=replica")
+                            .execute(&mut *tx)
+                            .await?;
+                        sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).execute(&mut *tx).await?;
+                        sqlx::query("INSERT INTO game_item_corpse_container_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
                         .bind(id(72).as_slice()).bind(id(42).as_slice()).bind(corpse.as_slice()).bind(id(79).as_slice()).execute(&mut *tx).await?;
-                    tx.commit().await?;
-                    let definition=|key:&str|crate::durability::item_mint::TypedDefinitionRef{family:"Item".into(),production_key:key.into(),revision_ref:"definition-r1".into()};
-                    let facts=|key:&str|crate::durability::item_loop_move::ItemLoopContent::loop_facts(&weights,&definition(key)).ok_or("native transfer facts");
-                    let mut pickup=owner.root.freeze_item_transfer(owner.character,owner.holder,fence,
+                        tx.commit().await?;
+                        let definition =
+                            |key: &str| crate::durability::item_mint::TypedDefinitionRef {
+                                family: "Item".into(),
+                                production_key: key.into(),
+                                revision_ref: "definition-r1".into(),
+                            };
+                        let facts = |key: &str| {
+                            crate::durability::item_loop_move::ItemLoopContent::loop_facts(
+                                &weights,
+                                &definition(key),
+                            )
+                            .ok_or("native transfer facts")
+                        };
+                        let mut pickup=owner.root.freeze_item_transfer(owner.character,owner.holder,fence,
                         crate::durability::item_transfer::ItemTransferRequest{
                             weight_generation_digest:crate::durability::item_transfer::ItemWeightLookup::generation_digest(&weights),
                             command:crate::foundation::CommandRef::new(fence.game_session_id,crate::foundation::CommandId::new(907).map_err(debug)?),
                             source_item_instance_id:id(72),destination:crate::durability::item_transfer::ItemTransferDestination::MainBackpack,
                             item:facts(vessel)?,backpack:Some(facts(bag)?),content_revision:"content-1".into(),ruleset_revision:"ruleset-1".into(),sim_revision:"sim-1".into()},&weights).await.map_err(|error|format!("corpse freeze: {error:?}"))?;
-                    for _ in 0..2 {
-                        let _=owner.root.commit_item_transfer(&permit,owner.character,owner.holder,fence,&mut pickup,&weights).await.map_err(|error|format!("corpse commit: {error:?}"))?;
+                        for _ in 0..2 {
+                            let _ = owner
+                                .root
+                                .commit_item_transfer(
+                                    &permit,
+                                    owner.character,
+                                    owner.holder,
+                                    fence,
+                                    &mut pickup,
+                                    &weights,
+                                )
+                                .await
+                                .map_err(|error| format!("corpse commit: {error:?}"))?;
+                        }
+                        assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,frozen);
+                        assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,0);
+                        assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_timed_state_writes WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,2);
+                        drop(permit);
+                        drop(owner);
+                        drop(authority);
+                        drop(seal);
+                        return harness.cleanup().await;
                     }
-                    assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,frozen);
-                    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,0);
-                    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_timed_state_writes WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?,2);
-                    drop(permit);
-                    drop(owner);drop(authority);drop(seal);
-                    return harness.cleanup().await;
-                }
-                // A fresh owner has no ingress result cache: this must resolve the
-                // immutable item-action receipt even though input handles changed.
-                let mut restarted = deps.owner(&harness, &authority);
-                restarted.active_generation = Some(active);
-                restarted.movement_cells = (&cells).into();
-                restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(action_room));
-                deps.initialize(&restarted).await;
-                let (_, recovered, _) = exchange_carried(&restarted, admitted, 1, &actual, None, None).await?;
-                assert_eq!(recovered, UseDisposition::Committed);
-                assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill'").fetch_one(&harness.pool).await?, 1);
-                assert_eq!(sqlx::query_scalar::<_, i32>("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?, if last {1} else if case.ground() {998} else {498});
+                    // A fresh owner has no ingress result cache: this must resolve the
+                    // immutable item-action receipt even though input handles changed.
+                    let mut restarted = deps.owner(&harness, &authority);
+                    restarted.active_generation = Some(active);
+                    restarted.movement_cells = (&cells).into();
+                    restarted.rooms =
+                        crate::gameplay_transport::SeamRooms::new(None, Some(action_room));
+                    deps.initialize(&restarted).await;
+                    let (_, recovered, _) =
+                        exchange_carried(&restarted, admitted, 1, &actual, None, None).await?;
+                    assert_eq!(recovered, UseDisposition::Committed);
+                    assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill'").fetch_one(&harness.pool).await?, 1);
+                    assert_eq!(sqlx::query_scalar::<_, i32>("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?, if last {1} else if case.ground() {998} else {498});
                 }
             }
             Case::Water | Case::Milk => {
@@ -651,7 +1000,8 @@ async fn exchange_carried(
             .map_err(debug)?;
             intent.target = UseTarget::Item(source.ok_or("current source handle")?);
             if intent.use_with_map_item.is_some() {
-                intent.use_with_map_item=Some(MapUseTarget::Item(vessel.ok_or("current vessel handle")?));
+                intent.use_with_map_item =
+                    Some(MapUseTarget::Item(vessel.ok_or("current vessel handle")?));
             }
             encode_item_use_intent(&intent).map_err(debug)?
         } else {

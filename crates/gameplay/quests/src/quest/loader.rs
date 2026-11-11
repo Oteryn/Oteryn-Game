@@ -252,6 +252,11 @@ pub(super) fn lower_embedded_quest_state(
     content_revision: &str,
 ) -> Result<LoweredQuestState, QuestLoadError> {
     let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
+    // Native goals own their zero-based counters before callbacks add read-only guards.
+    lowered.catalogue =
+        super::native_kill_goals::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::kill_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::lions_rock::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
@@ -259,7 +264,11 @@ pub(super) fn lower_embedded_quest_state(
     lowered.catalogue =
         super::last_creep_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
-        super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+        super::elvenbane::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue = super::world_callbacks::extend(
+        super::reward_callbacks::declare_tracks(lowered.catalogue).map_err(QuestLoadError::Json)?,
+    )
+    .map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::fire_feathered_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
@@ -289,8 +298,6 @@ pub(super) fn lower_embedded_quest_state(
     lowered.catalogue =
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
-        super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
-    lowered.catalogue =
         super::source_deaths::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::timers::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
@@ -318,12 +325,70 @@ pub(super) fn lower_embedded_quest_state(
     }
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    // Complete NPC reward activations and counters before validating native goals.
+    lowered.catalogue =
+        super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::death_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
     // This tool-owned auxiliary flag is outside the captured NPC track inventory.
     lowered.source_tracks.insert(
         "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/sewer_pipe03".into(),
         "storage:Quest.U8_4.InServiceOfYalahar.SewerPipe03".into(),
     );
+    super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
+    // Authored world programmes lower their tracks from the pinned canonical recipe.
+    // Register that evidence after legacy NPC alias compilation, retaining every
+    // existing donor storage binding and never presenting a new track as Lua storage.
+    for callback in super::world_callbacks::load().map_err(QuestLoadError::Json)? {
+        if let Some(source) = callback
+            .sources
+            .iter()
+            .find(|source| source.starts_with("canonical:"))
+        {
+            for storage in &callback.storage {
+                if lowered
+                    .catalogue
+                    .track(&storage.track)
+                    .is_some_and(|track| track.quest == callback.quest)
+                {
+                    lowered
+                        .source_tracks
+                        .entry(storage.track.clone())
+                        .or_insert_with(|| source.clone());
+                }
+            }
+        }
+    }
+    // Preserve source captures and their counts; only the production catalogue
+    // and its executable bindings are filtered by the owner's target scope.
+    let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);
+    lowered.catalogue = QuestStateCatalogue::new(
+        content_revision,
+        lowered
+            .catalogue
+            .tracks
+            .values()
+            .filter(|track| super::in_runtime_scope(&track.quest))
+            .cloned()
+            .collect(),
+        lowered
+            .catalogue
+            .transitions
+            .values()
+            .filter(|transition| super::in_runtime_scope(&transition.quest))
+            .cloned()
+            .collect(),
+    )
+    .map_err(QuestLoadError::Catalogue)?;
+    lowered.catalogue.npc_legacy = npc_legacy;
+    lowered
+        .source_tracks
+        .retain(|key, _| lowered.catalogue.track(key).is_some());
+    lowered
+        .requested_by
+        .retain(|key, _| lowered.catalogue.transition(key).is_some());
     Ok(lowered)
 }
 
@@ -458,6 +523,118 @@ mod tests {
         load_embedded_quest_state("content-1").expect("embedded quest state loads")
     }
 
+    #[test]
+    fn owner_scope_excludes_dawnport_from_runtime_state_and_callbacks() -> Result<(), String> {
+        let loaded =
+            load_embedded_quest_state("owner-scope").map_err(|error| format!("{error:?}"))?;
+        assert!(
+            loaded
+                .catalogue()
+                .definition_hash("oteryn:quest.dawnport_quest")
+                .is_none()
+        );
+        assert!(
+            loaded
+                .catalogue()
+                .transition("oteryn:quest-transition/classic/dawnport/start-the-rare-herb")
+                .is_none()
+        );
+        let callbacks = crate::quest::world_callbacks::load()?;
+        assert!(
+            callbacks
+                .iter()
+                .all(|callback| callback.quest != "oteryn:quest.dawnport_quest")
+        );
+        let registries = [
+            crate::quest::world_callbacks::EMBEDDED,
+            // Accepted main83acbdac3 source cohorts remain independently enumerated.
+            include_str!(
+                "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
+            ),
+            include_str!("../../../../../content/quests/world-callbacks/l6-item-rewards.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tools.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-world-puzzles.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tomb-rooms.json"),
+            include_str!("../../../../../content/quests/shared-access-callbacks.json"),
+            include_str!("../../../../../content/quests/native-scene-callbacks.json"),
+            include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
+            include_str!("../../../../../content/quests/authored-world-callbacks.json"),
+            include_str!("../../../../../content/quests/questpc7-world-callbacks.json"),
+            include_str!("../../../../../content/quests/questl2-djinn-world.json"),
+        ];
+        let mut expected = std::collections::BTreeSet::new();
+        for text in registries {
+            let source: serde_json::Value =
+                serde_json::from_str(text).map_err(|e| e.to_string())?;
+            for callback in source["callbacks"].as_array().ok_or("source callbacks")? {
+                if callback["quest"] != "oteryn:quest.dawnport_quest" {
+                    expected.insert(callback["key"].as_str().ok_or("callback key")?.to_owned());
+                }
+            }
+        }
+        assert!(expected.insert(crate::quest::schrodinger_island::callback().key));
+        expected.insert(crate::quest::rotten_blood::altar_callback().key);
+        // Collector main adds these exact native World cohorts; no donor
+        // exclusion becomes an automatic admission through a loaded key.
+        let before_native = expected.len();
+        for index in 0..48 {
+            expected.insert(format!("oteryn:quest-callback/hive-native-gate-{index}"));
+        }
+        for index in [0, 1, 2, 3, 5] {
+            expected.insert(format!(
+                "oteryn:quest-callback/hive-native-objective-{index}"
+            ));
+        }
+        for suffix in [
+            "fire-feathered-native-darkness",
+            "fire-feathered-native-life",
+            "fire-feathered-native-light",
+            "hive-native-hatchlings",
+            "hive-native-fluid-preparation",
+            "deeplings-native-coral",
+            "deeplings-native-heart",
+            "deeplings-native-soul-net",
+            "deeplings-native-stair",
+            "deeplings-native-boss-28574",
+            "deeplings-native-boss-28575",
+            "deeplings-native-boss-28576",
+        ] {
+            assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
+        }
+        assert_eq!(expected.len() - before_native, 65);
+        // Crystal source carried tomb keys and shared switch/gate identities
+        // are fixed independently of the runtime callback constructors.
+        let before_main_native = expected.len();
+        for unique in 3950..=3956 {
+            assert!(expected.insert(format!("oteryn:quest-callback/ancient-tombs-key-{unique}")));
+        }
+        for suffix in [
+            "thalas-switch",
+            "diprath-switch",
+            "ashmunrah-switch",
+            "thalas-switch-gate",
+            "diprath-switch-gate",
+            "ashmunrah-switch-gate",
+            "diprath-room",
+        ] {
+            assert!(expected.insert(format!("oteryn:quest-callback/ancient-tombs-{suffix}")));
+        }
+        assert_eq!(expected.len() - before_main_native, 14);
+        let before_elvenbane = expected.len();
+        for suffix in ["poison", "dragon-floor"] {
+            assert!(expected.insert(format!("oteryn:quest-callback/elvenbane/{suffix}")));
+        }
+        assert_eq!(expected.len() - before_elvenbane, 2);
+        assert_eq!(
+            callbacks
+                .into_iter()
+                .map(|callback| callback.key)
+                .collect::<std::collections::BTreeSet<_>>(),
+            expected
+        );
+        Ok(())
+    }
+
     fn document() -> serde_json::Value {
         serde_json::from_str(EMBEDDED).expect("embedded quest state is JSON")
     }
@@ -468,7 +645,9 @@ mod tests {
 
     #[test]
     fn every_lowered_record_loads_under_an_oteryn_key() {
-        let lowered = embedded();
+        // Source transcription remains complete, including owner-excluded
+        // donor quests. The owner_scope test separately checks runtime admission.
+        let lowered = parse_quest_state(EMBEDDED, "content-1").expect("source catalogue");
         let document = document();
         let quests = document["quests"].as_array().expect("quests");
         let (mut tracks, mut transitions) = (0, 0);
@@ -500,7 +679,9 @@ mod tests {
 
     #[test]
     fn a_lowered_npc_transition_keeps_its_source_and_dialogue_bindings() {
-        let lowered = embedded();
+        // Retain the exact native domain; only actual source writes may widen it.
+        // QuestLog only receives1, so a donor sentinel must not broaden its range.
+        let lowered = parse_quest_state(EMBEDDED, "content-1").expect("source catalogue");
         let track = lowered.catalogue().track(QUEST_LOG).expect("track");
         assert_eq!(
             (track.quest.as_str(), track.initial, track.min, track.max),
@@ -513,36 +694,49 @@ mod tests {
             let track = lowered.catalogue().track(&key).expect("Father track");
             assert_eq!((track.initial, track.min, track.max), (0, 0, max));
         }
+        let native = embedded();
+        let track = native.catalogue().track(QUEST_LOG).expect("native track");
         assert_eq!(
-            lowered.source_track(QUEST_LOG),
-            Some("canary:quest-progress/quest/u8_6/afathers_burden/quest_log")
+            (track.quest.as_str(), track.initial, track.min, track.max),
+            (QUEST, 0, 0, 1)
         );
-        let transition = lowered
-            .catalogue()
-            .transition(QUEST_LOG_NPC_1)
-            .expect("transition");
-        assert_eq!(
-            transition.effects,
-            vec![QuestEffect {
-                track: QUEST_LOG.into(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(1),
-            }]
-        );
-        assert!(!transition.completes);
-        assert_eq!(
-            lowered.requested_by(QUEST_LOG_NPC_1),
-            Some(&QuestRequestedBy {
-                npc: "canary:npc/tereban_functions".into(),
-                keywords: vec![QuestKeyword::Word("yes".into())],
-                topics: vec![1],
-            })
-        );
-        let changes = lowered
-            .catalogue()
-            .evaluate(transition, &BTreeMap::new(), 0)
-            .expect("first write");
-        assert_eq!((changes[0].before, changes[0].after), (0, 1));
+        for (suffix, max) in [("status", 2), ("progress", i64::from(i32::MAX))] {
+            let key = format!("oteryn:quest-progress/quest/u8_6/afathers_burden/{suffix}");
+            let track = native.catalogue().track(&key).expect("native Father track");
+            assert_eq!((track.initial, track.min, track.max), (0, 0, max));
+        }
+        for lowered in [&lowered, &native] {
+            assert_eq!(
+                lowered.source_track(QUEST_LOG),
+                Some("canary:quest-progress/quest/u8_6/afathers_burden/quest_log")
+            );
+            let transition = lowered
+                .catalogue()
+                .transition(QUEST_LOG_NPC_1)
+                .expect("transition");
+            assert_eq!(
+                transition.effects,
+                vec![QuestEffect {
+                    track: QUEST_LOG.into(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Set(1),
+                }]
+            );
+            assert!(!transition.completes);
+            assert_eq!(
+                lowered.requested_by(QUEST_LOG_NPC_1),
+                Some(&QuestRequestedBy {
+                    npc: "canary:npc/tereban_functions".into(),
+                    keywords: vec![QuestKeyword::Word("yes".into())],
+                    topics: vec![1],
+                })
+            );
+            let changes = lowered
+                .catalogue()
+                .evaluate(transition, &BTreeMap::new(), 0)
+                .expect("first write");
+            assert_eq!((changes[0].before, changes[0].after), (0, 1));
+        }
     }
 
     #[test]
@@ -680,6 +874,36 @@ mod tests {
                 .iter()
                 .any(|change| change.track.ends_with("/visitor") && change.after == 1)
         );
+        Ok(())
+    }
+    #[test]
+    fn authored_world_tracks_retain_canonical_witness_without_replacing_donor_storage()
+    -> Result<(), String> {
+        let original = parse_quest_state(EMBEDDED, "content-1").map_err(|e| format!("{e:?}"))?;
+        let lowered = load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+        for (key, source) in original.source_tracks {
+            if lowered.catalogue.track(&key).is_some() {
+                assert_eq!(
+                    lowered.source_track(&key),
+                    Some(source.as_str()),
+                    "donor binding {key}"
+                );
+            }
+        }
+        for key in [
+            "oteryn:quest-progress/questpc7/grimvale/programme",
+            "oteryn:quest-progress/questpc7/grimvale/feroxa",
+        ] {
+            let source = lowered
+                .source_track(key)
+                .ok_or("canonical source witness")?;
+            assert!(source.starts_with("canonical:content/quests/definitions/"));
+            assert!(source.contains("#/records/55/definition:sha256:"));
+            assert_eq!(
+                lowered.catalogue.track(key).ok_or("track")?.quest,
+                "oteryn:quest.grimvale_quest"
+            );
+        }
         Ok(())
     }
 }

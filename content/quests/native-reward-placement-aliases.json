@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "aliases": [
+    {
+      "claim": "oteryn:reward-claim.kv.mintwallincyclops",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6138,
+      "project_position": { "x": 32591, "y": 32097, "z": 14 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
+        "Committed region-z14-x127-y125.b3: ground351 and chest2472 at32591,32097,14; both entries have no retained unique tag. Original source identity, reward and claim policy are unchanged."
+      ]
+    }
+  ]
+}

@@ -8,7 +8,10 @@ impl RevisionSlot {
         clippy::too_many_arguments,
         reason = "independent current authority, item lane, source and destination admission"
     )]
-    pub async fn commit_npc_teleport<C: crate::durability::item_loop_move::ItemLoopContent>(
+    pub async fn commit_npc_teleport<
+        C: crate::durability::item_loop_move::ItemLoopContent,
+        G: crate::durability::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
         &mut self,
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -18,6 +21,7 @@ impl RevisionSlot {
         request: NpcProgramRequest,
         catalogue: Arc<QuestStateCatalogue>,
         items: &C,
+        premium: &G,
         admission: NpcTeleportAdmission,
     ) -> Result<NpcProgramCommit, CharacterProgressionError> {
         self.sequenced(
@@ -33,6 +37,7 @@ impl RevisionSlot {
                     request.clone(),
                     Arc::clone(&catalogue),
                     items,
+                    premium,
                     admission,
                 )
             },

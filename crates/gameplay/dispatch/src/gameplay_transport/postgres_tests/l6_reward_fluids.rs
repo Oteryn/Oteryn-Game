@@ -68,6 +68,9 @@ pub(super) async fn exercise(
     };
     let fence = admitted.item_fence.ok_or("current Item fence")?;
     let request = RewardClaimMintRequest {
+        backpack_outputs: false,
+        root_charges_remaining: None,
+        root_fluid_subtype: None,
             additional_items: Vec::new(),
         command: CommandRef::new(
             admitted.game_session_id,
@@ -85,6 +88,7 @@ pub(super) async fn exercise(
             .into_iter()
             .map(|(id, quantity)| {
                 Ok(RewardClaimMintContent {
+                    charges_remaining: None,
                     fluid_subtype: (id == 2901).then_some(16),
                     item: facts(id)?,
                     quantity,

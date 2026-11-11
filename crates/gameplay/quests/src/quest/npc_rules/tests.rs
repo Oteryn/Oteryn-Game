@@ -84,6 +84,36 @@ struct Facts {
     inventory: NpcInventorySnapshot,
     outfits: BTreeMap<u16, u8>,
 }
+
+#[test]
+fn inventory_planner_refuses_value_only_rules_and_unowned_character_guards()
+-> Result<(), NpcRuleError> {
+    let fixture = include_str!("test-fixtures/hero_greeting.json");
+    for value_only in [true, false] {
+        let mut document: serde_json::Value =
+            serde_json::from_str(fixture).map_err(|error| NpcRuleError::Json(error.to_string()))?;
+        if value_only {
+            document["rules"][0]["effects"] = serde_json::json!([
+                {"kind": "give_item", "item": "oteryn:item.tibia.i3031", "count": 1}
+            ]);
+        } else {
+            document["rules"][0]["guards"] = serde_json::json!([
+                {"kind": "level", "op": "ge", "value": 0}
+            ]);
+        }
+        let encoded = serde_json::to_string(&document)
+            .map_err(|error| NpcRuleError::Json(error.to_string()))?;
+        let catalogue = NpcRuleCatalog::from_json_documents(&[&encoded])?;
+        let facts = Facts::empty();
+        let mut input = facts.input("oteryn:npc.strange_pipe", "hi", 0);
+        input.trigger = NpcRuleTrigger::Greet;
+        assert!(matches!(
+            catalogue.plan_inventory(&input),
+            Err(NpcRuleError::MissingNativeResolution(_))
+        ));
+    }
+    Ok(())
+}
 impl Facts {
     fn empty() -> Self {
         Self {
@@ -659,9 +689,12 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.a_father_s_burden_quest",
         "oteryn:quest.a_pirates_tail",
         "oteryn:quest.bigfoot_s_burden_quest",
-        "oteryn:quest.blood_brothers_quest",
+        "oteryn:quest.demon_oak",
+        "oteryn:quest.cults_of_tibia_quest",
         "oteryn:quest.dangerous_depths_quest",
+        "oteryn:quest.blood_brothers_quest",
         "oteryn:quest.draconia_quest",
+        "oteryn:quest.forgotten_knowledge_quest",
         "oteryn:quest.elemental_spheres_quest",
         "oteryn:quest.hero_of_rathleton_quest",
         "oteryn:quest.hot_cuisine_quest",
@@ -674,6 +707,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.the_dream_courts_quest",
         "oteryn:quest.the_first_dragon_quest",
         "oteryn:quest.the_hidden_city_of_beregar_quest",
+        "oteryn:quest.the_inquisition_quest",
         "oteryn:quest.the_order_of_the_stag_quest",
         "oteryn:quest.the_paradox_tower_quest",
         "oteryn:quest.the_white_raven_monastery_quest",
@@ -684,11 +718,35 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         runtime
             .programs()
             .iter()
+            .filter(|program| program.document.schema == 1)
             .map(|p| p.document.quest.as_str())
             .collect::<std::collections::BTreeSet<_>>(),
         expected_programmes
     );
-    assert_eq!(runtime.programs().len(), expected_programmes.len());
+    // Gnomus retains two source programs; the authored Mystery program is separate.
+    assert_eq!(runtime.programs().len(), expected_programmes.len() + 2);
+    assert_eq!(
+        runtime
+            .programs()
+            .iter()
+            .filter(|program| program.document.quest == questpc2_gnomus_source::QUEST)
+            .count(),
+        2
+    );
+    assert_eq!(
+        runtime
+            .programs()
+            .iter()
+            .filter(|program| program.document.schema == 2)
+            .map(|program| program.document.quest.as_str())
+            .collect::<std::collections::BTreeSet<_>>(),
+        std::collections::BTreeSet::from(["oteryn:quest.authored.mystery_of_the_valley_quest"])
+    );
+    assert!(
+        !active
+            .npc_legacy
+            .contains_key("oteryn:quest.authored.mystery_of_the_valley_quest")
+    );
     let hot_cuisine = "oteryn:quest.hot_cuisine_quest";
     assert_eq!(
         active.npc_legacy.get(hot_cuisine).map(|(hash, _)| *hash),
@@ -723,14 +781,18 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .all(|rule| rule.npc.starts_with("oteryn:npc.corym_"))
     );
-    // The historical frozen catalogue has no Draconia definition to alias.
+    // Draconia/Stag have no legacy adapter. The new Elemental Spheres and Citizen
+    // source tracks have no matching frozen source binding, so no alias is fabricated.
     let expected_legacy = expected_programmes
         .iter()
         .copied()
         .filter(|quest| {
             !matches!(
                 *quest,
-                "oteryn:quest.draconia_quest" | "oteryn:quest.the_order_of_the_stag_quest"
+                "oteryn:quest.draconia_quest"
+                    | "oteryn:quest.the_order_of_the_stag_quest"
+                    | "oteryn:quest.elemental_spheres_quest"
+                    | "oteryn:quest.outfit_and_addon_quests"
             )
         })
         .collect::<std::collections::BTreeSet<_>>();
@@ -951,6 +1013,312 @@ fn shipped_npc_source_does_not_claim_an_unbound_native_catalogue() -> Result<(),
     assert_eq!(
         bound.programs()[0].document.quest,
         "oteryn:quest.a_father_s_burden_quest"
+    );
+    Ok(())
+}
+
+#[test]
+fn storage_owner_refuses_inventory_dependent_fallbacks_main_source() -> Result<(), NpcRuleError> {
+    let mut conditional = fixture_rule("inventory-first", serde_json::json!([]));
+    conditional["guards"] = serde_json::json!([
+        {"kind":"item","item":"oteryn:item.tibia.i140","count":1}
+    ]);
+    let fallback = fixture_rule(
+        "fallback",
+        serde_json::json!([
+            {"kind":"set","track":"oteryn:quest-progress/test/value","value":1}
+        ]),
+    );
+    let catalogue = fixture_catalog(&fixture_document(vec![conditional, fallback]))?;
+    let facts = Facts::empty();
+    assert!(matches!(
+        catalogue.plan_storage(&facts.input("oteryn:npc.test", "mission", 0)),
+        Err(NpcRuleError::MissingNativeResolution(_))
+    ));
+    Ok(())
+}
+
+#[test]
+fn storage_owner_preserves_order_and_rejects_unowned_effects_main_source()
+-> Result<(), NpcRuleError> {
+    let mut first = fixture_rule(
+        "first",
+        serde_json::json!([
+            {"kind":"set","track":"oteryn:quest-progress/test/value","value":3}
+        ]),
+    );
+    first["continue_matching"] = true.into();
+    let second = fixture_rule(
+        "second",
+        serde_json::json!([
+            {"kind":"add","track":"oteryn:quest-progress/test/value","value":1},
+            {"kind":"set_topic","value":2}
+        ]),
+    );
+    let catalogue = fixture_catalog(&fixture_document(vec![first, second]))?;
+    let facts = Facts::empty();
+    let input = facts.input("oteryn:npc.test", "mission", 0);
+    let plan = catalogue
+        .plan_storage(&input)?
+        .ok_or_else(|| NpcRuleError::Invalid("storage plan".into()))?;
+    assert_eq!(plan.track_changes[0].after, 4);
+    assert_eq!(plan.next_topic, 2);
+    assert_eq!(plan.selected_rule_keys.len(), 2);
+    let gift = fixture_rule(
+        "gift",
+        serde_json::json!([
+            {"kind":"give_item","item":"oteryn:item.tibia.i140","count":1}
+        ]),
+    );
+    let catalogue = fixture_catalog(&fixture_document(vec![gift]))?;
+    assert!(matches!(
+        catalogue.plan_storage(&input),
+        Err(NpcRuleError::MissingNativeResolution(_))
+    ));
+    Ok(())
+}
+
+#[test]
+fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_rollback_main_source()
+-> Result<(), String> {
+    let text = include_str!("../../../../../../content/quests/missions/quest-state.json");
+    let old = super::super::loader::parse_quest_state(text, "npc-legacy")
+        .map_err(|e| format!("{e:?}"))?;
+    let document: serde_json::Value = serde_json::from_str(text).map_err(|e| e.to_string())?;
+    let mut bindings = BTreeMap::new();
+    for quest in document["quests"].as_array().ok_or("quests")? {
+        for track in quest["tracks"].as_array().ok_or("tracks")? {
+            bindings.insert(
+                track["key"].as_str().ok_or("key")?.to_owned(),
+                track["source_key"].as_str().ok_or("source")?.to_owned(),
+            );
+        }
+    }
+    let active = extend(old.catalogue().clone(), &bindings)?;
+    let runtime = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+    assert_eq!(
+        runtime
+            .programs()
+            .iter()
+            .filter(|program| program.document.schema == 1)
+            .count(),
+        28
+    );
+    // Both source lanes are present; two Gnomus programs share one legacy quest.
+    // Schema2 Mystery has no fabricated legacy definition or absent-value mapping.
+    assert_eq!(active.npc_legacy.len(), 23);
+    // Main adds independently owned programmes; retain the exact original lane set.
+    let original = [
+        "oteryn:quest.a_father_s_burden_quest",
+        "oteryn:quest.a_pirates_tail",
+        "oteryn:quest.bigfoot_s_burden_quest",
+        "oteryn:quest.hero_of_rathleton_quest",
+        "oteryn:quest.hot_cuisine_quest",
+        "oteryn:quest.in_service_of_yalahar_quest",
+        "oteryn:quest.the_order_of_the_stag_quest",
+    ];
+    assert_eq!(
+        runtime
+            .programs()
+            .iter()
+            .filter(|p| original.contains(&p.document.quest.as_str()))
+            .count(),
+        7
+    );
+    assert_eq!(
+        active
+            .npc_legacy
+            .keys()
+            .filter(|q| original.contains(&q.as_str()))
+            .count(),
+        6
+    );
+    let mut defaults = BTreeMap::new();
+    for track in NpcRuleCatalog::embedded()
+        .map_err(|e| e.to_string())?
+        .programs()
+        .iter()
+        .flat_map(|program| &program.document.tracks)
+    {
+        *defaults.entry(track.initial).or_insert(0usize) += 1;
+    }
+    assert_eq!(defaults, BTreeMap::from([(-1, 214), (0, 54)]));
+    for program in NpcRuleCatalog::embedded()
+        .map_err(|e| e.to_string())?
+        .programs()
+    {
+        let quest = &program.document.quest;
+        if let Some((hash, defaults)) = active.npc_legacy.get(quest) {
+            assert_eq!(Some(*hash), old.catalogue().definition_hash(quest));
+            assert_ne!(Some(*hash), active.definition_hash(quest));
+            assert_eq!(legacy_defaults(&active, quest, hash), Some(defaults));
+            assert!(legacy_defaults(&active, quest, &[0; 32]).is_none());
+            // Old artifacts cannot accept a new pin: rollback requires this verified
+            // compatibility adapter, never activation of an incompatible old binary.
+            assert!(
+                legacy_defaults(
+                    old.catalogue(),
+                    quest,
+                    &active.definition_hash(quest).ok_or("hash")?
+                )
+                .is_none()
+            );
+            for track in old
+                .catalogue()
+                .tracks
+                .values()
+                .filter(|t| &t.quest == quest)
+            {
+                assert_eq!(defaults.get(&track.key), Some(&track.initial));
+                let new = active.track(&track.key).ok_or("track")?;
+                assert_eq!(
+                    new.initial, track.initial,
+                    "all existing native consumers keep their absent value"
+                );
+                assert!(new.min <= track.min && new.max >= track.max);
+            }
+            for transition in old
+                .catalogue()
+                .transitions
+                .values()
+                .filter(|t| &t.quest == quest)
+            {
+                assert_eq!(active.transition(&transition.key), Some(transition));
+            }
+        } else if runtime.program(quest).is_none() {
+            assert_eq!(
+                active.definition_hash(quest),
+                old.catalogue().definition_hash(quest)
+            );
+        }
+    }
+    runtime
+        .clone()
+        .with_native_bounds(&active)
+        .map_err(|e| e.to_string())?;
+    let loaded = super::super::loader::load_embedded_quest_state("npc-legacy")
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(loaded.catalogue().npc_legacy.len(), 23);
+    assert!(
+        !loaded
+            .catalogue()
+            .npc_legacy
+            .contains_key("oteryn:quest.authored.mystery_of_the_valley_quest")
+    );
+    assert_eq!(
+        loaded
+            .catalogue()
+            .npc_legacy
+            .keys()
+            .filter(|quest| original.contains(&quest.as_str()))
+            .count(),
+        6
+    );
+    Ok(())
+}
+
+#[test]
+fn storage_owner_commits_exact_father_acceptance_without_raising_general_cap_main_source()
+-> Result<(), NpcRuleError> {
+    let source = NpcRuleCatalog::runtime()?;
+    let facts = Facts::empty();
+    let input = facts.input("oteryn:npc.tereban", "yes", 1);
+    assert_eq!(MAX_NPC_TRACK_CHANGES, 16);
+    let plan = source
+        .plan_storage(&input)?
+        .ok_or_else(|| NpcRuleError::Invalid("father acceptance".into()))?;
+    assert_eq!(plan.track_changes.len(), 11);
+    assert_eq!(
+        plan.selected_rule_keys,
+        vec!["oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept"]
+    );
+    assert!(facts.tracks.is_empty());
+    Ok(())
+}
+
+#[test]
+fn authored_npc_program_requires_explicit_recipe_provenance() -> Result<(), NpcRuleError> {
+    let mut document: serde_json::Value =
+        serde_json::from_str(include_str!("test-fixtures/hero_greeting.json"))
+            .map_err(|e| NpcRuleError::Json(e.to_string()))?;
+    let quest = "oteryn:quest.authored.mystery_of_the_valley_quest";
+    let source = "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1";
+    document["schema"] = serde_json::json!(2);
+    document["quest"] = serde_json::json!(quest);
+    for group in ["tracks", "rules"] {
+        for row in document[group]
+            .as_array_mut()
+            .ok_or_else(|| NpcRuleError::Invalid("rows".into()))?
+        {
+            row["quest"] = serde_json::json!(quest);
+            row["sources"] = serde_json::json!([source]);
+        }
+    }
+    let encode = |value: &serde_json::Value| {
+        serde_json::to_string(value).map_err(|e| NpcRuleError::Json(e.to_string()))
+    };
+    NpcRuleCatalog::from_json_documents(&[&encode(&document)?])?;
+    for (schema, quest, provenance) in [
+        (1, quest, source),
+        (2, "oteryn:quest.hero_of_rathleton_quest", source),
+        (
+            2,
+            quest,
+            "oteryn-authored:chosen-recipe:unrelated:authored-r1",
+        ),
+        (
+            2,
+            quest,
+            "https://tibia.fandom.com/wiki/Mystery_of_the_Valley_Quest",
+        ),
+    ] {
+        let mut invalid = document.clone();
+        invalid["schema"] = serde_json::json!(schema);
+        invalid["quest"] = serde_json::json!(quest);
+        invalid["rules"][0]["sources"] = serde_json::json!([provenance]);
+        assert!(NpcRuleCatalog::from_json_documents(&[&encode(&invalid)?]).is_err());
+    }
+    // The original source-only schema remains valid and keeps its digest contract.
+    NpcRuleCatalog::from_json_documents(&[include_str!("test-fixtures/hero_greeting.json")])?;
+    Ok(())
+}
+
+#[test]
+fn mystery_access_source_transitions_preserve_their_native_effects() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|e| format!("{e:?}"))?;
+    for key in [
+        "oteryn:quest-transition/quest/u8_0/the_ice_islands/mission06/npc_1",
+        "oteryn:quest-transition/quest/u8_54/the_new_frontier/mission08/movement_1",
+    ] {
+        let transition = loaded
+            .catalogue()
+            .transition(key)
+            .ok_or_else(|| format!("missing {key}"))?;
+        assert_eq!(transition.effects.len(), 1);
+        if key.contains("mission08") {
+            assert_eq!(
+                transition.effects[0].effect,
+                crate::quest::QuestEffectKind::Computed
+            );
+        } else {
+            assert_eq!(
+                transition.effects[0].effect,
+                crate::quest::QuestEffectKind::Set(1)
+            );
+        }
+    }
+    let access = loaded
+        .catalogue()
+        .transition("oteryn:quest-transition/quest/u8_54/the_new_frontier/questline/action_2")
+        .ok_or("native prison secret-door event")?;
+    assert_eq!(
+        access.effects[0].from,
+        crate::quest::QuestComparison::Lt(23)
+    );
+    assert_eq!(
+        access.effects[0].effect,
+        crate::quest::QuestEffectKind::Set(23)
     );
     Ok(())
 }

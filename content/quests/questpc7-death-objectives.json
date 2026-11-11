@@ -1,0 +1,1421 @@
+{
+  "schema": 1,
+  "objectives": [
+    {
+      "key": "oteryn:quest-death/questpc7-hidden-charlatan",
+      "quest": "oteryn:quest.hidden_threats_quest",
+      "creature": "oteryn:creature.corym_charlatan",
+      "stage": "oteryn:quest-progress/questpc7/hidden/programme",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/hidden/kills",
+      "required": 5,
+      "minimum": {
+        "x": 33077,
+        "y": 32014,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33081,
+        "y": 32017,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33080,
+          "y": 32015,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/43/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
+        "canary:04b83b512:data-otservbr-global/scripts/quests/hidden_threats/movement-chests_check.lua:18-22:sha256:0e00845e4ce1d3cf40dba3139210f86bc96dcb0f8f3242345a4a01aa3badc9b4",
+        "content/world/placements/region-z13-x129-y125.b3:sha256:cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-hidden-skirmisher",
+      "quest": "oteryn:quest.hidden_threats_quest",
+      "creature": "oteryn:creature.corym_skirmisher",
+      "stage": "oteryn:quest-progress/questpc7/hidden/programme",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/hidden/kills",
+      "required": 5,
+      "minimum": {
+        "x": 33077,
+        "y": 32014,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33081,
+        "y": 32017,
+        "floor": -13
+      },
+      "guardian": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/43/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
+        "canary:04b83b512:data-otservbr-global/scripts/quests/hidden_threats/movement-chests_check.lua:18-22:sha256:0e00845e4ce1d3cf40dba3139210f86bc96dcb0f8f3242345a4a01aa3badc9b4",
+        "content/world/placements/region-z13-x129-y125.b3:sha256:cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-hidden-vanguard",
+      "quest": "oteryn:quest.hidden_threats_quest",
+      "creature": "oteryn:creature.corym_vanguard",
+      "stage": "oteryn:quest-progress/questpc7/hidden/programme",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/hidden/kills",
+      "required": 5,
+      "minimum": {
+        "x": 33077,
+        "y": 32014,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33081,
+        "y": 32017,
+        "floor": -13
+      },
+      "guardian": null,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/43/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
+        "canary:04b83b512:data-otservbr-global/scripts/quests/hidden_threats/movement-chests_check.lua:18-22:sha256:0e00845e4ce1d3cf40dba3139210f86bc96dcb0f8f3242345a4a01aa3badc9b4",
+        "content/world/placements/region-z13-x129-y125.b3:sha256:cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-hydra-guardian",
+      "quest": "oteryn:quest.hydra_egg_quest",
+      "creature": "oteryn:creature.hydra",
+      "stage": "oteryn:quest-progress/questpc7/hydra/programme",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/hydra/kills",
+      "required": 1,
+      "minimum": {
+        "x": 33002,
+        "y": 32662,
+        "floor": -3
+      },
+      "maximum": {
+        "x": 33006,
+        "y": 32666,
+        "floor": -3
+      },
+      "guardian": {
+        "position": {
+          "x": 33005,
+          "y": 32665,
+          "floor": -3
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-hero-construct",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "creature": "oteryn:creature.glooth_golem",
+      "stage": "oteryn:quest-progress/questpc7/hero/programme",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/hero/constructs",
+      "required": 10,
+      "minimum": {
+        "x": 33564,
+        "y": 31949,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 33571,
+        "y": 31953,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 33566,
+          "y": 31950,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-hero-maxxen",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "creature": "oteryn:creature.professor_maxxen",
+      "stage": "oteryn:quest-progress/questpc7/hero/constructs",
+      "stage_value": 10,
+      "counter": "oteryn:quest-progress/questpc7/hero/maxxen",
+      "required": 1,
+      "minimum": {
+        "x": 33564,
+        "y": 31949,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 33571,
+        "y": 31953,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 33570,
+          "y": 31951,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-plagirath",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.plagirath",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/programme",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_0",
+      "required": 1,
+      "minimum": {
+        "x": 33164,
+        "y": 31493,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33180,
+        "y": 31509,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33172,
+          "y": 31501,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_plagirath.lua:1:sha256:b26bbfee0013e159760774af9491f6912442d862bc84e666fad66ff42fd013c8",
+        "content/world/placements/region-z13-x129-y123.b3:1:sha256:d62f9bda79c2a39811b522e0c9fdc84bd5d166692734438df9b0ad2a15a57715"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-zamulosh",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.zamulosh",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_0",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_1",
+      "required": 1,
+      "minimum": {
+        "x": 33635,
+        "y": 32748,
+        "floor": -11
+      },
+      "maximum": {
+        "x": 33651,
+        "y": 32764,
+        "floor": -11
+      },
+      "guardian": {
+        "position": {
+          "x": 33643,
+          "y": 32756,
+          "floor": -11
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_zamulosh.lua:1:sha256:b1235772e4a7409b7c8d7c17609c6292b13b1b7597f460ef2a56c1523e56b278",
+        "content/world/placements/region-z11-x131-y127.b3:1:sha256:f109ef8bc953b434085af40fd03d4238ca8ae69d0f6cbc1470f036efdc2b90a9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-mazoran",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.mazoran",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_1",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_2",
+      "required": 1,
+      "minimum": {
+        "x": 33576,
+        "y": 32680,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 33592,
+        "y": 32696,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 33584,
+          "y": 32688,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_mazoran.lua:1:sha256:aa42e74df7fe8513799dc9dae7d8f1e0ae0e40be47a0218071b3ea4000ec48b3",
+        "content/world/placements/region-z14-x131-y127.b3:1:sha256:f1bf5ad6ab7f45a56a1a08b5152b6585f78687b356307d6265d1b8d935a5ddd3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-razzagorn",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.razzagorn",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_2",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_3",
+      "required": 1,
+      "minimum": {
+        "x": 33414,
+        "y": 32457,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 33430,
+        "y": 32473,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 33422,
+          "y": 32465,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_razzagorn.lua:1:sha256:21faaf1355ff47db52995885a6d02d2da0174234b5320d75bc422a50fad8b0de",
+        "content/world/placements/region-z14-x130-y126.b3:1:sha256:be75ad3406f6c5058fa8dd6b62d2f3828cca8ffa6440523885ce48c70d96a549"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-ragiaz",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.ragiaz",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_3",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_4",
+      "required": 1,
+      "minimum": {
+        "x": 33473,
+        "y": 32328,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33489,
+        "y": 32344,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33481,
+          "y": 32336,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_ragiaz.lua:1:sha256:3535982e927b467b0fbd399ef1d03fea1af6ca67ae8fc839a273b6e39c1f0a29",
+        "content/world/placements/region-z13-x130-y126.b3:1:sha256:a525ef0f1187968cf8e950c51437204cf49ba32b50136b43fd6507f6f5ce03db"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-tarbaz",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.tarbaz",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_4",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_5",
+      "required": 1,
+      "minimum": {
+        "x": 33451,
+        "y": 32836,
+        "floor": -11
+      },
+      "maximum": {
+        "x": 33467,
+        "y": 32852,
+        "floor": -11
+      },
+      "guardian": {
+        "position": {
+          "x": 33459,
+          "y": 32844,
+          "floor": -11
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_tarbaz.lua:1:sha256:f5f6e183c5b9059a1074a8a9e94b7fcc186d9c487d17b801a63cd6a51a7c3925",
+        "content/world/placements/region-z11-x130-y128.b3:1:sha256:40f496ecff1b96ad0ce31da3635d0c5d43283c6724a369ce9b50ddc62a99b67d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-shulgrax",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.shulgrax",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_5",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_6",
+      "required": 1,
+      "minimum": {
+        "x": 33477,
+        "y": 32778,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33493,
+        "y": 32794,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33485,
+          "y": 32786,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_shulgrax.lua:1:sha256:caa78225a995594732f4371b1f54c6a39f5e459528c3c6d7964d620a090660d0",
+        "content/world/placements/region-z13-x130-y128.b3:1:sha256:ed2759cc06ee7a2ebcac399d3d9e520bfdc2403cb00d9c60348f109c8287ef87"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-ferumbras-ferumbras_mortal_shell",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "creature": "oteryn:creature.ferumbras_mortal_shell",
+      "stage": "oteryn:quest-progress/questpc7/ferumbras/seal_6",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/ferumbras/seal_7",
+      "required": 1,
+      "minimum": {
+        "x": 33384,
+        "y": 31465,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 33400,
+        "y": 31481,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 33392,
+          "y": 31473,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_ferumbras_lever.lua:1:sha256:da25bca87561d9f917f90ce7bc50c4e7fc7f0357e7146516a2713212057b18c2",
+        "content/world/placements/region-z14-x130-y122.b3:1:sha256:e4dcf7855b7d22e9d1464e8e7661399f9d4f933dcd516fdce363a9caca5ddc13"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-count_vlarkorth",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.count_vlarkorth",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_0",
+      "required": 1,
+      "minimum": {
+        "x": 33448,
+        "y": 31426,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33464,
+        "y": 31442,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33456,
+          "y": 31434,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-duke_krule",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.duke_krule",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_1",
+      "required": 1,
+      "minimum": {
+        "x": 33448,
+        "y": 31465,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33464,
+        "y": 31481,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33456,
+          "y": 31473,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-earl_osam",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.earl_osam",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_2",
+      "required": 1,
+      "minimum": {
+        "x": 33480,
+        "y": 31433,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33496,
+        "y": 31449,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33488,
+          "y": 31441,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-lord_azaram",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.lord_azaram",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_3",
+      "required": 1,
+      "minimum": {
+        "x": 33416,
+        "y": 31465,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33432,
+        "y": 31481,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33424,
+          "y": 31473,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-sir_baeloc",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.sir_baeloc",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 4,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_4",
+      "required": 1,
+      "minimum": {
+        "x": 33414,
+        "y": 31423,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33430,
+        "y": 31439,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33422,
+          "y": 31431,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-sir_nictros",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.sir_nictros",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 4,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_5",
+      "required": 1,
+      "minimum": {
+        "x": 33419,
+        "y": 31423,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33435,
+        "y": 31439,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33427,
+          "y": 31431,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-king_zelos",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.king_zelos",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 5,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_6",
+      "required": 1,
+      "minimum": {
+        "x": 33435,
+        "y": 31537,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33451,
+        "y": 31553,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33443,
+          "y": 31545,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z13-x130-y123.b3:1:sha256:fdd5e457c35b1a3622485103aa9006e2dbb33a622cba968fe792260c1cdac26e",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-scarlett_etzel",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.scarlett_etzel",
+      "stage": "oteryn:quest-progress/questpc7/grave/programme",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_7",
+      "required": 1,
+      "minimum": {
+        "x": 33388,
+        "y": 32635,
+        "floor": -6
+      },
+      "maximum": {
+        "x": 33404,
+        "y": 32651,
+        "floor": -6
+      },
+      "guardian": {
+        "position": {
+          "x": 33396,
+          "y": 32643,
+          "floor": -6
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z06-x130-y127.b3:1:sha256:142b1af54e3bf9b22aca5afe41607c43b56b7fc46c34390437a773ee43934978",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-werewolf",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.werewolf",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/programme",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/afflicted",
+      "required": 10,
+      "minimum": {
+        "x": 33324,
+        "y": 31667,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 33340,
+        "y": 31683,
+        "floor": -7
+      },
+      "guardian": {
+        "position": {
+          "x": 33332,
+          "y": 31675,
+          "floor": -7
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-werebear",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.werebear",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/programme",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/afflicted",
+      "required": 10,
+      "minimum": {
+        "x": 33328,
+        "y": 31667,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 33344,
+        "y": 31683,
+        "floor": -7
+      },
+      "guardian": {
+        "position": {
+          "x": 33336,
+          "y": 31675,
+          "floor": -7
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-wereboar",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.wereboar",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/programme",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/afflicted",
+      "required": 10,
+      "minimum": {
+        "x": 33332,
+        "y": 31667,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 33348,
+        "y": 31683,
+        "floor": -7
+      },
+      "guardian": {
+        "position": {
+          "x": 33340,
+          "y": 31675,
+          "floor": -7
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-feroxa",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.feroxa",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/programme",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/feroxa",
+      "required": 1,
+      "minimum": {
+        "x": 33382,
+        "y": 31532,
+        "floor": -11
+      },
+      "maximum": {
+        "x": 33398,
+        "y": 31548,
+        "floor": -11
+      },
+      "guardian": {
+        "position": {
+          "x": 33390,
+          "y": 31540,
+          "floor": -11
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z11-x130-y123.b3:1:sha256:d2d37319a334a62251391ffdb9901a3ccdadfc4fed047ec06934a0c595436a18",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-bloodback",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.bloodback",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/passages",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/bloodback",
+      "required": 1,
+      "minimum": {
+        "x": 33176,
+        "y": 32008,
+        "floor": -8
+      },
+      "maximum": {
+        "x": 33192,
+        "y": 32024,
+        "floor": -8
+      },
+      "guardian": {
+        "position": {
+          "x": 33184,
+          "y": 32016,
+          "floor": -8
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z08-x129-y125.b3:1:sha256:29959154e97f6a6dd24b0cf3076f3316b218717ea0f2a0165b1dc90530ee9ea4",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-darkfang",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.darkfang",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/passages",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/darkfang",
+      "required": 1,
+      "minimum": {
+        "x": 33054,
+        "y": 31882,
+        "floor": -9
+      },
+      "maximum": {
+        "x": 33070,
+        "y": 31898,
+        "floor": -9
+      },
+      "guardian": {
+        "position": {
+          "x": 33062,
+          "y": 31890,
+          "floor": -9
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z09-x129-y124.b3:1:sha256:54c43306cd0fa522c1edc7a359fcee0723cd83930a915f901dd7a0b831cfb1f1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-sharpclaw",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.sharpclaw",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/passages",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/sharpclaw",
+      "required": 1,
+      "minimum": {
+        "x": 33112,
+        "y": 31994,
+        "floor": -9
+      },
+      "maximum": {
+        "x": 33128,
+        "y": 32010,
+        "floor": -9
+      },
+      "guardian": {
+        "position": {
+          "x": 33120,
+          "y": 32002,
+          "floor": -9
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z09-x129-y125.b3:1:sha256:c1fcb7d5e080ccec3f7b90b7cac20fd12ef72db083ac86a3dbc823b9b092f2c3",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-black_vixen",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.black_vixen",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/passages",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/black_vixen",
+      "required": 1,
+      "minimum": {
+        "x": 33442,
+        "y": 32026,
+        "floor": -9
+      },
+      "maximum": {
+        "x": 33458,
+        "y": 32042,
+        "floor": -9
+      },
+      "guardian": {
+        "position": {
+          "x": 33450,
+          "y": 32034,
+          "floor": -9
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z09-x130-y125.b3:1:sha256:2a259538a67532773231f989e72cca0bd84424524c39679e56b8c181e91216d9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-werehyaena",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.werehyaena",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/programme",
+      "stage_value": 8,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/werehyaena",
+      "required": 20,
+      "minimum": {
+        "x": 33203,
+        "y": 32351,
+        "floor": -8
+      },
+      "maximum": {
+        "x": 33219,
+        "y": 32367,
+        "floor": -8
+      },
+      "guardian": {
+        "position": {
+          "x": 33211,
+          "y": 32359,
+          "floor": -8
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z08-x129-y126.b3:1:sha256:e73385a52c60b93692c715a21e8a7fd1f80bfb7ca6c468a8e43e4cfaccb95e0d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-anomaly",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.anomaly",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_0",
+      "required": 1,
+      "minimum": {
+        "x": 32263,
+        "y": 31241,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32279,
+        "y": 31257,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32271,
+          "y": 31249,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-rupture",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.rupture",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_1",
+      "required": 1,
+      "minimum": {
+        "x": 32324,
+        "y": 31242,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32340,
+        "y": 31258,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32332,
+          "y": 31250,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-realityquake",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.realityquake",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_2",
+      "required": 1,
+      "minimum": {
+        "x": 32200,
+        "y": 31240,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32216,
+        "y": 31256,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32208,
+          "y": 31248,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-eradicator",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.eradicator",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_3",
+      "required": 1,
+      "minimum": {
+        "x": 32301,
+        "y": 31275,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32317,
+        "y": 31291,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32309,
+          "y": 31283,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-outburst",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.outburst",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 4,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_4",
+      "required": 1,
+      "minimum": {
+        "x": 32226,
+        "y": 31276,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32242,
+        "y": 31292,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32234,
+          "y": 31284,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-heart-world_devourer",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "creature": "oteryn:creature.world_devourer",
+      "stage": "oteryn:quest-progress/questpc7/heart/passages",
+      "stage_value": 5,
+      "counter": "oteryn:quest-progress/questpc7/heart/boss_5",
+      "required": 1,
+      "minimum": {
+        "x": 32263,
+        "y": 31339,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32279,
+        "y": 31355,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32271,
+          "y": 31347,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-forgotten-lloyd",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "creature": "oteryn:creature.lloyd",
+      "stage": "oteryn:quest-progress/questpc7/forgotten/programme",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/questpc7/forgotten/boss_0",
+      "required": 1,
+      "minimum": {
+        "x": 32791,
+        "y": 32820,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32807,
+        "y": 32836,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32799,
+          "y": 32828,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x128-y128.b3:1:sha256:e8f96a7b6754fcf438b1a55bbe0d73cedd6e4e3321b0b6c33303c294dffe7f3b",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-forgotten-lady_tenebris",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "creature": "oteryn:creature.lady_tenebris",
+      "stage": "oteryn:quest-progress/questpc7/forgotten/programme",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/forgotten/boss_1",
+      "required": 1,
+      "minimum": {
+        "x": 32904,
+        "y": 31591,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32920,
+        "y": 31607,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32912,
+          "y": 31599,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x128-y123.b3:1:sha256:dcfa219637e4fe4d31dbc93bf592057d93ef3d37d6bdd10c1d183235637b4fc6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-forgotten-the_enraged_thorn_knight",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "creature": "oteryn:creature.the_enraged_thorn_knight",
+      "stage": "oteryn:quest-progress/questpc7/forgotten/programme",
+      "stage_value": 5,
+      "counter": "oteryn:quest-progress/questpc7/forgotten/boss_2",
+      "required": 1,
+      "minimum": {
+        "x": 32616,
+        "y": 32872,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32632,
+        "y": 32888,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32624,
+          "y": 32880,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x127-y128.b3:1:sha256:f818c8913aab12300cd2e84dc6593a76215f758a8b83c8ac9c62c5329b29b3e7",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-forgotten-soul_of_dragonking_zyrtarch",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "creature": "oteryn:creature.soul_of_dragonking_zyrtarch",
+      "stage": "oteryn:quest-progress/questpc7/forgotten/programme",
+      "stage_value": 7,
+      "counter": "oteryn:quest-progress/questpc7/forgotten/boss_3",
+      "required": 1,
+      "minimum": {
+        "x": 33349,
+        "y": 31174,
+        "floor": -10
+      },
+      "maximum": {
+        "x": 33365,
+        "y": 31190,
+        "floor": -10
+      },
+      "guardian": {
+        "position": {
+          "x": 33357,
+          "y": 31182,
+          "floor": -10
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z10-x130-y121.b3:1:sha256:8eda13410a87ebf971595eeacb54bbe16eb2ba2bfc379fc4f1cd3af7fd8a48ef",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-forgotten-the_time_guardian",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "creature": "oteryn:creature.the_time_guardian",
+      "stage": "oteryn:quest-progress/questpc7/forgotten/programme",
+      "stage_value": 8,
+      "counter": "oteryn:quest-progress/questpc7/forgotten/boss_4",
+      "required": 1,
+      "minimum": {
+        "x": 32969,
+        "y": 31654,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 32985,
+        "y": 31670,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 32977,
+          "y": 31662,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x128-y123.b3:1:sha256:dcfa219637e4fe4d31dbc93bf592057d93ef3d37d6bdd10c1d183235637b4fc6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-forgotten-the_last_lore_keeper",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "creature": "oteryn:creature.the_last_lore_keeper",
+      "stage": "oteryn:quest-progress/questpc7/forgotten/programme",
+      "stage_value": 9,
+      "counter": "oteryn:quest-progress/questpc7/forgotten/boss_5",
+      "required": 1,
+      "minimum": {
+        "x": 31978,
+        "y": 32832,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 31994,
+        "y": 32848,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 31986,
+          "y": 32840,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "content/world/placements/region-z14-x124-y128.b3:1:sha256:2a5e9f0f36729af80ae8a40c92d07ebde9b20410966aefc248512247cb73e791",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-goblin-stalkers",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "creature": "oteryn:creature.marsh_stalker",
+      "stage": "oteryn:quest-progress/questpc7/goblin/programme",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/questpc7/goblin/stalkers",
+      "required": 5,
+      "minimum": {
+        "x": 33010,
+        "y": 32100,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 33074,
+        "y": 32164,
+        "floor": -7
+      },
+      "sources": [
+        "content/world/spawns/spawns-10000-11999.json:1:sha256:a74b7da322bba5ebea20c772dae368d1337ec4caf9cd146f89b1bb9b8419b051",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/authored-smith-guardian",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "creature": "oteryn:creature.giant_spider",
+      "stage": "oteryn:quest-progress/chosen/smith-cache/stage",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/chosen/smith-cache/kills",
+      "required": 1,
+      "minimum": {
+        "x": 32760,
+        "y": 32240,
+        "floor": -8
+      },
+      "maximum": {
+        "x": 32790,
+        "y": 32270,
+        "floor": -8
+      },
+      "guardian": {
+        "position": {
+          "x": 32775,
+          "y": 32254,
+          "floor": -8
+        },
+        "respawn_ms": 90000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
+        "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
+        "content/world/placements/region-z08-x128-y125.b3:sha256:c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef"
+      ]
+    }
+  ]
+}

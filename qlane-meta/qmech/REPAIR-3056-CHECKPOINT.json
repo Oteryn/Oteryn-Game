@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
+  "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
+  "parents": {
+    "previous_published_head": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
+    "integrated_main": "f01f18582443f482b7adcfaf32cae3f9d3616876"
+  },
+  "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
+  "generation": {
+    "workflow": ".github/workflows/content-tree-migration.yml",
+    "label": "content-candidate",
+    "outputs": "Exact-head generated-content patch, including canonical World changes, exported for review without an automatic commit/ref update.",
+    "routing_evidence": "G4 canonical WorldProject package seed was manually disabled; generation was moved to the active migration workflow in 140b3482b684d08b86d155c2459bce7ff45691e2 without changing existing validation jobs."
+  },
+  "pending": [
+    "Replay canonical World materializer from its pinned predecessor, complete dependent native/Prey providers, source witnesses, census and World pins.",
+    "Read back all exact merged-provider fixture inventories, including activation boss partitions and native output-key residual; existing prior pins are not final merged results.",
+    "Replay full canonical Quest source tree on the runner and recheck final source/state products. Current Quest-state and claims replay restored the five standalone chest transitions; historical USE proof bytes were not edited.",
+    "Compile and run required normal CI on the resulting published head.",
+    "Run PostgreSQL partitions and node boot on the final head; reconcile individual prior failing test identities.",
+    "The two-review quota is exhausted; later material changes have no fresh Codex approval. An owner decision is needed before any merge.",
+    "Protected-base Merge authority audit rejected the changed merge-gate.yml blob (run42938550000, job130254540983): expected2480e2eb9fb73d9af246188cde918359a260de94, candidate23356f400e5b79659fb4802492ef2d03a77f8ea4. Preserve the strengthened result-cache guards; protected-base approval/rotation remains separate from content/runtime qualification."
+  ],
+  "previous_execution_only": {
+    "merge_run": 42917781849,
+    "postgres_run": 42919473901,
+    "head": "c74d5f31a3a3c6ddea2313e7da878f37167190c1",
+    "both_conclusions": "failure; not evidence for this integration"
+  },
+  "completed_current_inputs": {
+    "quest_state": {
+      "quests": 101,
+      "tracks": 1344,
+      "transitions": 3270
+    },
+    "reward_claims": {
+      "records": 345,
+      "native_authored": 9
+    },
+    "historical_reward_use_proof_guard": "accepted after canonical state/claims replay; no PostgreSQL rerun asserted",
+    "source_compiler_amendment": "all frozen SOURCE cores verified unchanged"
+  },
+  "deferred_p2": [
+    {
+      "finding": "Conflicting duplicate migration keys in five inherited questpc7 historical JSON inventories",
+      "classification": "P2; no current runtime or required-CI consumer found",
+      "incoming_bytes_unchanged": true,
+      "paths": [
+        "qlane-meta/questpc7/MIGRATION-REGISTRY-PROOF.json",
+        "qlane-meta/questpc7/restart2-baseline.json",
+        "qlane-meta/questpc7/restart3-baseline.json",
+        "qlane-meta/questpc7/restart4-baseline.json",
+        "qlane-meta/questpc7/restart5-inherited-product-files.json"
+      ],
+      "action": "Preserve historical evidence; resolve provenance representation in the final grouped backlog."
+    }
+  ],
+  "last_checkpoint_execution": {
+    "head": "c8a3b3ca5326d808bf2e12df8956de395b2e4a3e",
+    "merge_run": 42941128183,
+    "generator_run": 42941128159,
+    "generator_job": 130262936969,
+    "generator_result": "Quest prerequisites passed; the materializer failed Rust compilation; no generated-content artifact was produced.",
+    "rust_result": "Clippy failed; all three unit shards failed test compilation before executing tests.",
+    "world_result": "Compiler build passed; pin-check rejected the stale tracked pin. No manual repin performed.",
+    "repair_scope": "Resolve the observed merged export, missing QuestWorldContext.party and optional reward-reference classes; retain cardinal-only Turn and unique numpad aliases; group existing corpse-admission arguments without changing qualification rules; pass an explicit absent Tutorial Corruptor claim in the ordinary nested-loot fixture. Complete the generic authored-binding fixture with its explicit absent occurrence/admission and empty dialogue alternatives.",
+    "qualification": "Pending on the successor head; source checks and formatting are not runtime or PostgreSQL evidence."
+  },
+  "followup_source_repair": {
+    "parent": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
+    "path": "crates/gameplay/content/src/content/creature_reward_empty_corpse.rs",
+    "finding": "The private row helper argument grouping missed its path-mounted empty-corpse child caller. The prior nine-call proof covered only the parent source file.",
+    "repair": "Wrap the same u32::from(u16::MAX) capacity and exact borrowed verified-source corpse set in CorpseAdmission; preserve the independent ordinary-row capacity of 30.",
+    "verification": "Exact parent/child source closure and light scoped checks; compilation and full generation remain pending on the successor.",
+    "actual_ci_evidence": {
+      "head": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
+      "run_id": 42944381067,
+      "job_id": 130273525253,
+      "diagnostic": "E0061 in creature_reward_empty_corpse.rs:25; eight arguments supplied to the seven-argument private row helper",
+      "log_sha256": "cd904cb68a5f110cf0a8844f4a9e2854388160b5d954e787d617e05643df389c"
+    }
+  },
+  "generation_prerequisite_repair": {
+    "parent": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
+    "imbuement": "Run the canonical offline candidate builder before the World-to-tree converter first validates the candidate. Current in-memory source replay changes only the reviewed Item-binding evidence digest, not any of the 24 type definitions.",
+    "reward_claim_variants": "Run the canonical variant migration producer after final Claim, Item, Achievement and metadata generation; its existing independent CI --check rejected the stale packet.",
+    "checks": "Two new prerequisite/order regressions failed on the prior script; all 17 lightweight dispatcher/merge checks passed after the two producer calls. No full provider generation or Rust/PG execution is claimed.",
+    "remaining_guard": "Post-conversion Item binding/eligibility references remain subject to their existing strict source checks; no automatic evidence-pin bypass was added."
+  }
+}

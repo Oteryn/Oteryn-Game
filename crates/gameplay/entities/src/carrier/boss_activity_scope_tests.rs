@@ -476,10 +476,15 @@ fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_c
             .bind_corpse_item_inner(ExactActorRef(*actor), corpse_item.clone())
             .expect("exact Channel or Instance death binds its committed physical body");
         assert_eq!(carrier.bound_corpses(None)[0].item, corpse_item);
+        let before_replay = carrier.clone();
         let committed_binding = carrier.clone();
         assert_eq!(
             carrier.bind_corpse_item_inner(ExactActorRef(*actor), corpse_item.clone()),
             Ok(())
+        );
+        assert_eq!(
+            *carrier, before_replay,
+            "same committed Item replay is idempotent"
         );
         assert_eq!(
             *carrier, committed_binding,
@@ -517,6 +522,45 @@ fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_c
             Err(CarrierError::CommittedLethalUnavailable)
         );
         assert_eq!(*carrier, before);
+        let mut foreign = *actor;
+        foreign.runtime_scope = match owner.runtime_scope {
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => RuntimeScopeRefV1::Instance {
+                world_id,
+                instance_id: *channel_id.as_bytes(),
+            },
+            RuntimeScopeRefV1::Instance {
+                world_id,
+                instance_id,
+            } => RuntimeScopeRefV1::channel(
+                world_id,
+                ChannelId::decode(&instance_id).expect("valid namespace twin"),
+            ),
+        };
+        assert_eq!(
+            carrier.bind_corpse_item_inner(ExactActorRef(foreign), corpse_item.clone()),
+            Err(CarrierError::CommittedLethalUnavailable)
+        );
+        assert_eq!(
+            *carrier, before,
+            "same-UUID foreign namespace cannot bind a corpse"
+        );
+        let mut conflict = corpse_item.clone();
+        conflict.item_instance_id = id(11);
+        assert_eq!(
+            carrier.bind_corpse_item_inner(ExactActorRef(*actor), conflict),
+            Err(CarrierError::CorpseProjectionConflict)
+        );
+        assert_eq!(
+            *carrier, before,
+            "a conflicting Item cannot replace the original MINT"
+        );
+        let visible = carrier.bound_corpses(None);
+        assert_eq!(visible.len(), 1);
+        assert_eq!(visible[0].item, corpse_item);
+        assert_eq!(visible[0].position, projected.position());
         // Reusing the slot cannot let an old receipt address its successor.
         carrier.remove(owner, *actor).expect("retire dead slot");
         let successor = carrier

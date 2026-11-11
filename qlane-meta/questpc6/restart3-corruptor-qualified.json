@@ -1,0 +1,24 @@
+{
+  "qualification": "Corruptor vocation reward/corpse path; not complete Newhaven World/quest admission",
+  "tests": [
+    "newhaven_corruptor_all_five_vocations_kill_loot_take_equip",
+    "newhaven_corruptor_lifecycle_recovers_original_corpse_and_child_custody",
+    "newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set",
+    "newhaven_corruptor_ordinary_loot_is_frozen_across_stamina_boundary"
+  ],
+  "markers": [
+    "NEWHAVEN_knight POSTGRES_CASE_COMPLETED 52.060546053s",
+    "NEWHAVEN_paladin POSTGRES_CASE_COMPLETED 50.422797435s",
+    "NEWHAVEN_sorcerer POSTGRES_CASE_COMPLETED 54.364376947s",
+    "NEWHAVEN_druid POSTGRES_CASE_COMPLETED 49.718641472s",
+    "NEWHAVEN_monk POSTGRES_CASE_COMPLETED 51.008822175s",
+    "NEWHAVEN_LIFECYCLE POSTGRES_CASE_COMPLETED 70.695106673s",
+    "NEWHAVEN_MODIFIERS POSTGRES_CASE_COMPLETED 131.887451894s",
+    "NEWHAVEN_STAMINA_BOUNDARY POSTGRES_CASE_COMPLETED 62.055068549s"
+  ],
+  "source_sha256": "0d2edd700b4b1ca1c17fe2a16ef27ad7111911505550fe7d9555b0e0a8649be8",
+  "native_profile_sha256": "1c59b6a9516efd06eeb46c123d6a3d4cb5d09e8f6453806fc51d63f12c891c6e",
+  "log": ".questpc/restart3-final-pg.log",
+  "combined_command": "PASS9selected:7actualPGcases,1guaranteeunit,1childprocesshelper",
+  "combined_duration_seconds": 909.696
+}

@@ -197,6 +197,8 @@ impl ActiveGeneration {
             ichgahal_exit::qualify(room, source_exit, resolved_exit.ok_or(R::UnknownPlacement)?)?
         } else if source == PinnedActivitySourceRoom::Vemiath {
             vemiath_exit::qualify(room, source_exit, resolved_exit.ok_or(R::UnknownPlacement)?)?
+        } else if source == PinnedActivitySourceRoom::Ichgahal {
+            ichgahal_exit::qualify(room, source_exit, resolved_exit.ok_or(R::UnknownPlacement)?)?
         } else {
             if resolved_exit.is_some() {
                 return Err(R::InvalidSourceCapture);

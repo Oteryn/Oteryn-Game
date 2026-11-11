@@ -8,7 +8,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import quest_callback_profiles as profiles
-import quests_2_emperor_item_profiles as emperor
 import timed_item_profiles as timed
 import writable_item_profiles as writing
 
@@ -20,34 +19,55 @@ BLOODY_TEAR = 'oteryn:item.tibia.i32594'
 
 
 class QuestCallbackProfiles(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # The committed provider includes later owners' refinements. Capture
+        # the real predecessor stage instead of feeding final output backwards
+        # through this importer and tripping its exact-source conflict guards.
+        import register_spell_families
+        captured = {}
+
+        class StageCaptured(Exception):
+            pass
+
+        def capture(root, generated, profile_path, *args, **kwargs):
+            captured['document'] = json.loads(generated[profile_path])
+            raise StageCaptured
+
+        with patch.object(profiles, 'admit', side_effect=capture):
+            try:
+                register_spell_families.outputs(ROOT)
+            except StageCaptured:
+                pass
+        cls.predecessor = captured['document']
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='.qcb3-profile-', dir=ROOT)
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / 'content/quests').mkdir(parents=True)
         (self.root / 'content/interactions').symlink_to(ROOT / 'content/interactions', target_is_directory=True)
-        (self.root / 'content/assets').symlink_to(ROOT / 'content/assets', target_is_directory=True)
         (self.root / 'content/items').symlink_to(ROOT / 'content/items', target_is_directory=True)
+        (self.root / 'content/assets').symlink_to(ROOT / 'content/assets', target_is_directory=True)
         (self.root / 'imports').symlink_to(ROOT / 'imports', target_is_directory=True)
+        (self.root / 'docs').symlink_to(ROOT / 'docs', target_is_directory=True)
         (self.root / 'tools').symlink_to(ROOT / 'tools', target_is_directory=True)
         self.callbacks = json.loads((ROOT / 'content/quests/world-callbacks.json').read_bytes())
         (self.root / 'content/quests/killing-in-the-name-of.json').write_bytes(
             (ROOT / 'content/quests/killing-in-the-name-of.json').read_bytes())
-        self.document = json.loads((ROOT / PROFILE).read_bytes())
-        # Recreate this producer's actual input stage, before later provider overlays.
-        packet = json.loads((ROOT / emperor.PATH).read_bytes())
-        preceding = {row['production_definition']['production_key']: row
-                     for row in packet['records']}
-        self.document['records'] = [preceding.get(row['production_definition']['production_key'], row)
-                                    for row in self.document['records']]
+        self.document = copy.deepcopy(self.predecessor)
         self.document['records'] = [r for r in self.document['records']
                                     if r['production_definition']['production_key'] not in
                                     (KEY, 'oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019',
-                                     BLOODY_TEAR, 'oteryn:item.tibia.i9388',
+                                     BLOODY_TEAR, 'oteryn:item.tibia.i9388', 'oteryn:item.tibia.i2973',
                                      'oteryn:item.tibia.i21389', 'oteryn:item.tibia.i21466',
                                      'oteryn:item.tibia.i5467', 'oteryn:item.tibia.i3595')]
         self.generated = {PROFILE: json.dumps(self.document).encode(),
                           MANIFEST: b'{"item_profiles":{"sha256":"pending"}}'}
+        # The callback importer consumes the real upstream constructor proof.
+        import authored_static_item_constructors
+        self.generated[authored_static_item_constructors.ADMISSIONS] = (
+            ROOT / authored_static_item_constructors.ADMISSIONS).read_bytes()
 
     def admit(self):
         (self.root / 'content/quests/world-callbacks.json').write_text(json.dumps(self.callbacks))
@@ -90,6 +110,32 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertEqual(row['authoring'], source['authoring'])
         self.assertEqual(row['production_binding'], source['production_binding'])
 
+    def test_authored_world_reward_closes_native_item_provider(self):
+        reward = {"item": "oteryn:item.tibia.i20357", "count": 1, "contents": []}
+        (self.root / 'content/quests/authored-world-callbacks.json').write_text(
+            json.dumps({"schema": 1, "callbacks": [{"effects": {"item_reward": reward}}]}))
+        self.admit()
+        rows = {r['production_definition']['production_key']: r
+                for r in json.loads(self.generated[PROFILE])['records']}
+        self.assertIn(reward['item'], rows)
+        self.assertIn('CharacterInventory', rows[reward['item']]['admission']['legal_destinations'])
+
+    def test_authored_unknown_stack_reward_gets_custody_without_canonical_mutation(self):
+        key = 'oteryn:item.tibia.i3208'
+        path = ROOT / 'content/items/definitions/items-19000-19499.json'
+        canonical = path.read_bytes()
+        definition = next(r['definition'] for r in json.loads(canonical)['records']
+                          if r['definition']['identity']['key'] == key)
+        (self.root / 'content/quests/authored-world-callbacks.json').write_text(json.dumps(
+            {'schema': 1, 'callbacks': [{'effects': {'item_reward': {'item': key, 'count': 1}}}]}))
+        self.admit()
+        row = next(r for r in json.loads(self.generated[PROFILE])['records']
+                   if r['production_definition']['production_key'] == key)
+        self.assertEqual(row['admission']['stack_class'], 'NonStackable')
+        self.assertIn('CharacterInventory', row['admission']['legal_destinations'])
+        self.assertEqual(row['semantics']['weapon'], definition['semantics']['weapon'])
+        self.assertEqual(path.read_bytes(), canonical)
+
     def test_fish_key_is_rebuilt_with_portable_admission_and_manifest_digest(self):
         self.admit()
         rows = [r for r in json.loads(self.generated[PROFILE])['records']
@@ -116,7 +162,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.admit()
         rows = {r['production_definition']['production_key']: r
                 for r in json.loads(self.generated[PROFILE])['records']}
-        for key in ('oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019',
+        for key in ('oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019', 'oteryn:item.tibia.i2973',
                     'oteryn:item.tibia.i2971', 'oteryn:item.tibia.i3249',
                     'oteryn:item.tibia.i3341', 'oteryn:item.tibia.i5803',
                     'oteryn:item.tibia.i6527', 'oteryn:item.tibia.i235',
@@ -130,6 +176,8 @@ class QuestCallbackProfiles(unittest.TestCase):
             self.assertEqual(row['production_binding']['target']['key'], key)
             self.assertEqual(row['semantics']['physical']['value']['pickupable'],
                              {'state': 'KNOWN', 'value': True})
+        self.assertEqual(rows['oteryn:item.tibia.i2973']['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 100})
 
     def test_demon_helmet_chest_reuses_canonical_equipment_without_new_owner(self):
         self.admit()
@@ -153,6 +201,62 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertEqual(rows[key]['admission'], {'materializable': True,
                          'stack_class': 'NonStackable',
                          'legal_destinations': ['CharacterInventory', 'Ground']})
+
+    def test_every_ready_reward_leaf_has_its_exact_native_item_profile(self):
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        expected = {
+            item['item']['key']
+            for path in sorted((ROOT / 'content/interactions/reward_claims').glob('reward-claim*.json'))
+            for row in json.loads(path.read_bytes())['records']
+            if row['definition'].get('readiness') == 'ready'
+            and row['definition'].get('quest', {}).get('key') != 'canary:quest/dawnport_quest'
+            for placement in row['definition']['placements']
+            for item in placement['reward'].get('items', [])
+        }
+        self.assertEqual(sorted(expected - rows.keys()), [])
+        for key in expected:
+            self.assertTrue(rows[key]['admission']['materializable'], key)
+            self.assertEqual(rows[key]['production_binding']['target']['key'], key)
+            self.assertEqual(rows[key]['production_binding']['disposition'], 'EXACT')
+        self.assertEqual(rows['oteryn:item.tibia.i5952']['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 120})
+
+    def test_static_reward_carriers_retain_source_physics_and_reject_conflicts(self):
+        document = {'records': []}
+        profiles.admit_map_carriers(ROOT, document)
+        self.assertEqual(len(document['records']), 5)
+        for row in document['records']:
+            physical = row['semantics']['physical']['value']
+            box = row['production_definition']['production_key'] == 'oteryn:item.tibia.i2473'
+            self.assertEqual(physical['pickupable'], {'state': 'KNOWN', 'value': box})
+            self.assertEqual(row['attributes']['blocks_movement'], not box)
+            self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+        retained = copy.deepcopy(document)
+        profiles.admit_map_carriers(ROOT, document)
+        self.assertEqual(document, retained)
+        document['records'][0]['attributes']['blocks_movement'] = not document['records'][0]['attributes']['blocks_movement']
+        with self.assertRaisesRegex(ValueError, 'QUEST_CHEST_ITEM_PROFILE_CONFLICT'):
+            profiles.admit_map_carriers(ROOT, document)
+
+    def test_selected_nightmare_teddy_chest_admits_its_exact_canonical_reward(self):
+        key = 'oteryn:item.tibia.i21982'
+        document = json.loads(self.generated[PROFILE])
+        document['records'] = [r for r in document['records']
+                               if r['production_definition']['production_key'] != key]
+        self.generated[PROFILE] = json.dumps(document).encode()
+        self.admit()
+        rows = [r for r in json.loads(self.generated[PROFILE])['records']
+                if r['production_definition']['production_key'] == key]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['production_binding']['target']['key'], key)
+        self.assertEqual(rows[0]['production_binding']['disposition'], 'EXACT')
+        self.assertEqual(rows[0]['admission'], {
+            'materializable': True, 'stack_class': 'NonStackable',
+            'legal_destinations': ['CharacterInventory', 'Ground']})
+        self.assertEqual(rows[0]['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 590})  # items.xml, not the chest's capacity hint
 
     def test_rotten_blood_rust_callback_admits_the_canonical_bloody_tear_once(self):
         # Rotten Blood's fixed callback is authored in Rust, so the JSON callback
@@ -222,6 +326,23 @@ class QuestCallbackProfiles(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_ITEM_MISSING'):
             self.admit()
 
+    def test_charged_child_requires_an_exact_existing_native_charge_proof(self):
+        for change in ('partial', 'foreign_target', 'missing'):
+            document = copy.deepcopy(self.document)
+            row = next(r for r in document['records']
+                       if r['production_definition']['production_key'] == 'oteryn:item.tibia.i3084')
+            if change == 'partial':
+                row['semantics']['charges']['value']['count']['value'] = 249
+            elif change == 'foreign_target':
+                row['production_binding']['target']['revision'] = 'foreign'
+            else:
+                document['records'].remove(row)
+            self.generated[PROFILE] = json.dumps(document).encode()
+            before = dict(self.generated)
+            with self.subTest(change=change), self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_ITEM_NOT_ADMITTED'):
+                self.admit()
+            self.assertEqual(self.generated, before, 'refused charge proof must not partially update generated outputs')
+
     def test_grizzly_icon_and_every_complete_chest_child_have_native_profiles(self):
         self.admit()
         rows = {row['production_definition']['production_key']: row
@@ -233,16 +354,21 @@ class QuestCallbackProfiles(unittest.TestCase):
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
         # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
-        # 3083), with 3083 also used by Triangle Tower: 130 + 4 identities.
-        self.assertEqual(len(expected), 146)
+        # 3083), with 3083 also used by Triangle Tower; retain the complete closure.
+        self.assertEqual(len(expected), 160)
         # Goblin Temple adds pan3466 and snowball2992; vial2874 was already present.
         self.assertTrue({'oteryn:item.tibia.i3466','oteryn:item.tibia.i2992'} <= expected)
         # Draconia adds the one-charge ice rapier and serpent sword to full bags.
         self.assertTrue({'oteryn:item.tibia.i3284', 'oteryn:item.tibia.i3297'} <= expected)
         # Fire Axe adds the already-admitted dragon necklace and Fire Axe to bags.
         self.assertTrue({'oteryn:item.tibia.i3085', 'oteryn:item.tibia.i3320'} <= expected)
-        # Dreamer adds certificate, bread and a WATER vial to the exact closure.
+        # Dreamer adds certificate, bread and the source-selected wine vial to the exact closure.
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (6498, 3602, 2874)} <= expected)
+        # Desert2 adds exactly its three previously absent child identities;
+        # the existing canonical root and fourth child were already in this closure.
+        self.assertTrue({'oteryn:item.tibia.i3084', 'oteryn:item.tibia.i3098',
+                         'oteryn:item.tibia.i3077'} <= expected)
+
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (2859, 2949, 3053, 3083)} <= expected)
         # Full-charge bags add Triangle Tower's Garlic Necklace and Desert's
         # Protection Amulet, Ring of Healing and Magic Light Wand.
@@ -362,6 +488,40 @@ class QuestCallbackProfiles(unittest.TestCase):
         with (patch.object(profiles, 'SOURCE_SHA256', '0' * 64),
               self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_SOURCE_DIGEST')):
             self.admit()
+
+
+
+class ExistingAuthoredCustody(unittest.TestCase):
+    def test_existing_torch_custody_is_reused_without_mutation(self):
+        import authored_quest_item_custody as custody
+        record = next(r for r in json.loads((ROOT / PROFILE).read_bytes())['records']
+                      if r['production_definition']['production_key'] == 'oteryn:item.tibia.i2920')
+        definition = next(r['definition']
+                          for path in (ROOT / 'content/items/definitions').glob('items-*.json')
+                          for r in json.loads(path.read_bytes())['records']
+                          if r['definition']['identity']['key'] == 'oteryn:item.tibia.i2920')
+        bindings = json.loads((ROOT / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']
+        before = copy.deepcopy(record)
+        custody.reuse_existing(definition, record, bindings)
+        self.assertEqual(record, before)
+        for case in range(7):
+            bad = copy.deepcopy(record)
+            if case == 0:
+                bad['production_definition']['revision_ref'] = 'definition-r2'
+            elif case == 1:
+                bad['production_binding']['disposition'] = 'UNKNOWN'
+            elif case == 2:
+                bad['admission']['materializable'] = False
+            elif case == 3:
+                bad['admission']['legal_destinations'] = ['Ground']
+            elif case == 4:
+                bad['semantics']['physical']['value']['pickupable']['value'] = False
+            elif case == 5:
+                bad['semantics']['stack']['value']['stackable']['value'] = True
+            else:
+                bad['semantics']['physical']['value']['weight']['value'] = -1
+            with self.subTest(case=case), self.assertRaises(ValueError):
+                custody.reuse_existing(definition, bad, bindings)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,75 @@
+{
+  "batch_id": "annihilator-complete-source-route-2026-11-07",
+  "base_sha": "126351d2116dbfa18005ab070c11388ee13e3534",
+  "scope": "Whole continuous actual-source Annihilator route; reusable expertise gate admission and pinned startup restoration.",
+  "changes": [
+    "Admit existing native expertise doors5111/5112 from exact pinned client/XML/bindings, ground-only, preserving accepted facts. Existing generic DoorBook owns level/toggle/step-off semantics.",
+    "Independently recapture level access from exact retained startup source without replacing four finished chest captures; apply only missing action1100 at33214,31671,13 through repository world tooling. Preserve Desert gates and single/list source table shapes.",
+    "Four genuine participants walk through actual gates and source lever staging; existing native combat clears the two corridor blockers. Actual source chest delivers one armor3388; same-command replay is stable, fresh and alternative-choice claims refuse. Actual exit portal returns to approach; claimed reward seals re-entry. No invented timed escape, six-kill storage predicate or fabricated geometry."
+  ],
+  "sources": {
+    "gate_items": "imports/canary/items-xml/items.xml:14552-14559",
+    "gate_items_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "level_startup": "data-global/startup/tables/door_level.lua:173-178",
+    "level_startup_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+    "retained_corpus": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+    "source_note": "CONTRACT-NOTES.md; existing chest capture preserves its independently pinned source. Canonical historical import assessments are unchanged."
+  },
+  "red": [
+    {
+      "log": "/tmp/questpc2-complete-native-memory-red-pg.log",
+      "postgres_version": 180006,
+      "duration_seconds": 74.12,
+      "failure": "Actual outer gate USE returned NothingToUse before expertise profiles."
+    },
+    {
+      "log": "/tmp/questpc2-complete-gate-after-data-pg.log",
+      "postgres_version": 180006,
+      "duration_seconds": 74.28,
+      "failure": "Admitted native gate still sealed because captured source startup action was absent."
+    },
+    {
+      "log": "/tmp/questpc2-complete-startup-restored-pg.log",
+      "postgres_version": 180006,
+      "duration_seconds": 100.04,
+      "failure": "Actual source statue blocked the initial reward-room walking path; routed around preserved geometry."
+    }
+  ],
+  "green": {
+    "postgres_log": "/tmp/questpc2-complete-merged-recovered-pg.log",
+    "postgres_version": 180006,
+    "duration_seconds": 108.32,
+    "build_seconds": 28.8,
+    "marker": "ANNIHILATOR_COMPLETE physical_reward=3388 shared_claims=1 achievements=1 source_exit=33213,31671,13 reentry=refused; POSTGRES_CASE_COMPLETED members=4 creatures=6 elapsed_ms=108003",
+    "source_gate_tests": {
+      "count": 2,
+      "seconds": 4.518
+    },
+    "startup_tests": {
+      "count": 13,
+      "seconds": 0.635
+    },
+    "fmt": "/tmp/questpc2-complete-final-fmt.log",
+    "registration": "/tmp/questpc2-complete-merged-registration.log; write/check43 files",
+    "check_log": "/tmp/questpc2-complete-final-check.log",
+    "check_seconds": 82,
+    "world_pin": "b3780093e958b72b7d7bdc12cc4aee81bba427000f064e29801e96b6df9d4c51",
+    "clippy_log": "/tmp/questpc2-complete-final-clippy.log",
+    "clippy_seconds": 173,
+    "pin_check": "/tmp/questpc2-complete-merged-pin-check.log; PASS"
+  },
+  "review": {
+    "kind": "self-review in AUTHORING; no PR/freeze/full-lane readiness claim",
+    "files": "All changed Rust fixture/helpers, source gate importer/tests, startup parser/tests/capture, registration wiring and generated content/pin deltas.",
+    "result": "Fixed merged parser single-group regression; no significant remaining finding. No runtime guard, test assertion or source collision weakened. No external review run."
+  },
+  "qualification": {
+    "canonical": "oteryn:quest.the_annihilator_quest",
+    "status": "QUALIFIED",
+    "lane_counts": {
+      "qualified": 2,
+      "unfinished": 33,
+      "blocked": 0
+    }
+  }
+}

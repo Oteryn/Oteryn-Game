@@ -1,0 +1,14 @@
+crates/gameplay/durability/src/durability/activity_handoff/boss_room.rs:373:        if let Some(refusal) = quest_entry::validate(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:63:    SoulWarEntry,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:64:    SoulWarFinalEntry,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:65:    RottenBloodEntry,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:126:    run_scenario(Case::SoulWarEntry)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:131:    run_scenario(Case::SoulWarFinalEntry)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:136:    run_scenario(Case::RottenBloodEntry)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:207:            Case::SoulWarEntry => Some("oteryn:creature.goshnar_s_spite"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:208:            Case::SoulWarFinalEntry => Some("oteryn:creature.goshnar_s_megalomania_purple"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:209:            Case::RottenBloodEntry => Some("oteryn:creature.bakragore"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:504:            if case == Case::RottenBloodEntry {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:514:            if case != Case::SoulWarEntry {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:520:                if case == Case::RottenBloodEntry {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:528:                if case == Case::SoulWarFinalEntry {

@@ -255,4 +255,24 @@ mod tests {
         );
         Ok(())
     }
+    #[test]
+    fn threshold_and_bound_set_have_distinct_definition_encoding_tags() {
+        let mut threshold = Vec::new();
+        QuestEffectKind::SetWhenAtLeast {
+            other_effect: 0,
+            minimum: 0,
+            value: 0,
+        }
+        .encode(&mut threshold);
+        let mut bound_set = Vec::new();
+        QuestEffectKind::SetWithBinding {
+            value: 0,
+            binding: [0; 32],
+        }
+        .encode(&mut bound_set);
+        assert_ne!(
+            threshold[0], bound_set[0],
+            "merged effect kinds must retain distinct encoding tags"
+        );
+    }
 }

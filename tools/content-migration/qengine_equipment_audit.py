@@ -8,6 +8,7 @@ import argparse
 import importlib.util
 import json
 from pathlib import Path
+import re
 
 
 def main():
@@ -31,6 +32,16 @@ def main():
     original = test.read_text()
     from qengine_reward_equipment_pin import refresh
     after = refresh(original, proof)
+    # The merged branch also states the exact delta from its frozen main base.
+    # Keep that independently named base and every attribute assertion intact.
+    base = re.findall(r'const QENGINE2_BASE_PROFILES: usize = ([0-9]+);', after)
+    if base:
+        if base != ['53'] or len(expected) < 53:
+            raise SystemExit('QENGINE_EQUIPMENT_BASE_COUNT')
+        after, count = re.subn(r'assert_eq!\(additions\.len\(\), QENGINE2_BASE_PROFILES \+ [0-9]+\);',
+                             f'assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + {len(expected) - 53});', after)
+        if count != 1:
+            raise SystemExit('QENGINE_EQUIPMENT_DELTA_ANCHOR')
     if args.check and after != original:
         raise SystemExit('QENGINE_EQUIPMENT_COUNT_STALE: run tools/content-migration/qengine_equipment_audit.py content')
     if not args.check and after != original:

@@ -206,9 +206,11 @@ fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError>
         }
         EntityDetail::ActorWithIcons {
             health_percent,
+            direction,
             icons,
             ..
         } if actor_kind(entity.kind)
+            && !direction.is_diagonal()
             && health_percent <= MAX_HEALTH_PERCENT
             && (entity.kind != EntityKind::Npc || health_percent == MAX_HEALTH_PERCENT)
             && icons.iter().all(|icon| match icon.category {
@@ -1065,6 +1067,43 @@ mod tests {
 
     fn at(x: i32) -> ActorPosition {
         ActorPosition { x, y: 7, floor: 7 }
+    }
+
+    #[test]
+    fn diagonal_intent_profile_never_widens_entity_facing() {
+        for direction in [
+            StepDirection::NorthEast,
+            StepDirection::SouthEast,
+            StepDirection::SouthWest,
+            StepDirection::NorthWest,
+        ] {
+            let mut entity = actor(EntityKind::Creature, 5);
+            entity.detail = EntityDetail::Actor {
+                direction,
+                appearance_ref: 1,
+                health_percent: 100,
+            };
+            assert!(encode_entity(&entity, false).is_err());
+            entity.detail = EntityDetail::ActorWithIcons {
+                direction,
+                appearance_ref: 1,
+                health_percent: 100,
+                icons: NativeCreatureIcons::new(&[NativeCreatureIcon {
+                    category: 1,
+                    id: 6,
+                    count: 1,
+                }])
+                .expect("qualified creature icon"),
+            };
+            assert!(
+                super::encode_entity(
+                    &entity,
+                    EntityFields::selected(&[CAPABILITY_NATIVE_CREATURE_ICONS_V1]),
+                    None,
+                )
+                .is_err()
+            );
+        }
     }
 
     fn actor(kind: EntityKind, n: u32) -> WorldSpatialEntity {

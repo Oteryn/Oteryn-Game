@@ -1,0 +1,5 @@
+{
+  "command": "python3 -m unittest test_quest_finish_newhaven_items",
+  "exit": 0,
+  "duration_seconds": 2.796
+}

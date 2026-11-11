@@ -60,6 +60,9 @@ pub(super) async fn fill_to_one_free_slot(
                 .map_err(super::fixture::debug)?;
         }
         let request = RewardClaimMintRequest {
+            backpack_outputs: false,
+            root_charges_remaining: None,
+            root_fluid_subtype: None,
             command: CommandRef::new(
                 fence.game_session_id,
                 CommandId::new(2000 + u64::from(ordinal)).map_err(super::fixture::debug)?,

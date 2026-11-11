@@ -17,6 +17,9 @@ fn m33_disjoint_step_phases_share_one_native_selector() -> Result<(), String> {
     });
     first.selector.appearance = Some(231);
     first.storage = vec![Storage {
+        add: None,
+        read_only: false,
+        set_if: None,
         track: "oteryn:quest-progress/m33/phase".into(),
         minimum: 0,
         maximum: 0,

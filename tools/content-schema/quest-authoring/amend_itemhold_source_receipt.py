@@ -9,8 +9,13 @@ import quest_tree_authoring as tree
 import source_fix_guard as guard
 
 COMPILER = 'tools/content-schema/quest-authoring/quest_tree_authoring.py'
-# Restore the exact historical charged-item view; frozen SOURCE cores are verified.
-PREVIOUS = '45d5840880648a7e94551ddcb67f6cdf3e0550937a0856a51ab2e95bb338d9fb'
+# Recognized compiler predecessors from both independently reviewed SOURCE views.
+# Every immutable input and frozen SOURCE core is still verified before repinning.
+PREVIOUS = {
+    '45d5840880648a7e94551ddcb67f6cdf3e0550937a0856a51ab2e95bb338d9fb',
+    'f8ed16d80fe61c295989d796a41d86a9e520944bb39651fd60cc79c55005c2ac',
+    '2de10695b57d2d95cbf012df84b9a8086539e2d43866b53c18f3e1e75ba5c694',
+}
 
 
 def verify_source_view(root):
@@ -43,7 +48,7 @@ def outputs(root):
             raise ValueError('SOURCE approval inputs differ from receipt')
         for descriptor in approval[category]:
             if category == 'compiler_inputs' and descriptor['path'] == COMPILER:
-                if descriptor['sha256'] not in (PREVIOUS, digest):
+                if descriptor['sha256'] not in PREVIOUS | {digest}:
                     raise ValueError('unrecognized prior SOURCE compiler pin')
             else:
                 guard.verify_file(root, descriptor)

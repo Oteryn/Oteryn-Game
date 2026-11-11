@@ -43,6 +43,7 @@ impl DurabilityRoot {
     )]
     pub async fn commit_character_npc_teleport<
         C: super::super::super::item_loop_move::ItemLoopContent,
+        G: super::super::grizzly::GrizzlyPremiumGate,
     >(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -52,6 +53,7 @@ impl DurabilityRoot {
         request: NpcProgramRequest,
         catalogue: Arc<QuestStateCatalogue>,
         items: &C,
+        premium: &G,
         admission: NpcTeleportAdmission,
     ) -> Result<NpcProgramCommit> {
         self.commit_npc_program_source(
@@ -62,6 +64,7 @@ impl DurabilityRoot {
             request,
             catalogue,
             items,
+            premium,
             NpcRuleCatalog::runtime().map_err(|_| CharacterProgressionError::InvalidInput)?,
             Some(admission),
         )

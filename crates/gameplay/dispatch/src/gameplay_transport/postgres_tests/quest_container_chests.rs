@@ -1,7 +1,7 @@
 //! Pinned source selectors -> literal USE -> existing once-claim owner -> full
 //! container custody, key/achievement facts, replay and atomic refusal.
 use super::fixture::{Harness, debug, id, run};
-use super::quest_callbacks::{source_world, source_world_choices, wire_use_targets, wire_uses};
+use super::quest_callbacks::{source_world, wire_use_targets, wire_uses};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -14,9 +14,12 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[derive(Clone, Copy)]
 enum Case {
+    Authored,
     Bear,
     Key,
     Choice,
+    ChoiceDoor,
+    ChoiceCaptured,
     Text,
     RootText,
     CrystalKey,
@@ -26,19 +29,26 @@ enum Case {
     DemonBoots,
     DemonHelmet,
     DemonShield,
+    Catalogue,
 }
 
 fn execute(case: Case, marker: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
+    let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || scenario(case).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "reward container scenario panicked")??;
-    println!("{marker} POSTGRES_CASE_COMPLETED");
+    println!("{marker} POSTGRES_CASE_COMPLETED {:?}", started.elapsed());
     Ok(())
+}
+
+#[test]
+fn quest_authored_placement_without_legacy_uid_mints_once_and_replays() -> TestResult {
+    execute(Case::Authored, "QUESTPC8_AUTHORED_PLACEMENT")
 }
 
 #[test]
@@ -52,6 +62,20 @@ fn quest_container_chests_key_attributes_are_atomic() -> TestResult {
 #[test]
 fn quest_container_chests_annihilator_choices_share_storage_and_achievement() -> TestResult {
     execute(Case::Choice, "W15B_STORAGE_CHOICE")
+}
+#[test]
+fn annihilator_reward_door_tracks_the_real_shared_claim() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    execute(Case::ChoiceDoor, "ANNIHILATOR_REWARD_DOOR")
+}
+#[test]
+fn annihilator_captured_startup_chests_share_the_real_claim() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    execute(Case::ChoiceCaptured, "ANNIHILATOR_CAPTURED_CHESTS")
 }
 #[test]
 fn quest_container_chests_authored_book_text_survives_replay() -> TestResult {
@@ -102,7 +126,52 @@ fn definition(key: &str) -> TypedDefinitionRef {
 }
 
 fn scenario(case: Case) -> TestResult {
+    scenario_case(case, None, None, None)
+}
+
+pub(super) fn catalogue_scenario(
+    chest: &super::quest_catalogue_chests::CatalogueChest,
+    activation: &super::quest_catalogue_chests::CatalogueActivation,
+) -> TestResult {
+    catalogue_scenario_with_template(chest, activation, None)
+}
+
+pub(super) fn catalogue_scenario_with_template(
+    chest: &super::quest_catalogue_chests::CatalogueChest,
+    activation: &super::quest_catalogue_chests::CatalogueActivation,
+    template: Option<&super::fixture::MigratedDatabaseTemplate>,
+) -> TestResult {
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), template)
+}
+
+fn scenario_case(
+    case: Case,
+    catalogue: Option<&super::quest_catalogue_chests::CatalogueChest>,
+    activation: Option<&super::quest_catalogue_chests::CatalogueActivation>,
+    template: Option<&super::fixture::MigratedDatabaseTemplate>,
+) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
+        Case::Catalogue => {
+            let chest = catalogue.ok_or("catalogue chest")?;
+            (
+                chest.claim.as_str(),
+                chest.position,
+                chest.unique,
+                chest.root.as_str(),
+                chest
+                    .contents
+                    .iter()
+                    .map(|(key, count, number)| (key.as_str(), *count, *number))
+                    .collect(),
+            )
+        }
+        Case::Authored => (
+            "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
+            (33313, 31574, -15),
+            0,
+            "oteryn:item.tibia.i3554",
+            vec![],
+        ),
         Case::DemonBoots => (
             "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
             (33313, 31574, -15),
@@ -155,7 +224,7 @@ fn scenario(case: Case) -> TestResult {
                 ("oteryn:item.tibia.i3598", 27, 0),
             ],
         ),
-        Case::Choice => (
+        Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured => (
             "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
             (33233, 31656, -13),
             6088,
@@ -186,53 +255,166 @@ fn scenario(case: Case) -> TestResult {
         ),
     };
     run(async |admin| {
-        let harness =
-            Harness::create_with_admission_seed(admin, "quest_container", false, false).await?;
+        let harness = if let Some(template) = template {
+            Harness::create_from_template(admin, "quest_container", template).await?
+        } else {
+            Harness::create_with_admission_seed(admin, "quest_container", false, false).await?
+        };
         prepare_current_session(&harness).await?;
+        if catalogue.is_some_and(|chest| chest.unique == 0) {
+            eprintln!(
+                "POSTGRES_CASE_STARTED native-source-alias after PostgreSQL fixture initialization"
+            );
+        }
+        if matches!(case, Case::Authored) {
+            eprintln!("QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CONNECTED");
+        }
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
+        if matches!(case, Case::ChoiceDoor) {
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&harness.pool)
+                .await?;
+            println!("ANNIHILATOR_REWARD_DOOR POSTGRES_CASE_OBSERVED server_version_num={version}");
+            assert!(
+                oteryn_gameplay_quests::quest::world_callbacks::load()?
+                    .iter()
+                    .any(|row| row.key == "oteryn:quest-callback/annihilator-reward-door"),
+                "source reward door callback missing"
+            );
+        }
+        let captured_choices = if matches!(case, Case::ChoiceCaptured) {
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&harness.pool)
+                .await?;
+            println!(
+                "ANNIHILATOR_CAPTURED_CHESTS POSTGRES_CASE_OBSERVED server_version_num={version}"
+            );
+            Some(super::annihilator_door::captured_chest_selectors()?)
+        } else {
+            None
+        };
         let mut deps = Dependencies::new()?;
-        let (controller, activated_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+        let owned_activation;
+        let (controller, activated_pin) = if let Some(activation) = activation {
+            activation
+        } else {
+            owned_activation = super::death_ml_loss_composed::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
+            &owned_activation
+        };
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = if matches!(case, Case::Choice) {
-            source_world_choices(
+        let world = if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
+            super::quest_callbacks::source_world_choices_with_door(
                 chest,
-                &[(33227, 6085), (33229, 6086), (33231, 6087), (33233, 6088)],
+                captured_choices.as_deref().unwrap_or(&[
+                    (33227, 6085),
+                    (33229, 6086),
+                    (33231, 6087),
+                    (33233, 6088),
+                ]),
                 2472,
+                matches!(case, Case::ChoiceDoor).then_some(native),
             )?
+        } else if let Some(chest) = catalogue {
+            super::quest_catalogue_chests::catalogue_source_world(chest)?
         } else {
-            let appearance = match case {
-                Case::Text | Case::RootText => 4240,
-                Case::CrystalKey => 2474,
-                _ => 2472,
+            let appearance = if let Some(chest) = catalogue {
+                chest.appearance
+            } else {
+                match case {
+                    Case::Text | Case::RootText => 4240,
+                    Case::CrystalKey => 2474,
+                    _ => 2472,
+                }
             };
             source_world(chest, unique, appearance, 0)?
         };
-        let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
-            world.base().as_ref(),
-            &|_| true,
-        )?;
-        assert!(
+        let mut authored_shard = None;
+        let report = if matches!(case, Case::Authored) {
+            // Exercise an authored selector on a real map without borrowing a source UID.
+            let mut definition = None;
+            for shard in crate::content::world_reward_claims::REWARD_CLAIM_SHARDS {
+                let shard: serde_json::Value = serde_json::from_str(shard)?;
+                for row in shard["records"].as_array().ok_or("records")? {
+                    if row["definition"]["identity"]["key"] == claim {
+                        definition = Some(row["definition"].clone());
+                    }
+                }
+            }
+            let mut definition = definition.ok_or("authored fixture reward")?;
+            definition["placements"][0]["source_binding"] = serde_json::json!({
+                "project_position": {"x":chest.0,"y":chest.1,"z":-chest.2},
+                "native_ordinal":1
+            });
+            for invalid in 0..7 {
+                let mut bad = definition.clone();
+                match invalid {
+                    0 => bad["placements"][0]["source_binding"]["native_ordinal"] = 0.into(),
+                    1 => bad["placements"][0]["source_binding"]["native_ordinal"] = 2.into(),
+                    2 => bad["placements"][0]["source_binding"]["native_ordinal"] = 256.into(),
+                    3 => bad["placements"][0]["source_binding"]["native_ordinal"] = (-1).into(),
+                    4 => {
+                        bad["placements"][0]["source_binding"]["legacy_unique_ids"] =
+                            serde_json::json!([])
+                    }
+                    5 => bad["placements"][0]["appearance_tibia_id"] = 2473.into(),
+                    _ => {
+                        bad["placements"][0]["source_binding"]["project_position"]["x"] =
+                            (chest.0 + 1).into()
+                    }
+                }
+                let bad = serde_json::json!({"records":[{"definition":bad}]}).to_string();
+                let refused = crate::content::world_reward_claims::bind_reward_claims(
+                    world.base().as_ref(),
+                    &[&bad],
+                    &|_| true,
+                )?;
+                assert!(
+                    refused.served.is_empty(),
+                    "invalid authored selector {invalid}"
+                );
+            }
+            let shard = serde_json::json!({"records":[{"definition":definition}]}).to_string();
+            let report = crate::content::world_reward_claims::bind_reward_claims(
+                world.base().as_ref(),
+                &[&shard],
+                &|_| true,
+            )?;
+            authored_shard = Some(shard);
+            report
+        } else {
+            crate::content::world_reward_claims::bind_embedded_reward_claims(
+                world.base().as_ref(),
+                &|_| true,
+            )?
+        };
+        assert_eq!(
             report.served.iter().any(|row| row.key.as_str() == claim),
-            "source claim did not bind"
+            catalogue.is_none_or(|chest| chest.servable),
+            "source namespace must match the native World binder"
         );
-        let catalogue = std::sync::Arc::new(
+        // Every live/cold owner gets the real catalogue and current Quest admission.
+        // The optional source-chest descriptor remains independent fixture metadata.
+        let quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
                 .catalogue()
                 .clone(),
-        );
+        ));
         let cells = world
-            .movement_cells(deps.room.movement_cells())
+            .movement_cells(if matches!(case, Case::ChoiceDoor) {
+                activated_pin.qualified_room().movement_cells()
+            } else {
+                deps.room.movement_cells()
+            })
             .map_err(debug)?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
@@ -267,7 +449,7 @@ fn scenario(case: Case) -> TestResult {
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: i32::from(chest.0) - 1,
+                    x: i32::from(chest.0) - i32::from(!matches!(case, Case::ChoiceDoor)),
                     y: i32::from(chest.1),
                     floor: -i16::from(chest.2),
                 },
@@ -324,11 +506,54 @@ fn scenario(case: Case) -> TestResult {
             })
         };
         let target = target_at(chest.0)?;
+        if matches!(case, Case::ChoiceDoor) {
+            {
+                let mut owner = deps.owner(&harness, &authority);
+                owner.active_generation = Some(generation);
+                owner.quest_catalogue = quest_catalogue.clone();
+                owner.movement_cells = (&cells).into();
+                owner.admit_progression_session(&mut admitted).await;
+                owner.admit_quest_session(&admitted).await;
+                deps.initialize(&owner).await;
+                let key =
+                    oteryn_world_bundle::bundle::placement_key(chest.2, chest.0 - 1, chest.1, 1)
+                        .ok_or("door")?;
+                super::annihilator_door::exercise(&owner, &mut admitted, deps.actor, &target, key)
+                    .await?;
+                let bag = harness
+                    .root
+                    .read_character_backpack(&authority, fence.character_id)
+                    .await
+                    .map_err(debug)?
+                    .ok_or("backpack")?;
+                assert_eq!(bag.entries.len(), 1);
+                assert_eq!(bag.entries[0].item.definition.production_key, root_key);
+                let counts: (i64, i64, i64) = sqlx::query_as("SELECT \
+                    (SELECT count(*) FROM game_reward_claims WHERE claim_production_key=$1), \
+                    (SELECT count(*) FROM game_item_nested_entries), \
+                    (SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/annihilator')")
+                    .bind(claim).fetch_one(&harness.pool).await?;
+                assert_eq!(counts, (1, 1, 1));
+            }
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         {
             let mut owner = deps.owner(&harness, &authority);
+            if let Some(shard) = &authored_shard {
+                assert!(
+                    owner
+                        .states
+                        .quest_callbacks
+                        .reward_claims_fixture
+                        .set(vec![shard.clone()])
+                        .is_ok()
+                );
+            }
             owner.active_generation = Some(generation);
+            owner.quest_catalogue = quest_catalogue.clone();
             owner.movement_cells = (&cells).into();
-            owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
             owner.admit_progression_session(&mut admitted).await;
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
@@ -421,6 +646,7 @@ fn scenario(case: Case) -> TestResult {
             };
             for (index, (item, quantity)) in burdens.into_iter().enumerate() {
                 let request = RewardClaimMintRequest {
+                    backpack_outputs: false,
                     additional_items: Vec::new(),
                     command: CommandRef::new(
                         admitted.game_session_id,
@@ -436,6 +662,8 @@ fn scenario(case: Case) -> TestResult {
                     quantity,
                     contents: Vec::new(),
                     root_text: None,
+                    root_fluid_subtype: None,
+                    root_charges_remaining: None,
                     backpack: backpack.clone(),
                     content_revision: "content-1".into(),
                     ruleset_revision: "ruleset-1".into(),
@@ -457,9 +685,19 @@ fn scenario(case: Case) -> TestResult {
             }
             {
                 let mut owner = deps.owner(&harness, &authority);
+                if let Some(shard) = &authored_shard {
+                    assert!(
+                        owner
+                            .states
+                            .quest_callbacks
+                            .reward_claims_fixture
+                            .set(vec![shard.clone()])
+                            .is_ok()
+                    );
+                }
                 owner.active_generation = Some(generation);
+                owner.quest_catalogue = quest_catalogue.clone();
                 owner.movement_cells = (&cells).into();
-                owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
                 owner.admit_progression_session(&mut admitted).await;
                 owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
@@ -487,12 +725,55 @@ fn scenario(case: Case) -> TestResult {
                 (0, 0, 0),
                 "room/weight refusal must leave no partial or pending reward"
             );
+        } else if catalogue.is_some_and(|chest| !chest.servable) {
+            // A Canary-only UID cannot acquire a Crystal World binding just
+            // because its numeric value matches. This negative source-alias
+            // case executes USE and must not qualify the unbound placement.
+            assert!(report.unbound.iter().any(|row| row.claim == claim
+                && row.reason
+                    == crate::content::world_reward_claims::UnboundReason::NoCrystalUniqueId));
+            let mut owner = deps.owner(&harness, &authority);
+            if let Some(shard) = &authored_shard {
+                assert!(
+                    owner
+                        .states
+                        .quest_callbacks
+                        .reward_claims_fixture
+                        .set(vec![shard.clone()])
+                        .is_ok()
+                );
+            }
+            owner.active_generation = Some(generation);
+            owner.quest_catalogue = quest_catalogue.clone();
+            owner.movement_cells = (&cells).into();
+            owner.admit_progression_session(&mut admitted).await;
+            owner.admit_quest_session(&admitted).await;
+            deps.initialize(&owner).await;
+            assert_eq!(
+                wire_use_targets(
+                    &owner,
+                    admitted,
+                    &[(1, &target), (1, &target), (2, &target)]
+                )
+                .await?,
+                [
+                    (CommandStatus::Accepted, UseDisposition::NothingToUse),
+                    (CommandStatus::DuplicateReplay, UseDisposition::NothingToUse),
+                    (CommandStatus::Accepted, UseDisposition::NothingToUse),
+                ]
+            );
+            let counts: (i64, i64) = sqlx::query_as("SELECT \
+                (SELECT count(*) FROM game_reward_claims WHERE claim_production_key=$1), \
+                (SELECT count(*) FROM game_reward_claim_mint_receipts WHERE claim_production_key=$1)")
+                .bind(claim).fetch_one(&harness.pool).await?;
+            assert_eq!(counts, (0, 0), "unbound donor UID must mint nothing");
         } else {
-            let alternate = if matches!(case, Case::Choice) {
-                target_at(33231)?
-            } else {
-                target.clone()
-            };
+            let alternate =
+                if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
+                    target_at(33231)?
+                } else {
+                    target.clone()
+                };
             let mut first_root = None;
             // One live stream starts at 1. Replay its retained result before
             // command 2 replaces the single terminal-record slot. A new owner
@@ -500,9 +781,19 @@ fn scenario(case: Case) -> TestResult {
             // without an in-memory command-result cache.
             for cold_replay in [false, true] {
                 let mut owner = deps.owner(&harness, &authority);
+                if let Some(shard) = &authored_shard {
+                    assert!(
+                        owner
+                            .states
+                            .quest_callbacks
+                            .reward_claims_fixture
+                            .set(vec![shard.clone()])
+                            .is_ok()
+                    );
+                }
                 owner.active_generation = Some(generation);
+                owner.quest_catalogue = quest_catalogue.clone();
                 owner.movement_cells = (&cells).into();
-                owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
                 owner.admit_progression_session(&mut admitted).await;
                 owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
@@ -523,7 +814,8 @@ fn scenario(case: Case) -> TestResult {
                             (CommandStatus::Accepted, UseDisposition::Committed),
                             (CommandStatus::DuplicateReplay, UseDisposition::Committed),
                             (CommandStatus::Accepted, UseDisposition::NothingToUse),
-                        ]
+                        ],
+                        "{claim} at {chest:?}"
                     );
                 }
                 let bag = harness
@@ -534,7 +826,7 @@ fn scenario(case: Case) -> TestResult {
                     .ok_or("backpack")?;
                 assert_eq!(bag.entries.len(), 1);
                 let root = &bag.entries[0].item;
-                assert_eq!(root.quantity, 1);
+                assert_eq!(root.quantity, catalogue.map_or(1, |chest| chest.quantity));
                 assert_eq!(root.definition.production_key, root_key);
                 if let Some(original) = first_root {
                     assert_eq!(root.item_instance_id, original)
@@ -559,6 +851,63 @@ fn scenario(case: Case) -> TestResult {
                     (SELECT count(DISTINCT created_xact_id::text) FROM game_item_audit_outbox WHERE item_instance_id=encode($2,'hex')::uuid OR item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($2,'hex')::uuid))")
                     .bind(claim).bind(root.item_instance_id.as_slice()).fetch_one(&harness.pool).await?;
                 assert_eq!(counts, (1, 1, 1 + expected.len() as i64, 1));
+                if let Some(chest) = catalogue {
+                    let texts: Vec<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,t.text \
+                        FROM game_item_texts t JOIN game_item_instances i USING(item_instance_id) \
+                        WHERE i.item_instance_id=encode($1,'hex')::uuid OR i.item_instance_id IN \
+                        (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) \
+                        ORDER BY i.definition_production_key,t.text")
+                        .bind(root.item_instance_id.as_slice()).fetch_all(&harness.pool).await?;
+                    let mut expected_texts = chest.texts.clone();
+                    expected_texts.sort();
+                    assert_eq!(texts, expected_texts, "complete source text plan");
+                    super::quest_catalogue_chests::assert_charges(
+                        &harness.pool,
+                        root.item_instance_id,
+                        chest,
+                    )
+                    .await?;
+                    let fluids: Vec<(String, i32)> = sqlx::query_as("SELECT i.definition_production_key,f.fluid_subtype::integer FROM game_item_fluid_states f JOIN game_item_instances i USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid OR i.item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) ORDER BY i.definition_production_key")
+                        .bind(root.item_instance_id.as_slice()).fetch_all(&harness.pool).await?;
+                    let mut expected_fluids = chest.fluids.clone();
+                    expected_fluids.sort();
+                    assert_eq!(fluids, expected_fluids, "exact source fluid state");
+                    let number: Option<i32> = sqlx::query_scalar("SELECT key_number FROM game_item_keys WHERE item_instance_id=encode($1,'hex')::uuid")
+                        .bind(root.item_instance_id.as_slice()).fetch_optional(&harness.pool).await?;
+                    assert_eq!(number, chest.key_number, "source root key number");
+                    // Exact donor defaults are independent of the generated
+                    // recipe's count: every charged leaf is one full instance.
+                    for (key, charges) in [
+                        ("oteryn:item.tibia.i3054", 200),
+                        ("oteryn:item.tibia.i3056", 200),
+                        ("oteryn:item.tibia.i3082", 50),
+                        ("oteryn:item.tibia.i3083", 150),
+                        ("oteryn:item.tibia.i3084", 250),
+                        ("oteryn:item.tibia.i3085", 200),
+                        ("oteryn:item.tibia.i3284", 1),
+                    ] {
+                        if chest.charges.iter().any(|(partial, _)| partial == key)
+                            || (root_key != key
+                                && !expected.iter().any(|(child, _, _)| *child == key))
+                        {
+                            continue;
+                        }
+                        use crate::content::ReferenceItemField::Known;
+                        let policy = native
+                            .item_policy(key, "definition-r1")
+                            .ok_or("native full-charge profile")?;
+                        assert!(matches!(&policy.record().semantics.charges,
+                            Known(value) if value.count == Known(charges)));
+                        let states: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_states t \
+                            JOIN game_item_instances i USING(item_instance_id) \
+                            WHERE i.definition_production_key=$2 AND (i.item_instance_id=encode($1,'hex')::uuid \
+                            OR i.item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries \
+                                WHERE parent_item_instance_id=encode($1,'hex')::uuid))")
+                            .bind(root.item_instance_id.as_slice()).bind(key)
+                            .fetch_one(&harness.pool).await?;
+                        assert_eq!(states, 0, "fresh {key} uses its full definition charges");
+                    }
+                }
                 if matches!(case, Case::CrystalKey) {
                     let key: (i32,bool,bool) = sqlx::query_as("SELECT k.key_number, \
                         k.minted_transaction_id=r.transaction_id,k.created_xact_id=r.created_xact_id \
@@ -653,7 +1002,13 @@ fn scenario(case: Case) -> TestResult {
             }
             let achievements:i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/annihilator'")
                 .fetch_one(&harness.pool).await?;
-            assert_eq!(achievements, i64::from(matches!(case, Case::Choice)));
+            assert_eq!(
+                achievements,
+                i64::from(
+                    matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured)
+                        || catalogue.is_some_and(|chest| chest.achievement)
+                )
+            );
             if matches!(case, Case::Text) {
                 let valid: (bool,bool,bool,bool,bool,bool) = sqlx::query_as("SELECT \
                     game_reward_claim_contents_plan_valid(contents_plan,contents_capacity), \
