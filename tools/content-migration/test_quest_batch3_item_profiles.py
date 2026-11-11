@@ -137,6 +137,17 @@ class RetainedQn3CensusTests(unittest.TestCase):
         rows = [row for row in packet['records']
                 if row['production_definition']['production_key'] == self.KEY]
         self.assertEqual(len(rows), 1)
+        before = copy.deepcopy(packet)
+        self.assertNotIn('always_on_top', rows[0]['attributes'])
+        self.assertNotIn('always_on_top_order', rows[0]['attributes'])
+        expected_house = copy.deepcopy(rows)
+        expected_house[0]['attributes'].update(always_on_top=False, always_on_top_order=0)
+        from refresh_equipment_profile_pin import registered_source_document
+        house_rows = registered_source_document(
+            profiles.ROOT, {'records': copy.deepcopy(rows)})['records']
+        self.assertIs(house_rows[0]['attributes']['always_on_top'], False)
+        self.assertIs(type(house_rows[0]['attributes']['always_on_top_order']), int)
+        self.assertEqual(house_rows, expected_house)
         for path in (
             profiles.NATIVE,
             'tools/content-schema/native-gameplay/engnpc-m05-item-profiles.json',
@@ -144,8 +155,24 @@ class RetainedQn3CensusTests(unittest.TestCase):
         ):
             with self.subTest(owner=path):
                 owner = json.loads((profiles.ROOT / path).read_bytes())
-                self.assertEqual([row for row in owner['records']
-                                  if row['production_definition']['production_key'] == self.KEY], rows)
+                owner_rows = [row for row in owner['records']
+                              if row['production_definition']['production_key'] == self.KEY]
+                self.assertEqual(len(owner_rows), 1)
+                if path == 'tools/content-schema/native-gameplay/engnpc-m05-item-profiles.json':
+                    self.assertEqual(owner_rows, rows)
+                    continue
+                attributes = owner_rows[0]['attributes']
+                present = ('always_on_top' in attributes, 'always_on_top_order' in attributes)
+                self.assertIn(present, ((False, False), (True, True)))
+                if present[0]:
+                    self.assertIs(attributes['always_on_top'], False)
+                    self.assertIs(type(attributes['always_on_top_order']), int)
+                    self.assertEqual(attributes['always_on_top_order'], 0)
+                    expected_rows = house_rows
+                else:
+                    expected_rows = rows
+                self.assertEqual(owner_rows, expected_rows)
+        self.assertEqual(packet, before)
         self.assertFalse(packet['runtime_enabled'])
 
     def test_retained_census_does_not_add_a_recipe_item_owner(self):
