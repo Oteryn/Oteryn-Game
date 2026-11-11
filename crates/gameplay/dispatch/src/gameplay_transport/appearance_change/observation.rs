@@ -37,16 +37,21 @@ pub(in crate::gameplay_transport) async fn observe_result(
     mut entities: Vec<wire::EntityRef>,
 ) -> Result<Observation, ObservationError> {
     if entities.len() > 256 {
+        operator_event("event=appearance_observation_failed class=visibility");
         return Err(ObservationError::Unavailable);
     }
     entities.sort_unstable();
     if entities.windows(2).any(|p| p[0] == p[1]) {
+        operator_event("event=appearance_observation_failed class=visibility");
         return Err(ObservationError::Unavailable);
     }
     let _foreground = admission
         .root
         .foreground_demand()
-        .map_err(|_| ObservationError::Unavailable)?;
+        .map_err(|_| {
+            operator_event("event=appearance_observation_failed class=fence");
+            ObservationError::Unavailable
+        })?;
     {
         // Monster profiles hold both guards while using the durable holder. Wait
         // for that existing owner before starting the command's one-second retry
@@ -80,14 +85,24 @@ pub(in crate::gameplay_transport) async fn observe_result(
 fn read_result<T>(
     result: Result<Option<T>, crate::durability::DurabilityError>,
     failure: &mut Option<crate::durability::DurabilityError>,
+    class: &'static str,
 ) -> Option<T> {
     match result {
-        Ok(value) => value,
+        Ok(value) => note_none(value, class),
         Err(error) => {
+            // A durable error belongs to the existing retry owner, not a logical
+            // refusal. A busy attempt must not emit diagnostics on every retry.
             *failure = Some(error);
             None
         }
     }
+}
+
+fn note_none<T>(value: Option<T>, class: &'static str) -> Option<T> {
+    if value.is_none() {
+        operator_event(&format!("event=appearance_observation_failed class={class}"));
+    }
+    value
 }
 
 async fn observe_once(
@@ -98,27 +113,33 @@ async fn observe_once(
     entities: &[wire::EntityRef],
     failure: &mut Option<crate::durability::DurabilityError>,
 ) -> Option<Observation> {
-    let (context, content) = admission.appearance_context()?;
+    let (context, content) = note_none(admission.appearance_context(), "content")?;
     let own_fence = read_result(
         super::super::character_gameplay_fence::current_once(admission, session, false).await,
         failure,
+        "fence",
     )?;
     let own = read_result(
         house::read_state(admission, own_fence, content.earned_grant_keys()).await,
         failure,
+        "state",
     )?;
-    let catalogue = super::catalogue::catalogue(
-        &content,
-        &own,
-        own_fence.expected_character_revision.get(),
-        context,
+    let catalogue = note_none(
+        super::catalogue::catalogue(
+            &content,
+            &own,
+            own_fence.expected_character_revision.get(),
+            context,
+        ),
+        "content",
     )?;
     let runtime = admission.runtime.lock().await;
     if !house::current_runtime_for_read(&runtime, observer, session, &own_fence, &content) {
-        return None;
+        return note_none(None, "fence");
     }
     let states = admission.states.spell_states.lock().await;
-    let (census, hirelings) = house::census(&runtime, observer, session)?;
+    let (census, hirelings) =
+        note_none(house::census(&runtime, observer, session), "visibility")?;
     let mut bindings = Vec::new();
     let now = admission.owner_now().get();
     for &entity in entities {
@@ -143,10 +164,13 @@ async fn observe_once(
             });
             continue;
         }
-        let (actor, target_session) = census.iter().find(|(actor, _)| {
-            actor.placement_identity() == entity.identity
-                && actor.actor_local_generation() == entity.generation
-        })?;
+        let (actor, target_session) = note_none(
+            census.iter().find(|(actor, _)| {
+                actor.placement_identity() == entity.identity
+                    && actor.actor_local_generation() == entity.generation
+            }),
+            "visibility",
+        )?;
         if states.player_hidden_from(
             &runtime,
             observer,
@@ -156,7 +180,7 @@ async fn observe_once(
             continue;
         }
         let Some(target_session) = *target_session else {
-            let creature = runtime.companion_snapshot(*actor).ok()?;
+            let creature = note_none(runtime.companion_snapshot(*actor).ok(), "visibility")?;
             let look = if let Some(look_type) = creature.state.policy.outfit_appearance() {
                 wire::Look::Outfit {
                     look_type,
@@ -164,16 +188,29 @@ async fn observe_once(
                     addons: 0,
                 }
             } else {
-                let native = admission.active_generation?.native_gameplay()?;
-                let item = &native
-                    .item_policy_for_source_id(creature.state.object_look_type?)?
-                    .record()
-                    .production_definition;
+                let native = note_none(
+                    note_none(admission.active_generation, "content")?.native_gameplay(),
+                    "content",
+                )?;
+                let item = &note_none(
+                    native.item_policy_for_source_id(note_none(
+                        creature.state.object_look_type,
+                        "content",
+                    )?),
+                    "content",
+                )?
+                .record()
+                .production_definition;
                 wire::Look::Item {
-                    definition_ref: native
-                        .item_index()?
-                        .definition_ref("Item", &item.production_key, &item.revision_ref)?
-                        .get(),
+                    definition_ref: note_none(
+                        note_none(native.item_index(), "content")?.definition_ref(
+                            "Item",
+                            &item.production_key,
+                            &item.revision_ref,
+                        ),
+                        "content",
+                    )?
+                    .get(),
                 }
             };
             bindings.push(wire::Binding {
@@ -193,47 +230,60 @@ async fn observe_once(
             super::super::character_gameplay_fence::current_once(admission, target_session, true)
                 .await,
             failure,
+            "fence",
         )?;
         if target_session == session && fence != own_fence {
-            return None;
+            return note_none(None, "revision");
         }
         if fence.runtime_scope != own_fence.runtime_scope
             || fence.scope_ownership_generation != own_fence.scope_ownership_generation
         {
-            return None;
+            return note_none(None, "fence");
         }
         let current = read_result(
             house::read_state(admission, fence, content.earned_grant_keys()).await,
             failure,
+            "state",
         )?;
         let in_house = runtime.house_actor_state(*actor, target_session).is_ok();
         let player = if in_house {
-            states
-                .actors
-                .iter()
-                .find(|(held, held_session, _)| *held == *actor && *held_session == target_session)
-                .map(|(_, _, state)| state)?
+            note_none(
+                states
+                    .actors
+                    .iter()
+                    .find(|(held, held_session, _)| {
+                        *held == *actor && *held_session == target_session
+                    })
+                    .map(|(_, _, state)| state),
+                "visibility",
+            )?
         } else {
-            states.get(&runtime, *actor, target_session)?
+            note_none(states.get(&runtime, *actor, target_session), "visibility")?
         };
         let (base, selection_revision) = super::catalogue::base(&content, &current);
         let mut look = wire::Look::Outfit {
-            look_type: content.look_type(&base.outfit_key, current.sex)?,
+            look_type: note_none(content.look_type(&base.outfit_key, current.sex), "content")?,
             colours: base.colours,
             addons: base.addons,
         };
         let owned = if in_house {
-            runtime
-                .house_actor_conditions_at(*actor, target_session, now)
-                .ok()?
+            note_none(
+                runtime
+                    .house_actor_conditions_at(*actor, target_session, now)
+                    .ok(),
+                "conditions",
+            )?
         } else {
-            runtime
-                .actor_conditions_at(*actor, Some(target_session), now)
-                .ok()?
+            note_none(
+                runtime
+                    .actor_conditions_at(*actor, Some(target_session), now)
+                    .ok(),
+                "conditions",
+            )?
         };
         let spell = player.owned_conditions();
         if !spell.accepts_time(now) || !owned.accepts_time(now) {
-            return None;
+            return note_none(None, "conditions");
         }
         let spell_value = spell.displayed_temporary_appearance_at(now);
         let owned_value = owned.displayed_temporary_appearance_at(now);
@@ -246,24 +296,30 @@ async fn observe_once(
                 .is_some()
                 && owned_value.is_none())
         {
-            return None;
+            return note_none(None, "conditions");
         }
-        let spell_look = temporary(
-            spell_value,
-            spell.outfit_at(now),
-            &content,
-            admission.active_generation?,
+        let spell_look = note_none(
+            temporary(
+                spell_value,
+                spell.outfit_at(now),
+                &content,
+                note_none(admission.active_generation, "content")?,
+            ),
+            "conditions",
         )?;
-        let owned_look = temporary(
-            owned_value,
-            owned.outfit_at(now),
-            &content,
-            admission.active_generation?,
+        let owned_look = note_none(
+            temporary(
+                owned_value,
+                owned.outfit_at(now),
+                &content,
+                note_none(admission.active_generation, "content")?,
+            ),
+            "conditions",
         )?;
         if let (Some(a), Some(b)) = (&spell_look, &owned_look)
             && a != b
         {
-            return None;
+            return note_none(None, "conditions");
         }
         // Crystal 201189f8 protocolgame.cpp:9233 and player.cpp:1383-1396: an
         // invisible player remains observable, but other players receive no outfit.
@@ -284,18 +340,22 @@ async fn observe_once(
         if read_result(
             house::read_state(admission, fence, content.earned_grant_keys()).await,
             failure,
+            "state",
         )? != current
         {
-            return None;
+            return note_none(None, "revision");
         }
         bindings.push(wire::Binding {
             context,
             appearance_ref: 1,
             entity,
             root_revision: fence.expected_character_revision.get(),
-            condition_revision: player
-                .revision()
-                .checked_add(runtime.actor_staff_visibility(*actor).ok()?.2)?,
+            condition_revision: note_none(
+                player.revision().checked_add(
+                    note_none(runtime.actor_staff_visibility(*actor).ok(), "visibility")?.2,
+                ),
+                "revision",
+            )?,
             owner_time_us: now,
             look,
             selection_revision,

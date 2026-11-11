@@ -21,6 +21,28 @@ pub(super) enum Next {
     Npc,
 }
 
+impl Next {
+    /// A closed diagnostic label, independent of client frames and database errors.
+    pub(super) const fn phase(&self) -> &'static str {
+        match self {
+            Self::Frame(Ok(_)) => "frame",
+            Self::Frame(Err(_)) => "frame_error",
+            Self::Held(..) => "held",
+            Self::StepDue => "step_due",
+            Self::Probe => "probe",
+            Self::ServerMessage => "server_message",
+            Self::Serene => "serene",
+            Self::QuestLog => "quest_log",
+            Self::Chat => "chat",
+            Self::Visibility => "visibility",
+            Self::Combat => "combat",
+            Self::Chase => "chase",
+            Self::TargetMove => "target_move",
+            Self::Npc => "npc",
+        }
+    }
+}
+
 pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     stream: &mut S,
     authority: &A,

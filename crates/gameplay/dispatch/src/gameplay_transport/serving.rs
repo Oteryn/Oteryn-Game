@@ -66,6 +66,8 @@ pub async fn serve_gameplay(
         imported_charms: owners.imported_charms,
         proficiency_catalogue: weapon_proficiency::ProductionProficiencyCatalogue::embedded(),
         clock_origin: std::time::Instant::now(),
+        #[cfg(test)]
+        test_step_wait_receipts: None,
         activity_runtimes: Default::default(),
         states: std::sync::Arc::new(channel_states::ChannelSessionStates {
             casts,

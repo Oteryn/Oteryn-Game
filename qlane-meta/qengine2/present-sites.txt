@@ -1,2 +1,0 @@
-crates/gameplay/quests/src/quest/reward_callbacks.rs:37:pub struct RewardCallback {
-crates/gameplay/quests/src/quest/reward_callbacks.rs:45:    pub take: Vec<ItemAmount>,

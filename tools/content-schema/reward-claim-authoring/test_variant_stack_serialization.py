@@ -38,17 +38,24 @@ class VariantStackSerializationTests(unittest.TestCase):
         # W15b's 67 recipes include these stack normalizations (PR2770 Q4/A).
         # ITEMHOLD-Q qualifies two more without changing their raw source witnesses.
         errors = variants.native_lowering_errors(self.records)
-        self.assertEqual(len(errors), 35)
+        self.assertEqual(len(errors), 27)
         qualified = {'oteryn:reward-claim.kv.ornamentedshield',
-                     'oteryn:reward-claim.kv.triangletower'}
+                     'oteryn:reward-claim.kv.triangletower',
+                     'oteryn:reward-claim.kv.draconia1'}
         self.assertTrue(qualified.isdisjoint(error['claim'] for error in errors))
+        draconia = next(r['definition'] for r in self.records
+                        if r['definition']['identity']['key'].endswith('.draconia1'))
+        self.assertEqual(draconia['native_contents']['placements'][0]['unique_id'], 6023)
+        self.assertEqual([(q['item']['key'], q['count'])
+                          for q in draconia['native_contents']['placements'][0]['contents']],
+                         [('oteryn:item.tibia.i3284', 1), ('oteryn:item.tibia.i3297', 1)])
         without_itemhold = copy.deepcopy(self.records)
         for row in without_itemhold:
             if row['definition']['identity']['key'] in qualified:
                 self.assertIn('native_contents', row['definition'])
                 del row['definition']['native_contents']
         previous_errors = variants.native_lowering_errors(without_itemhold)
-        self.assertEqual(len(previous_errors), 37)
+        self.assertEqual(len(previous_errors), 30)  # All three qualified ITEMHOLD claims were removed.
         self.assertEqual({error['claim'] for error in previous_errors}
                          - {error['claim'] for error in errors}, qualified)
 

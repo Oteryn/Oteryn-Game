@@ -98,6 +98,95 @@ class RuntimeEvidenceTests(unittest.TestCase):
             self.assertIn(f'event={event} failure_stage={stage}', result.stdout)
         self.assertNotIn('secret', result.stdout)
 
+    def test_loss_publication_and_grace_keep_only_fixed_results_and_stages(self):
+        monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
+        prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
+        expected = [f'event=control_loss_result kind={kind}' for kind in (
+            'recorded', 'resumed_history', 'terminal', 'unknown', 'not_applicable', 'refused',
+        )]
+        expected.extend([
+            'event=control_loss_publication stage=entry',
+            'event=control_loss_publication kind=pending stage=loss_readback',
+            'event=control_loss_publication kind=pending stage=native_publication',
+            'event=control_loss_grace stage=entry',
+        ])
+        expected.extend(f'event=control_loss_grace kind=pending stage={stage}' for stage in (
+            'activity_successor', 'staff_release', 'terminal_session', 'combat_hold',
+            'foreground_demand', 'death_save', 'activity_return', 'activity_publish',
+            'item_effects', 'release_fence', 'familiar_save', 'training_save', 'wheel_gift',
+            'monk_save', 'gourmet_checkpoint', 'condition_save', 'kill_rewards',
+            'release_not_applicable', 'release_not_expired', 'release_settle',
+            'release_commit', 'retire',
+        ))
+        # Separate schema coverage from the per-event cap exercised below.
+        for offset in range(0, len(expected), 8):
+            batch = expected[offset:offset + 8]
+            lines = [f'oteryn-game-server {fields} account=secret character=secret '
+                     'transport=secret receipt=secret connection_generation=secret '
+                     'lease_generation=secret state=secret database_url=secret payload=secret'
+                     for fields in batch]
+            lines.append('oteryn-game-server event=control_loss_grace stage=secret kind=secret')
+            script = prefix + '\n' + '\n'.join(f'report({line!r})' for line in lines)
+            result = subprocess.run([sys.executable, '-c', script, 'unused', 'test', '1', '0'],
+                                    capture_output=True, text=True, check=True)
+            for fields in batch:
+                self.assertIn(fields.replace('stage=', 'failure_stage='), result.stdout)
+            self.assertNotIn('secret', result.stdout)
+
+    def test_grace_deduplicates_before_numbers_and_keeps_event_and_total_caps(self):
+        monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
+        prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
+        lines = [f'oteryn-game-server event=control_loss_grace stage=combat_hold kind=pending '
+                 f'ts={index} ms={index} server_sequence={index}' for index in range(200)]
+        lines.extend(f'oteryn-game-server event=control_loss_grace stage={stage} kind=pending'
+                     for stage in (
+                         'foreground_demand', 'death_save', 'activity_return', 'activity_publish',
+                         'item_effects', 'release_fence', 'familiar_save', 'training_save',
+                         'wheel_gift', 'monk_save', 'gourmet_checkpoint', 'condition_save',
+                         'kill_rewards', 'release_commit', 'retire',
+                     ))
+        # Exhausting grace's own budget leaves space for the lifecycle result.
+        lines.append('oteryn-game-server event=control_loss_result kind=recorded')
+        for event in (
+            'serve_end', 'serve_command_end', 'command_guard_failed', 'join_prepare_failed',
+            'listener_poll_slow', 'listener_connection_poll_slow', 'pass_dropped',
+            'step_rejected_dawnport', 'step_rejected_source_map', 'step_rejected_dead',
+            'step_rejected_lane', 'step_rejected_pvp_locks', 'step_rejected_stale_position',
+            'step_rejected_pending_spell', 'step_rejected_drome', 'step_rejected_movement',
+        ):
+            lines.extend(f'oteryn-game-server event={event} '
+                         f'source=crates/gameplay/example_{index}.rs:1:1' for index in range(32))
+        script = prefix + '\n' + '\n'.join(f'report({line!r})' for line in lines)
+        result = subprocess.run([sys.executable, '-c', script, 'unused', 'test', '1', '0'],
+                                capture_output=True, text=True, check=True)
+        records = [line for line in result.stdout.splitlines()
+                   if line.startswith('NODE_BOOT_RUNTIME ')]
+        grace = [line for line in records if 'event=control_loss_grace ' in line]
+        self.assertEqual(len(records), 128)
+        self.assertEqual(len(grace), 16)
+        self.assertEqual(sum('failure_stage=combat_hold ' in line for line in grace), 2)
+        self.assertIn('event=control_loss_grace records=16', result.stdout)
+        self.assertIn('event=control_loss_result kind=recorded', result.stdout)
+
+    def test_appearance_failures_keep_only_closed_classes(self):
+        monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
+        prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
+        for event, classes in (
+            ('appearance_initial_failed', ('observation', 'mappings', 'attach', 'encode')),
+            ('appearance_observation_failed',
+             ('content', 'fence', 'revision', 'state', 'visibility', 'conditions')),
+        ):
+            lines = [f'oteryn-game-server event={event} class={kind} '
+                     'account=secret character=secret session=secret role=secret '
+                     'error=secret payload=secret' for kind in classes]
+            lines.append(f'oteryn-game-server event={event} class=secret')
+            script = prefix + '\n' + '\n'.join(f'report({line!r})' for line in lines)
+            result = subprocess.run([sys.executable, '-c', script, 'unused', 'test', '1', '0'],
+                                    capture_output=True, text=True, check=True)
+            for kind in classes:
+                self.assertIn(f'event={event} class={kind}', result.stdout)
+            self.assertNotIn('secret', result.stdout)
+
     def test_startup_integrity_failure_reports_only_closed_check_once(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -148,6 +237,20 @@ class RuntimeEvidenceTests(unittest.TestCase):
         self.assertNotIn('secret', result.stdout)
 
     def exercise(self, signum):
+        inbound_phases = (
+            'frame', 'frame_error', 'held', 'step_due', 'probe', 'server_message',
+            'serene', 'quest_log', 'chat', 'visibility', 'combat', 'chase',
+            'target_move', 'npc',
+        )
+        authority_stages = (
+            'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
+            'bazaar', 'revision_chain', 'appearance', 'build_chain',
+            'proficiency_history', 'familiar_chain', 'spell_familiar_group',
+            'spell_item_chain', 'audit_payload',
+        )
+        # Cover every label across both signal fixtures without exceeding the
+        # monitor's limit of sixteen records for this event.
+        authority_stages = authority_stages[::2] if signum == signal.SIGTERM else authority_stages[1::2]
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             work = root / 'work'
@@ -222,6 +325,17 @@ stage seam_stages -- blocked
                     log.write('oteryn-game-server event=serve_end reason=control_lost path=liveness_missed '
                               'source=crates/gameplay/serve.rs:8:3 next_command_id=17 server_sequence=23 '
                               'password=do-not-print-this-secret\n')
+                    for phase in inbound_phases:
+                        log.write(f'oteryn-game-server event=serve_end reason=disconnected phase={phase} '
+                                  'source=crates/gameplay/serve.rs:9:3 next_command_id=18 server_sequence=24\n')
+                    log.write('oteryn-game-server event=serve_end reason=disconnected '
+                              'phase=unapproved-phase-secret '
+                              'source=crates/gameplay/serve.rs:10:3 next_command_id=19 server_sequence=25\n')
+                    for stage in authority_stages:
+                        log.write('oteryn-game-server ts=2 level=warn module=durability '
+                                  f'event=character_authority_check_failed stage={stage}\n')
+                    log.write('oteryn-game-server ts=3 level=warn module=durability '
+                              'event=character_authority_check_failed stage=unapproved-stage-secret\n')
                     log.write('oteryn-game-server ts=1 level=error module=test event=admission_refused '
                               'error="permission denied for table secret-table" '
                               'database_url=postgres://fixture:do-not-print-this-secret@db/fixture\n')
@@ -240,6 +354,15 @@ stage seam_stages -- blocked
             self.assertEqual(process.returncode, 128 + signum, text)
             self.assertEqual(text.count('cleanup=complete'), 1, text)
             self.assertIn('event=serve_end reason=control_lost path=liveness_missed', text)
+            for phase in inbound_phases:
+                self.assertIn(f'event=serve_end reason=disconnected phase={phase} ', text)
+            self.assertIn('event=serve_end reason=disconnected source=crates/gameplay/serve.rs:10:3 ', text)
+            self.assertNotIn('unapproved-phase-secret', text)
+            for stage in authority_stages:
+                self.assertIn('event=character_authority_check_failed '
+                              f'failure_stage={stage} check_stage={stage} ', text)
+            self.assertIn('event=character_authority_check_failed ts=3 ', text)
+            self.assertNotIn('unapproved-stage-secret', text)
             self.assertIn('event=durability_pass_retired', text)
             self.assertIn('event=listener_connection_poll_slow ready=false ms=5650', text)
             self.assertIn('signature=permission_denied', text)

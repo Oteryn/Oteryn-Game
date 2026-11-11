@@ -43,6 +43,7 @@ import sys
 from pathlib import Path
 
 import container_native
+import charge_native
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -356,6 +357,9 @@ def build_records(claims: list, manifest: dict, items: dict,
         }
         if claim.get("quest"):
             record["quest"] = claim["quest"]
+        native = charge_native.derive(record, items, stack_problem)
+        if native is not None:
+            record["native_contents"] = native
         records.append({"definition": record})
     source_checks.extend(legacy_uid_checks(records))
     return records, source_checks

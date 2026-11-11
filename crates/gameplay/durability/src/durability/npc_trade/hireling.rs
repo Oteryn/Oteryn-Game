@@ -64,10 +64,7 @@ impl Extra {
                 if source.item_id == 23721 && request.cause.side == NpcTradeSide::Sell {
                     return Err(NpcTradeError::RequirementNotMet);
                 }
-                let price = match request.cause.side {
-                    NpcTradeSide::Buy => source.buy,
-                    NpcTradeSide::Sell => source.sell,
-                };
+                let price=match request.cause.side {NpcTradeSide::Buy=>source.buy,NpcTradeSide::Sell=>source.sell,NpcTradeSide::Exchange=>return Err(NpcTradeError::InvalidInput)};
                 let wrapped = request.cause.side == NpcTradeSide::Buy
                     && crate::domain::hireling::catalogue::wrapped_buy(selection.source_row)
                         .is_some();

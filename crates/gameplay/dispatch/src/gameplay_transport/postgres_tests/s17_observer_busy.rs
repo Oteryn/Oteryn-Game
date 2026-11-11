@@ -37,6 +37,12 @@ fn s17c_observer_postgres_busy_join_renew_and_ban_wait_without_retrying_storage(
                 let state = owner.start(facts, Settings::default(), 0)?;
                 owner.persist_audit(&h.root, &h.node).await?;
                 let accounts = HashMap::from([(facts.authority.current_game_session_id(), [1; 16])]);
+                let clock = std::time::Instant::now();
+                let now = || -> TestResult<u64> {
+                    25_000_u64
+                        .checked_add(u64::try_from(clock.elapsed().as_millis())?)
+                        .ok_or_else(|| "observer clock overflow".into())
+                };
                 let mut observer = None;
                 for step in 0..3 {
                     let op = match observer {
@@ -46,7 +52,7 @@ fn s17c_observer_postgres_busy_join_renew_and_ban_wait_without_retrying_storage(
                     };
                     let held = h.root.try_issue_semantic_pass()?;
                     let mut exchange = std::pin::pin!(apply_durable(
-                        &mut owner, &h.root, &h.node, &Access, &accounts, op, 25_000, 0,
+                        &mut owner, &h.root, &h.node, &Access, &accounts, op, now()?, 0,
                     ));
                     let first = std::future::poll_fn(|cx| Poll::Ready(exchange.as_mut().poll(cx))).await;
                     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
@@ -65,17 +71,17 @@ fn s17c_observer_postgres_busy_join_renew_and_ban_wait_without_retrying_storage(
                 assert_eq!(events.iter().filter(|event| event.kind == 12).count(), 1, "busy retries cannot duplicate the ban audit");
 
                 let Reply::Observer(id) = apply_durable(&mut owner, &h.root, &h.node, &Access, &accounts,
-                    Operation::Join(admission(state, [4; 16], [5; 16], 1)), 25_000, 0).await? else {
+                    Operation::Join(admission(state, [4; 16], [5; 16], 1)), now()?, 0).await? else {
                     return Err("join reply".into());
                 };
                 sqlx::query("ALTER TABLE game_cast_audit_outbox ADD CONSTRAINT s17c_reject CHECK (ordinal < 0) NOT VALID").execute(&h.pool).await?;
                 assert!(apply_durable(&mut owner, &h.root, &h.node, &Access, &accounts,
-                    Operation::Ban(facts, state.revision, id), 25_000, 0).await.is_err());
+                    Operation::Ban(facts, state.revision, id), now()?, 0).await.is_err());
                 assert!(!h.root.cast_account_banned(&h.node, [1; 16], [4; 16]).await?, "storage failure rolls back the ban");
                 owner.leave(id)?;
                 sqlx::query("DROP TABLE game_cast_account_bans").execute(&h.pool).await?;
                 assert!(apply_durable(&mut owner, &h.root, &h.node, &Access, &accounts,
-                    Operation::Join(admission(state, [6; 16], [7; 16], 1)), 25_000, 0).await.is_err(), "ban read storage errors remain fatal");
+                    Operation::Join(admission(state, [6; 16], [7; 16], 1)), now()?, 0).await.is_err(), "ban read storage errors remain fatal");
                 Ok::<(), Box<dyn std::error::Error>>(())
             }.await;
             h.cleanup().await?;

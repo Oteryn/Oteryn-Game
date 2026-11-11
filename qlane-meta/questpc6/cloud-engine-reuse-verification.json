@@ -1,0 +1,251 @@
+{
+  "scope": "Reusable qengine2 feature integration; no newly qualified foreign quests.",
+  "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+  "source_feature_base": "dc1cd724b",
+  "integration": "Bounded feature reuse; unrelated upstream workflow changes and binary map outputs excluded.",
+  "postgres_version": "18.6",
+  "pg": {
+    "red": {
+      "passed": 0,
+      "failed": 6,
+      "execution_seconds": 189.63,
+      "markers": [
+        {
+          "case": "qengine-rewards-knight",
+          "seconds": 89.747078448
+        },
+        {
+          "case": "qengine-rewards-backpack",
+          "seconds": 90.141984533
+        },
+        {
+          "case": "qengine-rewards-hallowed",
+          "seconds": 90.848547503
+        },
+        {
+          "case": "qengine-rewards-deepling",
+          "seconds": 102.291458346
+        },
+        {
+          "case": "qengine-rewards-outfox",
+          "seconds": 90.037705366
+        },
+        {
+          "case": "qengine-rewards-pirate",
+          "seconds": 99.491182601
+        }
+      ],
+      "log": "/tmp/questpc6-reuse-pg-red2.log",
+      "baseline": "Restored the pre-integration NPC dispatch boundary without reward_callbacks::prepare; tests unchanged between RED and GREEN."
+    },
+    "green": {
+      "passed": 6,
+      "failed": 0,
+      "execution_seconds": 203.22,
+      "markers": [
+        {
+          "case": "qengine-rewards-hallowed",
+          "seconds": 90.248577503
+        },
+        {
+          "case": "qengine-rewards-backpack",
+          "seconds": 91.290553605
+        },
+        {
+          "case": "qengine-rewards-knight",
+          "seconds": 93.734747637
+        },
+        {
+          "case": "qengine-rewards-deepling",
+          "seconds": 94.613906772
+        },
+        {
+          "case": "qengine-rewards-pirate",
+          "seconds": 109.868745548
+        },
+        {
+          "case": "qengine-rewards-outfox",
+          "seconds": 112.966096082
+        }
+      ],
+      "log": "/tmp/questpc6-reuse-pg-green.log"
+    },
+    "regressions": {
+      "passed": 15,
+      "failed": 0,
+      "execution_seconds": 235.95,
+      "markers": [
+        {
+          "case": "conditional-failure-blocked",
+          "seconds": 68.658350414
+        },
+        {
+          "case": "draconia-escape-later",
+          "seconds": 73.358233874
+        },
+        {
+          "case": "conditional-failure-landing",
+          "seconds": 74.636248997
+        },
+        {
+          "case": "draconia-escape-exact",
+          "seconds": 79.02666444
+        },
+        {
+          "case": "draconia-escape-absent",
+          "seconds": 57.960233878
+        },
+        {
+          "case": "draconia-escape-missing",
+          "seconds": 57.511775208
+        },
+        {
+          "case": "devil-helmet-sewer-use",
+          "seconds": 61.92578515
+        },
+        {
+          "case": "devil-helmet-sewer",
+          "seconds": 63.439219149
+        },
+        {
+          "case": "devil-helmet-sewer-use-existing",
+          "seconds": 78.27523519
+        },
+        {
+          "case": "devil-helmet-sewer-unrelated",
+          "seconds": 74.384044462
+        },
+        {
+          "case": "conditional-reset-absent",
+          "seconds": 10.103781196
+        },
+        {
+          "case": "conditional-reset-match",
+          "seconds": 10.511269535
+        },
+        {
+          "case": "conditional-reset-later",
+          "seconds": 5.283074189
+        },
+        {
+          "case": "devil-helmet-sewer-existing",
+          "seconds": 96.523643429
+        },
+        {
+          "case": "devil-helmet-sewer-use-blocked",
+          "seconds": 93.479233683
+        }
+      ],
+      "log": "/tmp/questpc6-reuse-regressions.log"
+    },
+    "world_and_atomic": {
+      "passed": 6,
+      "failed": 0,
+      "execution_seconds": 125.3,
+      "markers": [
+        {
+          "case": "thais-lighthouse-portals-expiry",
+          "seconds": 59.468390676
+        },
+        {
+          "case": "annihilator-entry",
+          "seconds": 59.512868455
+        },
+        {
+          "case": "thais-lighthouse-plate",
+          "seconds": 59.530893247
+        },
+        {
+          "case": "catalogue-npc-father",
+          "seconds": 107.949560959
+        },
+        {
+          "case": "triangle-tower-lever",
+          "seconds": 64.195403679
+        },
+        {
+          "case": "thais-lighthouse-portals",
+          "seconds": 65.830716152
+        }
+      ],
+      "log": "/tmp/questpc6-reuse-world-pg.log"
+    },
+    "final_tree": {
+      "passed": 6,
+      "failed": 0,
+      "execution_seconds": 107.1,
+      "markers": [
+        {
+          "case": "draconia-escape-exact",
+          "seconds": 53.326687804
+        },
+        {
+          "case": "thais-lighthouse-plate",
+          "seconds": 53.353555374
+        },
+        {
+          "case": "conditional-failure-landing",
+          "seconds": 53.371332993
+        },
+        {
+          "case": "catalogue-npc-father",
+          "seconds": 93.051197248
+        },
+        {
+          "case": "thais-lighthouse-portals-expiry",
+          "seconds": 52.142825699
+        },
+        {
+          "case": "thais-lighthouse-portals",
+          "seconds": 53.729843145
+        }
+      ],
+      "log": "/tmp/questpc6-reuse-final-pg.log",
+      "binding_proof": "Thais plate fixture deliberately omits UID25010; production startup projection must bind the exact source cell/item before framed STEP/StepOut effects can execute."
+    }
+  },
+  "native_profiles": {
+    "added": [
+      "oteryn:item.tibia.i10198",
+      "oteryn:item.tibia.i10199",
+      "oteryn:item.tibia.i11700",
+      "oteryn:item.tibia.i11701",
+      "oteryn:item.tibia.i133",
+      "oteryn:item.tibia.i3244",
+      "oteryn:item.tibia.i875",
+      "oteryn:item.tibia.i9041"
+    ],
+    "removed": [],
+    "changed_existing": [],
+    "draconia_3206_preserved": true
+  },
+  "checks": {
+    "all_seven_crates_all_targets_check": "PASS,177s",
+    "final_world_all_targets_check": "PASS,77s",
+    "all_seven_crates_all_targets_all_features_clippy_Dwarnings": "PASS,132s; initial ENOSPC corrected by deleting rebuildable incremental caches",
+    "binding_units": "PASS,2",
+    "quest_callback_units": "PASS,18,3.56s",
+    "reward_effect_authoring": "PASS,15",
+    "native_provider_compatibility": "PASS,2",
+    "source_binding_authoring": "PASS,4",
+    "npc_placement_authoring": "PASS,10",
+    "native_provider_reproduction": "PASS,41 files",
+    "content_integration": "PASS,123,2.48s",
+    "cargo_fmt_all_check": "PASS",
+    "pin_refresh_and_check": "PASS",
+    "world_repository": "PASS,5,53.50s; cargo test -p oteryn-game-server --test content_world_project_repository"
+  },
+  "pins": {
+    "inputs_digest": "eff7dcb5d213b754b27ca0f46fdc6b55f6da24706865ff53a55a3dbc9ac722d8",
+    "world": "72e9937a95e4cba5ab13fdec72405c79fa8f974814db46b60e16d5901e2af884",
+    "bytes": 31101922
+  },
+  "remaining_owned_entries": 0,
+  "new_whole_quests_qualified": 0,
+  "publication": {
+    "green_code_commit": "2123b7871",
+    "branch": "claude/happy-davinci-ijz3wy-questpc6",
+    "pushed": true,
+    "final_repository_verification_date": "2026-11-07"
+  }
+}

@@ -4,6 +4,7 @@ import hashlib
 import json
 import unittest
 
+import charge_native
 import container_native
 import reward_claim_authoring as plain
 
@@ -16,6 +17,17 @@ class ContainerNativeTests(unittest.TestCase):
                     for r in json.loads(p.read_text())['records']]
         cls.bear = next(d for d in cls.rows if d['identity']['key'] == 'oteryn:reward-claim.kv.bear_chest1')
 
+    def test_poison_daggers_target_has_two_distinct_nonstackable_children(self):
+        definition = next(d for d in self.rows
+                          if d['identity']['key'] == 'oteryn:reward-claim.kv.poisondaggers')
+        recipe = container_native.derive(definition, self.items, plain.stack_problem)
+        self.assertIsNotNone(recipe)
+        self.assertEqual([(q['item']['key'], q['count'])
+                          for q in recipe['placements'][0]['contents']],
+                         [('oteryn:item.tibia.i3448', 30),
+                          ('oteryn:item.tibia.i3299', 1),
+                          ('oteryn:item.tibia.i3299', 1)])
+
     def test_bear_room_bag_keeps_both_rewards_and_source_storage(self):
         recipe = container_native.derive(self.bear, self.items, plain.stack_problem)
         self.assertEqual(recipe['revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
@@ -26,6 +38,98 @@ class ContainerNativeTests(unittest.TestCase):
         self.assertEqual([(q['item']['key'], q['count']) for q in placement['contents']],
                          [('oteryn:item.tibia.i3447', 12), ('oteryn:item.tibia.i3031', 40)])
         self.assertEqual(placement['completion'], {'kind': 'quest_kv', 'key': 'bearChest1'})
+
+    def fluid_items(self):
+        # Copy only the vessels changed by negative cases; positive admission
+        # must use the actual generated Item facts.
+        items = self.items.copy()
+        for number in (2874, 2881, 2882):
+            key = f'oteryn:item.tibia.i{number}'
+            items[key] = copy.deepcopy(items[key])
+        return items
+
+    def test_wiki_milk_wine_and_present_donor_fills_preserve_source(self):
+        cases = (
+            ('kv.goblintemple2', 'WIKI_MILK_OVERRIDES_DONOR_WATER', [6119], [(2874, 9)]),
+            ('quest.u7_9.dreamers_challenge.chests_wine',
+             'WIKI_WINE_OVERRIDES_DONOR_WATER', [6197, 6198, 6199, 6200], [(2874, 2)]),
+            ('kv.present_box', 'CRYSTAL_PRESENT_WATER_SUBTYPES', [6113], [(2882, 1), (2881, 1)]),
+        )
+        for suffix, choice, uids, fills in cases:
+            definition = next(d for d in self.rows if d['identity']['key'].endswith(suffix))
+            before = copy.deepcopy(definition)
+            with self.subTest(claim=suffix):
+                native = container_native.derive(definition, self.fluid_items(), plain.stack_problem)
+                self.assertIsNotNone(native)
+                self.assertEqual(native['source_difference'], choice)
+                self.assertEqual([p['unique_id'] for p in native['placements']], uids)
+                for source, placement in zip(definition['placements'], native['placements']):
+                    self.assertEqual([{k: v for k, v in child.items() if k != 'fluid_subtype'}
+                                      for child in placement['contents']], source['reward']['items'])
+                    self.assertEqual([(container_native.item_id(child['item']), child['fluid_subtype'])
+                                      for child in placement['contents'] if 'fluid_subtype' in child], fills)
+                self.assertEqual(definition, before, 'historical SOURCE tuples and holds stay intact')
+                if 'chests_wine' in suffix:
+                    self.assertTrue(all(p['completion'] == {
+                        'kind': 'storage', 'key': 'Storage.Quest.U7_9.DreamersChallenge.ChestsWine'}
+                        for p in native['placements']))
+
+    def test_fluid_choice_never_clears_sibling_holds_or_unproven_item_facts(self):
+        definition = next(d for d in self.rows if d['identity']['key'].endswith('kv.goblintemple2'))
+        for mutation in ('hold', 'source', 'quantity', 'position', 'uid', 'identity', 'fluid', 'charges', 'unadmitted'):
+            changed = copy.deepcopy(definition)
+            items = self.fluid_items()
+            if mutation == 'hold':
+                changed['data_holds'].append({'category': 'source', 'code': 'UNRESOLVED'})
+            elif mutation == 'source':
+                changed['source_variant']['source_data']['status'] = 'WAITING_SOURCE'
+            elif mutation == 'quantity':
+                changed['placements'][0]['reward']['items'][2]['count'] = 9
+            elif mutation == 'position':
+                changed['placements'][0]['source_binding']['project_position']['x'] += 1
+            elif mutation == 'uid':
+                changed['placements'][0]['source_binding']['legacy_unique_ids'][1]['unique_id'] = 6118
+            elif mutation == 'identity':
+                changed['identity']['key'] = 'oteryn:reward-claim.kv.invented'
+            elif mutation == 'fluid':
+                items['oteryn:item.tibia.i2874']['semantics']['fluid'] = {'state': 'UNKNOWN'}
+            elif mutation == 'charges':
+                items['oteryn:item.tibia.i2874']['semantics']['charges'] = {
+                    'state': 'KNOWN', 'value': {'count': {'state': 'KNOWN', 'value': 9}}}
+            else:
+                items['oteryn:item.tibia.i2874']['materializable'] = False
+            with self.subTest(mutation=mutation):
+                self.assertIsNone(container_native.derive(changed, items, plain.stack_problem))
+
+    def test_medusa_uses_complete_crystal_reward_without_canary_fox_text(self):
+        definition = next(d for d in self.rows
+                          if d['identity']['key'].endswith('quest.u7_3.the_medusa_quest'))
+        before = copy.deepcopy(definition)
+        native = container_native.derive(definition, self.items, plain.stack_problem)
+        self.assertIsNotNone(native)
+        self.assertEqual(native['source_difference'], 'CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT')
+        placement = native['placements'][0]
+        self.assertEqual(placement['unique_id'], 6183)
+        self.assertEqual(placement['root']['key'], 'oteryn:item.tibia.i2853')
+        self.assertEqual([(child['item']['key'], child['count']) for child in placement['contents']],
+                         [(f'oteryn:item.tibia.i{i}', 1) for i in (3436, 3567, 3324)])
+        self.assertNotIn('root_text', placement)
+        self.assertTrue(all('text' not in child for child in placement['contents']))
+        self.assertEqual(definition, before, 'the original Canary SOURCE hold stays intact')
+
+    def test_medusa_reconciliation_cannot_clear_a_sibling_hold_or_invent_a_carrier(self):
+        definition = next(d for d in self.rows
+                          if d['identity']['key'].endswith('quest.u7_3.the_medusa_quest'))
+        for mutation in ('hold', 'carrier', 'quantity'):
+            changed = copy.deepcopy(definition)
+            if mutation == 'hold':
+                changed['data_holds'].append({'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING'})
+            elif mutation == 'carrier':
+                changed['placements'][0]['reward']['written_text']['item'] = self.items[
+                    'oteryn:item.tibia.i3436']['identity']
+            else:
+                changed['placements'][0]['reward']['items'][0]['count'] = 2
+            self.assertIsNone(container_native.derive(changed, self.items, plain.stack_problem), mutation)
 
     def test_no_recipe_for_unsourced_quantity_position_uid_or_container(self):
         for mutation in ('quantity', 'position', 'unique', 'root'):
@@ -99,9 +203,17 @@ class ContainerNativeTests(unittest.TestCase):
             row = recipe['placements'][0]
             self.assertLessEqual(len(row['contents']), min(row['capacity'], 20))
         native = [d for d in self.rows if container_native.derive(d, self.items, plain.stack_problem)]
-        self.assertEqual(len(native), 69)
+        ornament = next(d for d in self.rows
+                        if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield')
+        self.assertIsNone(container_native.derive(ornament, self.items, plain.stack_problem))
+        recipe = charge_native.derive(ornament, self.items, plain.stack_problem)
+        self.assertEqual(recipe, ornament['native_contents'])
+        self.assertEqual(recipe['placements'][0]['contents'][2]['charges_remaining'], 1)
+        # Count the migrated exact-charge recipe alongside the generic recipes.
+        native.append(ornament)
+        self.assertEqual(len(native), 77)  # Includes the milk, wine, Present and Poison Daggers recipes.
         self.assertEqual(sum(any('container' in p['reward'] for p in d['placements'])
-                             for d in native), 56)
+                             for d in native), 64)
 
     def test_all_twelve_text_leaves_keep_the_established_lf_normalization(self):
         evidence, _ = container_native.source()
@@ -159,6 +271,18 @@ class ContainerNativeTests(unittest.TestCase):
             else: claim += 'forged'
             self.assertFalse(container_native.full_charge_leaf(changed, claim, point,
                              item['identity']['key'], raw), mutation)
+
+    def test_every_admitted_default_matching_charge_leaf_uses_one_instance(self):
+        proof = plain.load_source_charge_evidence()
+        for source in proof:
+            item = self.items[source['item']]
+            if (not item['materializable'] or source['source_count_argument']
+                    != source['source_default_charges']):
+                continue
+            with self.subTest(claim=source['pilot_key']):
+                self.assertEqual(plain.charged_source_reward(
+                    item, source['pilot_key'], source['project_position'], source['item'],
+                    source['source_count_argument'], proof), (1, None))
 
     def test_authored_text_is_bound_only_to_the_exact_source_book(self):
         d = next(d for d in self.rows if d['identity']['key'].endswith('dreamers_challenge.bplong_sword'))

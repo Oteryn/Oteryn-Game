@@ -54,6 +54,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => CardinalStep::East,
             StepDirection::South => CardinalStep::South,
             StepDirection::West => CardinalStep::West,
+            StepDirection::NorthEast => CardinalStep::NorthEast,
+            StepDirection::SouthEast => CardinalStep::SouthEast,
+            StepDirection::SouthWest => CardinalStep::SouthWest,
+            StepDirection::NorthWest => CardinalStep::NorthWest,
         };
         // Preflight SQL shares the field owner's bounded durability holder.
         // Take the lane before those reads so a concurrent field turn cannot
@@ -145,7 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
             &none
         } else if let Some(map) = self.bundle_map() {
-            bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
+            bundle_doors = crate::map::floor::BundleDoors(&map.facts);
             &bundle_doors
         } else {
             legacy = self.door.lock().await.blocking_cells().clone();

@@ -2,6 +2,7 @@
 //! No provisioning: all assertions consume native admission, command or delta frames.
 use super::starter_inventory::check_starter;
 use super::*;
+use oteryn_dev_client::client_runtime::inventory;
 use oteryn_dev_client::{CharacterInventory, DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::{item_view as items, logout::LogoutResult};
 use std::collections::BTreeSet;
@@ -840,43 +841,23 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
             .and_then(|inventory| inventory.main_backpack)
             .ok_or("starter main backpack missing")?
             .handle;
-        let selection = items::ItemMoveSelection {
-            equip_drop: client
-                .selected_capabilities()
-                .contains(&items::CAPABILITY_ITEM_EQUIP_DROP_V1),
-            container_tree: false,
-            world_interaction: false,
-        };
-        let payload = items::encode_item_move_intent_for(
-            &items::ItemMoveIntent {
+        let reply = inventory::send(
+            client.session_mut(),
+            inventory::MoveRequest {
                 source,
                 destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::RightHand),
+                count: None,
             },
-            selection,
         )
-        .map_err(|error| format!("starter equip intent: {error:?}"))?;
-        let reply = client
-            .session_mut()
-            .gated_command(
-                items::CAPABILITY_ITEM_VIEW_MOVE_V1,
-                items::COMMAND_TYPE_ITEM_MOVE_INTENT,
-                &payload,
-            )
-            .await?;
-        let (payload, _) =
-            oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
-                .map_err(|error| format!("starter equip refusal detail: {error:?}"))?;
-        if reply.status != CommandStatus::Accepted
-            || items::decode_item_move_result_for(payload, selection)
-                .map_err(|error| format!("starter equip result: {error:?}"))?
-                != items::ItemMoveOutcome::SlotMismatch
-        {
+        .await?
+        .ok_or("starter equipment move capabilities are not selected")?;
+        if reply.outcome != items::ItemMoveOutcome::SlotMismatch {
             return Err(format!(
                 "starter invalid equip was not refused as SlotMismatch: {reply:?}"
             )
             .into());
         }
-        row.pass("invalid-equip-refused", &reply);
+        row.pass("invalid-equip-refused", reply);
 
         relog(&mut client, clients, 0xe1).await?;
         check_starter(

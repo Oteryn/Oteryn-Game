@@ -68,8 +68,17 @@ fn clock_epoch_matching_is_unique_monotonic_and_non_mutating() -> TestResult {
         before
     );
     assert!(epochs.record(qualification_step()).is_err());
-    assert!(epochs.record(qualification_step() * 3).is_err());
+    epochs.record(qualification_step() * 3)?;
+    assert_eq!(epochs.observed, 0);
+    assert_eq!(
+        &epochs.offsets[..epochs.len],
+        &[qualification_step() * 2, qualification_step() * 3]
+    );
+    epochs.record(qualification_step() * 4)?;
     assert_eq!(epochs.len, 3);
+    let retained = (epochs.offsets, epochs.len, epochs.observed);
+    assert!(epochs.record(qualification_step() * 5).is_err());
+    assert_eq!((epochs.offsets, epochs.len, epochs.observed), retained);
 
     // The real epochs are 75s apart (> twice the 10s tolerance). If an
     // unexpected input makes attribution ambiguous, refuse it without evidence.
@@ -85,6 +94,27 @@ fn clock_epoch_matching_is_unique_monotonic_and_non_mutating() -> TestResult {
     assert_eq!((row.previous, row.elapsed_minutes, row.passed), before);
     assert_eq!(ambiguous.observed, 0);
     Ok(())
+}
+
+#[test]
+fn clock_reconnect_uses_wall_time_and_requires_a_fresh_session_after_the_cycle() {
+    let mut row = ClockRow::default();
+    // Two injected 75s advances do not turn two seconds of socket life into
+    // an expired 90s idle window.
+    assert!(!row.reconnect_due(Duration::from_secs(2), true));
+    for accelerated in [false, true] {
+        assert!(!row.reconnect_due(Duration::from_secs(89), accelerated));
+        assert!(row.reconnect_due(Duration::from_secs(90), accelerated));
+    }
+    row.pass("full-cycle");
+    assert!(row.reconnect_due(Duration::from_secs(2), true));
+    assert!(!row.reconnect_due(Duration::from_secs(2), false));
+    row.pass("fresh-admission");
+    assert!(!row.reconnect_due(Duration::from_secs(2), true));
+    assert!(
+        !row.complete(),
+        "the other observations and logout remain required"
+    );
 }
 
 #[test]
@@ -427,6 +457,95 @@ fn clock_offset_epochs_wait_for_current_sunrise_after_a_queued_tls_frame() -> Te
 #[test]
 fn clock_offset_epochs_attribute_a_queued_midnight_tls_frame() -> TestResult {
     run_transport(|| queued_frame(3, 1_409, 0))
+}
+
+#[test]
+fn clock_offset_epochs_continue_on_one_tls_session_and_retain_queued_candidates() -> TestResult {
+    run_transport(|| async {
+        let release = Arc::new(Notify::new());
+        let queued = Arc::new(Notify::new());
+        let (release_peer, queued_peer) = (release.clone(), queued.clone());
+        let (anchor, clock_anchor) = tokio::sync::oneshot::channel::<std::time::Instant>();
+        let (mut client, peer) = connect_peer(reading(330), 8, move |mut stream| async move {
+            let started = clock_anchor.await?;
+            // Queueing the next frame needs no client reply: the receiver is
+            // deliberately suspended between the third and fourth offsets.
+            for epoch in 1..=5_u32 {
+                release_peer.notified().await;
+                let elapsed = started.elapsed() + qualification_step() * epoch;
+                let minute = (330 + elapsed.as_millis() / 2_500) % 1_440;
+                send_clock(
+                    &mut stream,
+                    u64::from(epoch),
+                    reading(u16::try_from(minute)?),
+                )
+                .await?;
+                queued_peer.notify_one();
+            }
+            wait_for_close(&mut stream).await;
+            Ok(())
+        })
+        .await?;
+        let started = std::time::Instant::now();
+        anchor.send(started).map_err(|_| "clock peer lost its anchor")?;
+        let session = client.join_snapshot().game_session_id;
+        let mut row = ClockRow::default();
+        row.observe(admitted_clock(&mut client)?, started.elapsed())?;
+        let mut epochs = ClockEpochs::new(Duration::ZERO, Duration::ZERO);
+        for epoch in 1..=2 {
+            epochs.record(qualification_step() * epoch)?;
+            release.notify_one();
+            queued.notified().await;
+            service_clock_advance(&mut client, &mut row, &mut epochs, started, true).await?;
+            assert_eq!(epochs.offsets[epochs.observed], qualification_step() * epoch);
+            assert!(!row.reconnect_due(started.elapsed(), true));
+        }
+
+        epochs.record(qualification_step() * 3)?;
+        release.notify_one();
+        queued.notified().await;
+        // Offset 3 is in TLS but unread. Compaction must retain it beside
+        // the last observed offset 2 and the newly injected offset 4.
+        epochs.record(qualification_step() * 4)?;
+        assert_eq!(
+            &epochs.offsets[..epochs.len],
+            &[
+                qualification_step() * 2,
+                qualification_step() * 3,
+                qualification_step() * 4,
+            ]
+        );
+        {
+            let wait = service_clock_advance(&mut client, &mut row, &mut epochs, started, true);
+            tokio::pin!(wait);
+            assert!(
+                tokio::time::timeout(Duration::from_millis(1_200), &mut wait)
+                    .await
+                    .is_err(),
+                "the retained queued epoch cannot acknowledge the newer advance"
+            );
+            release.notify_one();
+            queued.notified().await;
+            wait.await?;
+        }
+        assert_eq!(epochs.offsets[epochs.observed], qualification_step() * 4);
+        epochs.record(qualification_step() * 5)?;
+        release.notify_one();
+        queued.notified().await;
+        service_clock_advance(&mut client, &mut row, &mut epochs, started, true).await?;
+        assert_eq!(epochs.offsets[epochs.observed], qualification_step() * 5);
+        assert_eq!(client.join_snapshot().game_session_id, session);
+        assert!(row.elapsed_minutes >= 150);
+        assert!(row.passed.contains("sunrise"));
+        assert!(!row.reconnect_due(started.elapsed(), true));
+        assert!(
+            !row.complete(),
+            "partial cycle and one session cannot qualify the row"
+        );
+        drop(client);
+        peer.await??;
+        Ok(())
+    })
 }
 
 async fn queued_frame(marker: u8, initial: u16, delayed: u16) -> TestResult {

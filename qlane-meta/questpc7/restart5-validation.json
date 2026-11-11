@@ -1,0 +1,155 @@
+{
+  "task_id": "questpc",
+  "titles": 178,
+  "counts": {
+    "BLOCKED": 156,
+    "QUALIFIED": 22
+  },
+  "owner_excluded": 1,
+  "standalone_reward_contracts_only": true,
+  "product_delta": [],
+  "all_inherited_product_hashes_unchanged": true,
+  "current_checks": {
+    "status": {
+      "command": [
+        "python3",
+        ".questpc/restart5-quest-status.py"
+      ],
+      "exit": 0,
+      "duration_seconds": 0.568,
+      "log": ".questpc/restart5-status.log"
+    },
+    "fmt": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "duration_seconds": 11.765,
+      "log": ".questpc/restart5-fmt.log"
+    },
+    "mounted-fmt": {
+      "command": [
+        "rustup",
+        "run",
+        "1.99.1",
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "--config",
+        "skip_children=true",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs"
+      ],
+      "exit": 0,
+      "duration_seconds": 0.033,
+      "log": ".questpc/restart5-mounted-fmt.log"
+    },
+    "clippy": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--all-targets",
+        "--all-features",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "duration_seconds": 1.924,
+      "log": ".questpc/restart5-clippy.log"
+    },
+    "storage-units": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "storage_owner_",
+        "--",
+        "--nocapture"
+      ],
+      "exit": 0,
+      "duration_seconds": 0.865,
+      "log": ".questpc/restart5-storage-units.log"
+    }
+  },
+  "reward_pg": {
+    "log": ".questpc/restart5-reward-pg.log",
+    "log_sha256": "dbac54f92b6253ed8c6dab2f244bef2ed0de7ae84dc39d16b29555e92585f245",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--all-features",
+      "--lib",
+      "--",
+      "quest_catalogue_chests_phase_a_01_use_replay_and_refusal",
+      "quest_catalogue_chests_phase_a_02_use_replay_and_refusal",
+      "quest_catalogue_chests_phase_a_03_use_replay_and_refusal",
+      "quest_catalogue_chests_phase_a_04_use_replay_and_refusal",
+      "quest_catalogue_chests_phase_a_05_use_replay_and_refusal",
+      "quest_catalogue_chests_phase_a_06_use_replay_and_refusal",
+      "quest_catalogue_chests_phase_a_08_use_replay_and_refusal",
+      "quest_catalogue_chests_phase_a_09_use_replay_and_refusal",
+      "quest_catalogue_chests_phase_a_11_use_replay_and_refusal",
+      "--test-threads=1",
+      "--nocapture"
+    ],
+    "exit": 0,
+    "duration_seconds": 645.883,
+    "test_results": {
+      "quest_catalogue_chests_phase_a_01_use_replay_and_refusal": "ok",
+      "quest_catalogue_chests_phase_a_02_use_replay_and_refusal": "ok",
+      "quest_catalogue_chests_phase_a_03_use_replay_and_refusal": "ok",
+      "quest_catalogue_chests_phase_a_04_use_replay_and_refusal": "ok",
+      "quest_catalogue_chests_phase_a_05_use_replay_and_refusal": "ok",
+      "quest_catalogue_chests_phase_a_06_use_replay_and_refusal": "ok",
+      "quest_catalogue_chests_phase_a_08_use_replay_and_refusal": "ok",
+      "quest_catalogue_chests_phase_a_09_use_replay_and_refusal": "ok",
+      "quest_catalogue_chests_phase_a_11_use_replay_and_refusal": "ok"
+    },
+    "qualified_cohorts": 9,
+    "qualified_quests": 44
+  },
+  "npc_pg_failure": {
+    "command": "CARGO_BUILD_JOBS=4 /home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic -- --test-threads=1 --nocapture",
+    "exit": 101,
+    "test_seconds": 114.0,
+    "failure": "2603: hi: Rejected != Ok at classic_quests.rs:168",
+    "log": ".questpc/restart5-npc-scoped.log"
+  },
+  "qualification_units": {
+    "exit": 0,
+    "tests": 7,
+    "log": ".questpc/restart5-qualification-units.log"
+  },
+  "coverage_check": {
+    "exit": 0,
+    "log": ".questpc/restart5-coverage-check.log"
+  },
+  "qualification_check": {
+    "exit": 0,
+    "log": ".questpc/restart5-qualification-check.log"
+  },
+  "fresh_native_placements": 82,
+  "fresh_claims": 80,
+  "status_sha256": "76d4f9d273bb1f5cd76cf151abb314f4a554cc2c7b75e35a286757b03e496ae8",
+  "no_full_story_or_world_completion_claim": true
+}

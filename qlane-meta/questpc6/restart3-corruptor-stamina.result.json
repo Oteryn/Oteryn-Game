@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_corruptor_all_five_vocations_kill_loot_take_equip newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set --test-threads=1 --nocapture",
+  "exit": 101,
+  "duration_seconds": 270.69
+}

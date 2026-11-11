@@ -818,12 +818,13 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 "game_reward_claim_inbox_mint_is_complete",
             ]
         );
-        // Register these exact read-only custody users independently of the
+        // Register the exact read-only custody users independently of the
         // closed inventory above. A direct/dynamic Inbox DML path in any
         // helper fails even if its name remains in the registered reader set.
         for reader in [
             "game_daily_reward_pick_guard",
             "game_house_container_coin_pouch_destination",
+            "game_house_disposition_native_removal_proven",
             "game_house_disposition_native_removal_proven_before_t135",
             "game_house_nested_reclaim_reconcile",
             "game_returner_claim_guard",

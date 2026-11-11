@@ -28,10 +28,13 @@ class AcceptedOverlayTests(unittest.TestCase):
         for entry in self.receipt["files"]:
             self.assertEqual(overlay.digest(adopted[entry["path"]]),entry["output_sha256"])
         actual=bind_definitions(ROOT,adopted)
+        # Retain the independently qualified Thaian successor after the frozen overlay.
+        import questpc7_thaian_native
+        questpc7_thaian_native.apply(ROOT, actual, producer.canonical_bytes)
         for path in overlay.ALLOWED_PATHS:
             self.assertEqual(self.current[path],(ROOT/path).read_bytes(),path)
         self.assertEqual(before,{k:overlay.digest(v) for k,v in self.base.items()})
-        self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1870)
+        self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1871)
         looks=json.loads(actual['content/presentations/bindings/spell-appearances.json'])
         self.assertEqual(len(looks['records']),334)
         self.assertEqual(len(looks['item_appearances']),6)
@@ -40,18 +43,27 @@ class AcceptedOverlayTests(unittest.TestCase):
         # PREY-DIFF registers the generated tier and slot-value tables below;
         # C1 registers the Newhaven starting-loadout item profiles; SRX-1
         # registers the pinned item-profile supplement. QENGINE2 adds its
-        # source-qualified reward Item proof alongside the43 SEASON outputs.
-        self.assertEqual(len(actual.keys() - {qengine.PROOF}),43)
+        # source-qualified reward Item proof alongside the SEASON and quest constructor outputs.
+        merged_outputs = {
+            'content/cosmetics/outfits/native-cosmetics.json',
+            *{f'tools/content-schema/native-gameplay/questpc7-{name}.json' for name in (
+                'marsh-corpse-profiles', 'slug-corpse-profiles',
+                'smith-corpse-profiles', 'smith-item-profile',
+                'hot-fishburger-profile', 'hot-corpse-profiles',
+            )},
+        }
+        self.assertTrue(merged_outputs <= actual.keys())
+        self.assertEqual(len(actual.keys() - {qengine.PROOF} - merged_outputs),45)
         self.assertIn(qengine.PROOF,actual)
-        # Independently rebuild the complete pinned60-identity packet; a count
+        # Independently rebuild the complete merged128-identity packet; a count
         # alone cannot authorize a missing, duplicate or substituted reward.
         expected_packet=qengine.capture(ROOT)
         expected_raw=(json.dumps(expected_packet,ensure_ascii=False,indent=2)+'\n').encode()
         self.assertEqual(actual[qengine.PROOF],expected_raw)
         packet=json.loads(actual[qengine.PROOF])
         keys=[row['production_definition']['production_key'] for row in packet['records']]
-        self.assertEqual(len(keys),60)
-        self.assertEqual(len(set(keys)),60)
+        self.assertEqual(len(keys),128)
+        self.assertEqual(len(set(keys)),128)
         self.assertEqual(set(keys),{f'oteryn:item.tibia.i{item}' for item in qengine.IDS})
         native=json.loads(actual[producer.PROVIDER_DESTINATIONS['item_profiles']])
         by_key={row['production_definition']['production_key']:row for row in native['records']}
@@ -63,8 +75,13 @@ class AcceptedOverlayTests(unittest.TestCase):
             for field,value in row['attributes'].items():
                 self.assertEqual(by_key[key]['attributes'][field],value,(key,field))
         self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual)
+        self.assertIn('content/items/authored-static-admissions.json',actual)
+        for cohort in ('marsh', 'slug'):
+            self.assertIn(f'tools/content-schema/native-gameplay/questpc7-{cohort}-corpse-profiles.json', actual)
+        self.assertIn('tools/content-schema/native-gameplay/source-gate-item-profiles.json', actual)
         self.assertIn('content/items/definitions/srx1-item-updates.json',actual)
         self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)
+        self.assertIn('content/cosmetics/outfits/native-cosmetics.json',actual)
         self.assertIn('content/creatures/prey-tiers.json',actual)
         self.assertIn('content/creatures/prey-slot-values.json',actual)
         self.assertIn('content/items/readable-profiles.json',actual)

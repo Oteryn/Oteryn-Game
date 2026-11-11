@@ -533,9 +533,16 @@ pub async fn apply_durable(
     now: u64,
     privacy_version: i64,
 ) -> Result<Reply, Error> {
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+    let started = std::time::Instant::now();
+    let deadline = started + std::time::Duration::from_secs(1);
     let mut op = op;
     loop {
+        // A holder retry cannot preserve an observer grant's old clock sample.
+        let attempt_now = if matches!(&op, Operation::Join(_) | Operation::Renew(..)) {
+            elapsed_now(now, started)?
+        } else {
+            now
+        };
         match apply_durable_attempt(
             owner,
             root,
@@ -543,7 +550,7 @@ pub async fn apply_durable(
             access,
             accounts,
             op,
-            now,
+            attempt_now,
             privacy_version,
         )
         .await
@@ -616,6 +623,7 @@ async fn apply_durable_attempt(
     now: u64,
     privacy_version: i64,
 ) -> DurableOutcome {
+    let started = std::time::Instant::now();
     let result: Result<DurablePreflight, Error> = async {
         match &mut op {
             Operation::Start(_, settings, account) => {
@@ -681,10 +689,22 @@ async fn apply_durable_attempt(
     .await;
     match result {
         Ok(DurablePreflight::Proceed) => {
-            DurableOutcome::Complete(apply(owner, op, now, privacy_version))
+            // Even a successful ban lookup may cross the grant or current
+            // observer lease expiry. Validate after I/O using the same clock.
+            let now = if matches!(&op, Operation::Join(_) | Operation::Renew(..)) {
+                elapsed_now(now, started)
+            } else {
+                Ok(now)
+            };
+            DurableOutcome::Complete(now.and_then(|now| apply(owner, op, now, privacy_version)))
         }
         Ok(DurablePreflight::Applied) => DurableOutcome::Complete(Ok(Reply::Applied)),
         Ok(DurablePreflight::Busy) => DurableOutcome::Busy(Box::new(op)),
         Err(error) => DurableOutcome::Complete(Err(error)),
     }
+}
+
+fn elapsed_now(now: u64, started: std::time::Instant) -> Result<u64, Error> {
+    let elapsed = u64::try_from(started.elapsed().as_millis()).map_err(|_| Error::Unavailable)?;
+    now.checked_add(elapsed).ok_or(Error::Unavailable)
 }

@@ -1,0 +1,23 @@
+{
+  "batch_id": "annihilator-door-source-facts-2026-11-07",
+  "scope": "Correct retained source decisions only. Runtime, callback data and authoring code remain unpublished while targeted checks run.",
+  "source_members_verified": 3,
+  "source_guards": "SHA256 and Git blob SHA1 checked against retained portable archive; no donor copy committed.",
+  "findings": [
+    "Reward10102==1 seals explicit opening AND closing.",
+    "Closed5113 teleports onto target before changing to5114.",
+    "Creature.checkCreatureInsideDoor pushes the top creature E,S,N,W; it refuses only when every queryAdd fails. FLAG_IGNOREBLOCKCREATURE is explicit.",
+    "The generic quest-door movement closes an empty doorway on step-out."
+  ],
+  "current_runtime_evidence": {
+    "red_postgres_version": 180006,
+    "red_duration_seconds": 2.9,
+    "red_failure": "source reward door callback missing",
+    "subsequent_postgres_duration_seconds": 43.58,
+    "subsequent_failure": "StartNotEnterable: source fixture anchored on closed door; corrected to adjacent walkable tile.",
+    "green_claimed": false,
+    "environment": "Two later compile attempts failed with os error28 before PG. Current correction rerunning after lossless archive/cache recovery."
+  },
+  "whole_quest_qualifications": 0,
+  "next": "Finish source door opening collision proof, exact displacement, real shared-claim wire PG and five-crate checks; publish runtime green immediately. Continue full quest route after that."
+}

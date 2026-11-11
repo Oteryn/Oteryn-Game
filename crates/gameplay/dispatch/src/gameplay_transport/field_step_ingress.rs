@@ -304,7 +304,7 @@ pub(super) fn destination(
         .destination());
     }
     let p = origin.position();
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     Ok(MovementLocalPosition {
         x: p.x
             .checked_add(dx)

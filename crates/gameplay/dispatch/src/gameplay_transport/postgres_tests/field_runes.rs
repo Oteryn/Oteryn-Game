@@ -2438,7 +2438,7 @@ async fn step_creature_on_field(
             let before = runtime
                 .read_actor_position(creature)
                 .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-            let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+            let (dx, dy) = direction.delta();
             let at = before.position();
             let destination = MovementLocalPosition {
                 x: at.x + dx,

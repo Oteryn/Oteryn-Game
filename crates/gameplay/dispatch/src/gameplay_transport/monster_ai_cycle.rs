@@ -65,9 +65,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
+        // Qualification binds these immutable cells to the compiled artifact.
+        // Compare that retained generation without bulk hashing under the runtime lock.
         if runtime.owner_fence().is_err()
             || content.source_digest() != runtime.content_pin().server_artifact_digest()
-            || room.compiled().server_digest() != runtime.content_pin().server_artifact_digest()
+            || room.movement_cells().scope().generation_digest
+                != runtime.content_pin().server_artifact_digest()
         {
             return;
         }

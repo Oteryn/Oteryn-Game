@@ -71,6 +71,7 @@ oteryn-gameplay-durability = { version = "=0.1.0", path = "../../gameplay/durabi
 oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities", features = ["test-support"] }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../../gameplay/foundation", features = ["test-support"] }
 oteryn-gameplay-monster-ai = { version = "=0.1.0", path = "../../gameplay/monster-ai", features = ["test-support"] }
+oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests", features = ["test-support"] }
 oteryn-gameplay-social = { version = "=0.1.0", path = "../../gameplay/social", features = ["test-support"] }
 oteryn-gameplay-spell = { version = "=0.1.0", path = "../../gameplay/spell", features = ["test-support"] }
 oteryn-gameplay-world = { version = "=0.1.0", path = "../../gameplay/world", features = ["test-support"] }

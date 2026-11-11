@@ -44,6 +44,7 @@ fn observation() -> WorldSpatialObservation {
 struct SlowOwner {
     slow_browse: Cell<bool>,
     visibility_delay: Cell<std::time::Duration>,
+    vitals_delay: Cell<std::time::Duration>,
     browse_reads: Cell<usize>,
     sound_reads: Cell<usize>,
 }
@@ -75,6 +76,18 @@ impl FreshAdmissionAuthority for SlowOwner {
             tokio::time::sleep(delay).await;
         }
         Some(observation())
+    }
+
+    async fn tick_vitals(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> Option<(u64, crate::gameplay_transport::actor_spell::ActorVitals)> {
+        let delay = self.vitals_delay.get();
+        if !delay.is_zero() {
+            tokio::time::sleep(delay).await;
+        }
+        None
     }
 
     async fn observe_character_inventory(
@@ -334,6 +347,76 @@ fn browse_slow_visibility_refresh_dispatches_ready_client_before_next_refresh() 
 #[test]
 fn legacy_slow_visibility_refresh_dispatches_ready_client_before_next_refresh() -> TestResult {
     run(false)
+}
+
+#[test]
+fn slow_vitals_refresh_services_ready_chat_before_next_vitals() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> TestResult {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .start_paused(true)
+                .build()?
+                .block_on(async {
+                    let authority = SlowOwner::default();
+                    authority
+                        .vitals_delay
+                        .set(SERENE_EVALUATION + std::time::Duration::from_millis(400));
+                    let (mut server, _client) = tokio::io::duplex(1 << 20);
+                    let mut admitted = admitted(false)?;
+                    let actor = admitted.runtime_actor.ok_or("fixture actor")?;
+                    let mut session = setup::prepare(
+                        &mut server,
+                        &mut admitted,
+                        &authority,
+                        IDLE_LIVENESS,
+                        actor,
+                        observation(),
+                        integrity::Integrity::default(),
+                    )
+                    .await
+                    .map_err(|_| "prepare connection")?;
+                    // Isolate two ready periodic owners. Delay measures from tick
+                    // selection, so completing a slow Serene leaves it due again.
+                    session.visibility_refresh = None;
+                    let started = tokio::time::Instant::now();
+                    session.serene = Some(tokio::time::interval_at(
+                        started + SERENE_EVALUATION,
+                        SERENE_EVALUATION,
+                    ));
+                    session.chat_refresh = Some(tokio::time::interval_at(
+                        started + CHAT_REFRESH,
+                        CHAT_REFRESH,
+                    ));
+                    for refresh in session
+                        .serene
+                        .iter_mut()
+                        .chain(session.chat_refresh.iter_mut())
+                    {
+                        refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+                    }
+                    tokio::time::advance(SERENE_EVALUATION).await;
+                    let first = poll::next(&mut server, &authority, &mut session).await;
+                    assert!(matches!(first, Next::Serene));
+                    assert!(
+                        receive(&mut server, &authority, &mut session, first)
+                            .await
+                            .map_err(|_| "slow vitals refresh")?
+                            .is_none()
+                    );
+                    assert!(
+                        matches!(
+                            poll::next(&mut server, &authority, &mut session).await,
+                            Next::Chat
+                        ),
+                        "ready chat must run even when Serene is overdue again"
+                    );
+                    Ok(())
+                })
+        })?
+        .join()
+        .map_err(|_| "periodic scheduler test thread panicked")?
 }
 
 #[test]

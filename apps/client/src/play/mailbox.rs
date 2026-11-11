@@ -123,6 +123,7 @@ pub(super) struct Mailbox {
     pub(super) tracked_custom_ability: Option<u32>,
     pub(super) custom_hotkey_feedback: Option<String>,
     pub(super) battle_lists: super::feature_0017_attack::view::BattleListsState,
+    pub(super) diagonal_movement_selected: bool,
     pub(super) target_move_selected: bool,
     pub(super) movement_turn: Option<StepDir>,
     pub(super) creature_push_selected: bool,

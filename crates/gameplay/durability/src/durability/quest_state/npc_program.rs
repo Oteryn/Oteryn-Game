@@ -39,7 +39,7 @@ impl NpcProgramRequest {
         }
     }
 
-    fn binding(&self, character: CharacterId) -> [u8; 33] {
+    pub(in crate::durability) fn binding(&self, character: CharacterId) -> [u8; 33] {
         let mut digest =
             Sha256::new().chain_update(request_binding(character, &self.quest_request()));
         for value in [&self.npc, &self.message] {
@@ -74,6 +74,11 @@ pub fn preview(
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
+    if request.npc == oteryn_gameplay_quests::quest::hot_cuisine::NPC {
+        let inventory = oteryn_gameplay_quests::quest::hot_cuisine::HotCuisineProgram::embedded()?
+            .optimistic_inventory()?;
+        return evaluate_source(&source, request, tracks, catalogue, now, Some(&inventory));
+    }
     match evaluate_source(&source, request, tracks, catalogue, now, None) {
         Err(_) if request.npc == "oteryn:npc.tereban" => evaluate_source(
             &source,
@@ -150,6 +155,26 @@ fn evaluate_source(
         sex: 0,
         outfits: &BTreeMap::new(),
     };
+    if request.npc == oteryn_gameplay_quests::quest::hot_cuisine::NPC {
+        use oteryn_gameplay_quests::quest::hot_cuisine::{HotCuisineProgram, YearMonth};
+        let hot = HotCuisineProgram::embedded()?;
+        let calendar = hot.calendar_snapshot(&input, YearMonth::from_unix_seconds)?;
+        if let Some(program) = source.program(oteryn_gameplay_quests::quest::hot_cuisine::QUEST)
+            && let Some(plan) = hot.plan(program, &input, &calendar)?
+        {
+            // The shared participant admits plain recipes. Typed fluids and
+            // optional removals still need their own durable consumer.
+            if plan.effects.iter().any(|effect| matches!(effect,
+                oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::TakeItem { subtype: Some(_), .. }
+                | oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::TakeItem { optional: true, .. }
+                | oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::GiveItem { subtype: Some(_), .. }
+            )) {
+                return Err(oteryn_gameplay_quests::quest::npc_rules::NpcRuleError::MissingNativeResolution("Hot Cuisine item shape".into()));
+            }
+            return Ok(Some(plan));
+        }
+        return source.plan_storage(&input);
+    }
     if inventory.is_some() && marlin_trophy::owns(request) {
         source.plan_marlin_items(&input)
     } else if inventory.is_some() && fathers_burden::owns(request) {
@@ -188,7 +213,10 @@ impl DurabilityRoot {
 
     /// One source storage operation, including Father's eleven-track acceptance, is one transaction.
     #[allow(clippy::too_many_arguments, reason = "physical lane, current authority and item content are independent proofs")]
-    pub async fn commit_character_npc_program<C: super::super::item_loop_move::ItemLoopContent>(
+    pub async fn commit_character_npc_program<
+        C: super::super::item_loop_move::ItemLoopContent,
+        G: super::grizzly::GrizzlyPremiumGate,
+    >(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -197,6 +225,7 @@ impl DurabilityRoot {
         request: NpcProgramRequest,
         catalogue: Arc<QuestStateCatalogue>,
         items: &C,
+        premium: &G,
     ) -> Result<NpcProgramCommit> {
         if request.command.game_session_id() != fence.game_session_id
             || request.message.len() > 255
@@ -218,8 +247,16 @@ impl DurabilityRoot {
             .and_then(|source| source.admitted_for_npc(&request.npc, &catalogue))
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .ok_or(CharacterProgressionError::InvalidInput)?;
-        let mut content = items;
-        self.try_issue_semantic_pass()?.run_with_context(&mut content, move |holder,deadline,content| Box::pin(async move {
+        let hot_keys = if request.npc == oteryn_gameplay_quests::quest::hot_cuisine::NPC {
+            Some(oteryn_gameplay_quests::quest::hot_cuisine::HotCuisineProgram::embedded()
+                .and_then(|program| program.optimistic_inventory())
+                .map_err(|_| CharacterProgressionError::InvalidInput)?
+                .items.into_keys().map(|key| key.item).collect::<std::collections::BTreeSet<_>>()
+                .into_iter().collect::<Vec<_>>())
+        } else { None };
+        let mut participants = (items, premium);
+        self.try_issue_semantic_pass()?.run_with_context(&mut participants, move |holder,deadline,participants| Box::pin(async move {
+            let (content, premium) = participants;
             let mut tx=super::super::db::begin_type2_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
             lock_admission_relations(&mut tx).await?;
@@ -265,9 +302,12 @@ impl DurabilityRoot {
             let father_items = fathers_burden::owns(&request);
             let marlin_items = marlin_trophy::owns(&request);
             let plain_keys = source.item_exchange_keys(&request.npc);
-            let generic_items = !father_items && !marlin_items && plain_keys.is_some();
-            let inventory_owned = father_items || marlin_items || generic_items;
-            let inventory = if marlin_items {
+            let hot_items = hot_keys.is_some();
+            let generic_items = !father_items && !marlin_items && !hot_items && plain_keys.is_some();
+            let inventory_owned = father_items || marlin_items || hot_items || generic_items;
+            let inventory = if let Some(keys) = &hot_keys {
+                Some(fathers_burden::inventory_for(&mut tx, fence, keys).await?)
+            } else if marlin_items {
                 Some(fathers_burden::inventory_for(&mut tx, fence, &[marlin_trophy::FISH.into()]).await?)
             } else if father_items {
                 Some(fathers_burden::inventory(&mut tx, fence).await?)
@@ -284,6 +324,16 @@ impl DurabilityRoot {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && !plan.track_changes.is_empty()=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
+            if source.programs().iter().any(|program| {
+                program.document.quest == plan.quest && program.document.premium_required
+            }) {
+                let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id).fetch_one(&mut **tx).await?;
+                let account = account.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
+                if !premium.task_permitted(&mut tx, account).await? {
+                    return Ok(Ok(refused(QuestRefusal::StageMismatch)));
+                }
+            }
             let experience = rewards::experience(&plan.effects)?;
             if father_items && fathers_burden::experience(&plan)? != experience { return Err(DurabilityError::InvalidStoredState); }
             if experience > 0 {
@@ -291,7 +341,7 @@ impl DurabilityRoot {
                     .bind(id).fetch_one(&mut **tx).await?;
                 if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
             }
-            let item_action = father_items || marlin_items || (generic_items && items::changes_items(&plan));
+            let item_action = father_items || marlin_items || ((hot_items || generic_items) && items::changes_items(&plan));
             let quest=&plan.quest;
             let hash=catalogue.definition_hash(quest).ok_or(DurabilityError::InvalidStoredState)?;
             let stored_state=sqlx::query("SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE").bind(id).bind(quest).fetch_optional(&mut **tx).await?;
@@ -322,7 +372,7 @@ impl DurabilityRoot {
                 }
                 let applied = if marlin_items {
                     marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
-                } else if generic_items {
+                } else if generic_items || hot_items {
                     items::apply(&mut tx, fence, &request, &plan, *content, &node, permit).await?
                 } else {
                     fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await?

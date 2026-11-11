@@ -556,31 +556,39 @@ events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'step_rejected_stale_position', 'step_rejected_pending_spell',
           'step_rejected_drome', 'step_rejected_movement', 'step_rejected_holder_busy',
           'session_durability_failed', 'logout_unknown', 'logout_busy',
-          'control_loss_reconcile_pending', 'character_authority_check_failed'}
+          'control_loss_reconcile_pending', 'control_loss_result',
+          'control_loss_publication', 'control_loss_grace', 'character_authority_check_failed',
+          'appearance_initial_failed', 'appearance_observation_failed'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
     'kind': {'Actor', 'SnapshotMismatch', 'ContextMismatch', 'ScopeMismatch',
              'CoordinateOverflow', 'Cell', 'Blocked', 'CapacityExceeded', 'NotQualified',
              'holder_busy', 'storage', 'deadline', 'commit_unknown', 'authority',
-             'invalid_state', 'unavailable', 'unknown'},
+             'invalid_state', 'unavailable', 'unknown', 'recorded', 'resumed_history',
+             'terminal', 'not_applicable', 'refused', 'pending'},
+    'class': {'observation', 'mappings', 'attach', 'encode', 'content', 'fence',
+              'revision', 'state', 'visibility', 'conditions'},
     'failure_stage': {'account_closure', 'activity_destination', 'activity_loss_session',
                       'activity_publish', 'activity_return', 'activity_scope',
                       'activity_successor', 'activity_view', 'actor_unreserved',
                       'admitted_binding', 'appearance_observation', 'familiar_cast',
+                      'combat_hold', 'condition_save', 'death_save', 'entry', 'familiar_save',
                       'foreground_demand', 'gourmet_checkpoint', 'hunting_stamina_readback',
-                      'item_effects', 'logout_settle', 'loss_activity_origin',
+                      'item_effects', 'kill_rewards', 'logout_settle', 'loss_activity_origin',
+                      'loss_readback', 'monk_save', 'native_publication',
                       'loss_resumed_history', 'loss_session', 'loss_session_time',
                       'loss_transferred_history', 'native_cast', 'newhaven_travel',
                       'parameters', 'pending_spell_commit', 'prey_checkpoint_fence',
                       'prey_checkpoint_session', 'proficiency_character', 'proficiency_fence',
                       'proficiency_readback', 'proficiency_snapshot', 'pvp_refresh',
                       'release_attempt', 'release_commit', 'release_fence',
-                      'release_not_applicable', 'release_retry_lifted',
+                      'release_not_applicable', 'release_not_expired', 'release_retry_lifted',
+                      'release_settle',
                       'resting_stamina_readback', 'retire', 'retire_session',
-                      'spell_reconcile', 'stamina_character', 'stamina_session',
+                      'spell_reconcile', 'staff_release', 'stamina_character', 'stamina_session',
                       'terminal_session', 'training_character', 'training_readback',
-                      'training_save', 'training_session', 'world_items',
+                      'training_save', 'training_session', 'wheel_gift', 'world_items',
                       'zones_after_reconcile', 'zones_before_reconcile',
                       'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
                       'bazaar', 'revision_chain', 'appearance', 'build_chain',
@@ -592,10 +600,16 @@ labels = {
              'updates_timeout', 'activity_transfer', 'house_transfer'},
     'guard': {'house_transfer_input', 'activity_transfer_input'},
     'phase': {'activity_scope', 'initial', 'items', 'sessions', 'world',
-              'trade_open', 'trade_observation', 'inventory', 'visibility', 'appearances'},
+              'trade_open', 'trade_observation', 'inventory', 'visibility', 'appearances',
+              'frame', 'frame_error', 'held', 'step_due', 'probe', 'server_message',
+              'serene', 'quest_log', 'chat', 'combat', 'chase', 'target_move', 'npc'},
     'deadline_exceeded': {'true', 'false'},
     'ready': {'true', 'false'},
 }
+authority_stages = {'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
+                    'bazaar', 'revision_chain', 'appearance', 'build_chain',
+                    'proficiency_history', 'familiar_chain', 'spell_familiar_group',
+                    'spell_item_chain', 'audit_payload'}
 numbers = {'ts', 'next_command_id', 'server_sequence', 'command_type', 'command_id',
            'ms', 'connections', 'lifecycles', 'held_ms'}
 counts = collections.Counter()
@@ -623,6 +637,8 @@ def report(line):
     for key, allowed in labels.items():
         if fields.get(key) in allowed:
             safe.append((key, fields[key]))
+    if event == 'character_authority_check_failed' and fields.get('stage') in authority_stages:
+        safe.append(('check_stage', fields['stage']))
     for key in ('source', 'caller'):
         value = fields.get(key, '')
         if value in {'maintenance', 'none'} or re.fullmatch(
@@ -636,6 +652,7 @@ def report(line):
     # Reserve room for terminal failures even if many different slow callers recur.
     limit = {'serve_end': 32, 'durability_pass_slow': 16,
              'logout_busy': 16, 'control_loss_reconcile_pending': 16,
+             'control_loss_grace': 16,
              'character_authority_check_failed': 16}.get(event, 8)
     if event_counts[event] >= limit or emitted >= 128:
         if event not in limited:

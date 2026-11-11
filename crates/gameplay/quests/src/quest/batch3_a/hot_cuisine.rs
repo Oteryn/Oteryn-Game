@@ -15,7 +15,8 @@ use crate::quest::npc_rules::{
     NpcComparison, NpcKeywordMode, NpcRule, NpcRuleCatalog, NpcRuleEffect, NpcRuleError,
     NpcRuleGuard, NpcRuleInput, NpcRulePlan, NpcRuleProgram, NpcRuleTrigger,
 };
-use calendar::{YearMonth, can_cook, spends_bonus};
+pub use calendar::YearMonth;
+use calendar::{can_cook, spends_bonus};
 
 pub const QUEST: &str = "oteryn:quest.hot_cuisine_quest";
 pub const NPC: &str = "oteryn:npc.jean_pierre";
@@ -69,8 +70,8 @@ pub struct HotCuisineProgram {
 
 /// All dates use UTC, per coordinator ANSWER:
 /// https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205.
-/// The clock and saved dates come from one immutable snapshot. Physical exchanges
-/// remain disabled until the separate NPC exchange owner is approved.
+/// The clock and saved dates come from one immutable snapshot. The fenced NPC
+/// writer reevaluates this plan with locked inventory before applying its exchange.
 #[derive(Clone, Debug)]
 pub struct HotCuisineCalendar {
     pub current: YearMonth,
@@ -78,6 +79,47 @@ pub struct HotCuisineCalendar {
 }
 
 impl HotCuisineProgram {
+    /// Immutable recipe content is parsed before opening an owner transaction.
+    pub fn embedded() -> Result<&'static Self, NpcRuleError> {
+        static SOURCE: std::sync::OnceLock<Result<HotCuisineProgram, NpcRuleError>> =
+            std::sync::OnceLock::new();
+        SOURCE
+            .get_or_init(Self::load)
+            .as_ref()
+            .map_err(Clone::clone)
+    }
+
+    /// Preview proposes a source branch; only the locked inventory can admit it.
+    pub fn optimistic_inventory(
+        &self,
+    ) -> Result<crate::quest::npc_rules::NpcInventorySnapshot, NpcRuleError> {
+        use crate::quest::npc_rules::{NpcInventorySnapshot, NpcItemKey};
+        let mut inventory = NpcInventorySnapshot::default();
+        for recipe in &self.recipes {
+            for ingredient in &recipe.ingredients {
+                if let NpcRuleEffect::TakeItem {
+                    item,
+                    count,
+                    subtype,
+                    ..
+                } = ingredient
+                {
+                    let total = inventory
+                        .items
+                        .entry(NpcItemKey {
+                            item: item.clone(),
+                            subtype: *subtype,
+                        })
+                        .or_default();
+                    *total = total
+                        .checked_add(*count)
+                        .ok_or(NpcRuleError::LimitExceeded)?;
+                }
+            }
+        }
+        Ok(inventory)
+    }
+
     pub fn load() -> Result<Self, NpcRuleError> {
         let program: Self = serde_json::from_str(EMBEDDED)
             .map_err(|error| NpcRuleError::Json(error.to_string()))?;
@@ -292,7 +334,7 @@ impl HotCuisineProgram {
         let json = serde_json::to_string(&document)
             .map_err(|error| NpcRuleError::Json(error.to_string()))?;
         let catalogue = NpcRuleCatalog::from_json_documents(&[&json])?;
-        let mut plan = catalogue.plan(input)?;
+        let mut plan = catalogue.plan_inventory(input)?;
         if let Some(plan) = &mut plan {
             plan.program_digest = self.program_digest(generic.digest);
         }

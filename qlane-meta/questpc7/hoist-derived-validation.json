@@ -1,0 +1,12 @@
+[
+  {
+    "name": "quest_completion_import",
+    "command": [
+      "python3",
+      "tools/content-schema/quest-authoring/quest_completion_import.py",
+      "--check"
+    ],
+    "exit_code": 1,
+    "seconds": 3.5775327739993372
+  }
+]

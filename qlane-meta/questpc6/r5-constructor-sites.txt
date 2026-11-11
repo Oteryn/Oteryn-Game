@@ -1,0 +1,47 @@
+apps/game-server/src/node/serve/qualification_fixture.rs:170:            root_fluid_subtype: None,
+crates/gameplay/quests/src/quest/world_callbacks.rs:136:    callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
+crates/gameplay/quests/src/quest/mod.rs:78:pub(super) fn in_runtime_scope(quest: &str) -> bool {
+crates/gameplay/quests/src/quest/loader.rs:238:            .filter(|track| super::in_runtime_scope(&track.quest))
+crates/gameplay/quests/src/quest/loader.rs:245:            .filter(|transition| super::in_runtime_scope(&transition.quest))
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:7:#[path = "reward_claim_mint_postgres_cases/filled_fluid.rs"]
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:8:mod filled_fluid;
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:814:        root_fluid_subtype: None,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:2:use crate::durability::reward_claim_mint::RewardClaimMintContent;
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:39:fn filled_fluid_claims_commit_root_and_children_and_replay_without_refilling() -> TestResult {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:51:            root.root_fluid_subtype = Some(6);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:66:            root.root_fluid_subtype = Some(15);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:69:            bag.contents = vec![RewardClaimMintContent {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:91:                bad.root_fluid_subtype = Some(6);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:93:                    bad.root_fluid_subtype = None;
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:95:                    bad.contents = vec![RewardClaimMintContent {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:113:        "POSTGRES_CASE_COMPLETED filled_fluid_claims_commit_root_and_children_and_replay_without_refilling {:?}",
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:150:pub struct RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:176:    pub contents: Vec<RewardClaimMintContent>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:180:    pub root_fluid_subtype: Option<u8>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1847:            root_fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2005:    fn filled_fluid_rewards_bind_subtypes_and_refuse_ambiguous_shapes() {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2011:        filled.root_fluid_subtype = Some(6);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2018:        wine.root_fluid_subtype = Some(15);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2026:                "empty subtype" => changed.root_fluid_subtype = Some(0),
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2037:        bag.contents = vec![RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2061:            RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2068:            RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2127:        container.contents = vec![RewardClaimMintContent {
+crates/gameplay/social/src/interaction/chest_use.rs:319:        root_fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:8:        std::iter::once((0, request.root_fluid_subtype))
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:29:        request.root_fluid_subtype,
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:59:    for (ordinal, subtype) in std::iter::once((0, frozen.request.root_fluid_subtype)).chain(
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:11:    RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:156:                            RewardClaimMintContent {
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:181:                    root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:117:            root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:626:            RewardClaimMintContent, RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:661:            contents.push(RewardClaimMintContent {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:689:            root_fluid_subtype: None,
+crates/gameplay/content/src/content/world_reward_claims.rs:81:    OwnerExcluded,
+crates/gameplay/content/src/content/world_reward_claims.rs:285:        return Ok(Err(LeftOut::OwnerExcluded));
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:79:            root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:215:                root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:471:                    root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:263:        root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:642:        root_fluid_subtype: None,
