@@ -3,10 +3,13 @@
 DO $m07$
 DECLARE
     v_function TEXT := 'game_quest_reward_effects_valid(jsonb,text[],bigint[],bigint[])';
-    v_old TEXT := 'WHEN ''set_now'' THEN v_expected:=v_now;';
+    -- 1303 rewrote set_now as a checked multi-line branch; anchor on its head.
+    v_old TEXT := 'WHEN ''set_now'' THEN';
     v_new TEXT := $branch$
             WHEN 'add_at_least' THEN
-                IF jsonb_typeof(v_effect #> '{effect,value}') IS DISTINCT FROM 'number'
+                IF EXISTS(SELECT 1 FROM jsonb_object_keys(v_effect->'effect') key
+                        WHERE key NOT IN ('kind','value','minimum'))
+                    OR jsonb_typeof(v_effect #> '{effect,value}') IS DISTINCT FROM 'number'
                     OR jsonb_typeof(v_effect #> '{effect,minimum}') IS DISTINCT FROM 'number'
                     OR NOT coalesce((v_effect #>> '{effect,value}') ~ '^-?(0|[1-9][0-9]*)$'
                         AND (v_effect #>> '{effect,minimum}') ~ '^-?(0|[1-9][0-9]*)$', false)
@@ -19,8 +22,7 @@ DECLARE
                 IF v_expected NOT BETWEEN -9223372036854775808 AND 9223372036854775807
                     THEN RETURN false; END IF;
                 v_expected := greatest(v_expected, (v_effect #>> '{effect,minimum}')::numeric);
-            WHEN 'set_now' THEN v_expected:=v_now;
-$branch$;
+            WHEN 'set_now' THEN$branch$;
     v_body TEXT;
 BEGIN
     v_body := pg_get_functiondef(v_function::regprocedure);
