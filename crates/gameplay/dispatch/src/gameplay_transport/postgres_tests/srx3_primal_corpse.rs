@@ -65,6 +65,11 @@ fn srx3_w11_corpse_source_chain_policy_postgres() -> TestResult {
                     vec![6028, 4206, 4207, 4208],
                     vec![10000, 300000, 300000, 60000],
                 ),
+                (
+                    39344,
+                    vec![39344, 39343, 39342, 39341],
+                    vec![10000, 300000, 300000, 60000],
+                ),
             ] {
                 let key = format!("oteryn:item.tibia.i{root}");
                 let chain: Option<Vec<i32>> =
@@ -170,14 +175,25 @@ fn srx3_all52_source_corpse_policy_exact_postgres() -> TestResult {
                 "/../../../tools/content-schema/native-gameplay/boss-corpse-item-profiles.json"
             )))?;
             let chains = capture["decay_chains"].as_array().expect("source chains");
-            assert_eq!(chains.len(), 52);
-            for chain in chains {
+            // The complete pinned cohort includes Foam Stalker, Primal Menace
+            // and Outburst; retain an independent exact root expectation.
+            let expected_roots = [
+                111, 5973, 5993, 5995, 6028, 6081, 23478, 23564, 32610, 33792, 33797, 33801, 33805,
+                33809, 33813, 33817, 33859, 33863, 33867, 33871, 33875, 33876, 33889, 33891, 33897,
+                33901, 33905, 33909, 33949, 33984, 34121, 34125, 34133, 39344, 39530, 43555, 43559,
+                43567, 43571, 43579, 43583, 43669, 43816, 43820, 43824, 43828, 43832, 43836, 43840,
+                43844, 44012, 44015, 44018, 44021, 44024,
+            ];
+            assert_eq!(chains.len(), 55);
+            assert_eq!(capture["roots"], serde_json::json!(expected_roots));
+            for (chain, root) in chains.iter().zip(expected_roots) {
                 let expected = chain
                     .as_array()
                     .expect("source chain")
                     .iter()
                     .map(|n| n.as_i64().expect("sourceID") as i32)
                     .collect::<Vec<_>>();
+                assert_eq!(expected.first(), Some(&root), "exact ordered source root");
                 let key = format!("oteryn:item.tibia.i{}", expected[0]);
                 let mut durations = Vec::new();
                 for stage in &expected {
@@ -211,6 +227,13 @@ fn srx3_all52_source_corpse_policy_exact_postgres() -> TestResult {
                 assert_eq!(actual, Some(expected), "source chain {key}");
                 assert_eq!(actual_durations, Some(durations), "source durations {key}");
             }
+            let unknown: (Option<Vec<i32>>, Option<Vec<i64>>) = sqlx::query_as(
+                "SELECT game_summer_corpse_chain($1), game_source_corpse_durations_v1($1)",
+            )
+            .bind("oteryn:item.tibia.i0")
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(unknown, (None, None), "unknown roots have no corpse policy");
             h.cleanup().await
         })
     });

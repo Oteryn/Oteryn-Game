@@ -244,6 +244,38 @@ def qualify_missing_companion_audit(directory):
     return proof
 
 
+def checked_boss_corpse_capture():
+    """Bind the Elder extension to the complete current source corpse cohort."""
+    sys.path.insert(0, str(ROOT/'tools/content-migration'))
+    import boss_corpse_profiles as corpses
+    import boss_corpse_terminal_reference as terminal
+    raw, capture = read(ROOT/corpses.PATH)
+    sources = [{'repository': 'zimbadev/crystalserver', 'revision': corpses.PIN,
+                'path': path, 'sha256': sha}
+               for path, sha in {**corpses.SOURCE_HASHES, **terminal.EXTRA_SOURCES}.items()]
+    if (json.loads((ROOT/corpses.PIN_PATH).read_bytes()) != {
+            'path': corpses.PATH, 'sha256': digest(raw)}
+            or capture['schema'] != corpses.SCHEMA
+            or capture['source_revision'] != corpses.PIN
+            or capture['sources'] != sources
+            or capture['roots'] != sorted(corpses.ROOT_IDS)
+            or len(capture['decay_chains']) != 55
+            or len(capture['records']) != 199):
+        raise ValueError('Elder terminal source capture authority mismatch')
+    chains = capture['decay_chains']
+    if any(not isinstance(chain, list) or not 1 <= len(chain) <= 8
+           or any(type(item) is not int for item in chain)
+           or len(set(chain)) != len(chain) for chain in chains):
+        raise ValueError('Elder terminal source capture authority mismatch')
+    wanted = {item for chain in chains for item in chain}
+    identifiers = [row['production_binding']['external_id'] for row in capture['records']]
+    if ([chain[0] for chain in chains] != capture['roots']
+            or len(wanted) != 199 or len(set(identifiers)) != 199
+            or set(identifiers) != {str(item) for item in wanted}):
+        raise ValueError('Elder terminal source capture authority mismatch')
+    return capture
+
+
 def qualify_item_closure(catalog, provider):
     """Exact authored refs plus independent SourceIdentityBinding/definition match.
 
@@ -302,14 +334,9 @@ def qualify_item_closure(catalog, provider):
         if identifier in extra_records:
             raise ValueError('Boss movement Item source record conflict')
         extra_records[identifier] = record
-    import boss_corpse_profiles as corpse_profiles
     import boss_corpse_terminal_reference as corpse_terminal
     terminal_packet = corpse_terminal.checked_packet(ROOT)
-    terminal_raw, terminal_capture = read(ROOT/corpse_profiles.PATH)
-    if (json.loads((ROOT/corpse_profiles.PIN_PATH).read_bytes()) != {
-            'path': corpse_profiles.PATH, 'sha256': digest(terminal_raw)}
-            or len(terminal_capture['records']) != 51):
-        raise ValueError('Elder terminal source capture authority mismatch')
+    terminal_capture = checked_boss_corpse_capture()
     terminal_records = [record for record in terminal_capture['records']
                         if record['production_binding']['external_id'] == '43666']
     if len(terminal_records) != 1 or len(terminal_packet['bindings']) != 1:
