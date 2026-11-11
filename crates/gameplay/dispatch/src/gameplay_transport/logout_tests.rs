@@ -26,6 +26,7 @@ fn nbeof_logout_storage_and_unknown_commit_fail_without_retry()
                 stale_rounds: super::FRESH_ADMISSION_ROUNDS,
                 root: None,
                 _foreground: None,
+                waiter: std::sync::OnceLock::new(),
             };
             let mut failure = Some(error);
             let mut attempts = 0;
@@ -65,6 +66,7 @@ fn nbeof_holder_reads_share_one_absolute_retry_deadline() -> Result<(), Box<dyn 
             stale_rounds: super::FRESH_ADMISSION_ROUNDS,
             root: None,
             _foreground: None,
+            waiter: std::sync::OnceLock::new(),
         };
         let mut attempts = 0;
         let first = budget
