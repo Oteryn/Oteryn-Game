@@ -13,7 +13,6 @@ use crate::gameplay_transport::connection::{
     ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
 };
 use oteryn_gameplay_progression::atelier::{AtelierAction, AtelierState, FragmentKind, GemQuality};
-use oteryn_gameplay_progression::wheel::WheelDomain;
 use oteryn_gameplay_progression::wheel_gem_data::WheelGemData;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -220,27 +219,23 @@ fn scenario() -> TestResult {
         assert_eq!(initial.gems.len(), 8);
         assert_eq!(initial.gold, 0);
         assert!(initial.unrevealed.is_empty() && initial.fragments.is_empty());
-        for domain in [
-            WheelDomain::Green,
-            WheelDomain::Red,
-            WheelDomain::Purple,
-            WheelDomain::Blue,
-        ] {
-            for quality in [GemQuality::Lesser, GemQuality::Regular] {
-                let gems: Vec<_> = initial
-                    .gems
-                    .values()
-                    .filter(|gem| gem.domain == domain && gem.quality == quality)
-                    .collect();
-                assert_eq!(gems.len(), 1);
+        // The initial grant keeps four Lesser and four Regular gems; gems have no domain.
+        for quality in [GemQuality::Lesser, GemQuality::Regular] {
+            let gems: Vec<_> = initial
+                .gems
+                .values()
+                .filter(|gem| gem.quality == quality)
+                .collect();
+            assert_eq!(gems.len(), 4);
+            for gem in gems {
                 assert_eq!(
-                    gems[0].mods.len(),
+                    gem.mods.len(),
                     if quality == GemQuality::Lesser { 1 } else { 2 }
                 );
-                assert!(!gems[0].locked && !gems[0].vessel);
-                assert_eq!(gems[0].ruleset_revision, data.revision());
+                assert!(!gem.locked && !gem.vessel);
+                assert_eq!(gem.ruleset_revision, data.revision());
                 if quality == GemQuality::Regular {
-                    assert_ne!(gems[0].mods[0], gems[0].mods[1]);
+                    assert_ne!(gem.mods[0], gem.mods[1]);
                 }
             }
         }
@@ -601,6 +596,13 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
     sqlx::raw_sql(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../apps/game-server/migrations/1007_quest_carried_payment_reapplication.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    // Gem Vessel slots replace the domain vessel guard that reapplying 0314 restored.
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/2770_gem_vessel_slots.sql"
     )))
     .execute(&mut *tx)
     .await?;

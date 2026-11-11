@@ -68,8 +68,14 @@ pub(super) fn summary(
             key.replace('_', " ")
         ));
     }
-    for (key, stage) in &e.sockets.resonance_stages {
-        out.push(format!("{}: stage {stage}", key.replace('_', " ")));
+    if e.sockets.gem_vessel_nodes > 0 {
+        out.push(format!(
+            "Gem Vessel nodes: {} (+{} damage and healing)",
+            e.sockets.gem_vessel_nodes,
+            e.sockets.gem_vessel_nodes.saturating_mul(
+                oteryn_gameplay_progression::atelier::vessels::GEM_VESSEL_FLAT_DAMAGE_HEALING
+            )
+        ));
     }
     for (key, stage) in &e.revelation_stages {
         out.push(format!(

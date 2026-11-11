@@ -172,8 +172,13 @@ impl WheelOccurrence {
     }
 }
 
-/// Green, red, purple, blue; at most one revealed gem per domain.
-pub type WheelVessels = [Option<[u8; 16]>; 4];
+/// The ordered Gem Vessel slots (`atelier::vessels`); migration 2770 converted the former
+/// four domain cells.
+pub type WheelVessels = oteryn_gameplay_progression::atelier::vessels::GemVessels;
+
+/// A receipt's vessel vector as recorded: four domain cells before migration 2770, the
+/// ordered slots after it.
+pub type RecordedWheelVessels = Vec<Option<[u8; 16]>>;
 
 /// `WHEEL_INTENT set_allocation` (§7.1): a full replacement.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -181,7 +186,7 @@ pub struct WheelChangeRequest {
     pub occurrence: WheelOccurrence,
     pub expected_wheel_revision: u64,
     pub slots: WheelSlots,
-    /// None preserves the current vessels; Some replaces all four atomically.
+    /// None preserves the current vessels; Some replaces every slot atomically.
     pub vessels: Option<WheelVessels>,
 }
 
@@ -228,8 +233,8 @@ pub struct CommittedWheelChange {
     pub committed_character_revision: CharacterRevision,
     pub before_wheel_revision: u64,
     pub after_wheel_revision: u64,
-    pub vessels_before: WheelVessels,
-    pub vessels_after: WheelVessels,
+    pub vessels_before: RecordedWheelVessels,
+    pub vessels_after: RecordedWheelVessels,
     pub before: WheelSlots,
     pub after: WheelSlots,
     pub before_wheel_ruleset_revision: String,
@@ -414,24 +419,27 @@ impl DurabilityRoot {
                         return refuse(WheelRefusal::NoChange);
                     }
                     let vocation = read_vocation(&mut tx, fence.character_id).await?;
-                    if let Err(reason) = eligibility(
-                        &ruleset,
-                        &vocation,
-                        level,
-                        super::character_promotion::read_durable_promotion(
-                            &mut tx,
-                            fence.character_id,
-                        )
-                        .await?,
-                        premium_permitted,
-                    ) {
+                    let promoted = super::character_promotion::read_durable_promotion(
+                        &mut tx,
+                        fence.character_id,
+                    )
+                    .await?;
+                    if let Err(reason) =
+                        eligibility(&ruleset, &vocation, level, promoted, premium_permitted)
+                    {
                         return refuse(WheelRefusal::NotEligible(reason));
                     }
                     let atelier =
                         super::character_atelier::load_in_transaction(&mut tx, fence.character_id)
                             .await?;
                     if let Some(vessels) = request.vessels
-                        && !valid_vessels(&vessels, atelier.as_ref(), ruleset.revision())
+                        && !valid_vessels(
+                            &vessels_before,
+                            &vessels,
+                            atelier.as_ref(),
+                            &ruleset,
+                            (&request.slots, &vocation, level, promoted),
+                        )
                     {
                         return refuse(WheelRefusal::RulesetNotCurrent);
                     }
@@ -926,7 +934,7 @@ async fn write_change(
            wheel_ruleset_revision, original_character_revision, committed_character_revision, \
            level_before, level_after, experience_before, experience_after, profile_revision, \
            ruleset_revision, content_revision, simulation_revision, evidence_revision, \
-           declaration_revision, policy_revision, reward_revision, committed_at, vessels_before, vessels_after) \
+           declaration_revision, policy_revision, reward_revision, committed_at, gem_vessels_before, gem_vessels_after) \
          SELECT s.character_id, encode($2,'hex')::uuid, $3, $4, $5::text::numeric(20,0), \
            $6::text::numeric(20,0), $7, $8, $9, $10, $11::text::numeric(20,0), \
            $12::text::numeric(20,0), s.level, s.level, s.total_experience, \
@@ -1021,8 +1029,8 @@ async fn write_change(
         |value| CharacterRevision::new(value).map_err(|_| DurabilityError::InvalidStoredState);
     Ok(CommittedWheelChange {
         occurrence: change.occurrence,
-        vessels_before,
-        vessels_after,
+        vessels_before: vessels_before.to_vec(),
+        vessels_after: vessels_after.to_vec(),
         kind: change.kind,
         character_id,
         original_character_revision: revision(change.original)?,
@@ -1101,7 +1109,9 @@ async fn load_receipt(
         "SELECT wheel_occurrence_id::text, kind, request_binding, character_id::text, \
                 original_character_revision::text, committed_character_revision::text, \
                 before_wheel_revision::text, after_wheel_revision::text, slots_before, \
-                slots_after, vessels_before, vessels_after, before_wheel_ruleset_revision, wheel_ruleset_revision \
+                slots_after, coalesce(gem_vessels_before, vessels_before) AS vessels_before, \
+                coalesce(gem_vessels_after, vessels_after) AS vessels_after, \
+                before_wheel_ruleset_revision, wheel_ruleset_revision \
            FROM game_character_wheel_receipts \
           WHERE character_id = encode($1,'hex')::uuid \
             AND wheel_occurrence_id = encode($2,'hex')::uuid",
@@ -1158,26 +1168,20 @@ pub(super) async fn read_vessels(
     value
         .map(|json| serde_json::from_value(json).map_err(|_| DurabilityError::InvalidStoredState))
         .transpose()
-        .map(|v| v.unwrap_or([None; 4]))
+        .map(|v| v.unwrap_or(oteryn_gameplay_progression::atelier::vessels::NO_GEM_VESSELS))
 }
-fn valid_vessels(
-    vessels: &WheelVessels,
+/// A replacement slot vector is valid when every filled slot holds a distinct current gem of the
+/// slot's quality and every slot changed to a gem is open under the requested allocation.
+pub(super) fn valid_vessels(
+    before: &WheelVessels,
+    after: &WheelVessels,
     state: Option<&oteryn_gameplay_progression::atelier::AtelierState>,
-    revision: &str,
+    ruleset: &WheelRuleset,
+    (slots, vocation, level, promoted): (&WheelSlots, &str, u32, bool),
 ) -> bool {
-    let domains = [
-        WheelDomain::Green,
-        WheelDomain::Red,
-        WheelDomain::Purple,
-        WheelDomain::Blue,
-    ];
-    vessels.iter().zip(domains).all(|(id, domain)| {
-        id.is_none_or(|id| {
-            state
-                .and_then(|s| s.gems.get(&u128::from_be_bytes(id)))
-                .is_some_and(|gem| gem.domain == domain && gem.ruleset_revision == revision)
-        })
-    })
+    use oteryn_gameplay_progression::atelier::vessels;
+    let open = vessels::open_slots_for(ruleset, slots, vocation, level, promoted);
+    vessels::valid_change(before, after, state, ruleset.revision(), open)
 }
 
 fn slot_columns(slots: &WheelSlots) -> Vec<i16> {
@@ -1220,6 +1224,58 @@ mod tests {
         assert!(WheelOccurrence::from_bytes(v7).is_ok());
         v7[6] = 0x40;
         assert!(WheelOccurrence::from_bytes(v7).is_err());
+    }
+
+    #[test]
+    fn valid_vessels_accepts_a_gem_in_every_open_slot_of_its_quality_without_a_domain() {
+        use oteryn_gameplay_progression::atelier::{
+            AtelierState, Gem, GemQuality,
+            vessels::{GEM_VESSEL_SLOT_QUALITIES, NO_GEM_VESSELS},
+        };
+        let ruleset = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded()
+            .expect("embedded data")
+            .wheel_ruleset()
+            .expect("ruleset");
+        let full = WheelSlots::new(ruleset.capacities()).expect("full Wheel");
+        let gems = [
+            (1, GemQuality::Lesser),
+            (2, GemQuality::Regular),
+            (3, GemQuality::Greater),
+        ];
+        let mut state = AtelierState::default();
+        for (seed, quality) in gems {
+            let id = u128::from_be_bytes([seed; 16]);
+            state.gems.insert(
+                id,
+                Gem {
+                    id,
+                    quality,
+                    mods: Vec::new(),
+                    locked: false,
+                    vessel: false,
+                    slot: None,
+                    ruleset_revision: ruleset.revision().into(),
+                },
+            );
+        }
+        // The twelve slots span the four former domains; no slot is tied to one any more.
+        let mut accepted = 0;
+        for (seed, quality) in gems {
+            for (slot, slot_quality) in GEM_VESSEL_SLOT_QUALITIES.iter().enumerate() {
+                let mut after = NO_GEM_VESSELS;
+                after[slot] = Some([seed; 16]);
+                let valid = valid_vessels(
+                    &NO_GEM_VESSELS,
+                    &after,
+                    Some(&state),
+                    &ruleset,
+                    (&full, "knight", 2_000, true),
+                );
+                assert_eq!(valid, *slot_quality == quality, "gem {seed} slot {slot}");
+                accepted += usize::from(valid);
+            }
+        }
+        assert_eq!(accepted, 12);
     }
 
     #[test]

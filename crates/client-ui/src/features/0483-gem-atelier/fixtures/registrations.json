@@ -1,0 +1,22 @@
+[
+  {
+    "mechanic": "0483-gem-atelier",
+    "kind": "handlers",
+    "id": "0483-gem-atelier-v2",
+    "status": "unsupported",
+    "reason": "WU26-09 server side only: Gem Vessel slots, Replace Vessel and the domain-free Atelier land in the client lane.",
+    "commands": [
+      6210,
+      6211,
+      6212,
+      6213
+    ],
+    "not_applicable": {
+      "state": "The Gem Atelier v2 state lands with client support.",
+      "protocol": "The canonical codec is oteryn-protocol-oteryn atelier::v2.",
+      "view": "The Gem Vessel slot view lands with client support.",
+      "input": "The Replace Vessel input lands with client support.",
+      "settings": "The Gem Atelier has no client settings."
+    }
+  }
+]
