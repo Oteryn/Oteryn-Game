@@ -155,6 +155,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
 
     /// Commits one decoded request through the one Atelier writer and builds the capability
     /// 148 reply. Mod Reshaping (capability 483) enters here with its own decoded request.
+    /// A request that arrives already `refused` is a replay probe: it reaches the writer
+    /// without resources, so a committed occurrence replays its receipt and a fresh one is
+    /// refused with nothing written.
     pub(super) async fn atelier_v1_apply(
         &self,
         admitted: super::connection::AdmittedSession,
@@ -165,6 +168,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
     ) -> AtelierWireReply {
         use oteryn_protocol_oteryn::atelier as wire;
         let mut recorded = None;
+        let replay_only = refused;
         if let Some(request) = request {
             // Rebuilt so the resources may borrow this call's pinned content.
             let mut request = crate::durability::character_atelier::AtelierRequest {
@@ -192,6 +196,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 crate::durability::character_atelier::AtelierMutation::Reshape { .. }
             );
             let hireling_stash = reshape
+                && !replay_only
                 && self
                     .reshape_hireling_stash(
                         admitted.runtime_actor,
@@ -255,7 +260,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         at_locker,
                         hireling_stash,
                     );
-                if let Some(content) = &content {
+                if !replay_only && let Some(content) = &content {
                     request.resources = atelier_wire_resources(
                         self,
                         &runtime,
@@ -282,7 +287,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 Ok(GemBuildOutcome::Atelier(
                     crate::durability::character_atelier::AtelierOutcome::Committed { state, .. }
                     | crate::durability::character_atelier::AtelierOutcome::AlreadyCommitted { state, .. },
-                )) => recorded = Some(state),
+                )) => {
+                    refused = false;
+                    recorded = Some(state);
+                }
                 Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput
                     | crate::durability::character_progression::CharacterProgressionError::AuthorityRejected
                     | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence) => return AtelierWireReply::Rejected,
@@ -391,23 +399,27 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let gems = state
             .gems
             .values()
-            .map(|gem| wire::GemView {
-                id: gem.id.to_be_bytes(),
-                quality: match gem.quality {
-                    oteryn_gameplay_progression::atelier::GemQuality::Lesser => 0,
-                    oteryn_gameplay_progression::atelier::GemQuality::Regular => 1,
-                    oteryn_gameplay_progression::atelier::GemQuality::Greater => 2,
-                },
+            .map(|gem| {
                 // Gems have no domain. Capability 148 clients index their four vessel
-                // cells by this field, so a socketed gem reports its legacy cell.
-                domain: legacy
+                // cells by this field, so a gem in a legacy cell reports that cell. A gem
+                // socketed beyond the four cells stays socketed but is shown unsocketed,
+                // since the client refuses two socketed gems in one cell.
+                let cell = legacy
                     .iter()
                     .position(|cell| *cell == Some(gem.id.to_be_bytes()))
-                    .and_then(|cell| u8::try_from(cell).ok())
-                    .unwrap_or(0),
-                locked: gem.locked,
-                vessel: gem.vessel,
-                modifiers: gem.mods.clone(),
+                    .and_then(|cell| u8::try_from(cell).ok());
+                wire::GemView {
+                    id: gem.id.to_be_bytes(),
+                    quality: match gem.quality {
+                        oteryn_gameplay_progression::atelier::GemQuality::Lesser => 0,
+                        oteryn_gameplay_progression::atelier::GemQuality::Regular => 1,
+                        oteryn_gameplay_progression::atelier::GemQuality::Greater => 2,
+                    },
+                    domain: cell.unwrap_or(0),
+                    locked: gem.locked,
+                    vessel: cell.is_some(),
+                    modifiers: gem.mods.clone(),
+                }
             })
             .collect();
         wire::encode_reply(&wire::AtelierReply {

@@ -91,6 +91,26 @@ pub(super) async fn exercise(
     assert_eq!(footprint(h).await?, fp);
     assert_eq!(lesser_fragments(h).await?, fragments);
 
+    // Receipts from before migration 2770 still carry each gem's retired `domain`, and the
+    // `vessel` projection moves with Replace Vessel between Atelier receipts: the RESHAPE
+    // guard compares gems without either, so the redraw still commits.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    let aged = sqlx::query(
+        "UPDATE game_character_atelier_receipts SET outcome_json=jsonb_set(outcome_json,'{gems}',
+          (SELECT jsonb_object_agg(e.key,e.value||jsonb_build_object('domain','Green',
+            'vessel',NOT (e.value->>'vessel')::boolean)) FROM jsonb_each(outcome_json->'gems') e))
+         WHERE character_id=encode($1,'hex')::uuid AND after_revision=$2",
+    )
+    .bind(id(41).as_slice())
+    .bind(i64::try_from(before.revision)?)
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(aged.rows_affected(), 1);
+    tx.commit().await?;
+
     for (seed, position, burned) in [(161, 1_u8, 1_i64), (162, 2, 2)] {
         let prior = stored(h).await?;
         let fragments = lesser_fragments(h).await?;
@@ -131,7 +151,7 @@ pub(super) async fn exercise(
 
         let fp = footprint(h).await?;
         let replay = owner
-            .execute_gem_atelier(session, GemBuildCommand::Atelier(request))
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(request.clone()))
             .await
             .map_err(debug)?;
         assert!(
@@ -141,6 +161,37 @@ pub(super) async fn exercise(
             ),
             "{replay:?}"
         );
+        assert_eq!(stored(h).await?, after);
+        assert_eq!(footprint(h).await?, fp);
+
+        // The dispatch replay probe (admission lost: no Premium, or combat) carries no
+        // resources: the committed occurrence still replays, a fresh one is refused.
+        let probe = AtelierRequest {
+            resources: None,
+            ..request.clone()
+        };
+        advance_ex_action(owner)?;
+        assert!(matches!(
+            owner
+                .execute_gem_atelier(session, GemBuildCommand::Atelier(probe))
+                .await
+                .map_err(debug)?,
+            GemBuildOutcome::Atelier(AtelierOutcome::AlreadyCommitted { .. })
+        ));
+        let fresh = AtelierRequest {
+            occurrence: id(seed + 35),
+            expected_atelier_revision: after.revision,
+            resources: None,
+            ..request.clone()
+        };
+        advance_ex_action(owner)?;
+        assert!(matches!(
+            owner
+                .execute_gem_atelier(session, GemBuildCommand::Atelier(fresh))
+                .await
+                .map_err(debug)?,
+            GemBuildOutcome::Atelier(AtelierOutcome::Refused)
+        ));
         assert_eq!(stored(h).await?, after);
         assert_eq!(footprint(h).await?, fp);
     }

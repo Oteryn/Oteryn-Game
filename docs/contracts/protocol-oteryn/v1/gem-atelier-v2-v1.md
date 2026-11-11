@@ -34,7 +34,11 @@ The slot's previous occupant returns to the gem list. The Wheel allocation is un
 write uses the durable, session-generation fenced Wheel writer: a slot that changes to a gem
 must be open and of the gem's quality, the gem must be a current gem of the Character, and
 no gem fills two slots. A refusal returns `refused=true` with nothing written. The same
-occurrence and intent returns its recorded result.
+occurrence and intent returns its recorded result: the receipt binds the expected Wheel
+revision, slot and gem as sent, never the allocation or slots read at the time, so a retry
+replays even after later Wheel changes. A capability 148 allocation save binds its four cells
+as sent, as before migration 2770, and its gems are placed after the receipt lookup; a gem
+socketed beyond the four cells such a client is shown keeps its slot.
 
 Lock and paid requests run through the v1 Atelier writer unchanged.
 
@@ -52,7 +56,9 @@ gold and one lesser fragment, 1,000,000 gold and two lesser fragments, or 5,000,
 three greater fragments. The new modifier is drawn from the position's reveal pool minus the
 modifier the position holds now, so the result always differs; the two basic positions never
 hold the same modifier. The gem keeps its identity, quality and slot.
-Outside the temple or without Premium the reply is `refused=true` with nothing written.
+Outside the temple or without Premium the reply is `refused=true` with nothing written,
+unless the occurrence already committed: that receipt is returned, whatever the temple and
+Premium state at the retry.
 
 Reshape runs through the v1 Atelier writer as receipt kind `RESHAPE`: the modifier draw, the
 gold fee (audited fee cause 483 `gem_reshape`, service key `oteryn:atelier.reshape`), the
@@ -62,8 +68,9 @@ or a Steward hireling serves its open stash (the hireling depot service), the Su
 the remainder through its ledger; otherwise only carried fragments count, and a shortfall is
 `refused=true` with nothing written. The server checks this access at commit time. Migration 2771
 binds receipt, fee and fragments: the fee names the position, and exactly one modifier of one
-unlocked gem changes, only at that position. The same occurrence and intent returns its
-recorded result.
+unlocked gem changes, only at that position; gems compare without the retired `domain` of
+pre-2770 history and without the projected `vessel` flag. The same occurrence and intent
+returns its recorded result.
 
 ## Reply
 

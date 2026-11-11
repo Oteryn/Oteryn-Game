@@ -1,7 +1,7 @@
 use super::*;
 use crate::durability::character_atelier::AtelierResources;
 use crate::durability::character_wheel::{
-    WheelChangeRequest, WheelCommitOutcome, WheelOccurrence, WheelSlots,
+    WheelChangeRequest, WheelCommitOutcome, WheelOccurrence, WheelSlots, WheelVesselIntent,
 };
 use crate::durability::item_fee_burn::test_support::{definition, request as fee_request};
 use crate::gameplay_transport::atelier::{GemBuildCommand, GemBuildOutcome};
@@ -209,7 +209,7 @@ pub(super) async fn exercise(
         occurrence: WheelOccurrence::from_bytes(id(179)).map_err(debug)?,
         expected_wheel_revision: 0,
         slots: WheelSlots::ZERO,
-        vessels: Some(lesser_slot),
+        vessels: Some(WheelVesselIntent::Slots(lesser_slot)),
     };
     advance_ex_action(owner)?;
     assert!(
@@ -225,7 +225,7 @@ pub(super) async fn exercise(
         occurrence: WheelOccurrence::from_bytes(id(189)).map_err(debug)?,
         expected_wheel_revision: 0,
         slots: earned,
-        vessels: Some(regular_slot),
+        vessels: Some(WheelVesselIntent::Slots(regular_slot)),
     };
     advance_ex_action(owner)?;
     assert!(
@@ -351,7 +351,7 @@ pub(super) async fn exercise(
         expected_wheel_revision: 1,
         slots: WheelSlots::new(full).map_err(debug)?,
         // The full red slice unlocks three Gem Vessel nodes, opening slots 0..=2.
-        vessels: Some(regular_slot),
+        vessels: Some(WheelVesselIntent::Slots(regular_slot)),
     };
     // Keep the existing 11-point central slice too: moving points still needs a temple.
     let mut wheel = wheel;

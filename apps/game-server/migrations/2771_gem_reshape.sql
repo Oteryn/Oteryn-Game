@@ -130,18 +130,24 @@ BEGIN
   fee:=CASE reshape_at WHEN 1 THEN 125000 WHEN 2 THEN 1000000 WHEN 3 THEN 5000000 END;
   count_needed:=reshape_at;
   key:=CASE reshape_at WHEN 3 THEN 'oteryn:item.tibia.i46626' WHEN 1 THEN 'oteryn:item.tibia.i46625' WHEN 2 THEN 'oteryn:item.tibia.i46625' END;
+  -- Gems compare without the retired `domain` (kept in pre-2770 history) and without the
+  -- `vessel` flag, a projection of the Wheel vessel owner that Replace Vessel moves between
+  -- Atelier receipts.
   IF reshape_at IS NULL
     OR (SELECT array_agg(e.key ORDER BY e.key) FROM jsonb_each(a.outcome_json->'gems') e)
        IS DISTINCT FROM (SELECT array_agg(e.key ORDER BY e.key) FROM jsonb_each(before_state->'gems') e)
-    OR (SELECT count(*) FROM jsonb_each(a.outcome_json->'gems') e WHERE e.value IS DISTINCT FROM before_state->'gems'->e.key)<>1
+    OR (SELECT count(*) FROM jsonb_each(a.outcome_json->'gems') e
+       WHERE (e.value-'domain'-'vessel') IS DISTINCT FROM (before_state->'gems'->e.key)-'domain'-'vessel')<>1
     OR EXISTS(SELECT 1 FROM jsonb_each(a.outcome_json->'gems') e
-       WHERE e.value IS DISTINCT FROM before_state->'gems'->e.key
-        AND ((e.value-'mods') IS DISTINCT FROM (before_state->'gems'->e.key)-'mods'
-         OR (before_state->'gems'->e.key->>'locked')::boolean
-         OR jsonb_array_length(e.value->'mods')<>jsonb_array_length(before_state->'gems'->e.key->'mods')
-         OR jsonb_array_length(e.value->'mods')<reshape_at
-         OR EXISTS(SELECT 1 FROM generate_series(0,jsonb_array_length(e.value->'mods')-1) i
-            WHERE i<>reshape_at-1 AND e.value->'mods'->i IS DISTINCT FROM before_state->'gems'->e.key->'mods'->i))) THEN
+       CROSS JOIN LATERAL (SELECT e.value-'domain'-'vessel' AS after_gem,
+        (before_state->'gems'->e.key)-'domain'-'vessel' AS before_gem) g
+       WHERE g.after_gem IS DISTINCT FROM g.before_gem
+        AND ((g.after_gem-'mods') IS DISTINCT FROM g.before_gem-'mods'
+         OR (g.before_gem->>'locked')::boolean
+         OR jsonb_array_length(g.after_gem->'mods')<>jsonb_array_length(g.before_gem->'mods')
+         OR jsonb_array_length(g.after_gem->'mods')<reshape_at
+         OR EXISTS(SELECT 1 FROM generate_series(0,jsonb_array_length(g.after_gem->'mods')-1) i
+            WHERE i<>reshape_at-1 AND g.after_gem->'mods'->i IS DISTINCT FROM g.before_gem->'mods'->i))) THEN
    RAISE EXCEPTION 'Atelier reshape must replace one modifier of one unlocked gem' USING ERRCODE='23514';
   END IF;
  ELSIF a.kind='GRADE_UP' THEN$arm$;

@@ -132,8 +132,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return WheelAllocationReply::Rejected;
         };
         let session = admitted.game_session_id;
-        // A vector that cannot be placed into the ordered slots is a rule refusal, like the
-        // Wheel writer's own vessel refusal, and writes nothing.
         let refused = if request.action != 0 {
             let Ok(occurrence) =
                 crate::durability::character_wheel::WheelOccurrence::from_bytes(request.occurrence)
@@ -144,47 +142,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return WheelAllocationReply::Rejected;
             };
-            // Capability 148 clients still send four cells. Their gems are placed into the
-            // ordered Gem Vessel slots; the Wheel writer validates the result.
-            let vessels = match request.vessels {
-                None => Some(None),
-                Some(cells) => {
-                    let Ok(sessions) = self.states.atelier_sessions.lock() else {
-                        return WheelAllocationReply::Unavailable;
-                    };
-                    let state = sessions.get(&session).and_then(Option::as_ref);
-                    let current = state.map_or(gem_vessels::NO_GEM_VESSELS, gem_vessels::from_state);
-                    gem_vessels::from_legacy_cells(&current, &cells, |id| {
-                        state?
-                            .gems
-                            .get(&u128::from_be_bytes(id))
-                            .map(|gem| gem.quality)
-                    })
-                    .map(Some)
-                }
-            };
-            match vessels {
-                None => true,
-                Some(vessels) => {
-                    match self
-                        .wheel_fenced_change(
-                            admitted,
-                            item_fence,
-                            crate::durability::character_wheel::WheelChangeRequest {
-                                occurrence,
-                                expected_wheel_revision: request.expected_revision,
-                                slots,
-                                vessels,
-                            },
-                        )
-                        .await
-                    {
-                        FencedWheelChange::Done { refused } => refused,
-                        FencedWheelChange::Rejected => return WheelAllocationReply::Rejected,
-                        FencedWheelChange::Unavailable => {
-                            return WheelAllocationReply::Unavailable;
-                        }
-                    }
+            // Capability 148 clients still send four cells. The Wheel writer binds them as
+            // sent and, after its receipt lookup, places their gems into the ordered Gem
+            // Vessel slots; a vector that cannot be placed is a rule refusal.
+            match self
+                .wheel_fenced_change(
+                    admitted,
+                    item_fence,
+                    crate::durability::character_wheel::WheelChangeRequest {
+                        occurrence,
+                        expected_wheel_revision: request.expected_revision,
+                        slots,
+                        vessels: request
+                            .vessels
+                            .map(crate::durability::character_wheel::WheelVesselIntent::LegacyCells),
+                    },
+                )
+                .await
+            {
+                FencedWheelChange::Done { refused } => refused,
+                FencedWheelChange::Rejected => return WheelAllocationReply::Rejected,
+                FencedWheelChange::Unavailable => {
+                    return WheelAllocationReply::Unavailable;
                 }
             }
         } else {
