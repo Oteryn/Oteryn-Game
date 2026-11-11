@@ -179,7 +179,7 @@ class LionTrialItemProfiles(unittest.TestCase):
                     if mutation == 'weight':
                         row['semantics']['physical']['value']['weight']['value'] += 1
                     elif mutation == 'extra_attributes':
-                        row['attributes'].update(always_on_top=False, always_on_top_order=0)
+                        row['attributes']['unqualified_lion_attribute'] = True
                     else:
                         row['production_binding']['target']['key'] = 'oteryn:item.tibia.i3031'
                     expected_existing = copy.deepcopy(row)
@@ -319,6 +319,130 @@ class LionTrialItemProfiles(unittest.TestCase):
                         with self.assertRaisesRegex(ValueError, 'LION_TRIAL_ITEM_TAXONOMY'):
                             admit()
                     self.assertEqual(generated, before)
+
+    def test_top_order_selection_rejects_unqualified_item_keys(self):
+        keys = {f'oteryn:item.tibia.i{item}' for item in profiles.SOURCE_RECORDS}
+        with self.assertRaisesRegex(ValueError, 'LION_TRIAL_ITEM_TOP_ORDER_COHORT'):
+            profiles.records(ROOT, self.xml, self.definitions,
+                             top_order_keys=keys | {'oteryn:item.tibia.i3031'})
+
+    def test_house_top_order_survives_two_native_registration_cycles(self):
+        import authored_static_item_constructors as authored
+        import house_decoration_actions as house
+        import quest_callback_profiles as provider
+        import quick_loot_item_profiles as quick_loot
+        from qualification_inputs import appearance_input_scope
+
+        keys = {f'oteryn:item.tibia.i{item_id}' for item_id in profiles.SOURCE_RECORDS}
+        selected = set(profiles.SOURCE_RECORDS) & shared.IDS
+        self.assertEqual(selected, {5467, 21389, 21466})
+        profile = shared.PROFILE
+        manifest = 'content/spells.manifest.json'
+        read_bytes = Path.read_bytes
+        order = lambda row: row['production_definition']['production_key']
+        canonical = lambda value: (json.dumps(value, sort_keys=True) + '\n').encode()
+
+        def admit(generated):
+            provider.admit(ROOT, generated, profile, manifest, order, canonical)
+
+        def cycle(prior=None):
+            def native_read_bytes(path):
+                return prior if prior is not None and path == ROOT / profile else read_bytes(path)
+
+            # Only the predecessor's native bytes change between real captures;
+            # all canonical definitions, source pins and bindings stay actual.
+            with patch.object(Path, 'read_bytes', native_read_bytes):
+                captured = shared.capture(ROOT, item_ids=selected)
+            generated = {
+                profile: json.dumps({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1',
+                                     'records': captured['records']}).encode(),
+                manifest: b'{"item_profiles":{"sha256":"pending"}}',
+                authored.ADMISSIONS: (ROOT / authored.ADMISSIONS).read_bytes(),
+            }
+            quick_loot.admit(ROOT, generated, profile, manifest, order, canonical)
+            admit(generated)
+            return generated
+
+        with patch.object(provider, '_requested_inputs',
+                          return_value=(keys, set(), [])), patch.object(
+                              sys, 'path', [str(ROOT / 'tools/content-schema/reward-claim-authoring'),
+                                            *sys.path]), appearance_input_scope():
+            first = cycle()
+            original = {row['production_definition']['production_key']: row
+                        for row in json.loads(first[profile])['records']}
+            for key in keys:
+                self.assertNotIn('always_on_top', original[key]['attributes'])
+                self.assertNotIn('always_on_top_order', original[key]['attributes'])
+            overlay = json.loads((ROOT / house.PROFILES).read_bytes())
+            house_appearance = {
+                'reference': 'canary',
+                'revision': '47dfd51f45280a59a1d3e50ba7edd573d7234446',
+                'path': 'data/items/appearances.dat',
+                'sha256': 'aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50',
+            }
+            self.assertEqual([source for source in overlay['sources']
+                              if source['reference'] == 'canary'], [house_appearance])
+            self.assertEqual(overlay['appearance_sha256'], house_appearance['sha256'])
+            self.assertNotEqual(overlay['appearance_sha256'], shared.CLIENT_SHA)
+            # The two pinned files differ as a whole. Their exact four source
+            # flags agree, so the accepted House projection is reproducible
+            # from the independently verified appearance input used by Lion.
+            orders = {item: next((value for flag, value in
+                                  (('clip', 1), ('top', 3), ('bottom', 2))
+                                  if self.appearances[item]['flags'].get('flags.' + flag, False)), 0)
+                      for item in profiles.SOURCE_RECORDS}
+            self.assertEqual(orders, {item: 0 for item in profiles.SOURCE_RECORDS})
+            self.assertEqual(orders, {item: overlay['always_on_top'][str(item)]
+                                      for item in profiles.SOURCE_RECORDS})
+            house.admit(ROOT, first, profile, manifest, order, canonical)
+            after_house = {row['production_definition']['production_key']: row
+                           for row in json.loads(first[profile])['records']}
+            for key in keys:
+                expected = copy.deepcopy(original[key])
+                expected['attributes'].update(always_on_top=False, always_on_top_order=0)
+                self.assertEqual(after_house[key], expected)
+
+            second = cycle(first[profile])
+            accepted = copy.deepcopy(second)
+            actual = {row['production_definition']['production_key']: row
+                      for row in json.loads(second[profile])['records']}
+            for item in selected:
+                key = f'oteryn:item.tibia.i{item}'
+                self.assertEqual(actual[key], after_house[key])
+            self.assertEqual(actual['oteryn:item.tibia.i3595'], original['oteryn:item.tibia.i3595'])
+            house.admit(ROOT, second, profile, manifest, order, canonical)
+            self.assertEqual(json.loads(second[profile]), json.loads(first[profile]))
+
+            for mutation in ('wrong_top', 'wrong_order', 'missing_top', 'missing_order',
+                             'null_top', 'extra_attribute'):
+                with self.subTest(mutation=mutation):
+                    changed = copy.deepcopy(accepted)
+                    document = json.loads(changed[profile])
+                    key = 'oteryn:item.tibia.i21389'
+                    row = next(row for row in document['records']
+                               if row['production_definition']['production_key'] == key)
+                    if mutation == 'wrong_top':
+                        row['attributes']['always_on_top'] = True
+                    elif mutation == 'wrong_order':
+                        row['attributes']['always_on_top_order'] = 1
+                    elif mutation == 'missing_top':
+                        row['attributes'].pop('always_on_top')
+                    elif mutation == 'missing_order':
+                        row['attributes'].pop('always_on_top_order')
+                    elif mutation == 'null_top':
+                        row['attributes']['always_on_top'] = None
+                    else:
+                        row['attributes']['unqualified_lion_attribute'] = True
+                    changed[profile] = json.dumps(document).encode()
+                    before = copy.deepcopy(changed)
+                    with self.assertRaisesRegex(ValueError, 'LION_TRIAL_NATIVE_PROFILE_DRIFT') as error:
+                        admit(changed)
+                    self.assertEqual(changed, before)
+                    lines = str(error.exception).splitlines(keepends=True)
+                    self.assertEqual(lines[2], '+++ qualified/' + key + '\n')
+                    expected = ''.join(line[1:] for line in lines[3:]
+                                       if not line.startswith('@@') and line[0] in ' +')
+                    self.assertEqual(json.loads(expected), after_house[key])
 
     def test_source_duration_and_custom_action_changes_are_refused(self):
         for item_id in profiles.SOURCE_RECORDS:

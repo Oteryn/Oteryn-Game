@@ -824,6 +824,8 @@ def main() -> int:
                     "--refresh-item-keys"], cwd=ROOT, check=True)
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
+    import m42_cooking_canonical
+    m42_cooking_canonical.refresh(ROOT)
     import prey_difficulty
     prey_difficulty.regenerate(ROOT)
     # Preserve independently authored spell collections on every regeneration.

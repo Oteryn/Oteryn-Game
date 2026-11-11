@@ -367,7 +367,13 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
         raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
     source_items = ET.fromstring(raw).findall('item')
-    lion_records = lion_trial_item_profiles.records(root, raw, definitions)
+    lion_keys = {f'oteryn:item.tibia.i{item}' for item in lion_trial_item_profiles.SOURCE_RECORDS}
+    top_order_keys = {key for key in lion_keys if key in present
+                      and isinstance(present[key].get('attributes'), dict)
+                      and any(field in present[key]['attributes']
+                              for field in ('always_on_top', 'always_on_top_order'))}
+    lion_records = lion_trial_item_profiles.records(
+        root, raw, definitions, top_order_keys=top_order_keys)
     # QuickLoot may already have attached canonical navigation metadata. Keep
     # that optional owner in the expected record without borrowing its value
     # from the native row or changing the shape of newly admitted Lion Items.

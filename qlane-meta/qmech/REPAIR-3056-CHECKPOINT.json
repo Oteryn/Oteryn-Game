@@ -3,7 +3,7 @@
   "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
   "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
   "parents": {
-    "previous_published_head": "bf654a4f6a5264823c448027da11bbbd1bd4182c",
+    "previous_published_head": "8ea8cbe5f0898fd5802ca36897a6c6cc0c1f5f65",
     "integrated_main": "f01f18582443f482b7adcfaf32cae3f9d3616876"
   },
   "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
@@ -60,62 +60,94 @@
       "classification": "P2; no current workflow or regeneration-dispatcher caller found. External manual consumers are unknown.",
       "path": "tools/content-migration/questpc7_merge_audit_inventories.py",
       "action": "Deferred to the final grouped backlog. The abandoned exploratory edit was fully reverted; current active generation is not blocked by this historical helper."
+    },
+    {
+      "finding": "QN3 source/input and i27654 census entry are absent from the main batch3 packet, while active QENGINE/ENG-M05 retain the complete same profile and custody.",
+      "classification": "P2 retained provenance/census gap; no demonstrated jar runtime regression.",
+      "path": "tools/content-schema/native-gameplay/quest-batch3-item-profiles.json",
+      "evidence_sha256": "87a3979d1a5dd922668f052e33f4964f84216797a5d71b843c63431b82f23692",
+      "action": "Reconcile in the final grouped backlog without adding another native owner or weakening holds."
     }
   ],
   "last_checkpoint_execution": {
-    "head": "bf654a4f6a5264823c448027da11bbbd1bd4182c",
-    "merge_run": 42968975997,
-    "generator_run": 42968976003,
-    "generator_job": 130352734481,
-    "generator_result": "Quest prerequisites passed. The materializer compiled in3m47s and completed. The converter/Prey native composition refused i21389 with LION_TRIAL_NATIVE_PROFILE_DRIFT. Complete reconstructed records differ only by existing authoring.taxonomy={primary:Quest Items}. The earlier QuickLoot canonical-taxonomy block reproduces the entire existing record from the qualified one. Export/upload were skipped and artifact inventory was empty.",
-    "generator_log_sha256": "1ef73e27270cf2a26fef05b75ccbba2f43dd99f18eafc5c55327442091ce3dca",
-    "generator_receipt_sha256": "2fda8bcf9ed16c38e75868dd307fdcf4221bd48ef8e9cfb6501de3e55a2d0668",
+    "head": "8ea8cbe5f0898fd5802ca36897a6c6cc0c1f5f65",
+    "merge_run": 42972828074,
+    "generator_run": 42972827961,
+    "generator_job": 130365044304,
+    "generator_result": "Quest prerequisites passed; materializer compiled in2m59s and completed. First Lion admission returned before register514. The converter/Prey path then refused M42_CANONICAL_WITNESS_INPUT_DRIFT. House was not reached. Final pins, export and upload were skipped; artifact inventory empty.",
+    "generator_log_sha256": "fc501a9a523c0412574f7d61c3e6fb7e4cd9f35a07c7f66da462d0f54e85a5cd",
+    "generator_receipt_sha256": "da027a3f72755209ebc250d1d2c5fdcc010dc0f3bcbb1b35e65f45554cc82a46",
     "registered_output_count": "UNKNOWN: zero actual PASS registered spell import completion markers.",
-    "rust_policy_result": "Job130353177174 succeeded by result-cache reuse. Metadata, formatting, boundaries, migration JSON and production-closure checks were all skipped; no fresh policy execution is claimed. The key matches actual run61, but the restored marker producer is not printed and is not inferred.",
-    "rust_policy_log_sha256": "42cda8dfba57d7b0bd5b260481729b538ca7b7bd263e55ddf3bfecc5d278c91a",
+    "rust_policy_result": "Job130365839968 succeeded by result-cache reuse. Metadata, formatting, boundaries, migration JSON and production-closure checks were skipped. The same key was actually checked on head61; the restored marker producer is unknown.",
+    "rust_policy_log_sha256": "50ee88d0341753086ab50f35c8b48f6c1fef1acb8ef69bc73889b5f8f96041ff",
     "rust_policy_key": "jobresult-v1-rust_policy-04f3836b29532b9d67ce4ccab835f87c2c35161834db4a16d42d8afb7ce195c9",
     "rust_policy_last_actual_checks": {
       "head": "0cd82d254bacd76e418cf613d7c546605ecb3676",
       "job_id": 130341138222,
       "log_sha256": "85e29ab97ef88581d4404b190b07418764d0f4796f5cb0d5c4b9a01c2c9e2733"
     },
-    "clippy_result": "Actual strict cargo1.99.1 clippy --locked --all-targets -- -D warnings passed all67 selected packages in5m18s, with zero result-cache reuse. Cargo build cache was restored. This is compilation/lint evidence, not test execution.",
-    "clippy_job": 130353177277,
-    "clippy_log_sha256": "5090459779dcbbaabc52555a70af5efe59f7e7188b0deaaeddd907878a2b9dc2",
-    "rust_unit_result": "All three shards compiled and ran nextest. The disjoint terminal union contains12509 actual executions:11880 passed and629 failed. Every executed identity and status matches run61. Reused package results are excluded; no PostgreSQL execution is established.",
+    "clippy_result": "Actual strict cargo1.99.1 clippy --locked --all-targets -- -D warnings passed all67 selected packages in4m12s with zero result-cache reuse. This is compilation/lint evidence, not test execution.",
+    "clippy_job": 130365840030,
+    "clippy_log_sha256": "9fca08c52a679c7e666f8cf660820e3951405cea40d7305980e3c9d3d1bee4fb",
+    "rust_unit_result": "Three completed nextest shards contain12509 disjoint actual cases:11880 PASS and629 FAIL. All identities and statuses match head62. No new failure identities or substantive diagnostic changes. Reused packages are excluded; no database execution is established.",
     "rust_unit_jobs": [
       {
-        "job_id": 130353177525,
+        "job_id": 130365840000,
         "executed": 4174,
         "passed": 3951,
         "failed": 223,
         "packages_to_run": 59,
         "packages_reused": 8,
-        "log_sha256": "95038ef60f4dc563c3875b1446ce38241c84e6f2753d63e4ec0a454fc43fc515"
+        "log_sha256": "bf51cd2df8a3cdeb4b0bdf7ebde787bb239205c87bceb08c552590a9b16db7f9"
       },
       {
-        "job_id": 130353177241,
+        "job_id": 130365840017,
         "executed": 4225,
         "passed": 4026,
         "failed": 199,
         "packages_to_run": 59,
         "packages_reused": 8,
-        "log_sha256": "4940faf1b4e78c3296542941b88c660b150ef7af5b9142f87266c23eb50b2b5c"
+        "log_sha256": "58b4d73985c4ba8628b798e478292b85047f61f8df8dfaf5772cff65aecad9e8"
       },
       {
-        "job_id": 130353177248,
+        "job_id": 130365839995,
         "executed": 4110,
         "passed": 3903,
         "failed": 207,
         "packages_to_run": 61,
         "packages_reused": 6,
-        "log_sha256": "bd92d1df307a88181da39ae0092569f4c965cc4e4bd340e2c9b25c07dc5a79c6"
+        "log_sha256": "2dd59d5e22cd354b6b0513d5e261c6f4d8533063cae4032555ecf27ab0a1191d"
       }
     ],
     "unit_result_cache_provenance": {
-      "run_id": 42951225666,
-      "literal_logged_sha": "f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3",
-      "qualification": "The producer URL and SHA are recorded exactly as logged; their relationship to workflow merge context was not separately verified. Legitimate partial success ledgers were recorded only after completed execution and JUnit reconciliation."
+      "1": [
+        "2026-11-11T06:33:24.7726113Z ##[notice]oteryn-client-domain passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:24.7740315Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:24.7744888Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:24.7749189Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:24.7753646Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:24.7757767Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:24.7762064Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:24.7766639Z ##[notice]oteryn-synthetic-assets passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped"
+      ],
+      "2": [
+        "2026-11-11T06:33:23.9259582Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:23.9269977Z ##[notice]oteryn-gameplay-admission-evidence passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:23.9273573Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:23.9276537Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:23.9279533Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:23.9282325Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:23.9285107Z ##[notice]oteryn-platform-contracts passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:23.9288170Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped"
+      ],
+      "3": [
+        "2026-11-11T06:33:19.8479001Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:19.8485620Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:19.8486956Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:19.8488153Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:19.8489319Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped",
+        "2026-11-11T06:33:19.8490809Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42951225666 (sha f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3); skipped"
+      ]
     },
     "unit_failure_groups": {
       "literal_Item_updates_refusal": 316,
@@ -123,7 +155,7 @@
       "other": 26
     },
     "unit_comparison": {
-      "parent_head": "0cd82d254bacd76e418cf613d7c546605ecb3676",
+      "parent_head": "bf654a4f6a5264823c448027da11bbbd1bd4182c",
       "counts": {
         "prior_fail_actual_pass": 0,
         "new_failure_identities": 0,
@@ -131,92 +163,98 @@
         "prior_fail_not_executed": 0,
         "new_actual_executed": 0
       },
-      "root_reconciliation_sha256": "d859511efc66e4cffb9c4b0e52ff2e2db95e5dff14f3fadb111f004451fe0274"
+      "root_reconciliation_sha256": "bf263f60b0a960bb7de1fb5385e48223662a19e3571d1244352d4c18846abedb"
     },
     "focused_source_regressions": {
       "npc_only_track_owners_keep_exact_existing_quest_predecessors": [
         {
           "status": "PASS",
-          "duration": "0.503s",
-          "ordinal": 3336,
+          "duration": "0.707s",
+          "ordinal": 3338,
           "total": 4225,
           "binary": "oteryn-gameplay-quests",
           "test": "quest::npc_rules::tests::npc_only_track_owners_keep_exact_existing_quest_predecessors",
           "archive": null,
-          "line": 6455,
+          "line": 6504,
           "shard": 2,
-          "job_id": 130353177241
+          "job_id": 130365840017
         }
       ],
       "published_ungated_quest_hash_baseline": [
         {
           "status": "FAIL",
-          "duration": "1.012s",
+          "duration": "0.554s",
           "ordinal": 3348,
           "total": 4110,
           "binary": "oteryn-gameplay-quests",
           "test": "quest::reward_callbacks::tests::published_ungated_quest_hash_baseline",
           "archive": null,
-          "line": 6902,
+          "line": 6914,
           "repeated_summary_lines": [
-            8348
+            8360
           ],
           "evidence": [
             {
-              "line": 6916,
+              "line": 6928,
               "text": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\""
             }
           ],
           "root_cause_group": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\"",
           "shard": 3,
-          "job_id": 130353177248
+          "job_id": 130365839995
         }
       ],
       "qn5_structured_premium_world_entry_requires_personal_world_fences": [
         {
           "status": "PASS",
-          "duration": "0.009s",
+          "duration": "0.010s",
           "ordinal": 3403,
           "total": 4225,
           "binary": "oteryn-gameplay-quests",
           "test": "quest::world_callbacks::admission_tests::qn5_structured_premium_world_entry_requires_personal_world_fences",
           "archive": null,
-          "line": 6855,
+          "line": 6872,
           "shard": 2,
-          "job_id": 130353177241
+          "job_id": 130365840017
         }
       ]
     },
-    "existing_npc_catalogue_tests": "Both existing NPC activation tests and the Citizen published hash baseline now fail on the global Feaster callback, not an observed predecessor/count/hash mismatch. The direct predecessor test passed separately.",
+    "existing_npc_catalogue_tests": "The two existing NPC activation tests and published ungated baseline still stop at the Feaster guard; the source-specific predecessor and QN5 direct-admission tests actually pass.",
     "native_entry": {
-      "run_id": 42968975994,
-      "job_id": 130352734157,
-      "result": "Actual compilation3m10s and three tests passed; zero failed, ignored or filtered. Only Native entry is qualified.",
+      "run_id": 42972828042,
+      "job_id": 130365044302,
+      "result": "Actual compilation4m34s and3 PASS,0 failed/ignored/filtered. Only Native entry is qualified.",
       "platform_pin": "eb65ce453949a352fdc0e3ed0132d2cde0084fb7",
-      "log_sha256": "15317736e6c7b374662816d45f46a3ec9e66227118217d4417ede906e61af93c"
+      "log_sha256": "f195ef9f5346e635c61c91bd5ba1c46c9971d376cab462ee65d7f391889efefd"
     },
-    "boss_inventory": "No NATIVE_REWARD_BOSS_QUALIFICATION marker was reached. The private-drop regression ran but failed in the shared native fixture on Item updates discriminator, bounds or base pin before its behavioral assertions; it is not runtime-qualified.",
-    "postgres": "heavy-tests label absent; wrapper success denotes skipped database legs. No PostgreSQL qualification onbf654a4f is claimed.",
+    "boss_inventory": "No actual inventory marker. Private-drop cases remain blocked by Item updates admission before their behavioral regression. No new boss counts are inferred.",
+    "postgres": "Initial wrapper42972828008 skipped database legs. No PostgreSQL execution or qualification on this head is claimed.",
     "quest_authoring": {
-      "run_id": 42968975996,
-      "attempt": 1,
-      "unit_modules": {
-        "total": 182,
-        "passed": 173,
-        "failed": 9,
-        "duplicate_module_names": 0,
-        "failure_cases": 8,
-        "error_cases": 1
-      },
-      "unit_job": 130352734174,
-      "unit_log_sha256": "cd40372abd61c8a5054248ba3018e004f03d1f974800a5c89b3d43714339daed",
-      "other_failed_jobs": {
-        "130352734554": "stale donor Source capture: npc.json.gz",
-        "130352734589": "variant migration packet is stale"
-      },
-      "failure_comparison": "The182 module identities/statuses and nine failure exceptions match run61. No new independent source blocker was identified. Per-case skips5+2+1 remain explicit and are not successes.",
-      "receipt_sha256": "a057b5ae6db17114200533538d87608ff94dd3ee37017a9bf446432f6893c28a"
+      "current_run_id": 42972828120,
+      "current_log_intake": "Not repeated on head63; no current exception-equivalence claim.",
+      "last_full_observed_head": "bf654a4f6a5264823c448027da11bbbd1bd4182c",
+      "last_full_observation": {
+        "run_id": 42968975996,
+        "attempt": 1,
+        "unit_modules": {
+          "total": 182,
+          "passed": 173,
+          "failed": 9,
+          "duplicate_module_names": 0,
+          "failure_cases": 8,
+          "error_cases": 1
+        },
+        "unit_job": 130352734174,
+        "unit_log_sha256": "cd40372abd61c8a5054248ba3018e004f03d1f974800a5c89b3d43714339daed",
+        "other_failed_jobs": {
+          "130352734554": "stale donor Source capture: npc.json.gz",
+          "130352734589": "variant migration packet is stale"
+        },
+        "failure_comparison": "The182 module identities/statuses and nine failure exceptions match run61. No new independent source blocker was identified. Per-case skips5+2+1 remain explicit and are not successes.",
+        "receipt_sha256": "a057b5ae6db17114200533538d87608ff94dd3ee37017a9bf446432f6893c28a"
+      }
     },
+    "lion_suite": "The published12-test route was skipped: validate130365044656 failed imbuement step7 before parent migration step14. No full Lion suite execution.",
     "qualification": "Canonical generated content, successor execution and final PostgreSQL qualification remain pending."
   },
   "followup_source_repair": {
@@ -404,37 +442,69 @@
     "qualification": "Independent bounded source peer passed. Actual canonical110+2 generation and Rust execution remain pending; no generated JSON was hand-edited."
   },
   "source_review_at_checkpoint": {
-    "base_head": "bf654a4f6a5264823c448027da11bbbd1bd4182c",
-    "source_files": 3,
-    "scope": "One closed taxonomy composition, regression and existing-CI-route group has author checks and an independent source peer. This is not a full-suite pass, generator success, PostgreSQL qualification or fresh Codex approval.",
+    "base_head": "8ea8cbe5f0898fd5802ca36897a6c6cc0c1f5f65",
+    "source_files": 7,
+    "scope": "Two bounded code/test repairs and one strictly captured source packet have author checks and independent peers. Full canonical generation, full Lion14, final runtime/PG qualification and fresh Codex approval remain pending.",
     "groups": [
       {
-        "name": "lion_taxonomy_composition",
+        "name": "lion_house_replay",
         "source_count": 3,
         "source_files": [
           {
             "path": "tools/content-migration/quest_callback_profiles.py",
-            "sha256": "0b1e3cff002e84919cb274dc3a9874a6760445467f073a31252eaec298f9a22b"
+            "sha256": "6b515f1207c2341e9a580ba80eac51ae9e786e78a52a58d461172950605575be"
+          },
+          {
+            "path": "tools/content-migration/lion_trial_item_profiles.py",
+            "sha256": "d64b01e64dbc4712e0b542408f38d84e3267adeac014cb8ff1f748ef2cfdde7f"
           },
           {
             "path": "tools/content-migration/test_lion_trial_item_profiles.py",
-            "sha256": "b146a4a6cc30149ce5fa67033a1c7291bf8984751460103f0cdac105186c28be"
-          },
-          {
-            "path": "tools/content-migration/test_world_project_v2_to_tree.py",
-            "sha256": "411b390fd2d905a2a2625f34bc3330eacb146c4aabf1b2af5dd1636a6e327ac8"
+            "sha256": "ef84658331d5b0635f30b8124ed0e86fc7d0180505aad12e1672f43a09a099fa"
           }
         ],
-        "author_manifest_sha256": "df0980089191734b9a3d0ed8c78e718cdbaa33ac6caa08b0df83a8b37e84a11d",
-        "independent_peer_sha256": "d429354b6d8e0fda634a2daa2441a7471355c206e8a135e4c5e3807aa0b9a5e3"
+        "author_manifest_sha256": "3d6cec0d595e469d01749ac33ae41aecb07a48282718bc16bae9799ab6859b9b",
+        "independent_peer_sha256": "04e0b9eee652a28b837ed11e293940397315db9dec6da09da1a6b7af04b23308"
+      },
+      {
+        "name": "m42_canonical_refresh",
+        "source_count": 3,
+        "source_files": [
+          {
+            "path": "tools/content-migration/m42_cooking_canonical.py",
+            "sha256": "51b60621b1fd89b3dccc95c28edfa1dc0f9781bae133abdf6777ad75344c18a4"
+          },
+          {
+            "path": "tools/content-migration/test_m42_cooking_canonical.py",
+            "sha256": "38d93029ff0c5a049ad771ae4084f211c792359bc7a43f3844c5682668340e0f"
+          },
+          {
+            "path": "tools/content-migration/world_project_v2_to_tree.py",
+            "sha256": "eb23fed3110b4102c8e7d6d94841b2f6181b9d8a313d06d4ebc85c751f0949ab"
+          }
+        ],
+        "author_manifest_sha256": "73b53f0a705459027b567acd83675a708a6b0c694bff57236e2cdd9366ba039e",
+        "independent_peer_sha256": "3a461f25026ca9c621b3527a72611bbdff216b3b262c2b4b833e075849d99541"
+      },
+      {
+        "name": "qnpcfx_source_cohort",
+        "source_count": 1,
+        "source_files": [
+          {
+            "path": "tools/content-schema/native-gameplay/qnpcfx-item-profiles.json",
+            "sha256": "cca8baa61c77a736934a3503a4284e5498b9d7db431b7ea5090f0ad5b696a134"
+          }
+        ],
+        "author_manifest_sha256": "e726da52c3b495c54fc69f904925e780b3d815822aabe1e0162da4ca342d4d2e",
+        "independent_peer_sha256": "94e6842c190e7b6df56d3cd12851d19e8ad460f19541827594d4d778444d5ec8"
       }
     ]
   },
   "prior_source_checkpoint": {
-    "head": "bf654a4f6a5264823c448027da11bbbd1bd4182c",
+    "head": "8ea8cbe5f0898fd5802ca36897a6c6cc0c1f5f65",
     "source_groups": 1,
-    "source_files": 2,
-    "source_review_matrix": "The preceding diagnostic/fixture matrix and run61 results are preserved in this file at commitbf654a4f6a5264823c448027da11bbbd1bd4182c."
+    "source_files": 3,
+    "source_review_matrix": "The preceding taxonomy repair and run62 evidence remain in this file at commit8ea8cbe5f0898fd5802ca36897a6c6cc0c1f5f65."
   },
   "grizzly_retained_pin_repair": {
     "cause": "The complete retained shop packet matched integrated main f01f1858. Its items-11000-11499 descriptor still referenced that main blob, while the merged HEAD shard includes a previously approved non-shop Item22008 materialization/stack change.",
@@ -497,6 +567,323 @@
     "ci_route": "Add only the Lion suite to the existing schedule_check(..., check=True) in test_world_project_v2_to_tree.py. Preserve all other call order, the work pool, future waits and error propagation. Actual twelve-test execution is pending the successor validation runner.",
     "author_proof_sha256": "a99c6e21bf14033503d298cfd0c0bfc680ca4c1803855166588b6a8d3e61712f",
     "independent_peer_sha256": "d429354b6d8e0fda634a2daa2441a7471355c206e8a135e4c5e3807aa0b9a5e3",
-    "qualification": "The bounded source repair is verified locally and independently reviewed; full generator and final runtime qualification remain pending."
+    "qualification": "The bounded source repair is verified locally and independently reviewed; full generator and final runtime qualification remain pending.",
+    "successor_ci": "Head63 passed the first Lion admission and reached the next M42 call. This is not a complete registration or replay qualification."
+  },
+  "lion_house_replay_repair": {
+    "diagnosis": "An actual bounded QENGINE/QuickLoot/Lion/House chain passes once, then the next real QENGINE/QuickLoot/Lion cycle refuses i21389 solely for House always_on_top=false/always_on_top_order=0. This was not reached by CI63, which stopped earlier at M42.",
+    "root_red_sha256": "e1c808a747b87b3bdeb622dbcac3bdf8955d8793dc6d5908f4d3c4518644bf10",
+    "source_proof_sha256": "afaf530fdbba1eba883dc87c7a118fac4e59b1ccd18339bc9331c758997140e7",
+    "independent_source_proof_sha256": "d1843809f5336c14e73c4ef4869692aed688e4208819b3d614ca81225f4330be",
+    "source_boundary": "House aa44 and tracked Lion2dfa are different whole appearance files. Actual decoding proves the three rendering flags and false/0 pair equal only for the closed four selected Items. The mistaken whole-file test assumption was rejected before production edits.",
+    "change": "Optional expected pair is derived from the already SHA-verified tracked appearance, only for a selected subset of the closed Lion four. Presence of either prior field selects the full expected pair; no values are copied from native attributes.",
+    "invariants": "Full-record equality, source/binding/custody facts, known values, full diagnostics and no-write refusal remain. Bare/new record shape is preserved. Existing12 test assertions stay intact; one old negative input changed from the now-qualified pair to an unrelated foreign attribute.",
+    "local_verification": "Corrected actual two-cycle RED, then2 new and2 existing targeted tests PASS, each invocation under30s. Six wrong/partial/null/extra variants and unknown selected key refuse. Full14 suite remains pending.",
+    "author_proof_sha256": "1bcf4311f241cb1cd6e744dcbcb92535ff5e8ecbbc01939d33f553055d152d75",
+    "independent_peer_sha256": "04e0b9eee652a28b837ed11e293940397315db9dec6da09da1a6b7af04b23308"
+  },
+  "m42_canonical_refresh_repair": {
+    "diagnosis": "The retained witness names packet541dc880 from the earlier branch, while current packet20998521 equals accepted f01. No reached writer changes packet or recipe before the failing first M42 consumer. Runner post-converter shard bytes remain unknown.",
+    "diagnosis_sha256": "1600b5635c191f827db3bad6dacfdd8ab1089a02defa1016a317075423945eae",
+    "baseline": "f01f18582443f482b7adcfaf32cae3f9d3616876",
+    "baseline_basis": "All72 complete recipe rows equal accepted f01. Compared with old856a,70 are unchanged; exact existing source owners independently reproduce the entire i2874 and i3738 records. The normalized binding input equals complete f01 bytes; only three checked provenance-bridge edits distinguish the helper.",
+    "source_contract": "15 recipes,72 identities,66 retained source profiles and6 HELD exclusions. No generic UNKNOWN-to-KNOWN allowance or native/profile recapture.",
+    "change": "Before the first Prey consumer, check exact base packet except descriptor hashes, recipe and source bytes, path set, base-or-current pins, full selected wrapper lists and complete closure. Prepare the witness before either write, then reuse the existing guarded pin helper. Ordinary verification remains strict and does not require Git history.",
+    "local_verification": "Actual converter-prefix RED;8/8 M42 tests and existing sibling1/1 PASS.16 negative cases refuse before writes. A finite copy of34 real shards preserves72 rows/66profiles/6HELD and gives byte-identical replay in3.478s. All4 old test bodies remain unchanged. No derived repo data were written locally.",
+    "author_proof_sha256": "8ae57a2f401d7d171f970ecc6b99310ee946ea0135ff6e1107d443d784376247",
+    "independent_peer_sha256": "3a461f25026ca9c621b3527a72611bbdff216b3b262c2b4b833e075849d99541"
+  },
+  "qnpcfx_source_cohort_repair": {
+    "diagnosis": "The unchanged strict adapter requires8 source records/classifications; incoming f01 packet has only venison i52636. Unconditional native registration and equipment refresh would refuse. This is a separate source-proven defect, not a later stage executed by CI63.",
+    "scope": "Only tools/content-schema/native-gameplay/qnpcfx-item-profiles.json. Both Python adapter and existing tests remain unchanged.",
+    "capture": "Existing source capture with exact Crystal items.xml8a4a526c completed in7.041s, yielding8 identities,8 classifications,0HELD and0foreign records. Full8 record bodies equal accepted87da; venison also equals the previous current packet.",
+    "metadata": "87 current authoring/canonical/accepted descriptor hashes are checked. Four7528..7531 classifications reflect existing native admission; their complete profile bodies are unchanged.",
+    "rejected_hypothesis": "The shared capture already separates selected records from custody promotions. No suspected promotion leak was reproduced; no filter or related code change was introduced.",
+    "local_verification": "Unchanged four tests: old packet1FAIL/2ERROR/1PASS, corrected packet4/4PASS. Actual strict adapter rejects old1 without writes, admits new8, repeats byte-identically and refuses six malformed cohort/classification cases without writes.",
+    "packet_sha256": "cca8baa61c77a736934a3503a4284e5498b9d7db431b7ea5090f0ad5b696a134",
+    "independent_peer_sha256": "94e6842c190e7b6df56d3cd12851d19e8ad460f19541827594d4d778444d5ec8"
+  },
+  "deferred_p2_latest_queue": {
+    "path": "pr3056-final-p2p3-queue-8ea8cbe5.json",
+    "sha256": "9c279d6b768aaad82d06bccf8115db5a950794242cf55cf42fff953eefe4ae15",
+    "total_open_groups": 6,
+    "prior_five_reverified_here": false
+  },
+  "deferred_p2_backlog": {
+    "scope": "Inherited five groups plus the bounded QN3 finding; prior groups were not reverified on head63. No closure or new execution is implied.",
+    "entries": [
+      {
+        "id": "client_capture_replays",
+        "priority": "P2",
+        "category": "verification_gap",
+        "status": "OPEN: actual client replay proof not established by current received evidence",
+        "facts": [
+          "Current Capture::load_schema returns Ok(None) and emits SRX3_NATIVE_CAPTURE_SKIPPED when the requested variable is unset; each of the three consumers then returns Ok(()). A test summary PASS alone does not establish transcript replay.",
+          "Fresh exact-variable scan of all checked-in .github/workflows/*.yml and *.yaml has zero references to these three names. External/manual runner configuration remains UNKNOWN; this is not a claim that every runner leaves them unset."
+        ],
+        "repo_paths": [
+          "apps/client/src/play/capture_test_support.rs",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native/capture.rs",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native/early_exit.rs",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_primal.rs",
+          "apps/client/src/features/0015-item-use/tests/actual_capture.rs",
+          "apps/client/src/features/0015-item-use/tests/actual_capture_exit.rs",
+          "apps/client/src/features/0117-boss-encounter/tests/actual_capture.rs"
+        ],
+        "required_real_inputs_and_consumers": [
+          {
+            "environment": "SRX3_SOULPIT_CAPTURE_PATH",
+            "server_test": "srx3_soulpit_native_use_scope_barrier_and_spawn_postgres",
+            "producer": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native/capture.rs",
+            "consumer_test": "srx3_soulpit_actual_server_transcript_native_use_waves_icons_and_return",
+            "consumer": "apps/client/src/features/0015-item-use/tests/actual_capture.rs",
+            "schema": "OTERYN_NATIVE_SCOPE_REPLAY/v1",
+            "client_completion_marker": "SRX3_SOULPIT ACTUAL_SERVER_NATIVE_PLAY_COMPLETED",
+            "current_client_capture_execution": "UNVERIFIED; no runtime environment or external/manual capture configuration inspected in this task",
+            "server_test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native.rs"
+          },
+          {
+            "environment": "SRX3_SOULPIT_EXIT_CAPTURE_PATH",
+            "server_test": "srx3_soulpit_native_early_exit_retires_private_encounter_postgres",
+            "producer": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native/early_exit.rs",
+            "consumer_test": "srx3_soulpit_actual_server_native_core_and_early_exit_gestures",
+            "consumer": "apps/client/src/features/0015-item-use/tests/actual_capture_exit.rs",
+            "schema": "OTERYN_NATIVE_SOULPIT_EXIT_REPLAY/v1",
+            "client_completion_marker": "SRX3_SOULPIT ACTUAL_SERVER_NATIVE_EARLY_EXIT_PLAY_COMPLETED",
+            "current_client_capture_execution": "UNVERIFIED; no runtime environment or external/manual capture configuration inspected in this task",
+            "server_test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native.rs"
+          },
+          {
+            "environment": "SRX3_PRIMAL_CAPTURE_PATH",
+            "server_test": "srx3_primal_real_source_entry_wave_pods_and_terminal_postgres",
+            "producer": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_primal.rs",
+            "consumer_test": "srx3_primal_actual_server_transcript_native_entry_pod_and_return",
+            "consumer": "apps/client/src/features/0117-boss-encounter/tests/actual_capture.rs",
+            "schema": "OTERYN_NATIVE_SCOPE_REPLAY/v1",
+            "additional_input": "Actual captured nonzero native_server_artifact_digest and existing pinned OTERYN_ASSET_DIR cache.",
+            "client_completion_marker": "SRX3_PRIMAL ACTUAL_SERVER_NATIVE_PLAY_COMPLETED",
+            "current_client_capture_execution": "UNVERIFIED; no runtime environment or external/manual capture configuration inspected in this task",
+            "server_test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_primal.rs"
+          }
+        ],
+        "recommendation": "On the authorized real qualification runner, run one intended PG producer per unique capture path; require its real nonempty emitted file and matching admitted metadata, then run the corresponding client consumer and retain its completion marker. Primal also requires the real nonzero captured server digest and pinned OTERYN_ASSET_DIR. Preserve the visible environment skip; never manufacture a transcript or treat a route-less success as play proof.",
+        "closure_evidence": "Exact candidate SHA, actual producer completion, captured file digest/metadata, corresponding consumer completion marker and required real asset cache. No such closure is claimed here."
+      },
+      {
+        "id": "rotten_hunting16_and_literal_elderbloodjaw",
+        "priority": "P2",
+        "category": "accepted_scope_deferred_functionality",
+        "status": "OPEN: retained accepted deferred hunting-area parity, separate from five boss-entry qualification",
+        "scope_evidence": {
+          "package": "qlane-meta/qmech/PACKAGE.md",
+          "narrow_boss_assignment": [
+            "qlane-meta/qmech/ASSIGN.md:34",
+            "qlane-meta/qmech/CLAIMS.md:43"
+          ],
+          "inventory": "tools/content-schema/quest-authoring/batches/quests4/rotten_blood_quest.json",
+          "json_pointers": [
+            "/step_inventory/37",
+            "/step_inventory/44"
+          ],
+          "inventory_labels": [
+            "Ordinary monster death binding",
+            "Hazard bloodjaw on kill"
+          ],
+          "both_rows_currently_partial": true
+        },
+        "facts": [
+          "The current inventory explicitly records startup binding for16 listed types and the hazard spawn of literal elderbloodjaw; these rows are not the unrelated rotten-putrefactory-return exclusion.",
+          "Inventory and the current six-source native death registry/generator are byte-identical to the prior verified hunting packet head. Current registry keys are recorded below; this task did not infer completed hunting handlers from boss entry support.",
+          "Prior bounded source/runtime review established no current16-handler FIFO deadlock and no demonstrated P1 boss-entry impact. Its820 World spawn count is historical evidence at850387a10a754917ae0e15769a6f7aab6f1c2860, not a newly regenerated count at this head."
+        ],
+        "current_registry_keys": [
+          "oteryn:creature.bakragore",
+          "oteryn:creature.chagorz",
+          "oteryn:creature.ichgahal",
+          "oteryn:creature.murcion",
+          "oteryn:creature.mushroom",
+          "oteryn:creature.vemiath"
+        ],
+        "hunting_creatures": [
+          "oteryn:creature.bloated_man_maggot",
+          "oteryn:creature.converter",
+          "oteryn:creature.darklight_construct",
+          "oteryn:creature.darklight_emitter",
+          "oteryn:creature.darklight_matter",
+          "oteryn:creature.darklight_source",
+          "oteryn:creature.darklight_striker",
+          "oteryn:creature.meandering_mushroom",
+          "oteryn:creature.mycobiontic_beetle",
+          "oteryn:creature.oozing_carcass",
+          "oteryn:creature.oozing_corpus",
+          "oteryn:creature.rotten_man_maggot",
+          "oteryn:creature.sopping_carcass",
+          "oteryn:creature.sopping_corpus",
+          "oteryn:creature.walking_pillar",
+          "oteryn:creature.wandering_pillar"
+        ],
+        "literal_source": {
+          "name": "elderbloodjaw",
+          "distinct_existing_name": "elder_bloodjaw",
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "monster_path": "data-global/monster/quests/rotten_blood_quest/elderbloodjaw.lua",
+          "spawn_caller": "data-global/scripts/quests/rotten_blood_quest/eventcallback_on_combat_rottenblood.lua:52"
+        },
+        "repo_paths": [
+          "tools/content-schema/quest-authoring/batches/quests4/rotten_blood_quest.json",
+          "tools/content-schema/native-gameplay/build_srx3_rotten_death_events.py",
+          "tools/content-schema/native-gameplay/srx3-rotten-death-events.json",
+          "crates/gameplay/content/src/content/native_rotten_death_events.rs",
+          "crates/gameplay/entities/src/carrier/native_source_death.rs",
+          "crates/gameplay/entities/src/carrier/damage_ledger.rs",
+          "crates/gameplay/entities/src/carrier/runtime_actor_periodic.rs",
+          "crates/gameplay/dispatch/src/gameplay_transport/party_spell_owner.rs",
+          "crates/gameplay/dispatch/src/gameplay_transport/source_death.rs",
+          "crates/gameplay/content/src/content/project/native_spell_world/callback_context.rs"
+        ],
+        "unresolved_dependencies": [
+          "Actual raw last-hit/full damage provenance across all real HP producers; reward totals and SourcePlayerDamageShare are not substitutes.",
+          "Actual current party/master/leader ordering and shared-state inputs, including original identity continuity.",
+          "Correct script-lifetime Player cooldown continuity across relog/handoff; no invented ActorRef/session cache or permanent quest timer.",
+          "Exact current published Channel source-map qualification; complete literal elderbloodjaw HP/content/spell shape.",
+          "Any no-principal corpse extension must remain exact-source, exact-item, current-scope/pin/XID fenced; activate no registry event before its handler and corpse completion are closed."
+        ],
+        "recommendation": "Keep this one disclosed functional follow-up group. Resolve the proven input/identity/content dependencies before proposing implementation; do not add aliasing, no-op handlers, guessed killer data or broad NULL-principal admission."
+      },
+      {
+        "id": "mixed33792_33949_item_prefix",
+        "priority": "P2",
+        "category": "candidate_reachability_unknown",
+        "status": "OPEN CANDIDATE: no ordinary reachable production mixed stack demonstrated",
+        "facts": [
+          "The earlier bounded peer identified the source33792 Condensed Remorse false return for a non-player, which would stop a later33949 Dead Aspect callback on the same original physical stack.",
+          "Current SourceGroundStepKind still recognizes33876,33949,33984 only. Existing actual three-kind prefix ordering is not a proof of ordinary33792/33949 co-location."
+        ],
+        "repo_paths": [
+          "crates/gameplay/durability/src/durability/creature_source_items/source_step/creature.rs",
+          "crates/gameplay/durability/src/durability/creature_source_items/source_step.rs",
+          "crates/gameplay/durability/src/durability/quest_state/soul_war_source/step/standing_read.rs",
+          "crates/gameplay/dispatch/src/gameplay_transport/spite_step.rs"
+        ],
+        "unknown": "Whether an ordinary production owner can create or retain the mixed original Item stack in the relevant native scope.",
+        "recommendation": "First provide a concrete reachable placement/caller and original ordering proof. If reachable, retain the finite source nil/false prefix through the existing original-owner/cursor path. Until then, keep this candidate out of confirmed P1 claims and avoid speculative code."
+      },
+      {
+        "id": "historical_json_duplicate_keys",
+        "priority": "P2",
+        "category": "inherited_historical_evidence_ambiguity",
+        "status": "OPEN: preserve original historical bytes; clarification deferred",
+        "facts": [
+          "Five historical qlane-meta/questpc7 JSON files contain six duplicate member occurrences with conflicting digest values:1283 in all five and1282 additionally in MIGRATION-REGISTRY-PROOF.",
+          "All five files still match the prior audit hashes and incoming mainf01f18582443f482b7adcfaf32cae3f9d3616876 byte-for-byte.",
+          "The prior bounded consumer review found documentation references but no runtime or required CI guard consumer. Its inspected migration JSON guard inputs were three explicit docs/migration/rust-*.json files, not these histories. No claim is made about external manual tooling."
+        ],
+        "repo_paths": [
+          "qlane-meta/questpc7/MIGRATION-REGISTRY-PROOF.json",
+          "qlane-meta/questpc7/restart2-baseline.json",
+          "qlane-meta/questpc7/restart3-baseline.json",
+          "qlane-meta/questpc7/restart4-baseline.json",
+          "qlane-meta/questpc7/restart5-inherited-product-files.json"
+        ],
+        "files": [
+          {
+            "path": "qlane-meta/questpc7/MIGRATION-REGISTRY-PROOF.json",
+            "sha256": "c46a467772a54f1aed8060cd23e686b99c5eb5f32085e8351a8100fef2aa7682",
+            "byte_equal_incoming_main": true,
+            "duplicate_members": [
+              {
+                "key": "1283_quest_viola_rewards.sql",
+                "values_equal": false
+              },
+              {
+                "key": "1282_quest_native_npc_revision.sql",
+                "values_equal": false
+              }
+            ]
+          },
+          {
+            "path": "qlane-meta/questpc7/restart2-baseline.json",
+            "sha256": "65e275d5830c9a4730be29adb65fe55223f776ebd50e0e63a5abda9278825a2e",
+            "byte_equal_incoming_main": true,
+            "duplicate_members": [
+              {
+                "key": "apps/game-server/migrations/1283_quest_viola_rewards.sql",
+                "values_equal": false
+              }
+            ]
+          },
+          {
+            "path": "qlane-meta/questpc7/restart3-baseline.json",
+            "sha256": "ffd43ef2dbc9a14ef8f6fa9cca67de0723231802330f0ecb96ceb4f2cb5b70f6",
+            "byte_equal_incoming_main": true,
+            "duplicate_members": [
+              {
+                "key": "apps/game-server/migrations/1283_quest_viola_rewards.sql",
+                "values_equal": false
+              }
+            ]
+          },
+          {
+            "path": "qlane-meta/questpc7/restart4-baseline.json",
+            "sha256": "027065466a1ca399d703169cbab1a4e93f8c3aa7aa8986c9c4a8ac0cdcdac308",
+            "byte_equal_incoming_main": true,
+            "duplicate_members": [
+              {
+                "key": "apps/game-server/migrations/1283_quest_viola_rewards.sql",
+                "values_equal": false
+              }
+            ]
+          },
+          {
+            "path": "qlane-meta/questpc7/restart5-inherited-product-files.json",
+            "sha256": "1c78c0833c85f79c540a291c1a17251128e3764a725b3f765e4d0e0b83dd57f5",
+            "byte_equal_incoming_main": true,
+            "duplicate_members": [
+              {
+                "key": "apps/game-server/migrations/1283_quest_viola_rewards.sql",
+                "values_equal": false
+              }
+            ]
+          }
+        ],
+        "risk": "A last-value-wins JSON reader loses the earlier digest, so these documents cannot support an unambiguous single-value history claim.",
+        "recommendation": "Preserve historical files. Resolve both digest observations against their original commits and append a separate clarification before relying on them as provenance. Do not silently delete duplicate members or treat historical records as current runtime qualification."
+      },
+      {
+        "id": "historical_feaster_merge_audit_owner_partition",
+        "priority": "P2",
+        "status": "DEFERRED_FOR_FINAL_GROUP",
+        "path": "tools/content-migration/questpc7_merge_audit_inventories.py",
+        "facts": [
+          "The historical script still validates a single112-entry document and rewrites the old single-document Rust fixture assertion. Canonical Feaster ownership is now110+2 across two mounted files.",
+          "No current workflow or regeneration dispatcher caller was found in the bounded source search. This is not a blocker claim for the running generator.",
+          "The temporary author-only extraction was captured in scratch and the sole touched source restored exactly; no implementation from this P2 scope is currently pending."
+        ],
+        "required_fix": "At final cleanup, reconcile its exact112-key union,103-key residual and fixture check with the two explicit owners; preserve missing/duplicate/foreign and overlap refusals.",
+        "evidence": {
+          "path": "batch61-step-feaster-audit-deferred.json",
+          "sha256": "c350505da3556d790a4ea615ef5e4d9efac53863a3bf29112221dbcc2cc01ed3"
+        },
+        "unknown": "External or manual invocations are not verified."
+      },
+      {
+        "id": "qn3_batch3_retained_census_gap",
+        "priority": "P2",
+        "status": "DEFERRED_FOR_FINAL_GROUP",
+        "path": "tools/content-schema/native-gameplay/quest-batch3-item-profiles.json",
+        "facts": [
+          "The incoming packet omits the existing QN3 dangerous-depths authoring input and i27654 census row. Its capture selector still includes that source.",
+          "The current Gnomus measurements-report gives i27654 x1. The full profile is identical in accepted87da batch3, current ENG-M05, QENGINE proof and native provider. Earlier active QENGINE capture/admission preserves this custody.",
+          "This is not an established runtime jar regression; QNPCFX strict8/current1 is a separate active P1 repair."
+        ],
+        "required_fix": "At final grouped provenance cleanup, reconcile the retained QN3 census/input against the current source and all existing owners without adding another native owner or weakening holds.",
+        "evidence": {
+          "path": "batch64-step-qn3-surprise-jar-disposition.json",
+          "sha256": "87a3979d1a5dd922668f052e33f4964f84216797a5d71b843c63431b82f23692"
+        },
+        "limits": "No runtime or PostgreSQL execution was performed by this source-only investigation."
+      }
+    ]
   }
 }

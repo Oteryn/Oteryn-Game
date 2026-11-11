@@ -68,10 +68,13 @@ def qualify(item_id, node, appearance, physical, bindings, definition):
     )['records'][0]
 
 
-def records(root, xml, definitions):
+def records(root, xml, definitions, *, top_order_keys=()):
     """Resolve the exact M07 native records from the retained pinned providers."""
     import qengine_reward_item_profiles as shared
 
+    top_order_keys = set(top_order_keys)
+    if not top_order_keys <= {f'oteryn:item.tibia.i{item}' for item in SOURCE_RECORDS}:
+        raise ValueError('LION_TRIAL_ITEM_TOP_ORDER_COHORT')
     source = owner.source
     raw = (root / shared.CLIENT).read_bytes()
     if hashlib.sha256(raw).hexdigest() != shared.CLIENT_SHA:
@@ -82,6 +85,18 @@ def records(root, xml, definitions):
     nodes = source.xml_index(xml)
     bindings = source.binding_index(
         (root / 'imports/crystalserver/bindings/items.json').read_bytes())
-    return {f'oteryn:item.tibia.i{item_id}': qualify(
+    qualified = {f'oteryn:item.tibia.i{item_id}': qualify(
         item_id, nodes[item_id], appearances[item_id], physical[item_id], bindings,
         definitions[f'oteryn:item.tibia.i{item_id}']) for item_id in SOURCE_RECORDS}
+    # House's retained appearance pin and this verified pin agree on these
+    # four ordering facts. Reproduce only its optional pair, from source flags,
+    # using the same clip/top/bottom precedence; never copy native attributes.
+    for item_id in SOURCE_RECORDS:
+        key = f'oteryn:item.tibia.i{item_id}'
+        if key in top_order_keys:
+            flags = appearances[item_id]['flags']
+            order = next((value for flag, value in (('clip', 1), ('top', 3), ('bottom', 2))
+                          if flags.get('flags.' + flag, False)), 0)
+            qualified[key]['attributes'].update(always_on_top=order != 0,
+                                                 always_on_top_order=order)
+    return qualified
