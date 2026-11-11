@@ -37,6 +37,62 @@ class SourceOverlapProofs(unittest.TestCase):
         self.assertEqual(sum(int(v) for v in re.findall(r', (\d+)\)', self.SOURCE)) - sum(counts.values()), 34)
         self.assertEqual(aliases.refresh(result, pins.ROOT, self.bosses), result)
 
+    def test_craft_overlap_requires_complete_registered_source_identities(self):
+        paths = (aliases.engine.PROOF, aliases.floor.PATH, aliases.spheres.PATH,
+                 aliases.elevator.PATH, aliases.rafzane.PATH, aliases.craft.PACKET,
+                 aliases.npc.PATH, aliases.endgame.PATH)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for path in paths:
+                target = root / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes((pins.ROOT / path).read_bytes())
+            shared = aliases.source_keys(root, aliases.engine.PROOF,
+                                         aliases.names(aliases.engine.IDS))
+            craft = aliases.source_keys(root, aliases.craft.PACKET,
+                                        aliases.names(aliases.craft.IDS))
+            self.assertEqual(craft & shared, aliases.names({21506, 21507, 21573}))
+            self.assertEqual(aliases.refresh(self.SOURCE, root, self.bosses),
+                             aliases.refresh(self.SOURCE, pins.ROOT, self.bosses))
+            for path in (aliases.engine.PROOF, aliases.craft.PACKET):
+                target = root / path
+                original = target.read_bytes()
+                for change, replacement in (("missing", None),
+                                            ("foreign", "oteryn:item.tibia.i999999"),
+                                            ("duplicate", "oteryn:item.tibia.i21506")):
+                    with self.subTest(path=path, change=change):
+                        packet = json.loads(original)
+                        row = next(row for row in packet['records']
+                                   if row['production_definition']['production_key']
+                                   == 'oteryn:item.tibia.i21573')
+                        if replacement is None:
+                            packet['records'].remove(row)
+                        else:
+                            row['production_definition']['production_key'] = replacement
+                        changed = json.dumps(packet).encode()
+                        target.write_bytes(changed)
+                        try:
+                            with self.assertRaisesRegex(ValueError, 'SOURCE_IDENTITIES:' + re.escape(path)):
+                                aliases.refresh(self.SOURCE, root, self.bosses)
+                            self.assertEqual(target.read_bytes(), changed)
+                        finally:
+                            target.write_bytes(original)
+
+    def test_craft_declaration_requires_full_or_qualified_unique_count(self):
+        old = '("QREADY1-CRAFT", 6),'
+        for replacement in ('("QREADY1-CRAFT", 4),', '("QREADY1-CRAFT", 5),',
+                            old + '\n    ' + old):
+            with self.subTest(replacement=replacement):
+                with self.assertRaisesRegex(ValueError, 'COHORT_DECLARATION:QREADY1-CRAFT'):
+                    aliases.refresh(self.SOURCE.replace(old, replacement), pins.ROOT, self.bosses)
+        packet = json.loads((pins.ROOT / aliases.craft.PACKET).read_bytes())
+        normalized = pins.qready1_craft_equipment_pin.refresh(
+            self.SOURCE.replace(old, '("QREADY1-CRAFT", 4),'), packet)
+        self.assertEqual(normalized, self.SOURCE)
+        result = aliases.refresh(normalized, pins.ROOT, self.bosses)
+        self.assertIn('("QREADY1-CRAFT", 3),', result)
+
+
     def test_both_elevator_sources_include_the_same_nine_fixed_identities(self):
         expected = {6218, 17938, 17939, 17940, 17942, 17943, 17944, 17947, 17970}
         self.assertEqual(aliases.elevator.IDS, expected)
