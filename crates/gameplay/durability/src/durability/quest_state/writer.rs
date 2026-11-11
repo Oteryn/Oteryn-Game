@@ -1889,7 +1889,7 @@ impl DurabilityRoot {
                         && let super::soul_war_source::SoulWarSourceAction::Step(step)=input.as_ref() {
                         let Some((permit, context, _))=&context else {return Err(DurabilityError::InvalidStoredState);};
                         if !super::super::quest_world_callback::consume_soul_war_source_step(
-                            &mut tx,permit,fence,&request,step,context,(&recovery,&node),
+                            &mut tx,permit,fence,&request,step,now,context,(&recovery,&node),
                         ).await? {
                             tx.rollback().await?;
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));

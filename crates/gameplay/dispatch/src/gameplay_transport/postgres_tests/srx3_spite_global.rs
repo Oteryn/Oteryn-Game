@@ -692,6 +692,11 @@ fn spite_source_step_case(cancel_during_cleanup: bool) -> TestResult {
             let mut admitted = deps.admitted;
             prepare_player(&h, &owner, &mut admitted, 500).await?;
             h.root.set_test_quest_clock(1_800_000_000).map_err(debug)?;
+            let receipt_clock_before: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint",
+            )
+            .fetch_one(&h.pool)
+            .await?;
             let actor = admitted.runtime_actor.ok_or("actual source Player")?;
             let native = scene
                 .controller
@@ -982,11 +987,58 @@ fn spite_source_step_case(cancel_during_cleanup: bool) -> TestResult {
                 serde_json::json!({"completes":true}),
                 serde_json::json!({"track_keys":[rule::MAW]}),
                 serde_json::json!({"values_before":[1_799_999_945]}),
-                serde_json::json!({"committed_at":1_800_000_001}),
             ] {
                 let accepted:bool=sqlx::query_scalar("SELECT game_spite_source_step_receipt_shape(jsonb_populate_record(NULL::game_character_quest_receipts,to_jsonb(r)||$2::jsonb)) FROM game_character_quest_receipts r WHERE character_id=encode($1,'hex')::uuid AND cause_kind='source_step'")
                     .bind(fence.character_id.as_bytes().as_slice()).bind(patch.clone()).fetch_one(&h.pool).await?;
                 assert!(!accepted, "one invalid source receipt invariant: {patch}");
+            }
+            let clock_proof: (bool, serde_json::Value, i64, i64, bool) = sqlx::query_as(
+                "SELECT game_spite_source_step_consumption_matches(c,r),convert_from(c.proof,'UTF8')::jsonb->'quest_clock_seconds',r.committed_at,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,c.proof_sha256=sha256(c.proof) FROM game_quest_callback_consumptions c JOIN game_character_quest_receipts r USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.item_instance_id=$1::uuid",
+            )
+            .bind(&first)
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(
+                clock_proof.0,
+                "the consumed field proves the exact quest clock"
+            );
+            assert_eq!(clock_proof.1, serde_json::json!(1_800_000_000));
+            assert!(
+                (receipt_clock_before..=clock_proof.3).contains(&clock_proof.2),
+                "receipt time remains database wall time in milliseconds"
+            );
+            assert!(clock_proof.4, "the immutable proof hash covers its clock");
+            let changed_clock: (bool, bool) = sqlx::query_as(
+                "SELECT game_spite_source_step_receipt_shape(jsonb_populate_record(r,$2::jsonb)),game_spite_source_step_consumption_matches(c,jsonb_populate_record(r,$2::jsonb)) FROM game_quest_callback_consumptions c JOIN game_character_quest_receipts r USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.item_instance_id=$1::uuid",
+            )
+            .bind(&first)
+            .bind(serde_json::json!({"values_after":[1_800_000_001]}))
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(
+                changed_clock,
+                (true, false),
+                "a structurally valid receipt still needs the sampled quest clock"
+            );
+            for patch in [
+                serde_json::json!({}),
+                serde_json::json!({"quest_clock_seconds":null}),
+                serde_json::json!({"quest_clock_seconds":"1800000000"}),
+                serde_json::json!({"quest_clock_seconds":[1_800_000_000]}),
+                serde_json::json!({"quest_clock_seconds":1_800_000_001}),
+                serde_json::json!({"quest_clock_seconds":1_800_000_000_000_i64}),
+            ] {
+                let accepted: bool = sqlx::query_scalar(
+                    "SELECT game_spite_source_step_consumption_matches(jsonb_populate_record(c,jsonb_build_object('proof',convert_to(p.proof::text,'UTF8'),'proof_sha256',sha256(convert_to(p.proof::text,'UTF8')))),r) FROM game_quest_callback_consumptions c JOIN game_character_quest_receipts r USING(character_id,cause_id,cause_ordinal,transition_key) CROSS JOIN LATERAL (SELECT (convert_from(c.proof,'UTF8')::jsonb-'quest_clock_seconds')||$2::jsonb AS proof) p WHERE c.item_instance_id=$1::uuid",
+                )
+                .bind(&first)
+                .bind(patch.clone())
+                .fetch_one(&h.pool)
+                .await?;
+                assert!(
+                    !accepted,
+                    "one invalid sampled clock with a matching hash: {patch}"
+                );
             }
             drop(permit);
             for (seconds, expected) in [(55, 1_i64), (1, 2_i64)] {
