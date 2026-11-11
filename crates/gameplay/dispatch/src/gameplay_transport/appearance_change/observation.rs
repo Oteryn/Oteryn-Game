@@ -265,10 +265,13 @@ async fn observe_once(
         {
             return note_none(None, "fence");
         }
-        let current = read_state_result(
-            house::read_state(admission, fence, content.earned_grant_keys()).await,
-            failure,
-        )?;
+        let current = match house::read_state(admission, fence, content.earned_grant_keys()).await {
+            // Another player between its durable death and the respawn placement has no
+            // observable appearance yet: it gets no binding, as a hidden player does, and
+            // the observer's projection is not lost to it.
+            Err(ReadFailure::RespawnPending) if target_session != session => continue,
+            result => read_state_result(result, failure)?,
+        };
         let in_house = runtime.house_actor_state(*actor, target_session).is_ok();
         let player = if in_house {
             note_none(
@@ -361,11 +364,11 @@ async fn observe_once(
         }
         // The selection and root are re-read after observer preparation. Runtime pin,
         // incarnation and condition state stay locked through this bounded DB read.
-        if read_state_result(
-            house::read_state(admission, fence, content.earned_grant_keys()).await,
-            failure,
-        )? != current
-        {
+        let reread = match house::read_state(admission, fence, content.earned_grant_keys()).await {
+            Err(ReadFailure::RespawnPending) if target_session != session => continue,
+            result => read_state_result(result, failure)?,
+        };
+        if reread != current {
             return note_none(None, "revision");
         }
         bindings.push(wire::Binding {
