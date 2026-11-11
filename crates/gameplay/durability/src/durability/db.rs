@@ -18,7 +18,13 @@ use tokio::sync::{Mutex, Notify};
 
 #[cfg(any(test, feature = "test-support"))]
 mod quest_clock;
+mod foreground;
+mod holder_queue;
 mod ready_admission;
+
+use foreground::HolderPriority;
+pub use holder_queue::HolderWaiter;
+use holder_queue::{HolderQueue, Turn};
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const DB_TRANSACTION_FAILED: oteryn_error_codes::ErrorCode = oteryn_error_codes::ErrorCode::new(
@@ -115,11 +121,15 @@ fn record_holder_usage(
     let refused: u64 = window.callers.iter().map(|(_, entry)| entry.refused).sum();
     oteryn_error_codes::emit(
         DIAGNOSTIC_PROCESS,
-        &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Info, "durability", "holder_window")
-            .field("window_ms", millis(elapsed))
-            .field("held_ms", millis(held))
-            .field("passes", oteryn_error_codes::FieldValue::U64(passes))
-            .field("refused", oteryn_error_codes::FieldValue::U64(refused)),
+        &oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Info,
+            "durability",
+            "holder_window",
+        )
+        .field("window_ms", millis(elapsed))
+        .field("held_ms", millis(held))
+        .field("passes", oteryn_error_codes::FieldValue::U64(passes))
+        .field("refused", oteryn_error_codes::FieldValue::U64(refused)),
     );
     window
         .callers
@@ -128,11 +138,18 @@ fn record_holder_usage(
         let site = caller.map_or_else(|| "maintenance".to_owned(), ToString::to_string);
         oteryn_error_codes::emit(
             DIAGNOSTIC_PROCESS,
-            &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Info, "durability", "holder_usage")
-                .field("caller", oteryn_error_codes::FieldValue::Owned(site))
-                .field("passes", oteryn_error_codes::FieldValue::U64(entry.passes))
-                .field("held_ms", millis(entry.held))
-                .field("refused", oteryn_error_codes::FieldValue::U64(entry.refused)),
+            &oteryn_error_codes::Line::new(
+                oteryn_error_codes::Level::Info,
+                "durability",
+                "holder_usage",
+            )
+            .field("caller", oteryn_error_codes::FieldValue::Owned(site))
+            .field("passes", oteryn_error_codes::FieldValue::U64(entry.passes))
+            .field("held_ms", millis(entry.held))
+            .field(
+                "refused",
+                oteryn_error_codes::FieldValue::U64(entry.refused),
+            ),
         );
     }
     *usage = None;
@@ -180,9 +197,16 @@ impl Drop for PassOwner {
         if !self.finished {
             oteryn_error_codes::emit(
                 DIAGNOSTIC_PROCESS,
-                &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "durability", "pass_dropped")
-                    .field("caller", oteryn_error_codes::FieldValue::Owned(self.caller.to_string()))
-                    .field("held_ms", millis(self.issued.elapsed())),
+                &oteryn_error_codes::Line::new(
+                    oteryn_error_codes::Level::Warn,
+                    "durability",
+                    "pass_dropped",
+                )
+                .field(
+                    "caller",
+                    oteryn_error_codes::FieldValue::Owned(self.caller.to_string()),
+                )
+                .field("held_ms", millis(self.issued.elapsed())),
             );
         }
         if let Ok(mut owner) = self.slot.lock()
@@ -411,10 +435,10 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
         .checked_add(std::mem::size_of::<DurabilityRoot>())
         .ok_or(DurabilityError::RootUnavailable)?;
 
-    for requested in lengths
-        .into_iter()
-        .chain(std::iter::once(TRANSPORT_IP_TEXT_MAX_BYTES))
-    {
+    for requested in lengths.into_iter().chain([
+        TRANSPORT_IP_TEXT_MAX_BYTES,
+        holder_queue::HOLDER_QUEUE_ALLOCATION_BYTES,
+    ]) {
         total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
     }
 
@@ -472,6 +496,8 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
     for requested in [
         arc_allocation_request::<AtomicBool>()?,
         arc_allocation_request::<Mutex<()>>()?,
+        arc_allocation_request::<HolderPriority>()?,
+        arc_allocation_request::<StdMutex<HolderQueue>>()?,
         arc_allocation_request::<RootICharge>()?,
         arc_allocation_request::<RootBudgetAdapter>()?,
         arc_allocation_request::<
@@ -1018,6 +1044,9 @@ pub struct DurabilityRoot {
     /// Signalled each time the holder is observed back in the idle pool (NODEBOOT-1).
     holder_returned: Arc<Notify>,
     maintenance: Arc<Mutex<()>>,
+    holder_priority: Arc<HolderPriority>,
+    /// Refused owners in arrival order; an idle holder is kept for the oldest waiting one.
+    holder_queue: Arc<StdMutex<HolderQueue>>,
     /// Which semantic pass has the holder checked out (NBDIAG-4).
     holder_owner: Arc<StdMutex<HolderOwner>>,
     /// The deadline of the next semantic pass in milliseconds, shared by every clone:
@@ -1030,6 +1059,14 @@ pub struct DurabilityRoot {
     pub(super) staff_trust: Arc<
         std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>,
     >,
+}
+
+/// Foreground preference lasts until this owner finishes or its future is cancelled.
+/// Retaining its root charge keeps the arbitration allocation under root custody.
+#[must_use = "foreground preference ends when the guard is dropped"]
+pub struct ForegroundDemand {
+    _demand: foreground::ForegroundDemand,
+    _root_i_charge: Option<Arc<RootICharge>>,
 }
 
 /// While it lives, every semantic pass of its root runs under the boot deadline
@@ -1095,6 +1132,8 @@ impl DurabilityRoot {
             holder_owner: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
+            holder_priority: Arc::default(),
+            holder_queue: Arc::default(),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: Some(Box::new(relay_options)),
             _root_i_charge: root_i_charge,
@@ -1135,6 +1174,8 @@ impl DurabilityRoot {
             holder_owner: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
+            holder_priority: Arc::default(),
+            holder_queue: Arc::default(),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: <PgConnectOptions as std::str::FromStr>::from_str(database_url)
                 .ok()
@@ -1144,7 +1185,29 @@ impl DurabilityRoot {
         })
     }
 
+    /// Gives one independently polled future its own holder retry identity. Work it spawns
+    /// through this root inherits that identity, even when a listener polls many such futures.
+    pub fn with_holder_owner<F: Future>(future: F) -> impl Future<Output = F::Output> {
+        static NEXT_OWNER: AtomicU64 = AtomicU64::new(0);
+        holder_queue::spawned_for(
+            holder_queue::OwnerKey::Scoped(NEXT_OWNER.fetch_add(1, Ordering::Relaxed)),
+            future,
+        )
+    }
+
     pub fn spawn_task<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        // Work spawned on an owner's behalf keeps that owner's place for the holder.
+        self.spawn_on_runtime(holder_queue::spawned_for(
+            holder_queue::current_owner(),
+            future,
+        ))
+    }
+
+    fn spawn_on_runtime<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
     where
         F: Future + Send + 'static,
         F::Output: Send + 'static,
@@ -1181,13 +1244,88 @@ impl DurabilityRoot {
     }
 
     /// Checkout only an already-idle holder. This method never establishes a connection.
+    /// While an owner refused earlier still waits, a later owner is refused too, so the idle
+    /// holder goes to the oldest waiting owner (see [`HolderWaiter`]).
     pub fn try_acquire_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
-        if let Some(holder) = self.pool.try_acquire() {
+        let owner = holder_queue::current_owner();
+        let now = Instant::now();
+        let mut queue = self
+            .holder_queue
+            .lock()
+            .map_err(|_| DurabilityError::RootUnavailable)?;
+        if queue.turn(owner, now) != Turn::Kept
+            && let Some(holder) = self.pool.try_acquire()
+        {
+            queue.served(owner);
             return Ok(holder);
         }
-
-        self.request_ready();
+        let kept = self.pool.num_idle() > 0;
+        queue.refused(owner, now);
+        drop(queue);
+        // A holder kept idle for an older owner needs no recovery.
+        if !kept {
+            self.request_ready();
+        }
         Err(DurabilityError::RootUnavailable)
+    }
+
+    /// Takes the current owner's place in the holder queue after a refused checkout that it
+    /// retries. `None` when the queue is full, or an outer retry of the same owner already
+    /// holds the place.
+    pub fn holder_waiter(&self) -> Option<HolderWaiter> {
+        HolderWaiter::enqueue(&self.holder_queue, &self.holder_returned)
+    }
+
+    /// Waits for the retry of a step that found the holder busy, for an owner holding a
+    /// [`HolderWaiter`]. When the holder is idle and this owner is the oldest refused owner
+    /// still waiting, the retry starts at once; later owners are refused meanwhile, so it takes
+    /// the holder ahead of them however slow its path back to the checkout is. A holder checked
+    /// out, or kept idle for an older owner, is waited for; once it is free without being this
+    /// owner's turn, the retry starts no earlier than `earliest`. An idle holder
+    /// that this owner does not wait for, before any wait, means the step failed for another
+    /// reason: the retry then waits until `latest`, as a plain backoff would. Every retry starts by `latest`.
+    /// Returns `false` at once when the root has no live holder, which only maintenance
+    /// re-establishes.
+    pub async fn wait_holder_turn(
+        &self,
+        earliest: tokio::time::Instant,
+        latest: tokio::time::Instant,
+    ) -> bool {
+        let mut waited = false;
+        loop {
+            let mut returned = std::pin::pin!(self.holder_returned.notified());
+            returned.as_mut().enable();
+            if self.pool.size() == 0 {
+                return false;
+            }
+            if self.is_ready() {
+                match self.holder_turn() {
+                    Turn::Mine => return true,
+                    Turn::Free => {
+                        let retry_at = if waited { earliest.min(latest) } else { latest };
+                        tokio::time::sleep_until(retry_at).await;
+                        return true;
+                    }
+                    Turn::Kept => {}
+                }
+            }
+            // A holder dropped without a semantic-pass guard, or a stale older waiter, sends no
+            // notification: look again on the maintenance poll.
+            let poll = (tokio::time::Instant::now() + HOLDER_RETURN_POLL).min(latest);
+            if tokio::time::timeout_at(poll, returned).await.is_err()
+                && tokio::time::Instant::now() >= latest
+            {
+                return true;
+            }
+            waited = true;
+        }
+    }
+
+    fn holder_turn(&self) -> Turn {
+        let owner = holder_queue::current_owner();
+        self.holder_queue
+            .lock()
+            .map_or(Turn::Kept, |queue| queue.turn(owner, Instant::now()))
     }
 
     /// Consume at most one coalesced demand and run one bounded maintenance window.
@@ -1239,6 +1377,13 @@ impl DurabilityRoot {
                 self.holder_returned.notified(),
             )
             .await;
+        }
+        // A live holder that is idle again needs no re-establishment, so it gets no schema
+        // check either: taking it here would only hand the returned holder to this window
+        // instead of the owner whose refused checkout raised the demand. Under steady use every
+        // refusal did so, and that owner then lost the holder on each return.
+        if self.pool.size() > 0 {
+            return Ok(true);
         }
         let fresh = self.pool.size() == 0;
         let remaining = deadline.saturating_duration_since(Instant::now());
@@ -1356,6 +1501,49 @@ impl DurabilityRoot {
 
     fn pass_deadline(&self) -> Duration {
         Duration::from_millis(self.pass_deadline_millis.load(Ordering::Acquire))
+    }
+
+    /// Give a foreground owner a bounded preference over scheduled background passes.
+    /// Keep this guard across holder waits and all passes of that owner operation.
+    pub fn foreground_demand(&self) -> Result<ForegroundDemand, DurabilityError> {
+        self.holder_priority
+            .foreground(Instant::now(), ROOT_RECOVERY_WINDOW)
+            .map(|demand| ForegroundDemand {
+                _demand: demand,
+                _root_i_charge: self._root_i_charge.clone(),
+            })
+            .ok_or(DurabilityError::RootUnavailable)
+    }
+
+    /// A scheduled pass yields to waiting foreground work without creating a
+    /// connection or a maintenance demand. A real ready miss keeps its old demand.
+    #[track_caller]
+    pub fn try_issue_background_semantic_pass(
+        &self,
+    ) -> Result<IssuedSemanticPass, DurabilityError> {
+        let caller = std::panic::Location::caller();
+        let holder = self
+            .holder_priority
+            .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
+                // Priority already granted this pass its fairness turn. The ticket
+                // queue must not reserve an idle holder against that grant.
+                let holder = self.pool.try_acquire();
+                if holder.is_none() {
+                    self.request_ready();
+                }
+                holder
+            })
+            .ok_or_else(|| {
+                record_holder_usage(Some(caller), None);
+                DurabilityError::RootUnavailable
+            })?;
+        let issued = Instant::now();
+        Ok(IssuedSemanticPass {
+            root: self.clone(),
+            holder,
+            deadline: issued + self.pass_deadline(),
+            owner: PassOwner::checked_out(&self.holder_owner, caller, issued),
+        })
     }
 
     #[track_caller]
@@ -1633,17 +1821,19 @@ pub async fn connect(database_url: &str, max_connections: u32) -> Result<PgPool,
         .map_err(DurabilityError::from)?;
     oteryn_error_codes::emit(
         DIAGNOSTIC_PROCESS,
-        &oteryn_error_codes::Line::new(
-            oteryn_error_codes::Level::Info,
-            "durability",
-            "db_pool",
-        )
-        .field("size", oteryn_error_codes::FieldValue::U64(u64::from(pool.size())))
-        .field("idle", oteryn_error_codes::FieldValue::U64(pool.num_idle() as u64))
-        .field(
-            "max",
-            oteryn_error_codes::FieldValue::U64(u64::from(max_connections)),
-        ),
+        &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Info, "durability", "db_pool")
+            .field(
+                "size",
+                oteryn_error_codes::FieldValue::U64(u64::from(pool.size())),
+            )
+            .field(
+                "idle",
+                oteryn_error_codes::FieldValue::U64(pool.num_idle() as u64),
+            )
+            .field(
+                "max",
+                oteryn_error_codes::FieldValue::U64(u64::from(max_connections)),
+            ),
     );
     Ok(pool)
 }

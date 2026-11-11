@@ -14,9 +14,9 @@ async fn floor_journey(
         return Err("floor route did not produce a protocol floor change".into());
     }
     let old_session = client.join_snapshot().game_session_id;
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("floor journey logout refused: {logout:?}").into());
+    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("floor journey logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     drop(client);
     client = connect_world(clients, 0x77).await?;

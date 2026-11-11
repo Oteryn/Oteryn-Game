@@ -1,6 +1,7 @@
 //! The existing item/NPC owners while the real House scope owns the player.
 //! House movement retains native House custody and the existing STEP pacing.
 use super::*;
+use crate::gameplay_transport::appearance_change::observation::ObservationError;
 mod map;
 mod reply;
 mod snapshot;
@@ -317,7 +318,7 @@ impl State {
             }
             _ => {}
         }
-        self.spatial(stream, authority, admitted).await
+        self.spatial(stream, authority, admitted, false).await
     }
 
     async fn item_delta<S: AsyncWrite + Unpin>(
@@ -390,6 +391,7 @@ impl State {
         stream: &mut S,
         authority: &A,
         admitted: &mut AdmittedSession,
+        periodic: bool,
     ) -> Result<(), ServeEnd> {
         if let Some(view) = self.visibility.as_mut() {
             let entities = crate::gameplay_transport::entity_names::observe(
@@ -400,9 +402,9 @@ impl State {
             .await
             .ok_or(ServeEnd::Disconnected)?;
             let sequence = admitted.continuity.server_sequence;
-            let (_, revision) = self
+            let projection = self
                 .appearances
-                .refresh(
+                .refresh_result(
                     stream,
                     authority,
                     self.actor,
@@ -413,8 +415,16 @@ impl State {
                     sequence,
                     self.spatial_revision,
                 )
-                .await
-                .ok_or(ServeEnd::Disconnected)?;
+                .await;
+            let (_, revision) = match projection {
+                Ok(published) => published,
+                Err(ObservationError::HolderBusy | ObservationError::RespawnPending)
+                    if periodic =>
+                {
+                    return Ok(());
+                }
+                Err(_) => return Err(ServeEnd::Disconnected),
+            };
             self.spatial_revision = revision;
             admitted.continuity.spatial_revision = revision;
         }
@@ -491,6 +501,6 @@ impl State {
         {
             self.npc(stream, admitted, &update).await?;
         }
-        self.spatial(stream, authority, admitted).await
+        self.spatial(stream, authority, admitted, true).await
     }
 }

@@ -481,7 +481,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        let retry = super::AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root);
+        let retry =
+            super::AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
+                .map_err(|_| ())?;
         let Some(mut receipt) = retry
             .retry_unavailable(async || {
                 self.root

@@ -76,7 +76,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         }
         let handoffs = ActivityHandoffOwner::new(self.root.clone());
-        let retry = super::AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root);
+        let retry =
+            super::AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
+                .map_err(|_| ())?;
         let Some(candidate) = retry
             .retry_unavailable(async || {
                 self.root.await_ready().await.map_err(projection_refusal)?;

@@ -871,11 +871,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             actor,
         )?;
         if next.controller.is_none() {
-            let mut from = self.states.lost.lock().map_err(|_| ())?;
-            let mut to = destination.states.lost.lock().map_err(|_| ())?;
-            to.try_reserve(1).map_err(|_| ())?;
-            from.remove(&old);
-            to.insert(new, next);
+            self.states
+                .transfer_lost_to(&destination.states, old, next)?;
         }
         // Settlement publishes these effects before releasing its recipient
         // revisions/lane. These same guards remain held across this move, so a

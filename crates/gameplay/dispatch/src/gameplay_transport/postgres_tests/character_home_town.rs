@@ -210,6 +210,13 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
             "SELECT count(*) FROM game_character_home_town_receipts WHERE character_id=encode($1,'hex')::uuid",
         ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(receipts, 1, "one receipt for the actual town change");
+        // A legal citizenship receipt must also pass the full boot authority check.
+        drop(
+            h.root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?,
+        );
         if let Some(entry) = p20 {
             premium_ended(
                 &h,

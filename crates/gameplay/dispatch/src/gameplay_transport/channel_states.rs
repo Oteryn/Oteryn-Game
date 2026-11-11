@@ -63,6 +63,8 @@ pub struct ChannelSessionStates {
     /// Ended admitted sessions whose loss is durably recorded and whose grace has not ended:
     /// the only sessions a `ClientResume` can name. At most one entry per admitted session.
     pub lost: std::sync::Mutex<std::collections::HashMap<GameSessionId, AdmittedSession>>,
+    /// Wakes a resume that observed the durable loss before `lost` publication finished.
+    pub(super) lost_changed: tokio::sync::Notify,
     pub(super) newhaven_travel: newhaven_travel::NewhavenTravel,
     /// NPC-CMD-1a: the NPC conversation and talk limit of each session with capability 3.
     pub npc_conversations: npc_command::NpcConversations,
@@ -138,6 +140,50 @@ pub struct ChannelSessionStates {
 }
 
 impl ChannelSessionStates {
+    pub(super) fn insert_lost(&self, session: AdmittedSession) -> Result<(), ()> {
+        self.lost
+            .lock()
+            .map_err(|_| ())?
+            .insert(session.game_session_id, session);
+        self.lost_changed.notify_waiters();
+        Ok(())
+    }
+
+    pub(super) fn remove_lost_if(
+        &self,
+        session: GameSessionId,
+        predicate: impl FnOnce(&AdmittedSession) -> bool,
+    ) {
+        let removed = self
+            .lost
+            .lock()
+            .ok()
+            .and_then(|mut lost| predicate(lost.get(&session)?).then(|| lost.remove(&session)))
+            .flatten()
+            .is_some();
+        if removed {
+            self.lost_changed.notify_waiters();
+        }
+    }
+
+    pub(super) fn transfer_lost_to(
+        &self,
+        destination: &Self,
+        old: GameSessionId,
+        next: AdmittedSession,
+    ) -> Result<(), ()> {
+        let mut from = self.lost.lock().map_err(|_| ())?;
+        let mut to = destination.lost.lock().map_err(|_| ())?;
+        to.try_reserve(1).map_err(|_| ())?;
+        from.remove(&old);
+        to.insert(next.game_session_id, next);
+        drop(to);
+        drop(from);
+        self.lost_changed.notify_waiters();
+        destination.lost_changed.notify_waiters();
+        Ok(())
+    }
+
     /// Activity owners retain independent gameplay state, the origin Channel's
     /// connection recipients, and its existing node shutdown/input gate.
     pub(super) fn for_activity(&self) -> Self {
@@ -186,5 +232,61 @@ impl ChannelSessionStates {
         self.tutorial_sessions.forget(session);
         self.server_messages.forget(session);
         self.newhaven_travel.forget(session);
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod tests {
+    use super::*;
+    use crate::foundation::{ChannelId, WorldId};
+
+    #[tokio::test]
+    async fn transferring_lost_session_wakes_both_registered_waiters() {
+        fn uuid_v7(tag: u8) -> [u8; 16] {
+            let mut bytes = [tag; 16];
+            bytes[6] = 0x70 | (tag & 0x0f);
+            bytes[8] = 0x80 | (tag & 0x3f);
+            bytes
+        }
+        let source = ChannelSessionStates::default();
+        let destination = ChannelSessionStates::default();
+        let world = WorldId::decode(&uuid_v7(1)).expect("world");
+        let channel = ChannelId::decode(&uuid_v7(2)).expect("channel");
+        let old = GameSessionId::decode(&uuid_v7(3)).expect("old session");
+        let session = |game_session_id| AdmittedSession {
+            game_session_id,
+            world_id: world,
+            channel_id: channel,
+            runtime_actor: None,
+            first_entry: super::super::connection::FirstEntryOutcome::Positioned,
+            controller: None,
+            continuity: super::super::connection::SessionContinuity::FRESH,
+            item_fence: None,
+        };
+        source
+            .insert_lost(session(old))
+            .expect("insert lost session");
+        let mut source_notified = std::pin::pin!(source.lost_changed.notified());
+        source_notified.as_mut().enable();
+        let mut destination_notified = std::pin::pin!(destination.lost_changed.notified());
+        destination_notified.as_mut().enable();
+        destination
+            .lost
+            .lock()
+            .expect("destination lost map")
+            .reserve(1);
+        source
+            .transfer_lost_to(
+                &destination,
+                old,
+                session(GameSessionId::decode(&uuid_v7(4)).expect("new session")),
+            )
+            .expect("transfer lost session");
+        for notified in [source_notified, destination_notified] {
+            tokio::time::timeout(std::time::Duration::from_millis(50), notified)
+                .await
+                .expect("lost transfer notification");
+        }
     }
 }
