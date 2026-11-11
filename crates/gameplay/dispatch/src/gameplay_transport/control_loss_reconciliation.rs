@@ -27,6 +27,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .recover_pending_soul_war_source_use(actor, session)
             .await
         {
+            operator_event("event=control_loss_reconcile_pending stage=soul_war_source_use");
             return false;
         }
         let access = self.refresh_spell_access(actor, session).await;
