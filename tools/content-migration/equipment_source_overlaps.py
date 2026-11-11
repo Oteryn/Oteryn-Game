@@ -37,7 +37,7 @@ def refresh(source, root, qualified_boss_corpses):
         ('QMECH-M49', sphere_keys, floor_keys, names({7738,7739,7740,7741,7742,7743,7744,7745,7746,7748,8106,8139,8140,8141})),
         ('QMECH-M50', rafzane_keys, elevator_keys, names(elevator.IDS)),
         ('M26-ENDGAME', endgame_keys, qualified_boss_corpses, names({33864,33865,33866,33867,33876})),
-        ('QREADY1-CRAFT', craft_keys, shared, names({21506,21507})),
+        ('QREADY1-CRAFT', craft_keys, shared, names({21506,21507,21573})),
         ('ENGNPC-M05', npc_keys, shared, names({27654})),
         ('M22-TAINTED-TALISMAN', names({22008}), shared, names({22008})),
         ('NPCFIX2-M22', names({22008}), shared, names({22008})),
