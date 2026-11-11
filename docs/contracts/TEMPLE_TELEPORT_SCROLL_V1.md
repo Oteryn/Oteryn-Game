@@ -135,8 +135,9 @@ third original source of that owner; no new clock, sweep or table is introduced.
 - Defensive refusal. A use racing the deadline pass (the scroll is due but not yet
   removed) is refused: the writer reads the schedule under the scroll's row lock and
   returns `NOT_POSSIBLE` with nothing burnt, written or moved. The use row's stamp records
-  the schedule's deadline and the database clock, and its CHECK (`observed < expires`)
-  refuses a burn that crosses the deadline after that read.
+  the schedule's deadline and the database clock, and its CHECK (`observed < expires`,
+  `game_temple_scroll_uses_before_deadline`) refuses a burn that crosses the deadline after
+  that read: the burn rolls back and the use is refused as `NOT_POSSIBLE` the same way.
 - No deadline. A scroll delivered before migration 2762 has no schedule, carries no
   deadline and never expires under this contract.
 

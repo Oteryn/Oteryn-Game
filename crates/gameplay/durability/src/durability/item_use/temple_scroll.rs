@@ -116,7 +116,12 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error)),
                     }
                     match pair(&mut tx, &fence, &request).await {
-                        Ok(()) => {}
+                        Ok(true) => {}
+                        // The deadline passed between the read above and the use row's stamp.
+                        Ok(false) => {
+                            drop(tx);
+                            return Ok(Ok(TempleScrollOutcome::Expired));
+                        }
                         Err(ItemUseError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     }
@@ -144,13 +149,17 @@ async fn due(connection: &mut PgConnection, item: &[u8; 16]) -> Result<bool> {
     .await?)
 }
 
-/// Insert the burn's use row; its stamp copies the deadline and refuses a due scroll.
+/// The use row's CHECK that refuses a scroll stamped at or after its deadline (migration 2762).
+const USE_BEFORE_DEADLINE: &str = "game_temple_scroll_uses_before_deadline";
+
+/// Insert the burn's use row; its stamp copies the deadline and refuses a due scroll: `false`
+/// when the scroll fell due after [`due`] read it (the caller drops the transaction).
 async fn pair(
     connection: &mut PgConnection,
     fence: &CurrentCharacterItemFence,
     request: &ItemUseRequest,
-) -> Result<()> {
-    sqlx::query(
+) -> Result<bool> {
+    match sqlx::query(
         "INSERT INTO game_temple_scroll_uses(transaction_id,item_instance_id,character_id) \
          VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)",
     )
@@ -158,8 +167,14 @@ async fn pair(
     .bind(request.source_item_instance_id.as_slice())
     .bind(fence.character_id.as_bytes().as_slice())
     .execute(&mut *connection)
-    .await?;
-    Ok(())
+    .await
+    {
+        Ok(_) => Ok(true),
+        Err(sqlx::Error::Database(error)) if error.constraint() == Some(USE_BEFORE_DEADLINE) => {
+            Ok(false)
+        }
+        Err(error) => Err(error.into()),
+    }
 }
 
 /// A committed scroll command has its use row.

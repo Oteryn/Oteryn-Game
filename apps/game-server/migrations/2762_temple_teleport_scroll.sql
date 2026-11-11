@@ -52,7 +52,8 @@ CREATE TABLE game_temple_scroll_uses (
  expires_at_unix_ms BIGINT CHECK(expires_at_unix_ms>0),
  observed_at_unix_ms BIGINT NOT NULL CHECK(observed_at_unix_ms>0),
  created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
- CHECK(expires_at_unix_ms IS NULL OR observed_at_unix_ms<expires_at_unix_ms)
+ CONSTRAINT game_temple_scroll_uses_before_deadline
+  CHECK(expires_at_unix_ms IS NULL OR observed_at_unix_ms<expires_at_unix_ms)
 );
 CREATE INDEX game_temple_scroll_uses_character ON game_temple_scroll_uses(character_id);
 CREATE TRIGGER game_temple_scroll_uses_immutable BEFORE UPDATE OR DELETE ON game_temple_scroll_uses
