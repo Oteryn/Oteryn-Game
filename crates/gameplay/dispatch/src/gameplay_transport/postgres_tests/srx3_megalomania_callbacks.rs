@@ -94,7 +94,7 @@ fn actual_source_entry(check_plain_corpse: bool) -> TestResult {
             let (_, reply, barrier) = super::boss_activity::exchange_capture(
                 &owner,
                 &mut admitted,
-                "oteryn:boss.goshnar_s_megalomania",
+                "oteryn:creature.goshnar_s_megalomania_purple",
                 true,
                 &mut frames,
             )
