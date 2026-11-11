@@ -338,6 +338,55 @@ def _requested_inputs(root, extra_keys=()):
     return keys, authored_keys, authored_callbacks
 
 
+def canonical_source_inputs(root):
+    """Authenticate and parse the source once for an ordinary admission pass."""
+    raw = (root / SOURCE).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
+        raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
+    source_items = ET.fromstring(raw).findall('item')
+    return raw, source_items
+
+
+def canonical_native_profile(root, definition, matches, source_items):
+    """Construct one ordinary profile from the caller's authenticated source inputs."""
+    identity = definition['identity']
+    key = identity['key']
+    if (not definition['materializable']
+            or definition['stack_class'] not in ('StackCapable', 'NonStackable')
+            or len(matches) != 1 or matches[0]['disposition'] != 'EXACT'
+            or matches[0]['target'] != identity):
+        raise ValueError(f'QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}')
+    physical = definition['semantics']['physical']
+    if (physical['state'] != 'KNOWN'
+            or any(physical['value'][field] != {'state': 'KNOWN', 'value': True}
+                   for field in ('movable', 'pickupable'))):
+        raise ValueError('QUEST_CALLBACK_ITEM_NOT_PORTABLE')
+    item_id = int(matches[0]['external_id'])
+    source_matches = [item for item in source_items
+                      if int(item.get('id', item.get('fromid', '0'))) <= item_id
+                      <= int(item.get('id', item.get('toid', '0')))]
+    if len(source_matches) != 1:
+        raise ValueError('QUEST_CALLBACK_SOURCE_ITEM_MISSING')
+    speeds = [attr for attr in source_matches[0].findall('attribute')
+              if attr.get('key', '').lower() == 'speed']
+    if len(speeds) > 1:
+        raise ValueError('QUEST_CALLBACK_DUPLICATE_SPEED')
+    # Canary's Abilities constructor defaults speed to zero when XML omits it.
+    speed = int(speeds[0].attrib['value']) if speeds else 0
+    record = {
+        'authoring': {'item': identity},
+        'semantics': grant_semantics(root, definition),
+        'attributes': {'speed_bonus': speed},
+        'admission': {'materializable': True, 'stack_class': definition['stack_class'],
+                      'legal_destinations': ['CharacterInventory', 'Ground']},
+        'production_definition': {'family': identity['family'], 'production_key': key,
+                                  'revision_ref': identity['revision']},
+        'production_binding': matches[0], 'production_binding_qualification': None,
+    }
+    complete_native_stack(root, record, definition, matches[0])
+    return record
+
+
 def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
     keys, authored_keys, authored_callbacks = _requested_inputs(root, extra_keys)
     import container_native
@@ -362,10 +411,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     import authored_static_item_constructors
     authored = json.loads(generated[authored_static_item_constructors.ADMISSIONS])
     bindings.extend(row['binding'] for row in authored['records'])
-    raw = (root / SOURCE).read_bytes()
-    if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
-        raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
-    source_items = ET.fromstring(raw).findall('item')
+    raw, source_items = canonical_source_inputs(root)
     lion_keys = {f'oteryn:item.tibia.i{item}' for item in lion_trial_item_profiles.SOURCE_RECORDS}
     top_order_keys = {key for key in lion_keys if key in present
                       and isinstance(present[key].get('attributes'), dict)
@@ -496,29 +542,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
         if key in present:
             complete_native_stack(root, present[key], definition, matches[0])
             continue
-        item_id = int(matches[0]['external_id'])
-        source_matches = [item for item in source_items
-                          if int(item.get('id', item.get('fromid', '0'))) <= item_id
-                          <= int(item.get('id', item.get('toid', '0')))]
-        if len(source_matches) != 1:
-            raise ValueError('QUEST_CALLBACK_SOURCE_ITEM_MISSING')
-        speeds = [attr for attr in source_matches[0].findall('attribute')
-                  if attr.get('key', '').lower() == 'speed']
-        if len(speeds) > 1:
-            raise ValueError('QUEST_CALLBACK_DUPLICATE_SPEED')
-        # Canary's Abilities constructor defaults speed to zero when XML omits it.
-        speed = int(speeds[0].attrib['value']) if speeds else 0
-        document['records'].append({
-            'authoring': {'item': identity},
-            'semantics': grant_semantics(root, definition),
-            'attributes': {'speed_bonus': speed},
-            'admission': {'materializable': True, 'stack_class': definition['stack_class'],
-                          'legal_destinations': ['CharacterInventory', 'Ground']},
-            'production_definition': {'family': identity['family'], 'production_key': key,
-                                      'revision_ref': identity['revision']},
-            'production_binding': matches[0], 'production_binding_qualification': None,
-        })
-        complete_native_stack(root, document['records'][-1], definition, matches[0])
+        document['records'].append(canonical_native_profile(
+            root, definition, matches, source_items))
     document['records'].sort(key=order)
     raw = encode_native_profile(document)
     generated[profile_path] = raw

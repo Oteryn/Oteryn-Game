@@ -169,6 +169,29 @@ def registered_engine_npc_documents(root, qengine, npc):
     return copy.deepcopy(qengine), result
 
 
+def boss_yield_prior_record(root):
+    """Reproduce the earlier, requested Crimson Sword owner before yield custody."""
+    import authored_static_item_constructors as authored
+    import quest_callback_profiles as callbacks
+    key = 'oteryn:item.tibia.i7385'
+    requested, authored_keys, _ = callbacks._requested_inputs(root)
+    if key not in requested or key not in authored_keys:
+        raise ValueError('SRX3_BOSS_YIELD_TRADER_NOT_REQUESTED')
+    definitions = [row['definition']
+                   for path in sorted((root / 'content/items/definitions').glob('items-*.json'))
+                   for row in json.loads(path.read_bytes())['records']
+                   if row['definition']['identity']['key'] == key]
+    if (len(definitions) != 1 or definitions[0]['identity'] !=
+            {'family': 'Item', 'key': key, 'revision': 'definition-r1'}):
+        raise ValueError('SRX3_BOSS_YIELD_TRADER_CANONICAL_IDENTITY')
+    bindings = json.loads((root / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']
+    static = json.loads((root / authored.ADMISSIONS).read_bytes())
+    bindings.extend(row['binding'] for row in static['records'])
+    matches = [binding for binding in bindings if binding['target'] == definitions[0]['identity']]
+    _, source_items = callbacks.canonical_source_inputs(root)
+    return callbacks.canonical_native_profile(root, definitions[0], matches, source_items)
+
+
 def source_cohorts(root):
     """Re-use each closed source authority before counting its independent keys."""
     taxonomy = {
@@ -179,13 +202,15 @@ def source_cohorts(root):
     for name, module_name, previous_ids in SRX3_SOURCES:
         generated = {"profiles": b'{"records":[]}', "manifest": b'{"item_profiles":{}}'}
         owner = importlib.import_module(module_name)
+        if module_name == "boss_reward_yield_profiles":
+            generated["profiles"] = json.dumps({"records": [boss_yield_prior_record(root)]}).encode()
         owner.admit(root, generated, "profiles", "manifest",
                     lambda row: row["production_definition"]["production_key"],
                     lambda value: json.dumps(value, sort_keys=True).encode())
         document = json.loads(generated["profiles"])
         for row in document["records"]:
             key = row["production_definition"]["production_key"]
-            # Registration's Hireling stage attaches canonical taxonomy to
+            # Registration's Quick Loot stage attaches canonical taxonomy to
             # earlier profiles. Yield admission runs after that stage. Never
             # copy a later generated profile's authoring to manufacture parity.
             if module_name != "boss_reward_yield_profiles" and key in taxonomy and "taxonomy" not in row["authoring"]:
@@ -488,7 +513,16 @@ def regenerate(source, base, updates, qengine, npc, starting=None, srx3=(), coow
         for row in document["records"]:
             key = row["production_definition"]["production_key"]
             if key in new and actual_rows.get(key) != row:
-                raise ValueError(f"SRX3 source profile differs: {name}/{key}")
+                diagnostic = {
+                    "cohort": name,
+                    "key": key,
+                    "expected_source_row": row,
+                    "actual_row": actual_rows.get(key),
+                }
+                raise ValueError(
+                    f"SRX3 source profile differs: {name}/{key}: "
+                    + json.dumps(diagnostic, sort_keys=True)
+                )
         for key in new & coowner_keys:
             if not coowner_equivalent(coowner_rows[key], actual_rows[key]):
                 raise ValueError(f"already-counted coowner profile differs: {key}")

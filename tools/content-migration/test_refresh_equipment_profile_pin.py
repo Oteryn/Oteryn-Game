@@ -921,5 +921,293 @@ class RegisteredEngineNpcSourceTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "shared source|duplicate production key"):
                     self.qualified(engine, npc)
 
+
+class Srx3SourceDiagnosticsTests(unittest.TestCase):
+    def fixture(self, *, missing=False):
+        source = EquipmentPinTests().srx3_source()
+        proof = document(2, 5)
+        proof['records'][-1]['facts'] = {
+            'nested': {'mass': 3600, 'unit': 'centiweight'},
+            'unknown': None, 'flag': False, 'zero': 0,
+        }
+        base = document(0, 1, 2, 3) if missing else document(0, 1, 2, 3, 5)
+        if not missing:
+            base['records'][-1] = copy.deepcopy(proof['records'][-1])
+            base['records'][-1]['facts']['nested']['mass'] = 3601
+        return source, base, document(4), document(0), document(1), proof
+
+    def refusal(self, inputs):
+        source, base, updates, engine, npc, proof = inputs
+        before = copy.deepcopy(inputs)
+        with self.assertRaisesRegex(ValueError, 'SRX3 source profile differs: SRX3-TEST/5') as caught:
+            regenerate(source, base, updates, engine, npc,
+                       srx3=[('SRX3-TEST', proof, {'2'})])
+        self.assertEqual(inputs, before)
+        return str(caught.exception)
+
+    def assert_diagnostic(self, message, expected, actual):
+        prefix = 'SRX3 source profile differs: SRX3-TEST/5'
+        self.assertTrue(message.startswith(prefix + ': '), message)
+        diagnostic = {
+            'cohort': 'SRX3-TEST', 'key': '5',
+            'expected_source_row': expected, 'actual_row': actual,
+        }
+        self.assertEqual(message, prefix + ': ' + json.dumps(diagnostic, sort_keys=True))
+        parsed = json.loads(message[len(prefix) + 2:])
+        self.assertEqual(parsed, diagnostic)
+        self.assertIs(parsed['expected_source_row']['facts']['flag'], False)
+        self.assertIsNone(parsed['expected_source_row']['facts']['unknown'])
+        self.assertIs(type(parsed['expected_source_row']['facts']['zero']), int)
+        return parsed
+
+    def test_changed_nested_fact_refuses_with_complete_deterministic_operands(self):
+        inputs = self.fixture()
+        message = self.refusal(inputs)
+        self.assertEqual(self.refusal(inputs), message)
+        parsed = self.assert_diagnostic(
+            message, inputs[-1]['records'][-1], inputs[1]['records'][-1])
+        self.assertEqual(parsed['expected_source_row']['facts']['nested']['mass'], 3600)
+        self.assertEqual(parsed['actual_row']['facts']['nested']['mass'], 3601)
+        self.assertIs(parsed['actual_row']['facts']['flag'], False)
+        self.assertIs(type(parsed['actual_row']['facts']['zero']), int)
+
+    def test_missing_actual_row_refuses_with_complete_source_and_null_actual(self):
+        inputs = self.fixture(missing=True)
+        message = self.refusal(inputs)
+        self.assertEqual(self.refusal(inputs), message)
+        parsed = self.assert_diagnostic(message, inputs[-1]['records'][-1], None)
+        self.assertIsNone(parsed['actual_row'])
+
+
+class BossYieldPriorOwnerTests(unittest.TestCase):
+    KEY = 'oteryn:item.tibia.i7385'
+    MAP_CARRIERS = {f'oteryn:item.tibia.i{i}' for i in (1777, 2436, 2438, 2473, 2474)}
+
+    @classmethod
+    def setUpClass(cls):
+        import authored_static_item_constructors as authored
+        import boss_reward_yield_profiles as yields
+        import lion_trial_item_profiles as lion
+        import quest_callback_profiles as callbacks
+        cls.authored, cls.yields, cls.callbacks = authored, yields, callbacks
+        cls.requests = callbacks._requested_inputs(refresh.ROOT)
+        requested, authored_keys, authored_callbacks = cls.requests
+        if cls.KEY not in requested or cls.KEY not in authored_keys:
+            raise AssertionError('actual requested Trader source is required')
+        cls.trader_callbacks = [row for row in authored_callbacks if cls.KEY in json.dumps(row)]
+        generated = {'profiles': b'{"records":[]}', 'manifest': b'{"item_profiles":{}}',
+                     authored.ADMISSIONS: (refresh.ROOT / authored.ADMISSIONS).read_bytes()}
+        # Execute the ordinary requested branch. The disjoint Lion cohort is
+        # excluded so this focused test never needs the appearance decoder.
+        with patch.object(callbacks, '_requested_inputs',
+                          return_value=({cls.KEY}, {cls.KEY}, authored_callbacks)), \
+                patch.object(lion, 'records', return_value={}), \
+                patch.object(yields.corpses.source.engine_items, 'load_appearance_objects',
+                             side_effect=AssertionError('appearance decoding is outside this test')):
+            callbacks.admit(refresh.ROOT, generated, 'profiles', 'manifest',
+                            lambda row: row['production_definition']['production_key'],
+                            yields.corpses.encode)
+        cls.before = json.loads(generated['profiles'])
+        if refresh.keys(cls.before) != cls.MAP_CARRIERS | {cls.KEY}:
+            raise AssertionError('the real five map carriers and ordinary Trader row are required')
+        yields.admit(refresh.ROOT, generated, 'profiles', 'manifest',
+                     lambda row: row['production_definition']['production_key'],
+                     yields.corpses.encode)
+        cls.actual = refresh.registered_source_document(
+            refresh.ROOT, json.loads(generated['profiles']))
+        cls.selection = next(row for row in refresh.SRX3_SOURCES if row[0] == 'SRX3-BOSS-YIELDS')
+        with patch.object(refresh, 'SRX3_SOURCES', (cls.selection,)):
+            cls.cohort = refresh.source_cohorts(refresh.ROOT)[0]
+        isolated = {'profiles': b'{"records":[]}', 'manifest': b'{"item_profiles":{}}'}
+        yields.admit(refresh.ROOT, isolated, 'profiles', 'manifest',
+                     lambda row: row['production_definition']['production_key'],
+                     yields.corpses.encode)
+        cls.isolated = refresh.registered_source_document(
+            refresh.ROOT, json.loads(isolated['profiles']))
+        definitions = [(path, row['definition'])
+                       for path in sorted((refresh.ROOT / 'content/items/definitions').glob('items-*.json'))
+                       for row in json.loads(path.read_bytes())['records']
+                       if row['definition']['identity']['key'] == cls.KEY]
+        if len(definitions) != 1:
+            raise AssertionError('one exact canonical Trader definition is required')
+        cls.definition_path, cls.definition = definitions[0]
+        cls.binding_path = refresh.ROOT / 'imports/crystalserver/bindings/items.json'
+        cls.bindings = json.loads(cls.binding_path.read_bytes())
+        cls.static_path = refresh.ROOT / authored.ADMISSIONS
+        cls.static = json.loads(cls.static_path.read_bytes())
+        all_bindings = cls.bindings['bindings'] + [row['binding'] for row in cls.static['records']]
+        cls.matches = [binding for binding in all_bindings if binding['target'] == cls.definition['identity']]
+        cls.xml, cls.source_items = callbacks.canonical_source_inputs(refresh.ROOT)
+
+    @classmethod
+    def row(cls, document):
+        return next(row for row in document['records']
+                    if row['production_definition']['production_key'] == cls.KEY)
+
+    def generate(self, actual=None):
+        source = EquipmentPinTests().srx3_source().replace(
+            'ORIGINAL_PROFILES: usize = 1;', 'ORIGINAL_PROFILES: usize = 19;').replace(
+            '("QNPCFX", 1)', '("QNPCFX", 0)').replace(
+            'cohorts add 1 + 1 keys', 'cohorts add 0 + 0 keys')
+        empty = {'records': []}
+        return regenerate(source, actual or self.actual, empty, empty, empty,
+                          srx3=[self.cohort])
+
+    def test_actual_trader_yield_house_chain_keeps_the_complete_cohort_guard(self):
+        name, expected, previous = self.cohort
+        self.assertEqual(name, 'SRX3-BOSS-YIELDS')
+        self.assertEqual(len(expected['records']), 46)
+        self.assertEqual(len(previous), 14)
+        self.assertNotIn(self.KEY, previous)
+        self.assertEqual(refresh.keys(self.actual), refresh.keys(expected) | self.MAP_CARRIERS)
+        actual = {row['production_definition']['production_key']: row for row in self.actual['records']}
+        isolated = {row['production_definition']['production_key']: row for row in self.isolated['records']}
+        changed = []
+        for row in expected['records']:
+            key = row['production_definition']['production_key']
+            self.assertEqual(row, actual[key], key)
+            if row != isolated[key]:
+                changed.append(key)
+        self.assertEqual(changed, [self.KEY])
+        self.assertEqual(len(refresh.keys(expected) - {self.KEY}), 45)
+        self.assertNotIn('taxonomy', self.row(expected)['authoring'])
+        generated, count = self.generate()
+        self.assertEqual(count, 51)  # Fixed historical14 + map5 + new32.
+        empty = {'records': []}
+        self.assertEqual(regenerate(generated, self.actual, empty, empty, empty,
+                                    srx3=[self.cohort]), (generated, count))
+        with patch.object(refresh, 'SRX3_SOURCES', (self.selection,)):
+            self.assertEqual(refresh.source_cohorts(refresh.ROOT), [self.cohort])
+
+    def test_shared_factory_matches_the_actual_ordinary_branch_without_mutation(self):
+        before = copy.deepcopy((self.definition, self.matches))
+        result = self.callbacks.canonical_native_profile(
+            refresh.ROOT, self.definition, self.matches, self.source_items)
+        self.assertEqual(result, self.row(self.before))
+        self.assertEqual((self.definition, self.matches), before)
+        self.assertEqual(result['authoring'], {'item': self.definition['identity']})
+        self.assertEqual(result['attributes'], {'speed_bonus': 0})
+        self.assertEqual(result['semantics'],
+                         self.callbacks.grant_semantics(refresh.ROOT, self.definition))
+        self.assertEqual(result['semantics']['imbuement']['value']['slot_count'],
+                         {'state': 'KNOWN', 'value': 2})
+        self.assertEqual(result['semantics']['trade_restrictions']['value']['marketable'],
+                         {'state': 'KNOWN', 'value': True})
+        self.assertEqual({row['key'] for row in self.trader_callbacks},
+                         {'oteryn:quest-reward/chosen/trader/buy-sword',
+                          'oteryn:quest-reward/chosen/trader/sword'})
+
+    def test_requested_membership_and_unique_canonical_identity_are_required(self):
+        requested, authored, callbacks = copy.deepcopy(self.requests)
+        requested.remove(self.KEY)
+        with patch.object(self.callbacks, '_requested_inputs',
+                          return_value=(requested, authored, callbacks)):
+            with self.assertRaisesRegex(ValueError, 'SRX3_BOSS_YIELD_TRADER_NOT_REQUESTED'):
+                refresh.boss_yield_prior_record(refresh.ROOT)
+        original = Path.read_bytes
+        document = json.loads(self.definition_path.read_bytes())
+        for mode in ('missing', 'duplicate', 'revision'):
+            with self.subTest(mode=mode):
+                changed = copy.deepcopy(document)
+                entries = [row for row in changed['records']
+                           if row['definition']['identity']['key'] == self.KEY]
+                self.assertEqual(len(entries), 1)
+                if mode == 'missing':
+                    changed['records'].remove(entries[0])
+                elif mode == 'duplicate':
+                    changed['records'].append(copy.deepcopy(entries[0]))
+                else:
+                    entries[0]['definition']['identity']['revision'] = 'unqualified'
+                raw = json.dumps(changed).encode()
+                def read(path):
+                    return raw if path == self.definition_path else original(path)
+                with patch.object(Path, 'read_bytes', read), \
+                        patch.object(self.callbacks, '_requested_inputs', return_value=self.requests):
+                    with self.assertRaisesRegex(ValueError, 'SRX3_BOSS_YIELD_TRADER_CANONICAL_IDENTITY'):
+                        refresh.boss_yield_prior_record(refresh.ROOT)
+
+    def test_full_base_and_authored_binding_inventory_rejects_missing_or_duplicate(self):
+        original = Path.read_bytes
+        for mode in ('missing', 'duplicate_base', 'duplicate_authored'):
+            with self.subTest(mode=mode):
+                bindings, static = copy.deepcopy((self.bindings, self.static))
+                selected = [row for row in bindings['bindings']
+                            if row['target'] == self.definition['identity']]
+                self.assertEqual(len(selected), 1)
+                if mode == 'missing':
+                    bindings['bindings'].remove(selected[0])
+                elif mode == 'duplicate_base':
+                    bindings['bindings'].append(copy.deepcopy(selected[0]))
+                else:
+                    static['records'].append({'binding': copy.deepcopy(selected[0])})
+                overlays = {self.binding_path: json.dumps(bindings).encode(),
+                            self.static_path: json.dumps(static).encode()}
+                def read(path):
+                    return overlays[path] if path in overlays else original(path)
+                with patch.object(Path, 'read_bytes', read), \
+                        patch.object(self.callbacks, '_requested_inputs', return_value=self.requests):
+                    with self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_ITEM_NOT_ADMITTED'):
+                        refresh.boss_yield_prior_record(refresh.ROOT)
+
+    def test_factory_preserves_canonical_binding_and_portable_guards(self):
+        for mode in ('not_materializable', 'unknown_stack', 'binding_disposition',
+                     'binding_target', 'unknown_physical', 'immovable', 'not_pickupable',
+                     'unknown_weight'):
+            with self.subTest(mode=mode):
+                definition, matches = copy.deepcopy((self.definition, self.matches))
+                if mode == 'not_materializable':
+                    definition['materializable'] = False
+                elif mode == 'unknown_stack':
+                    definition['stack_class'] = 'Unknown'
+                elif mode == 'binding_disposition':
+                    matches[0]['disposition'] = 'UNQUALIFIED'
+                elif mode == 'binding_target':
+                    matches[0]['target']['revision'] = 'unqualified'
+                elif mode == 'unknown_physical':
+                    definition['semantics']['physical'] = {'state': 'UNKNOWN'}
+                elif mode == 'unknown_weight':
+                    definition['semantics']['physical']['value']['weight'] = {'state': 'UNKNOWN'}
+                else:
+                    field = 'movable' if mode == 'immovable' else 'pickupable'
+                    definition['semantics']['physical']['value'][field] = {'state': 'KNOWN', 'value': False}
+                with self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_'):
+                    self.callbacks.canonical_native_profile(
+                        refresh.ROOT, definition, matches, self.source_items)
+
+    def test_source_hash_unique_xml_and_duplicate_speed_guards_remain(self):
+        import xml.etree.ElementTree as ET
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / self.callbacks.SOURCE
+            target.parent.mkdir(parents=True)
+            target.write_bytes(self.xml + b'\n')
+            with self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_SOURCE_DIGEST'):
+                self.callbacks.canonical_source_inputs(root)
+        selected = [item for item in self.source_items
+                    if int(item.get('id', item.get('fromid', '0'))) <= 7385
+                    <= int(item.get('id', item.get('toid', '0')))]
+        self.assertEqual(len(selected), 1)
+        for values in ([], selected + selected):
+            with self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_SOURCE_ITEM_MISSING'):
+                self.callbacks.canonical_native_profile(
+                    refresh.ROOT, self.definition, self.matches, values)
+        duplicate = copy.deepcopy(selected[0])
+        ET.SubElement(duplicate, 'attribute', {'key': 'speed', 'value': '0'})
+        ET.SubElement(duplicate, 'attribute', {'key': 'speed', 'value': '1'})
+        with self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_DUPLICATE_SPEED'):
+            self.callbacks.canonical_native_profile(
+                refresh.ROOT, self.definition, self.matches, [duplicate])
+
+    def test_all_remaining_actual_row_disagreements_still_reach_full_guard(self):
+        for part in ('authoring', 'attributes', 'production_binding', 'admission', 'semantics'):
+            with self.subTest(part=part):
+                actual = copy.deepcopy(self.actual)
+                self.row(actual)[part]['unqualified_extra'] = True
+                with self.assertRaisesRegex(ValueError,
+                        'SRX3 source profile differs: SRX3-BOSS-YIELDS/oteryn:item.tibia.i7385'):
+                    self.generate(actual)
+
+
+
 if __name__ == "__main__":
     unittest.main()
