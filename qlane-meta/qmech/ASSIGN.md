@@ -50,3 +50,7 @@
 | M42 | dispatch planera gotowania UTC | Hot Cuisine | questpc7 | ASSIGNED |
 | M43 | USE na stanie questa innego gracza | The Colours of Magic | questpc8 | CLAIMED |
 | OWNER | most Cake 48227 typed unavailable decyzją właściciela (W05d.md:18) | A Piece of Cake | — | OWNER |
+
+## PR3056: integracja z main f01f1858 (2026-11-11)
+
+Przydział naprawy migracji: `2740_quest_paid_experience_rewards.sql` jest następcą dla powtarzalnych wymian M39 z potwierdzonym zużyciem przedmiotu i nadaniem XP w tej samej transakcji. Opublikowana migracja1097 pozostaje niezmieniona;2740 musi zachować jej pozostałe ograniczenia i późniejsze rozszerzenia funkcji. Ten przydział nie oznacza zakończonej kwalifikacji PostgreSQL.
