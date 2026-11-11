@@ -4,7 +4,8 @@
 - Status: **ACCEPTED** (owner, 2026-11-05)
 - Owner: FND-04B, with protocol and native-client owners
 - Scope: Game-issued fast reconnect and its acceptance-message delivery only
-- `IMPLEMENTATION_AUTHORITY: NONE`; `PRODUCTION_AUTHORITY: NONE`
+- `IMPLEMENTATION_AUTHORITY: GAME-SIDE` (owner, 2026-11-11; see Owner decisions);
+  `PRODUCTION_AUTHORITY: NONE`
 
 ## Precedence and gap
 
@@ -136,17 +137,31 @@ allow. Existing FND-02 transport/size refusals apply before credential parsing.
 | COMMIT response loss; transport+proof loss; predecessor replay | Same-attempt result on proven channel; otherwise recovery; no revival |
 | Key revoke, grace expiry or owner change between phases; restart ambiguity | COMMIT revalidation rejects or fails closed without guessed state |
 | Retry ceiling/backoff/deadlines; memory/logout/crash/log inspection | Bounded work, unchanged deadlines, no persisted/exported secrets |
+| Platform account ban, kick or password change while a proof is current | Game session terminal; current and candidate proofs refused (`RECONNECT_NOT_ELIGIBLE`) |
 
-## Owner decisions required before acceptance
+## Owner decisions (2026-11-11)
 
-1. Game signing ownership and exact profile/claims, Game trust distribution and
-   revocation contract, 2,048-byte bound and 24-hour non-renewing lifetime.
-2. Release of reserved tags 11 and 7, optional-field compatibility and the
-   concrete PREPARE/successor delivery mapping as a separate implementation gate.
-3. Memory-only client custody, three-transmission retry ceiling/backoff and
-   registration of remaining server resource/deadline values before implementation.
-4. Existing refusal mapping and the matrix above, with independent security,
-   protocol and native-client review before implementation acceptance.
+The owner accepted decisions 1-4 as proposed and added decision 5:
 
-This document records proposals only; it changes no accepted contract status,
-runtime, schema, registry, Platform responsibility or production authorization.
+1. Accepted: Game signing ownership, the profile and claims above, Game trust
+   distribution and revocation through authenticated Game configuration, the
+   2,048-byte bound and the 24-hour non-renewing lifetime.
+2. Accepted: release of reserved tags 11 (`ServerAccepted`) and 7
+   (`ServerResumeAccepted`) as optional fields, subject to protocol-owner
+   confirmation at schema work. The concrete PREPARE/successor delivery mapping
+   stays a separate implementation gate under independent review (§11/§15).
+3. Accepted: memory-only client custody and the three-transmission retry
+   ceiling with 250 ms then 500 ms backoff. Remaining server resource and
+   deadline values are registered before the code that uses them.
+4. Accepted: the existing FND-04B §25 refusal mapping and the test matrix above,
+   with independent security, protocol and native-client review before
+   implementation acceptance.
+5. Added: a Platform account ban, kick or password change must make the Game
+   session terminal, so that no current or candidate proof can be used after
+   it. Implementation must show that path end to end (matrix row above); a
+   session-status check alone is not enough if the Platform event never
+   reaches Game.
+
+Implementation authority covers Game-side work only. Production authority stays
+`NONE` and needs a separate owner decision. Platform responsibilities are
+unchanged.
