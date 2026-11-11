@@ -3,6 +3,16 @@
   "owner": "crates",
   "events": [
     {
+      "event": "appearance_observation_failed",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "class"
+      ],
+      "codes": [],
+      "note": "Closed-schema appearance observation refusal class for connection diagnostics; no actor or stored payload."
+    },
+    {
       "event": "attack_target_condition_gated",
       "level": "info",
       "span": false,
@@ -67,6 +77,17 @@
       "note": "Node boot diagnostics (NBDIAG, #3057)."
     },
     {
+      "event": "control_loss_grace",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage",
+        "kind"
+      ],
+      "codes": [],
+      "note": "Closed-schema grace-expiry stage and pending kind; no account or session identity."
+    },
+    {
       "event": "control_loss_reconcile_pending",
       "level": "info",
       "span": false,
@@ -75,6 +96,16 @@
       ],
       "codes": [],
       "note": "NBFIX: closed retained-work stage blocking logout or loss reconciliation."
+    },
+    {
+      "event": "control_loss_result",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "kind"
+      ],
+      "codes": [],
+      "note": "Closed lifecycle result kind after original control-loss operation; no identifiers."
     },
     {
       "event": "join_prepare_failed",
