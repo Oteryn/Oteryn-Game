@@ -1,97 +1,134 @@
 # Universal client: work plan
 
-Status: plan for owner review (2026-11-11). Companion to `UNIVERSAL_CLIENT_PROPOSAL.md`; it does not lift the
+Status: plan for owner review (2026-11-11). Companion to `UNIVERSAL_CLIENT_PROPOSAL.md`. It does not lift the
 2026-11-10 implementation pause and accepts no ADR.
 
 ## 1. Goal
 
-One Rust client, the final player client, for Windows, Linux and macOS from one code base. The browser follows later
-(owner decision D2). Every window and dialog is drawn by the game and looks the same on every system.
+One Rust client, the final player client, for Windows, Linux and macOS from one code base. The browser comes later
+(owner decision D2).
+
+Owner rule: the client looks **1:1 like the Tibia Global client** and uses Global graphics. Our own look comes later as
+a second skin. So the UI layer is pixel-exact and skinnable. It is not a generic widget toolkit with Tibia colours.
 
 ## 2. What we have
 
 | Area | State | Cross-platform? |
 |---|---|---|
 | Window and input | `winit 0.30.13` | Yes. Windows, X11, Wayland, macOS and web. |
-| GPU | `wgpu 30.0.1`, features `dx12` and `wgsl`. Tests already use `vulkan`. | Yes, once the Vulkan and Metal backends are turned on. |
-| Game rendering | `crates/renderer`, sprites and map | Yes (pure wgpu) |
+| GPU | `wgpu 30.0.1`, features `dx12` and `wgsl`. Tests already use `vulkan`. | Yes, once Vulkan and Metal are turned on |
+| Game rendering | `crates/renderer`, sprites and map from Global appearances and sprite sheets (`client-assets`) | Yes |
 | Game state, protocol, network | `client-domain`, `client-runtime`, `session`, `protocol-oteryn`, Tokio | Yes (native) |
-| UI logic | `client-ui`: 141 features of state, actions and text; tested | Yes. It has no widgets and no layout. |
-| UI drawing | Win32 dialogs in `apps/client`: about 39,700 lines, 190 files, 65 features | No. Windows only. |
-| Text | Win32 draws dialog text. The renderer has only a 5x7 ASCII bitmap, with no Polish characters. | No |
-| Audio | `rodio 0.21` (cpal) | Yes. WASAPI, CoreAudio and ALSA/Pulse. |
+| UI logic | `client-ui`: 141 features of state, actions and text, tested | Yes. It has no widgets and no layout. |
+| UI drawing | Win32 dialogs in `apps/client`, about 39,700 lines in 190 files and 65 features | No. Windows only, and it does not look like Global. |
+| Global UI skin (frames, buttons, scrollbars, icons, side-panel windows) | Not loaded. Only world sprites are loaded today. | n/a |
+| Text | Win32 for dialogs. Renderer: 5x7 ASCII bitmap. | No |
+| Audio | `rodio 0.21` (cpal) | Yes |
 | Credentials, single instance, shell, capture, updater, crash report | `windows-sys` | No |
-| CI | Windows build and Linux tests | Linux build of the client: no. macOS: no. |
 
 ## 3. What we need, and what to use
 
-Upstream first: take mature crates and write only the glue.
+### 3.1 UI layer: our own pixel-exact layer, not egui
 
-| Need | Choice | Why / alternative |
+A 1:1 copy of Global needs:
+
+- exact pixel positions and sizes;
+- Global 9-slice skin images;
+- Global fonts with pixel-exact glyphs;
+- Global window behaviour: docked side-panel mini-windows that can be dragged, resized and minimised; modal dialogs;
+  the action bars.
+
+egui fights each of these: it lays out automatically, draws anti-aliased TTF text and uses its own interaction look.
+Bending it into a 1:1 copy would cost more than a thin layer of our own. So:
+
+| Part | Choice |
+|---|---|
+| Drawing | Our own `client-ui-skin` crate: quads, 9-slice frames and glyph runs through the existing `wgpu` sprite batch |
+| Widgets | Label, button, checkbox, radio, slider, scrollbar, list/table, tree, tabs, combo box, text field, tooltip, context menu, modal dialog, side-panel mini-window, action-bar slot. About 15 widgets, each copied from Global. |
+| Layout | Absolute positions per window, read from layout files (RON/JSON). Global windows are fixed-size, so no flexbox is needed. If the Global client's resources contain window definitions, a converter generates our layout files (checked in F0). |
+| Focus, Tab order, keyboard | Our own, small |
+| Text editing (caret, selection, IME) | Our own text field over the bitmap fonts. IME events come from `winit`. |
+| Clipboard | `arboard` |
+| Second skin later | The skin is data (images, fonts, layout files), so our own look is a data swap, not a code change |
+
+### 3.2 Assets taken from Global (reference use, faithful reimplementation)
+
+| Asset | Where it comes from | Tool |
 |---|---|---|
-| Widget kit (layout, buttons, lists, tabs, scrolling, focus, modal dialogs, text field with caret, selection, IME and clipboard) | **`egui` core** (MIT/Apache), drawn through our own small painter on the existing `wgpu 30` renderer | egui is mature and renderer-agnostic: it outputs triangle meshes and a font atlas. It handles text input, IME, Unicode, scrolling and focus, and it runs in the browser too. This replaces about 22 person-days of the hand-written kit in the proposal (part 3a). Alternatives: our own kit (slow, high risk on text input); `iced` (its own runtime, harder to put inside the game loop); Slint (GPL or commercial licence, rejected). |
-| egui to winit glue | `egui-winit`, if its winit version matches 0.30; otherwise about 300 lines of our own glue | Check in F0. Do not take `egui-wgpu` if it pins a different wgpu: our painter is small. |
-| Fonts with Polish characters | Bundled OFL font: Noto Sans or Inter for the UI, plus one OFL pixel font for in-game names | egui uses TTF/OTF directly. Licence: OFL allows bundling. |
-| Tibia-like look (frames, buttons, scrollbars) | egui `Style` plus 9-slice textures | The skin images must be our own or carry redistribution rights. Third-party client art is reference only. |
-| Clipboard | `arboard` (or the egui-winit clipboard) | Windows, macOS, X11 and Wayland |
-| Credentials | `keyring` | Windows Credential Manager, macOS Keychain, Linux Secret Service |
-| Single instance | Lock file in the user data directory (`fs4` or our own) | Replaces the Win32 named mutex |
-| Data and config paths | `directories` | Correct per-OS paths |
-| Audio | `rodio` (have) | Linux CI needs `libasound2-dev` |
-| Packaging | Windows: current installer. Linux: AppImage and `.tar.gz`. macOS: `.app` and `.dmg` via `cargo-bundle`, unsigned (D4). | Signing and notarisation only before a Mac release to players |
-| Updater | Per-OS downloader behind a trait; the UI goes through egui | Windows keeps today's logic |
-| Crash report | Panic hook plus a report written by the game; the dialog goes through egui | No OS dialog needed |
+| UI skin images | Global client resources (Qt resource data in the client binaries) | Extractor script in `tools/`, run locally on the PC client. The output goes to the local asset cache, like the world sprites. Original files are not committed to the repository. |
+| UI fonts | Global client resources, or the system font it names | F0 finds out which. A bitmap font is converted to a glyph atlas plus metrics. |
+| Polish letters (ą ć ę ł ń ś ź ż and capitals) | Global fonts cover Latin-1 only, so these are probably missing | About 16 glyphs drawn in the same style (a small art task), or a matching TTF fallback |
+| Window layouts and sizes | Global client definitions if present; otherwise measured from screenshots | Converter or a measuring helper |
+| Reference screenshots of each window | Global client on the PC, same resolution and scale | Kept locally for tests, not committed |
 
-No game engine (Bevy, Fyrox and the like) is needed: the game already has its own renderer, loop and state. Switching
-engines would mean rewriting working code, not porting it.
+### 3.3 Other components
+
+| Need | Choice |
+|---|---|
+| Credentials | `keyring` (Windows Credential Manager, macOS Keychain, Linux Secret Service) |
+| Single instance | Lock file in the user data directory |
+| Data and config paths | `directories` |
+| Audio | `rodio` (have); Linux needs `libasound2-dev` |
+| Packaging | Windows: current installer. Linux: AppImage and `.tar.gz`. macOS: `.app` via `cargo-bundle`, unsigned (D4). |
+| Updater and crash report | Logic behind a trait; their windows are drawn with the same skin |
+
+No game engine (Bevy and the like): the game already has its own renderer, loop and state.
 
 ## 4. Tests
 
 | Level | What | Tools |
 |---|---|---|
 | Logic | Current `client-ui` and `client-runtime` lib tests, unchanged | `cargo test` |
-| UI behaviour | Every ported window: open it, click, type Polish text, check the action sent | `egui_kittest` (egui's test harness; finds widgets by label through AccessKit) |
-| Pixel snapshots | Key windows rendered off-screen and compared with a stored PNG within a tolerance | `egui_kittest` snapshots, wgpu off-screen; Linux CI uses software Vulkan (Mesa lavapipe) |
-| Architecture | Rule: no `windows_sys::Win32::UI` outside `platform/windows`. A baseline list of remaining files may only shrink. | `oteryn-architecture-check` |
-| Build matrix | Client builds for Windows x64, Linux x64 and macOS arm64 | GitHub runners `windows-latest`, `ubuntu-latest`, `macos-14`. macOS minutes cost 10x: build on every PR, run the full set only on merge. |
-| End-to-end | Scripted session on each OS: login, enter the world, walk, chat, open options, cast a spell, log out (criterion S3) | Local server in Docker with PostgreSQL; the client in script mode |
-| Performance | Windows frame time and memory before and after (criterion S4) | Measured baseline before F2, budget gate |
-| Manual | Windows 10/11, Ubuntu 24.04 (X11 and Wayland), macOS 14 arm64; Polish keyboard, IME, HiDPI 150%/200% | Checklist per release candidate |
+| Widgets | Each widget: click, drag, scroll, keyboard, Polish text input, clipboard | Unit tests on the skin layer with synthetic input |
+| **1:1 look** | Each window rendered off-screen and compared with the Global reference screenshot. The diff stays below a threshold and the diff image is saved on failure. | wgpu off-screen render; Linux CI uses Mesa lavapipe (software Vulkan). Reference images come from the local cache, so this runs on the PC and on CI runners that have the cache. |
+| Behaviour | Each window: open, act, check the action sent to `client-ui` | Tests through the real caller |
+| Architecture | No `windows_sys::Win32::UI` outside `platform/windows`. The baseline list of remaining files may only shrink. | `oteryn-architecture-check` |
+| Build matrix | Windows x64, Linux x64, macOS arm64 | GitHub runners; macOS builds on each PR, full runs only on merge |
+| End-to-end | Scripted session on each OS: login, character list, enter the world, walk, chat, options, cast a spell, log out | Local server in Docker with PostgreSQL |
+| Performance | Windows frame time and memory, before and after | Baseline before F2, then a gate |
+| Manual | Windows 10/11, Ubuntu 24.04 (X11 and Wayland), macOS 14; Polish keyboard, IME, HiDPI | Checklist per release candidate |
+
+The screenshot comparison is the key test: it lets Codex fix a window until it matches Global without a person
+looking at every pixel.
 
 ## 5. Templates
 
-- **Port packet** (one per feature, for Codex), carrying:
-  - the feature, owned files and the matching `client-ui` view;
-  - the egui view to write;
-  - the `egui_kittest` test to add (red before, green after);
-  - the Win32 file to delete;
-  - the baseline line to remove.
-- **egui view skeleton**: one function `fn show(ui, &ViewModel) -> Vec<Action>`. The view holds no state and makes no
-  network calls; all logic stays in `client-ui`.
-- **Platform trait skeleton**: `trait Platform { credentials, single_instance, open_url, data_dir, capture }`, with
-  implementations in `platform/windows`, `platform/linux` and `platform/macos`.
+- **Port packet for one window** (for Codex):
+  - the owned files;
+  - the matching `client-ui` view;
+  - the layout file to write;
+  - the reference screenshot;
+  - the pixel-diff test (red before, green after);
+  - the Win32 file to delete and the baseline line to remove.
+- **Window skeleton**: a layout file and `fn show(&mut Ui, &ViewModel) -> Vec<Action>`. No state or network in the
+  view; logic stays in `client-ui`.
+- **Platform trait**: `credentials`, `single_instance`, `open_url`, `data_dir` and `capture`, with implementations for
+  Windows, Linux and macOS.
 
 ## 6. Order of work
 
-Times are wall-clock time with Codex lanes, using the tempo measured on 2026-11-11: about 20 minutes for six fixes plus
-one feature.
+Times are wall-clock time with Codex lanes, at the tempo measured on 2026-11-11.
 
 | Phase | Content | Exit test | Time |
 |---|---|---|---|
-| F0 spike | egui core and our painter in the game window; one Polish text field; the About window ported; check the egui-winit and wgpu versions | Polish text typed, copied and pasted; the window draws over the map; go / no-go on egui | 0.5 day |
-| F1 foundation | `client-ui-egui` crate (painter, skin, fonts, input/IME/clipboard); platform trait and Windows implementation (3d); architecture rule with baseline; Vulkan and Metal on; client build behind `cfg` for Linux/macOS (step 1); CI build matrix | Game window renders on Linux and macOS; Windows unchanged | 1-2 days |
-| F2 features | 65 features in 4 parallel lanes, one lane per area so lanes share no files. Lane 1: options and preferences (3 tasks). Lane 2: Wheel, Cyclopedia, Bestiary. Lane 3: chat, social, party, guild. Lane 4: Store, account, market, rest. | Each feature: kittest green, Win32 file deleted, baseline shorter | 2-4 days |
-| F3 entry windows | Login, character list, device login, status, updater, crash report | Full start-to-game path without Win32 | 1 day |
-| F4 OS bring-up | Linux X11/Wayland, macOS Metal, HiDPI, keyboard layouts; packages; E2E on 3 systems; performance gate | S1-S5 met | 2-5 days |
-| F5 browser | Steps 2 and 4 of the proposal, later (D2) | Under the web plan's gates | later |
+| F0 spike | Extract the Global UI skin and fonts from the client on the PC. Check whether the resources hold window definitions. Draw one Global window (About, or the Exit dialog) pixel-exact over the map. Type Polish text into a skinned text field. | Pixel diff against the Global screenshot under the threshold. Polish text, IME and clipboard work. | 1 day |
+| F1 foundation | Skin crate with about 15 widgets, side-panel mini-window docking, layout loader; screenshot-diff harness; platform trait (3d); architecture rule; Vulkan and Metal on; Linux/macOS build behind `cfg`; CI build matrix | Widget tests green. The game window renders on Linux and macOS. Windows unchanged. | 2-4 days |
+| F2 windows | 65 features in 4 parallel lanes, one area per lane so lanes share no files. Lane 1: options. Lane 2: Wheel, Cyclopedia, Bestiary. Lane 3: chat, social, party, guild. Lane 4: Store, account, market, rest. Each window is iterated against its screenshot. | Each window: pixel diff green, behaviour test green, Win32 file deleted | 4-7 days |
+| F3 entry windows | Login, character list, device login, status, updater, crash report, all in Global look | Full start-to-game path without Win32 | 1-2 days |
+| F4 OS bring-up | Linux X11/Wayland, macOS Metal, HiDPI, keyboard layouts; packages; E2E on 3 systems; performance gate | S1-S5 of the proposal | 2-5 days |
+| F5 our own skin | Second skin as data | later | later |
+| F6 browser | Steps 2 and 4 of the proposal (D2) | Under the web plan's gates | later |
 
-Native total: about **1-2 weeks wall-clock**. The pure writing is about 1-2 days of that. The rest is review, CI and
-testing on real systems.
+Native total: about **2-3 weeks wall-clock**, longer than a generic UI because every window is matched to Global
+pixel by pixel. The screenshot-diff harness keeps that work automatic.
 
 ## 7. Needed from the owner
 
 1. Lift the pause for this work.
-2. Accept egui as the UI kit (it replaces the hand-written kit in part 3a).
-3. Approve by name the workflow change that adds the Linux and macOS build matrix (macOS runners cost money).
-4. Accept the OFL fonts and the rule that skin images are our own art.
-5. Access to a Mac and a Linux machine (or testers) for F4; CI covers the build, not how the windows feel.
+2. Accept our own pixel-exact skin layer instead of egui. This is required by the 1:1 rule.
+3. The Global client installed on the PC (the version we copy), and a way to log in to take reference screenshots.
+   The test server or an account the owner names.
+4. Approve by name the workflow change for the Linux and macOS build matrix (macOS runners cost money).
+5. Who draws the missing Polish glyphs in the Global font style, if Global lacks them: Codex from the existing glyphs,
+   or a person.
+6. A Mac and a Linux machine (or testers) for F4.
