@@ -1399,3 +1399,12 @@ fixtures retain their borrowed cells and use None for the additive field,
 which preserves legacy terrain-kind behavior (world-bundle/bundle.rs:140-142).
 No assertions or scenario preconditions change. Both affected real Cake PG
 cases are included with the S17, House-container and QREADY1 focused rerun.
+
+### QMECH M18 selected First Dragon
+
+No migration or command/capability number is allocated. Existing Boss Activity wire
+commands and tables own the selected encounter. The explicit chosen-recipe adapter
+is `content/encounters/bosses/selected-first-dragon.json`; its generator checks pinned
+Crystal donor blobs and leaves the original unresolved full-phase capture unchanged.
+Donor file:line details and immutable source URLs are recorded in
+`docs/reference/content-prep/qmech-season/M18.md` and the generated packet.
