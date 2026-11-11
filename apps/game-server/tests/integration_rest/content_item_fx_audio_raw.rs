@@ -90,8 +90,17 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
         .filter(|batch| batch.batch_id == "seasonal-cake-creature-crystal-201189f-r1")
         .collect::<Vec<_>>();
     assert_eq!(cake.len(), 1, "one separately qualified Cake source batch");
+    let thaian = batches
+        .iter()
+        .filter(|batch| batch.batch_id == "questpc7-thaian-wiki-chosen-r1")
+        .collect::<Vec<_>>();
     assert_eq!(
-        batches.len() - cake.len(),
+        thaian.len(),
+        1,
+        "one separately qualified Thaian source batch"
+    );
+    assert_eq!(
+        batches.len() - cake.len() - thaian.len(),
         34,
         "all historical source batches retained"
     );
@@ -117,6 +126,25 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     );
     assert!(cake.candidates.is_empty());
     assert!(cake.reimport_states.is_empty());
+    let thaian = thaian[0];
+    assert_eq!(thaian.source_repository, "tibiawiki.com.br");
+    assert_eq!(
+        thaian.source_generation_profile,
+        "OTERYN_QUESTPC7_THAIAN_AUTHORING/v1"
+    );
+    assert_eq!(
+        thaian.source_revision,
+        "questpc7-thaian-wiki-445240-chosen-r1"
+    );
+    assert_eq!(thaian.mapper_revision, "creature-admission-r1");
+    assert_eq!(
+        thaian.source_artifact_sha256,
+        world_project_sha256(include_bytes!(
+            "../../../../tools/content-schema/quest-authoring/questpc7-thaian-authoring.json"
+        ))
+    );
+    assert!(thaian.candidates.is_empty());
+    assert!(thaian.reimport_states.is_empty());
     assert_eq!(
         batches
             .iter()
