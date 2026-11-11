@@ -98,12 +98,12 @@ fn panel_displays_server_quotes_and_the_matching_modifier_grade() {
             "Removing points or resetting is blocked while you are in a fight (PZ lock)."
         )
     );
-    assert!(text.contains("654321 gold"));
+    assert!(!text.contains("654321 gold"), "no domain switch price");
     assert!(text.contains("9–11 supreme fragments"));
     assert!(text.contains("222222 gold and 777 supreme fragments"));
     assert!(modifier_label(&panel, 1, 5).contains("Grade II"));
-    assert!(slot_label(&panel, 14).contains("Green"));
-    assert!(slot_label(&panel, 20).contains("Blue"));
+    assert!(!slot_label(&panel, 14).contains("Green"));
+    assert!(!slot_label(&panel, 20).contains("Blue"));
 }
 
 #[test]

@@ -6,7 +6,7 @@ pub(super) struct Controls {
     pub(super) mods: HWND,
     pub(super) body: HWND,
     pub(super) quality: HWND,
-    pub(super) domain: HWND,
+    pub(super) vessel: HWND,
     pub(super) buttons: [HWND; 12],
 }
 pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
@@ -15,7 +15,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         control(
             hwnd,
             "STATIC",
-            "Selected | Green | Red | Purple | Blue (draft vessels)",
+            "Selected | Gem Vessel 1 | Gem Vessel 2 | Gem Vessel 3 | Gem Vessel 4 (draft vessels)",
             2,
             [12, 80, 500, 24],
             0,
@@ -57,7 +57,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
             [12, 630, 150, 200],
             CBS_DROPDOWNLIST as u32 | WS_TABSTOP,
         );
-        let domain = control(
+        let vessel = control(
             hwnd,
             "COMBOBOX",
             "",
@@ -70,19 +70,19 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         }
         for d in 0..4 {
             SendMessageW(
-                domain,
+                vessel,
                 CB_ADDSTRING,
                 0,
-                wide(domain_name(d)).as_ptr() as isize,
+                wide(&vessel_name(d)).as_ptr() as isize,
             );
         }
         let buttons = [
             ("Reveal", 100),
             ("Dismantle", 101),
-            ("Switch domain", 102),
+            ("Reshape mod", 102),
             ("Upgrade grade", 103),
             ("Lock / unlock", 104),
-            ("Socket draft", 105),
+            ("Replace Vessel", 105),
             ("Clear vessel", 106),
             ("Save vessels", 107),
             ("Refresh", 108),
@@ -105,7 +105,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
                 WS_TABSTOP,
             )
         });
-        if [surface, list, mods, body, quality, domain]
+        if [surface, list, mods, body, quality, vessel]
             .iter()
             .chain(buttons.iter())
             .any(|h| h.is_null())
@@ -118,7 +118,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
             mods,
             body,
             quality,
-            domain,
+            vessel,
             buttons,
         })
     }

@@ -9,7 +9,7 @@ impl layout::Controls {
                 gems,
                 modifiers,
                 quality,
-                domain,
+                vessel,
                 lock_button,
                 description,
                 ..
@@ -53,7 +53,7 @@ impl layout::Controls {
                 }
             }
             SendMessageW(quality, CB_SETCURSEL, usize::from(panel.quality), 0);
-            SendMessageW(domain, CB_SETCURSEL, usize::from(panel.domain), 0);
+            SendMessageW(vessel, CB_SETCURSEL, usize::from(panel.vessel_slot), 0);
             SetWindowTextW(
                 lock_button,
                 wide(if panel.selected_gem().is_some_and(|gem| gem.locked) {
