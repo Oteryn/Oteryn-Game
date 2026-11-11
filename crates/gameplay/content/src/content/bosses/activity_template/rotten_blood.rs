@@ -1,5 +1,7 @@
 //! Literal pinned Rotten levers; Quest admission and runtime callbacks retain their owners.
 use super::*;
+#[path = "rotten_blood/ichgahal_exit.rs"]
+mod ichgahal_exit;
 #[path = "rotten_blood/vemiath_exit.rs"]
 mod vemiath_exit;
 
@@ -84,6 +86,21 @@ impl ActiveGeneration {
         source: PinnedActivitySourceRoom,
     ) -> Result<QualifiedActivityRoomTemplate, ActivityTemplateRefusal> {
         self.qualify_rotten_blood_activity_template_composed(room, content_revision, source, None)
+    }
+
+    /// Only the pinned Ichgahal raw exit/Teleport arrival pair can compose here.
+    pub fn qualify_ichgahal_activity_template(
+        &self,
+        room: &QualifiedNativeEntryRoom,
+        content_revision: &str,
+        resolved: LogicalCell,
+    ) -> Result<QualifiedActivityRoomTemplate, ActivityTemplateRefusal> {
+        self.qualify_rotten_blood_activity_template_composed(
+            room,
+            content_revision,
+            PinnedActivitySourceRoom::Ichgahal,
+            Some(resolved),
+        )
     }
 
     /// Only the pinned Vemiath raw exit/Teleport arrival pair can compose here.
@@ -178,6 +195,8 @@ impl ActiveGeneration {
         let source_exit = cell(candidate.exit_position.ok_or(R::IncompleteLayout)?);
         let exit = if source == PinnedActivitySourceRoom::Vemiath {
             vemiath_exit::qualify(room, source_exit, resolved_exit.ok_or(R::UnknownPlacement)?)?
+        } else if source == PinnedActivitySourceRoom::Ichgahal {
+            ichgahal_exit::qualify(room, source_exit, resolved_exit.ok_or(R::UnknownPlacement)?)?
         } else {
             if resolved_exit.is_some() {
                 return Err(R::InvalidSourceCapture);

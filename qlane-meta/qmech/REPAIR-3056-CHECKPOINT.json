@@ -8,9 +8,10 @@
   },
   "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
   "generation": {
-    "workflow": ".github/workflows/g4-canonical-worldproject-package-seed.yml",
+    "workflow": ".github/workflows/content-tree-migration.yml",
     "label": "content-candidate",
-    "outputs": "Exact-head canonical World and reviewable generated-content patch; no automatic commit/ref update."
+    "outputs": "Exact-head generated-content patch, including canonical World changes, exported for review without an automatic commit/ref update.",
+    "routing_evidence": "G4 canonical WorldProject package seed was manually disabled; generation was moved to the active migration workflow in 140b3482b684d08b86d155c2459bce7ff45691e2 without changing existing validation jobs."
   },
   "pending": [
     "Replay canonical World materializer from its pinned predecessor, complete dependent native/Prey providers, source witnesses, census and World pins.",
@@ -18,7 +19,8 @@
     "Replay full canonical Quest source tree on the runner and recheck final source/state products. Current Quest-state and claims replay restored the five standalone chest transitions; historical USE proof bytes were not edited.",
     "Compile and run required normal CI on the resulting published head.",
     "Run PostgreSQL partitions and node boot on the final head; reconcile individual prior failing test identities.",
-    "The two-review quota is exhausted; later material changes have no fresh Codex approval. An owner decision is needed before any merge."
+    "The two-review quota is exhausted; later material changes have no fresh Codex approval. An owner decision is needed before any merge.",
+    "Protected-base Merge authority audit rejected the changed merge-gate.yml blob (run42938550000, job130254540983): expected2480e2eb9fb73d9af246188cde918359a260de94, candidate23356f400e5b79659fb4802492ef2d03a77f8ea4. Preserve the strengthened result-cache guards; protected-base approval/rotation remains separate from content/runtime qualification."
   ],
   "previous_execution_only": {
     "merge_run": 42917781849,
@@ -52,12 +54,6 @@
         "qlane-meta/questpc7/restart5-inherited-product-files.json"
       ],
       "action": "Preserve historical evidence; resolve provenance representation in the final grouped backlog."
-    },
-    {
-      "finding": "Candidate operation.txt summarizes content and pin commands but omits the earlier Quest prerequisite commands",
-      "classification": "P2 documentation; exact workflow and head remain available",
-      "path": ".github/workflows/g4-canonical-worldproject-package-seed.yml",
-      "action": "Collect with final grouped documentation work."
     }
   ]
 }

@@ -45,7 +45,7 @@ pub(crate) fn reset_callback() -> super::world_callbacks::Callback {
     callback.passages = TREES
         .into_iter()
         .map(|position| Passage {
-        require_state: false,
+            require_state: false,
             position,
             appearance: 3636,
             replacement: None,

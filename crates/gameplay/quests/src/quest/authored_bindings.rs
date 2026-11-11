@@ -316,7 +316,10 @@ impl Bindings {
                         if callback.trigger != expected {
                             return Err("authored world trigger mismatch".into());
                         }
-                        if callback.operations().any(|operation| !tracks.contains(&operation.track)) {
+                        if callback
+                            .operations()
+                            .any(|operation| !tracks.contains(&operation.track))
+                        {
                             return Err("authored foreign clock track".into());
                         }
                         (&callback.key, &callback.quest, &callback.storage)
@@ -355,7 +358,10 @@ impl Bindings {
         for quest in &mut normalized.quests {
             for stage in &mut quest.stages {
                 match &mut stage.trigger {
-                    Trigger::NpcDialogue { callback, alternatives } => {
+                    Trigger::NpcDialogue {
+                        callback,
+                        alternatives,
+                    } => {
                         callback.completes = stage.completes;
                         for other in alternatives {
                             other.completes = stage.completes;

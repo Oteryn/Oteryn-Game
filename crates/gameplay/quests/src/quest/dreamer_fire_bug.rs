@@ -105,9 +105,9 @@ mod tests {
                 1 => bad.item_on_target.as_mut().ok_or("tool")?.reusable = false,
                 2 => bad.effects.reset_after_ms = Some(1),
                 _ => bad.storage.push(super::super::world_callbacks::Storage {
-        set_if: None,
-        add: None,
-        read_only: false,
+                    set_if: None,
+                    add: None,
+                    read_only: false,
                     track: "oteryn:quest-progress/fixture".into(),
                     minimum: 0,
                     maximum: 0,

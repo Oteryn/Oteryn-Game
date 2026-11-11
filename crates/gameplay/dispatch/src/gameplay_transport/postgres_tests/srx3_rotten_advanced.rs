@@ -217,6 +217,49 @@ fn scenario_with_step(
                         .is_err(),
                     "a caller cannot select another exit"
                 );
+            } else if kind == PinnedActivitySourceRoom::Ichgahal {
+                let raw = crate::content::LogicalCell {
+                    x: 33004,
+                    y: 32343,
+                    z: 15,
+                };
+                let effective =
+                    crate::map::floor::resolve_teleport_arrival(scene.room.movement_cells(), raw)
+                        .map_err(|error| {
+                        format!("actual Ichgahal source Teleport arrival: {error:?}")
+                    })?;
+                assert_eq!(
+                    effective,
+                    crate::content::LogicalCell {
+                        x: 34065,
+                        y: 31717,
+                        z: 15
+                    }
+                );
+                let template = active
+                    .qualify_ichgahal_activity_template(&scene.room, revision, effective)
+                    .map_err(|error| {
+                        format!("actual Ichgahal composed exit template: {error:?}")
+                    })?;
+                assert_eq!(template.exit_position(), effective);
+                assert_eq!(
+                    template.source_exit_position(),
+                    raw,
+                    "literal Lua exit evidence remains distinct from its composed landing"
+                );
+                assert!(
+                    active
+                        .qualify_ichgahal_activity_template(
+                            &scene.room,
+                            revision,
+                            crate::content::LogicalCell {
+                                x: 34066,
+                                ..effective
+                            }
+                        )
+                        .is_err(),
+                    "a caller cannot select another Ichgahal exit"
+                );
             } else {
                 active
                     .qualify_rotten_blood_activity_template(&scene.room, revision, kind)
@@ -444,6 +487,70 @@ fn scenario_with_step(
             view.drain_monster_melee().await;
             if final_boss {
                 view.drain_bak_first_think_claims().await;
+                #[cfg(test)]
+                {
+                    let runtime = view.runtime.lock().await;
+                    if let Ok(states) = view.states.spell_states.try_lock() {
+                        let boss_actor = runtime
+                            .visible_entities()
+                            .creatures
+                            .iter()
+                            .find(|c| {
+                                runtime.matches_live_creature_identity(c.actor, boss.as_bytes())
+                            })
+                            .map(|c| c.actor);
+                        let native = view
+                            .active_generation
+                            .and_then(|active| active.native_gameplay());
+                        eprintln!(
+                            "SRX3_BAK_FIRST_THINK_PRE_ASSERT now={} next_ai={} next_swing={} source_work={:?} profile_due={:?} profile={:?} movement_pending={} movement_due={:?}",
+                            view.owner_now().get(),
+                            states.next_monster_ai_pass_us,
+                            states.monster_melee.next_swing_pass_us,
+                            native.map(|native| {
+                                crate::gameplay_transport::source_death::next_source_work(
+                                    &runtime, &states, native,
+                                )
+                            }),
+                            states.native_profile_pass.next_due(&runtime),
+                            states.native_profile_pass.pending(),
+                            runtime.rotten_movement_pending(),
+                            runtime
+                                .pending_rotten_movement(1)
+                                .map(|events| events.first().map(|event| event.observed_us()))
+                        );
+                        eprintln!(
+                            "SRX3_BAK_FIRST_THINK_PRE_ASSERT boss={boss_actor:?} position={:?} ai={:?} due={:?} advanced={:?}",
+                            boss_actor.map(|actor| runtime.read_actor_position(actor)),
+                            boss_actor
+                                .and_then(|actor| states.monster_melee.creature_ai.state(actor)),
+                            boss_actor
+                                .and_then(|actor| states.monster_melee.creature_ai.due(actor)),
+                            states
+                                .rotten_blood_callbacks
+                                .portal_diagnostics_for_test(&runtime)
+                        );
+                        let player = admitted.runtime_actor;
+                        eprintln!(
+                            "SRX3_BAK_FIRST_THINK_PRE_ASSERT player={player:?} position={:?} health={:?} dead={:?} pending={:?} unreserved={:?} staff_visibility={:?}",
+                            player.map(|actor| runtime.read_actor_position(actor)),
+                            player
+                                .and_then(|actor| states.get(
+                                    &runtime,
+                                    actor,
+                                    admitted.game_session_id
+                                ))
+                                .map(|state| state.vitals().health),
+                            player.map(|actor| states.is_dead(actor)),
+                            player.map(|actor| states
+                                .has_pending_spell_commit(actor, admitted.game_session_id)),
+                            player.map(|actor| runtime.assert_actor_spell_unreserved(actor)),
+                            player.map(|actor| runtime.actor_staff_visibility(actor))
+                        );
+                    } else {
+                        eprintln!("SRX3_BAK_FIRST_THINK_PRE_ASSERT spell_states_busy=true");
+                    }
+                }
                 if prepared_bak {
                     let RuntimeScopeRefV1::Instance { instance_id, .. } = instance else {
                         return Err("prepared source Bakragore must enter an Instance".into());

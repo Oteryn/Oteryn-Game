@@ -38,6 +38,32 @@ class SourceRegions(unittest.TestCase):
     def test_anomaly_restoration_has_exact_source_item_policy(self):
         self.assertEqual([22894, 23049], producer.ROOMS["callback-anomaly"]["extra_items"])
 
+    def test_ichgahal_exit_keeps_raw_teleport_and_captures_its_exact_arrival(self):
+        capture = document('rotten-blood-ichgahal')
+        raw = next(tile for tile in capture['tiles']
+                   if tile['source_position'] == [33004, 32343, 15])
+        teleport = next(item for item in raw['items']
+                        if item['server_item_id'] == 34111)
+        self.assertEqual(teleport['depth'], 0)
+        self.assertEqual(teleport['attributes'], {'dest': [34065, 31717, 15]})
+        self.assertEqual(raw['semantics']['unmaterialized_dynamic_items'], [34111])
+        arrivals = [tile for tile in capture['tiles']
+                    if tile['source_position'] == teleport['attributes']['dest']]
+        self.assertEqual(len(arrivals), 1)
+        arrival = arrivals[0]
+        self.assertEqual(arrival['items'], [
+            {'server_item_id': 36344, 'depth': 0, 'attributes': {}},
+            {'server_item_id': 292, 'depth': 0, 'attributes': {}},
+        ])
+        self.assertEqual(arrival['semantics']['ground'], 36344)
+        self.assertEqual(arrival['semantics']['ground_speed'], 150)
+        self.assertEqual(arrival['semantics']['unmaterialized_dynamic_items'], [])
+        self.assertFalse(arrival['semantics']['flags']['block_solid'])
+        regions = capture['source_regions']
+        self.assertTrue(covers(regions, [34065, 31717, 15]))
+        self.assertFalse(covers(regions, [34066, 31717, 15]))
+        self.assertFalse(covers(regions, [33500, 32000, 15]))
+
     def test_primal_disjoint_gap_does_not_become_proved_absent(self):
         capture = document('primal')
         regions = capture.get('source_regions', [])

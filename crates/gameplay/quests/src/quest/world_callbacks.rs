@@ -822,7 +822,6 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         {
             return Err("duplicate callback selector across registries".into());
         }
-        same_selector.push(callback);
         peers.push(callback);
     }
     Ok(())

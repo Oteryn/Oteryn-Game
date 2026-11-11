@@ -257,6 +257,20 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         .filter(|policy| policy.reward_boss == Some(true))
         .collect::<Vec<_>>();
     assert!(!bosses.is_empty());
+    // Read the actual reward table before fixed inventory expectations. This diagnostic
+    // keeps each refusal distinct while a newly generated source cohort is qualified.
+    let mut reward_inventory = std::collections::BTreeMap::new();
+    for policy in &bosses {
+        let outcome = match source.reward_table().row(&policy.definition_key) {
+            Ok(_) => "Admitted".to_owned(),
+            Err(reason) => format!("{reason:?}"),
+        };
+        reward_inventory.insert(policy.definition_key.as_str(), outcome);
+    }
+    eprintln!(
+        "NATIVE_REWARD_BOSS_QUALIFICATION {}",
+        serde_json::to_string(&reward_inventory).map_err(|error| error.to_string())?
+    );
     // Exact native corpse/yield producers qualify complete source rows.
     // A newly admitted body still requires independent private-loot closure;
     // no missing yield may be silently dropped from a boss reward.

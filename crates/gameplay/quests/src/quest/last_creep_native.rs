@@ -132,8 +132,8 @@ fn callback(
         trigger,
         actor_kind: Default::default(),
         selector: Selector {
-        position_aliases: Vec::new(),
-        ordinal: None,
+            position_aliases: Vec::new(),
+            ordinal: None,
             native: Some(NativeSelector {
                 position,
                 ordinal: 1,

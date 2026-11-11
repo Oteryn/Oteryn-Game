@@ -57,6 +57,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             active
                 .qualify_vemiath_activity_template(room, revision, effective)
                 .map_err(|_| ActivityRefusal::ContentUnavailable)
+        } else if kind == Room::Ichgahal {
+            let raw = crate::content::LogicalCell {
+                x: 33004,
+                y: 32343,
+                z: 15,
+            };
+            let effective = crate::map::floor::resolve_teleport_arrival(room.movement_cells(), raw)
+                .map_err(|_| ActivityRefusal::ContentUnavailable)?;
+            active
+                .qualify_ichgahal_activity_template(room, revision, effective)
+                .map_err(|_| ActivityRefusal::ContentUnavailable)
         } else {
             active
                 .qualify_rotten_blood_activity_template(room, revision, kind)
