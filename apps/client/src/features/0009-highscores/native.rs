@@ -165,7 +165,11 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             close(&weak);
             return;
         }
-        for label in highscores::CATEGORIES {
+        // Capability 498 adds the Loyalty row; the flag is fixed for the session.
+        let loyalty = weak
+            .upgrade()
+            .is_some_and(|shared| lock(&shared).highscores.loyalty_selected);
+        for (_, label) in oteryn_client_ui::highscores_loyalty::categories(loyalty) {
             let label = oteryn_client_ui::localization::tr(label);
             SendMessageW(category, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
         }
@@ -203,7 +207,11 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                         }
                         let Some(category_id) = usize::try_from(c)
                             .ok()
-                            .and_then(highscores::category_for_selection)
+                            .and_then(|i| {
+                                oteryn_client_ui::highscores_loyalty::category_for_selection(
+                                    i, loyalty,
+                                )
+                            })
                         else {
                             continue;
                         };
@@ -243,7 +251,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                     text,
                     wide(&highscores::panel_text(panel).replace('\n', "\r\n")).as_ptr(),
                 );
-                if let Some(index) = highscores::category_selection(panel.category) {
+                if let Some(index) = oteryn_client_ui::highscores_loyalty::category_selection(panel.category, loyalty) {
                     SendMessageW(category, CB_SETCURSEL, index, 0);
                 }
                 SendMessageW(vocation, CB_SETCURSEL, panel.vocation as usize, 0);

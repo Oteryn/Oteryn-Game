@@ -3,15 +3,32 @@
     "mechanic": "0495-chat-channel-participants",
     "kind": "handlers",
     "id": "0495-chat-channel-participants-chat-extension",
-    "status": "unsupported",
-    "reason": "WU26 chat server side only: the participant list and the channel notices land in the client lane.",
+    "status": "supported",
     "commands": [],
+    "shared_commands": [
+      13
+    ],
+    "direction": "server_to_client",
+    "capability": 495,
+    "entry": "protocol.rs::participants_text",
+    "push_messages": [
+      "ChatChannelList"
+    ],
+    "reducer": "protocol.rs::notice_text",
+    "test": "tests.rs::c0495_tabs_read_owners_channel_with_participants_and_notices",
     "not_applicable": {
-      "state": "The participants come from the server list on each change; the client keeps no new durable state.",
-      "protocol": "The shared chat codec in oteryn-protocol-oteryn encodes list field 5 and line kind 8.",
-      "view": "The participant list and the join, leave and exclusion lines land with client support.",
+      "state": "The console keeps the owners, participants and the bounded notice list of the session.",
+      "protocol": "The shared chat codec in oteryn-protocol-oteryn decodes list field 5 and line kind 8; the session reads them only when 495 is selected.",
+      "view": "The channel tab shows the owner label, the participant list and the join, leave and exclusion notices.",
       "input": "No new input; the existing private channel intents carry it.",
       "settings": "No client setting controls the participants or the notices."
     }
+  },
+  {
+    "mechanic": "0495-chat-channel-participants",
+    "kind": "panels",
+    "id": "0495-chat-channel-participants-panel",
+    "status": "supported",
+    "entry": "protocol.rs::participants_text"
   }
 ]

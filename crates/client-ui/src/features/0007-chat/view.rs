@@ -31,6 +31,15 @@ fn tab_text(
     }
     let show_messages = panel.console.shows_messages(tab);
     let mut text = String::from(tr!("Local Chat — Say / Whisper / Yell / Private\n"));
+    if let Some(super::ChannelTab::Private(id)) = channel
+        && let Some(names) = panel.console.participants.get(id)
+    {
+        let _ = writeln!(
+            text,
+            "{}",
+            crate::chat_channel_participants::participants_text(names)
+        );
+    }
     if channel.is_none() && panel.console.presentation.visible[2] {
         text.push_str(&crate::chat_guild_room::panel_text(panel));
     }
@@ -51,8 +60,9 @@ fn tab_text(
             continue;
         }
         use crate::chat::ConsoleTab;
+        let recipient = panel.recipients.get(index).and_then(|name| name.as_deref());
         if let Some(channel) = channel {
-            if !channel_line(channel, line) {
+            if !channel_line(channel, line, recipient) {
                 continue;
             }
         } else if !matches!(
@@ -102,7 +112,14 @@ fn tab_text(
                     .console
                     .metadata
                     .name(panel.console.display, speaker_name);
-                if presentation.mode_labels {
+                if let Some(recipient) = recipient {
+                    // Capability 493: the own echo reads as sent to its recipient.
+                    let _ = writeln!(
+                        text,
+                        "{}",
+                        crate::chat_private_echo::echo_text(recipient, message)
+                    );
+                } else if presentation.mode_labels {
                     let _ = lwriteln!(
                         text,
                         "[Private] {speaker_name}: {message}",
@@ -178,6 +195,22 @@ fn tab_text(
             _ => {}
         }
     }
+    if let Some(super::ChannelTab::Private(id)) = channel
+        && show_messages
+    {
+        for notice in panel
+            .console
+            .channel_notices
+            .iter()
+            .filter(|notice| notice.channel_id == *id)
+        {
+            let _ = writeln!(
+                text,
+                "{}",
+                crate::chat_channel_participants::notice_text(notice)
+            );
+        }
+    }
     if channel.is_none() && show_messages && tab == crate::chat::ConsoleTab::All {
         text.push_str(&panel.console.notices.scoped_text(
             panel.console.filters,
@@ -232,13 +265,13 @@ fn local_tab_text(panel: &ChatPanel, tab: &super::ChannelTab) -> String {
 }
 
 /// A channel tab shows its own lines; a dropped-lines marker belongs to every tab.
-fn channel_line(channel: &super::ChannelTab, line: &ChatLine) -> bool {
+fn channel_line(channel: &super::ChannelTab, line: &ChatLine, recipient: Option<&str>) -> bool {
     use super::ChannelTab;
     match (channel, line) {
         (ChannelTab::Room(room), ChatLine::Room { room: line, .. }) => room == line,
         (ChannelTab::Private(id), ChatLine::PrivateChannel(line)) => *id == line.channel_id,
-        (ChannelTab::Conversation(name), ChatLine::Private { speaker_name, .. }) => {
-            speaker_name.eq_ignore_ascii_case(name)
+        (ChannelTab::Conversation(name), ChatLine::Private { .. }) => {
+            crate::chat_private_echo::in_conversation(name, line, recipient)
         }
         (_, ChatLine::Dropped) => true,
         _ => false,

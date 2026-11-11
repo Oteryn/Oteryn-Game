@@ -74,7 +74,9 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.hireling_management_initialize(session.feature_selected(250));
     outbox.market_initialize(session.market_selected());
     outbox.chat_with_movement_initialize(session);
+    outbox.chat_extras_reset();
     outbox.chat_private_publish(session);
+    outbox.chat_extras_publish(session);
     outbox.player_typing_initialize(session.player_typing_selected());
     outbox.arena_initialize(session.feature_selected(170));
     outbox.boss_encounter_initialize(session.feature_selected(117));
@@ -106,7 +108,11 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
     outbox.world_event_initialize(session.feature_selected(53));
     outbox.daily_boost_initialize(session.feature_selected(151));
-    outbox.highscores_initialize(session.server_mechanic_selected(9));
+    outbox.highscores_initialize(
+        session.server_mechanic_selected(9),
+        session.feature_selected(498),
+    );
+    outbox.sanction_initialize(session.feature_selected(497));
     outbox.depot_search_initialize(session.server_mechanic_selected(153));
     outbox.target_move_initialize(session.feature_selected(64));
     outbox.creature_push_initialize(session.feature_selected(82));

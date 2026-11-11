@@ -112,6 +112,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         197 => outbox.cyclopedia_tracker_result(&result),
                         199 => outbox.cyclopedia_character_result(&result),
                         225 => outbox.boss_difficulty_result(&result),
+                        497 => outbox.sanction_record_result(&result),
                         250 => outbox.hireling_management_result(&result),
                         276 => outbox.condition_status_result(&result),
                         384 => outbox.mechanics_status_result(&result),

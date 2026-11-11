@@ -93,6 +93,13 @@ pub struct ChatLog {
     pub(super) guild: GuildRoomState,
     pub(super) private_channels: Option<ChatChannelList>,
     pub(super) lines: VecDeque<ChatLine>,
+    /// Capabilities 493 and 496 side data of `lines`, one entry per line.
+    pub(super) extras: VecDeque<crate::chat_extended::LineExtra>,
+    /// Capability 495 notices, oldest first, at most [`MAX_CHAT_LOG_LINES`].
+    pub(super) notices: VecDeque<crate::chat_extended::NoticeEntry>,
+    pub(super) notice_serial: u64,
+    /// Capabilities 494 and 495: the extension of the latest channel list.
+    pub(super) channel_extension: Option<crate::chat_extended::ChannelListExtension>,
 }
 
 impl ChatLog {
@@ -116,11 +123,13 @@ impl ChatLog {
         self.lines.is_empty()
     }
 
-    pub(super) fn push(&mut self, line: ChatLine) {
+    pub(super) fn push(&mut self, line: ChatLine, extra: crate::chat_extended::LineExtra) {
         if self.lines.len() >= MAX_CHAT_LOG_LINES {
             self.lines.pop_front();
+            self.extras.pop_front();
         }
         self.lines.push_back(line);
+        self.extras.push_back(extra);
     }
 }
 

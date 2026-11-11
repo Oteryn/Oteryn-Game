@@ -61,6 +61,8 @@ mod gated_command;
 pub use gated_command::world_context;
 /// Server-owned highscores query and result codecs.
 pub use oteryn_protocol_oteryn::highscores;
+/// The own Platform sanction record (capability 497).
+pub use oteryn_protocol_oteryn::sanction_record;
 pub mod container_tree;
 mod hotkey_equip_transport;
 #[path = "features/0004-item-view-move/protocol.rs"]
@@ -123,10 +125,15 @@ pub use oteryn_protocol_oteryn::{creature_push, target_move};
 /// Player-trade wire values for the selected native-client feature.
 pub use oteryn_protocol_oteryn::{player_trade, player_typing};
 pub use recovery::{Recovery, RecoveryState, check_resume_selection};
+mod chat_extended;
 mod guild_chat;
 mod private_channels;
 pub use appearance_state::{
     AppearanceItemDictionary, AppearanceUpdate, EntityDisplayName, Look, VisibleAppearance,
+};
+pub use chat_extended::{
+    ChannelListExtension, ChannelNotice, ChannelNoticeKind, ChannelParticipants, LineExtra,
+    NoticeEntry,
 };
 use oteryn_protocol_oteryn::actor_spell::{
     self, AimedSpellCastIntent, SpellAimMode, SpellCastIntent,

@@ -86,6 +86,7 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         // Wheel and Atelier are playable through the selected capability 148.
         (148, &[161, 308, 309, 424, 6119, 6121], &[]),
         (483, &[6210, 6211, 6212, 6213], &[]),
+        (497, &[6240], &[]),
         (150, &[174, 175, 176, 739], &[]),
         // Live balances use their own selected capability without changing Atelier V1.
         (272, &[484], &[]),

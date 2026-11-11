@@ -3,15 +3,32 @@
     "mechanic": "0496-chat-line-sequence",
     "kind": "handlers",
     "id": "0496-chat-line-sequence-chat-extension",
-    "status": "unsupported",
-    "reason": "WU26 chat server side only: ordering chat lines by sequence lands in the client lane.",
+    "status": "supported",
     "commands": [],
+    "shared_commands": [
+      13
+    ],
+    "direction": "server_to_client",
+    "capability": 496,
+    "entry": "protocol.rs::new_senders",
+    "push_messages": [
+      "ChatLine"
+    ],
+    "reducer": "protocol.rs::new_senders",
+    "test": "tests.rs::c0496_an_incoming_private_message_opens_its_tab_once",
     "not_applicable": {
-      "state": "The client compares each sequence with the last one it saw; no durable state.",
-      "protocol": "The shared chat codec in oteryn-protocol-oteryn encodes line field 13.",
-      "view": "Line ordering in the chat console lands with client support.",
+      "state": "The console remembers the highest sequence it handled and the senders whose tab it opened.",
+      "protocol": "The shared chat codec in oteryn-protocol-oteryn decodes line field 13; the session reads it only when 496 is selected.",
+      "view": "An incoming private message opens its Conversation tab once.",
       "input": "No new input; every chat line carries it.",
       "settings": "No client setting controls the sequence."
     }
+  },
+  {
+    "mechanic": "0496-chat-line-sequence",
+    "kind": "panels",
+    "id": "0496-chat-line-sequence-panel",
+    "status": "supported",
+    "entry": "protocol.rs::new_senders"
   }
 ]

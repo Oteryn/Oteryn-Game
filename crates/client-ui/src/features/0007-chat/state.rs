@@ -85,6 +85,18 @@ pub struct Console {
     /// The latest NPC conversation, kept for the NPC tab after the conversation closed.
     pub npc_lines: Vec<String>,
     pub dialog: super::ChannelDialog,
+    /// Capability 495: the owner of each private channel, for its tab caption.
+    pub owners: std::collections::BTreeMap<u16, String>,
+    /// Capability 495: the participants of each private channel the character is in.
+    pub participants: std::collections::BTreeMap<u16, Vec<String>>,
+    /// Capability 495: join, leave and exclude notices in arrival order.
+    pub channel_notices: Vec<crate::chat_channel_participants::NoticeLine>,
+    /// Capability 494: the joined channels of the previous list.
+    pub(super) joined_seen: std::collections::BTreeSet<u16>,
+    /// Capability 495: the last notice taken.
+    pub(super) notice_seen: u64,
+    /// Capability 496: the highest line sequence taken.
+    pub(super) sequence_seen: u64,
 }
 impl Default for Console {
     fn default() -> Self {
@@ -105,6 +117,12 @@ impl Default for Console {
             focus: None,
             npc_lines: Vec::new(),
             dialog: Default::default(),
+            owners: Default::default(),
+            participants: Default::default(),
+            channel_notices: Vec::new(),
+            joined_seen: Default::default(),
+            notice_seen: 0,
+            sequence_seen: 0,
         }
     }
 }
@@ -178,8 +196,19 @@ impl Console {
             tr!("Private").to_owned(),
             tr!("Guild").to_owned(),
         ];
-        labels.extend(self.channels.iter().map(ChannelTab::label));
+        labels.extend(self.channels.iter().map(|tab| self.tab_label(tab)));
         labels
+    }
+    /// A tab's caption: a private channel whose owner the server named reads "<Owner>'s
+    /// channel" (capability 495), every other tab as [`ChannelTab::label`].
+    pub fn tab_label(&self, tab: &ChannelTab) -> String {
+        match tab {
+            ChannelTab::Private(id) => self.owners.get(id).map_or_else(
+                || tab.label(),
+                |owner| crate::chat_channel_participants::channel_label(owner),
+            ),
+            _ => tab.label(),
+        }
     }
     /// The server owns which public rooms are open: mirror them as tabs, selecting the room
     /// that was asked for once it opened.

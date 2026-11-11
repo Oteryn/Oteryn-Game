@@ -21,3 +21,14 @@ impl Outbox {
         );
     }
 }
+impl Outbox {
+    /// Capability 497: the own sanction record window; a new session starts without a record.
+    pub(in crate::play) fn sanction_initialize(&self, selected: bool) {
+        let mut mailbox = lock(&self.0);
+        mailbox.sanctions = Default::default();
+        mailbox.sanctions.selected = selected;
+    }
+    pub(in crate::play) fn sanction_record_result(&self, result: &GatedCommandResult) {
+        oteryn_client_ui::sanction_record::apply_result(&mut lock(&self.0).sanctions, result);
+    }
+}

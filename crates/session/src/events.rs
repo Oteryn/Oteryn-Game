@@ -55,6 +55,9 @@ pub enum SessionEvent {
     ActorCombatState(AppliedDelta<ActorCombatState>),
     /// Domain 12 `CHAT`, delta type 1: one line. [`Session::chat_log`] already holds it.
     ChatLine(AppliedDelta<ChatLine>),
+    /// Domain 12 `CHAT`, delta type 1 under capability 495: a member joined, left or was
+    /// excluded from a private channel. [`ChatLog::channel_notices`] already holds it.
+    ChatNotice(AppliedDelta<chat_extended::ChannelNotice>),
     /// Domain 12 `CHAT`, delta type 2: the open-room set, replaced whole.
     ChatRooms(AppliedDelta<ChatRoomSet>),
     /// Domain 12, capability-80 delta 3: available rooms and private-channel metadata.
@@ -111,6 +114,7 @@ impl SessionEvent {
             Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
             Self::ActorCombatState(_) => attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             Self::ChatLine(_)
+            | Self::ChatNotice(_)
             | Self::ChatRooms(_)
             | Self::VipPresence(_)
             | Self::PlayerTyping(_) => STATE_DOMAIN_CHAT,

@@ -16,6 +16,20 @@ impl Outbox {
         let list = mailbox.chat_private.list.clone();
         mailbox.chat.console.sync_private(list.as_ref());
     }
+    /// A new session counts its sequences and notices from the start.
+    pub(in crate::play) fn chat_extras_reset(&self) {
+        lock(&self.0).chat.console.reset_extensions();
+    }
+    /// Hands the console the extensions of the chat capabilities the session selected.
+    pub(in crate::play) fn chat_extras_publish<T: Stepper>(&self, session: &T) {
+        let extras = session.chat_extras();
+        let mut mailbox = lock(&self.0);
+        let own = mailbox.party.own_character_name.clone();
+        let list = mailbox.chat_private.list.clone();
+        mailbox
+            .chat
+            .apply_extras(&own, list.as_ref(), extras);
+    }
     pub(in crate::play) fn chat_private_result(
         &self,
         intent: &ChatIntent,

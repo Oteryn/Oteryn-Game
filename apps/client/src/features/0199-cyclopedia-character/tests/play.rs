@@ -187,6 +187,8 @@ mod misc;
 mod navigation;
 #[path = "protection.rs"]
 mod protection;
+#[path = "sanctions.rs"]
+mod sanctions;
 
 #[test]
 fn blessings_dialog_requests_self_and_reduces_the_real_server_reply()

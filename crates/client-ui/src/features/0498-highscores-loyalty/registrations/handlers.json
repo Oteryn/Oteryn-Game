@@ -2,13 +2,23 @@
   "mechanic": "0498-highscores-loyalty",
   "kind": "handlers",
   "id": "0498-highscores-loyalty-category13",
-  "status": "unsupported",
-  "reason": "N014 server side only: enabling the reserved Loyalty category in the native highscores window lands in the client lane.",
+  "status": "supported",
   "commands": [],
+  "shared_commands": [
+    14
+  ],
+  "direction": "server_to_client",
+  "capability": 498,
+  "entry": "protocol.rs::category_for_selection",
+  "push_messages": [
+    "HighscoresReply"
+  ],
+  "reducer": "protocol.rs::category_selection",
+  "test": "tests.rs::c0498_the_filter_requests_category_13_only_with_the_capability",
   "not_applicable": {
-    "state": "The existing 0009 highscores state holds category pages.",
+    "state": "The existing 0009 highscores state holds category pages and the loyalty flag of the session.",
     "protocol": "The existing highscores codec carries category 13 unchanged.",
-    "view": "The 0009 highscores window keeps category 13 reserved until client support lands.",
+    "view": "The 0009 highscores window offers the Loyalty row only when 498 is selected.",
     "input": "The existing command 14 request is unchanged.",
     "settings": "The Loyalty category has no client setting."
   }

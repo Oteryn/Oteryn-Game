@@ -9,6 +9,9 @@ pub use filters::{ConsoleFilters, ConsoleNotices, NoticeClass, NoticeScope};
 mod channel_dialog;
 mod input;
 pub use channel_dialog::{ChannelDialog, DialogAction, dialog_rows};
+#[path = "state/extensions.rs"]
+mod extensions;
+pub use extensions::ChatExtras;
 #[path = "state/presentation.rs"]
 mod presentation;
 mod protocol;

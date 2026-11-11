@@ -175,6 +175,7 @@ pub(super) struct Mailbox {
     pub(super) daily_boost: oteryn_client_ui::daily_boost::DailyBoostPanel,
     pub(super) highscores: oteryn_client_ui::highscores::HighscoresPanel,
     pub(super) highscores_shutdown: bool,
+    pub(super) sanctions: oteryn_client_ui::sanction_record::SanctionsPanel,
     pub(super) depot_search: oteryn_client_ui::depot_search::DepotSearchPanel,
     pub(super) hotkey_equip: oteryn_client_ui::hotkey_equip::HotkeyEquipPanel,
     pub(super) potion_durations: oteryn_client_ui::potion_durations::PotionDurationsPanel,

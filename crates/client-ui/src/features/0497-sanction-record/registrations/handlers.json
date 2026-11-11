@@ -2,16 +2,17 @@
   "mechanic": "0497-sanction-record",
   "kind": "handlers",
   "id": "0497-sanction-record-command6240",
-  "status": "unsupported",
-  "reason": "N009 server side only: the native client sanction record window lands in the client lane.",
+  "status": "supported",
   "commands": [
     6240
   ],
+  "direction": "client_to_server",
+  "capability": 497,
+  "entry": "protocol.rs::request",
+  "reducer": "protocol.rs::apply_result",
+  "test": "tests.rs::c0497_open_sends_the_empty_query_and_the_reply_fills_the_record",
   "not_applicable": {
-    "state": "No client state holds the sanction record until the window lands.",
-    "protocol": "The sanction record codec in oteryn-protocol-oteryn encodes command 6240 and its reply.",
-    "view": "The sanction record window lands with client support.",
-    "input": "The empty command 6240 request needs no client input yet.",
+    "input": "The window sends the empty command 6240 request on open and on Refresh; the native button carries it.",
     "settings": "The sanction record has no client setting."
   }
 }

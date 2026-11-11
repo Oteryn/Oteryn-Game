@@ -125,10 +125,18 @@ pub mod browse_field;
 /// Local speech and named private messages.
 #[path = "features/0007-chat/mod.rs"]
 pub mod chat;
+#[path = "features/0495-chat-channel-participants/protocol.rs"]
+pub mod chat_channel_participants;
 #[path = "features/0036-chat-guild-room/mod.rs"]
 pub mod chat_guild_room;
+#[path = "features/0494-chat-joined-channels/protocol.rs"]
+pub mod chat_joined_channels;
+#[path = "features/0496-chat-line-sequence/protocol.rs"]
+pub mod chat_line_sequence;
 #[path = "features/0240-chat-party-room/mod.rs"]
 pub mod chat_party_room;
+#[path = "features/0493-chat-private-echo/protocol.rs"]
+pub mod chat_private_echo;
 #[path = "features/0199-cyclopedia-character/mod.rs"]
 pub mod cyclopedia_character;
 #[path = "features/0487-cyclopedia-character-vocation/protocol.rs"]
@@ -148,6 +156,9 @@ pub mod forge_creature;
 /// Live server highscores panel.
 #[path = "features/0009-highscores/mod.rs"]
 pub mod highscores;
+/// Highscores category 13, Loyalty.
+#[path = "features/0498-highscores-loyalty/protocol.rs"]
+pub mod highscores_loyalty;
 #[path = "features/0179-hotkey-equip/mod.rs"]
 pub mod hotkey_equip;
 #[path = "features/0485-hotkey-equip-upgrade-tier/protocol.rs"]
@@ -267,6 +278,8 @@ pub mod wheel_allocation;
 #[path = "features/0031-tutorial-notices/mod.rs"]
 pub mod tutorial_notices;
 
+#[path = "features/0497-sanction-record/mod.rs"]
+pub mod sanction_record;
 #[path = "features/0075-server-save-countdown/protocol.rs"]
 pub mod server_save_countdown;
 
