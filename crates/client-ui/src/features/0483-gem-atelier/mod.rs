@@ -4,7 +4,7 @@ pub use oteryn_client_runtime::wheel_allocation::{WheelCommand, atelier};
 mod protocol;
 mod state;
 mod view;
-pub use protocol::{decode_reply, mutate, query, replace_vessel, set_lock};
+pub use protocol::{decode_reply, mutate, query, replace_vessel, reshape, set_lock};
 pub use state::{Projection, ReplaceBlock, VesselBoard, project, replace_block};
 pub use view::vessel_lines;
 

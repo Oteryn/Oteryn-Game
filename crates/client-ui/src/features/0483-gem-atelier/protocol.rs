@@ -66,6 +66,24 @@ pub fn replace_vessel(
         .ok_or("Vessel change could not be sent")
 }
 
+/// Command 6214 rerolls one modifier; costs and the draw stay server-owned.
+pub fn reshape(
+    occurrence: [u8; 16],
+    expected_revision: u64,
+    gem: [u8; 16],
+    position: u8,
+) -> Result<WheelCommand, &'static str> {
+    let payload = v2::encode_reshape(&v2::ReshapeRequest {
+        occurrence,
+        expected_revision,
+        gem,
+        position,
+    })
+    .map_err(|_| tr!("Mod reshaping could not be sent"))?;
+    WheelCommand::new(v2::COMMAND_TYPE_ATELIER_V2_RESHAPE, payload)
+        .ok_or(tr!("Mod reshaping could not be sent"))
+}
+
 /// Decodes a v2 reply into the panel projection.
 #[must_use]
 pub fn decode_reply(bytes: &[u8]) -> Option<Projection> {

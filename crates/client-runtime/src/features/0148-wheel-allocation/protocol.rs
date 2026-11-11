@@ -44,6 +44,10 @@ impl WheelCommand {
                 atelier::v2::decode_replace_vessel(&payload).ok()?;
                 true
             }
+            atelier::v2::COMMAND_TYPE_ATELIER_V2_RESHAPE => {
+                atelier::v2::decode_reshape(&payload).ok()?;
+                true
+            }
             _ => return None,
         };
         Some(Self {
@@ -86,7 +90,7 @@ pub async fn send<S: SessionStream>(
         });
     }
     let v2 = (atelier::v2::COMMAND_TYPE_ATELIER_V2_QUERY
-        ..=atelier::v2::COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL)
+        ..=atelier::v2::COMMAND_TYPE_ATELIER_V2_RESHAPE)
         .contains(&request.kind);
     let request_capability = if v2 {
         atelier::v2::CAPABILITY_GEM_ATELIER_V2

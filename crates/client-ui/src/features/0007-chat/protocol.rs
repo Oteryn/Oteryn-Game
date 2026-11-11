@@ -77,15 +77,28 @@ pub fn channel_request(panel: &mut ChatPanel) -> Option<ChatIntent> {
 
 type Private = crate::chat_private_channel::ChatPanel;
 
+fn room_request(
+    chat: &ChatPanel,
+    public: &mut ChatPanel,
+    intent: crate::chat_public_channels::Intent,
+    room: ChatRoom,
+) -> Option<ChatIntent> {
+    let selected = public.selected;
+    public.selected = chat.selected && (selected || !room.requires_public_channels());
+    let command = crate::chat_public_channels::request(public, intent);
+    public.selected = selected;
+    command
+}
+
 fn open_room(chat: &mut ChatPanel, public: &mut ChatPanel, room: ChatRoom) -> Option<ChatIntent> {
     use super::{ChannelTab, PendingFocus};
-    use crate::chat_public_channels::{Intent, request};
+    use crate::chat_public_channels::Intent;
     let tab = ChannelTab::Room(room);
     if public.rooms.contains(room) {
         chat.console.open_channel(tab);
         return None;
     }
-    let command = request(public, Intent::Open(room));
+    let command = room_request(chat, public, Intent::Open(room), room);
     if command.is_some() {
         chat.console.focus = Some(PendingFocus::Tab(tab));
     } else {
@@ -154,9 +167,11 @@ pub fn close_current(
     match chat.console.current.clone()? {
         ChannelTab::Room(room) => {
             // The tab disappears when the server reports the room closed.
-            let command = crate::chat_public_channels::request(
+            let command = room_request(
+                chat,
                 public,
                 crate::chat_public_channels::Intent::Close(room),
+                room,
             );
             if command.is_none() {
                 chat.feedback = public.feedback.clone();

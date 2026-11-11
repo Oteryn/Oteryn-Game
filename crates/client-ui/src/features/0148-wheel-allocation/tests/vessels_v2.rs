@@ -59,11 +59,13 @@ fn a_v2_reply_enables_reshape_only_in_the_temple_with_premium() -> Result<(), Er
         (false, true, true),
         (true, false, true),
     ] {
-        let panel = synced(in_temple, premium)?;
+        let mut panel = synced(in_temple, premium)?;
+        panel.modifier = Some((0, 31));
         assert_eq!(panel.in_temple, Some(in_temple));
         assert_eq!(panel.premium, Some(premium));
         let gem = panel.selected_gem().ok_or("gem")?;
         assert_eq!(reshape_block(&panel, gem).is_some(), blocked);
+        assert_eq!(panel.can_reshape(), !blocked);
     }
     Ok(())
 }
@@ -129,5 +131,45 @@ fn without_483_the_four_draft_vessels_and_old_bytes_remain() -> Result<(), Error
     assert_eq!(command.kind, 309);
     panel.pending = None;
     assert!(request(&mut panel, Intent::ReplaceVessel, occurrence(7)).is_none());
+    Ok(())
+}
+
+#[test]
+fn reshape_intent_encodes_6214_and_applies_the_live_result() -> Result<(), Error> {
+    let mut panel = synced(true, true)?;
+    panel.modifier = Some((0, 31));
+    let command = request(&mut panel, Intent::Reshape, occurrence(8)).ok_or("reshape")?;
+    assert_eq!((command.kind, command.mutation), (6214, true));
+    let decoded = wire(v2::decode_reshape(&command.payload))?;
+    assert_eq!(
+        (
+            decoded.occurrence,
+            decoded.expected_revision,
+            decoded.gem,
+            decoded.position
+        ),
+        (occurrence(8), 4, [17; 16], 1)
+    );
+    let mut live = v2_reply(5, true, true);
+    live.gems[0].modifiers[0] = 7;
+    let (wheel, _) = current(5);
+    assert!(apply_result(
+        &mut panel,
+        &WheelResponse {
+            kind: 6214,
+            status: CommandStatus::Accepted,
+            payload: wire(v2::encode_reply(&live))?,
+            wheel: Some(wire(wheel::encode_wheel_reply(&wheel))?),
+            atelier: Some(wire(v2::encode_reply(&live))?),
+            resources: None,
+        }
+    ));
+    assert_eq!(panel.selected_gem().ok_or("gem")?.modifiers, [7, 0, 5]);
+    assert!(panel.pending.is_none());
+    assert!(panel.retry.is_none());
+    assert_eq!(panel.feedback, Some("The server confirmed the request"));
+    panel.atelier_v2 = false;
+    panel.modifier = Some((0, 7));
+    assert!(request(&mut panel, Intent::Reshape, occurrence(9)).is_none());
     Ok(())
 }

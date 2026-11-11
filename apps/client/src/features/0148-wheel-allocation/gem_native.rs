@@ -248,6 +248,8 @@ fn run(
                             *h,
                             i32::from(if index == 11 {
                                 panel.retry.is_some() && panel.pending.is_none()
+                            } else if index == 2 {
+                                panel.can_reshape()
                             } else if index >= 9 {
                                 panel.gems.review.is_some() && panel.pending.is_none()
                             } else {

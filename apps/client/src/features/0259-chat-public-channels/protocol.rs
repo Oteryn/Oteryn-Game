@@ -41,14 +41,24 @@ impl Outbox {
         );
     }
 
-    pub(in crate::play) fn chat_public_result(&self, outcome: &ChatOutcome) {
+    pub(in crate::play) fn chat_public_result(
+        &self,
+        intent: &oteryn_session::ChatIntent,
+        outcome: &ChatOutcome,
+    ) {
         let mut mailbox = lock(&self.0);
         oteryn_client_ui::chat_public_channels::apply_result(&mut mailbox.chat_public, outcome);
         // A refused open leaves no tab to select; a room line sent from the console tab
         // ends its pending state here too.
         let refused = outcome.disposition != oteryn_session::ChatDisposition::Ok;
-        let focused = refused && mailbox.chat.console.focus.take().is_some();
-        if mailbox.chat.pending || focused {
+        let management = matches!(
+            intent,
+            oteryn_session::ChatIntent::OpenRoom(_) | oteryn_session::ChatIntent::CloseRoom(_)
+        );
+        if refused && management {
+            mailbox.chat.console.focus = None;
+        }
+        if mailbox.chat.pending && matches!(intent, oteryn_session::ChatIntent::Room { .. }) {
             oteryn_client_ui::chat::apply_result(&mut mailbox.chat, outcome);
         }
     }

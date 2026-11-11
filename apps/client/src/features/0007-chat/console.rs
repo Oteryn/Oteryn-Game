@@ -345,3 +345,80 @@ impl Outbox {
         }
     }
 }
+
+/// Cache the complete captions; ownership can change a label without adding a tab.
+#[cfg(any(windows, test))]
+pub(super) fn update_tab_labels(held: &mut Vec<String>, labels: &[String]) -> bool {
+    if held == labels {
+        return false;
+    }
+    held.clear();
+    held.extend_from_slice(labels);
+    true
+}
+
+/// Native editors use the same saved custom bindings as the game window.
+#[cfg(any(windows, test))]
+pub(super) fn native_key(
+    link: &PlayLink,
+    input: &mut crate::play::PreferenceInput,
+    virtual_key: u32,
+    modifiers: oteryn_input_actions::Modifiers,
+    pressed: bool,
+    repeat: bool,
+) -> bool {
+    use oteryn_input_actions::{ButtonState, KeyCode, NormalizedInputEvent};
+    let code = match virtual_key {
+        0x41..=0x5a => virtual_key - 0x41 + 4,
+        0x31..=0x39 => virtual_key - 0x31 + 30,
+        0x30 => 39,
+        0x70..=0x7b => virtual_key - 0x70 + 58,
+        0x09 => 43,
+        0x20 => 44,
+        _ => return false,
+    };
+    let Ok(code) = KeyCode::new(code as u16) else {
+        return false;
+    };
+    let mut preferences = lock(&link.mailbox).local_preferences.clone();
+    // The native editor handles text and editing itself. Only session utility bindings
+    // are dispatched here; settings-only actions belong to the game/settings thread.
+    preferences.custom_hotkeys.retain(|_, action| {
+        matches!(
+            action,
+            crate::play::CustomAction::Utility {
+                action: crate::play::UtilityAction::CloseCurrentChannel
+                    | crate::play::UtilityAction::NextChannel
+                    | crate::play::UtilityAction::PreviousChannel
+                    | crate::play::UtilityAction::OpenChannelList
+                    | crate::play::UtilityAction::OpenHelpChannel
+                    | crate::play::UtilityAction::ToggleLensHelp
+            }
+        )
+    });
+    preferences.action_keys.0.clear();
+    let bound = preferences.custom_hotkeys.keys().any(|chord| {
+        crate::play::feature_local_reference_preferences::settings::parse_action_chord(chord)
+            == Some((code, modifiers))
+    });
+    let event = NormalizedInputEvent::Key {
+        code,
+        modifiers,
+        repeat,
+        state: if pressed {
+            ButtonState::Pressed
+        } else {
+            ButtonState::Released
+        },
+    };
+    let Ok(routed) = input.route_chat(&preferences, &[event], true) else {
+        return false;
+    };
+    let actions = input.take_custom_actions();
+    for action in &actions {
+        if let crate::play::CustomAction::Utility { action } = action {
+            link.utility_action(*action);
+        }
+    }
+    (bound && routed.is_empty()) || !actions.is_empty()
+}

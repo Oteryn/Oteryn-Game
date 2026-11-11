@@ -27,9 +27,20 @@ impl PreferenceStore {
         if bytes.len() > 1 << 20 {
             return Err(io::Error::other(tr!("Settings file exceeds 1 MiB")));
         }
-        let mut document: serde_json::Value = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let mut document: serde_json::Value =
+            serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         if let Some(fields) = document.as_object_mut()
-            && fields.get("hotkey_profiles").is_some_and(|value| value.get("presets").is_some_and(serde_json::Value::is_object) && value.get("selected").is_some_and(serde_json::Value::is_string) && value.get("chat_on").is_some_and(serde_json::Value::is_boolean))
+            && fields.get("hotkey_profiles").is_some_and(|value| {
+                value
+                    .get("presets")
+                    .is_some_and(serde_json::Value::is_object)
+                    && value
+                        .get("selected")
+                        .is_some_and(serde_json::Value::is_string)
+                    && value
+                        .get("chat_on")
+                        .is_some_and(serde_json::Value::is_boolean)
+            })
         {
             if fields.contains_key("hotkey_contexts") {
                 return Err(io::Error::other("Conflicting hotkey context formats"));
@@ -38,7 +49,19 @@ impl PreferenceStore {
                 fields.insert("hotkey_contexts".into(), contexts);
             }
         }
-        let preferences: ReferencePreferences = serde_json::from_value(document).map_err(io::Error::other)?;
+        let legacy = document
+            .as_object()
+            .is_some_and(|fields| !fields.contains_key("custom_hotkeys"));
+        if legacy {
+            document["custom_hotkeys"] = serde_json::json!({});
+        }
+        let mut preferences: ReferencePreferences =
+            serde_json::from_value(document).map_err(io::Error::other)?;
+        if legacy {
+            for (chord, action) in super::custom_actions::default_custom_hotkeys() {
+                let _ = preferences.assign_custom_hotkey(&chord, action);
+            }
+        }
         preferences.validate().map_err(io::Error::other)?;
         Ok(preferences)
     }
@@ -128,8 +151,12 @@ impl PreferenceStore {
 mod merge_compatibility {
     use super::*;
     #[test]
-    fn rich_options_profiles_load_after_context_extraction() -> Result<(), Box<dyn std::error::Error>> {
-        let path = std::env::temp_dir().join(format!("clientgap-profile-merge-{}.json", std::process::id()));
+    fn rich_options_profiles_load_after_context_extraction()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let path = std::env::temp_dir().join(format!(
+            "clientgap-profile-merge-{}.json",
+            std::process::id()
+        ));
         let mut preferences = ReferencePreferences::default();
         preferences.rebind("0009-highscores-open", "ALT+H")?;
         preferences.add_hotkey_profile("Merge compatibility")?;
@@ -140,6 +167,44 @@ mod merge_compatibility {
         std::fs::write(&path, serde_json::to_vec(&old)?)?;
         assert_eq!(PreferenceStore::read_transfer(&path)?, preferences);
         std::fs::remove_file(path)?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod legacy_chords {
+    use super::*;
+    #[test]
+    fn legacy_defaults_preserve_primary_secondary_and_action_bar_chords()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for (field, value, chord) in [
+            (
+                "keybindings",
+                serde_json::json!({"0009-highscores-open":"ALT+H", "local-spell-action-bar-spell-1":"CTRL+H"}),
+                "CTRL+H",
+            ),
+            (
+                "secondary_keybindings",
+                serde_json::json!({"0009-highscores-open":"CTRL+T"}),
+                "CTRL+T",
+            ),
+            ("action_keys", serde_json::json!({"0":"CTRL+E"}), "CTRL+E"),
+        ] {
+            let path = std::env::current_dir()?
+                .join(format!("legacy-chords-{}-{field}.json", std::process::id()));
+            let mut doc = serde_json::to_value(ReferencePreferences::default())?;
+            doc.as_object_mut()
+                .ok_or("object")?
+                .remove("custom_hotkeys");
+            doc[field] = value.clone();
+            std::fs::write(&path, serde_json::to_vec(&doc)?)?;
+            let loaded = PreferenceStore::read_transfer(&path);
+            std::fs::remove_file(&path)?;
+            let loaded = loaded?;
+            assert!(!loaded.custom_hotkeys.contains_key(chord));
+            assert_eq!(serde_json::to_value(&loaded)?[field], value);
+            assert_eq!(loaded.custom_hotkeys.len(), 5);
+        }
         Ok(())
     }
 }

@@ -21,7 +21,7 @@ pub struct WheelPanel {
     pub preset_book: super::presets::PresetBook,
     pub preset_feedback: String,
     pub selected: bool,
-    /// Capability 483 is negotiated: the Atelier speaks commands 6210-6213 and reports twelve
+    /// Capability 483 is negotiated: the Atelier speaks commands 6210-6214 and reports twelve
     /// Gem Vessel slots.
     pub atelier_v2: bool,
     /// The Gem Vessel facts of the last confirmed v2 reply.
@@ -89,6 +89,19 @@ impl WheelPanel {
             && self.confirmed_atelier.is_some()
             && self.pending.is_none()
             && self.retry.is_none()
+    }
+
+    /// Both native Atelier views use the same admission and current-selection checks.
+    pub fn can_reshape(&self) -> bool {
+        self.ready()
+            && self.atelier_v2
+            && !self.dirty()
+            && self.gems.pending.is_none()
+            && self.diagram.pending.is_none()
+            && self.gems.review.is_none()
+            && self
+                .selected_gem()
+                .is_some_and(|gem| super::reshape_block(self, gem).is_none())
     }
 
     pub fn selected_gem(&self) -> Option<&atelier::GemView> {

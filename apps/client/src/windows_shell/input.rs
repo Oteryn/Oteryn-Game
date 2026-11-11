@@ -67,6 +67,30 @@ impl Application {
                 });
             }
 
+            if play.link.lens_active() {
+                play.view.observe_creature_pointer(events);
+                // Clear an armed drag before help ends the mode on this press.
+                if play.view.world_pointer_input(&play.link, events).is_err() {
+                    self.fail(event_loop, ShellError::RendererRender);
+                    return;
+                }
+                for click in &clicks {
+                    if !click.secondary {
+                        let size = self
+                            .window
+                            .as_ref()
+                            .map(|window| window.inner_size())
+                            .unwrap_or_default();
+                        let root = [size.width, size.height]
+                            .map(|value| u16::try_from(value).unwrap_or(u16::MAX));
+                        let key = play.view.lens_key([click.x as f32, click.y as f32], root);
+                        play.link.lens_click(key);
+                        break;
+                    }
+                }
+                return;
+            }
+
             if play.link.custom_hotkeys_input(events) {
                 return;
             }
@@ -189,18 +213,6 @@ impl Application {
                     if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
                         play.view.attack_toggle_click(tile, &play.link);
                     }
-                    continue;
-                }
-                if !click.secondary && play.link.lens_active() {
-                    let size = self
-                        .window
-                        .as_ref()
-                        .map(|window| window.inner_size())
-                        .unwrap_or_default();
-                    let root =
-                        [size.width, size.height].map(|v| u16::try_from(v).unwrap_or(u16::MAX));
-                    let key = play.view.lens_key([click.x as f32, click.y as f32], root);
-                    play.link.lens_click(key);
                     continue;
                 }
                 if !click.secondary && suppress_primary {

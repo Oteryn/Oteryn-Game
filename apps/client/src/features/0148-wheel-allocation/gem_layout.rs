@@ -79,7 +79,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         let buttons = [
             ("Reveal", 100),
             ("Dismantle", 101),
-            ("Reshape mod", 102),
+            (tr!("Reshape mod"), 102),
             ("Upgrade grade", 103),
             ("Lock / unlock", 104),
             ("Replace Vessel", 105),

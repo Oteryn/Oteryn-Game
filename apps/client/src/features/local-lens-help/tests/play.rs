@@ -1,9 +1,7 @@
 use crate::play::{HudAction, HudPanel, PlayView, play_channel};
 use oteryn_client_ui::lens_help;
 use oteryn_renderer::TileCoord;
-use oteryn_session::{
-    ActorPosition, EntityDetail, EntityRef, StepDirection, WorldSpatialEntity,
-};
+use oteryn_session::{ActorPosition, EntityDetail, EntityRef, StepDirection, WorldSpatialEntity};
 
 const ROOT: [u16; 2] = [1280, 720];
 
@@ -52,9 +50,8 @@ fn lens_mode_toggles_and_a_click_shows_one_help_text_then_ends_the_mode() {
 #[test]
 fn lens_key_names_the_hud_pane_the_creature_and_the_world_under_the_point()
 -> Result<(), Box<dyn std::error::Error>> {
-    let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?.with_entities(vec![
-        creature_at(101, 200)?,
-    ])?;
+    let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?
+        .with_entities(vec![creature_at(101, 200)?])?;
     let [x, y] = view.scene().view().tile_to_screen(TileCoord::new(101, 200));
     assert_eq!(view.lens_key([x + 1.0, y + 1.0], ROOT), Some("creature"));
     let [x, y] = view.scene().view().tile_to_screen(TileCoord::new(100, 200));
@@ -79,6 +76,53 @@ fn lens_key_names_the_hud_pane_the_creature_and_the_world_under_the_point()
         ];
         assert_eq!(view.lens_key(inside, ROOT), Some(key));
         assert!(lens_help::help_text(key).is_some());
+    }
+    Ok(())
+}
+
+#[test]
+fn lens_gesture_never_arms_a_creature_attack_or_push() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{
+        ButtonState, Modifiers, MouseButton, NormalizedInputEvent, PointerCoordinate, PointerDelta,
+        PointerMotion, PointerPosition,
+    };
+    for (alt, delta) in [(false, 0), (false, 48), (true, 0), (true, 48)] {
+        let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?
+            .with_entities(vec![creature_at(101, 200)?])?;
+        let (link, mut commands, _) = play_channel();
+        let [x, y] = view.scene().view().tile_to_screen(TileCoord::new(101, 200));
+        let moved = NormalizedInputEvent::PointerMoved {
+            position: PointerPosition::new(
+                PointerCoordinate::new(x as i32 + 1)?,
+                PointerCoordinate::new(y as i32 + 1)?,
+            ),
+            motion: PointerMotion::new(PointerDelta::new(0)?, PointerDelta::new(0)?),
+        };
+        let modifiers = if alt {
+            Modifiers::one(oteryn_input_actions::Modifier::Alt)
+        } else {
+            Modifiers::NONE
+        };
+        let button = |state| NormalizedInputEvent::MouseButton {
+            button: MouseButton::PRIMARY,
+            state,
+            modifiers,
+        };
+        assert!(link.lens_toggle());
+        assert!(!view.attack_toggle_click(TileCoord::new(101, 200), &link));
+        view.world_pointer_input(&link, &[moved, button(ButtonState::Pressed)])?;
+        assert!(view.creature_drag.source.is_none());
+        link.lens_click(Some("creature"));
+        let moved = NormalizedInputEvent::PointerMoved {
+            position: PointerPosition::new(
+                PointerCoordinate::new(x as i32 + 1 + delta)?,
+                PointerCoordinate::new(y as i32 + 1)?,
+            ),
+            motion: PointerMotion::new(PointerDelta::new(delta)?, PointerDelta::new(0)?),
+        };
+        view.world_pointer_input(&link, &[moved, button(ButtonState::Released)])?;
+        assert!(view.inputs.is_empty());
+        assert!(commands.try_recv().is_err());
     }
     Ok(())
 }

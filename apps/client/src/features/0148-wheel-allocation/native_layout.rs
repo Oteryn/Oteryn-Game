@@ -31,7 +31,14 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
             [410, 6, 180, 28],
             WS_TABSTOP,
         );
-        control(hwnd, "BUTTON", "Visual Gem Atelier", VISUAL_ATELIER, [600, 6, 180, 28], WS_TABSTOP);
+        control(
+            hwnd,
+            "BUTTON",
+            "Visual Gem Atelier",
+            VISUAL_ATELIER,
+            [600, 6, 180, 28],
+            WS_TABSTOP,
+        );
         let presets = control(
             hwnd,
             "BUTTON",
@@ -109,7 +116,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         let switch = control(
             hwnd,
             "BUTTON",
-            "Reshape mod",
+            tr!("Reshape mod"),
             RESHAPE,
             [830, 346, 130, 28],
             WS_TABSTOP,

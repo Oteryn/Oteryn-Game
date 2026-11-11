@@ -1,4 +1,7 @@
 [
+ "Reshaping a gem's mods lets you randomly re-roll each mod of the gem. Reshape position {}: {} gold and {} {} fragments.",
+ "Mod Reshaping unavailable: {}.",
+ "Reshape mod {} of the selected gem?\nCost: {} gold and {} {} fragments. The server rerolls the mod.",
  "Channel {id}",
  "Level {} — {} ({} XP)",
  "\nSummary: {} weapons, {} mastered\n",

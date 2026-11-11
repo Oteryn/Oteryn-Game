@@ -23,9 +23,9 @@ pub fn is_vessel_node(name: &str) -> bool {
 /// Mod Reshaping prices per mod position (1-3): gold, fragments, fragment kind.
 pub fn reshape_cost(position: usize) -> (u64, u32, &'static str) {
     match position {
-        1 => (125_000, 1, "lesser"),
-        2 => (1_000_000, 2, "lesser"),
-        _ => (5_000_000, 3, "greater"),
+        1 => (125_000, 1, tr!("lesser")),
+        2 => (1_000_000, 2, tr!("lesser")),
+        _ => (5_000_000, 3, tr!("greater")),
     }
 }
 
@@ -52,12 +52,12 @@ pub enum ReshapeBlock {
 impl ReshapeBlock {
     pub fn reason(self) -> &'static str {
         match self {
-            Self::NotUnlocked => "The gem must be unlocked first",
-            Self::NoModifier => "Select a modifier of the gem first",
-            Self::NotPremium => "Your account must be Premium to reshape mods",
-            Self::NotInTemple => "You must be inside a temple to reshape mods",
-            Self::Gold => "You do not have enough gold at this position",
-            Self::Fragments => "You do not have enough fragments at this position",
+            Self::NotUnlocked => tr!("The gem must be unlocked first"),
+            Self::NoModifier => tr!("Select a modifier of the gem first"),
+            Self::NotPremium => tr!("Your account must be Premium to reshape mods"),
+            Self::NotInTemple => tr!("You must be inside a temple to reshape mods"),
+            Self::Gold => tr!("You do not have enough gold at this position"),
+            Self::Fragments => tr!("You do not have enough fragments at this position"),
         }
     }
 }
@@ -67,24 +67,29 @@ pub fn reshape_block(panel: &WheelPanel, gem: &atelier::GemView) -> Option<Resha
     if gem.modifiers.is_empty() {
         return Some(ReshapeBlock::NotUnlocked);
     }
-    let position = reshape_position(panel, gem)?;
+    let position = reshape_position(panel, gem);
     if panel.premium != Some(true) {
         return Some(ReshapeBlock::NotPremium);
     }
     if panel.in_temple != Some(true) {
         return Some(ReshapeBlock::NotInTemple);
     }
-    let (gold, fragments, kind) = reshape_cost(position);
+    let Some(position) = position else {
+        return Some(ReshapeBlock::NoModifier);
+    };
+    let (gold, fragments, _) = reshape_cost(position);
     let resources = panel.confirmed_resources.as_ref()?;
     if resources.carried_gold.saturating_add(resources.bank_gold) < gold {
         return Some(ReshapeBlock::Gold);
     }
-    let owned = if kind == "lesser" {
+    let owned = if position < 3 {
         resources.basic_fragments
     } else {
         resources.supreme_fragments
     };
-    (owned < u64::from(fragments)).then_some(ReshapeBlock::Fragments)
+    // Reported totals include stash stock even when it cannot pay here. The v2
+    // writer checks carried stock and the current depot/open-stash context.
+    (!panel.atelier_v2 && owned < u64::from(fragments)).then_some(ReshapeBlock::Fragments)
 }
 
 /// Fragment Workshop totals: +5 Health, Mana and Capacity per unlocked mod grade, one
@@ -297,7 +302,7 @@ pub fn panel_text(panel: &WheelPanel) -> String {
             && let Some(position) = reshape_position(panel, gem)
         {
             let (gold, fragments, kind) = reshape_cost(position);
-            lines.push(format!("Reshaping a gem's mods lets you randomly re-roll each mod of the gem. Reshape position {}: {} gold and {} {} fragments.",
+            lines.push(lfmt!("Reshaping a gem's mods lets you randomly re-roll each mod of the gem. Reshape position {}: {} gold and {} {} fragments.",
                 position,
                 gold,
                 fragments,
@@ -307,8 +312,9 @@ pub fn panel_text(panel: &WheelPanel) -> String {
         if let Some(gem) = panel.selected_gem()
             && let Some(block) = reshape_block(panel, gem)
         {
-            lines.push(format!("Mod Reshaping unavailable: {}.", block.reason()));
+            lines.push(lfmt!("Mod Reshaping unavailable: {}.", block.reason()));
         }
+        lines.push(tr!("Reshape uses carried fragments. Supply Stash fragments are also available at a depot while the stash is open.").into());
         lines.extend(workshop_lines(panel));
         if let Some((kind, mod_id)) = panel.modifier {
             let grade = panel.grade(kind, mod_id);

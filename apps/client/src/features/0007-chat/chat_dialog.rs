@@ -176,10 +176,15 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let mut cooldown = cooldown_bar::CooldownBar::new(hwnd);
         let mut mirror = mirror::Mirror::new(hwnd);
         let mut held = String::new();
+        let mut held_labels = Vec::new();
+        let mut keyboard_input = crate::play::PreferenceInput::default();
         let mut msg: MSG = std::mem::zeroed();
         loop {
             while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
                 mirror.input(&msg, tabs, &weak);
+                if keyboard(&msg, &weak, &commands, &mut keyboard_input) {
+                    continue;
+                }
                 TranslateMessage(&msg);
                 DispatchMessageW(&msg);
             }
@@ -296,7 +301,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             }
             // Opened channel tabs follow the console state after the fixed tabs.
             let labels = mailbox.chat.console.tab_labels();
-            if SendMessageW(tabs, LB_GETCOUNT, 0, 0) as usize != labels.len() {
+            if console::update_tab_labels(&mut held_labels, &labels) {
                 SendMessageW(tabs, LB_RESETCONTENT, 0, 0);
                 for label in &labels {
                     SendMessageW(tabs, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);

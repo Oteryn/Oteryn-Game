@@ -63,6 +63,10 @@ impl layout::Controls {
                 })
                 .as_ptr(),
             );
+            windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
+                GetDlgItem(GetParent(description), RESHAPE as i32),
+                i32::from(panel.can_reshape()),
+            );
             SetWindowTextW(description, wide(&panel_text(panel)).as_ptr());
         }
     }

@@ -149,8 +149,13 @@ fn prepare(
             if let Some(block) = super::reshape_block(panel, gem) {
                 return Err(block.reason());
             }
-            // WIRE NEEDED: the Atelier mutate message has no Reshape action yet.
-            return Err("Mod Reshaping is not offered by this server yet");
+            if !panel.atelier_v2 {
+                return Err(tr!("Mod reshaping is unavailable in this session"));
+            }
+            let position = super::reshape_position(panel, gem)
+                .and_then(|position| u8::try_from(position).ok())
+                .ok_or(tr!("Select a modifier of the gem first"))?;
+            return gem_atelier::reshape(occurrence, atelier.revision, gem.id, position);
         }
         Intent::Dismantle => {
             let gem = panel.selected_gem().ok_or(tr!("Select a gem first"))?;
@@ -211,7 +216,8 @@ fn operation_refused(response: &WheelResponse) -> Option<bool> {
         atelier::v2::COMMAND_TYPE_ATELIER_V2_QUERY
         | atelier::v2::COMMAND_TYPE_ATELIER_V2_SET_LOCK
         | atelier::v2::COMMAND_TYPE_ATELIER_V2_MUTATE
-        | atelier::v2::COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL => {
+        | atelier::v2::COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL
+        | atelier::v2::COMMAND_TYPE_ATELIER_V2_RESHAPE => {
             gem_atelier::decode_reply(&response.payload).map(|v| v.atelier.refused)
         }
         _ => None,
