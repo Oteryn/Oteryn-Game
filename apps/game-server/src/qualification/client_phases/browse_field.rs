@@ -18,7 +18,7 @@ pub(super) async fn browse_field(
         selected: true,
         x: position.x,
         y: position.y,
-        floor: -position.floor,
+        floor: position.floor,
         ..Default::default()
     };
     let command = client_ui::browse_field::open(&mut panel).ok_or("browse field request")?;
@@ -56,7 +56,7 @@ pub(super) async fn browse_field(
     let browse = view.browse.as_ref().ok_or("browse page missing")?;
     if browse.position.x != position.x
         || browse.position.y != position.y
-        || browse.position.floor != -position.floor
+        || browse.position.floor != position.floor
     {
         return Err("browse field returned a different tile".into());
     }

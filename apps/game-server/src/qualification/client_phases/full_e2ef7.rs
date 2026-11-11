@@ -3632,7 +3632,7 @@ async fn acquire(
                                 == ActorPosition {
                                     x: i32::from(p.x),
                                     y: i32::from(p.y),
-                                    floor: -i16::from(p.floor),
+                                    floor: i16::from(p.floor),
                                 }
                         })
                 })

@@ -22,7 +22,9 @@ fn unavailable_personal_event(
     callback: Option<&oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     native_death: bool,
 ) -> bool {
-    use oteryn_gameplay_quests::quest::{authored_bindings, world_callbacks, world_change_journals};
+    use oteryn_gameplay_quests::quest::{
+        authored_bindings, world_callbacks, world_change_journals,
+    };
     if !matches!(
         authored_bindings::personal_event_profile(&transition.quest),
         Some(authored_bindings::PersonalEventProfile::Unavailable { .. })

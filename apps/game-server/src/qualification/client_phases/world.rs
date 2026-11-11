@@ -95,10 +95,11 @@ pub(crate) fn load_world(
 }
 
 fn tile(position: ActorPosition) -> TestResult<TilePos> {
+    // The qualified Bundle already projects its wire positions into native map floors.
     Ok(TilePos {
         x: u16::try_from(position.x)?,
         y: u16::try_from(position.y)?,
-        floor: -i8::try_from(position.floor)?,
+        floor: i8::try_from(position.floor)?,
     })
 }
 
@@ -319,7 +320,7 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     .map(|at| ActorPosition {
         x: i32::from(at.x),
         y: i32::from(at.y),
-        floor: -i16::from(at.floor),
+        floor: i16::from(at.floor),
     });
     client = client_disconnect_resume::recover(client, clients, after).await?;
     travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
@@ -683,7 +684,7 @@ async fn shop_journey(
                     && npc.placements.iter().any(|placement| {
                         entity.position.x == i32::from(placement.x)
                             && entity.position.y == i32::from(placement.y)
-                            && entity.position.floor == -i16::from(placement.floor)
+                            && entity.position.floor == i16::from(placement.floor)
                     })
             })
         })
