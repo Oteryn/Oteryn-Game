@@ -1386,6 +1386,10 @@ fn physical_context(
         if matches!(case, Physical::SharedLowerWave) {
             let settled = persisted_drome_record(&harness).await?;
             assert_eq!(
+                settled.wave, 1,
+                "cadence persists the next physical wave before a client status refresh"
+            );
+            assert_eq!(
                 (
                     settled.progress.start,
                     settled.progress.level,

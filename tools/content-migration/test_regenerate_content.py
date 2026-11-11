@@ -14,6 +14,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -957,7 +958,13 @@ def main() -> None:
     ]
     for test in tests:
         test()
-    print(f"PASS {len(tests)} checks")
+    import test_item_bootstrap
+
+    suite = unittest.defaultTestLoader.loadTestsFromModule(test_item_bootstrap)
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    if not result.wasSuccessful():
+        raise SystemExit(1)
+    print(f"PASS {len(tests)} checks and {result.testsRun} Item bootstrap tests")
 
 
 if __name__ == "__main__":

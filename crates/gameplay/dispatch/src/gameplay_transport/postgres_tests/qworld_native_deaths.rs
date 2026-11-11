@@ -231,15 +231,15 @@ pub(super) async fn exercise(
         "same-value reactivation invalidates every previously captured death"
     );
     retire_settled(owner, &captured).await?;
-    // Every source death is captured and drained twice by the helper. Reach the
-    // authored threshold, then prove fresh deaths cannot exceed it; a closed
-    // world must still award no personal credit throughout the same sequence.
-    for death in 2..=counter.maximum + 1 {
+    // Four eligible deaths have already settled. Continue with fresh command
+    // identities through the authored threshold and one excess death. The helper
+    // replays every death, and a closed world must still award no personal credit.
+    for death in 5..=counter.maximum + 1 {
         let target = super::qengine_kill_stories::death_actor(
             owner,
             admitted,
             counter.creature,
-            20002 + u64::try_from(death)?,
+            20100 + u64::try_from(death)?,
         )
         .await?;
         assert_eq!(

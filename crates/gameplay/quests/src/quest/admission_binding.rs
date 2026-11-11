@@ -201,7 +201,14 @@ mod tests {
                 "{}",
                 callback.key
             );
-            validate(transition, false)?;
+            validate(transition, callback.world_claim.is_some())?;
+            if callback.world_claim.is_some() {
+                assert!(
+                    validate(transition, false).is_err(),
+                    "World claim requires its registered context: {}",
+                    callback.key
+                );
+            }
         }
         Ok(())
     }
