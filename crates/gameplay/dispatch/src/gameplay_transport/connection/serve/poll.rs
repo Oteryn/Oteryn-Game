@@ -1,6 +1,8 @@
-//! Cancel-safe polling with a bounded input turn after periodic work.
+//! Cancel-safe polling with a bounded input turn and fair periodic refreshes.
 
 use super::*;
+
+const PERIODIC_REFRESHES: u8 = 6;
 
 pub(super) enum Next {
     Frame(std::io::Result<Vec<u8>>),
@@ -120,7 +122,6 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             }
         });
         let input_after_refresh = session.input_after_refresh;
-        let mut refresh_cursor = session.refresh_cursor;
         let mut input = |context: &mut std::task::Context<'_>| {
             if step_due.as_mut().poll(context).is_ready() {
                 return Some(Next::StepDue);
@@ -158,29 +159,23 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             if server_message.as_mut().poll(context).is_ready() {
                 return std::task::Poll::Ready(Next::ServerMessage);
             }
-            // A refresh may outlast its own period. Give every ready periodic owner
-            // a turn before selecting that same owner again; input and probes retain
-            // their existing precedence.
-            for offset in 0..6 {
-                let owner = (refresh_cursor + offset) % 6;
-                let ready = match owner {
-                    0 => serene_tick.as_mut().poll(context).is_ready(),
-                    1 => quest_log_tick.as_mut().poll(context).is_ready(),
-                    2 => chat_tick.as_mut().poll(context).is_ready(),
-                    3 => visibility_tick.as_mut().poll(context).is_ready(),
-                    4 => combat_tick.as_mut().poll(context).is_ready(),
-                    _ => npc_tick.as_mut().poll(context).is_ready(),
+            // A refresh (or its following input turn) may outlast the timer's period.
+            // Rotate only after selecting a refresh: every continuously ready timer gets
+            // a turn within six refresh selections, even when Serene is always overdue.
+            // Probe/server-message priority and the one input turn remain above this ring.
+            for offset in 0..PERIODIC_REFRESHES {
+                let refresh = (session.next_periodic_refresh + offset) % PERIODIC_REFRESHES;
+                let (next, ready) = match refresh {
+                    0 => (Next::Serene, serene_tick.as_mut().poll(context)),
+                    1 => (Next::QuestLog, quest_log_tick.as_mut().poll(context)),
+                    2 => (Next::Chat, chat_tick.as_mut().poll(context)),
+                    3 => (Next::Visibility, visibility_tick.as_mut().poll(context)),
+                    4 => (Next::Combat, combat_tick.as_mut().poll(context)),
+                    _ => (Next::Npc, npc_tick.as_mut().poll(context)),
                 };
-                if ready {
-                    refresh_cursor = (owner + 1) % 6;
-                    return std::task::Poll::Ready(match owner {
-                        0 => Next::Serene,
-                        1 => Next::QuestLog,
-                        2 => Next::Chat,
-                        3 => Next::Visibility,
-                        4 => Next::Combat,
-                        _ => Next::Npc,
-                    });
+                if ready.is_ready() {
+                    session.next_periodic_refresh = (refresh + 1) % PERIODIC_REFRESHES;
+                    return std::task::Poll::Ready(next);
                 }
             }
             if let Some(next) = input(context) {
@@ -189,7 +184,6 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             std::task::Poll::Pending
         })
         .await;
-        session.refresh_cursor = refresh_cursor;
         session.input_after_refresh = matches!(
             next,
             Next::Probe
@@ -204,3 +198,7 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
         next
     }
 }
+
+#[cfg(test)]
+#[path = "poll_tests.rs"]
+mod tests;

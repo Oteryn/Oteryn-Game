@@ -1,5 +1,6 @@
 //! Starter-backpack, temple-respawn and first-vocation journeys on the ordinary Character.
 //! No provisioning: all assertions consume native admission, command or delta frames.
+use super::starter_inventory::check_starter;
 use super::*;
 use oteryn_dev_client::{CharacterInventory, DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::{item_view as items, logout::LogoutResult};
@@ -95,13 +96,7 @@ impl Row {
     }
 }
 
-pub(super) async fn run(
-    clients: &SeamClients<'_>,
-    world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
-    npcs: &oteryn_world_bundle::npc::Table,
-) {
-    // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
+pub(super) async fn run_starter(clients: &SeamClients<'_>) {
     let mut starter = Row::new("C19a", STARTER);
     let result = tokio::time::timeout(
         Duration::from_secs(100),
@@ -110,7 +105,15 @@ pub(super) async fn run(
     .await
     .unwrap_or_else(|_| Err("starter journey deadline; remaining actions unproven".into()));
     starter.finish(result);
+}
 
+pub(super) async fn run(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    npcs: &oteryn_world_bundle::npc::Table,
+) {
+    // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
     let mut temple = Row::new("C20d", TEMPLE);
     let result = tokio::time::timeout(
         Duration::from_secs(330),
@@ -787,29 +790,15 @@ mod resting_tests {
     }
 }
 
-/// Wire handles are session-local. Assert the exact template, quantity and empty custody
-/// instead of comparing handles across fresh admissions (or accepting any container).
-fn check_starter(inventory: &CharacterInventory, definition: NonZeroU32) -> TestResult {
-    if !inventory.main_backpack.is_some_and(|bag| {
-        bag.item_definition_ref == definition && bag.count.get() == 1 && bag.sub_type == 0
-    }) || !inventory.entries.is_empty()
-        || !inventory.equipment.is_empty()
-    {
-        return Err(
-            format!("expected exactly one production starter backpack: {inventory:?}").into(),
-        );
-    }
-    Ok(())
-}
-
 async fn logout(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        match client.session_mut().logout().await?.result {
+        let logout = client.session_mut().logout().await?;
+        match logout.result {
             Some(LogoutResult::Accepted) => return Ok(()),
             Some(LogoutResult::Busy | LogoutResult::InFight { .. })
                 if tokio::time::Instant::now() < deadline => {}
-            result => return Err(format!("E2EF6 logout did not settle: {result:?}").into()),
+            _ => return Err(format!("E2EF6 logout did not settle: {logout:?}").into()),
         }
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
@@ -831,11 +820,16 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
     let result: TestResult = async {
         let index = provisioning::item_index()?;
         let definition = provisioning::item_reference(&index, 2854)?;
+        let entries = [
+            provisioning::item_reference(&index, 3003)?,
+            provisioning::item_reference(&index, 3457)?,
+        ];
         check_starter(
             client
                 .inventory()
                 .ok_or("starter inventory snapshot missing")?,
             definition,
+            entries,
         )?;
         row.pass("first-entry-backpack", client.inventory());
 
@@ -890,6 +884,7 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
                 .inventory()
                 .ok_or("starter relog inventory missing")?,
             definition,
+            entries,
         )?;
         row.pass("relog-custody-no-second-grant", client.inventory());
         relog(&mut client, clients, 0xe2).await?;
@@ -898,6 +893,7 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
                 .inventory()
                 .ok_or("second starter relog inventory missing")?,
             definition,
+            entries,
         )?;
         row.pass("second-relog-no-second-grant", client.inventory());
         Ok(())
@@ -2619,6 +2615,7 @@ async fn adventurer_journey(
         let held = blessings(&mut victim).await?;
         let owned = custody(victim.inventory().ok_or("Adventurer inventory missing")?);
         let mut attacker = connect_world(clients, tag + 1).await?;
+        let mut earning_cancelled = false;
         let fight: TestResult = async {
             {
                 let earning = earn_death_prerequisites(&mut attacker, world, spawns, 8, 0);
@@ -2627,7 +2624,10 @@ async fn adventurer_journey(
                     match tokio::time::timeout(Duration::from_millis(100), earning.as_mut()).await {
                         Ok(result) => { result?; break; }
                         Err(_) => {
-                            victim.service_liveness(Duration::from_millis(1)).await?;
+                            if let Err(error) = victim.service_liveness(Duration::from_millis(1)).await {
+                                earning_cancelled = true;
+                                return Err(error.into());
+                            }
                             victim.take_events();
                         }
                     }
@@ -2645,6 +2645,12 @@ async fn adventurer_journey(
             row.pass("adventurer-relog", (&held, &owned));
             Ok(())
         }.await;
+        if earning_cancelled {
+            // The observer error dropped a pending attacker exchange. Close its
+            // connection without sending cleanup on an uncertain reply/frame.
+            drop(attacker);
+            return fight;
+        }
         let cleanup = release_fighter(&mut attacker).await;
         fight.and(cleanup)
     }.await;
@@ -2979,45 +2985,5 @@ mod tests {
         }
         assert!(!unknown.complete());
         assert!(!Row::new("C19a", &[]).complete());
-    }
-
-    #[test]
-    #[allow(
-        dead_code,
-        reason = "The required function-local mount is not discoverable by libtest; run this exact helper/test source in the isolated unit-test harness."
-    )]
-    fn starter_requires_exact_single_backpack_and_no_extra_custody() -> TestResult {
-        let definition = NonZeroU32::new(1).ok_or("definition")?;
-        let bag = items::ItemEntry {
-            handle: std::num::NonZeroU64::new(1).ok_or("handle")?,
-            item_definition_ref: definition,
-            count: NonZeroU32::new(1).ok_or("count")?,
-            sub_type: 0,
-        };
-        let mut inventory = CharacterInventory {
-            main_backpack: Some(bag),
-            ..Default::default()
-        };
-        check_starter(&inventory, definition)?;
-        assert!(check_starter(&inventory, NonZeroU32::new(2).ok_or("other definition")?).is_err());
-        inventory.entries.push(bag);
-        assert!(check_starter(&inventory, definition).is_err());
-        inventory.entries.clear();
-        inventory.equipment.push(items::EquippedItem {
-            slot: items::EquipmentSlot::RightHand,
-            item: bag,
-        });
-        assert!(check_starter(&inventory, definition).is_err());
-        inventory.equipment.clear();
-        inventory.main_backpack = Some(items::ItemEntry {
-            count: NonZeroU32::new(2).ok_or("two")?,
-            ..bag
-        });
-        assert!(check_starter(&inventory, definition).is_err());
-        inventory.main_backpack = None;
-        assert!(check_starter(&inventory, definition).is_err());
-        inventory.main_backpack = Some(items::ItemEntry { sub_type: 1, ..bag });
-        assert!(check_starter(&inventory, definition).is_err());
-        Ok(())
     }
 }

@@ -61,6 +61,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return GraceExpiryResult::Unknown;
             }
         }
+        // Keep preference through the existing release attempts, after any
+        // combat hold has ended; a single busy read must not drop the demand.
+        let Ok(_foreground) = self.root.foreground_demand() else {
+            return GraceExpiryResult::Unknown;
+        };
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
             return GraceExpiryResult::Unknown;
         };
@@ -236,30 +241,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .training_release_store(releasing, admitted, logout.is_some())
             .await
         else {
+            self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
             return ReleaseAttempt::Retry;
         };
-        let outcome = match release {
-            TerminalRelease::Abandoned(transport) => {
-                releasing
-                    .release_abandoned_session(session, &account_id, transport)
-                    .await
-            }
-            TerminalRelease::CapabilityMismatch(epoch) => {
-                releasing
-                    .release_capability_mismatch(session, &account_id, epoch)
-                    .await
-            }
-            TerminalRelease::StaffKickLost(epoch) => {
-                releasing
-                    .release_staff_lost_session(session, &account_id, epoch)
-                    .await
-            }
-            TerminalRelease::Logout(transport) | TerminalRelease::StaffKick(transport) => {
-                releasing
-                    .release_logout_session(session, &account_id, transport)
-                    .await
-            }
-        };
+        let outcome = AdmissionRetryBudget::for_command(self.root)
+            .retry_durability("release_commit", async || match release {
+                TerminalRelease::Abandoned(transport) => {
+                    releasing
+                        .release_abandoned_session(session, &account_id, transport)
+                        .await
+                }
+                TerminalRelease::CapabilityMismatch(epoch) => {
+                    releasing
+                        .release_capability_mismatch(session, &account_id, epoch)
+                        .await
+                }
+                TerminalRelease::StaffKickLost(epoch) => {
+                    releasing
+                        .release_staff_lost_session(session, &account_id, epoch)
+                        .await
+                }
+                TerminalRelease::Logout(transport) | TerminalRelease::StaffKick(transport) => {
+                    releasing
+                        .release_logout_session(session, &account_id, transport)
+                        .await
+                }
+            })
+            .await;
         if ends_session(&outcome) {
             // PREM-1b (D476): the session is over, whether abandoned, mismatched or logged out;
             // its Premium pulls stop, as at grace expiry.

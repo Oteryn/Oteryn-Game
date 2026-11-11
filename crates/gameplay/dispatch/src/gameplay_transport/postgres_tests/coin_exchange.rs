@@ -818,7 +818,48 @@ fn converter_scenario() -> TestResult {
 
         // gold_converter.lua L17-36: a fresh converter spends one of its 500 charges.
         seed_converter_bag(&h, &[(162, "oteryn:item.tibia.i23722", 1, None), (164, gold, 100, None)]).await?;
-        let converted = owner.use_gold_converter(deps.actor, command(1), ItemKey::Instance(id(162)), ItemKey::Instance(id(164))).await.ok_or("gold converter")?;
+        let converted = {
+            // Contend after replay lookup, at the fresh conversion's second lane acquisition.
+            let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+            let conversion = crate::gameplay_transport::coin_use::CONVERTER_COMMIT_LANE_BARRIER
+                .scope(
+                    Arc::clone(&barrier),
+                    owner.use_gold_converter(
+                        deps.actor,
+                        command(1),
+                        ItemKey::Instance(id(162)),
+                        ItemKey::Instance(id(164)),
+                    ),
+                );
+            tokio::pin!(conversion);
+            tokio::select! {
+                () = barrier.0.notified() => {}
+                result = &mut conversion => return Err(format!("conversion ended before lane contention: {result:?}").into()),
+            }
+            let permit = owner
+                .spell_lane_permit()
+                .await
+                .ok_or("competing checkpoint lane")?;
+            barrier.1.notify_one();
+            // A cooperative yield must not masquerade as waiting for the occupied lane.
+            let polled = {
+                let mut waiting = std::pin::pin!(tokio::task::unconstrained(conversion.as_mut()));
+                std::future::poll_fn(|cx| {
+                    std::task::Poll::Ready(std::future::Future::poll(waiting.as_mut(), cx))
+                })
+                .await
+            };
+            assert!(
+                polled.is_pending(),
+                "conversion must wait for the occupied spell lane"
+            );
+            assert!(
+                deps.runtime.try_lock().is_ok(),
+                "a converter waiting for the lane must leave runtime available to its owner"
+            );
+            drop(permit);
+            conversion.await.ok_or("gold converter")?
+        };
         assert_eq!(converted.disposition, UseDisposition::Committed);
         assert_eq!(converter_row(&h, 162).await?, ("oteryn:item.tibia.i23722".into(), 1, Some(499)));
         assert_eq!(quantity(&h, "3035").await?, 1);

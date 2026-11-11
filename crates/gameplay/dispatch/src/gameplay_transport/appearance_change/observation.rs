@@ -10,24 +10,103 @@ pub struct Observation {
     pub bindings: Vec<wire::Binding>,
 }
 
+/// Only a proven exhausted holder retry may defer an established observer's refresh.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ObservationError {
+    HolderBusy,
+    Unavailable,
+}
+
 pub(in crate::gameplay_transport) async fn observe(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     observer: ExactActorRef,
     session: GameSessionId,
     empty_outfit: bool,
-    mut entities: Vec<wire::EntityRef>,
+    entities: Vec<wire::EntityRef>,
 ) -> Option<Observation> {
+    observe_result(admission, observer, session, empty_outfit, entities)
+        .await
+        .ok()
+}
+
+pub(in crate::gameplay_transport) async fn observe_result(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    observer: ExactActorRef,
+    session: GameSessionId,
+    empty_outfit: bool,
+    mut entities: Vec<wire::EntityRef>,
+) -> Result<Observation, ObservationError> {
     if entities.len() > 256 {
-        return None;
+        return Err(ObservationError::Unavailable);
     }
     entities.sort_unstable();
     if entities.windows(2).any(|p| p[0] == p[1]) {
-        return None;
+        return Err(ObservationError::Unavailable);
     }
+    let _foreground = admission
+        .root
+        .foreground_demand()
+        .map_err(|_| ObservationError::Unavailable)?;
+    {
+        // Monster profiles hold both guards while using the durable holder. Wait
+        // for that existing owner before starting the command's one-second retry
+        // window; the foreground demand prevents a new profile from overtaking us.
+        let _runtime = admission.runtime.lock().await;
+        let _states = admission.states.spell_states.lock().await;
+    }
+    let retry = AdmissionRetryBudget::for_command(admission.root);
+    retry
+        .retry_durability("appearance_observation", async || {
+            let mut failure = None;
+            let observation =
+                observe_once(admission, observer, session, empty_outfit, &entities, &mut failure)
+                    .await;
+            // All runtime/spell guards belong to observe_once and have dropped
+            // before retry_durability can wait for the holder. Its durable reads
+            // acquire with try_issue_root/try_issue_semantic_pass, never a wait.
+            match failure {
+                Some(error) => Err(error),
+                None => Ok(observation),
+            }
+        })
+        .await
+        .map_err(|error| match error {
+            crate::durability::DurabilityError::RootUnavailable => ObservationError::HolderBusy,
+            _ => ObservationError::Unavailable,
+        })?
+        .ok_or(ObservationError::Unavailable)
+}
+
+fn read_result<T>(
+    result: Result<Option<T>, crate::durability::DurabilityError>,
+    failure: &mut Option<crate::durability::DurabilityError>,
+) -> Option<T> {
+    match result {
+        Ok(value) => value,
+        Err(error) => {
+            *failure = Some(error);
+            None
+        }
+    }
+}
+
+async fn observe_once(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    observer: ExactActorRef,
+    session: GameSessionId,
+    empty_outfit: bool,
+    entities: &[wire::EntityRef],
+    failure: &mut Option<crate::durability::DurabilityError>,
+) -> Option<Observation> {
     let (context, content) = admission.appearance_context()?;
-    let own_fence =
-        super::super::character_gameplay_fence::current(admission, session, false).await?;
-    let own = house::read_state(admission, own_fence, content.earned_grant_keys()).await?;
+    let own_fence = read_result(
+        super::super::character_gameplay_fence::current_once(admission, session, false).await,
+        failure,
+    )?;
+    let own = read_result(
+        house::read_state(admission, own_fence, content.earned_grant_keys()).await,
+        failure,
+    )?;
     let catalogue = super::catalogue::catalogue(
         &content,
         &own,
@@ -42,7 +121,7 @@ pub(in crate::gameplay_transport) async fn observe(
     let (census, hirelings) = house::census(&runtime, observer, session)?;
     let mut bindings = Vec::new();
     let now = admission.owner_now().get();
-    for entity in entities {
+    for &entity in entities {
         if let Some(entry) = hirelings.iter().find(|entry| {
             entry.actor.placement_identity() == entity.identity
                 && entry.actor.actor_local_generation() == entity.generation
@@ -110,9 +189,11 @@ pub(in crate::gameplay_transport) async fn observe(
             });
             continue;
         };
-        let fence =
-            super::super::character_gameplay_fence::current(admission, target_session, true)
-                .await?;
+        let fence = read_result(
+            super::super::character_gameplay_fence::current_once(admission, target_session, true)
+                .await,
+            failure,
+        )?;
         if target_session == session && fence != own_fence {
             return None;
         }
@@ -121,7 +202,10 @@ pub(in crate::gameplay_transport) async fn observe(
         {
             return None;
         }
-        let current = house::read_state(admission, fence, content.earned_grant_keys()).await?;
+        let current = read_result(
+            house::read_state(admission, fence, content.earned_grant_keys()).await,
+            failure,
+        )?;
         let in_house = runtime.house_actor_state(*actor, target_session).is_ok();
         let player = if in_house {
             states
@@ -197,7 +281,11 @@ pub(in crate::gameplay_transport) async fn observe(
         }
         // The selection and root are re-read after observer preparation. Runtime pin,
         // incarnation and condition state stay locked through this bounded DB read.
-        if house::read_state(admission, fence, content.earned_grant_keys()).await? != current {
+        if read_result(
+            house::read_state(admission, fence, content.earned_grant_keys()).await,
+            failure,
+        )? != current
+        {
             return None;
         }
         bindings.push(wire::Binding {

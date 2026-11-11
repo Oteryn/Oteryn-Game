@@ -67,6 +67,16 @@
       "note": "Node boot diagnostics (NBDIAG, #3057)."
     },
     {
+      "event": "control_loss_reconcile_pending",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage"
+      ],
+      "codes": [],
+      "note": "NBFIX: closed retained-work stage blocking logout or loss reconciliation."
+    },
+    {
       "event": "join_prepare_failed",
       "level": "info",
       "span": false,
@@ -91,6 +101,27 @@
       "note": "Node boot diagnostics (NBDIAG, #3057)."
     },
     {
+      "event": "logout_busy",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage"
+      ],
+      "codes": [],
+      "note": "NBFIX: closed logout refusal stage; no account, session or authentication material."
+    },
+    {
+      "event": "logout_unknown",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage",
+        "kind"
+      ],
+      "codes": [],
+      "note": "NBEOF-2: closed-schema logout stage and unknown/authority failure kind before transport closure."
+    },
+    {
       "event": "serve_command_end",
       "level": "info",
       "span": false,
@@ -107,12 +138,103 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "session_durability_failed",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage",
+        "kind"
+      ],
+      "codes": [],
+      "note": "NBEOF-2: closed-schema stage and failure kind after holder retry exhaustion or a non-retryable durability failure."
+    },
+    {
       "event": "spell_cast_condition_gated",
       "level": "info",
       "span": false,
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "step_rejected_dawnport",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_dead",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_drome",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_holder_busy",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_lane",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_movement",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_pending_spell",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_pvp_locks",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_source_map",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_stale_position",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
     },
     {
       "event": "transport_close",

@@ -16,7 +16,10 @@ use std::sync::{Arc, Mutex as StdMutex, OnceLock};
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, Notify};
 
+mod foreground;
 mod ready_admission;
+
+use foreground::HolderPriority;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const DB_TRANSACTION_FAILED: oteryn_error_codes::ErrorCode = oteryn_error_codes::ErrorCode::new(
@@ -470,6 +473,7 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
     for requested in [
         arc_allocation_request::<AtomicBool>()?,
         arc_allocation_request::<Mutex<()>>()?,
+        arc_allocation_request::<HolderPriority>()?,
         arc_allocation_request::<RootICharge>()?,
         arc_allocation_request::<RootBudgetAdapter>()?,
         arc_allocation_request::<std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>>()?,
@@ -1007,6 +1011,7 @@ pub struct DurabilityRoot {
     /// Signalled each time the holder is observed back in the idle pool (NODEBOOT-1).
     holder_returned: Arc<Notify>,
     maintenance: Arc<Mutex<()>>,
+    holder_priority: Arc<HolderPriority>,
     /// Which semantic pass has the holder checked out (NBDIAG-4).
     holder_owner: Arc<StdMutex<HolderOwner>>,
     /// The deadline of the next semantic pass in milliseconds, shared by every clone:
@@ -1017,6 +1022,14 @@ pub struct DurabilityRoot {
     relay_options: Option<Box<PgConnectOptions>>,
     _root_i_charge: Option<Arc<RootICharge>>,
     pub(super) staff_trust: Arc<std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>>,
+}
+
+/// Foreground preference lasts until this owner finishes or its future is cancelled.
+/// Retaining its root charge keeps the arbitration allocation under root custody.
+#[must_use = "foreground preference ends when the guard is dropped"]
+pub struct ForegroundDemand {
+    _demand: foreground::ForegroundDemand,
+    _root_i_charge: Option<Arc<RootICharge>>,
 }
 
 /// While it lives, every semantic pass of its root runs under the boot deadline
@@ -1079,6 +1092,7 @@ impl DurabilityRoot {
             holder_owner: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
+            holder_priority: Arc::default(),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: Some(Box::new(relay_options)),
             _root_i_charge: root_i_charge,
@@ -1117,6 +1131,7 @@ impl DurabilityRoot {
             holder_owner: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
+            holder_priority: Arc::default(),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: <PgConnectOptions as std::str::FromStr>::from_str(database_url)
                 .ok()
@@ -1338,6 +1353,43 @@ impl DurabilityRoot {
 
     fn pass_deadline(&self) -> Duration {
         Duration::from_millis(self.pass_deadline_millis.load(Ordering::Acquire))
+    }
+
+    /// Give a foreground owner a bounded preference over scheduled background passes.
+    /// Keep this guard across holder waits and all passes of that owner operation.
+    pub fn foreground_demand(&self) -> Result<ForegroundDemand, DurabilityError> {
+        self.holder_priority
+            .foreground(Instant::now(), ROOT_RECOVERY_WINDOW)
+            .map(|demand| ForegroundDemand {
+                _demand: demand,
+                _root_i_charge: self._root_i_charge.clone(),
+            })
+            .ok_or(DurabilityError::RootUnavailable)
+    }
+
+    /// A scheduled pass yields to waiting foreground work without creating a
+    /// connection or a maintenance demand. A real ready miss keeps its old demand.
+    #[track_caller]
+    pub fn try_issue_background_semantic_pass(
+        &self,
+    ) -> Result<IssuedSemanticPass, DurabilityError> {
+        let caller = std::panic::Location::caller();
+        let holder = self
+            .holder_priority
+            .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
+                self.try_acquire_ready().ok()
+            })
+            .ok_or_else(|| {
+                record_holder_usage(Some(caller), None);
+                DurabilityError::RootUnavailable
+            })?;
+        let issued = Instant::now();
+        Ok(IssuedSemanticPass {
+            root: self.clone(),
+            holder,
+            deadline: issued + self.pass_deadline(),
+            owner: PassOwner::checked_out(&self.holder_owner, caller, issued),
+        })
     }
 
     #[track_caller]

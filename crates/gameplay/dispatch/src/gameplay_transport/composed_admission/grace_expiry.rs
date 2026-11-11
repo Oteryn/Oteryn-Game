@@ -44,6 +44,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // One hold across the attempts of an epoch, so a retry is counted once.
         let mut settled_death = None;
+        // The grace/combat wait does not request preference. Once release work
+        // starts, retain it across the existing attempts and their backoff.
+        let mut foreground = None;
         let mut attempts = 0;
         while attempts < EXPIRY_ATTEMPTS {
             // Timeout/defeat may return an offline actor while its original
@@ -75,7 +78,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let mark = match facts {
                 Ok(facts) => facts.control_loss,
-                Err(_) => return GraceExpiryResult::Unknown,
+                Err(_) => {
+                    // Retirement can remove the actor before its offline acknowledgement
+                    // succeeds. Retry that exact terminal cleanup, not the release write.
+                    // Missing/stale native facts alone never prove terminality or absence
+                    // in the current scope; the existing reconciler checks both.
+                    return match self.reconcile_terminal_session(admitted).await {
+                        GraceExpiryResult::Released => GraceExpiryResult::Released,
+                        _ => GraceExpiryResult::Unknown,
+                    };
+                }
             };
             // The lost epoch was resumed: nothing is this transition's to release.
             let Some(ControlLossMark {
@@ -123,9 +135,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             attempts += 1;
             // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
             // Each hold step runs the melee pass; the whole hold counts as one attempt.
-            if self.hold_while_in_fight(actor, session).await {
+            if self
+                .hold_while_in_fight_releasing_demand(actor, session, &mut foreground)
+                .await
+            {
                 while self.hold_while_in_fight(actor, session).await {}
                 continue;
+            }
+            if foreground.is_none() {
+                let Ok(demand) = self.root.foreground_demand() else {
+                    return GraceExpiryResult::Unknown;
+                };
+                foreground = Some(demand);
             }
             if !self
                 .settle_released_death(actor, session, &mut settled_death)

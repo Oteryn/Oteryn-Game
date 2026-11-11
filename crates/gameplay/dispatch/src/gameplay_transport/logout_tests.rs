@@ -4,6 +4,97 @@
 use super::logout::{in_fight_logout_retry, in_fight_retry_after_ms};
 
 #[test]
+fn nbeof_logout_storage_and_unknown_commit_fail_without_retry()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::{DurabilityError, SqlxFailureClass};
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?;
+    runtime.block_on(async {
+        for error in [
+            DurabilityError::Database(SqlxFailureClass::RetryableStatement),
+            DurabilityError::CommitOutcomeUnknown,
+            DurabilityError::InvalidStoredState,
+            DurabilityError::CommitRejected,
+            DurabilityError::RootPassDeadlineExceeded,
+            DurabilityError::Unavailable,
+        ] {
+            let budget = super::AdmissionRetryBudget {
+                deadline: tokio::time::Instant::now() + super::COMMAND_HOLDER_WINDOW,
+                backoff: super::RECONCILE_BACKOFF,
+                stale_rounds: super::FRESH_ADMISSION_ROUNDS,
+                root: None,
+                _foreground: None,
+            };
+            let mut failure = Some(error);
+            let mut attempts = 0;
+            let started = tokio::time::Instant::now();
+            let result = budget
+                .retry_durability("release_commit", || {
+                    attempts += 1;
+                    std::future::ready(failure.take().map_or(Ok(()), Err))
+                })
+                .await;
+            assert!(
+                result.is_err(),
+                "a storage/unknown failure must remain a failure"
+            );
+            assert_eq!(attempts, 1, "storage errors must never replay the release");
+            assert_eq!(started.elapsed(), std::time::Duration::ZERO);
+        }
+    });
+    Ok(())
+}
+
+#[test]
+fn nbeof_holder_reads_share_one_absolute_retry_deadline() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::durability::DurabilityError;
+    use std::time::Duration;
+
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?;
+    runtime.block_on(async {
+        let started = tokio::time::Instant::now();
+        let budget = super::AdmissionRetryBudget {
+            deadline: started + super::COMMAND_HOLDER_WINDOW,
+            backoff: super::RECONCILE_BACKOFF,
+            stale_rounds: super::FRESH_ADMISSION_ROUNDS,
+            root: None,
+            _foreground: None,
+        };
+        let mut attempts = 0;
+        let first = budget
+            .retry_durability("first_read", || {
+                attempts += 1;
+                std::future::ready(if attempts < 3 {
+                    Err(DurabilityError::RootUnavailable)
+                } else {
+                    Ok(7)
+                })
+            })
+            .await;
+        assert_eq!(first.ok(), Some(7));
+        assert_eq!(attempts, 3);
+        tokio::time::sleep(Duration::from_millis(350)).await;
+        attempts = 0;
+        let second = budget
+            .retry_durability("later_read", || {
+                attempts += 1;
+                std::future::ready(Err::<(), _>(DurabilityError::RootUnavailable))
+            })
+            .await;
+        assert!(matches!(second, Err(DurabilityError::RootUnavailable)));
+        assert_eq!(attempts, 2, "later reads keep the original deadline");
+        assert_eq!(started.elapsed(), Duration::from_millis(950));
+    });
+    Ok(())
+}
+
+#[test]
 fn the_in_fight_retry_rounds_up_to_whole_milliseconds_within_1_to_60000() {
     assert_eq!(in_fight_retry_after_ms(1_000_001, 1_000_000), 1);
     assert_eq!(in_fight_retry_after_ms(1_001_000, 1_000_000), 1);

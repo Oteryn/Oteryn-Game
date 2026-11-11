@@ -1,5 +1,6 @@
 //! E2EF7: complete bounded ranking journey using ordinary admitted characters.
-//! No privileged provisioning: the retained snapshot must come from the served job.
+//! First prove the served job's snapshots, then prepare a cut through the existing fixture
+//! publisher so the ordinary newly admitted character can exercise own rank and retention.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::highscores::{self, wire};
@@ -336,11 +337,82 @@ async fn refused(
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("ranking character logout refused".into());
+    let (result, logout, attempts, busy_timed_out) =
+        super::logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("ranking character logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
+    Ok(())
+}
+
+async fn prepare_ranking_cut(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    own_name: &str,
+    progress: &mut RankingProgress,
+) -> TestResult {
+    use crate::durability::highscore_snapshot::{CutLimits, SnapshotCatalogues};
+
+    let world = wire::WorldId::decode(&clients.world)?;
+    // Nothing in this fixture has published yet: all required categories must first
+    // be readable from the real served job, including its correctly echoed World.
+    // Keep this precondition and preparation inside the existing journey deadline.
+    let mut served_achievement_cut = None;
+    for category in (1..=10).chain(std::iter::once(12)) {
+        let mut probe = request(category, 0, 1, 0);
+        probe.details = true;
+        progress.stage("served_job_cut", Some(probe));
+        let page = observed_query(client, probe, progress).await?;
+        if page.world != Some(world) {
+            return Err("ranking served-job snapshot names another World".into());
+        }
+        if category == 10 {
+            served_achievement_cut = Some(page.snapshot_id);
+        }
+    }
+    let served_achievement_cut =
+        served_achievement_cut.ok_or("ranking served-job achievement snapshot absent")?;
+    evidence("E2EF7_SETUP S11 served-job-cut PASS categories=11 source=served-job");
+
+    // Boot may publish before the ordinary admission initializes progression. Do not
+    // alter the 30-minute scheduler or invent a planned reset: this existing test-only
+    // entry uses the same catalogue, role, RR cut, eligibility and registered limits.
+    progress.stage("fixture_cut_publication", None);
+    let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)
+        .map_err(|_| "ranking fixture root unavailable")?;
+    root.await_ready()
+        .await
+        .map_err(|_| "ranking fixture root not ready")?;
+    let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
+        .map_err(|_| "ranking fixture achievement catalogue unavailable")?;
+    let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements))
+        .map_err(|_| "ranking fixture snapshot catalogues unavailable")?;
+    // A failed or uncertain publication is final; never replay this write.
+    let published = root
+        .refresh_highscore_world_within(world, catalogues, CutLimits::REGISTERED)
+        .await
+        .map_err(|_| "ranking fixture cut publication failed")?;
+    let snapshot = published
+        .iter()
+        .find(|snapshot| snapshot.category == 10)
+        .ok_or("ranking fixture achievement cut absent")?;
+    if snapshot.snapshot_id <= served_achievement_cut {
+        return Err("ranking fixture publication did not advance its cut".into());
+    }
+    let mut probe = request(10, 0, 1, snapshot.snapshot_id);
+    probe.details = true;
+    progress.stage("fixture_cut_readback", Some(probe));
+    let page = observed_query(client, probe, progress).await?;
+    if page.world != Some(world)
+        || page.computed_at != snapshot.computed_at_ms
+        || page.own_row.as_ref().is_none_or(|own| own.name != own_name)
+    {
+        return Err("ranking fixture cut lacks the admitted character's own row".into());
+    }
+    evidence(&format!(
+        "E2EF7_SETUP S11 fixture-prepared-cut PASS category=10 snapshot_id={} source=fixture-publisher",
+        snapshot.snapshot_id
+    ));
     Ok(())
 }
 
@@ -365,6 +437,7 @@ async fn journey(
         let own_name = own_name
             .as_str()
             .map_err(|e| format!("ranking own name: {e:?}"))?;
+        prepare_ranking_cut(&mut client, clients, own_name, progress).await?;
         let mut observed_own = false;
         // Charm points (11) have no activated source. Its unsupported response
         // is exercised as a refusal; it must never masquerade as an empty list.
@@ -625,19 +698,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         clock_journey(&mut row, &mut client, clients),
     )
     .await;
-    let mut result = match result {
-        Ok(result) => result,
-        Err(_) => Err("world-clock deadline: full cycle not observed within wall-time budget".into()),
-    };
-    // The session lives outside the timed future: even cancellation attempts an
-    // ordinary logout, and cleanup failure prevents a full-row PASS.
+    let mut result = clock_journey_outcome(result, &mut client);
+    // A completed journey may still need an ordinary logout. Cancellation
+    // instead discards the connection: its reply or frame may be only partly read.
     if let Some(client) = client.as_mut() {
         match tokio::time::timeout(Duration::from_secs(25), logout(client)).await {
             Ok(Ok(())) => row.pass("final-logout"),
             cleanup => {
                 evidence(&format!("E2EF7_GAP W20a final-logout {cleanup:?}"));
                 if result.is_ok() {
-                    result = Err("world-clock final logout did not succeed".into());
+                    result = Err(format!("world-clock final logout did not succeed: {cleanup:?}").into());
                 }
             }
         }
@@ -647,6 +717,19 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     additional_rows(clients).await;
     continuation_rows(clients).await;
     forge_row(clients).await;
+}
+
+fn clock_journey_outcome(
+    result: Result<TestResult, tokio::time::error::Elapsed>,
+    connection: &mut Option<DevClientSession>,
+) -> TestResult {
+    match result {
+        Ok(result) => result,
+        Err(_) => {
+            *connection = None;
+            Err("world-clock deadline: full cycle not observed within wall-time budget".into())
+        }
+    }
 }
 
 const CLOCK_ACTIONS: &[&str] = &[
@@ -688,11 +771,13 @@ impl ClockRow {
             .all(|action| self.passed.contains(action))
     }
 
-    fn observe(
-        &mut self,
+    // Pure validation is shared by epoch attribution and the single committed
+    // observation. A rejected candidate cannot add minutes or emit evidence.
+    fn validate_observation(
+        &self,
         clock: oteryn_protocol_oteryn::world_clock::WorldClock,
         elapsed: Duration,
-    ) -> TestResult {
+    ) -> TestResult<u32> {
         let minute = u32::from(clock.tibian_minute);
         if minute >= 1_440
             || clock.light_color != 215
@@ -700,6 +785,7 @@ impl ClockRow {
         {
             return Err(format!("world-clock minute/light/color mismatch: {clock:?}").into());
         }
+        let mut elapsed_minutes = self.elapsed_minutes;
         if let Some((previous, at)) = self.previous {
             let elapsed_ms = elapsed
                 .checked_sub(at)
@@ -716,38 +802,53 @@ impl ClockRow {
                 )
                 .into());
             }
-            self.elapsed_minutes += forward;
+            elapsed_minutes = elapsed_minutes
+                .checked_add(forward)
+                .ok_or("world-clock cumulative minutes overflow")?;
             let since_first = elapsed
                 .checked_sub(
                     self.first_observation
                         .ok_or("world-clock first sample absent")?,
                 )
                 .ok_or("world-clock cumulative time moved backwards")?;
-            if (u128::from(self.elapsed_minutes) * 2_500).abs_diff(since_first.as_millis()) > 10_000
+            if (u128::from(elapsed_minutes) * 2_500).abs_diff(since_first.as_millis()) > 10_000
             {
                 return Err("world-clock cumulative rate drift exceeds 10s".into());
             }
-            if forward > 0 {
-                if minute < u32::from(previous.tibian_minute) {
-                    self.pass("midnight-wrap");
-                }
-                // Both endpoints must be in the ramp. Day/night plateaux or
-                // reconnecting from night to day cannot stand in for a ramp.
-                let prior = u32::from(previous.tibian_minute);
-                if (360..480).contains(&prior)
-                    && (360..480).contains(&minute)
-                    && clock.light_level > previous.light_level
-                {
-                    self.pass("sunrise");
-                }
-                if (1_050..1_170).contains(&prior)
-                    && (1_050..1_170).contains(&minute)
-                    && clock.light_level < previous.light_level
-                {
-                    self.pass("sunset");
-                }
+        }
+        Ok(elapsed_minutes)
+    }
+
+    fn observe(
+        &mut self,
+        clock: oteryn_protocol_oteryn::world_clock::WorldClock,
+        elapsed: Duration,
+    ) -> TestResult {
+        let elapsed_minutes = self.validate_observation(clock, elapsed)?;
+        let minute = u32::from(clock.tibian_minute);
+        if let Some((previous, _)) = self.previous
+            && elapsed_minutes > self.elapsed_minutes
+        {
+            if minute < u32::from(previous.tibian_minute) {
+                self.pass("midnight-wrap");
+            }
+            // Both endpoints must be in the ramp. Day/night plateaux or
+            // reconnecting from night to day cannot stand in for a ramp.
+            let prior = u32::from(previous.tibian_minute);
+            if (360..480).contains(&prior)
+                && (360..480).contains(&minute)
+                && clock.light_level > previous.light_level
+            {
+                self.pass("sunrise");
+            }
+            if (1_050..1_170).contains(&prior)
+                && (1_050..1_170).contains(&minute)
+                && clock.light_level < previous.light_level
+            {
+                self.pass("sunset");
             }
         }
+        self.elapsed_minutes = elapsed_minutes;
         if (480..1_050).contains(&minute) && clock.light_level == 250 {
             self.pass("day");
         }
@@ -798,6 +899,26 @@ fn expected_light(minute: u32) -> u8 {
         .unwrap_or(40),
         _ => 40,
     }
+}
+
+// WORLDINT0-RL-18: a delta is owed at an hour boundary or a light change,
+// subject to the ten-second pacing limit. Walk at most one hour of the
+// independent light oracle; a known full hour always crosses a boundary.
+// Only explicitly injected time is used, so receive latency cannot invent a
+// change. A silent advance remains outstanding until a real frame arrives.
+fn clock_delta_expected_after_advance(
+    clock: oteryn_protocol_oteryn::world_clock::WorldClock,
+    advance: Duration,
+) -> bool {
+    if advance < Duration::from_secs(10) {
+        return false;
+    }
+    (1..=60_u32)
+        .take_while(|minutes| u128::from(*minutes) * 2_500 <= advance.as_millis())
+        .any(|minutes| {
+            let minute = (u32::from(clock.tibian_minute) + minutes) % 1_440;
+            minute.is_multiple_of(60) || expected_light(minute) != clock.light_level
+        })
 }
 
 fn admitted_clock(
@@ -872,6 +993,117 @@ fn qualification_elapsed(started: std::time::Instant, offset: Duration) -> Durat
     started.elapsed().saturating_add(qualification_offset().saturating_sub(offset))
 }
 
+// A 90s session can contain its admission epoch and at most two 75s
+// advances. Retain silent epochs: a naturally emitted frame can still be in
+// the TLS queue when the next explicit advance is applied.
+struct ClockEpochs {
+    offsets: [Duration; 3],
+    len: usize,
+    observed: usize,
+    origin: Duration,
+}
+
+impl ClockEpochs {
+    fn new(origin: Duration, admitted_offset: Duration) -> Self {
+        Self {
+            offsets: [admitted_offset; 3],
+            len: 1,
+            observed: 0,
+            origin,
+        }
+    }
+
+    fn record(&mut self, offset: Duration) -> TestResult {
+        let current = self.offsets[self.len - 1];
+        if offset < current {
+            return Err("world-clock injected offset moved backwards".into());
+        }
+        if offset != current {
+            if self.len == self.offsets.len() {
+                return Err("world-clock session exceeded its bounded offset epochs".into());
+            }
+            self.offsets[self.len] = offset;
+            self.len += 1;
+        }
+        Ok(())
+    }
+
+    fn observe(
+        &mut self,
+        row: &mut ClockRow,
+        clock: oteryn_protocol_oteryn::world_clock::WorldClock,
+        received_elapsed: Duration,
+    ) -> TestResult {
+        let mut matched = None;
+        for index in self.observed..self.len {
+            // The independent input is real receive time plus a recorded
+            // injection, never time reconstructed from the received minute.
+            let injected = self.offsets[index]
+                .checked_sub(self.origin)
+                .ok_or("world-clock offset precedes journey origin")?;
+            let elapsed = received_elapsed
+                .checked_add(injected)
+                .ok_or("world-clock observation time overflow")?;
+            if row.validate_observation(clock, elapsed).is_ok() {
+                if matched.is_some() {
+                    return Err("world-clock frame matches multiple offset epochs".into());
+                }
+                matched = Some((index, elapsed));
+            }
+        }
+        let (index, elapsed) = matched.ok_or_else(|| {
+            format!(
+                "world-clock frame matches no retained offset epoch: clock={clock:?} received_ms={} observed_offset_ms={} current_offset_ms={}",
+                received_elapsed.as_millis(),
+                self.offsets[self.observed].as_millis(),
+                self.offsets[self.len - 1].as_millis(),
+            )
+        })?;
+        row.observe(clock, elapsed)?;
+        self.observed = index;
+        Ok(())
+    }
+
+    fn delta_owed(&self, clock: oteryn_protocol_oteryn::world_clock::WorldClock) -> bool {
+        clock_delta_expected_after_advance(
+            clock,
+            self.offsets[self.len - 1] - self.offsets[self.observed],
+        )
+    }
+}
+
+async fn service_clock_advance(
+    client: &mut DevClientSession,
+    row: &mut ClockRow,
+    epochs: &mut ClockEpochs,
+    started: std::time::Instant,
+    accelerated: bool,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    loop {
+        client.service_liveness(Duration::from_secs(1)).await?;
+        // Use actual elapsed time when the receive window completes. Transport
+        // and queueing jitter remain subject to the existing 10s rate tolerance.
+        let received_elapsed = started.elapsed();
+        for event in client.take_events() {
+            if let oteryn_dev_client::SessionEvent::WorldClock(delta) = event {
+                epochs.observe(row, delta.value, received_elapsed)?;
+                row.pass("clock-delta");
+            }
+        }
+        let (clock, _) = row.previous.ok_or("world-clock admission sample absent")?;
+        // An old queued frame does not acknowledge the latest advance. It can,
+        // however, prove that its remaining 75s stays on the same hour/light
+        // plateau. Recompute after the entire batch without renewing the bound.
+        if !accelerated || !epochs.delta_owed(clock) {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("world-clock advance did not produce a server delta".into());
+        }
+    }
+}
+
 async fn clock_journey(
     row: &mut ClockRow,
     connection: &mut Option<DevClientSession>,
@@ -892,7 +1124,12 @@ async fn clock_journey(
             return Err("world-clock fresh admission reused the old game session".into());
         }
         let clock = admitted_clock(client)?;
-        row.observe(clock, qualification_elapsed(started, offset))?;
+        let admitted_offset = qualification_offset();
+        let mut epochs = ClockEpochs::new(offset, admitted_offset);
+        row.observe(
+            clock,
+            started.elapsed() + admitted_offset.saturating_sub(offset),
+        )?;
         row.pass("snapshot");
         if previous_session.is_some() {
             row.pass("fresh-admission");
@@ -900,25 +1137,17 @@ async fn clock_journey(
         let reconnect_at = qualification_elapsed(started, offset) + Duration::from_secs(90);
         loop {
             advance_qualification_time(qualification_step())?;
-            let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
-            loop {
-                client.service_liveness(Duration::from_secs(1)).await?;
-                let mut observed = false;
-                for event in client.take_events() {
-                    if let oteryn_dev_client::SessionEvent::WorldClock(delta) = event {
-                        row.observe(delta.value, qualification_elapsed(started, offset))?;
-                        row.pass("clock-delta");
-                        observed = true;
-                    }
-                }
-                if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_none() || observed {
-                    break;
-                }
-                if tokio::time::Instant::now() >= deadline {
-                    return Err("world-clock advance did not produce a server delta".into());
-                }
-            }
-            // Final logout is checked by run_packet even on timeout or error.
+            epochs.record(qualification_offset())?;
+            service_clock_advance(
+                client,
+                row,
+                &mut epochs,
+                started,
+                std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some(),
+            )
+            .await?;
+            // A completed journey's final logout is checked by run_packet.
+            // Cancellation drops its uncertain connection and leaves logout unproven.
             if CLOCK_ACTIONS
                 .iter()
                 .filter(|action| **action != "final-logout")
@@ -961,6 +1190,54 @@ mod clock_tests {
                 row.observe(source.reading(now).ok_or("clock reading")?, elapsed)?;
             }
             for action in ["day", "night", "sunrise", "sunset", "midnight-wrap", "full-cycle"] {
+                assert!(row.passed.contains(action), "missing {action}");
+            }
+            assert!(!row.complete(), "transport and relog are still required");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn accelerated_clock_allows_silent_steps_without_losing_required_deltas() -> TestResult {
+        let source = crate::world_clock::WorldClockSource::new(0);
+        for initial_minute in [0_u64, 359, 479, 1_049, 1_439] {
+            let initial_ms = initial_minute * 2_500;
+            let mut clock = source.reading(initial_ms).ok_or("clock reading")?;
+            let mut pacer = crate::world_clock::WorldClockDeltaPacer::default();
+            pacer.reset(clock, initial_ms);
+            let mut row = ClockRow::default();
+            row.observe(clock, Duration::ZERO)?;
+            let mut observed_offset = Duration::ZERO;
+            let mut saw_silent_step = false;
+            let mut saw_delta = false;
+            for step in 1..=50_u32 {
+                let elapsed = qualification_step() * step;
+                let expects_delta =
+                    clock_delta_expected_after_advance(clock, elapsed - observed_offset);
+                let delta = pacer.due(&source, initial_ms + u64::try_from(elapsed.as_millis())?);
+                assert_eq!(
+                    expects_delta,
+                    delta.is_some(),
+                    "initial={initial_minute} step={step}"
+                );
+                if let Some(delta) = delta {
+                    row.observe(delta, elapsed)?;
+                    clock = delta;
+                    observed_offset = elapsed;
+                    saw_delta = true;
+                } else {
+                    saw_silent_step = true;
+                }
+            }
+            assert!(saw_silent_step && saw_delta);
+            for action in [
+                "day",
+                "night",
+                "sunrise",
+                "sunset",
+                "midnight-wrap",
+                "full-cycle",
+            ] {
                 assert!(row.passed.contains(action), "missing {action}");
             }
             assert!(!row.complete(), "transport and relog are still required");
@@ -1102,6 +1379,10 @@ mod clock_tests {
     }
 }
 
+#[cfg(test)]
+#[path = "full_e2ef7_clock_epochs_tests.rs"]
+mod clock_epoch_tests;
+
 // Continuation rows keep their own action sets and cleanup outside timed futures.
 use native::world_spatial_entities as spatial;
 use oteryn_protocol_oteryn::{self as native, actor_spell as casts, party as parties};
@@ -1199,9 +1480,18 @@ async fn additional_rows(clients: &SeamClients<'_>) {
         light_journey(&mut row, &mut light, clients),
     )
     .await;
-    let mut result = result.unwrap_or_else(|_| {
-        Err("personal-light journey exceeded wall-time deadline".into())
-    });
+    let mut result = match result {
+        Ok(result) => {
+            if observer_cancelled(&result) {
+                light = None;
+            }
+            result
+        }
+        Err(_) => {
+            light = None;
+            Err("personal-light journey exceeded wall-time deadline".into())
+        }
+    };
     if let Some(client) = light.as_mut() {
         match tokio::time::timeout(Duration::from_secs(25), client.logout()).await {
             Ok(Ok(())) => row.pass("final-logout"),
@@ -1225,7 +1515,10 @@ async fn additional_rows(clients: &SeamClients<'_>) {
             party_spell_journey(&mut gate, &mut cost, &mut pair, clients, world),
         )
         .await
-        .unwrap_or_else(|_| Err("party-spell journey deadline; remaining actions unproven".into())),
+        .unwrap_or_else(|_| {
+            pair = [None, None];
+            Err("party-spell journey deadline; remaining actions unproven".into())
+        }),
         Err(error) => Err(format!("party compiled-world load: {error}").into()),
     };
     let mut cleaned = 0;
@@ -1302,6 +1595,35 @@ const FORGE_SUPPORTED_CAPABILITIES: &[u32] = &[
 ];
 
 type LightStream = tokio_rustls::client::TlsStream<TcpStream>;
+
+#[derive(Debug)]
+struct ObserverIoDeadline {
+    operation: &'static str,
+    elapsed: tokio::time::error::Elapsed,
+}
+
+impl std::fmt::Display for ObserverIoDeadline {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(self.operation)
+    }
+}
+
+impl std::error::Error for ObserverIoDeadline {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.elapsed)
+    }
+}
+
+fn observer_cancelled(result: &TestResult) -> bool {
+    result
+        .as_ref()
+        .is_err_and(|error| observer_error_cancelled(error.as_ref()))
+}
+
+fn observer_error_cancelled(error: &(dyn std::error::Error + 'static)) -> bool {
+    error.is::<tokio::time::error::Elapsed>() || error.is::<ObserverIoDeadline>()
+}
+
 struct LightClient {
     stream: LightStream,
     generation: u64,
@@ -1331,7 +1653,10 @@ async fn light_read<S: tokio::io::AsyncRead + Unpin>(stream: &mut S) -> TestResu
         Ok(bytes)
     })
     .await
-    .map_err(|_| "personal-light frame deadline")?
+    .map_err(|elapsed| ObserverIoDeadline {
+        operation: "personal-light frame deadline",
+        elapsed,
+    })?
 }
 async fn light_write(stream: &mut LightStream, bytes: &[u8]) -> TestResult {
     tokio::time::timeout(Duration::from_secs(20), async {
@@ -1340,7 +1665,10 @@ async fn light_write(stream: &mut LightStream, bytes: &[u8]) -> TestResult {
         Ok(())
     })
     .await
-    .map_err(|_| "personal-light write deadline")?
+    .map_err(|elapsed| ObserverIoDeadline {
+        operation: "personal-light write deadline",
+        elapsed,
+    })?
 }
 fn post_frame(
     bytes: &[u8],
@@ -1777,17 +2105,40 @@ impl LightClient {
         Ok(())
     }
     async fn logout(&mut self) -> TestResult {
-        let (status, payload) = self
-            .command(native::logout::COMMAND_TYPE_LOGOUT_INTENT, &[])
-            .await?;
-        if status != CommandStatus::Accepted
-            || native::logout::decode_logout_result(&payload)
-                .map_err(|e| format!("personal-light logout codec: {e:?}"))?
-                != native::logout::LogoutResult::Accepted
-        {
-            return Err("personal-light logout refused".into());
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+        let mut attempts = 0;
+        loop {
+            attempts += 1;
+            let command_id = self.command;
+            let (status, payload) = self
+                .command(native::logout::COMMAND_TYPE_LOGOUT_INTENT, &[])
+                .await
+                .map_err(|error| {
+                    if observer_error_cancelled(error.as_ref()) {
+                        error
+                    } else {
+                        format!("personal-light logout attempt {attempts} command_id={command_id} failed: {error}").into()
+                    }
+                })?;
+            let result = native::logout::decode_logout_result(&payload)
+                .map_err(|error| format!("personal-light logout codec: {error:?}; command_id={command_id}; status={status:?}; attempts={attempts}"))?;
+            if status == CommandStatus::Accepted
+                && result == native::logout::LogoutResult::Accepted
+            {
+                return Ok(());
+            }
+            let busy_timed_out = result == native::logout::LogoutResult::Busy
+                && tokio::time::Instant::now() >= deadline;
+            if status != CommandStatus::Rejected
+                || result != native::logout::LogoutResult::Busy
+                || busy_timed_out
+            {
+                return Err(format!("personal-light logout refused: command_id={command_id}; server_sequence={}; status={status:?}; result={result:?}; attempts={attempts}; busy_timed_out={busy_timed_out}", self.sequence).into());
+            }
+            // Only a fully correlated Busy permits a new command. The next
+            // command services probes; never cancel receive() inside a frame.
+            tokio::time::sleep(Duration::from_millis(250)).await;
         }
-        Ok(())
     }
 }
 
@@ -2933,8 +3284,14 @@ async fn continuation_rows(clients: &SeamClients<'_>) {
         let mut result = tokio::time::timeout(Duration::from_secs(1_800), result)
             .await
             .unwrap_or_else(|_| {
+                connections = [None, None];
+                pvp_connections = [None, None];
                 Err(format!("{id}: journey deadline; required observations incomplete").into())
             });
+        if observer_cancelled(&result) {
+            connections = [None, None];
+            pvp_connections = [None, None];
+        }
         let admitted = connections.iter().flatten().count();
         let mut released = 0;
         for connection in connections.iter_mut().rev().flatten() {
@@ -4191,6 +4548,7 @@ struct PvpAttack {
 }
 #[derive(Debug)]
 struct PvpLogout {
+    status: CommandStatus,
     result: Option<native::logout::LogoutResult>,
 }
 #[derive(Debug)]
@@ -4556,10 +4914,10 @@ impl PvpClient {
             )
         };
         if result.is_some_and(|r| r.is_rejected() != (reply.status == CommandStatus::Rejected)) {
-            return Err("PvP logout status mismatch".into());
+            return Err(format!("PvP logout status mismatch: status={:?}; result={result:?}", reply.status).into());
         }
         self.released = result == Some(native::logout::LogoutResult::Accepted);
-        Ok(PvpLogout { result })
+        Ok(PvpLogout { status: reply.status, result })
     }
     async fn step(&mut self, direction: StepDirection) -> TestResult<PvpStep> {
         let reply = self
@@ -4585,6 +4943,10 @@ async fn pvp_poll(a: &mut PvpClient, b: &mut PvpClient) -> TestResult {
         b.service_liveness(Duration::from_millis(25)),
     )
     .await;
+    // Preserve either stream's cancelled read even if its peer failed differently.
+    if observer_cancelled(&b) {
+        return b;
+    }
     a?;
     b?;
     Ok(())
@@ -4627,10 +4989,10 @@ async fn pvp_release(client: &mut PvpClient, budget: Duration) -> TestResult {
                 Duration::from_millis(u64::from(retry_after_ms)).min(Duration::from_secs(30))
             }
             Some(native::logout::LogoutResult::Busy) => Duration::from_millis(250),
-            other => return Err(format!("PvP ordinary release blocked:{other:?}").into()),
+            _ => return Err(format!("PvP ordinary release blocked: status={:?}; result={:?}", reply.status, reply.result).into()),
         };
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("PvP ordinary release deadline:{reply:?}").into());
+            return Err(format!("PvP ordinary release deadline: status={:?}; result={:?}", reply.status, reply.result).into());
         }
         let until = (tokio::time::Instant::now() + wait).min(deadline);
         while tokio::time::Instant::now() < until {
@@ -4891,6 +5253,7 @@ struct ForgeAttack {
 }
 #[derive(Debug)]
 struct ForgeLogout {
+    status: CommandStatus,
     result: Option<native::logout::LogoutResult>,
 }
 #[derive(Debug)]
@@ -5276,10 +5639,10 @@ impl ForgeClient {
             )
         };
         if result.is_some_and(|r| r.is_rejected() != (reply.status == CommandStatus::Rejected)) {
-            return Err("Forge logout status mismatch".into());
+            return Err(format!("Forge logout status mismatch: status={:?}; result={result:?}", reply.status).into());
         }
         self.released = result == Some(native::logout::LogoutResult::Accepted);
-        Ok(ForgeLogout { result })
+        Ok(ForgeLogout { status: reply.status, result })
     }
     async fn step(&mut self, direction: StepDirection) -> TestResult<ForgeStep> {
         let reply = self
@@ -5322,11 +5685,15 @@ async fn forge_row(clients: &SeamClients<'_>) {
     let mut result = tokio::time::timeout(Duration::from_secs(1_800), result)
         .await
         .unwrap_or_else(|_| {
+            connection = None;
             Err(
                 "P19: ordinary hunt/dust journey exceeded 1800s; remaining observations unproven"
                     .into(),
             )
         });
+    if observer_cancelled(&result) {
+        connection = None;
+    }
     if let Some(client) = connection.as_mut() {
         let cleanup = async {
             client.attack_target(None).await?;
@@ -5433,7 +5800,7 @@ async fn forge_release(client: &mut ForgeClient) -> TestResult {
             Some(
                 native::logout::LogoutResult::InFight { .. } | native::logout::LogoutResult::Busy,
             ) if tokio::time::Instant::now() < deadline => client.barrier().await?,
-            _ => return Err(format!("forge ordinary logout:{reply:?}").into()),
+            _ => return Err(format!("forge ordinary logout: status={:?}; result={:?}", reply.status, reply.result).into()),
         }
     }
 }
@@ -5767,7 +6134,13 @@ async fn forge_journey(
             evidence(
                 "E2EF7_GAP P19 dust-acquisition pending required=60 native-reason=INSUFFICIENT_DUST; continuing ordinary influenced hunts",
             );
-            forge_hunt(client,world,false,sliver).await.map_err(|e|format!("earned-dust-acquisition-blocked:required=60;ordinary-influenced-hunt={e};premium-dust-gate=crates/gameplay/domain/src/domain/forge_creature.rs:93"))?;
+            forge_hunt(client,world,false,sliver).await.map_err(|error| {
+                if observer_error_cancelled(error.as_ref()) {
+                    error
+                } else {
+                    format!("earned-dust-acquisition-blocked:required=60;ordinary-influenced-hunt={error};premium-dust-gate=crates/gameplay/domain/src/domain/forge_creature.rs:93").into()
+                }
+            })?;
             continue;
         }
         break forge_conversion(&value, before, client.slivers(sliver))?;

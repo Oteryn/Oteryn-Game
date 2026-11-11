@@ -1387,6 +1387,9 @@ struct AdmissionRetryBudget<'r> {
     /// The root whose holder a retry waits for (NODEBOOT-1); without one a retry sleeps the
     /// whole backoff.
     root: Option<&'r DurabilityRoot>,
+    // Opt-in foreground owners retain preference across every read and wait of
+    // this fixed budget, including cancellation of the enclosing future.
+    _foreground: Option<crate::durability::ForegroundDemand>,
 }
 
 /// The earliest retry after a step that found the holder busy, measured from the failure
@@ -1405,6 +1408,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: fresh_admission_backoff(game_session_id),
             stale_rounds: 1,
             root: None,
+            _foreground: None,
         }
     }
 
@@ -1417,6 +1421,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
+            _foreground: None,
         }
     }
 
@@ -1427,6 +1432,30 @@ impl<'r> AdmissionRetryBudget<'r> {
             root: Some(root),
             ..Self::new(game_session_id)
         }
+    }
+
+    /// The existing command read budget, with preference retained until every
+    /// read completes or its owner is cancelled. Later reads never renew it.
+    fn for_foreground_command(
+        root: &'r DurabilityRoot,
+    ) -> Result<Self, crate::durability::DurabilityError> {
+        let budget = Self::for_command(root);
+        Ok(Self {
+            _foreground: Some(root.foreground_demand()?),
+            ..budget
+        })
+    }
+
+    /// The existing root recovery budget for one foreground lifecycle operation.
+    fn for_foreground_root(
+        game_session_id: &GameSessionId,
+        root: &'r DurabilityRoot,
+    ) -> Result<Self, crate::durability::DurabilityError> {
+        let budget = Self::for_root(game_session_id, root);
+        Ok(Self {
+            _foreground: Some(root.foreground_demand()?),
+            ..budget
+        })
     }
 
     /// Whether a step that ended on `refusal` is retried. Only an unavailable outcome (such
