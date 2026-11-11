@@ -56,7 +56,23 @@ pub(super) async fn execute(
     let actor = a.runtime_actor?;
     let removal = super::wheel_allocation::removal_permitted(owner, actor, a.game_session_id).await;
     let slots = WheelSlots::new(r.points).ok()?;
-    let draft_result = read.validate_draft(rules, &slots, &r.vessels, removal);
+    // The presentation draft still carries four legacy cells; place them into the ordered
+    // Gem Vessel slots the same way the allocation route does.
+    let draft_vessels = oteryn_gameplay_progression::atelier::vessels::from_legacy_cells(
+        &read.vessels,
+        &r.vessels,
+        |id| {
+            read.atelier
+                .as_ref()?
+                .gems
+                .get(&u128::from_be_bytes(id))
+                .map(|gem| gem.quality)
+        },
+    );
+    let draft_result = draft_vessels.map_or(
+        Err(oteryn_gameplay_progression::wheel::WheelRefusal::RulesetNotCurrent),
+        |vessels| read.validate_draft(rules, &slots, &vessels, removal),
+    );
     let eligible = oteryn_gameplay_progression::wheel::eligibility(
         rules,
         &read.vocation,
@@ -82,10 +98,8 @@ pub(super) async fn execute(
         let mut allocation = read.allocation.clone();
         allocation.slots = slots;
         let mut atelier = read.atelier.clone();
-        if let Some(a) = &mut atelier {
-            for gem in a.gems.values_mut() {
-                gem.vessel = r.vessels.contains(&Some(gem.id.to_be_bytes()));
-            }
+        if let (Some(a), Some(vessels)) = (&mut atelier, &draft_vessels) {
+            oteryn_gameplay_progression::atelier::vessels::project(a, vessels);
         }
         effects::configured(
             &data,

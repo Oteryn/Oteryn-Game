@@ -574,14 +574,17 @@ fn current_cast_reads_grade_iv_and_socketed_mastery_in_the_same_transaction() ->
                     Gem {
                         id: gem_id,
                         quality: GemQuality::Greater,
-                        domain: WheelDomain::Green,
                         mods: vec![31, 0, 5],
                         locked: false,
                         vessel: false,
+                        slot: None,
                         ruleset_revision: data.revision().into(),
                     },
                 );
-                Some([Some(id(105)), None, None, None])
+                // Slot 2 is the first Greater Gem Vessel; the full green slice opens it.
+                let mut vessels = oteryn_gameplay_progression::atelier::vessels::NO_GEM_VESSELS;
+                vessels[2] = Some(id(105));
+                Some(crate::durability::character_wheel::WheelVesselIntent::Slots(vessels))
             };
             let mut tx = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")

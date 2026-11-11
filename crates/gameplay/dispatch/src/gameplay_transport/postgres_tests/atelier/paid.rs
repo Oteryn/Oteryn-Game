@@ -1,10 +1,11 @@
 use super::*;
 use crate::durability::character_atelier::AtelierResources;
 use crate::durability::character_wheel::{
-    WheelChangeRequest, WheelCommitOutcome, WheelOccurrence, WheelSlots,
+    WheelChangeRequest, WheelCommitOutcome, WheelOccurrence, WheelSlots, WheelVesselIntent,
 };
 use crate::durability::item_fee_burn::test_support::{definition, request as fee_request};
 use crate::gameplay_transport::atelier::{GemBuildCommand, GemBuildOutcome};
+use oteryn_gameplay_progression::atelier::vessels::NO_GEM_VESSELS;
 
 async fn quantity(h: &Harness, seed: u8) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
@@ -33,6 +34,7 @@ pub(super) async fn exercise(
         content: &content,
         coins: fee_request(2, 1)?.change,
         fragment: definition("oteryn:item.tibia.i46625"),
+        supply_stash: false,
     });
     let session = crate::bestiary_postgres_harness::fence(1)?.game_session_id;
     let mut requests = Vec::new();
@@ -145,12 +147,14 @@ pub(super) async fn exercise(
     // A fee refusal after the planned material BURN rolls back that material and its audit.
     let mut bad = resources.clone();
     bad.coins.backpack.definition.revision_ref = "incompatible".into();
-    let mod_id = before
+    // Gems have no domain: the subject is the first initial Regular gem by identity.
+    let chosen = before
         .gems
         .values()
-        .find(|gem| gem.domain == WheelDomain::Green && gem.quality == GemQuality::Regular)
-        .ok_or("green regular")?
-        .mods[1];
+        .find(|gem| gem.quality == GemQuality::Regular && gem.id != u128::from_be_bytes(id(181)))
+        .ok_or("initial regular")?;
+    let mod_id = chosen.mods[1];
+    let green = chosen.id.to_be_bytes();
     let refused = AtelierRequest {
         occurrence: id(184),
         expected_atelier_revision: before.revision,
@@ -198,19 +202,14 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 229).await?, 56 + fresh_yield);
     let retired:(i64,i16,bool)=sqlx::query_as("SELECT i.quantity,i.lifecycle,NOT EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id) FROM game_atelier_item_records r JOIN game_item_instances i ON i.item_instance_id=(r.outputs->0->>'item')::uuid WHERE r.occurrence=encode($1,'hex')::uuid").bind(id(178).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(retired, (0, 2, true));
-    let green = stored(h)
-        .await?
-        .gems
-        .values()
-        .find(|gem| gem.domain == WheelDomain::Green && gem.quality == GemQuality::Regular)
-        .ok_or("green regular")?
-        .id
-        .to_be_bytes();
+    // Slot 0 holds Lesser gems only.
+    let mut lesser_slot = NO_GEM_VESSELS;
+    lesser_slot[0] = Some(green);
     let wrong = WheelChangeRequest {
         occurrence: WheelOccurrence::from_bytes(id(179)).map_err(debug)?,
         expected_wheel_revision: 0,
         slots: WheelSlots::ZERO,
-        vessels: Some([None, Some(green), None, None]),
+        vessels: Some(WheelVesselIntent::Slots(lesser_slot)),
     };
     advance_ex_action(owner)?;
     assert!(
@@ -219,11 +218,24 @@ pub(super) async fn exercise(
     let mut points = [0; 36];
     points[14] = 11;
     let earned = WheelSlots::new(points).map_err(debug)?;
+    // Slot 1 is the first Regular vessel; no Gem Vessel node is unlocked, so it is closed.
+    let mut regular_slot = NO_GEM_VESSELS;
+    regular_slot[1] = Some(green);
+    let closed = WheelChangeRequest {
+        occurrence: WheelOccurrence::from_bytes(id(189)).map_err(debug)?,
+        expected_wheel_revision: 0,
+        slots: earned,
+        vessels: Some(WheelVesselIntent::Slots(regular_slot)),
+    };
+    advance_ex_action(owner)?;
+    assert!(
+        matches!(owner.execute_gem_atelier(session,GemBuildCommand::Wheel(closed)).await.map_err(debug)?,GemBuildOutcome::Wheel(ref change) if matches!(**change,WheelCommitOutcome::Refused(_)))
+    );
     let wheel = WheelChangeRequest {
         occurrence: WheelOccurrence::from_bytes(id(188)).map_err(debug)?,
         expected_wheel_revision: 0,
         slots: earned,
-        vessels: Some([Some(green), None, None, None]),
+        vessels: None,
     };
     advance_ex_action(owner)?;
     let outcome = owner
@@ -238,7 +250,7 @@ pub(super) async fn exercise(
         "{outcome:?}"
     );
     assert!(
-        owner
+        !owner
             .states
             .atelier_sessions
             .lock()
@@ -273,40 +285,6 @@ pub(super) async fn exercise(
             .map_err(debug)?,
         GemBuildOutcome::Wheel(ref change) if matches!(**change, WheelCommitOutcome::Refused(crate::durability::character_wheel::WheelRefusal::OverPoints))
     ));
-    let fp = footprint(h).await?;
-    let blocked = AtelierRequest {
-        occurrence: id(189),
-        expected_atelier_revision: stored(h).await?.revision,
-        mutation: AtelierMutation::SwitchDomain { gem: green },
-        resources: Some(resources.clone()),
-    };
-    advance_ex_action(owner)?;
-    assert!(matches!(
-        owner
-            .execute_gem_atelier(session, GemBuildCommand::Atelier(blocked))
-            .await
-            .map_err(debug)?,
-        GemBuildOutcome::Atelier(AtelierOutcome::Refused)
-    ));
-    assert_eq!(footprint(h).await?, fp);
-    let remove = WheelChangeRequest {
-        occurrence: WheelOccurrence::from_bytes(id(190)).map_err(debug)?,
-        expected_wheel_revision: 1,
-        slots: earned,
-        vessels: Some([None; 4]),
-    };
-    advance_ex_action(owner)?;
-    let outcome = owner
-        .execute_gem_atelier(session, GemBuildCommand::Wheel(remove))
-        .await
-        .map_err(debug)?;
-    assert!(
-        matches!(
-            outcome,
-            GemBuildOutcome::Wheel(ref change) if matches!(**change, WheelCommitOutcome::Committed(_))
-        ),
-        "{outcome:?}"
-    );
     let unlock = AtelierRequest {
         occurrence: id(194),
         expected_atelier_revision: stored(h).await?.revision,
@@ -321,28 +299,6 @@ pub(super) async fn exercise(
         .execute_gem_atelier(session, GemBuildCommand::Atelier(unlock))
         .await
         .map_err(debug)?;
-    let switch = AtelierRequest {
-        occurrence: id(191),
-        expected_atelier_revision: stored(h).await?.revision,
-        mutation: AtelierMutation::SwitchDomain { gem: green },
-        resources: Some(resources.clone()),
-    };
-    advance_ex_action(owner)?;
-    let outcome = owner
-        .execute_gem_atelier(session, GemBuildCommand::Atelier(switch))
-        .await
-        .map_err(debug)?;
-    assert!(
-        matches!(
-            outcome,
-            GemBuildOutcome::Atelier(AtelierOutcome::Committed { .. })
-        ),
-        "{outcome:?}"
-    );
-    assert_eq!(
-        stored(h).await?.gems[&u128::from_be_bytes(green)].domain,
-        WheelDomain::Red
-    );
     let dismantle = AtelierRequest {
         occurrence: id(192),
         expected_atelier_revision: stored(h).await?.revision,
@@ -392,9 +348,10 @@ pub(super) async fn exercise(
     }
     let wheel = WheelChangeRequest {
         occurrence: WheelOccurrence::from_bytes(id(195)).map_err(debug)?,
-        expected_wheel_revision: 2,
+        expected_wheel_revision: 1,
         slots: WheelSlots::new(full).map_err(debug)?,
-        vessels: Some([None, Some(green), None, None]),
+        // The full red slice unlocks three Gem Vessel nodes, opening slots 0..=2.
+        vessels: Some(WheelVesselIntent::Slots(regular_slot)),
     };
     // Keep the existing 11-point central slice too: moving points still needs a temple.
     let mut wheel = wheel;
@@ -417,8 +374,8 @@ pub(super) async fn exercise(
         .ok_or("gem effects")?;
     assert_eq!(effects.sockets.grade_iv_points, 1);
     // Crystal 201189f player_wheel.cpp:2735-2752 reads each modifier's own
-    // shared grade. The three upgrades above raised mods[1] to grade 3;
-    // switching domain preserves that modifier and its independently earned grade.
+    // shared grade. The three upgrades above raised mods[1] to grade 3; every mod
+    // of a gem in an open vessel is active without resonance.
     assert_eq!(
         effects
             .sockets
@@ -427,6 +384,39 @@ pub(super) async fn exercise(
         Some(&vec![0, 3])
     );
     assert!(!effects.sockets.gem_values_milli.is_empty());
+    // A receipt replay projects the vessel slots as the committing write did: with green
+    // socketed in slot 1, a Set Lock and its replay return the same state.
+    for (seed, locked) in [(218, true), (221, false)] {
+        let request = AtelierRequest {
+            occurrence: id(seed),
+            expected_atelier_revision: stored(h).await?.revision,
+            mutation: AtelierMutation::SetLock { gem: green, locked },
+            resources: None,
+        };
+        advance_ex_action(owner)?;
+        let GemBuildOutcome::Atelier(AtelierOutcome::Committed {
+            state: committed, ..
+        }) = owner
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(request.clone()))
+            .await
+            .map_err(debug)?
+        else {
+            return Err("set lock commit".into());
+        };
+        let socketed = &committed.gems[&u128::from_be_bytes(green)];
+        assert_eq!((socketed.slot, socketed.vessel), (Some(1), true));
+        advance_ex_action(owner)?;
+        let GemBuildOutcome::Atelier(AtelierOutcome::AlreadyCommitted {
+            state: replayed, ..
+        }) = owner
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(request))
+            .await
+            .map_err(debug)?
+        else {
+            return Err("set lock replay".into());
+        };
+        assert_eq!(replayed, committed);
+    }
     let supreme_mod = stored(h).await?.gems[&u128::from_be_bytes(id(182))].mods[2];
     for seed in 196..199 {
         let request = AtelierRequest {
@@ -440,6 +430,7 @@ pub(super) async fn exercise(
                 content: &content,
                 coins: fee_request(3, 1)?.change,
                 fragment: definition("oteryn:item.tibia.i46626"),
+                supply_stash: false,
             })),
         };
         advance_ex_action(owner)?;
@@ -479,6 +470,7 @@ pub(super) async fn exercise(
             content: &content,
             coins: fee_request(4, 1)?.change,
             fragment: definition("oteryn:item.tibia.i46626"),
+            supply_stash: false,
         })),
     };
     advance_ex_action(owner)?;

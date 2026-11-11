@@ -1,0 +1,23 @@
+{
+  "id": 483,
+  "name": "GEM_ATELIER_V2",
+  "constant": "atelier::v2::CAPABILITY_GEM_ATELIER_V2",
+  "requires": [
+    148
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6210,
+    6211,
+    6212,
+    6213,
+    6214
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

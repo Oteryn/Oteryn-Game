@@ -16,6 +16,7 @@ impl FeeBurnCause {
             Self::GemReveal { .. } => 9,
             Self::GemSwitchDomain { .. } => 10,
             Self::GemGradeUp { .. } => 11,
+            Self::GemReshape { .. } => 483,
             Self::MarketFee { .. } => 6,
             Self::NpcTravel { .. } => 8,
             Self::AreaDonation { .. } => 4,
@@ -39,7 +40,8 @@ impl FeeBurnCause {
             | Self::PreyPickAgain { occurrence, .. }
             | Self::GemReveal { occurrence, .. }
             | Self::GemSwitchDomain { occurrence }
-            | Self::GemGradeUp { occurrence, .. } => occurrence,
+            | Self::GemGradeUp { occurrence, .. }
+            | Self::GemReshape { occurrence, .. } => occurrence,
             Self::MarketFee { occurrence, .. } | Self::AreaDonation { occurrence, .. } => {
                 occurrence
             }
@@ -72,6 +74,7 @@ impl FeeBurnCause {
             Self::GemReveal { .. } => "oteryn:atelier.reveal",
             Self::GemSwitchDomain { .. } => "oteryn:atelier.switch_domain",
             Self::GemGradeUp { .. } => "oteryn:atelier.grade_up",
+            Self::GemReshape { .. } => "oteryn:atelier.reshape",
             Self::MarketFee { .. } => "oteryn:market.offer",
             Self::AreaDonation { .. } => "oteryn:area.entry_environs",
             Self::CharmUnassign { charm, .. } => charm.as_str(),
@@ -105,7 +108,10 @@ impl FeeBurnCause {
             Self::QuestRewardPayment { callback, gold, .. } if callback.starts_with("oteryn:quest-reward/") && callback.len() <= 128 && (1..=1_000_000_000_000).contains(gold) => Ok(()),
             Self::HirelingService { service, .. } if service.starts_with("oteryn:service.hireling.") => Ok(()),
             Self::PreyListReroll { slot: 1..=3, .. } | Self::PreyPickAgain { slot: 1..=3, .. } => Ok(()),
-            Self::GemReveal { .. } | Self::GemSwitchDomain { .. } | Self::GemGradeUp { .. } => {
+            Self::GemReveal { .. }
+            | Self::GemSwitchDomain { .. }
+            | Self::GemGradeUp { .. }
+            | Self::GemReshape { .. } => {
                 Ok(())
             }
             Self::MarketFee { offer, .. } => {
@@ -193,6 +199,13 @@ impl FeeBurnCause {
             }
             Self::GemGradeUp { occurrence, proof } => {
                 FeeBurnCauseV1::GemGradeUp(OneItemNpcPurchaseV1 {
+                    atelier_proof: proof.clone(),
+                    service_key: self.key().into(),
+                    occurrence: occurrence.to_vec(),
+                })
+            }
+            Self::GemReshape { occurrence, proof } => {
+                FeeBurnCauseV1::GemReshape(OneItemNpcPurchaseV1 {
                     atelier_proof: proof.clone(),
                     service_key: self.key().into(),
                     occurrence: occurrence.to_vec(),

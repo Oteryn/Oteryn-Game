@@ -75,7 +75,8 @@ impl Case {
     fn refuses(self) -> bool {
         matches!(
             self,
-            Self::InsufficientFragments
+            Self::SwitchDomain
+                | Self::InsufficientFragments
                 | Self::InsufficientGold
                 | Self::StashedReveal
                 | Self::FullDismantle
@@ -158,7 +159,7 @@ fn atelier_wire_filtered_managed_dismantle_still_uses_ordinary_destination() -> 
 }
 
 #[test]
-fn atelier_wire_switch_domain_charges_once_and_restores_after_relog() -> TestResult {
+fn atelier_wire_retired_switch_domain_is_refused_without_a_write() -> TestResult {
     check(Case::SwitchDomain)
 }
 
@@ -203,7 +204,7 @@ fn atelier_wire_last_nested_coin_stack_retires_and_makes_change_once() -> TestRe
 }
 
 #[test]
-fn atelier_wire_domain_switch_reads_seventy_five_nested_coin_stacks() -> TestResult {
+fn atelier_wire_lesser_reveal_reads_seventy_five_nested_coin_stacks() -> TestResult {
     check(Case::ManyNestedCoins)
 }
 
@@ -445,7 +446,7 @@ async fn stow_asset(
     stow_asset_command(owner, admitted, input, quantity, 150).await
 }
 
-async fn stow_asset_command(
+pub(super) async fn stow_asset_command(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     input: u8,
@@ -687,16 +688,17 @@ fn scenario(case: Case) -> TestResult {
         if matches!(case, Case::ThirtyFragments) {
             before = query(&owner, &mut admitted).await?;
         }
-        let scope_before = if case.custody() {
+        let scope_before = if case.custody() || case.refuses() {
             Some(scope_footprint(&h).await?)
         } else {
             None
         };
+        // Gems have no domain; the subject is the first Regular gem of the reply.
         let gem = before
             .gems
             .iter()
-            .find(|gem| gem.domain == 0 && gem.quality == 1)
-            .ok_or("initial regular green gem")?;
+            .find(|gem| gem.quality == 1)
+            .ok_or("initial regular gem")?;
         let original_gem = gem.clone();
         let grade_kind = u8::from(matches!(case, Case::SupremeStashGrade));
         let grade_modifier = if grade_kind == 1 {
@@ -721,6 +723,7 @@ fn scenario(case: Case) -> TestResult {
             | Case::NestedGold
             | Case::WholeNestedGold
             | Case::StashedReveal
+            | Case::ManyNestedCoins
             | Case::ExAction => wire::Mutation::Reveal { quality: 0 },
             Case::Dismantle
             | Case::NestedDismantle
@@ -731,9 +734,7 @@ fn scenario(case: Case) -> TestResult {
             | Case::ManagedFallbackDismantle
             | Case::ManagedMainFallbackDismantle
             | Case::FilteredManagedDismantle => wire::Mutation::Dismantle { gem: gem.id },
-            Case::SwitchDomain | Case::ManyNestedCoins => {
-                wire::Mutation::SwitchDomain { gem: gem.id }
-            }
+            Case::SwitchDomain => wire::Mutation::SwitchDomain { gem: gem.id },
             Case::GradeUp
             | Case::NestedGrade
             | Case::StashGrade
@@ -756,7 +757,7 @@ fn scenario(case: Case) -> TestResult {
         };
         let payload = wire::encode_mutate(&request).map_err(debug)?;
         let bank_before = footprint(&h).await?.2;
-        if scope_before.is_some() {
+        if case.custody() {
             assert!(
                 owner
                     .refresh_and_apply_spell_access(deps.actor, session)
@@ -768,7 +769,7 @@ fn scenario(case: Case) -> TestResult {
             if !matches!(case, Case::InsufficientGold) {
                 let required_gold = match request.mutation {
                     wire::Mutation::Reveal { .. } => 125_000,
-                    wire::Mutation::SwitchDomain { .. } => 250_000,
+                    wire::Mutation::SwitchDomain { .. } => 0,
                     wire::Mutation::Dismantle { .. } => 0,
                     _ if grade_kind == 1 => 5_000_000,
                     _ if target_grade == 3 => 30_000_000,
@@ -836,6 +837,7 @@ fn scenario(case: Case) -> TestResult {
             | Case::NestedGold
             | Case::WholeNestedGold
             | Case::StashedReveal
+            | Case::ManyNestedCoins
             | Case::ExAction => {
                 assert_eq!(reply.gems.len(), before.gems.len() + 1);
                 assert!(
@@ -884,17 +886,8 @@ fn scenario(case: Case) -> TestResult {
                 );
                 None
             }
-            Case::SwitchDomain | Case::ManyNestedCoins => {
-                assert_eq!(
-                    reply
-                        .gems
-                        .iter()
-                        .find(|gem| gem.id == original_gem.id)
-                        .ok_or("rotated gem")?
-                        .domain,
-                    1
-                );
-                Some(250_000)
+            Case::SwitchDomain => {
+                return Err("retired Switch Domain reached mutation verification".into());
             }
             Case::GradeUp
             | Case::NestedGrade
@@ -942,6 +935,7 @@ fn scenario(case: Case) -> TestResult {
             | Case::NestedGold
             | Case::WholeNestedGold
             | Case::StashedReveal
+            | Case::ManyNestedCoins
             | Case::ExAction => Some(
                 before
                     .quality_quotes
@@ -959,14 +953,9 @@ fn scenario(case: Case) -> TestResult {
             | Case::ManagedFallbackDismantle
             | Case::ManagedMainFallbackDismantle
             | Case::FilteredManagedDismantle => None,
-            Case::SwitchDomain | Case::ManyNestedCoins => Some(
-                before
-                    .quality_quotes
-                    .iter()
-                    .find(|quote| quote.quality == 1)
-                    .ok_or("regular quote")?
-                    .switch_gold as i64,
-            ),
+            Case::SwitchDomain => {
+                return Err("retired Switch Domain reached a paid quote".into());
+            }
             Case::GradeUp
             | Case::NestedGrade
             | Case::StashGrade

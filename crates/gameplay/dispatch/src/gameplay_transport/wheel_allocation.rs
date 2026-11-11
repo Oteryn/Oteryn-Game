@@ -1,6 +1,7 @@
 //! WHEEL-LIVE-1 client allocation boundary.
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 
+use oteryn_gameplay_progression::atelier::vessels as gem_vessels;
 use oteryn_protocol_oteryn::wheel as wire;
 
 #[derive(Debug)]
@@ -10,7 +11,103 @@ pub enum WheelAllocationReply {
     Unavailable,
 }
 
+/// The outcome of one fenced Wheel write: a rule refusal or a commit is a reply; anything
+/// else ends the request without one.
+pub(super) enum FencedWheelChange {
+    Done { refused: bool },
+    Rejected,
+    Unavailable,
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// The admitted Character's current item fence when the actor may use the Wheel now: the
+    /// session generation, runtime binding, lease and (for a change) the spell lane and vitals.
+    pub(super) async fn wheel_change_gate(
+        &self,
+        admitted: AdmittedSession,
+        change: bool,
+    ) -> Option<crate::durability::item_transfer::CurrentCharacterItemFence> {
+        let item_fence = admitted.item_fence?;
+        let runtime = self.runtime.lock().await;
+        let binding = runtime.binding();
+        if item_fence.game_session_id != admitted.game_session_id
+            || item_fence.connection_generation.get() != admitted.continuity.connection_generation
+            || admitted.world_id != binding.world_id()
+            || Some(admitted.channel_id) != binding.channel_id()
+            || item_fence.runtime_scope != binding.runtime_scope()
+            || item_fence.scope_ownership_generation != binding.scope_generation()
+            || runtime.owner_fence().is_err()
+            || !admitted.runtime_actor.is_some_and(|actor| {
+                runtime
+                    .player_control_facts(actor, admitted.game_session_id)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+                    && runtime
+                        .bound_attacker_lease(actor, admitted.game_session_id)
+                        .is_ok_and(|lease| {
+                            lease.character_id().as_bytes() == item_fence.character_id.as_bytes()
+                                && lease.generation() == item_fence.character_lease_generation
+                        })
+                    && (!change || runtime.assert_actor_spell_unreserved(actor).is_ok())
+            })
+        {
+            return None;
+        }
+        let states = self.states.spell_states.lock().await;
+        if change
+            && admitted.runtime_actor.is_none_or(|actor| {
+                states.has_pending_spell_commit(actor, admitted.game_session_id)
+                    || states
+                        .get(&runtime, actor, admitted.game_session_id)
+                        .is_none_or(|state| state.health == 0)
+            })
+        {
+            return None;
+        }
+        Some(item_fence)
+    }
+
+    /// Commits one Wheel change through the durable Wheel writer under the gate's fence.
+    pub(super) async fn wheel_fenced_change(
+        &self,
+        admitted: AdmittedSession,
+        item_fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        request: crate::durability::character_wheel::WheelChangeRequest,
+    ) -> FencedWheelChange {
+        let Some(actor) = admitted.runtime_actor else {
+            return FencedWheelChange::Rejected;
+        };
+        // Oteryn owner decision (2026-11-05), diverging from Crystal
+        // player_wheel.cpp:2151: removal/reset is allowed anywhere logout's combat
+        // lock does not hold the actor, including a current protection-zone tile.
+        let removal_permitted = removal_permitted(self, actor, admitted.game_session_id).await;
+        let change = self
+            .commit_wheel_client(
+                admitted.game_session_id,
+                super::atelier::GemBuildCommand::Wheel(request),
+                removal_permitted,
+                Some(item_fence),
+            )
+            .await;
+        match change {
+            Ok(super::atelier::GemBuildOutcome::Wheel(outcome)) => FencedWheelChange::Done {
+                refused: matches!(
+                    *outcome,
+                    crate::durability::character_wheel::WheelCommitOutcome::Refused(_)
+                ),
+            },
+            Err(
+                crate::durability::character_progression::CharacterProgressionError::InvalidInput
+                | crate::durability::character_progression::CharacterProgressionError::AuthorityRejected
+                | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence
+                | crate::durability::character_progression::CharacterProgressionError::MissingProgressionState
+                | crate::durability::character_progression::CharacterProgressionError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable,
+                ),
+            ) => FencedWheelChange::Rejected,
+            _ => FencedWheelChange::Unavailable,
+        }
+    }
+
     pub(super) async fn wheel_allocation_wire(
         &self,
         admitted: AdmittedSession,
@@ -28,61 +125,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return WheelAllocationReply::Rejected;
         }
-        let Some(item_fence) = admitted.item_fence else {
-            return WheelAllocationReply::Rejected;
-        };
         let Some(permit) = self.spell_lane_permit().await else {
             return WheelAllocationReply::Rejected;
         };
-        {
-            let runtime = self.runtime.lock().await;
-            let binding = runtime.binding();
-            if item_fence.game_session_id != admitted.game_session_id
-                || item_fence.connection_generation.get()
-                    != admitted.continuity.connection_generation
-                || admitted.world_id != binding.world_id()
-                || Some(admitted.channel_id) != binding.channel_id()
-                || item_fence.runtime_scope != binding.runtime_scope()
-                || item_fence.scope_ownership_generation != binding.scope_generation()
-                || runtime.owner_fence().is_err()
-                || !admitted.runtime_actor.is_some_and(|actor| {
-                    runtime
-                        .player_control_facts(actor, admitted.game_session_id)
-                        .is_ok_and(|facts| facts.control_loss.is_none())
-                        && runtime
-                            .bound_attacker_lease(actor, admitted.game_session_id)
-                            .is_ok_and(|lease| {
-                                lease.character_id().as_bytes()
-                                    == item_fence.character_id.as_bytes()
-                                    && lease.generation() == item_fence.character_lease_generation
-                            })
-                        && (request.action == 0
-                            || runtime.assert_actor_spell_unreserved(actor).is_ok())
-                })
-            {
-                return WheelAllocationReply::Rejected;
-            }
-            let states = self.states.spell_states.lock().await;
-            if request.action != 0
-                && admitted.runtime_actor.is_none_or(|actor| {
-                    states.has_pending_spell_commit(actor, admitted.game_session_id)
-                        || states
-                            .get(&runtime, actor, admitted.game_session_id)
-                            .is_none_or(|state| state.health == 0)
-                })
-            {
-                return WheelAllocationReply::Rejected;
-            }
-        }
-        let session = admitted.game_session_id;
-        let Some(actor) = admitted.runtime_actor else {
+        let Some(item_fence) = self.wheel_change_gate(admitted, request.action != 0).await else {
             return WheelAllocationReply::Rejected;
         };
-        // Oteryn owner decision (2026-11-05), diverging from Crystal
-        // player_wheel.cpp:2151: removal/reset is allowed anywhere logout's combat
-        // lock does not hold the actor, including a current protection-zone tile.
-        let removal_permitted = removal_permitted(self, actor, session).await;
-        let change = if request.action != 0 {
+        let session = admitted.game_session_id;
+        let refused = if request.action != 0 {
             let Ok(occurrence) =
                 crate::durability::character_wheel::WheelOccurrence::from_bytes(request.occurrence)
             else {
@@ -92,39 +142,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return WheelAllocationReply::Rejected;
             };
-            let command = super::atelier::GemBuildCommand::Wheel(
-                crate::durability::character_wheel::WheelChangeRequest {
-                    occurrence,
-                    expected_wheel_revision: request.expected_revision,
-                    slots,
-                    vessels: request.vessels,
-                },
-            );
-            Some(
-                self.commit_wheel_client(session, command, removal_permitted, Some(item_fence))
-                    .await,
-            )
+            // Capability 148 clients still send four cells. The Wheel writer binds them as
+            // sent and, after its receipt lookup, places their gems into the ordered Gem
+            // Vessel slots; a vector that cannot be placed is a rule refusal.
+            match self
+                .wheel_fenced_change(
+                    admitted,
+                    item_fence,
+                    crate::durability::character_wheel::WheelChangeRequest {
+                        occurrence,
+                        expected_wheel_revision: request.expected_revision,
+                        slots,
+                        vessels: request
+                            .vessels
+                            .map(crate::durability::character_wheel::WheelVesselIntent::LegacyCells),
+                    },
+                )
+                .await
+            {
+                FencedWheelChange::Done { refused } => refused,
+                FencedWheelChange::Rejected => return WheelAllocationReply::Rejected,
+                FencedWheelChange::Unavailable => {
+                    return WheelAllocationReply::Unavailable;
+                }
+            }
         } else {
-            None
+            false
         };
         drop(permit);
-        let refused = match change {
-            None => false,
-            Some(Ok(super::atelier::GemBuildOutcome::Wheel(outcome))) => matches!(
-                *outcome,
-                crate::durability::character_wheel::WheelCommitOutcome::Refused(_)
-            ),
-            Some(Err(
-                crate::durability::character_progression::CharacterProgressionError::InvalidInput
-                | crate::durability::character_progression::CharacterProgressionError::AuthorityRejected
-                | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence
-                | crate::durability::character_progression::CharacterProgressionError::MissingProgressionState,
-            )) => return WheelAllocationReply::Rejected,
-            Some(Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
-                crate::durability::DurabilityError::RootUnavailable,
-            ))) => return WheelAllocationReply::Rejected,
-            _ => return WheelAllocationReply::Unavailable,
-        };
         let allocation = self
             .states
             .wheel_sessions
@@ -149,20 +194,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(sessions) = self.states.atelier_sessions.lock() else {
                 return WheelAllocationReply::Unavailable;
             };
-            let mut vessels = [None; wire::WHEEL_VESSELS];
-            if let Some(Some(state)) = sessions.get(&session) {
-                for gem in state.gems.values().filter(|gem| gem.vessel) {
-                    let index = match gem.domain {
-                        oteryn_gameplay_progression::wheel::WheelDomain::Green => 0,
-                        oteryn_gameplay_progression::wheel::WheelDomain::Red => 1,
-                        oteryn_gameplay_progression::wheel::WheelDomain::Purple => 2,
-                        oteryn_gameplay_progression::wheel::WheelDomain::Blue => 3,
-                    };
-                    if vessels[index].replace(gem.id.to_be_bytes()).is_some() {
-                        return WheelAllocationReply::Unavailable;
-                    }
-                }
-            }
+            let vessels: wire::WheelVessels = match sessions.get(&session) {
+                Some(Some(state)) => gem_vessels::legacy_cells(&gem_vessels::from_state(state)),
+                _ => [None; wire::WHEEL_VESSELS],
+            };
             Some(vessels)
         } else {
             None

@@ -454,6 +454,9 @@ message OneItemFeeBurnCauseV1 {
     OneItemNpcPurchaseV1 bosstiary_slot = 16; // WB2/P02; oteryn:bosstiary.slot_remove, same-transaction slot operation
     // Closed named-House Hireling food purchase through the existing fee owner.
     OneItemNpcPurchaseV1 hireling_service = 472;
+    // Winter Update 2026 Mod Reshaping: oteryn:atelier.reshape, 125000/1000000/5000000 gold
+    // for positions 1/2/3; paired with the same-transaction Atelier RESHAPE receipt.
+    OneItemNpcPurchaseV1 gem_reshape = 483;
   }
 }
 message OneItemMarketFeeV1 {
@@ -463,8 +466,8 @@ message OneItemMarketFeeV1 {
 message OneItemNpcPurchaseV1 {
   string service_key = 1;
   bytes occurrence = 2;
-  // Same-transaction source proof for GemReveal, GemSwitchDomain and GemGradeUp.
-  // New carried-source proofs include coin_inputs. Reveal and grade also bind
+  // Same-transaction source proof for GemReveal, GemSwitchDomain, GemGradeUp and GemReshape.
+  // New carried-source proofs include coin_inputs. Reveal, grade and reshape also bind
   // material BURNs; grade may debit the matching Supply Stash remainder.
   // Historical material-only proofs and an empty domain-switch proof remain valid.
   bytes atelier_proof = 3;
