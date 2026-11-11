@@ -154,6 +154,53 @@ def _same_repository_ref(value: object) -> bool:
     )
 
 
+PULL_FILES_API_LIMIT = 3000
+ACTIVE_TASK_PREFIX = "docs/agents/tasks/active/"
+
+
+def _active_task_directory(ref: str) -> dict[str, str]:
+    """Map each active task packet path at `ref` to its blob SHA."""
+    listing = _request(
+        f"https://api.github.com/repos/{PROVIDER}/contents/"
+        f"{ACTIVE_TASK_PREFIX.rstrip('/')}?ref={ref}"
+    )
+    if not isinstance(listing, list) or not all(isinstance(item, dict) for item in listing):
+        raise ValueError("invalid GitHub active-task directory response")
+    if len(listing) >= 1000:
+        raise ValueError("active-task directory listing exceeded the bounded size")
+    packets: dict[str, str] = {}
+    for item in listing:
+        path, blob = item.get("path"), item.get("sha")
+        if not _valid_repository_path(path) or not path.startswith(ACTIVE_TASK_PREFIX):
+            raise ValueError("invalid active-task directory entry")
+        if not isinstance(blob, str) or SHA_RE.fullmatch(blob) is None:
+            raise ValueError("invalid active-task directory entry")
+        if (
+            item.get("type") == "file"
+            and path.endswith(".md")
+            and path != ACTIVE_TASK_PREFIX + "README.md"
+        ):
+            packets[path] = blob
+    return packets
+
+
+def _active_task_paths_by_tree(base: str, head: str) -> set[str]:
+    """Active task packets a PR adds, removes or changes, from merge base to head."""
+    compare = _request(f"https://api.github.com/repos/{PROVIDER}/compare/{base}...{head}")
+    if not isinstance(compare, dict) or not isinstance(compare.get("merge_base_commit"), dict):
+        raise ValueError("invalid GitHub compare response")
+    merge_base = compare["merge_base_commit"].get("sha")
+    if not isinstance(merge_base, str) or SHA_RE.fullmatch(merge_base) is None:
+        raise ValueError("invalid GitHub merge-base SHA")
+    before = _active_task_directory(merge_base)
+    after = _active_task_directory(head)
+    return {
+        path
+        for path in before.keys() | after.keys()
+        if before.get(path) != after.get(path)
+    }
+
+
 def _pull_request_active_task_paths(
     number: int,
     expected_head: str,
@@ -191,12 +238,18 @@ def _pull_request_active_task_paths(
         raise ValueError("pull request head moved during live-state candidate validation")
     if not isinstance(base, str) or SHA_RE.fullmatch(base) is None:
         raise ValueError("live pull request base SHA is invalid")
-    if type(changed_files) is not int or changed_files < 0 or changed_files > 3000:
+    if type(changed_files) is not int or changed_files < 0:
         raise ValueError("invalid pull request changed-files count")
 
     items: list[dict] = []
+    tree_selected: set[str] | None = None
+    if changed_files > PULL_FILES_API_LIMIT:
+        # The pull-files listing stops at 3000 entries, so a larger PR is
+        # scoped by comparing the active task directory at the merge base and
+        # at the head instead. Same selection: added, removed or changed packets.
+        tree_selected = _active_task_paths_by_tree(base, head)
     page = 1
-    while len(items) < changed_files:
+    while tree_selected is None and len(items) < changed_files:
         batch = _request(
             f"https://api.github.com/repos/{PROVIDER}/pulls/{number}/files"
             f"?per_page=100&page={page}"
@@ -210,7 +263,7 @@ def _pull_request_active_task_paths(
         if page > 30:
             raise ValueError("pull request file enumeration exceeded bounded pagination")
 
-    if len(items) != changed_files:
+    if tree_selected is None and len(items) != changed_files:
         raise ValueError("pull request file enumeration is incomplete")
 
     pull_after = _request(pr_url)
@@ -228,7 +281,10 @@ def _pull_request_active_task_paths(
     ):
         raise ValueError("pull request moved during live-state candidate validation")
 
-    prefix = "docs/agents/tasks/active/"
+    if tree_selected is not None:
+        return tree_selected
+
+    prefix = ACTIVE_TASK_PREFIX
     selected: set[str] = set()
     seen_filenames: set[str] = set()
     for item in items:

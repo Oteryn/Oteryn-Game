@@ -96,7 +96,7 @@ def main():
     if not args.check:
         args.out_dir.mkdir(parents=True, exist_ok=True)
     for name, document in documents.items():
-        raw = (json.dumps(document, indent=2)+"\n").encode()
+        raw = (json.dumps(document, separators=(",", ":"))+"\n").encode()
         target = args.out_dir/name
         if args.check:
             if not target.exists() or target.read_bytes() != raw:

@@ -103,6 +103,66 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
                 {"docs/agents/tasks/active/OTV2-selected.md"},
             )
 
+    def test_pull_request_live_task_scope_above_files_api_limit_uses_tree_comparison(self):
+        base = "e" * 40
+        head = "f" * 40
+        merge_base = "1" * 40
+        pull = {
+            "state": "open",
+            "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+            "base": {"sha": base, "ref": "main", "repo": {"full_name": adoption.PROVIDER}},
+            "changed_files": 3030,
+        }
+        prefix = "docs/agents/tasks/active/"
+
+        def entry(name: str, blob: str, kind: str = "file") -> dict:
+            return {"path": prefix + name, "sha": blob * 40, "type": kind}
+
+        directories = {
+            merge_base: [
+                entry("README.md", "2"),
+                entry("OTV2-unchanged.md", "3"),
+                entry("OTV2-changed.md", "4"),
+                entry("OTV2-removed.md", "5"),
+            ],
+            head: [
+                entry("README.md", "6"),
+                entry("OTV2-unchanged.md", "3"),
+                entry("OTV2-changed.md", "7"),
+                entry("OTV2-added.md", "8"),
+                entry("notes", "9", "dir"),
+            ],
+        }
+
+        def request(url: str):
+            if "/files?" in url:
+                raise AssertionError("pull-files listing must not be used above the API limit")
+            if url.endswith(f"/compare/{base}...{head}"):
+                return {"merge_base_commit": {"sha": merge_base}}
+            if "/contents/docs/agents/tasks/active?ref=" in url:
+                return directories[url.rsplit("=", 1)[1]]
+            if url.endswith("/pulls/81"):
+                return pull
+            raise AssertionError(url)
+
+        with mock.patch.object(adoption, "_request", side_effect=request):
+            self.assertEqual(
+                adoption._pull_request_active_task_paths(81, head),
+                {prefix + "OTV2-changed.md", prefix + "OTV2-removed.md", prefix + "OTV2-added.md"},
+            )
+
+        moved = dict(pull, changed_files=3031)
+        responses = iter([pull, moved])
+
+        def moving_request(url: str):
+            if url.endswith("/pulls/81"):
+                return next(responses)
+            return request(url)
+
+        with mock.patch.object(adoption, "_request", side_effect=moving_request):
+            with self.assertRaisesRegex(ValueError, "moved during live-state"):
+                adoption._pull_request_active_task_paths(81, head)
+
     def test_pull_request_live_task_scope_rejects_malformed_file_paths(self):
         base = "4" * 40
         head = "5" * 40
