@@ -283,12 +283,50 @@ fn selected_personal_counters_still_require_validated_native_death()
             )
         })
         .collect();
-    let active =
+    let mut active =
         oteryn_gameplay_quests::quest::native_kills::active_for(state.catalogue(), &enabled);
+    // The catalogue also exposes authored routes eligible at their initial gate.
+    // This test qualifies only the two selected personal journal owners.
+    active.retain(|key| {
+        oteryn_gameplay_quests::quest::native_kills::counter(key).is_some_and(|counter| {
+            matches!(
+                counter.quest,
+                "oteryn:quest.authored.fire_from_the_earth_mini_world_change"
+                    | "oteryn:quest.authored.hive_outpost_mini_world_change"
+            )
+        })
+    });
     assert_eq!(
         active.len(),
         16,
         "all seven fiery and nine insect source counters"
+    );
+    assert_eq!(
+        active
+            .iter()
+            .map(String::as_str)
+            .collect::<std::collections::BTreeSet<_>>(),
+        [
+            "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/diabolic_imp",
+            "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon",
+            "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_hatchling",
+            "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_lord",
+            "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_lord_hatchling",
+            "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragonling",
+            "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/hellfire_fighter",
+            "oteryn:quest-transition/native-kills/m31/hive_outpost/crawler",
+            "oteryn:quest-transition/native-kills/m31/hive_outpost/hive_overseer",
+            "oteryn:quest-transition/native-kills/m31/hive_outpost/insectoid_worker",
+            "oteryn:quest-transition/native-kills/m31/hive_outpost/kollos",
+            "oteryn:quest-transition/native-kills/m31/hive_outpost/spidris",
+            "oteryn:quest-transition/native-kills/m31/hive_outpost/spidris_elite",
+            "oteryn:quest-transition/native-kills/m31/hive_outpost/spitter",
+            "oteryn:quest-transition/native-kills/m31/hive_outpost/swarmer",
+            "oteryn:quest-transition/native-kills/m31/hive_outpost/waspoid",
+        ]
+        .into_iter()
+        .collect(),
+        "exact selected personal source counter identities"
     );
     let mut seen = std::collections::BTreeSet::new();
     for key in active {

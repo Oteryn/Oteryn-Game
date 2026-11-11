@@ -321,7 +321,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     | "oteryn:creature.the_old_widow"
             )
         }) {
-            // Retained native-goal and Hireling owners qualify these six Items.
+            // Retained native-goal, Hireling and BossYield owners qualify these Items.
             // Every remaining unavailable yield still refuses the complete table.
             for key in [
                 "oteryn:item.tibia.i3061",
@@ -330,6 +330,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "oteryn:item.tibia.i3002",
                 "oteryn:item.tibia.i3069",
                 "oteryn:item.tibia.i3070",
+                "oteryn:item.tibia.i7416",
             ] {
                 let facts = loot
                     .items
@@ -341,10 +342,9 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 assert_eq!(facts.item.revision, "definition-r1");
             }
             let (body, refused): (&str, &[&str]) = match policy.definition_key.as_str() {
-                "oteryn:creature.the_old_widow" => (
-                    "oteryn:item.tibia.i5977",
-                    &["oteryn:item.tibia.i7416", "oteryn:item.tibia.i12320"],
-                ),
+                "oteryn:creature.the_old_widow" => {
+                    ("oteryn:item.tibia.i5977", &["oteryn:item.tibia.i12320"])
+                }
                 _ => (
                     "oteryn:item.tibia.i4097",
                     &["oteryn:item.tibia.i3116", "oteryn:item.tibia.i3309"],
