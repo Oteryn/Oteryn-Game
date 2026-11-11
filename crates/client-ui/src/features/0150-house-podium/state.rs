@@ -36,6 +36,20 @@ impl Panel {
         self.feedback.clear();
         true
     }
+    /// Switch the draft between outfit, mount and creature displays and its facing.
+    /// The committed projection is untouched; only the unsaved preview changes.
+    pub fn choose_display(&mut self, kind: u8, direction: u8) -> bool {
+        if !(1..=3).contains(&kind) || direction > 3 || self.pending {
+            return false;
+        }
+        let (kind, direction) = (kind.to_string(), direction.to_string());
+        if self.fields[1] != kind || self.fields[2] != direction {
+            self.fields[1] = kind;
+            self.fields[2] = direction;
+            self.artwork = None;
+        }
+        true
+    }
     pub fn failed(&mut self, message: &str) {
         self.pending = false;
         self.feedback = message.into();

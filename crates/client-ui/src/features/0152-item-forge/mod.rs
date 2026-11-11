@@ -17,3 +17,6 @@ pub use protocol::{apply_result, command, control_request, preview_request, requ
 pub use selection::{MAX_CANDIDATES, PreviewState};
 pub use state::ItemForgePanel;
 pub use view::{panel_text, selected_pair_text};
+#[cfg(test)]
+#[path = "state/selection_tests.rs"]
+mod selection_tests;
