@@ -278,6 +278,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
     let newly_admitted = [
+        "oteryn:creature.demodras",
         "oteryn:creature.the_percht_queen",
         "oteryn:creature.goshnar_s_spite",
     ];
@@ -317,44 +318,36 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 policy.definition_key.as_str(),
                 "oteryn:creature.bazir"
                     | "oteryn:creature.infernatil"
-                    | "oteryn:creature.demodras"
                     | "oteryn:creature.the_old_widow"
             )
         }) {
-            // Loot regeneration refreshes their already qualified source body;
-            // The native-goal owner now qualifies these three identities;
-            // the other five still forbid this entire private loot table.
+            // Retained native-goal and Hireling owners qualify these six Items.
+            // Every remaining unavailable yield still refuses the complete table.
             for key in [
                 "oteryn:item.tibia.i3061",
                 "oteryn:item.tibia.i3072",
                 "oteryn:item.tibia.i2903",
+                "oteryn:item.tibia.i3002",
+                "oteryn:item.tibia.i3069",
+                "oteryn:item.tibia.i3070",
             ] {
                 let facts = loot
                     .items
                     .iter()
                     .find(|facts| facts.item.key == key)
-                    .ok_or("qualified native-goal loot identity")?;
+                    .ok_or("qualified source loot identity")?;
                 assert!(facts.materializable);
                 assert_eq!(facts.item.family, "Item");
                 assert_eq!(facts.item.revision, "definition-r1");
             }
             let (body, refused): (&str, &[&str]) = match policy.definition_key.as_str() {
-                "oteryn:creature.demodras" => {
-                    ("oteryn:item.tibia.i5984", &["oteryn:item.tibia.i5919"])
-                }
                 "oteryn:creature.the_old_widow" => (
                     "oteryn:item.tibia.i5977",
                     &["oteryn:item.tibia.i7416", "oteryn:item.tibia.i12320"],
                 ),
                 _ => (
                     "oteryn:item.tibia.i4097",
-                    &[
-                        "oteryn:item.tibia.i3002",
-                        "oteryn:item.tibia.i3070",
-                        "oteryn:item.tibia.i3069",
-                        "oteryn:item.tibia.i3116",
-                        "oteryn:item.tibia.i3309",
-                    ],
+                    &["oteryn:item.tibia.i3116", "oteryn:item.tibia.i3309"],
                 ),
             };
             assert_eq!(corpse.key, body);
@@ -403,7 +396,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     | "oteryn:creature.apprentice_sheng"
                     | "oteryn:creature.bazir"
                     | "oteryn:creature.dharalion"
-                    | "oteryn:creature.demodras"
                     | "oteryn:creature.earth_overlord"
                     | "oteryn:creature.energy_overlord"
                     | "oteryn:creature.fire_overlord"
@@ -434,6 +426,18 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 .reward_table()
                 .row(&policy.definition_key)
                 .map_err(|reason| format!("{}: {reason:?}", policy.definition_key))?;
+            if policy.definition_key == "oteryn:creature.demodras" {
+                assert_eq!(corpse.key, "oteryn:item.tibia.i5984");
+                let tooth = loot
+                    .items
+                    .iter()
+                    .find(|facts| facts.item.key == "oteryn:item.tibia.i5919")
+                    .ok_or("source-qualified Demodras yield")?;
+                assert_eq!(tooth.item.family, "Item");
+                assert_eq!(tooth.item.revision, "definition-r1");
+                assert!(tooth.materializable);
+                assert!(tooth.stackable);
+            }
             if matches!(
                 policy.definition_key.as_str(),
                 "oteryn:creature.armenius_creature" | "oteryn:creature.grand_mother_foulscale"
@@ -487,6 +491,8 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 if policy.definition_key == "oteryn:creature.sugar_daddy" {
                     // W02 admits the unchanged source table and all its 22 Items.
                     assert_eq!(table.entries.len(), 22);
+                } else if policy.definition_key == "oteryn:creature.demodras" {
+                    assert_eq!(table.entries.len(), 17);
                 } else if policy.definition_key == "oteryn:creature.the_primal_menace" {
                     // Crystal the_primal_menace.lua:118 explicitly authors {}.
                     assert_eq!(reference.family, "Loot");
@@ -556,7 +562,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 287, 18, 31)
+        (52, 283, 20, 33)
     );
     assert_eq!(
         admitted,
@@ -567,6 +573,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.bakragore",
             "oteryn:creature.chagorz",
             "oteryn:creature.chayenne",
+            "oteryn:creature.demodras",
             "oteryn:creature.dragonking_zyrtarch",
             "oteryn:creature.dreadful_disruptor",
             "oteryn:creature.eradicator",
@@ -601,7 +608,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         refreshed_body_loot_refusals,
         [
             "oteryn:creature.bazir",
-            "oteryn:creature.demodras",
             "oteryn:creature.infernatil",
             "oteryn:creature.the_old_widow"
         ]
