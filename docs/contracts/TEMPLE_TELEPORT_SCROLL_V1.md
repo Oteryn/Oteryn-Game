@@ -95,24 +95,30 @@ third original source of that owner; no new clock, sweep or table is introduced.
   retrieval, carried tree, depot), as an action-minted Item does; every other scheduled
   Item keeps its movement guard. Owners that refuse every scheduled Item (supply stash,
   House containers, market) refuse the scroll too.
-- Expiry. When the deadline has passed, the Item deadline pass removes the scroll exactly
-  as it removes every other expiring Item: one immutable receipt, predecessor capture,
-  audit envelope, the Item retired (`lifecycle` 2, quantity 0) and its custody removed. The
-  pass hosts Ground, the carried tree (main backpack and nested containers, depth up to 8)
-  and equipment, and migration 2762 extends it minimally with the Character Inbox root
-  (receipt custody kind 4), for this scroll only, through the one seam
-  `game_temple_scroll_inbox_expire`. Carried and Inbox removal requires the Character's
-  current session in that Channel, as for every carried Item: an offline Character's
-  scroll keeps its overdue schedule and is removed on the first pass after login. No
-  status text is sent; the Item simply disappears.
+- Expiry applies in all custodies. When the deadline has passed, one Item deadline pass
+  removes the scroll wherever it is, for an online or an offline Character, exactly as it
+  removes every other expiring Item: one immutable receipt, predecessor capture, audit
+  envelope, the Item retired (`lifecycle` 2, quantity 0) and its custody removed. Location
+  never decides whether a due scroll expires:
+  - Ground, and the carried tree (main backpack and nested containers) and equipment of a
+    Character whose session is live in the passing Channel: the pass's existing session-bound
+    removal (receipt custody 1, 2, 3).
+  - Every other custody the scroll can occupy, through the one seam
+    `game_temple_scroll_expire_due` (migration 2762) on the same pass, for this scroll only,
+    under no session: the Character Inbox root (custody 4), a depot box or locker (custody 5,
+    the box's committed count decremented as a depot transfer does), a container rooted in
+    the Inbox (custody 2), and the carried tree (custody 2) and equipment (custody 3, the
+    equipment revision advanced) of an offline Character. An offline Character's scroll does
+    not wait for login.
+  - The Supply Stash holds stackable balances only and refuses every scheduled Item, as do
+    House containers and the market, so the scroll can never be in them.
+
+  No status text is sent; the Item simply disappears.
 - Defensive refusal. A use racing the deadline pass (the scroll is due but not yet
   removed) is refused: the writer reads the schedule under the scroll's row lock and
   returns `NOT_POSSIBLE` with nothing burnt, written or moved. The use row's stamp records
   the schedule's deadline and the database clock, and its CHECK (`observed < expires`)
   refuses a burn that crosses the deadline after that read.
-- Not hosted. A scroll in a depot box is not hosted by the pass; it is removed on the first
-  pass after it returns to the carried tree or the Inbox, and a use before that is refused
-  as above, so it can never teleport after its deadline.
 - No deadline. A scroll delivered before migration 2762 has no schedule, carries no
   deadline and never expires under this contract.
 
@@ -123,10 +129,12 @@ Migration 2762 indexes daily lines by item instance; admits cause 481 in
 rule kept verbatim and widened); creates `game_temple_scroll_uses` with its stamp, its
 immutability and its deferred pairing checks; admits the scroll's schedule provenance in
 `game_spell_item_temporal_schedule_proven`, its movement in `game_item_loop_line_admit`,
-receipt custody kind 4 in both receipt CHECKs, the Inbox predecessor capture in
-`game_spell_item_temporal_capture`, the Inbox outcome in
-`game_spell_item_temporal_receipt_proven` and the Inbox row removal in
-`game_character_inbox_remove`, each as a prepended arm that keeps every previous arm.
+the session-less scroll receipt (custody 2, 3, 4, 5 with no session) in both receipt
+CHECKs, its predecessor capture in `game_spell_item_temporal_capture`, its outcome in
+`game_spell_item_temporal_receipt_proven` and the Inbox and depot row removals in
+`game_character_inbox_remove` and `game_character_depot_remove`, each as a prepended arm
+that keeps every previous arm; and creates the seam `game_temple_scroll_expire_due` with
+its custody resolver `game_temple_scroll_custody`.
 Applied migrations are immutable: a rollback is a successor migration that stops new
 writes (the dispatch branch, the claim's schedule insert and the INSERT grant) and keeps
 every record as evidence of a consumed or expired scroll.
@@ -140,7 +148,11 @@ lifetime constants (the lifetime fits the deadline owner's `duration_millis`). P
 `temple_scroll_teleports_home_and_is_consumed`, `temple_scroll_refused_with_logout_block`,
 `temple_scroll_kept_when_the_temple_landing_is_taken_at_commit` (the writer with every
 landing occupied at commit: nothing is burnt or written) and
-`temple_scroll_vanishes_through_the_item_deadline_owner` (a due scroll's use is refused
-with nothing written; the Item deadline pass then retires the due carried scroll and the
-due Inbox scroll with receipt custody kinds 2 and 4 and removes their custody, while the
-fresh scroll stays and still teleports).
+`temple_scroll_vanishes_through_the_item_deadline_owner` (online: a due scroll's use is
+refused with nothing written; one Item deadline pass then retires the due carried scroll
+under the session and the due scrolls in the Inbox, in a container in the Inbox and in a
+depot box under no session, receipt custody kinds 2, 2, 4 and 5, and removes their custody
+and the depot box count, while the fresh scroll stays and still teleports) and
+`temple_scroll_vanishes_in_every_custody_of_an_offline_character` (offline: one pass
+retires the due scrolls carried, worn, in the Inbox, in a container in the Inbox and in a
+depot box, receipt custody kinds 2, 2, 3, 4 and 5, all under no session).

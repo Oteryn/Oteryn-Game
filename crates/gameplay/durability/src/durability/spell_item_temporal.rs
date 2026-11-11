@@ -78,7 +78,8 @@ pub(super) async fn schedule_action_item_in_transaction(
 /// Executes original source deadlines on the one actual Item store. Inventory
 /// is eligible only under a currently active Character in this owned Channel;
 /// an offline or foreign-scope item keeps its original overdue schedule. A due
-/// Temple Teleport Scroll is also removed from that Character's Inbox root.
+/// Temple Teleport Scroll is removed wherever it is, for an online or offline
+/// Character (WU26-06, migration 2762's `game_temple_scroll_expire_due`).
 pub async fn drain_due_items_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
@@ -99,7 +100,6 @@ pub async fn drain_due_items_in_transaction(
        p.target_family,p.target_production_key,p.target_revision,g.stack_ordinal,
        e.character_id::text AS bag_character,e.parent_item_instance_id::text AS parent,e.placement_ordinal::text AS ordinal,
        eq.character_id::text AS equipped_character,eq.slot,es.revision::text AS equipment_revision,
-       x.character_id::text AS inbox_character,x.ordinal::text AS inbox_ordinal,
        sess.game_session_id::text AS session,sess.character_lease_generation::text AS lease,sess.current_generation::text AS connection,
        game_character_uuid_v7()::text AS transaction_id,game_character_uuid_v7()::text AS event_id
       FROM game_spell_item_temporal_schedules p JOIN game_item_instances i USING(item_instance_id)
@@ -115,16 +115,14 @@ pub async fn drain_due_items_in_transaction(
       LEFT JOIN game_item_container_slots bag ON bag.character_id=e.character_id
       LEFT JOIN game_character_equipment_slots eq ON eq.item_instance_id=p.item_instance_id
       LEFT JOIN game_character_equipment_state es ON es.character_id=eq.character_id
-      LEFT JOIN game_item_character_inbox_locations x ON x.item_instance_id=i.item_instance_id
-       AND p.definition_production_key='oteryn:item.tibia.i25718' AND p.target_family IS NULL
-      LEFT JOIN game_durability_admission_character_guards cg ON cg.character_id=COALESCE(e.character_id,eq.character_id,x.character_id)
+      LEFT JOIN game_durability_admission_character_guards cg ON cg.character_id=COALESCE(e.character_id,eq.character_id)
       LEFT JOIN game_durability_reconnect_sessions sess ON sess.game_session_id=cg.holder_game_session_id
       WHERE i.lifecycle=1 AND i.quantity=1 AND i.world_id=encode($1,'hex')::uuid
        AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)=(p.definition_family,p.definition_production_key,p.definition_revision)
        AND p.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint
        AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id)
        AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND (g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
-         OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id OR x.world_id=i.world_id)
+         OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
           AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
           AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
           AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric))
@@ -139,17 +137,12 @@ pub async fn drain_due_items_in_transaction(
         let parent: Option<String> = row.try_get("parent")?;
         let slot: Option<i16> = row.try_get("slot")?;
         let stack: Option<i64> = row.try_get("stack_ordinal")?;
-        let inbox_ordinal: Option<String> = row.try_get("inbox_ordinal")?;
-        // Kind 4 is the Character Inbox root, hosted only for the Temple Teleport Scroll
-        // (WU26-06, migration 2762); the query joins no other Inbox Item.
         let kind: i16 = if stack.is_some() {
             1
         } else if parent.is_some() {
             2
         } else if slot.is_some() {
             3
-        } else if inbox_ordinal.is_some() {
-            4
         } else {
             return Err(SpellItemError::Rejected(
                 "Item timer has no supported exact custody",
@@ -159,8 +152,6 @@ pub async fn drain_due_items_in_transaction(
             row.try_get("bag_character")?
         } else if kind == 3 {
             row.try_get("equipped_character")?
-        } else if kind == 4 {
-            row.try_get("inbox_character")?
         } else {
             None
         };
@@ -179,11 +170,7 @@ pub async fn drain_due_items_in_transaction(
         } else {
             row.try_get("connection")?
         };
-        let ordinal: Option<String> = if kind == 4 {
-            inbox_ordinal
-        } else {
-            row.try_get("ordinal")?
-        };
+        let ordinal: Option<String> = row.try_get("ordinal")?;
         let equipment_revision: Option<String> = row.try_get("equipment_revision")?;
         sqlx::query("INSERT INTO game_spell_item_temporal_receipts(transaction_id,event_id,item_instance_id,world_id,channel_id,ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,game_session_id,character_lease_generation,connection_generation,source_parent,source_ordinal,source_slot,equipment_revision_before,source_stack_ordinal) VALUES($1::uuid,$2::uuid,$3::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7::text::numeric,1,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$8,$9::uuid,$10::uuid,$11::text::numeric,$12::text::numeric,$13::uuid,$14::text::numeric,$15,$16::text::numeric,$17)")
             .bind(&transaction).bind(&event).bind(&item).bind(world.as_slice()).bind(channel.as_slice()).bind(authority.generation().to_string())
@@ -202,11 +189,6 @@ pub async fn drain_due_items_in_transaction(
                     let main = sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=$1::uuid AND parent_item_instance_id=$2::uuid AND placement_ordinal=$3::text::numeric").bind(&item).bind(&parent).bind(&ordinal).execute(&mut **tx).await?.rows_affected();
                     let nested = sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=$1::uuid AND parent_item_instance_id=$2::uuid AND placement_ordinal=$3::text::numeric").bind(&item).bind(&parent).bind(&ordinal).execute(&mut **tx).await?.rows_affected();
                     main + nested
-                },
-                4=> {
-                    // The Inbox stays closed to runtime DML; the seam deletes only this receipt's row.
-                    sqlx::query("SELECT game_temple_scroll_inbox_expire($1::uuid)").bind(&transaction).execute(&mut **tx).await?;
-                    1
                 },
                 _=>sqlx::query("DELETE FROM game_character_equipment_slots WHERE item_instance_id=$1::uuid AND character_id=$2::uuid AND slot=$3").bind(&item).bind(&character).bind(slot).execute(&mut **tx).await?.rows_affected(),
             };
@@ -233,6 +215,12 @@ pub async fn drain_due_items_in_transaction(
             .bind(&event).bind(&transaction).bind(bytes).execute(&mut **tx).await?;
         changed += 1;
     }
+    // Stored (Inbox, depot) scrolls and scrolls of offline Characters, under no session.
+    let scrolls: i32 = sqlx::query_scalar("SELECT game_temple_scroll_expire_due(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4)")
+        .bind(world.as_slice()).bind(channel.as_slice()).bind(authority.generation().to_string())
+        .bind(i32::try_from(limit - changed).map_err(|_| SpellItemError::Rejected("Item timer batch bound"))?)
+        .fetch_one(&mut **tx).await?;
+    let changed = changed + usize::try_from(scrolls).map_err(|_| SpellItemError::Rejected("Item timer batch bound"))?;
     let floor = super::item_loop_move::floor_transform::drain_due(tx, authority, limit - changed).await?;
     Ok(changed + floor)
 }
