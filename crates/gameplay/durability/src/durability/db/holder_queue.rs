@@ -286,10 +286,7 @@ mod tests {
             assert_eq!(queue.turn(first, stale), Turn::Free);
             assert_eq!(queue.turn(second, stale), Turn::Mine);
             assert_eq!(queue.turn(later, stale), Turn::Kept);
-            assert_eq!(
-                queue.turn(later, now + WAITING_LIVENESS * 2),
-                Turn::Free
-            );
+            assert_eq!(queue.turn(later, now + WAITING_LIVENESS * 2), Turn::Free);
             Ok(())
         })
     }

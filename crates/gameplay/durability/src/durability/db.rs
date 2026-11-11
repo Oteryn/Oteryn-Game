@@ -21,8 +21,8 @@ mod holder_queue;
 mod ready_admission;
 
 use foreground::HolderPriority;
-use holder_queue::{HolderQueue, Turn};
 pub use holder_queue::HolderWaiter;
+use holder_queue::{HolderQueue, Turn};
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const DB_TRANSACTION_FAILED: oteryn_error_codes::ErrorCode = oteryn_error_codes::ErrorCode::new(
@@ -119,11 +119,15 @@ fn record_holder_usage(
     let refused: u64 = window.callers.iter().map(|(_, entry)| entry.refused).sum();
     oteryn_error_codes::emit(
         DIAGNOSTIC_PROCESS,
-        &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Info, "durability", "holder_window")
-            .field("window_ms", millis(elapsed))
-            .field("held_ms", millis(held))
-            .field("passes", oteryn_error_codes::FieldValue::U64(passes))
-            .field("refused", oteryn_error_codes::FieldValue::U64(refused)),
+        &oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Info,
+            "durability",
+            "holder_window",
+        )
+        .field("window_ms", millis(elapsed))
+        .field("held_ms", millis(held))
+        .field("passes", oteryn_error_codes::FieldValue::U64(passes))
+        .field("refused", oteryn_error_codes::FieldValue::U64(refused)),
     );
     window
         .callers
@@ -132,11 +136,18 @@ fn record_holder_usage(
         let site = caller.map_or_else(|| "maintenance".to_owned(), ToString::to_string);
         oteryn_error_codes::emit(
             DIAGNOSTIC_PROCESS,
-            &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Info, "durability", "holder_usage")
-                .field("caller", oteryn_error_codes::FieldValue::Owned(site))
-                .field("passes", oteryn_error_codes::FieldValue::U64(entry.passes))
-                .field("held_ms", millis(entry.held))
-                .field("refused", oteryn_error_codes::FieldValue::U64(entry.refused)),
+            &oteryn_error_codes::Line::new(
+                oteryn_error_codes::Level::Info,
+                "durability",
+                "holder_usage",
+            )
+            .field("caller", oteryn_error_codes::FieldValue::Owned(site))
+            .field("passes", oteryn_error_codes::FieldValue::U64(entry.passes))
+            .field("held_ms", millis(entry.held))
+            .field(
+                "refused",
+                oteryn_error_codes::FieldValue::U64(entry.refused),
+            ),
         );
     }
     *usage = None;
@@ -184,9 +195,16 @@ impl Drop for PassOwner {
         if !self.finished {
             oteryn_error_codes::emit(
                 DIAGNOSTIC_PROCESS,
-                &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "durability", "pass_dropped")
-                    .field("caller", oteryn_error_codes::FieldValue::Owned(self.caller.to_string()))
-                    .field("held_ms", millis(self.issued.elapsed())),
+                &oteryn_error_codes::Line::new(
+                    oteryn_error_codes::Level::Warn,
+                    "durability",
+                    "pass_dropped",
+                )
+                .field(
+                    "caller",
+                    oteryn_error_codes::FieldValue::Owned(self.caller.to_string()),
+                )
+                .field("held_ms", millis(self.issued.elapsed())),
             );
         }
         if let Ok(mut owner) = self.slot.lock()
@@ -479,7 +497,11 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
         arc_allocation_request::<HolderPriority>()?,
         arc_allocation_request::<RootICharge>()?,
         arc_allocation_request::<RootBudgetAdapter>()?,
-        arc_allocation_request::<std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>>()?,
+        arc_allocation_request::<
+            std::sync::OnceLock<
+                Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>,
+            >,
+        >()?,
     ] {
         total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
     }
@@ -1026,7 +1048,9 @@ pub struct DurabilityRoot {
     /// budget. `None` when the root was built without them.
     relay_options: Option<Box<PgConnectOptions>>,
     _root_i_charge: Option<Arc<RootICharge>>,
-    pub(super) staff_trust: Arc<std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>>,
+    pub(super) staff_trust: Arc<
+        std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>,
+    >,
 }
 
 /// Foreground preference lasts until this owner finishes or its future is cancelled.
@@ -1255,11 +1279,7 @@ impl DurabilityRoot {
                 match self.holder_turn() {
                     Turn::Mine => return true,
                     Turn::Free => {
-                        let retry_at = if waited {
-                            earliest.min(latest)
-                        } else {
-                            latest
-                        };
+                        let retry_at = if waited { earliest.min(latest) } else { latest };
                         tokio::time::sleep_until(retry_at).await;
                         return true;
                     }
@@ -1772,17 +1792,19 @@ pub async fn connect(database_url: &str, max_connections: u32) -> Result<PgPool,
         .map_err(DurabilityError::from)?;
     oteryn_error_codes::emit(
         DIAGNOSTIC_PROCESS,
-        &oteryn_error_codes::Line::new(
-            oteryn_error_codes::Level::Info,
-            "durability",
-            "db_pool",
-        )
-        .field("size", oteryn_error_codes::FieldValue::U64(u64::from(pool.size())))
-        .field("idle", oteryn_error_codes::FieldValue::U64(pool.num_idle() as u64))
-        .field(
-            "max",
-            oteryn_error_codes::FieldValue::U64(u64::from(max_connections)),
-        ),
+        &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Info, "durability", "db_pool")
+            .field(
+                "size",
+                oteryn_error_codes::FieldValue::U64(u64::from(pool.size())),
+            )
+            .field(
+                "idle",
+                oteryn_error_codes::FieldValue::U64(pool.num_idle() as u64),
+            )
+            .field(
+                "max",
+                oteryn_error_codes::FieldValue::U64(u64::from(max_connections)),
+            ),
     );
     Ok(pool)
 }

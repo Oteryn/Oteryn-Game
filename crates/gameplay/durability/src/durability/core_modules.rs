@@ -173,8 +173,7 @@ pub mod world_reset;
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{
     DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig, ForegroundDemand, HolderWaiter,
-    IssuedSemanticPass,
-    ROOT_RECOVERY_WINDOW,
+    IssuedSemanticPass, ROOT_RECOVERY_WINDOW,
 };
 pub use schema::{MigrationExecutor, SchemaCompatibility};
 
