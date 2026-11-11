@@ -14,6 +14,14 @@ impl PlayLink {
         enqueue(&mut lock(&self.mailbox), &self.commands, mode, recipient);
     }
     pub fn chat_input(&self, events: &[NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::chat::default_channel_key(events) {
+            self.chat_console_tab(oteryn_client_ui::chat::ConsoleTab::All);
+            return true;
+        }
+        if oteryn_client_ui::chat::temporary_mode_key(events) {
+            lock(&self.mailbox).chat.console.mode = oteryn_client_ui::chat::ComposerMode::Temporary;
+            return true;
+        }
         if !oteryn_client_ui::chat::open_key(events) {
             return false;
         }

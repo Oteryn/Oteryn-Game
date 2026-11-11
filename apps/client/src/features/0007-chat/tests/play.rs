@@ -118,3 +118,32 @@ fn local_chat_input_reaches_session_and_received_private_message_is_visible() ->
 
 #[path = "console.rs"]
 mod console;
+
+#[test]
+fn n021_alt_d_selects_the_default_tab_and_keypad_enter_sets_temporary_mode()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::{ComposerMode, ConsoleTab};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, _, _) = crate::play::play_channel();
+    let press =
+        |code: u16, modifiers| -> Result<[NormalizedInputEvent; 1], Box<dyn std::error::Error>> {
+            Ok([NormalizedInputEvent::Key {
+                code: KeyCode::new(code)?,
+                state: ButtonState::Pressed,
+                modifiers,
+                repeat: false,
+            }])
+        };
+    link.chat_console_tab(ConsoleTab::Guild);
+    assert!(link.chat_input(&press(7, Modifiers::one(Modifier::Alt))?));
+    assert_eq!(
+        crate::play::mailbox::lock(&link.mailbox).chat.console.tab,
+        ConsoleTab::All
+    );
+    assert!(link.chat_input(&press(88, Modifiers::NONE)?));
+    assert_eq!(
+        crate::play::mailbox::lock(&link.mailbox).chat.console.mode,
+        ComposerMode::Temporary
+    );
+    Ok(())
+}

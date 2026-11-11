@@ -301,3 +301,28 @@ fn identical_messages_at_log_capacity_keep_new_receipt_times() {
     assert_eq!(metadata.prefix(display, 0), "[00:00:10 UTC] ");
     assert_eq!(metadata.prefix(display, max - 1), "[00:00:20 UTC] ");
 }
+
+#[test]
+fn n021_default_channel_and_temporary_mode_keys() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let key =
+        |code: u16, modifiers| -> Result<[NormalizedInputEvent; 1], Box<dyn std::error::Error>> {
+            Ok([NormalizedInputEvent::Key {
+                code: KeyCode::new(code)?,
+                state: ButtonState::Pressed,
+                modifiers,
+                repeat: false,
+            }])
+        };
+    assert!(crate::chat::default_channel_key(&key(
+        7,
+        Modifiers::one(Modifier::Alt)
+    )?));
+    assert!(!crate::chat::default_channel_key(&key(7, Modifiers::NONE)?));
+    assert!(crate::chat::temporary_mode_key(&key(88, Modifiers::NONE)?));
+    assert!(!crate::chat::temporary_mode_key(&key(
+        88,
+        Modifiers::one(Modifier::Alt)
+    )?));
+    Ok(())
+}

@@ -13,7 +13,7 @@ pub use presentation::Presentation;
 mod state;
 mod view;
 pub use crate::chat_public_channels::apply_result;
-pub use input::open_key;
+pub use input::{default_channel_key, open_key, temporary_mode_key};
 pub use protocol::{console_request, request};
 pub use state::{
     ChatPanel, CommunicationList, CommunicationLists, ComposerMode, Console, ConsoleTab, Mode,
