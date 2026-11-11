@@ -370,7 +370,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M19: four exact Items in qready1-quest-item-profiles.json.
     ("QREADY1-CLOCKS", 4),
     // M20: two exact Items in qready1-craft-item-profiles.json.
-    ("QREADY1-CRAFT", 4),
+    ("QREADY1-CRAFT", 3),
     // M20: four Wiki/official Items in qready1-cradle-item-profiles.json.
     ("QREADY1-CRADLE", 4),
     // BEGIN GENERATED NPCFIX2 M22 PROFILE ADDITIONS
@@ -397,7 +397,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // both pinned appearance banks; no original key is removed or relabeled.
     ("SEASON-W18-HOUSE", 1959),
     // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
-    // QENGINE2 captures 95 source-qualified Items (qengine_reward_item_profiles.IDS).
+    // QENGINE2 captures 156 source-qualified Items (qengine_reward_item_profiles.IDS).
     // The exact packet carries speed_bonus=0 for every record, checked below.
     ("QENGINE-REWARDS", 53),
     // W05d:48 canonical seasonal profiles;35 further keys are new after the
@@ -422,7 +422,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 adds exactly the 128 independently captured physical quest Items.
+    // QENGINE2 adds exactly the 156 independently captured physical quest Items.
     // In particular the pre-existing pick keeps its unknown equipment speed;
     // custody completion must not replace that owner with a fabricated zero.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -458,13 +458,21 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
     }
     // QENGINE2 identities: generated begin
-    assert_eq!(added_keys.len(), 95);
+    assert_eq!(added_keys.len(), 156);
     assert_eq!(
         added_keys,
         std::collections::BTreeSet::from([
             "oteryn:item.tibia.i10198",
             "oteryn:item.tibia.i10199",
             "oteryn:item.tibia.i11544",
+            "oteryn:item.tibia.i11545",
+            "oteryn:item.tibia.i11546",
+            "oteryn:item.tibia.i11547",
+            "oteryn:item.tibia.i11548",
+            "oteryn:item.tibia.i11549",
+            "oteryn:item.tibia.i11550",
+            "oteryn:item.tibia.i11551",
+            "oteryn:item.tibia.i11552",
             "oteryn:item.tibia.i11700",
             "oteryn:item.tibia.i11701",
             "oteryn:item.tibia.i12413",
@@ -491,12 +499,20 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i16165",
             "oteryn:item.tibia.i16167",
             "oteryn:item.tibia.i16242",
+            "oteryn:item.tibia.i17668",
             "oteryn:item.tibia.i17669",
             "oteryn:item.tibia.i17670",
+            "oteryn:item.tibia.i17671",
             "oteryn:item.tibia.i17672",
             "oteryn:item.tibia.i17673",
             "oteryn:item.tibia.i17674",
             "oteryn:item.tibia.i17675",
+            "oteryn:item.tibia.i17676",
+            "oteryn:item.tibia.i17677",
+            "oteryn:item.tibia.i17679",
+            "oteryn:item.tibia.i17681",
+            "oteryn:item.tibia.i19083",
+            "oteryn:item.tibia.i19151",
             "oteryn:item.tibia.i20275",
             "oteryn:item.tibia.i20276",
             "oteryn:item.tibia.i21291",
@@ -506,26 +522,67 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i21505",
             "oteryn:item.tibia.i21506",
             "oteryn:item.tibia.i21507",
+            "oteryn:item.tibia.i21573",
+            "oteryn:item.tibia.i21897",
+            "oteryn:item.tibia.i21898",
+            "oteryn:item.tibia.i21899",
+            "oteryn:item.tibia.i21901",
+            "oteryn:item.tibia.i21902",
+            "oteryn:item.tibia.i21905",
+            "oteryn:item.tibia.i21906",
             "oteryn:item.tibia.i22008",
+            "oteryn:item.tibia.i22074",
             "oteryn:item.tibia.i22082",
             "oteryn:item.tibia.i22516",
             "oteryn:item.tibia.i22721",
+            "oteryn:item.tibia.i23163",
+            "oteryn:item.tibia.i23986",
+            "oteryn:item.tibia.i27565",
             "oteryn:item.tibia.i27654",
             "oteryn:item.tibia.i28792",
             "oteryn:item.tibia.i28793",
             "oteryn:item.tibia.i2973",
             "oteryn:item.tibia.i30168",
             "oteryn:item.tibia.i30169",
+            "oteryn:item.tibia.i3029",
+            "oteryn:item.tibia.i3035",
+            "oteryn:item.tibia.i3114",
+            "oteryn:item.tibia.i3120",
+            "oteryn:item.tibia.i3205",
+            "oteryn:item.tibia.i3212",
+            "oteryn:item.tibia.i3214",
+            "oteryn:item.tibia.i32173",
+            "oteryn:item.tibia.i32197",
+            "oteryn:item.tibia.i32225",
+            "oteryn:item.tibia.i32226",
+            "oteryn:item.tibia.i32227",
+            "oteryn:item.tibia.i32228",
+            "oteryn:item.tibia.i3231",
+            "oteryn:item.tibia.i3232",
+            "oteryn:item.tibia.i3233",
+            "oteryn:item.tibia.i3234",
+            "oteryn:item.tibia.i3243",
             "oteryn:item.tibia.i3244",
+            "oteryn:item.tibia.i32537",
+            "oteryn:item.tibia.i32582",
+            "oteryn:item.tibia.i32583",
+            "oteryn:item.tibia.i32584",
+            "oteryn:item.tibia.i32585",
+            "oteryn:item.tibia.i32602",
+            "oteryn:item.tibia.i32757",
+            "oteryn:item.tibia.i3456",
             "oteryn:item.tibia.i3537",
             "oteryn:item.tibia.i3543",
+            "oteryn:item.tibia.i3560",
             "oteryn:item.tibia.i3587",
             "oteryn:item.tibia.i3589",
             "oteryn:item.tibia.i3590",
             "oteryn:item.tibia.i3593",
+            "oteryn:item.tibia.i3607",
             "oteryn:item.tibia.i36543",
             "oteryn:item.tibia.i36544",
             "oteryn:item.tibia.i36545",
+            "oteryn:item.tibia.i3661",
             "oteryn:item.tibia.i37002",
             "oteryn:item.tibia.i37003",
             "oteryn:item.tibia.i3723",
@@ -540,6 +597,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i5938",
             "oteryn:item.tibia.i5939",
             "oteryn:item.tibia.i5940",
+            "oteryn:item.tibia.i5941",
             "oteryn:item.tibia.i5945",
             "oteryn:item.tibia.i5947",
             "oteryn:item.tibia.i6099",
@@ -555,8 +613,11 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i770",
             "oteryn:item.tibia.i7785",
             "oteryn:item.tibia.i875",
+            "oteryn:item.tibia.i8995",
+            "oteryn:item.tibia.i8996",
             "oteryn:item.tibia.i9041",
             "oteryn:item.tibia.i9106",
+            "oteryn:item.tibia.i9527",
         ])
     );
     // QENGINE2 identities: generated end
@@ -676,11 +737,39 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .filter(|(name, _)| {
             matches!(
                 *name,
-                "QENGINE-REWARDS"
+                "ENGCLAIM-M34"
+                    | "ENGNPC-M04"
+                    | "ENGNPC-M05"
+                    | "ENGNPC2-SLUG-CORPSES"
+                    | "M01C-KEY-DOORS"
+                    | "M07-CARROT"
+                    | "M07-FIRE-BUG"
+                    | "M07-LION-TRIALS"
+                    | "M18-FIRST-DRAGON"
+                    | "M22-TAINTED-TALISMAN"
+                    | "M23-LAST-CREEP"
+                    | "M26-ENDGAME"
+                    | "M30A-HIT-SOURCE"
+                    | "M35-CLAIM-SETS"
+                    | "M35-FANFARE-KEY"
+                    | "M35-GOBLIN-TEMPLE"
+                    | "M41"
+                    | "M42-HOT-CUISINE"
+                    | "M44-LIONS-AMPHORA"
+                    | "NPCFIX2-M22"
+                    | "QENGINE-REWARDS"
+                    | "QM49-ELEMENTAL-SPHERES"
+                    | "QM50-ELEVATOR"
+                    | "QMECH-M49"
+                    | "QMECH-M50"
                     | "QREADY1"
+                    | "QREADY1-CLOCKS"
+                    | "QREADY1-CRADLE"
+                    | "QREADY1-CRAFT"
                     | "QREADY2"
                     | "QUESTPC2-SOURCE-CLOSURE"
                     | "QUESTPC4-STAG-ITEMS"
+                    | "QUESTPC4-TREASURE-REWARDS"
                     | "QUESTPC7-HOT-CORPSES"
                     | "QUESTPC7-HOT-FISHBURGER"
                     | "QUESTPC7-MARSH-CORPSES"
@@ -691,17 +780,19 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                     | "QUESTPC8-MERGED"
                     | "SEASON-W05D"
                     | "SEASON-W18-HOUSE"
+                    | "SRV7-M14"
                     | "SRV9-MARRIAGE"
                     | "SRVENC-W02"
+                    | "SRVGAP-QUEST-DISGUISE"
                     | "W10-PRIMAL"
                     | "WORLDCHG"
             )
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 2442);
+    assert_eq!(later_main_profiles, 2589);
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 75);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 103);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES
@@ -764,7 +855,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 128),
+        ("qengine-reward-item-profiles.json", 156),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -990,7 +1081,12 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         // MAIL-E09: the parcels and the stamped letter carry no speed attribute.
         .chain([3503, 3504, 3506].map(|id| format!("oteryn:item.tibia.i{id}")))
         // BEGIN GENERATED KNOWN SPEED EXCLUSIONS
-        .filter(|key| !["oteryn:item.tibia.i2833", "oteryn:item.tibia.i5805", "oteryn:item.tibia.i5806"].contains(&key.as_str()))
+        .filter(|key| ![
+            "oteryn:item.tibia.i2833",
+            "oteryn:item.tibia.i5805",
+            "oteryn:item.tibia.i5806"
+        ]
+        .contains(&key.as_str()))
         // END GENERATED KNOWN SPEED EXCLUSIONS
         .collect()
     );

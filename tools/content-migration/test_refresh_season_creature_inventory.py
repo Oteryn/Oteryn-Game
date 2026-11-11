@@ -24,9 +24,14 @@ class SeasonalInventory(unittest.TestCase):
             self.root, self.rows, self.native, self.schedules), 1)
 
     def test_unrelated_creature_and_schedule_additions_remain_rejected(self):
+        extra_key = 'oteryn:creature.unqualified_inventory_fixture'
+        extra_row = copy.deepcopy(self.rows[0])
+        extra_native = copy.deepcopy(self.native[0])
+        extra_row['definition']['identity']['key'] = extra_key
+        extra_native['profile']['target']['key'] = extra_key
         with self.assertRaisesRegex(ValueError, 'Non-seasonal canonical inventory'):
-            inventory.validate_inventory(self.root, self.rows + [self.rows[0]],
-                                         self.native + [self.native[0]], self.schedules)
+            inventory.validate_inventory(self.root, self.rows + [extra_row],
+                                         self.native + [extra_native], self.schedules)
         with self.assertRaisesRegex(ValueError, 'Non-seasonal canonical inventory'):
             inventory.validate_inventory(self.root, self.rows, self.native, self.schedules + 1)
 
