@@ -38,9 +38,13 @@ Write it as one self-contained file. Include, in this order:
    only when the packet gives a database route (a PC lane's own database);
    otherwise a non-PostgreSQL test, with the PostgreSQL case run by the
    coordinator.
-7. **Report:** at most 15 lines: result, head SHA or diff name, commands run
+7. **Review:** for a Claude lane or child session that owns its branch,
+   "you run the Codex review of your head and fix confirmed findings
+   (`oteryn-review` §5)"; for a Codex lane, "no review, the coordinator
+   reviews".
+8. **Report:** at most 15 lines: result, head SHA or diff name, commands run
    with pass/fail counts, open questions with options and a recommendation,
-   what is still PARTIAL.
+   what is still PARTIAL, and the line `Codex review <head SHA>: ...`.
 
 Keep the packet short and decided: write it for an engineer who has never
 seen the repository, so it names the files, the function and type names, the

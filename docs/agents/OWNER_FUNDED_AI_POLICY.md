@@ -98,6 +98,13 @@ GitHub control-plane write and must obey one-writer routing.
   repository/PR/head review packet, but it must not emit the trigger itself.
 - For a standalone task with no programme control plane, only the exact task owner
   named by the live allocation may trigger review.
+- Owner decision 2026-11-11 (lanes that work alone): a Claude session, child
+  session or PC lane that owns a branch or PR, named as its owner in its packet
+  or allocation, is the exact task owner for the heads it pushes. It runs that
+  head's local `codex exec` review itself under the per-PR rule above and
+  reports the result (head SHA, findings, fixes) to its coordinator, which does
+  not run a second review of the same head. A Codex lane never reviews code; its
+  result is reviewed by the coordinator or the lane that takes it over.
 - If trigger ownership is ambiguous, fail closed and reconcile ownership; do not
   ask the owner for funding permission and do not race another agent.
 - Provider-native automatic review already running for the same exact head counts
