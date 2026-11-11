@@ -1,0 +1,412 @@
+{
+  "schema": "OTERYN_QMECH_GENERATED_CHECKPOINT/v1",
+  "boundary": "after-native-registration",
+  "baseline_head": "011cb5696c4635c74f92aa4e10c452b8285cc767",
+  "runtime_publishable": false,
+  "note": "Evidence checkpoint only. Authoring tail and authentic World pin closure must complete before publication of runtime files.",
+  "known_pc_transfer_and_genuine_producer_sha256": {
+    "content/world/definitions/declarations.json": "6372260f3058ac836446673f43c026ef7596d6d92c38ae8bf5e9f25fdbe14709",
+    "content/world/provenance/imports.json": "16253c6b34cb1754d33a1019b6ffca399e1b39243b82a0d993495bd3160be8f5",
+    "content/world/manifest.json": "ec48e6b4c630b84405a131243af4125c05ee73c7e0038f26f34118d67d10e3dc",
+    "content/world/content.lock.json": "a8dba0aedb4347682036c067730551143804eb48f24be9356e72082ca5972929",
+    "content/creatures/definitions/spell-native-profiles.json": "5c23bcf35e614600b94e99af1e1967d08f3705563843fb46215eb0f4ef42d962",
+    "content/world/project.json": "4e714ad6e54c8d56033b27e1503228978f4f63e23dc1d905cd386bf7eced886a",
+    "tools/content-schema/native-gameplay/prey-model-results.json": "a442842a103b5adbbcdc90e89dfedeef1846fee45f371b8e88709d8e4de43144"
+  },
+  "reviewed_guards": {
+    "count": 52,
+    "unchanged": 51,
+    "changed_key": "oteryn:creature.soul_sphere",
+    "actual": "b63228b0188ff2bfadd3bac08a2fd25d8e85098d7b3f4d54b01ba9b564c5ee8c"
+  },
+  "native_source_root": "9e04cf93580dbeeaa50c0fc38cc98a7929ea4f9ceb4697284c1eb95b219b39a3",
+  "witnesses": [
+    {
+      "path": "crates/gameplay/content/src/content/native_monster_callback_witness.json",
+      "sha256": "caadd3b6e732d986d90bb411ccdc897346c8992e9e3b159b1d1da49db781c623",
+      "bytes": 1589888
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-witness.json",
+      "sha256": "2c825c71d81c2cb6c2292888c5039840007c51bda3d56f6861e9e4865462b952",
+      "bytes": 1670131
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-rotten-blood-witness.json",
+      "sha256": "5788170ae9fde55fd5a084abbf63890baa233f35896884e2ca672d315bb20b4f",
+      "bytes": 961951
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-primal-witness.json",
+      "sha256": "94b3e911515b6d84dd278c69496cbe841149da569d9978c90d0bc4e11c671b48",
+      "bytes": 469445
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-attacks.json",
+      "sha256": "79eb6bf86aef73ccd5ed5d43ece835c359723e5613fa571837444ddc472e2fd9",
+      "bytes": 163448
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-omrafir-attacks.json",
+      "sha256": "0152012c4df7daed5fb23216b865a2934ba5380d4fec48ee29f18d8431821b36",
+      "bytes": 90980
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_soul_war_callbacks/w01_prepare_death_witness.json",
+      "sha256": "6cf3722243d78f8b973d8d19bbaee1acadb4cc73159ef52af325340540eba8c2",
+      "bytes": 131697
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-death-events.json",
+      "sha256": "6a0318df5680fed4150ff532d911d09a3c3c312ce4f9509c822a604805be5503",
+      "bytes": 48543
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-rotten-death-events.json",
+      "sha256": "5e6688a798d4919286311d9679c2e069f473c1bb1dd8cf23d33aa427492f1491",
+      "bytes": 7825
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_w01_death_events_witness.json",
+      "sha256": "e3d3add37f27a220264de0b4461ec87b18d5a765132085a817368f1f3c0bc80f",
+      "bytes": 389718
+    }
+  ],
+  "generated_files": [
+    {
+      "path": "content/content.lock.json",
+      "bytes": 11906,
+      "sha256": "2ddff9dc88322214e12c3d38d43faf656d81969819eb7c6ebd41811613399f2a",
+      "git_blob": "515f7f284c3d87535e196d80942beaa8bf01bf65",
+      "baseline_git_blob": "1a205e67ec213352c57f9e732f0b7f701d026a29",
+      "mode": "100644"
+    },
+    {
+      "path": "content/cosmetics/mounts/index.json",
+      "bytes": 372,
+      "sha256": "2a16de06863b87bfff0c6a3b8a55ed96c76e3cadd4f8c3253da0034d3126ef27",
+      "git_blob": "bc56ea2440e18bb0a81fcae850c6fdb6b89b5be5",
+      "baseline_git_blob": "842973af8572aa719f4c2eb3a6d4685e4233ea9c",
+      "mode": "100644"
+    },
+    {
+      "path": "content/creatures/definitions/index.json",
+      "bytes": 2278,
+      "sha256": "53a0424a8e7e7b65ae1da3d13ff656da633b33a59fa25f7b91a9c924b3b8ddc3",
+      "git_blob": "73369b786b126bd3a8b1e9b69a4401ea0d6b78e5",
+      "baseline_git_blob": "74d8608a8a1d4acb0c57aa769286370c34641ca1",
+      "mode": "100644"
+    },
+    {
+      "path": "content/creatures/definitions/spell-native-profiles.json",
+      "bytes": 25840401,
+      "sha256": "5c23bcf35e614600b94e99af1e1967d08f3705563843fb46215eb0f4ef42d962",
+      "git_blob": "83c59528c6bbe87a9503e3166f2277a68ef64063",
+      "baseline_git_blob": "73db3efb5b529ac0702248a923c4516afb7c1759",
+      "mode": "100644"
+    },
+    {
+      "path": "content/creatures/prey-slot-values.json",
+      "bytes": 164929,
+      "sha256": "8431439b05ade89decc501a54d6ceda543238cd73f87eda48372290692b8cc16",
+      "git_blob": "afd5987e79785617b63086829639fe2b5bbac7d8",
+      "baseline_git_blob": "dd1a148cf793e9261451e8c3cc1f0e13ade69329",
+      "mode": "100644"
+    },
+    {
+      "path": "content/dialogues/definitions/index.json",
+      "bytes": 398,
+      "sha256": "002d7da08f966d1ceb76e8b068a2e398be1382674e36dc2342ba9f1d564a649b",
+      "git_blob": "2974db9c2ce7bb15480f4e2bb6ac31e29b2c0492",
+      "baseline_git_blob": "75a5c6b99812db79d184bf3eb026fb0575cfbe44",
+      "mode": "100644"
+    },
+    {
+      "path": "content/documents/index.json",
+      "bytes": 469,
+      "sha256": "2c122e01dc01d83d4110ee2b6f15752f17d7c8dd881f3e9c5813df8c512cc0e3",
+      "git_blob": "45de9743dfe0f8231c5db5a7581c2491901c8d7b",
+      "baseline_git_blob": "d0e81e45559618ad0dd5b9dd314e42c9d575e4a1",
+      "mode": "100644"
+    },
+    {
+      "path": "content/encounters/definitions/index.json",
+      "bytes": 407,
+      "sha256": "a93baaa16a1e77fc3ab40a3c2df08bfc9cb2e2afcc8a88c80f4d7e35e304fc5d",
+      "git_blob": "bf575981f56c9570c665a86a93c1bbd8711f97d5",
+      "baseline_git_blob": "7997eefa2158b9ad14e1604f39d64c35200c29d9",
+      "mode": "100644"
+    },
+    {
+      "path": "content/manifest.json",
+      "bytes": 31977,
+      "sha256": "a9db8a899edb30502f710d3d1ee52ab981539c8a180981eaed675e87dc1ee255",
+      "git_blob": "46d89d6ed49ba898f91df84945ca1e882a0c88dd",
+      "baseline_git_blob": "583da1465bedba82accfbe09afb49ebd27932d43",
+      "mode": "100644"
+    },
+    {
+      "path": "content/npcs/definitions/index.json",
+      "bytes": 455,
+      "sha256": "544c39bfefd62655bf38752e5d364b3daae87b3d8c425c35e08c5e2a11a65107",
+      "git_blob": "3a3ea192c1dea1ccbdd623a7e2ca4bdea5e334fd",
+      "baseline_git_blob": "0c762b568c3cae6e056f8191619e9f392427fe6d",
+      "mode": "100644"
+    },
+    {
+      "path": "content/project.json",
+      "bytes": 735,
+      "sha256": "44817a234658fc33d68862186c6fe89021ddfd705abd641f189d5fd16d748867",
+      "git_blob": "c9c1f620efb7e74715a9792eb20a7d6ab1507ca9",
+      "baseline_git_blob": "9f2ab8aecbaaf799262b0e05c0019d4856396bb1",
+      "mode": "100644"
+    },
+    {
+      "path": "content/services/bank/index.json",
+      "bytes": 328,
+      "sha256": "38adf8facab9f3b56a36c9b5f9fa5847c748ebeced55bb53c4711a32f93575c2",
+      "git_blob": "8b5d9f0a5124369421c34c8d9e43dedca1df4823",
+      "baseline_git_blob": "b62cb7c5ce2e053fba4aeec85599f5bd598f83cd",
+      "mode": "100644"
+    },
+    {
+      "path": "content/services/blessings/index.json",
+      "bytes": 342,
+      "sha256": "55e09794623ac534cf0df138e6a43337d539c45077eec493c1b2a5c115096f17",
+      "git_blob": "dde7f8e73f3dfdb9240b2cc6c6866092137eed78",
+      "baseline_git_blob": "8ce2f15bbef72867d5213561b9073a09422acba3",
+      "mode": "100644"
+    },
+    {
+      "path": "content/services/promotion/index.json",
+      "bytes": 343,
+      "sha256": "c43ea7234c55ada04df69e296709e97946d817b704b16a63a642c334eeef2883",
+      "git_blob": "bff9501f3247b7d887ae3e174a49c1f7932739d4",
+      "baseline_git_blob": "5e8d0a4dc43218fcbf5a07230e01a32f81258804",
+      "mode": "100644"
+    },
+    {
+      "path": "content/services/trade/index.json",
+      "bytes": 333,
+      "sha256": "0e0e979a5e4900bbcf15d59cadf92eed5559e9fd45d61efbb0898d7bdb357fc0",
+      "git_blob": "35ee5e8e176ec9620b08efa74657d39db0ed4313",
+      "baseline_git_blob": "6b60d6d9f0b6cc5e1eb1664d88a2dcf5d84a827a",
+      "mode": "100644"
+    },
+    {
+      "path": "content/services/travel/index.json",
+      "bytes": 335,
+      "sha256": "c0c850bfad295f437fc65fef52a4e21c43cf0f44117614dc873b3ff056d33784",
+      "git_blob": "3f59a4e147fbec3166b55149bde868912fa5dd84",
+      "baseline_git_blob": "1452f9ee76c4b066e325e5c3fe0657ea00418532",
+      "mode": "100644"
+    },
+    {
+      "path": "content/spells.manifest.json",
+      "bytes": 2768,
+      "sha256": "8be9dd247e3baabc8224bb6161947fbce2492ef7e22b8434995bc7f1674c518e",
+      "git_blob": "92346af53d1ad978d85877d7a4950fabc02e7d75",
+      "baseline_git_blob": "c038eadeca0a0d2eabe79b8a1913d47d7a2d3e21",
+      "mode": "100644"
+    },
+    {
+      "path": "content/world/content.lock.json",
+      "bytes": 418,
+      "sha256": "a8dba0aedb4347682036c067730551143804eb48f24be9356e72082ca5972929",
+      "git_blob": "867749b2fbf448b9d53831d06fdd7dd14772f8bb",
+      "baseline_git_blob": "34fb377aeebadb46d1192fec44d81ab6634ddca8",
+      "mode": "100644"
+    },
+    {
+      "path": "content/world/definitions/declarations.json",
+      "bytes": 27789754,
+      "sha256": "6372260f3058ac836446673f43c026ef7596d6d92c38ae8bf5e9f25fdbe14709",
+      "git_blob": "d4e2a10ea984963d377c1df88c3c7fa8a093c8fa",
+      "baseline_git_blob": "3e8752c1a5c578e3d74b93e92c4839f2c35603cc",
+      "mode": "100644"
+    },
+    {
+      "path": "content/world/manifest.json",
+      "bytes": 1957,
+      "sha256": "ec48e6b4c630b84405a131243af4125c05ee73c7e0038f26f34118d67d10e3dc",
+      "git_blob": "1ee2f897ac97b4f3c6aaa751c972d5ab171521a3",
+      "baseline_git_blob": "8fc2727e3af97ef4e86d766c131dc69a6f98e82f",
+      "mode": "100644"
+    },
+    {
+      "path": "content/world/project.json",
+      "bytes": 408,
+      "sha256": "4e714ad6e54c8d56033b27e1503228978f4f63e23dc1d905cd386bf7eced886a",
+      "git_blob": "f8187f3b42088a5ebf4ba58f2b1dba0f59c853f5",
+      "baseline_git_blob": "95a6355944b2cc4b43583b5d91d6de8d01f14dd7",
+      "mode": "100644"
+    },
+    {
+      "path": "content/world/provenance/imports.json",
+      "bytes": 6773975,
+      "sha256": "16253c6b34cb1754d33a1019b6ffca399e1b39243b82a0d993495bd3160be8f5",
+      "git_blob": "5a98be6ce6cfaf0c86d822e1e9b67b24892f8ce4",
+      "baseline_git_blob": "b01ad7b57a018540ef6766f1544eb4a83a95a606",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_monster_callback_witness.json",
+      "bytes": 1589888,
+      "sha256": "caadd3b6e732d986d90bb411ccdc897346c8992e9e3b159b1d1da49db781c623",
+      "git_blob": "3b56d9343611bbb4a71b3d695e5f17bed905d9e6",
+      "baseline_git_blob": "d60da574d8ec974d57f6af0c4cd0bf907a463553",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_soul_war_callbacks/w01_prepare_death_witness.json",
+      "bytes": 131697,
+      "sha256": "6cf3722243d78f8b973d8d19bbaee1acadb4cc73159ef52af325340540eba8c2",
+      "git_blob": "44d171d0d5a7e07a2546c6c3d5b97fc2e8f186ad",
+      "baseline_git_blob": "e2a3c875337b73539ff2103c2754b04633378338",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_w01_death_events_pin.rs",
+      "bytes": 2966,
+      "sha256": "1ea4e2cfec7999aa183d0463c8e94e1e5ce0c211c015a43e4945ce562662f1ef",
+      "git_blob": "17d0ba4d90fd0c0a644c7d360fd2748c7ca913e3",
+      "baseline_git_blob": "1783918aefd70bc8538f006789e403aa961cbee0",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_w01_death_events_witness.json",
+      "bytes": 389718,
+      "sha256": "e3d3add37f27a220264de0b4461ec87b18d5a765132085a817368f1f3c0bc80f",
+      "git_blob": "8d99fc8770b65e6998c8b4c1ee8e41e6ec9bca2d",
+      "baseline_git_blob": "e13e7b73641171d136794505f522654cbf15e0d5",
+      "mode": "100644"
+    },
+    {
+      "path": "docs/balance/PREY-SLOT-VALUE-2026-11-01.md",
+      "bytes": 81196,
+      "sha256": "d48d23046f094a6a957bfe94b16450ab26bccfa680e32fc23cc3ef3782a9b285",
+      "git_blob": "6db2ea42f03c9cf8db24391433f3b915367b28bd",
+      "baseline_git_blob": "b94d93f09b7d676b3da1e8400756a379c71e9e2a",
+      "mode": "100644"
+    },
+    {
+      "path": "docs/balance/PREY-TIME-SIM-2026-11-01.md",
+      "bytes": 12327,
+      "sha256": "8dacc55058193f7b446a173576ca13711b600e5f253711436cbc34aa3ba66e5d",
+      "git_blob": "e6d08bb1ed8031e487cd447bc24a24140d736493",
+      "baseline_git_blob": "db4af556b4684c0e2d5962502d7c21ebe9cbb3d9",
+      "mode": "100644"
+    },
+    {
+      "path": "imports/tibiawiki/batches.json",
+      "bytes": 7564,
+      "sha256": "a5135733b231007383b9c4244608ec8fd1c9dee651f7becd70e77cd949690497",
+      "git_blob": "e4105fb424953ad49b31814ef2ba60861ebea14a",
+      "baseline_git_blob": "e599c92234c42973f249696a33496a23b2596f0a",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/build_srx3_soul_war_witness.py",
+      "bytes": 22056,
+      "sha256": "673e0ab379a92ac326e4828bbff8ab3ac3d37a7bb2bacefc8b3f327fef122081",
+      "git_blob": "998e5e2a52923edc09853690a1b8a6d09e4fe150",
+      "baseline_git_blob": "e21b573c200eb0a0a08b4967e6e7a4c1d6e33719",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/prey-model-results.json",
+      "bytes": 122667,
+      "sha256": "a442842a103b5adbbcdc90e89dfedeef1846fee45f371b8e88709d8e4de43144",
+      "git_blob": "c7ce224e0439879a7fd503f903138cf3e0491bd3",
+      "baseline_git_blob": "4bec586aa567d336c1ffdb7a4dba66df6907536b",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-omrafir-attacks.json",
+      "bytes": 90980,
+      "sha256": "0152012c4df7daed5fb23216b865a2934ba5380d4fec48ee29f18d8431821b36",
+      "git_blob": "f17afa8e2ccca3695c085ec54198a3f47eee02eb",
+      "baseline_git_blob": "98a9e7df2f8a37055caf7dce48f594ed90f3257d",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-primal-witness.json",
+      "bytes": 469445,
+      "sha256": "94b3e911515b6d84dd278c69496cbe841149da569d9978c90d0bc4e11c671b48",
+      "git_blob": "e7a7d9f213a9f6f70ccb30d63012151f7b734903",
+      "baseline_git_blob": "716ca72e2cc1711ca4bf6990e1e5d129801a0d39",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-rotten-blood-witness.json",
+      "bytes": 961951,
+      "sha256": "5788170ae9fde55fd5a084abbf63890baa233f35896884e2ca672d315bb20b4f",
+      "git_blob": "bf7fadd1a070ba9873bf332bee83a5594f044339",
+      "baseline_git_blob": "ce68fb4e64feb00ecc8c86c3acf0ab408b4553a4",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-rotten-death-events.json",
+      "bytes": 7825,
+      "sha256": "5e6688a798d4919286311d9679c2e069f473c1bb1dd8cf23d33aa427492f1491",
+      "git_blob": "176cfd10b1396488d1c5892b8adaad5ac22eecde",
+      "baseline_git_blob": "bc93382e1f40db97bb178c0cccd85854b91aca2e",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-attacks.json",
+      "bytes": 163448,
+      "sha256": "79eb6bf86aef73ccd5ed5d43ece835c359723e5613fa571837444ddc472e2fd9",
+      "git_blob": "6f91f97a5733a04c3ae639aa4e1fdb7890d7b4d7",
+      "baseline_git_blob": "2e8b3b899b069e40217575a955f64adafe8c641c",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-death-events.json",
+      "bytes": 48543,
+      "sha256": "6a0318df5680fed4150ff532d911d09a3c3c312ce4f9509c822a604805be5503",
+      "git_blob": "6e0fbac2a247533cdc75ec4f754a6cadf1477d1a",
+      "baseline_git_blob": "ab979541a19157107c0007282930c4983b434a49",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-witness.json",
+      "bytes": 1670131,
+      "sha256": "2c825c71d81c2cb6c2292888c5039840007c51bda3d56f6861e9e4865462b952",
+      "git_blob": "7f845d32226248f7835d929b7e88529b70827010",
+      "baseline_git_blob": "639e7b01b9cc8477972004f518d0b4d06b6bf4ef",
+      "mode": "100644"
+    }
+  ],
+  "owner_greed_sources": [
+    {
+      "path": "crates/gameplay/content/src/content/bosses/activity_template/soul_war_entry_gate.rs",
+      "bytes": 482,
+      "sha256": "8522ccd0d447daf288bbeb3e859f09067c5f102c04afb50ffced1b9d2a35fb90",
+      "git_blob": "f3de7e0780566bc4f67ed998821bec22a7eba1f1",
+      "baseline_git_blob": "dc9406de1328bb402e6050660246245149bac515",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime/source_bundle.rs",
+      "bytes": 46521,
+      "sha256": "d537b8426324e374f321a9d88f6b7996e74554122283806e42ff526a3a18b2eb",
+      "git_blob": "7a49c5f39938cf59def9a35698d21d80accb14b8",
+      "baseline_git_blob": "142768e386d5980ed0d7aa232c29f22f3c700916",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/entities/src/carrier/soul_war.rs",
+      "bytes": 31684,
+      "sha256": "2d6cd7b75641353846cc552f4de15e178246af5b6da0f98c85fc01bd1eef98e9",
+      "git_blob": "c09eff659b171836dd0fb744f2225eb42af00a54",
+      "baseline_git_blob": "6cc2f5729f1ed321d414c1da5826dc48f79c894a",
+      "mode": "100644"
+    }
+  ],
+  "binary_patch": {
+    "path": "after-native-registration.generated.binary.patch",
+    "bytes": 28982,
+    "sha256": "2a5e957b789791836e6e494d1fecc0ac41d3c4a9341c564f6f7e2892e6e36c80"
+  }
+}
