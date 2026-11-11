@@ -61,7 +61,7 @@ south-east, on the temple's floor. A landing admits the actor when the callback 
 proof the citizenship and quest teleports use accepts it: walkable, no closed door, not
 occupied, not closed by the PvP block.
 
-The move is part of the consume. After the use row is stamped unexpired and before COMMIT,
+The move is part of the consume. After the use row is stamped and before COMMIT,
 the writer calls the Channel owner, which takes the runtime and spell-state guards in their
 established order and teleports the actor to the first admitting landing. When no landing
 admits the actor at that moment (every candidate was taken since PREPARE), the transaction
@@ -74,55 +74,73 @@ use does.
 
 ## Seven-day deadline
 
-The scroll's deadline is a TIMED deadline in the sense of TIMED-ITEM-0B §10.3 (database
-time at which the item expires) with the `Expire {Deadline}` cause of RT-1c, fixed once at
-delivery and never moved: no `SetDeadline`, `ClearDeadline` or `PutOut` follows it.
+The scroll expires through the game's existing Item expiration owner, the absolute Item
+deadline owner (`game_spell_item_temporal_schedules`, drained by
+`drain_due_items_in_transaction` on the Channel's Item deadline pass, about once a second),
+which already makes spell- and action-minted Items with a duration vanish. The scroll is a
+third original source of that owner; no new clock, sweep or table is introduced.
 
-- Delivery. The daily reward claim that mints the scroll stamps its immutable
-  `game_character_daily_reward_lines` row (kind `TEMPLE_SCROLL`, naming the minted
-  instance) with `effect_started_at` = the daily effect clock (`game_daily_effect_now()`)
-  and `effect_expires_at` = `effect_started_at` + 168 hours (604,800,000 ms, the
-  `remaining_ms` ceiling of the TIMED rows). Migration 2762 admits exactly that interval
-  for this kind and requires it on every newly delivered scroll line.
+- Delivery. The daily reward claim that mints the scroll into the Inbox inserts, in the
+  same transaction, the scroll's schedule: `duration_millis` = 604,800,000 (168 hours),
+  `expires_at_unix_ms` = the transaction's database start + that duration, no decay target
+  (the scroll vanishes rather than transforms), `source_transaction_id` = the claim and
+  `source_ordinal` = 1. The deferred schedule proof (migration 2762) admits exactly that
+  row: the live scroll of definition `definition-r1`, its `TEMPLE_SCROLL` delivery line
+  delivered by that claim, the exact duration, deadline and content digest, and the current
+  transaction. The deadline is fixed once and never moved.
 - Why not `game_item_timed_states`. Its write admission (D360) binds a deadline to a lit
-  continuous item on a tile and requires a pinned timed definition; a carried scroll with
-  one charge and an unchanging deadline has neither. The delivery line is already the
-  immutable, per-instance, transactional record of the delivery, so the deadline is kept
-  there and read by instance, not copied into a mutable row.
-- Expiry. The deadline is applied by the item's owner when the holder next uses it: the
-  insert of the `game_temple_scroll_uses` row stamps the daily effect clock and the
-  instance's deadline and records `expired = (deadline <= clock)`. An expired scroll is
-  burnt by the same atomic consume, the actor is not moved, the result is `COMMITTED` and
-  the actor receives the status text `Your temple teleport scroll has expired.` The
-  database computes `expired`; the caller cannot choose it.
-- No deadline. A scroll without a delivered daily line (a scroll delivered before
-  migration 2762, or minted by any other owner) carries no deadline and never expires
-  under this contract.
-
-Not in this contract: a background sweep that removes an expired scroll the holder never
-touches again, in the Inbox, a depot or a container. Such a scroll stays visible until it
-is used, and it can never teleport after its deadline. A sweep belongs to the RT-1c
-deadline scheduler when that owner exists. The Inbox delivery itself is unchanged: a
-scroll is used after it is moved to the carried tree.
+  continuous item on a tile and requires a pinned timed definition, and the item loop
+  refuses items with a timed row; a carried scroll has neither.
+- Movement. The scroll moves with its immutable schedule through the item loop (Inbox
+  retrieval, carried tree, depot), as an action-minted Item does; every other scheduled
+  Item keeps its movement guard. Owners that refuse every scheduled Item (supply stash,
+  House containers, market) refuse the scroll too.
+- Expiry. When the deadline has passed, the Item deadline pass removes the scroll exactly
+  as it removes every other expiring Item: one immutable receipt, predecessor capture,
+  audit envelope, the Item retired (`lifecycle` 2, quantity 0) and its custody removed. The
+  pass hosts Ground, the carried tree (main backpack and nested containers, depth up to 8)
+  and equipment, and migration 2762 extends it minimally with the Character Inbox root
+  (receipt custody kind 4), for this scroll only, through the one seam
+  `game_temple_scroll_inbox_expire`. Carried and Inbox removal requires the Character's
+  current session in that Channel, as for every carried Item: an offline Character's
+  scroll keeps its overdue schedule and is removed on the first pass after login. No
+  status text is sent; the Item simply disappears.
+- Defensive refusal. A use racing the deadline pass (the scroll is due but not yet
+  removed) is refused: the writer reads the schedule under the scroll's row lock and
+  returns `NOT_POSSIBLE` with nothing burnt, written or moved. The use row's stamp records
+  the schedule's deadline and the database clock, and its CHECK (`observed < expires`)
+  refuses a burn that crosses the deadline after that read.
+- Not hosted. A scroll in a depot box is not hosted by the pass; it is removed on the first
+  pass after it returns to the carried tree or the Inbox, and a use before that is refused
+  as above, so it can never teleport after its deadline.
+- No deadline. A scroll delivered before migration 2762 has no schedule, carries no
+  deadline and never expires under this contract.
 
 ## Persistence and rollback
 
-Migration 2762 widens `daily_effect_interval` with the 168-hour scroll interval, adds
-`daily_temple_scroll_deadline` (`NOT VALID`, so lines delivered before it keep their null
-interval), indexes lines by item instance, admits cause 481 in
+Migration 2762 indexes daily lines by item instance; admits cause 481 in
 `game_item_use_records_cause_kind_check` and `game_item_use_cause_shape` (each previous
-rule kept verbatim and widened), and creates `game_temple_scroll_uses` with its stamp, its
-immutability and its deferred pairing checks. Applied migrations are immutable: a rollback
-is a successor migration that stops new writes (the dispatch branch and the INSERT grant)
-and keeps every record as evidence of a consumed scroll.
+rule kept verbatim and widened); creates `game_temple_scroll_uses` with its stamp, its
+immutability and its deferred pairing checks; admits the scroll's schedule provenance in
+`game_spell_item_temporal_schedule_proven`, its movement in `game_item_loop_line_admit`,
+receipt custody kind 4 in both receipt CHECKs, the Inbox predecessor capture in
+`game_spell_item_temporal_capture`, the Inbox outcome in
+`game_spell_item_temporal_receipt_proven` and the Inbox row removal in
+`game_character_inbox_remove`, each as a prepended arm that keeps every previous arm.
+Applied migrations are immutable: a rollback is a successor migration that stops new
+writes (the dispatch branch, the claim's schedule insert and the INSERT grant) and keeps
+every record as evidence of a consumed or expired scroll.
 
 ## Tests
 
-Unit: the refusal order and dispositions, the landing order, the cause and lifetime
-constants. PostgreSQL
+Unit: the refusal order and dispositions, the landing order, the cause, revision and
+lifetime constants (the lifetime fits the deadline owner's `duration_millis`). PostgreSQL
 (route-less: returns `Ok(())` without `OTERYN_TEST_POSTGRES_ADMIN_URL`), in
 `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/temple_scroll.rs`:
 `temple_scroll_teleports_home_and_is_consumed`, `temple_scroll_refused_with_logout_block`,
 `temple_scroll_kept_when_the_temple_landing_is_taken_at_commit` (the writer with every
 landing occupied at commit: nothing is burnt or written) and
-`temple_scroll_expires_after_seven_days`.
+`temple_scroll_vanishes_through_the_item_deadline_owner` (a due scroll's use is refused
+with nothing written; the Item deadline pass then retires the due carried scroll and the
+due Inbox scroll with receipt custody kinds 2 and 4 and removes their custody, while the
+fresh scroll stays and still teleports).

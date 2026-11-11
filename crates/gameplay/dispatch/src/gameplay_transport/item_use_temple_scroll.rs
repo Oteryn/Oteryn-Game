@@ -3,8 +3,9 @@
 //! block and a protection-zone block, resolves the home temple and checks its landing; the
 //! native item-use writer burns the scroll with its use row and, before COMMIT, moves the actor
 //! to the free landing closest to the temple. No landing rolls the burn back, so the scroll is
-//! never consumed without the move. English TibiaWiki "Temple Teleport Scroll"; Winter Update
-//! 2026 thread 565.
+//! never consumed without the move. An expired scroll is removed by the Item deadline owner,
+//! not by a use; a use that races its deadline is refused with nothing written. English
+//! TibiaWiki "Temple Teleport Scroll"; Winter Update 2026 thread 565.
 use super::*;
 use crate::content::NativeEntryMovementCells;
 use crate::durability::item_use::temple_scroll::{TempleLanding, TempleScrollOutcome};
@@ -13,9 +14,6 @@ use crate::map::floor::CellBlocker;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::future::Future;
 use std::pin::Pin;
-
-/// The status text of a scroll burnt at or after its seven-day deadline.
-pub(super) const EXPIRED_TEXT: &str = "Your temple teleport scroll has expired.";
 
 /// The landing order around the temple, after the temple cell itself: Crystal's placement
 /// ring (`Map::placeCreature`'s normal relative list, the closest-free-tile search a temple
@@ -190,19 +188,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &landing,
         );
         let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
-        let (disposition, outcome, ambiguous) = match tokio::time::timeout(bound, commit).await {
-            // Every landing was taken at commit: the burn rolled back and the scroll is kept.
-            Ok(Ok(TempleScrollOutcome::NoLanding)) => (UseDisposition::NotPossible, None, false),
-            Ok(Ok(outcome)) => (UseDisposition::Committed, Some(outcome), false),
-            Ok(Err(ItemUseError::StaleState)) => (UseDisposition::StaleState, None, false),
-            Ok(Err(ItemUseError::Unavailable(_))) | Err(_) => {
-                (UseDisposition::Rejected, None, true)
+        let (disposition, ambiguous) = match tokio::time::timeout(bound, commit).await {
+            // Every landing was taken at commit, or the scroll's deadline passed before the
+            // Item deadline owner removed it: the burn rolled back and nothing was written.
+            Ok(Ok(TempleScrollOutcome::NoLanding | TempleScrollOutcome::Expired)) => {
+                (UseDisposition::NotPossible, false)
             }
-            Ok(Err(_)) => (UseDisposition::Rejected, None, false),
+            Ok(Ok(TempleScrollOutcome::Used | TempleScrollOutcome::AlreadyCommitted)) => {
+                (UseDisposition::Committed, false)
+            }
+            Ok(Err(ItemUseError::StaleState)) => (UseDisposition::StaleState, false),
+            Ok(Err(ItemUseError::Unavailable(_))) | Err(_) => (UseDisposition::Rejected, true),
+            Ok(Err(_)) => (UseDisposition::Rejected, false),
         };
-        if outcome == Some(TempleScrollOutcome::Expired) {
-            self.states.chat.push_quest_feedback(session, EXPIRED_TEXT);
-        }
         // A use moved the actor before its COMMIT; a replay applied its effect then.
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;

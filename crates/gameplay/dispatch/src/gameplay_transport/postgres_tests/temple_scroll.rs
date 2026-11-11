@@ -1,8 +1,9 @@
 //! WU26-06 Temple Teleport Scroll through the production USE owner
 //! (`docs/contracts/TEMPLE_TELEPORT_SCROLL_V1.md`): a use burns the scroll with its use row and
 //! moves the actor to the home temple, a logout block refuses with nothing written, and a
-//! scroll used after its seven-day delivery deadline burns as expired without moving anyone. A
-//! temple landing taken at commit rolls the burn back: the scroll is kept.
+//! temple landing taken at commit rolls the burn back: the scroll is kept. A scroll past its
+//! seven-day deadline is refused with nothing written, and the Channel's Item deadline pass
+//! removes it from the carried tree and from the Character Inbox like any expiring Item.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
@@ -14,8 +15,8 @@ const SCROLL: &str = "oteryn:item.tibia.i25718";
 const BAG: u8 = 170;
 const FRESH: u8 = 171;
 const OLD: u8 = 172;
-const FRESH_CLAIM: u8 = 173;
-const OLD_CLAIM: u8 = 174;
+const INBOX: u8 = 175;
+const DELIVERY: u8 = 176;
 const START: MovementLocalPosition = MovementLocalPosition {
     x: 7,
     y: 0,
@@ -55,7 +56,7 @@ fn temple_scroll_kept_when_the_temple_landing_is_taken_at_commit() -> TestResult
 }
 
 #[test]
-fn temple_scroll_expires_after_seven_days() -> TestResult {
+fn temple_scroll_vanishes_through_the_item_deadline_owner() -> TestResult {
     on_big_stack("temple_scroll_expired", Case::Expired)
 }
 
@@ -131,10 +132,9 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
             .await
         };
         let uses = || async {
-            sqlx::query_as::<_, (i64, i64, i64)>(
+            sqlx::query_as::<_, (i64, i64)>(
                 "SELECT (SELECT count(*) FROM game_item_use_records WHERE cause_kind=481 AND shape=1), \
-                        (SELECT count(*) FROM game_temple_scroll_uses WHERE NOT expired), \
-                        (SELECT count(*) FROM game_temple_scroll_uses WHERE expired)",
+                        (SELECT count(*) FROM game_temple_scroll_uses)",
             )
             .fetch_one(pool)
             .await
@@ -160,9 +160,9 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
                 // One use burns the scroll with its use row and moves the actor home.
                 assert_eq!(use_scroll(1, FRESH).await, UseDisposition::Committed);
                 assert_eq!(item(FRESH).await?, (0, 2));
-                assert_eq!(uses().await?, (1, 1, 0));
+                assert_eq!(uses().await?, (1, 1));
                 assert_eq!(position().await?, temple);
-                let paired: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_use_records u JOIN game_temple_scroll_uses s USING(transaction_id) WHERE u.cause_kind=481 AND u.source_item_instance_id=encode($1,'hex')::uuid AND u.source_definition_production_key=$2 AND s.item_instance_id=u.source_item_instance_id AND s.deadline_at IS NOT NULL AND s.deadline_at>s.observed_at")
+                let paired: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_use_records u JOIN game_temple_scroll_uses s USING(transaction_id) JOIN game_spell_item_temporal_schedules p ON p.item_instance_id=s.item_instance_id WHERE u.cause_kind=481 AND u.source_item_instance_id=encode($1,'hex')::uuid AND u.source_definition_production_key=$2 AND s.item_instance_id=u.source_item_instance_id AND s.expires_at_unix_ms=p.expires_at_unix_ms AND s.expires_at_unix_ms>s.observed_at_unix_ms")
                     .bind(id(FRESH).as_slice())
                     .bind(SCROLL)
                     .fetch_one(pool)
@@ -170,7 +170,7 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
                 assert_eq!(paired, 1);
                 // The same command again answers from its record: nothing more burns.
                 assert_eq!(use_scroll(1, FRESH).await, UseDisposition::Committed);
-                assert_eq!(uses().await?, (1, 1, 0));
+                assert_eq!(uses().await?, (1, 1));
                 assert_eq!(item(OLD).await?, (1, 1));
             }
             Case::LogoutBlock => {
@@ -187,7 +187,7 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
                 }
                 assert_eq!(use_scroll(1, FRESH).await, UseDisposition::NotPossible);
                 assert_eq!(item(FRESH).await?, (1, 1));
-                assert_eq!(uses().await?, (0, 0, 0));
+                assert_eq!(uses().await?, (0, 0));
                 assert_eq!(position().await?, START);
             }
             Case::NoLanding => {
@@ -240,32 +240,38 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
                     crate::durability::item_use::temple_scroll::TempleScrollOutcome::NoLanding
                 );
                 assert_eq!(item(FRESH).await?, (1, 1));
-                assert_eq!(uses().await?, (0, 0, 0));
+                assert_eq!(uses().await?, (0, 0));
                 assert_eq!(position().await?, START);
                 // The kept scroll is used normally once its landing is free.
                 assert_eq!(use_scroll(2, FRESH).await, UseDisposition::Committed);
                 assert_eq!(item(FRESH).await?, (0, 2));
-                assert_eq!(uses().await?, (1, 1, 0));
+                assert_eq!(uses().await?, (1, 1));
                 assert_eq!(position().await?, temple);
             }
             Case::Expired => {
-                // Delivered eight days ago: the burn's row records the expiry, the scroll is
-                // consumed and the actor stays where it is.
-                assert_eq!(use_scroll(1, OLD).await, UseDisposition::Committed);
-                assert_eq!(item(OLD).await?, (0, 2));
-                assert_eq!(uses().await?, (1, 0, 1));
+                // A use racing the deadline pass is refused: nothing burns, is written or moves.
+                assert_eq!(use_scroll(1, OLD).await, UseDisposition::NotPossible);
+                assert_eq!(item(OLD).await?, (1, 1));
+                assert_eq!(uses().await?, (0, 0));
                 assert_eq!(position().await?, START);
-                let lifetime_ms: i64 = sqlx::query_scalar("SELECT (EXTRACT(EPOCH FROM s.deadline_at-l.effect_started_at)*1000)::bigint FROM game_temple_scroll_uses s JOIN game_character_daily_reward_lines l ON l.item_instance_id=s.item_instance_id WHERE s.item_instance_id=encode($1,'hex')::uuid")
+                // The Channel's Item deadline pass removes both due scrolls, carried and in the
+                // Inbox, and leaves the fresh one.
+                owner.drain_source_item_deadlines().await;
+                assert_eq!(item(OLD).await?, (0, 2));
+                assert_eq!(item(INBOX).await?, (0, 2));
+                assert_eq!(item(FRESH).await?, (1, 1));
+                let custody: (i64, i64, Vec<i16>) = sqlx::query_as("SELECT (SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_item_character_inbox_locations WHERE item_instance_id=encode($2,'hex')::uuid), (SELECT coalesce(array_agg(custody_kind ORDER BY custody_kind),'{}') FROM game_spell_item_temporal_receipts WHERE item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid))")
                     .bind(id(OLD).as_slice())
+                    .bind(id(INBOX).as_slice())
+                    .bind(id(FRESH).as_slice())
                     .fetch_one(pool)
                     .await?;
-                assert_eq!(
-                    lifetime_ms,
-                    crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_LIFETIME_MS
-                );
+                assert_eq!(custody, (0, 0, vec![2, 4]));
+                assert_eq!(uses().await?, (0, 0));
+                assert_eq!(position().await?, START);
                 // The fresh scroll still teleports.
                 assert_eq!(use_scroll(2, FRESH).await, UseDisposition::Committed);
-                assert_eq!(uses().await?, (2, 1, 1));
+                assert_eq!(uses().await?, (1, 1));
                 assert_eq!(position().await?, temple);
             }
         }
@@ -274,8 +280,9 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
     })
 }
 
-/// One main backpack holding two scrolls with their delivered daily lines: one delivered an
-/// hour ago and one eight days ago.
+/// One main backpack holding two scrolls and one scroll in the Character Inbox, each with its
+/// deadline on the Item deadline owner as the daily claim writes it: the carried fresh scroll is
+/// due in seven days less an hour, the carried old one and the Inbox one were due a day ago.
 async fn seed_scrolls(h: &Harness) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -296,23 +303,31 @@ async fn seed_scrolls(h: &Harness) -> TestResult {
         .execute(&mut *tx)
         .await?;
     sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)").bind(id(41).as_slice()).bind(id(BAG).as_slice()).bind(id(42).as_slice()).bind(id(245).as_slice()).execute(&mut *tx).await?;
-    for (ordinal, (seed, claim, age)) in [(FRESH, FRESH_CLAIM, "1 hour"), (OLD, OLD_CLAIM, "8 days")]
-        .into_iter()
-        .enumerate()
-    {
+    let lifetime = crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_LIFETIME_MS;
+    for (seed, due_in_ms) in [(FRESH, lifetime - 3_600_000), (OLD, -86_400_000), (INBOX, -86_400_000)] {
         sqlx::raw_sql(sqlx::AssertSqlSafe(item(seed, SCROLL, 1)))
             .execute(&mut *tx)
             .await?;
-        sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::bigint,encode($6,'hex')::uuid)").bind(id(41).as_slice()).bind(id(BAG).as_slice()).bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(i64::try_from(ordinal + 1)?).bind(id(246).as_slice()).execute(&mut *tx).await?;
-        // The delivery line as the daily claim writes it (migration 2762's interval).
-        sqlx::query("WITH instant AS (SELECT clock_timestamp()-$3::text::interval AS at) INSERT INTO game_character_daily_reward_lines(claim_id,line,kind,definition,quantity,status,delivering_transaction_id,item_instance_id,effect_started_at,effect_expires_at) SELECT encode($1,'hex')::uuid,0,'TEMPLE_SCROLL',$4,1,'DELIVERED',encode($1,'hex')::uuid,encode($2,'hex')::uuid,at,at+interval '168 hours' FROM instant")
-            .bind(id(claim).as_slice())
+        if seed == INBOX {
+            sqlx::query("INSERT INTO game_item_character_inbox_locations(item_instance_id,world_id,character_id,ordinal) SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,coalesce(max(ordinal),0)+1 FROM game_item_character_inbox_locations WHERE character_id=encode($3,'hex')::uuid")
+                .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
+        } else {
+            sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::bigint,encode($6,'hex')::uuid)").bind(id(41).as_slice()).bind(id(BAG).as_slice()).bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(i64::from(seed - FRESH + 1)).bind(id(246).as_slice()).execute(&mut *tx).await?;
+        }
+        // The deadline as `schedule_delivered_scroll` writes it (migration 2762).
+        sqlx::query("INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3,floor(extract(epoch FROM clock_timestamp())*1000)::bigint+$4,'Item',$5,'definition-r1',sha256(convert_to($5||'|definition-r1','UTF8')))")
             .bind(id(seed).as_slice())
-            .bind(age)
+            .bind(id(DELIVERY).as_slice())
+            .bind(lifetime)
+            .bind(due_in_ms)
             .bind(SCROLL)
             .execute(&mut *tx)
             .await?;
     }
+    sqlx::query("INSERT INTO game_character_inbox_counters(character_id,next_ordinal,committed) SELECT character_id,max(ordinal)+1,count(*) FROM game_item_character_inbox_locations WHERE character_id=encode($1,'hex')::uuid GROUP BY character_id ON CONFLICT(character_id) DO UPDATE SET next_ordinal=EXCLUDED.next_ordinal,committed=EXCLUDED.committed")
+        .bind(id(41).as_slice())
+        .execute(&mut *tx)
+        .await?;
     tx.commit().await?;
     Ok(())
 }

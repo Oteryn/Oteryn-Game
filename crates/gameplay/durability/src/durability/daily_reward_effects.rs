@@ -41,11 +41,19 @@ pub(super) async fn grant(
             grant_balance(tx, fence, request, kind, quantity).await?;
             None
         };
-        // WU26-06: a scroll line fixes the scroll's seven-day deadline once, on the daily
-        // effect clock (docs/contracts/TEMPLE_TELEPORT_SCROLL_V1.md; migration 2762).
-        sqlx::query("WITH instant AS (SELECT public.game_daily_effect_now() AS at) INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,definition,quantity,status,delivering_transaction_id,item_instance_id,effect_started_at,effect_expires_at) SELECT encode($1,'hex')::uuid,$2,$3::text,CASE WHEN $3::text='TEMPLE_SCROLL' THEN 'oteryn:item.tibia.i25718' END,$4,'DELIVERED',encode($1,'hex')::uuid,$5::uuid,CASE WHEN $3::text='TEMPLE_SCROLL' THEN at END,CASE WHEN $3::text='TEMPLE_SCROLL' THEN at+interval '168 hours' END FROM instant")
-            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity)).bind(item)
+        sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,definition,quantity,status,delivering_transaction_id,item_instance_id) VALUES(encode($1,'hex')::uuid,$2,$3,CASE WHEN $3='TEMPLE_SCROLL' THEN 'oteryn:item.tibia.i25718' END,$4,'DELIVERED',encode($1,'hex')::uuid,$5::uuid)")
+            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity)).bind(item.as_deref())
             .execute(&mut ***tx).await?;
+        // WU26-06: the delivered scroll vanishes seven days later through the existing Item
+        // deadline owner (docs/contracts/TEMPLE_TELEPORT_SCROLL_V1.md; migration 2762).
+        if let Some(item) = &item {
+            super::item_use::temple_scroll::schedule_delivered_scroll(
+                &mut ***tx,
+                item,
+                &request.transaction_id,
+            )
+            .await?;
+        }
         line += 1;
     }
     if reward.prey_wildcards > 0 {
