@@ -62,29 +62,6 @@ pub(in crate::play) fn enqueue_details(
 }
 
 impl PlayLink {
-    pub fn daily_reward_picker_request(&self, selection: Option<&str>) {
-        enqueue_picker(&mut lock(&self.mailbox), &self.commands, selection);
-    }
-}
-pub(in crate::play) fn enqueue_picker(
-    mailbox: &mut Mailbox,
-    commands: &UnboundedSender<PlayCommand>,
-    selection: Option<&str>,
-) {
-    if mailbox.world_input_blocked() {
-        return;
-    }
-    if let Some(command) =
-        oteryn_client_ui::daily_reward::request_picker(&mut mailbox.daily_reward, selection)
-        && commands.send(PlayCommand::Feature(command)).is_err()
-    {
-        mailbox.daily_reward.pending = false;
-        mailbox.daily_reward.picker_pending = None;
-        mailbox.daily_reward.feedback = Some("The session has ended");
-    }
-}
-
-impl PlayLink {
     pub fn returner_reward_request(&self, claim: bool) {
         enqueue_returner(&mut lock(&self.mailbox), &self.commands, claim);
     }

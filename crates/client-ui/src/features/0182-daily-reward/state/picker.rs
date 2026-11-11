@@ -90,31 +90,3 @@ pub fn apply_picker(panel: &mut DailyRewardPanel, kind: u32, result: &GatedComma
         },
     )
 }
-pub fn picker_text(panel: &DailyRewardPanel) -> String {
-    let mut text = String::from(
-        "Daily reward item selection\nEnter item:count pairs, for example 266:3,268:2.\n",
-    );
-    if let Some(o) = panel.picker {
-        text.push_str(&format!(
-            "Day {} — {} — allowance {} total items\n",
-            o.day,
-            if o.premium { "Premium" } else { "Free" },
-            o.maximum
-        ));
-        if (o.day - 1) % 7 + 1 == 6 {
-            text.push_str("Each exercise weapon has 50 charges.\n");
-        }
-        for id in o.items.into_iter().filter(|id| *id != 0) {
-            text.push_str(&format!("{id}: {}\n", super::picker_names::name(id)));
-        }
-        if o.maximum == 0 {
-            text.push_str("No item selection available for this day or already claimed.\n");
-        }
-    } else {
-        text.push_str("Refresh to load the server catalogue.\n");
-    }
-    if let Some(feedback) = panel.feedback {
-        text.push_str(feedback);
-    }
-    text
-}
