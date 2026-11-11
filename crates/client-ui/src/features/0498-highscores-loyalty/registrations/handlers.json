@@ -1,0 +1,15 @@
+{
+  "mechanic": "0498-highscores-loyalty",
+  "kind": "handlers",
+  "id": "0498-highscores-loyalty-category13",
+  "status": "unsupported",
+  "reason": "N014 server side only: enabling the reserved Loyalty category in the native highscores window lands in the client lane.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The existing 0009 highscores state holds category pages.",
+    "protocol": "The existing highscores codec carries category 13 unchanged.",
+    "view": "The 0009 highscores window keeps category 13 reserved until client support lands.",
+    "input": "The existing command 14 request is unchanged.",
+    "settings": "The Loyalty category has no client setting."
+  }
+}

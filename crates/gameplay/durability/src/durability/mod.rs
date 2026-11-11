@@ -54,6 +54,7 @@ mod quest_unnatural_selection;
 pub mod quest_world_callback;
 pub mod raid_runner;
 pub mod raid_schedule;
+pub mod sanction_record;
 pub mod staff;
 pub mod support_intake;
 pub mod task_board;

@@ -41,10 +41,10 @@ mod tibiadrome;
 #[path = "highscores_postgres_cases/category_allocation.rs"]
 mod category_allocation;
 
-// Complete fixtures activate Charm: categories 1..=12 plus 14 (Drome lifetime),
+// Complete fixtures activate Charm: categories 1..=12 plus 13 (Loyalty), 14 (Drome lifetime),
 // 16 (Phosphorus) and 17 (Drome rotation). Each cut writes one snapshot per category.
-const COMPLETE_CATEGORIES: [u8; 15] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 17];
-const SNAPSHOTS_PER_CUT: i64 = 12 + 3;
+const COMPLETE_CATEGORIES: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17];
+const SNAPSHOTS_PER_CUT: i64 = 13 + 3;
 
 struct Formula;
 impl BuildFormula for Formula {
@@ -528,7 +528,7 @@ fn world_category_token_isolation_empty_world_and_query_boundaries() -> TestResu
                 Err(SnapshotError::SnapshotExpired)
             ));
         }
-        for category in [0, 13, 15, 18, 255] {
+        for category in [0, 15, 18, 255] {
             assert!(matches!(
                 h.root
                     .read_highscore_page(world(), category, None, 1, 0, asking())
@@ -768,6 +768,9 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
             .bind(vec![1_u8]).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests WHERE source_kind='highscore-fixture'")
             .execute(&mut *tx).await?;
+        // Platform's existing account loyalty projection (0406) feeds category 13.
+        sqlx::query("INSERT INTO game_account_loyalty_projections(account_id,loyalty_points,platform_revision) SELECT account_id,42,1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
         let ids = h
             .root
@@ -791,7 +794,11 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
         assert_eq!(charms.rows[0].character_id, asking());
         assert_eq!(charms.rows[0].value, (25, 0));
         assert!(charms.rows[1..].iter().all(|r| r.value == (0, 0)));
-        assert!(page(h, 13, None, 1, 0).await.is_err());
+        // Every eligible Character of the account ranks with its account's loyalty points.
+        let loyalty = page(h, 13, None, 1, 0).await?;
+        assert_eq!(loyalty.rows.len(), 3);
+        assert!(loyalty.rows.iter().all(|r| r.value == (42, 0)));
+        assert!(loyalty.rows.iter().any(|r| r.character_id == asking()));
         // Projection readability does not make the synthetic roots eligible for authority.
         // Preserve the exact guard that rejected the original fixture ordering.
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -1419,7 +1426,7 @@ fn experience_gain_reaches_the_client_through_the_snapshot_job() -> TestResult {
 }
 
 /// HIGHSCORES0 §3: with no activated per-race Charm point source (CHARM-6) the serve job's
-/// catalogues publish categories 1 to 10, 12, 14, 16 and 17, and the client's category 11 query through the
+/// catalogues publish categories 1 to 10, 12, 13, 14, 16 and 17, and the client's category 11 query through the
 /// dispatched handler is `NOT_SUPPORTED` rather than a ranking of zero points.
 #[test]
 fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> TestResult {
@@ -1534,26 +1541,34 @@ fn boss_points_query_is_served_through_the_client_handler() -> TestResult {
             decode_highscores_result(&result).map_err(debug)?.category,
             12
         );
+        // Loyalty 13 is published; capability 498 gates it in the dispatch route.
+        let HighscoresReply::Result(result) = client_reply(h, 13, 0, 1, 0).await? else {
+            return Err("category 13 query was not accepted".into());
+        };
         assert_eq!(
-            client_reply(h, 13, 0, 1, 0).await?,
+            decode_highscores_result(&result).map_err(debug)?.category,
+            13
+        );
+        assert_eq!(
+            client_reply(h, 15, 0, 1, 0).await?,
             HighscoresReply::Terminal(FoundationProtocolError::NotSupported)
         );
         Ok(())
     })
 }
 
-/// Migration 2727's extended guard on the cluster-global job group, as the migration runs it.
+/// Migration 2801's extended guard on the cluster-global job group, as the migration runs it.
 fn job_role_guard() -> &'static str {
-    const MIGRATION: &str = include_str!("../../migrations/2727_boss_difficulty_victories.sql");
+    const MIGRATION: &str = include_str!("../../migrations/2801_loyalty_highscore_category.sql");
     const END: &str = "END $highscore_role_guard$;";
     let start = MIGRATION
         .find("DO $highscore_role_guard$")
-        .expect("2727 extends its role guard");
+        .expect("2801 extends its role guard");
     let end = start + MIGRATION[start..].find(END).expect("the guard block ends") + END.len();
     &MIGRATION[start..end]
 }
 
-/// Runs `statements` and then the 2727 guard in one transaction. With `refusal` the guard must
+/// Runs `statements` and then the 2801 guard in one transaction. With `refusal` the guard must
 /// refuse with 42501 and that message, otherwise it must pass. The changes to the cluster-global
 /// group exist only in this transaction, so no other database on the shared cluster ever sees
 /// them; after the rollback the provisioned group passes the guard again.
@@ -1728,7 +1743,7 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
     run("hsjobprivileges", async |h| {
         let guard = job_role_guard();
         assert!(guard.contains("pg_shdepend"));
-        // Provisioned: the table-level grants of 0129/0929/1105/2727 plus exactly the
+        // Provisioned: the table-level grants of 0129/0929/1105/2727/2801 plus exactly the
         // closure predicate of 0996, no shared grants, and the group owns nothing.
         let grants: Vec<(String, String)> = sqlx::query_as(
             "SELECT c.relname::text, string_agg(a.privilege_type, ',' ORDER BY a.privilege_type COLLATE \"C\") \
@@ -1741,6 +1756,7 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
         let expected = [
             ("game_account_achievement_grant_requests", "SELECT"),
             ("game_account_achievements", "SELECT"),
+            ("game_account_loyalty_projections", "SELECT"),
             ("game_boss_room_catalogue", "SELECT"),
             ("game_character_bestiary_progress", "SELECT"),
             ("game_character_boss_difficulty_records", "SELECT"),
