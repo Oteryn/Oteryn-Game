@@ -17,10 +17,38 @@ mod production;
 #[path = "analyser/tests.rs"]
 mod tests;
 
+/// Advisory provenance of one hit the own character took. The attacker reaches only a
+/// session that selected capability 486; rules never read it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::gameplay_transport) struct HitSource {
+    pub(in crate::gameplay_transport) source:
+        oteryn_protocol_oteryn::analyser::AnalyserDamageSource,
+    pub(in crate::gameplay_transport) attacker: Option<ExactActorRef>,
+}
+
+impl From<oteryn_protocol_oteryn::analyser::AnalyserDamageSource> for HitSource {
+    fn from(source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource) -> Self {
+        Self {
+            source,
+            attacker: None,
+        }
+    }
+}
+
+/// The client-visible spatial reference of an exact actor (`visible_entities` generation).
+fn entity_ref(actor: ExactActorRef) -> oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+    oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+        identity: actor.placement_identity(),
+        generation: actor.actor_local_generation(),
+    }
+}
+
 #[derive(Debug)]
 struct Stream {
     actor: ExactActorRef,
     generation: u64,
+    /// Capability 486 selected: damage input may carry the attacker.
+    attributed: bool,
     pending: AnalyserPendingQueue,
     totals: super::analyser_party::Totals,
     started: std::time::Instant,
@@ -40,6 +68,17 @@ impl AnalyserStreams {
         generation: u64,
         items: Option<Arc<crate::content::item_ref::ItemDefinitionIndex>>,
     ) -> Option<bool> {
+        self.snapshot_attributed(actor, session, generation, items, false)
+    }
+
+    pub(super) fn snapshot_attributed(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        generation: u64,
+        items: Option<Arc<crate::content::item_ref::ItemDefinitionIndex>>,
+        attributed: bool,
+    ) -> Option<bool> {
         let mut streams = self.0.lock().ok()?;
         if streams
             .get(&session)
@@ -55,6 +94,7 @@ impl AnalyserStreams {
             Stream {
                 actor,
                 generation,
+                attributed,
                 pending: AnalyserPendingQueue::default(),
                 totals: Default::default(),
                 started: std::time::Instant::now(),
@@ -71,12 +111,38 @@ impl AnalyserStreams {
     }
 
     pub(super) fn push(&self, actor: ExactActorRef, session: GameSessionId, fact: AnalyserFact) {
+        self.push_hit(actor, session, fact, None);
+    }
+
+    /// Capability 486: one own-character hit with its attacker, emitted from the committed
+    /// damage path. Unselected sessions receive the original fact bytes.
+    pub(super) fn push_hit(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        fact: AnalyserFact,
+        attacker: Option<ExactActorRef>,
+    ) {
         if let Ok(mut streams) = self.0.lock()
             && let Some(held) = streams.get_mut(&session).filter(|held| held.actor == actor)
         {
             held.totals.observe(&fact);
+            let attacker = attacker
+                .filter(|attacker| held.attributed && *attacker != actor)
+                .filter(|_| {
+                    matches!(
+                        fact,
+                        AnalyserFact::DamageInput {
+                            source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(_)
+                                | oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Player,
+                            ..
+                        }
+                    )
+                })
+                .map(entity_ref)
+                .filter(|entity| entity.generation != 0);
             // Enrichment must never reject the gameplay outcome it observes.
-            let _ = held.pending.push(&fact);
+            let _ = held.pending.push_attributed(&fact, attacker.as_ref());
         }
     }
 
@@ -148,17 +214,18 @@ impl AnalyserStreams {
         session: GameSessionId,
         mut value: u64,
         element: DamageElement,
-        source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource,
+        source: HitSource,
     ) {
         while let Some(chunk) = NonZeroU32::new(value.min(u64::from(u32::MAX)) as u32) {
-            self.push(
+            self.push_hit(
                 actor,
                 session,
                 AnalyserFact::DamageInput {
                     value: chunk,
                     element,
-                    source,
+                    source: source.source,
                 },
+                source.attacker,
             );
             value -= u64::from(chunk.get());
         }
@@ -246,17 +313,17 @@ pub(super) fn element(kind: crate::player_lethal::PlayerHitKind) -> DamageElemen
     }
 }
 
-pub(super) fn source(
-    runtime: &ChannelRuntimeV1,
-    actor: ExactActorRef,
-) -> oteryn_protocol_oteryn::analyser::AnalyserDamageSource {
+pub(super) fn source(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> HitSource {
     use oteryn_protocol_oteryn::analyser::AnalyserDamageSource as S;
-    runtime
-        .companion_snapshot_including_dead(actor)
-        .ok()
-        .map_or(S::Player, |view| {
-            S::Creature(race(&view.state.policy.definition_key))
-        })
+    HitSource {
+        source: runtime
+            .companion_snapshot_including_dead(actor)
+            .ok()
+            .map_or(S::Player, |view| {
+                S::Creature(race(&view.state.policy.definition_key))
+            }),
+        attacker: Some(actor),
+    }
 }
 
 pub(super) fn charm_element(

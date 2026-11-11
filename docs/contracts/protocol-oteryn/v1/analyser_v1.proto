@@ -11,6 +11,7 @@ syntax = "proto3";
 package oteryn.protocol.v1.analyser;
 
 import "damage_element_v1.proto";
+import "world_spatial_v1.proto";
 
 enum AnalyserImpactKind {
   ANALYSER_IMPACT_KIND_UNSPECIFIED = 0;
@@ -59,6 +60,10 @@ message AnalyserDamageInputV1 {
   oteryn.protocol.v1.damage_element.DamageElement element = 2;
   AnalyserDamageSource source = 3;
   uint32 race = 4; // Bestiary race index 1..=1024; only for CREATURE, 0 = none
+  // Capability 486 ANALYSER_HIT_ATTRIBUTION_V1 only: the spatial entity whose hit the own
+  // character took, for CREATURE or PLAYER sources with a known live attacker. Never present
+  // without selection; generation is non-zero. Condition ticks carry no attacker.
+  oteryn.protocol.v1.world_spatial.EntityRefV1 attacker = 5;
 }
 
 message AnalyserDroppedV1 {
