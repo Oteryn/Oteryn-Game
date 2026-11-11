@@ -1007,7 +1007,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                         && !callback.requires_world_admission)
                     || (callback.minimum_level.is_some()
                         && !native_trials::level_guard_admitted(callback))
-                    || callback.requires_live_premium()
+                    || callback.requires_premium
+                    || callback.premium_required
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()

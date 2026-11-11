@@ -191,3 +191,78 @@ fn live_admission_is_bound_even_without_the_optional_world_flag() -> Result<(), 
     );
     Ok(())
 }
+
+#[test]
+fn qn5_structured_premium_world_entry_requires_personal_world_fences() -> Result<(), String> {
+    let source: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/authored-bindings/qn5-grimvale.json"
+    ))
+    .map_err(|error| error.to_string())?;
+    let value = source
+        .pointer("/quests/0/stages/0/trigger/callback")
+        .ok_or("Grimvale authored entry")?;
+    let document =
+        |value: &serde_json::Value| serde_json::json!({"schema":1,"callbacks":[value]}).to_string();
+    let callbacks = parse(&document(value))?;
+    assert_eq!(callbacks.len(), 1);
+    let callback = &callbacks[0];
+    assert_eq!(
+        callback.key,
+        "oteryn:quest-callback/qn5/grimvale-encounter-entry"
+    );
+    assert!(callback.requires_world_admission);
+    assert!(callback.has_state_writes());
+    assert_eq!(callback.storage.len(), 1);
+    assert_eq!(callback.operation_count(), 0);
+    assert_eq!(callback.world_requirements.len(), 1);
+    assert_eq!(callback.world_requirements[0].appearance, 22761);
+    assert_eq!(callback.world_change.as_deref(), Some("grimvale"));
+    assert!(
+        callback
+            .admission
+            .as_ref()
+            .is_some_and(|guard| guard.premium)
+    );
+    assert!(!callback.requires_premium);
+    assert!(!callback.premium_required);
+    assert!(callback.requires_live_premium());
+
+    for (fence, field, replacement) in [
+        (
+            "World admission",
+            "requires_world_admission",
+            serde_json::json!(false),
+        ),
+        ("personal state", "storage", serde_json::json!([])),
+        ("Player actor", "actor_kind", serde_json::json!("monster")),
+        (
+            "nonreversible admission",
+            "reversible",
+            serde_json::json!(true),
+        ),
+        (
+            "nonopening admission",
+            "opening_only",
+            serde_json::json!(true),
+        ),
+        (
+            "legacy flat Premium",
+            "requires_premium",
+            serde_json::json!(true),
+        ),
+        (
+            "main flat Premium",
+            "premium_required",
+            serde_json::json!(true),
+        ),
+    ] {
+        let mut refused = value.clone();
+        refused[field] = replacement;
+        assert_eq!(
+            parse(&document(&refused)).err(),
+            Some(format!("invalid callback {}", callback.key)),
+            "{fence} must remain enforced"
+        );
+    }
+    Ok(())
+}

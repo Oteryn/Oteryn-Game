@@ -735,6 +735,23 @@ impl NpcRuleCatalog {
     }
 }
 
+// These accepted source programmes add only new NPC-owned tracks to an existing
+// quest. Its exact previous definition remains valid even without a shared track.
+fn additive_legacy_owner(program: &NpcRuleProgram) -> bool {
+    program.document.schema == 1
+        && matches!(
+            (
+                program.document.quest.as_str(),
+                program.document.program_key.as_deref(),
+            ),
+            ("oteryn:quest.elemental_spheres_quest", None)
+                | (
+                    "oteryn:quest.outfit_and_addon_quests",
+                    Some("oteryn:quest-npc-program.citizen-source-sagas")
+                )
+        )
+}
+
 /// Extend native bounds only for source writes; preserve existing absent values.
 pub(super) fn extend(
     catalogue: super::QuestStateCatalogue,
@@ -750,11 +767,12 @@ pub(super) fn extend(
                 quest.as_str(),
                 "oteryn:quest.draconia_quest" | "oteryn:quest.the_order_of_the_stag_quest"
             )
-            && program
+            && (program
                 .document
                 .tracks
                 .iter()
                 .any(|track| source_tracks.contains_key(&track.key))
+                || additive_legacy_owner(program))
             && let Some(hash) = catalogue.definition_hash(quest)
         {
             legacy.insert(

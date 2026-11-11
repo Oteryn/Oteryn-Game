@@ -3,7 +3,7 @@
   "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
   "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
   "parents": {
-    "previous_published_head": "eaa76472491899677438dd21ff3b91f20cb2b74c",
+    "previous_published_head": "73aaf0231d3b250ec59e2384920712f64d854f97",
     "integrated_main": "f01f18582443f482b7adcfaf32cae3f9d3616876"
   },
   "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
@@ -54,50 +54,116 @@
         "qlane-meta/questpc7/restart5-inherited-product-files.json"
       ],
       "action": "Preserve historical evidence; resolve provenance representation in the final grouped backlog."
+    },
+    {
+      "finding": "Historical questpc7_merge_audit_inventories.py assumes a monolithic112-callback Feaster output; the accepted producer splits110+2.",
+      "classification": "P2; no current workflow or regeneration-dispatcher caller found. External manual consumers are unknown.",
+      "path": "tools/content-schema/quest-authoring/questpc7_merge_audit_inventories.py",
+      "action": "Deferred to the final grouped backlog. The abandoned exploratory edit was fully reverted; current active generation is not blocked by this historical helper."
     }
   ],
   "last_checkpoint_execution": {
-    "head": "eaa76472491899677438dd21ff3b91f20cb2b74c",
-    "merge_run": 42951225666,
-    "generator_run": 42951225652,
-    "generator_job": 130295734196,
-    "generator_result": "Quest prerequisites passed and the materializer compiled in 2m46s. Its executable exited with NotFound before materialization completed. Source diagnosis found that the retained Item index referenced absent items-34000-34110.json while the complete approved tail is items-34000-34121.json. Final pins, export and upload were not reached; artifact inventory was empty.",
-    "generator_log_sha256": "41ea69ac705c471080ad84aaba21663761e58a25b1674c9cac4c0779d0845194",
-    "rust_policy_result": "Actual cache-miss execution passed in job130296449750.",
-    "clippy_result": "Actual strict Clippy failed on two unconstructed private Premium adapters and two unnecessary Grizzly runtime borrows. All four source diagnostics are addressed in this checkpoint; no successor execution is claimed.",
-    "rust_unit_result": "All three shards compiled and executed real nextest cases. Their exact identity union contains12542 executions:11829 passed and713 failed, with no overlap between shards. Every shard selected67 packages without result-cache reuse. These are unit results, not PostgreSQL execution.",
+    "head": "73aaf0231d3b250ec59e2384920712f64d854f97",
+    "merge_run": 42959149543,
+    "generator_run": 42959149485,
+    "generator_job": 130321264440,
+    "generator_result": "Quest prerequisites passed. The materializer compiled in4m00s and executed through the npc_presence1122 report. Imbuement candidate generation passed24types/72tiers. The converter then refused strict Grizzly shop input refresh with GRIZZLY_SHOP_REPIN_SELECTED_DEFINITION_CHANGED. The prior diagnostic combined a baseline digest mismatch and selected full-row drift; the generated after-state was not exported, so the actual first failing arm is unknown. Final World pins, export and upload were skipped; artifact inventory was empty.",
+    "generator_log_sha256": "88deba76c54bb569648977b3d64982173962299ecccd493bbe990cdec531a13d",
+    "rust_policy_result": "Actual cache-miss job130321763474 passed metadata, formatting, boundaries, JSON and production-closure checks.",
+    "rust_policy_log_sha256": "3685442e96e87c318036de6c130a0f687e377bec7d1c7201cf33587502adaac9",
+    "clippy_result": "Actual strict cargo1.99.1 clippy --locked --all-targets -- -D warnings passed all67selected packages in4m28s, with zero result-cache reuse. The protected-main Cargo build cache was used. This is compilation/lint evidence, not unit or PostgreSQL execution.",
+    "clippy_job": 130321763519,
+    "clippy_log_sha256": "b656091212f2e1534de0163c2ef7cac26b5ea699deda4099dac64544bb899735",
+    "rust_unit_result": "All three shards compiled and ran nextest. Their disjoint terminal identity union contains12507actual executions:11877passed and630failed. Reused package results are excluded from these counts. No current full not-executed inventory census is asserted. This is unit execution, not PostgreSQL.",
     "rust_unit_jobs": [
       {
-        "job_id": 130296449872,
-        "executed": 4190,
-        "passed": 3943,
-        "failed": 247,
-        "log_sha256": "068a88d46e86aad910e3c97a4b089187ddc466858a3337243c4604ddcb4accdf"
+        "job_id": 130321763550,
+        "executed": 4174,
+        "passed": 3951,
+        "failed": 223,
+        "packages_to_run": 59,
+        "packages_reused": 8,
+        "log_sha256": "2cc7cc7d19c7a41e88c0ebe1f7c80887313288024b77e48d46bc29fb8364c40a"
       },
       {
-        "job_id": 130296449848,
-        "executed": 4233,
-        "passed": 3999,
-        "failed": 234,
-        "log_sha256": "e8dc537da04d912a67270342e0e35afb8281f3eff3c5780f58ed9677d203c803"
+        "job_id": 130321763502,
+        "executed": 4223,
+        "passed": 4024,
+        "failed": 199,
+        "packages_to_run": 59,
+        "packages_reused": 8,
+        "log_sha256": "687d93c7c246a4309b0ea76a23b6447002e875a849cdc5b4b50d0be9af2e7ad5"
       },
       {
-        "job_id": 130296449866,
-        "executed": 4119,
-        "passed": 3887,
-        "failed": 232,
-        "log_sha256": "a4800b955f4912720d54f94c4d1a520992a8a9fe72d84d5bbb4f40a01c0bd3e3"
+        "job_id": 130321763525,
+        "executed": 4110,
+        "passed": 3902,
+        "failed": 208,
+        "packages_to_run": 61,
+        "packages_reused": 6,
+        "log_sha256": "4f1ab0827af1c7c2c45b3ef8be08d6b9f00a8055b079dd647702f77b33177da3"
       }
     ],
-    "native_entry": {
-      "run_id": 42951225683,
-      "job_id": 130295733994,
-      "result": "Actual compilation and three tests passed; zero failed, ignored or filtered. This qualifies only Native entry on the recorded parent head.",
-      "log_sha256": "6ef6c127a8d2a5c0871adbd37cf90efb3e27b2d351bae51de2da17d480ef8e2b"
+    "unit_result_cache_provenance": {
+      "run_id": 42951225666,
+      "literal_logged_sha": "f0d09a19a6de0bf37c52c499be5b3f5c5e099fb3",
+      "qualification": "The producer URL and SHA are recorded exactly as logged; their relationship to workflow merge context was not separately verified. Legitimate partial success ledgers were recorded only after completed execution and JUnit reconciliation."
     },
-    "boss_inventory": "The actual fixture ran in shard3 but failed while parsing the native manifest: Item updates discriminator, bounds or base pin. It did not reach NATIVE_REWARD_BOSS_QUALIFICATION; no current admission totals are available.",
-    "qualification": "This is a source repair checkpoint. Full canonical generation, successor Rust execution and final PostgreSQL qualification remain pending.",
-    "rust_unit_not_executed_from_inventory": 33
+    "unit_failure_groups": {
+      "literal_Item_updates_refusal": 316,
+      "literal_Feaster_callback_refusal": 283,
+      "other": 31
+    },
+    "unit12_parent_comparison": "All422current failed identities in shards1+2 also failed on the prior parent;59prior failures actually passed. This comparison covers these two shards only.",
+    "native_entry": {
+      "run_id": 42959149639,
+      "job_id": 130321265259,
+      "result": "Actual compilation and three tests passed; zero failed, ignored or filtered. This qualifies only Native entry on the recorded head.",
+      "platform_pin": "eb65ce453949a352fdc0e3ed0132d2cde0084fb7",
+      "log_sha256": "bdd7f06da53b17e79c6d1a85e3bdfdc8e5eaf0ed072b0b7c9174f64dbce4fbf1"
+    },
+    "boss_inventory": "No NATIVE_REWARD_BOSS_QUALIFICATION marker was reached. The newly authored private-drop regression executed but failed in the shared native fixture before its behavioral assertions; it is not runtime-qualified.",
+    "postgres": "heavy-tests label absent; wrapper success denotes skipped database legs. No PostgreSQL qualification on73aaf023 is claimed.",
+    "qualification": "Canonical generated content, successor Rust execution and final PostgreSQL qualification remain pending.",
+    "quest_authoring": {
+      "run_id": 42959149569,
+      "attempt": 1,
+      "unit_modules": {
+        "total": 182,
+        "passed": 173,
+        "failed": 9,
+        "duplicate_module_names": 0,
+        "failure_cases": 8,
+        "error_cases": 1
+      },
+      "unit_job": 130321264706,
+      "unit_log_sha256": "fbaa082387f8c5558722500a85840ecbb910494720403a1556a48f84c35066e7",
+      "other_failed_jobs": {
+        "130321265053": "stale donor Source capture: npc.json.gz",
+        "130321265091": "variant migration packet is stale"
+      },
+      "focused_actual_passes": [
+        {
+          "module": "test_questpc2_rotten_membership_facts",
+          "rc": 0,
+          "summary": "Ran 1 test in 4.634s, OK",
+          "line": 588
+        },
+        {
+          "module": "test_questpc2_rotten_item_facts",
+          "rc": 0,
+          "summary": "Ran 4 tests in 14.808s, OK",
+          "line": 597
+        },
+        {
+          "module": "test_reward_greeting_ownership",
+          "rc": 0,
+          "summary": "Ran 6 tests in 15.859s, OK",
+          "line": 624
+        }
+      ],
+      "failure_comparison": "The nine failed module identities match the prior bounded diagnosis58 exactly. No new independent source/code blocker was identified in this intake; full generated output remains unqualified."
+    }
   },
   "followup_source_repair": {
     "parent": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
@@ -284,234 +350,139 @@
     "qualification": "Independent bounded source peer passed. Actual canonical110+2 generation and Rust execution remain pending; no generated JSON was hand-edited."
   },
   "source_review_at_checkpoint": {
-    "base_head": "eaa76472491899677438dd21ff3b91f20cb2b74c",
-    "source_files": 32,
-    "scope": "Bounded author checks and independent source reviews. These do not represent successor Rust execution, full canonical generation, PostgreSQL qualification, or new Codex approval.",
+    "base_head": "73aaf0231d3b250ec59e2384920712f64d854f97",
+    "source_files": 9,
+    "scope": "All six bounded repair groups have author source checks and independent source peers. This does not represent successor Rust execution, full canonical generation, PostgreSQL qualification or new Codex approval.",
     "groups": [
       {
-        "name": "premium_dead",
-        "source_count": 2,
-        "source_files": [
-          {
-            "path": "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs",
-            "sha256": "eee7e581c65e7f086e83a4754c6e01c3f55edeb10a6dc6e19559fda5857bc7b0"
-          },
-          {
-            "path": "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator/promotion_gate.rs",
-            "sha256": "151b871af3277ed0e52f5d52a64706bea9b5ce48c08ca60e175448bd6d0a1bb4"
-          }
-        ],
-        "author_manifest_sha256": "e2b934d37cff9a9d3302382053ef37d103d13973dd1ec305a1d8271acf07a5ec",
-        "independent_peer_sha256": "700f635634f6623cae022928ed0d2cdf8e7af7d2148e8f99067fd000c7fa7832"
-      },
-      {
-        "name": "private_drop",
-        "source_count": 2,
-        "source_files": [
-          {
-            "path": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs",
-            "sha256": "7a6b7862782e5985651533c439141c41ec8124b71fd8eeffd96f279cb61ba20e"
-          },
-          {
-            "path": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs",
-            "sha256": "cfee9e844f95a2c3ba5bc5a737f446a348dd6f3e952322be928da27b6dc5538c"
-          }
-        ],
-        "author_manifest_sha256": "3d4403c4339083061c638b237bf3c29c5a05be17eb456afc18c0d073bcbe32c3",
-        "independent_peer_sha256": "fa580c572740df0535af9523e928ea60951dbf4fc8aa13e2bffd3e00755ee30d"
-      },
-      {
-        "name": "grizzly_borrow",
+        "name": "feaster_loader",
         "source_count": 1,
         "source_files": [
           {
-            "path": "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills.rs",
-            "sha256": "64cd417511588b53c1ce88de627099e95ed03c4675149c68ab83350fb920857b"
+            "path": "crates/gameplay/quests/src/quest/loader.rs",
+            "sha256": "a0ab98b6284d07e91760d1cd1f5b45325b9ead131cdb4a0212fbee529cf1bfbc"
           }
         ],
-        "author_manifest_sha256": "d1c9b49d7a71dee9855b23c88dc80bb4c609af0c2579c97b52324ed1e24c2571",
-        "independent_peer_sha256": "1aaa0c61f5744deb82fa794964b8563c1baf87eca3dc2cc5daa62d8a7e0e53ac"
+        "author_manifest_sha256": "f9808d5356a286be52ce3ad10ccccd3123e16a302c3e8600597c710422a29c76",
+        "independent_peer_sha256": "13de83463ec107e90764524e21e78b6981a4a3912aa718acd62bba0c876ba27d"
       },
       {
-        "name": "item_bootstrap_and_final_rotten_pins",
-        "source_count": 5,
-        "source_files": [
-          {
-            "path": "tools/content-migration/item_tree_index.py",
-            "sha256": "6e7bc86ebec09e690fd9c14af2685f570b46bcb2d3236d1114562908e4c853b0"
-          },
-          {
-            "path": "tools/content-migration/regenerate_content.py",
-            "sha256": "99f39acd1432973292e8174cb2d0ef9608ae4ed732faaaa3692392eba447d3ca"
-          },
-          {
-            "path": "tools/content-migration/test_regenerate_content.py",
-            "sha256": "439a27179ebad132014997812c2317a133508e37bc5614db3b58d0bdeaada2a5"
-          },
-          {
-            "path": "tools/content-migration/world_project_v2_to_tree.py",
-            "sha256": "090c89ee68df92f27ca84a3a0a9d88061ab9be4e0b9f588b45f9b9076e1630df"
-          },
-          {
-            "path": "content/items/index.json",
-            "sha256": "58d09313e88dd9f457147821d71a99bcbe269809d1b1e4191a7af50e1415d9d1"
-          }
-        ],
-        "author_manifest_sha256": "349ce999e6396baf45a812fbe397ad462ce727f8f1feac62db016132f51b49fe",
-        "independent_peer_sha256": "a7100ce8e5ceec9152e59dbd3acd70e596250e9ca4841ad9e78948a46ea4a5ba"
-      },
-      {
-        "name": "protocol_fixtures",
-        "source_count": 7,
-        "source_files": [
-          {
-            "path": "crates/protocol-oteryn/src/world_spatial.rs",
-            "sha256": "5cb1dc38ac549f9357794ece23454f5fc36c0b6b9e1485a894bd1fb2359dd7d6"
-          },
-          {
-            "path": "apps/client/src/features/0013-paced-movement/tests/play.rs",
-            "sha256": "ed1d9134c542053c1ff50d30d64f4efe093b8635413cb412f04cda045c826714"
-          },
-          {
-            "path": "crates/protocol-oteryn/src/world_spatial_entities/soulpit_icon_tests.rs",
-            "sha256": "a4cd5b50923fe2ddb96edcac703093de793114a857b365f1c1fd39831c249f66"
-          },
-          {
-            "path": "apps/client/src/features/0006-world-spatial-entities/tests/native_icons.rs",
-            "sha256": "fdc72159558d4ab35572c35096a2c045f3292eba1fb266a3548d3c406e210948"
-          },
-          {
-            "path": "apps/client/src/features/0006-world-spatial-entities/tests/native_icons_play.rs",
-            "sha256": "3893a9eabc29bc57c54621cdcb6d2a45d1271fae68456d5230929172900c59af"
-          },
-          {
-            "path": "crates/session/src/tests/appearance_session_tests/native_icons.rs",
-            "sha256": "7052022a8a2ca19faa061590f56f97b2d3d201734c0c504462ce79103dd8989f"
-          },
-          {
-            "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_movement.rs",
-            "sha256": "63d141b6284edce7c92b858f13434c5a491b575c550679388de88ca9ba8e2548"
-          }
-        ],
-        "author_manifest_sha256": "6056275542662b965ca89b5aa9159734c42275560f3a0cb816abbe252f1a8849",
-        "independent_peer_sha256": "0f535fad1777d54839d3e642ed9f38afbd6ef04e8aebd8d797519be383e6a236"
-      },
-      {
-        "name": "bundle_inventory",
+        "name": "grizzly_retained_pin",
         "source_count": 1,
         "source_files": [
           {
-            "path": "crates/gameplay/dispatch/src/gameplay_transport/bundle_gates_tests.rs",
-            "sha256": "1e30f7f5d0a0d8bff3cf6fed362de28bdc3636a3154be7aed7f87a125511a6f8"
+            "path": "tools/content-schema/native-gameplay/grizzly-shop-profiles.json",
+            "sha256": "8120d7585824bffa7598a7ebb8b0c27ec34740ddaf44723079865455fc2b975f"
           }
         ],
-        "author_manifest_sha256": "a45391a446d70f45f18560956e8692f6ffbcb278a807ce97e91e85569fc3b2c5",
-        "independent_peer_sha256": "765f081f807385b263f5aa0067489006f0bdac2fe568d99b525232f050a92149"
+        "author_manifest_sha256": "3716c81a8c08d6770cc04a20eb6f2fcebe6f331038b25e5329c5584d1a9112a5",
+        "independent_peer_sha256": "cfd8e1759d93f57750303ddc0b6f877c8c9568e6a4c8abc999f55c54fbfc5f3d"
       },
       {
-        "name": "quest_admission",
-        "source_count": 4,
+        "name": "grizzly_refusal_diagnostics",
+        "source_count": 1,
+        "source_files": [
+          {
+            "path": "tools/content-migration/grizzly_shop_profiles.py",
+            "sha256": "30b2f9f2ea5592b4255e969845f47089914739e7c9b7459208e2f6cd64326fa6"
+          }
+        ],
+        "author_manifest_sha256": "a8eb789b8f81b92d761af7d4bf627c598f3f1d4672c955d6a9b0bef0bcd66615",
+        "independent_peer_sha256": "271e235d80aa5ef9aecf1983742ef37b6045bce46d29a0b3fe7eb36c154d02ba"
+      },
+      {
+        "name": "npc_fixtures",
+        "source_count": 2,
+        "source_files": [
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules.rs",
+            "sha256": "507feef4feea3bd135afc097da98fa0b68a466ad27d05a3a79b3fb64231ef318"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/tests.rs",
+            "sha256": "c819ac8aa5d3e948de43dd6fb2590b6dab82e2462423d28d72db06e0f102655c"
+          }
+        ],
+        "author_manifest_sha256": "96f2fb8cedb7b581f0e453b243451ce5483d265822440f3aea9808b7a691e6e4",
+        "independent_peer_sha256": "fc2d8b90aae18bed6d9a404f9e88ae9a8215a72153bdcaf50f72c1d86edec055"
+      },
+      {
+        "name": "qn5_structured_admission",
+        "source_count": 2,
         "source_files": [
           {
             "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
-            "sha256": "6320ff7b7c75b6ac0a6c04e8b73770b8cfc40e61754bb80251d0f7f44a389534"
+            "sha256": "d5a5215c2346f054d9804610ec56c1f7826e9c10a179b70119d1ff011d2e4972"
           },
           {
-            "path": "crates/gameplay/quests/src/quest/npc_rules/validate.rs",
-            "sha256": "6af06a2e1fbdf578d4a778bf41461456cc5ff767f4de29281fbcc0901f23392d"
-          },
-          {
-            "path": "crates/gameplay/quests/src/quest/npc_rules/questpc2_gnomus_source.rs",
-            "sha256": "335c1b9870d0ae76b1f7cdadc05f6f89eb7770652af0d954ce3c0bff4c227451"
-          },
-          {
-            "path": "crates/gameplay/quests/src/quest/npc_rules/questpc2_gnomus_source_tests.rs",
-            "sha256": "7569b9577d8781029a19c36345342c6dcead89e93f07a8cc30815ffd9ba9ce8e"
+            "path": "crates/gameplay/quests/src/quest/world_callbacks/admission_tests.rs",
+            "sha256": "27e1d19f4d9e8d8a206e1fb91337532521f01c0aac7a85cf847e2177c0de9ee0"
           }
         ],
-        "author_manifest_sha256": "e547db0c4e9b519a1d626aea040a0300900ece999de884c0eab97e1392414577",
-        "independent_peer_sha256": "faba5cadf2297b16d7693f72c3037ada59c0bbac77c1be76ab2d0440af6875e7"
+        "author_manifest_sha256": "b0ec31917e82a8f22fc8f03de2c6d07cafcef23ed0893869ee14688b1560b629",
+        "independent_peer_sha256": "b1ae9aec96c3ea4f52ba00b49c469ac9c7fcfc559f3cb0aeb244bd78fe2894b2"
       },
       {
-        "name": "reward_owner_init",
-        "source_count": 1,
+        "name": "native_callback_witness_order",
+        "source_count": 2,
         "source_files": [
           {
-            "path": "crates/gameplay/quests/src/quest/reward_callbacks.rs",
-            "sha256": "9c14ee1c64abbe099fe365074ac60ff8d88cd1ce195f98e8f1182131540d6b6c"
-          }
-        ],
-        "author_manifest_sha256": "0bb1f0f28caf43153f25e3ea6be29624d7d38d1b786701f28fc50a89fb838494",
-        "independent_peer_sha256": "1304a82b8cebc8dbe2734c4d5a7ada1d007aa989eec957064f8ef54abe6a2659"
-      },
-      {
-        "name": "endgame_retry_fixture",
-        "source_count": 1,
-        "source_files": [
-          {
-            "path": "crates/gameplay/dispatch/src/gameplay_transport/endgame_room_policy.rs",
-            "sha256": "91e5879b736fa7e7b945a22a89e56d077c5170842cec4e447e87dbe3cde414a6"
-          }
-        ],
-        "author_manifest_sha256": "bb5a561b5f4025b23888441eb538766babbb1e8d9dd9f97dea42aff003647166",
-        "independent_peer_sha256": "dadf619c2fedc5c43cccb5309df4cee9204a23b8281fcdb7c19e33fc62811a6c"
-      },
-      {
-        "name": "authored_item_admission",
-        "source_count": 1,
-        "source_files": [
-          {
-            "path": "crates/gameplay/content/src/content/native_gameplay.rs",
-            "sha256": "d3afdeaffbc010408bdab96f545a67d46bc1fb3d74b834d6bc487c13bd9a7e1d"
-          }
-        ],
-        "author_manifest_sha256": "aea880cd74f1bf7f47905a81c101e164bde7e29724bd6ca9ee839cefacad5f9e",
-        "independent_peer_sha256": "fa3388f8371c03d98d228681d18cb2b5270e72f4788a719b38fd0b84f5261031"
-      },
-      {
-        "name": "npc_greetings",
-        "source_count": 3,
-        "source_files": [
-          {
-            "path": "tools/content-schema/quest-authoring/qengine_rewards.py",
-            "sha256": "f7f85c2bd56f7655835a374e7a183007588ae3432f75000920b3045c43f01b8c"
+            "path": "tools/content-migration/regenerate_content.py",
+            "sha256": "6420607c958d07857b859b312adedb468220749279b43db4b530510dedd19a35"
           },
           {
-            "path": "tools/content-schema/quest-authoring/test_reward_greeting_ownership.py",
-            "sha256": "173546779d780db3a620a5eeb1dc141fa1d97ee40eca7d986b10bcdb0ee283cf"
-          },
-          {
-            "path": "content/dialogues/quests/shared-reward-greetings.json",
-            "sha256": "13ed22d9ff8411cfbd79b2b6d4728151bc55785840797941ad2b4b763679e408"
+            "path": "tools/content-migration/test_regenerate_content.py",
+            "sha256": "3d3d701d37bbba7281f7522c46c3c9f425f60beeb7a0989c4835188ebfa51fb8"
           }
         ],
-        "author_manifest_sha256": "3f5e854e7be343a984c530a8e7eeddf586f677c6bb445b4d6ff8649aaa16ca1b",
-        "independent_peer_sha256": "b20c6e13c806f44047a8457d5e95f6f43f7fb2058f165bb5a5649f22adae6c37"
-      },
-      {
-        "name": "feaster_owner",
-        "source_count": 4,
-        "source_files": [
-          {
-            "path": "tools/content-schema/quest-authoring/questpc7_feaster_programme.py",
-            "sha256": "8aec8f4bc7a8a3080b56731b76adbeb604d385b381359ae225f555849fcaeb7f"
-          },
-          {
-            "path": "tools/content-schema/quest-authoring/questpc7_integration.py",
-            "sha256": "6dc0d280ebf7a6cd87638fd5679397de9e229fc5515ae810801ce28f0b0e5504"
-          },
-          {
-            "path": "tools/content-schema/quest-authoring/test_questpc7_programmes.py",
-            "sha256": "5559b690621226153553aa57fe4b6d4ddc361206485d0c9475311379d5a6af9b"
-          },
-          {
-            "path": "crates/gameplay/quests/src/quest/world_callbacks/outfit_tests.rs",
-            "sha256": "539079030d347fb261eedd772ea7f2f353a35e274b1d1be3d82d1b78e1822342"
-          }
-        ],
-        "author_manifest_sha256": "1f779169e12bcf3a2ab054a8691b65bc175cfb29ce86869389e440262accc9b5",
-        "independent_peer_sha256": "e2be603e8fde7216b8a1df48cdac32f9bef8710111bf0da18028a125b56db352"
+        "author_manifest_sha256": "acda8c707d89a37ed4b5a97a72c854661068bed35fbad1c001e98457b207f5d6",
+        "independent_peer_sha256": "82e5f596247bb6a687781d9dc711abdaf6e86452c709d9930adc59d5b91079c8"
       }
     ]
+  },
+  "prior_source_checkpoint": {
+    "head": "73aaf0231d3b250ec59e2384920712f64d854f97",
+    "source_groups": 12,
+    "source_files": 32,
+    "source_review_matrix": "The exact preceding matrix is preserved in this file at commit73aaf0231d3b250ec59e2384920712f64d854f97."
+  },
+  "grizzly_retained_pin_repair": {
+    "cause": "The complete retained shop packet matched integrated main f01f1858. Its items-11000-11499 descriptor still referenced that main blob, while the merged HEAD shard includes a previously approved non-shop Item22008 materialization/stack change.",
+    "repair": "Run the existing strict refresh_canonical_input_pins against exact f01f18582443f482b7adcfaf32cae3f9d3616876. It changed exactly one derived SHA. All13old descriptors authenticate that Git base, all13new descriptors authenticate current HEAD shards, and all56selected complete rows are identical between those revisions.",
+    "preserved": "53admitted/3rejected selected identities, source captures, row order, catalogue content and the strict full-row refusal are unchanged. Shared selected Items22101/22102/22103 retain identical complete rows.",
+    "diagnostics": "Separate the same ordered refusal conditions into BASE_DIGEST and SELECTED_ROWS diagnostics, retaining the ValueError prefix, short-circuit behavior and write boundary. Include actual path/digests or selected-row diff to identify any remaining converter drift.",
+    "checks": "Actual strict helper succeeded in0.037seconds. Four old/new differential helper probes with real temporary JSON and mocked Git blob boundary preserve result bytes, acceptance, refusal/no-write and Git-read counts. Independent source peers passed.",
+    "limitation": "The previous runner did not export generated rows. This proves and repairs a retained baseline mismatch, not that it was the first offending descriptor or that the next full converter will pass."
+  },
+  "feaster_loader_fixture_repair": {
+    "path": "crates/gameplay/quests/src/quest/loader.rs",
+    "repair": "Mount the already runtime-owned feaster-phase-routes document in the existing owner-scope test registry, preserving its112callback coverage when canonical main output splits110+2.",
+    "preserved": "All assertions, Dawnport exclusions and production loader bytes are unchanged.",
+    "checks": "Whole-file inverse, scoped Rust syntax/format/diff and independent peer passed; no Rust execution is claimed."
+  },
+  "npc_fixture_repair": {
+    "cause": "The main-source overlap guard excluded two already accepted predecessor identities after their new NPC-owned tracks and digest marker changed the active definition. Unfinished stored states without those aliases reach RevisionMismatch. Existing completion predecessors cover only Father/Marlin, and the independent Citizen hash regression requires its exact historical alias.",
+    "repair": "Preserve schema1, Draconia/Stag exclusions, the existing overlap guard and real old hash/default extraction. Add only the exact accepted Elemental/None and Citizen/citizen-source-sagas owner pairs. Both same-input fixtures require the fixed25quest union; retain their hash, defaults, rollback and source guards.",
+    "accepted_cohort": "21accepted ours predecessors plus14accepted main predecessors, intersection10, give25distinct identities. Both full historical Elemental2track/4transition and Outfit41track/152transition records are identical across87da, f01 and73aaf. The new NPC tracks are intentional separate owners, not missing donor data.",
+    "fixture_alignment": "Require the exact pair of Gnomus program owners; program totals29all/28schema1 and default census214minus-one/54zero follow the independent closed25document inventory.",
+    "regression": "One direct real-content regression checks both exact historical hashes/defaults and changed active hashes, plus foreign hash, quest, programme key, crossed owner and schema refusals. No global full loader is invoked by that new case.",
+    "preserved": "All three previously peered NPCfixture1 edits remain exact. Runtime writers, source documents, completion predecessor registry and the published Citizen hash test are unchanged.",
+    "checks": "Production inverse equals73aaf; test inverse equals the previously peered Rotten67e4ef5 file. Syn, scoped rustfmt/diff and independent root source peer passed. No Rust or PostgreSQL execution is claimed."
+  },
+  "qn5_structured_admission_repair": {
+    "cause": "During integration the World-requirements shape restriction was changed from the flat Premium flag to the broader live runtime predicate. This newly refused unchanged, accepted QN5 structured admission.",
+    "repair": "In this single shape clause retain both flat Premium refusals while permitting structured admission.premium under existing personal Player, World-admission, nonreversible and nonopening requirements.",
+    "accepted_source": "QN5 JSON and registered-stage test are byte-identical to accepted87da88a0; that source already distinguished shape restrictions from its structured-aware live predicate.",
+    "preserved": "All other shape refusals, shared live Premium helper, dispatch pre-lock checks, writer context/transactional Premium checks, active World participant and actual QN5 source remain unchanged.",
+    "regression": "Add one direct real-QN5 parser regression with seven named negative fences. All four existing tests retain their exact bytes; no global loader is invoked by the new case.",
+    "checks": "Exact one-predicate full-file inverse, real Syn parser, scoped pinned rustfmt, diff check and independent root source peer passed. Actual Rust execution remains pending."
+  },
+  "native_callback_witness_generation_repair": {
+    "cause": "The full generator refreshed W01 ordered death evidence without first regenerating its required native callback witness. The preserved W01 refresh strictly compares their Creature roots; current retained roots differ.",
+    "repair": "Invoke the existing canonical callback witness builder once after the final native registration, then run the existing W01 --refresh-native-pin there. Preserve early Soul War refresh and the order of all other producer calls.",
+    "consumer_proof": "A bounded scan found no W01 JSON/pin producer consumer between its previous position and final native registration. W01 is read by its own builder/tests and Rust inclusion, so the single move preserves prerequisites and binds the final provider.",
+    "preserved": "No capture, source-cache, native bodies, identity bindings, expected source fingerprints or witness-builder guard is changed. Callback or W01 refusal still stops all later producers.",
+    "checks": "Both new dispatcher regressions failed on the original production script. The complete lightweight dispatcher suite passed28checks in1.063seconds. All26previous test-function ASTs and order are unchanged; no real producer subprocess was executed.",
+    "qualification": "Independent bounded source peer passed. Actual callback/W01 producer execution and full canonical runner generation remain pending."
   }
 }

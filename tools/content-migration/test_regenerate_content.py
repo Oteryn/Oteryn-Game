@@ -531,6 +531,60 @@ def downstream_quest_commands():
     ))
 
 
+def test_callback_and_w01_witnesses_follow_final_provider_in_dependency_order() -> None:
+    native = ("python3", "tools/content-migration/register_spell_families.py")
+    callback = ("python3", "tools/content-schema/native-gameplay/build_native_callback_witness.py")
+    death = ("python3", "tools/content-schema/native-gameplay/build_native_death_event_witness.py", "--refresh-native-pin")
+    rooms = ("python3", "tools/content-schema/quest-authoring/grizzly_rooms.py")
+    check = ("python3", "fixture/final_check.py", "--check")
+
+    def require_current_callback(command, events):
+        if command == callback:
+            assert events[-2] == native, "callback witness requires the final native provider"
+        if command == death:
+            assert events[-2] == callback, "W01 refresh requires the canonical callback witness"
+        if command == rooms:
+            assert callback in events[:-1] and death in events[:-1], "consumers need both current witnesses"
+
+    for checks in (False, True):
+        events = []
+        assert full_generation_trace(events, require_current_callback, checks=checks) == 0
+        assert events.count(callback) == events.count(death) == 1
+        final_native = max(i for i, command in enumerate(events) if command == native)
+        assert final_native < events.index(callback) < events.index(death) < events.index(rooms)
+        assert not any("--source-cache" in command or "--canary-tree" in command for command in events)
+        if checks:
+            assert events.index(death) < events.index(check)
+
+
+def test_callback_or_w01_witness_refusal_stops_later_generation() -> None:
+    callback = ("python3", "tools/content-schema/native-gameplay/build_native_callback_witness.py")
+    death = ("python3", "tools/content-schema/native-gameplay/build_native_death_event_witness.py", "--refresh-native-pin")
+    later = (
+        ("python3", "tools/content-schema/native-gameplay/build_srx3_rotten_blood_witness.py"),
+        ("python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"),
+        ("world-metadata",),
+        ("python3", "fixture/final_check.py", "--check"),
+    )
+    for checks in (False, True):
+        for refused in (callback, death):
+            def refuse(command, _events):
+                if command == refused:
+                    raise subprocess.CalledProcessError(23, list(command))
+
+            events = []
+            try:
+                full_generation_trace(events, refuse, checks=checks)
+            except subprocess.CalledProcessError as error:
+                assert error.returncode == 23 and error.cmd == list(refused)
+            else:
+                raise AssertionError("a refused canonical witness must stop regeneration")
+            assert events.count(refused) == 1
+            assert not any(command in events for command in later)
+            if refused == callback:
+                assert death not in events
+
+
 def test_rotten_death_witnesses_follow_final_native_provider_before_consumers() -> None:
     native = ("python3", "tools/content-migration/register_spell_families.py")
     witness = ("python3", "tools/content-schema/native-gameplay/build_srx3_rotten_blood_witness.py")
@@ -823,6 +877,8 @@ def main() -> None:
         test_materializer_bootstraps_complete_item_index_before_running,
         test_item_inventory_rejects_incomplete_or_ambiguous_shards_before_materialization,
         test_item_inventory_emitter_matches_converter_format_and_explicit_output_set,
+        test_callback_and_w01_witnesses_follow_final_provider_in_dependency_order,
+        test_callback_or_w01_witness_refusal_stops_later_generation,
         test_rotten_death_witnesses_follow_final_native_provider_before_consumers,
         test_rotten_death_witness_refusal_stops_every_later_consumer,
         test_downstream_quest_producers_follow_inputs_and_precede_consumers,

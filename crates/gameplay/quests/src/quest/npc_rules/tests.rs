@@ -665,6 +665,118 @@ fn storage_owner_preserves_order_and_rejects_unowned_effects() -> Result<(), Npc
     Ok(())
 }
 
+// The accepted source cohorts from both parents retain these exact predecessors.
+// Draconia has no historical definition; Stag and schema2 have separate owners.
+const EXPECTED_LEGACY_QUESTS: [&str; 25] = [
+    "oteryn:quest.a_father_s_burden_quest",
+    "oteryn:quest.a_pirates_tail",
+    "oteryn:quest.bigfoot_s_burden_quest",
+    "oteryn:quest.blood_brothers_quest",
+    "oteryn:quest.cults_of_tibia_quest",
+    "oteryn:quest.dangerous_depths_quest",
+    "oteryn:quest.demon_oak",
+    "oteryn:quest.elemental_spheres_quest",
+    "oteryn:quest.forgotten_knowledge_quest",
+    "oteryn:quest.hero_of_rathleton_quest",
+    "oteryn:quest.hot_cuisine_quest",
+    "oteryn:quest.in_service_of_yalahar_quest",
+    "oteryn:quest.kilmaresh_quest",
+    "oteryn:quest.marlin_trophy_quest",
+    "oteryn:quest.outfit_and_addon_quests",
+    "oteryn:quest.the_djinn_war_efreet_faction",
+    "oteryn:quest.the_djinn_war_marid_faction",
+    "oteryn:quest.the_dream_courts_quest",
+    "oteryn:quest.the_first_dragon_quest",
+    "oteryn:quest.the_hidden_city_of_beregar_quest",
+    "oteryn:quest.the_inquisition_quest",
+    "oteryn:quest.the_paradox_tower_quest",
+    "oteryn:quest.the_white_raven_monastery_quest",
+    "oteryn:quest.tibia_tales",
+    "oteryn:quest.tower_defence_quest",
+];
+
+#[test]
+fn npc_only_track_owners_keep_exact_existing_quest_predecessors() -> Result<(), String> {
+    let text = include_str!("../../../../../../content/quests/missions/quest-state.json");
+    let old = super::super::loader::parse_quest_state(text, "npc-legacy")
+        .map_err(|error| format!("{error:?}"))?;
+    let document: serde_json::Value =
+        serde_json::from_str(text).map_err(|error| error.to_string())?;
+    let mut bindings = BTreeMap::new();
+    for quest in document["quests"].as_array().ok_or("quests")? {
+        for track in quest["tracks"].as_array().ok_or("tracks")? {
+            bindings.insert(
+                track["key"].as_str().ok_or("key")?.to_owned(),
+                track["source_key"].as_str().ok_or("source")?.to_owned(),
+            );
+        }
+    }
+    let active = extend(old.catalogue().clone(), &bindings)?;
+    let runtime = NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
+    for (quest, program_key) in [
+        ("oteryn:quest.elemental_spheres_quest", None),
+        (
+            "oteryn:quest.outfit_and_addon_quests",
+            Some("oteryn:quest-npc-program.citizen-source-sagas"),
+        ),
+    ] {
+        let program = runtime
+            .programs()
+            .iter()
+            .find(|program| {
+                program.document.quest == quest
+                    && program.document.program_key.as_deref() == program_key
+            })
+            .ok_or("accepted NPC owner")?;
+        assert!(additive_legacy_owner(program));
+        assert!(
+            program
+                .document
+                .tracks
+                .iter()
+                .all(|track| !bindings.contains_key(&track.key))
+        );
+        let old_hash = old.catalogue().definition_hash(quest).ok_or("old hash")?;
+        let defaults = old
+            .catalogue()
+            .tracks
+            .values()
+            .filter(|track| track.quest == quest)
+            .map(|track| (track.key.clone(), track.initial))
+            .collect::<BTreeMap<_, _>>();
+        assert_ne!(active.definition_hash(quest), Some(old_hash));
+        assert_eq!(legacy_defaults(&active, quest, &old_hash), Some(&defaults));
+        let mut foreign_hash = old_hash;
+        foreign_hash[0] ^= 1;
+        assert!(legacy_defaults(&active, quest, &foreign_hash).is_none());
+
+        let mut foreign_key = program.clone();
+        foreign_key.document.program_key = Some("oteryn:quest-npc-program.foreign".into());
+        assert!(!additive_legacy_owner(&foreign_key));
+        let mut foreign_schema = program.clone();
+        foreign_schema.document.schema = 2;
+        assert!(!additive_legacy_owner(&foreign_schema));
+        for foreign_quest in [
+            "oteryn:quest.foreign",
+            "oteryn:quest.draconia_quest",
+            "oteryn:quest.the_order_of_the_stag_quest",
+        ] {
+            let mut foreign_owner = program.clone();
+            foreign_owner.document.quest = foreign_quest.into();
+            assert!(!additive_legacy_owner(&foreign_owner));
+        }
+        let mut crossed_owner = program.clone();
+        crossed_owner.document.quest = if program_key.is_none() {
+            "oteryn:quest.outfit_and_addon_quests"
+        } else {
+            "oteryn:quest.elemental_spheres_quest"
+        }
+        .into();
+        assert!(!additive_legacy_owner(&crossed_owner));
+    }
+    Ok(())
+}
+
 #[test]
 fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_rollback()
 -> Result<(), String> {
@@ -724,7 +836,22 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .collect::<std::collections::BTreeSet<_>>(),
         expected_programmes
     );
-    assert_eq!(runtime.programs().len(), expected_programmes.len() + 1);
+    let gnomus_programmes: Vec<_> = runtime
+        .programs()
+        .iter()
+        .filter(|program| program.document.quest == questpc2_gnomus_source::QUEST)
+        .map(|program| program.document.program_key.as_deref())
+        .collect();
+    assert_eq!(gnomus_programmes.len(), 2);
+    assert_eq!(
+        gnomus_programmes
+            .into_iter()
+            .collect::<std::collections::BTreeSet<_>>(),
+        std::collections::BTreeSet::from([None, Some(questpc2_gnomus_source::PROGRAM)])
+    );
+    // The distinct quest set counts Gnomus once; its second source programme
+    // and the separately checked schema2 Mystery each add one runtime owner.
+    assert_eq!(runtime.programs().len(), expected_programmes.len() + 2);
     assert_eq!(
         runtime
             .programs()
@@ -784,6 +911,10 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             )
         })
         .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(
+        expected_legacy,
+        std::collections::BTreeSet::from(EXPECTED_LEGACY_QUESTS)
+    );
     assert_eq!(
         active
             .npc_legacy
@@ -1090,11 +1221,18 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .filter(|program| program.document.schema == 1)
             .count(),
-        16
+        28
     );
     // Canonical main adds the exact source cohort checked above; schema2
     // Mystery has no fabricated legacy definition or absent-value mapping.
-    assert_eq!(active.npc_legacy.len(), 14);
+    assert_eq!(
+        active
+            .npc_legacy
+            .keys()
+            .map(String::as_str)
+            .collect::<std::collections::BTreeSet<_>>(),
+        std::collections::BTreeSet::from(EXPECTED_LEGACY_QUESTS)
+    );
     // Main adds independently owned programmes; retain the exact original lane set.
     let original = [
         "oteryn:quest.a_father_s_burden_quest",
@@ -1130,7 +1268,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 192), (0, 52)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 214), (0, 54)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
@@ -1186,7 +1324,15 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         .map_err(|e| e.to_string())?;
     let loaded = super::super::loader::load_embedded_quest_state("npc-legacy")
         .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(loaded.catalogue().npc_legacy.len(), 14);
+    assert_eq!(
+        loaded
+            .catalogue()
+            .npc_legacy
+            .keys()
+            .map(String::as_str)
+            .collect::<std::collections::BTreeSet<_>>(),
+        std::collections::BTreeSet::from(EXPECTED_LEGACY_QUESTS)
+    );
     assert!(
         !loaded
             .catalogue()

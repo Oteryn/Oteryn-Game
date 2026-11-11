@@ -800,8 +800,7 @@ def main() -> int:
                  "build_srx3_soul_war_attacks.py",
                  "build_srx3_omrafir_attacks.py", "build_srx3_w01_prepare_death.py"):
         run(["python3", native + name])
-    for name in ("build_srx3_soul_war_death_events.py", "build_native_death_event_witness.py"):
-        run(["python3", native + name, "--refresh-native-pin"])
+    run(["python3", native + "build_srx3_soul_war_death_events.py", "--refresh-native-pin"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
@@ -817,6 +816,10 @@ def main() -> int:
     # Claims above may add complete native container recipes. Rebuild their
     # Item closure only after those final claims exist, before census and pins.
     run(["python3", "tools/content-migration/register_spell_families.py"])
+    # W01 binds the same final native root as the complete callback witness.
+    # Requalify both source bodies before their downstream consumers.
+    run(["python3", native + "build_native_callback_witness.py"])
+    run(["python3", native + "build_native_death_event_witness.py", "--refresh-native-pin"])
     # Both Rotten witnesses bind the final Creature root and retain their
     # reviewed source-body guards; this refresh does not recapture donor source.
     run(["python3", native + "build_srx3_rotten_blood_witness.py"])
