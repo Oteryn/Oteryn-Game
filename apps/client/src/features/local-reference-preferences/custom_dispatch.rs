@@ -116,8 +116,13 @@ impl PlayLink {
                 true
             }
             UtilityAction::OpenChannelList => {
-                let list = self.chat_channel_list_text();
-                lock(&self.mailbox).chat.feedback = Some(list);
+                self.chat_channel_dialog_open();
+                true
+            }
+            UtilityAction::ToggleLensHelp => {
+                let active = self.lens_toggle();
+                lock(&self.mailbox).chat.feedback =
+                    Some(oteryn_client_ui::lens_help::mode_text(active).into());
                 self.open_chat();
                 true
             }

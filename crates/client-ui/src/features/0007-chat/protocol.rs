@@ -53,6 +53,11 @@ pub fn channel_request(panel: &mut ChatPanel) -> Option<ChatIntent> {
     }
     let text = panel.text.clone();
     let intent = match channel {
+        // Receive-only tabs redirect typed text to local chat, as the Global client does.
+        ChannelTab::Loot | ChannelTab::ServerLog | ChannelTab::Npc => ChatIntent::Say {
+            mode: ChatSpeechMode::Say,
+            text,
+        },
         ChannelTab::Room(room) => ChatIntent::Room { room, text },
         ChannelTab::Private(channel_id) => ChatIntent::PrivateChannel(
             oteryn_client_runtime::chat_private_channel::PrivateChannelIntent::Say {
@@ -106,6 +111,10 @@ pub fn open_entry(
     use crate::chat_private_channel::{Intent, request};
     let (id, intent) = match entry {
         ChannelEntry::Room(room) => return open_room(chat, public, *room),
+        ChannelEntry::Local(tab) => {
+            chat.console.open_channel(tab.clone());
+            return None;
+        }
         ChannelEntry::CreateOwn => (None, Intent::Create),
         ChannelEntry::Own(id) | ChannelEntry::Invitation { channel_id: id, .. } => {
             (Some(*id), Intent::Join)
@@ -166,7 +175,10 @@ pub fn close_current(
             }
             command
         }
-        ChannelTab::Conversation(_) => {
+        ChannelTab::Conversation(_)
+        | ChannelTab::Loot
+        | ChannelTab::ServerLog
+        | ChannelTab::Npc => {
             chat.console.close_current();
             None
         }

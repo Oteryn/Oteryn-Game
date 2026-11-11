@@ -289,6 +289,10 @@ pub mod stash;
 #[path = "features/local-minimap/mod.rs"]
 pub mod minimap;
 
+/// Lens help: help texts keyed by panel identifiers.
+#[path = "features/local-lens-help/mod.rs"]
+pub mod lens_help;
+
 /// Target-walk input and receipt projection.
 #[path = "features/0064-target-move/mod.rs"]
 pub mod target_move;

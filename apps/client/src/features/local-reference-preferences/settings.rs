@@ -57,7 +57,7 @@ mod custom_actions;
 mod custom_dispatch;
 #[path = "utility_actions.rs"]
 mod utility_actions;
-pub use custom_actions::{CustomAction, ObjectTarget};
+pub use custom_actions::{CustomAction, ObjectTarget, default_custom_hotkeys};
 pub use utility_actions::UtilityAction;
 #[path = "profiles.rs"]
 mod profiles;
@@ -246,7 +246,7 @@ pub struct ReferencePreferences {
     pub hotkey_contexts: HotkeyProfiles,
     #[serde(default)]
     pub item_hotkeys: crate::play::feature_0179_hotkey_equip::view::ItemHotkeys,
-    #[serde(default)]
+    #[serde(default = "custom_actions::default_custom_hotkeys")]
     pub custom_hotkeys: std::collections::BTreeMap<String, CustomAction>,
     #[serde(default)]
     pub bar_hotkey_profiles: std::collections::BTreeMap<
@@ -349,7 +349,7 @@ impl Default for ReferencePreferences {
             secondary_keybindings: std::collections::BTreeMap::new(),
             hotkey_contexts: HotkeyProfiles::default(),
             item_hotkeys: Default::default(),
-            custom_hotkeys: std::collections::BTreeMap::new(),
+            custom_hotkeys: custom_actions::default_custom_hotkeys(),
             bar_hotkey_profiles: std::collections::BTreeMap::new(),
             bar_action_profiles: std::collections::BTreeMap::new(),
             custom_hotkey_profiles: std::collections::BTreeMap::new(),

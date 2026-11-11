@@ -40,6 +40,8 @@ struct Actions(Vec<usize>);
 #[path = "native_helpers.rs"]
 mod helpers;
 use helpers::*;
+#[path = "native_channels.rs"]
+mod channel_dialog;
 #[path = "native_console.rs"]
 mod console_controls;
 

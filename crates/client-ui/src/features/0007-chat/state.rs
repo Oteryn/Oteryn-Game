@@ -23,6 +23,27 @@ pub enum ChannelTab {
     Room(oteryn_client_runtime::chat_public_channels::ChatRoom),
     Private(u16),
     Conversation(String),
+    /// Client-local views over messages the client already receives; they take no input.
+    Loot,
+    ServerLog,
+    Npc,
+}
+impl ChannelTab {
+    /// The tab caption.
+    pub fn label(&self) -> String {
+        match self {
+            ChannelTab::Room(room) => crate::chat_public_channels::room_name(*room).to_owned(),
+            ChannelTab::Private(id) => lfmt!("Channel {id}", id = id),
+            ChannelTab::Conversation(name) => name.clone(),
+            ChannelTab::Loot => tr!("Loot").to_owned(),
+            ChannelTab::ServerLog => tr!("Server Log").to_owned(),
+            ChannelTab::Npc => tr!("NPC").to_owned(),
+        }
+    }
+    /// Loot, Server Log and NPC are receive-only: typed text goes to local chat instead.
+    pub fn receive_only(&self) -> bool {
+        matches!(self, Self::Loot | Self::ServerLog | Self::Npc)
+    }
 }
 /// A channel tab to select once the server has confirmed it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -61,6 +82,9 @@ pub struct Console {
     /// The selected channel tab; `None` while a fixed tab is selected.
     pub current: Option<ChannelTab>,
     pub focus: Option<PendingFocus>,
+    /// The latest NPC conversation, kept for the NPC tab after the conversation closed.
+    pub npc_lines: Vec<String>,
+    pub dialog: super::ChannelDialog,
 }
 impl Default for Console {
     fn default() -> Self {
@@ -79,6 +103,8 @@ impl Default for Console {
             channels: Vec::new(),
             current: None,
             focus: None,
+            npc_lines: Vec::new(),
+            dialog: Default::default(),
         }
     }
 }
@@ -152,11 +178,7 @@ impl Console {
             tr!("Private").to_owned(),
             tr!("Guild").to_owned(),
         ];
-        labels.extend(self.channels.iter().map(|tab| match tab {
-            ChannelTab::Room(room) => crate::chat_public_channels::room_name(*room).to_owned(),
-            ChannelTab::Private(id) => lfmt!("Channel {id}", id = id),
-            ChannelTab::Conversation(name) => name.clone(),
-        }));
+        labels.extend(self.channels.iter().map(ChannelTab::label));
         labels
     }
     /// The server owns which public rooms are open: mirror them as tabs, selecting the room
@@ -201,6 +223,13 @@ impl Console {
         {
             self.focus = None;
             self.open_channel(ChannelTab::Private(id));
+        }
+    }
+    /// Keep the NPC tab's lines: an empty update after the conversation closed keeps the
+    /// last reply, a new conversation replaces it.
+    pub fn sync_npc(&mut self, lines: &[String]) {
+        if !lines.is_empty() {
+            self.npc_lines = lines.to_vec();
         }
     }
     /// Select the next (or previous) tab, wrapping around.

@@ -24,6 +24,44 @@ impl PlayLink {
         let entries = self.chat_channel_entries();
         oteryn_client_ui::chat::channel_list_text(&entries, &lock(&self.mailbox).chat.console)
     }
+    /// The rows of the channel list dialog: the server's channels, then the local tabs.
+    pub fn chat_dialog_entries(&self) -> Vec<ChannelEntry> {
+        let mailbox = lock(&self.mailbox);
+        oteryn_client_ui::chat::dialog_entries(
+            mailbox.chat_private.list.as_ref(),
+            mailbox.chat_public.rooms,
+        )
+    }
+    /// OpenChannelList (Ctrl+O): show the channel list dialog next to the console.
+    pub fn chat_channel_dialog_open(&self) {
+        lock(&self.mailbox).chat.console.dialog.show();
+        self.open_chat();
+    }
+    /// The dialog's state and one caption per row.
+    pub fn chat_channel_dialog(&self) -> (oteryn_client_ui::chat::ChannelDialog, Vec<String>) {
+        let entries = self.chat_dialog_entries();
+        let mailbox = lock(&self.mailbox);
+        (
+            mailbox.chat.console.dialog.clone(),
+            oteryn_client_ui::chat::dialog_rows(&entries, &mailbox.chat.console),
+        )
+    }
+    /// A row was selected in the dialog.
+    pub fn chat_channel_dialog_select(&self, index: usize) {
+        let rows = self.chat_dialog_entries().len();
+        lock(&self.mailbox).chat.console.dialog.select(index, rows);
+    }
+    /// The private-message name box changed.
+    pub fn chat_channel_dialog_name(&self, name: &str) {
+        lock(&self.mailbox).chat.console.dialog.set_name(name);
+    }
+    pub fn chat_channel_dialog_cancel(&self) {
+        lock(&self.mailbox).chat.console.dialog.hide();
+    }
+    /// Open what the dialog selected, or the private-message tab of the typed name.
+    pub fn chat_channel_dialog_confirm(&self) -> bool {
+        dialog_confirm(&mut lock(&self.mailbox), &self.commands)
+    }
     /// OpenHelpChannel.
     pub fn chat_open_help(&self) {
         self.chat_channel_command(|mailbox| {
@@ -60,16 +98,7 @@ impl PlayLink {
         &self,
         command: impl FnOnce(&mut Mailbox) -> Option<oteryn_session::ChatIntent>,
     ) {
-        let mut mailbox = lock(&self.mailbox);
-        if let Some(intent) = command(&mut mailbox)
-            && self.commands.send(PlayCommand::ChatPublic(intent)).is_err()
-        {
-            mailbox.chat_public.pending = false;
-            mailbox.chat_private.pending = false;
-            mailbox.chat_private.pending_intent = None;
-            mailbox.chat.console.focus = None;
-            mailbox.chat.feedback = Some(tr!("The session has ended").into());
-        }
+        channel_command(&mut lock(&self.mailbox), &self.commands, command);
     }
     pub fn chat_console_tab(&self, tab: ConsoleTab) {
         select(&mut lock(&self.mailbox), tab);
@@ -203,6 +232,53 @@ pub(super) fn refresh(mailbox: &mut Mailbox, commands: &UnboundedSender<PlayComm
         mailbox.chat.console.metadata.pending = None;
     }
 }
+/// Send what a channel command asks for; a closed session leaves a feedback line instead.
+pub(in crate::play) fn channel_command(
+    mailbox: &mut Mailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+    command: impl FnOnce(&mut Mailbox) -> Option<oteryn_session::ChatIntent>,
+) {
+    if let Some(intent) = command(mailbox)
+        && commands.send(PlayCommand::ChatPublic(intent)).is_err()
+    {
+        mailbox.chat_public.pending = false;
+        mailbox.chat_private.pending = false;
+        mailbox.chat_private.pending_intent = None;
+        mailbox.chat.console.focus = None;
+        mailbox.chat.feedback = Some(tr!("The session has ended").into());
+    }
+}
+
+/// Confirm the channel list dialog: open the selected row, or the private-message tab of the
+/// typed name. The native dialog calls this with the mailbox it already holds.
+pub(in crate::play) fn dialog_confirm(
+    mailbox: &mut Mailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+) -> bool {
+    use oteryn_client_ui::chat::DialogAction;
+    let entries = oteryn_client_ui::chat::dialog_entries(
+        mailbox.chat_private.list.as_ref(),
+        mailbox.chat_public.rooms,
+    );
+    match mailbox.chat.console.dialog.confirm(&entries) {
+        Some(DialogAction::Entry(entry)) => {
+            channel_command(mailbox, commands, |mailbox| {
+                oteryn_client_ui::chat::open_entry(
+                    &mut mailbox.chat,
+                    &mut mailbox.chat_public,
+                    &mut mailbox.chat_private,
+                    &entry,
+                )
+            });
+            true
+        }
+        Some(DialogAction::Conversation(name)) => {
+            oteryn_client_ui::chat::open_conversation(&mut mailbox.chat, &name)
+        }
+        None => false,
+    }
+}
+
 impl Outbox {
     pub(in crate::play) fn console_events(&self, events: &[oteryn_session::SessionEvent]) {
         let received = std::time::SystemTime::now()

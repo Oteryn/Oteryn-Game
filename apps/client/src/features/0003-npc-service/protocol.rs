@@ -34,6 +34,7 @@ impl Mailbox {
         for event in events {
             if let SessionEvent::NpcConversation(delta) = event {
                 self.dialogue.apply(delta.value.clone());
+                self.chat.console.sync_npc(&self.dialogue.lines);
             }
         }
     }

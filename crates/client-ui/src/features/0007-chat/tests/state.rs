@@ -635,4 +635,121 @@ mod channels {
         assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
         assert!(chat.console.channels.is_empty());
     }
+
+    #[test]
+    fn chat_local_tabs_open_from_the_dialog_rows_and_close_without_wire() {
+        let (mut chat, mut public, mut private) = selected();
+        let entries = dialog_entries(Some(&list(None, &[])), ChatRoomSet::default());
+        let local: Vec<_> = entries
+            .iter()
+            .filter(|entry| matches!(entry, ChannelEntry::Local(_)))
+            .cloned()
+            .collect();
+        assert_eq!(
+            local,
+            [
+                ChannelEntry::Local(ChannelTab::Loot),
+                ChannelEntry::Local(ChannelTab::ServerLog),
+                ChannelEntry::Local(ChannelTab::Npc),
+            ]
+        );
+        for entry in &local {
+            assert_eq!(
+                open_entry(&mut chat, &mut public, &mut private, entry),
+                None
+            );
+        }
+        assert_eq!(
+            chat.console.tab_labels()[4..],
+            ["Loot", "Server Log", "NPC"]
+        );
+        assert_eq!(chat.console.current, Some(ChannelTab::Npc));
+        // Typing in a local tab speaks locally; nothing is sent to a channel.
+        chat.text = "hi".into();
+        assert!(matches!(
+            channel_request(&mut chat),
+            Some(ChatIntent::Say { .. })
+        ));
+        assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
+        assert_eq!(chat.console.channels.len(), 2);
+        assert!(dialog_rows(&entries, &chat.console)[entries.len() - 1].contains("closed"));
+    }
+
+    #[test]
+    fn chat_loot_tab_takes_loot_notices_out_of_the_server_log_and_all_tabs() {
+        let mut chat = ChatPanel::default();
+        chat.console
+            .notices
+            .push(NoticeClass::Loot, "Looted 2 of 3 items", 1);
+        chat.console
+            .notices
+            .push(NoticeClass::Status, "Server is saving", 2);
+        let log = |chat: &ChatPanel| {
+            let mut shown = chat.clone();
+            shown.console.current = Some(ChannelTab::ServerLog);
+            panel_text(&shown)
+        };
+        // Without a Loot tab the loot line stays in the combined log.
+        chat.console.open_channel(ChannelTab::ServerLog);
+        assert!(log(&chat).contains("Looted 2 of 3 items") && log(&chat).contains("saving"));
+        chat.console.open_channel(ChannelTab::Loot);
+        let loot = panel_text(&chat);
+        assert!(loot.contains("Looted 2 of 3 items") && !loot.contains("saving"));
+        let log = log(&chat);
+        assert!(!log.contains("Looted") && log.contains("Server is saving"));
+        chat.console.select(ConsoleTab::All);
+        assert!(!panel_text(&chat).contains("Looted"));
+    }
+
+    #[test]
+    fn chat_npc_tab_keeps_the_last_conversation_lines() {
+        let mut chat = ChatPanel::default();
+        chat.console.open_channel(ChannelTab::Npc);
+        chat.console
+            .sync_npc(&["Hello, traveller.".into(), "Buy?".into()]);
+        assert_eq!(panel_text(&chat), "Hello, traveller.\nBuy?\n");
+        chat.console.sync_npc(&[]);
+        assert!(panel_text(&chat).contains("Buy?"));
+        chat.console.sync_npc(&["Farewell.".into()]);
+        assert_eq!(panel_text(&chat), "Farewell.\n");
+    }
+
+    #[test]
+    fn chat_dialog_selects_steps_and_confirms_rows_or_a_typed_name() {
+        let channels = list(Some(100), &[(205, "Ana")]);
+        let entries = dialog_entries(Some(&channels), ChatRoomSet::default());
+        let console = Console::default();
+        let rows = dialog_rows(&entries, &console);
+        assert_eq!(rows.len(), entries.len());
+        assert!(rows[0].starts_with("World") && rows.iter().any(|row| row.contains("Ana")));
+        let mut dialog = ChannelDialog::default();
+        dialog.show();
+        assert!(dialog.open && dialog.selected == 0);
+        assert!(!dialog.select(entries.len(), entries.len()));
+        dialog.step(false, entries.len());
+        assert_eq!(dialog.selected, entries.len() - 1);
+        dialog.step(true, entries.len());
+        assert_eq!(dialog.selected, 0);
+        dialog.step(true, 0);
+        assert!(dialog.select(1, entries.len()));
+        assert_eq!(
+            dialog.confirm(&entries),
+            Some(DialogAction::Entry(ChannelEntry::Room(ChatRoom::Help)))
+        );
+        assert!(!dialog.open);
+        // A typed name wins over the selection and opens a conversation.
+        dialog.show();
+        dialog.set_name("  Bryn ");
+        assert_eq!(
+            dialog.confirm(&entries),
+            Some(DialogAction::Conversation("Bryn".into()))
+        );
+        // A hidden dialog confirms nothing; no rows and no name: nothing to confirm either.
+        assert_eq!(dialog.confirm(&entries), None);
+        dialog.show();
+        assert_eq!(dialog.confirm(&[]), None);
+        // The create row is captioned as the owner asked.
+        let create = dialog_rows(&[ChannelEntry::CreateOwn], &console);
+        assert_eq!(create, ["Create own private channel"]);
+    }
 }

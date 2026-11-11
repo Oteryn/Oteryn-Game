@@ -21,6 +21,7 @@ pub(super) unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LP
                 ) && note == BN_CLICKED as usize
                     || id == TAB && note == LBN_SELCHANGE as usize)
                     || PrivateControls::accepts(id, note)
+                    || channel_dialog::accepts(id, note)
                     || console_controls::accepts(id, note))
             {
                 (*actions).0.push(id);

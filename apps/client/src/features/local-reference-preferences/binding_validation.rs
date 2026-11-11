@@ -33,11 +33,13 @@ pub(super) fn validate_effective(
         if default.starts_with("MOUSE") {
             continue;
         }
-        let chord = parse(primary.get(id).map_or(default, String::as_str))?;
-        if used.contains(&chord) {
-            return Err(PreferenceError);
+        if let Some(value) = effective_chord(primary, id, default) {
+            let chord = parse(value)?;
+            if used.contains(&chord) {
+                return Err(PreferenceError);
+            }
+            used.push(chord);
         }
-        used.push(chord);
         if let Some(value) = secondary.get(id) {
             let chord = parse(value)?;
             if used.contains(&chord) {
@@ -74,7 +76,9 @@ pub(in crate::play) fn validate_custom(
         if default.starts_with("MOUSE") {
             continue;
         }
-        if used.contains(&parse(primary.get(id).map_or(default, String::as_str))?) {
+        if let Some(value) = effective_chord(primary, id, default)
+            && used.contains(&parse(value)?)
+        {
             return Err(PreferenceError);
         }
     }

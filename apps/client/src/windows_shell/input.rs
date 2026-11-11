@@ -49,7 +49,7 @@ impl Application {
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
             for action in custom_actions {
-                if let crate::play::CustomAction::Utility { action } = action {
+                if let oteryn_client::play::CustomAction::Utility { action } = action {
                     if self.settings.run_utility(&play.link, action) {
                         let _ = self.settings.capture(&mut play.view);
                     }
@@ -58,7 +58,9 @@ impl Application {
                 }
             }
             if let Some(window) = &self.window {
-                window.set_cursor(if play.view.preferences().cursor_crosshair {
+                window.set_cursor(if play.link.lens_active() {
+                    winit::window::CursorIcon::Help
+                } else if play.view.preferences().cursor_crosshair {
                     winit::window::CursorIcon::Crosshair
                 } else {
                     winit::window::CursorIcon::Default
@@ -187,6 +189,18 @@ impl Application {
                     if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
                         play.view.attack_toggle_click(tile, &play.link);
                     }
+                    continue;
+                }
+                if !click.secondary && play.link.lens_active() {
+                    let size = self
+                        .window
+                        .as_ref()
+                        .map(|window| window.inner_size())
+                        .unwrap_or_default();
+                    let root =
+                        [size.width, size.height].map(|v| u16::try_from(v).unwrap_or(u16::MAX));
+                    let key = play.view.lens_key([click.x as f32, click.y as f32], root);
+                    play.link.lens_click(key);
                     continue;
                 }
                 if !click.secondary && suppress_primary {

@@ -152,6 +152,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let mut private = PrivateControls::new(hwnd);
         let mut font = console_font::ConsoleFont::default();
         let mut console = console_controls::Controls::new(hwnd);
+        let mut channels = channel_dialog::Controls::default();
         // Reserve an independent strip above the console's existing controls.
         let mut child = GetWindow(hwnd, GW_CHILD);
         while !child.is_null() {
@@ -219,6 +220,9 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     continue;
                 }
                 if private.action(action, &mut mailbox, &commands) {
+                    continue;
+                }
+                if channels.action(action, &mut mailbox, &commands) {
                     continue;
                 }
                 match action {
@@ -300,6 +304,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             }
             SendMessageW(tabs, LB_SETCURSEL, mailbox.chat.console.tab_index(), 0);
             console.tick(&mut mailbox, &commands, transcript);
+            channels.tick(&mut mailbox, hwnd);
             font.update(transcript, mailbox.chat.console.display.font_px);
             private.render(&mailbox.chat_private);
             mirror.render(&mailbox.chat, transcript);

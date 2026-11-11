@@ -26,6 +26,9 @@ fn tab_text(
     } else {
         tab
     };
+    if let Some(local) = channel.filter(|channel| channel.receive_only()) {
+        return local_tab_text(panel, local);
+    }
     let show_messages = panel.console.shows_messages(tab);
     let mut text = String::from(tr!("Local Chat — Say / Whisper / Yell / Private\n"));
     if channel.is_none() && panel.console.presentation.visible[2] {
@@ -176,16 +179,52 @@ fn tab_text(
         }
     }
     if channel.is_none() && show_messages && tab == crate::chat::ConsoleTab::All {
-        text.push_str(
-            &panel
-                .console
-                .notices
-                .text(panel.console.filters, panel.console.display),
-        );
+        text.push_str(&panel.console.notices.scoped_text(
+            panel.console.filters,
+            panel.console.display,
+            super::NoticeScope::Combined {
+                loot_tab_open: panel.console.channels.contains(&super::ChannelTab::Loot),
+            },
+        ));
     }
     if let Some(feedback) = &panel.feedback
         && presentation.feedback
         && panel.console.filters.information
+    {
+        let _ = writeln!(text, "{feedback}");
+    }
+    text
+}
+
+/// The Loot, Server Log and NPC tabs are client-local views over messages the client already
+/// received: loot results, server notices and the latest NPC conversation.
+fn local_tab_text(panel: &ChatPanel, tab: &super::ChannelTab) -> String {
+    use super::{ChannelTab, NoticeScope};
+    let console = &panel.console;
+    let mut text = match tab {
+        ChannelTab::Loot => {
+            console
+                .notices
+                .scoped_text(console.filters, console.display, NoticeScope::LootOnly)
+        }
+        ChannelTab::ServerLog => console.notices.scoped_text(
+            console.filters,
+            console.display,
+            NoticeScope::Combined {
+                loot_tab_open: console.channels.contains(&ChannelTab::Loot),
+            },
+        ),
+        _ => console
+            .npc_lines
+            .iter()
+            .fold(String::new(), |mut text, line| {
+                let _ = writeln!(text, "{line}");
+                text
+            }),
+    };
+    if let Some(feedback) = &panel.feedback
+        && console.presentation.feedback
+        && console.filters.information
     {
         let _ = writeln!(text, "{feedback}");
     }
@@ -212,7 +251,12 @@ pub enum ChannelEntry {
     Room(oteryn_client_runtime::chat_public_channels::ChatRoom),
     CreateOwn,
     Own(u16),
-    Invitation { channel_id: u16, owner_name: String },
+    Invitation {
+        channel_id: u16,
+        owner_name: String,
+    },
+    /// A client-local tab: Loot, Server Log or NPC.
+    Local(super::ChannelTab),
 }
 
 /// The rows the server lets this session open: the public rooms of the channel list (or, while
@@ -242,36 +286,67 @@ pub fn channel_entries(
     entries
 }
 
+/// The rows of the channel list dialog: the server's channels, then the three local tabs.
+#[must_use]
+pub fn dialog_entries(
+    list: Option<&oteryn_client_runtime::chat_private_channel::ChatChannelList>,
+    open_rooms: oteryn_client_runtime::chat_public_channels::ChatRoomSet,
+) -> Vec<ChannelEntry> {
+    use super::ChannelTab;
+    let mut entries = channel_entries(list, open_rooms);
+    entries.extend(
+        [ChannelTab::Loot, ChannelTab::ServerLog, ChannelTab::Npc]
+            .into_iter()
+            .map(ChannelEntry::Local),
+    );
+    entries
+}
+
 /// The channel list dialog text; a channel that already has a tab is marked open.
 #[must_use]
 pub fn channel_list_text(entries: &[ChannelEntry], console: &super::Console) -> String {
-    use super::ChannelTab;
     let mut text = String::from(tr!("Channel list\n"));
-    let open = |tab: &ChannelTab| console.channels.contains(tab);
     for entry in entries {
-        let state = |opened: bool| if opened { tr!("open") } else { tr!("closed") };
-        match entry {
-            ChannelEntry::Room(room) => {
-                let _ = writeln!(
-                    text,
-                    "{}: {}",
-                    crate::chat_public_channels::room_name(*room),
-                    state(open(&ChannelTab::Room(*room)))
-                );
-            }
-            ChannelEntry::CreateOwn => {
-                text.push_str(tr!("Create"));
-                text.push('\n');
-            }
-            ChannelEntry::Own(id) => {
-                let _ = lwriteln!(text, "Own channel ({id})", id = id);
-            }
-            ChannelEntry::Invitation {
-                channel_id,
-                owner_name,
-            } => {
-                let _ = lwriteln!(text, "Invitation: {} ({})", owner_name, channel_id);
-            }
+        text.push_str(&entry_text(entry, console));
+    }
+    text
+}
+
+/// One channel list row as a line of text.
+pub(super) fn entry_text(entry: &ChannelEntry, console: &super::Console) -> String {
+    use super::ChannelTab;
+    let state = |tab: ChannelTab| {
+        if console.channels.contains(&tab) {
+            tr!("open")
+        } else {
+            tr!("closed")
+        }
+    };
+    let mut text = String::new();
+    match entry {
+        ChannelEntry::Room(room) => {
+            let _ = writeln!(
+                text,
+                "{}: {}",
+                crate::chat_public_channels::room_name(*room),
+                state(ChannelTab::Room(*room))
+            );
+        }
+        ChannelEntry::CreateOwn => {
+            text.push_str(tr!("Create"));
+            text.push('\n');
+        }
+        ChannelEntry::Own(id) => {
+            let _ = lwriteln!(text, "Own channel ({id})", id = id);
+        }
+        ChannelEntry::Invitation {
+            channel_id,
+            owner_name,
+        } => {
+            let _ = lwriteln!(text, "Invitation: {} ({})", owner_name, channel_id);
+        }
+        ChannelEntry::Local(tab) => {
+            let _ = writeln!(text, "{}: {}", tab.label(), state(tab.clone()));
         }
     }
     text

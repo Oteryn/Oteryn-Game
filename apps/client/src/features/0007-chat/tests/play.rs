@@ -152,3 +152,31 @@ fn n021_alt_d_selects_the_default_tab_and_keypad_enter_sets_temporary_mode()
     );
     Ok(())
 }
+
+#[test]
+fn channel_dialog_opens_a_private_message_tab_by_name_and_cancels_cleanly() {
+    use oteryn_client_ui::chat::ChannelTab;
+    let (link, _commands, _outbox) = play_channel();
+    link.chat_channel_dialog_open();
+    let (dialog, rows) = link.chat_channel_dialog();
+    assert!(dialog.open);
+    // Without a server list the dialog still offers the three local tabs.
+    assert!(rows.iter().any(|row| row.starts_with("Loot")));
+    link.chat_channel_dialog_cancel();
+    assert!(!link.chat_channel_dialog().0.open);
+    assert!(!link.chat_channel_dialog_confirm());
+    link.chat_channel_dialog_open();
+    link.chat_channel_dialog_name(" Bryn ");
+    assert!(link.chat_channel_dialog_confirm());
+    let panel = link.chat_panel();
+    assert!(!panel.console.dialog.open);
+    assert_eq!(
+        panel.console.current,
+        Some(ChannelTab::Conversation("Bryn".into()))
+    );
+    // A name that cannot be a player closes the dialog and says why.
+    link.chat_channel_dialog_open();
+    link.chat_channel_dialog_name(&"x".repeat(121));
+    assert!(!link.chat_channel_dialog_confirm());
+    assert!(link.chat_panel().feedback.is_some());
+}

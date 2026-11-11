@@ -238,6 +238,7 @@ pub(super) struct Mailbox {
     pub(super) hireling_management: oteryn_client_ui::hireling_management::Panel,
     pub(super) market: oteryn_client_ui::market::MarketPanel,
     pub(super) market_shutdown: bool,
+    pub(super) lens: oteryn_client_ui::lens_help::LensHelp,
     // CL26s1
     pub(super) chat: oteryn_client_ui::chat::ChatPanel,
     pub(super) chat_public: oteryn_client_ui::chat_public_channels::ChatPanel,

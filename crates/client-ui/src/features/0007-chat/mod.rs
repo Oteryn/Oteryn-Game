@@ -4,8 +4,11 @@ mod display;
 pub use display::{ConsoleDisplay, Metadata};
 #[path = "../../components/console_filters.rs"]
 mod filters;
-pub use filters::{ConsoleFilters, ConsoleNotices, NoticeClass};
+pub use filters::{ConsoleFilters, ConsoleNotices, NoticeClass, NoticeScope};
+#[path = "state/channel_dialog.rs"]
+mod channel_dialog;
 mod input;
+pub use channel_dialog::{ChannelDialog, DialogAction, dialog_rows};
 #[path = "state/presentation.rs"]
 mod presentation;
 mod protocol;
@@ -23,7 +26,8 @@ pub use state::{
     ConsoleTab, Mode, PendingFocus,
 };
 pub use view::{
-    ChannelEntry, channel_entries, channel_list_text, mirror_text, panel_text, write_log,
+    ChannelEntry, channel_entries, channel_list_text, dialog_entries, mirror_text, panel_text,
+    write_log,
 };
 #[cfg(test)]
 #[path = "tests/state.rs"]
