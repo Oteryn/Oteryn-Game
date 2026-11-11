@@ -160,7 +160,7 @@ impl DurabilityRoot {
                     match &page {
                         StreamPage::Sanctions(items) => {
                             for item in items {
-                                if !known(&mut *tx, &item.account_id, item.character_id.as_ref())
+                                if !known(&mut tx, &item.account_id, item.character_id.as_ref())
                                     .await?
                                 {
                                     counts.skipped = counts.skipped.saturating_add(1);
@@ -184,7 +184,7 @@ impl DurabilityRoot {
                         }
                         StreamPage::Loyalty(items) => {
                             for item in items {
-                                if !known(&mut *tx, &item.account_id, None).await? {
+                                if !known(&mut tx, &item.account_id, None).await? {
                                     counts.skipped = counts.skipped.saturating_add(1);
                                     continue;
                                 }

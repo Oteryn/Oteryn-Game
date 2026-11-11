@@ -48,7 +48,7 @@ pub(super) async fn grant(
         // deadline owner (docs/contracts/TEMPLE_TELEPORT_SCROLL_V1.md; migration 2762).
         if let Some(item) = &item {
             super::item_use::temple_scroll::schedule_delivered_scroll(
-                &mut ***tx,
+                tx,
                 item,
                 &request.transaction_id,
             )
