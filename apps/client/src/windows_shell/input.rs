@@ -177,6 +177,12 @@ impl Application {
             };
             let mut render_failed = false;
             for click in clicks {
+                if click.toggle_attack {
+                    if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
+                        play.view.attack_toggle_click(tile, &play.link);
+                    }
+                    continue;
+                }
                 if !click.secondary && suppress_primary {
                     continue;
                 }

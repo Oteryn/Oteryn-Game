@@ -278,3 +278,58 @@ fn active_named_battle_list_survives_character_switches() -> Result<(), Box<dyn 
 
 #[path = "metadata.rs"]
 mod metadata;
+
+#[test]
+fn o014_battle_list_filters_by_type_and_sorts_by_each_choice() {
+    use crate::play::feature_0017_attack::view::{BattleListPreferences, BattleSort};
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+    };
+    let row = |id, kind, health| WorldSpatialEntity {
+        display_name: None,
+        kind,
+        entity: EntityRef {
+            identity: [id; 16],
+            generation: 1,
+        },
+        position: ActorPosition {
+            x: 1,
+            y: 2,
+            floor: 7,
+        },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: health,
+        },
+    };
+    let creature = row(1, EntityKind::Creature, 80);
+    let player = row(2, EntityKind::Player, 30);
+    let rows = [creature, player];
+    let list = |players, creatures, sort| BattleListPreferences {
+        players,
+        creatures,
+        sort,
+        ..Default::default()
+    };
+    assert_eq!(
+        list(true, false, BattleSort::Name).rows(&rows),
+        vec![player]
+    );
+    assert_eq!(
+        list(false, true, BattleSort::Name).rows(&rows),
+        vec![creature]
+    );
+    assert_eq!(
+        list(true, true, BattleSort::HealthAscending).rows(&rows),
+        vec![player, creature]
+    );
+    assert_eq!(
+        list(true, true, BattleSort::HealthDescending).rows(&rows),
+        vec![creature, player]
+    );
+    assert_eq!(
+        list(true, true, BattleSort::Identity).rows(&rows),
+        vec![creature, player]
+    );
+}
