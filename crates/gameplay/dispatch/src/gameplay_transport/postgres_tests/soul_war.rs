@@ -784,7 +784,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
                     floor: 10,
                 },
             )
-            .map_err(debug)?;
+            .ok_or("Soul War bundle view")?;
         let pin = crate::content::channel_content_pin::ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,

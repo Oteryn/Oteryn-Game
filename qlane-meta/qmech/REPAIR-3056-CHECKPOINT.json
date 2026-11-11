@@ -3,7 +3,7 @@
   "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
   "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
   "parents": {
-    "previous_published_head": "879303f499b7cfda2dd031bf6d728b1d2f000223",
+    "previous_published_head": "2e66d733b595fd0ed0ad08ee11947bea629d2c8a",
     "integrated_main": "f01f18582443f482b7adcfaf32cae3f9d3616876"
   },
   "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
@@ -57,16 +57,26 @@
     }
   ],
   "last_checkpoint_execution": {
-    "head": "879303f499b7cfda2dd031bf6d728b1d2f000223",
-    "merge_run": 42946402737,
-    "generator_run": 42946402808,
-    "generator_job": 130280178376,
-    "generator_result": "Quest prerequisites passed; Rust materializer compilation failed on two missing qualify_origin direction arguments. Pin refresh, export and upload were skipped; artifact inventory was empty.",
-    "generator_log_sha256": "5e0367d7d95c7007223b47cb757cd402c3725b6d5f3debdb566cc7f8512d2a20",
-    "rust_policy_result": "Actual cache-miss execution passed in job 130280772376.",
-    "rust_result": "All three unit jobs failed compilation before executing tests. Clippy also rejected the stale validate_document test call and the unconstructed PaidExchange variant.",
-    "repair_scope": "Complete both scripted relocation calls, use the current full test validator with its unchanged 256-row bound, connect existing paid exchange branches to their byte-equivalent typed key helper, repair exact historical Item binding consumption, and complete downstream Quest generation.",
-    "qualification": "Source checks and bounded Python tests do not establish a passing Rust build, full generated content or PostgreSQL qualification."
+    "head": "2e66d733b595fd0ed0ad08ee11947bea629d2c8a",
+    "merge_run": 42948846350,
+    "generator_run": 42948846608,
+    "generator_job": 130288094213,
+    "generator_result": "Quest prerequisites passed. Rust materializer compilation failed on the optional loot reference and repeated damage_shares move in kill_reward.rs. Materialization, pin refresh, export and upload were not reached; artifact inventory was empty.",
+    "generator_log_sha256": "b6609566eee05d1ea6ecc35445b8ead166904ebd775d1be4cbfda6a5dd3b227c",
+    "rust_policy_result": "Actual cache-miss execution passed in job 130288640175.",
+    "rust_result": "Strict Clippy failed on the unreachable AI diagonal pattern. All three unit shards failed cargo test --no-run with the same 17 compiler diagnostics and two unreachable-pattern warnings; zero test cases executed. Native entry failed on the two kill_reward errors before runtime qualification.",
+    "repair_scope": "Correct optional loot references and the rowless participation ledger, remove unreachable duplicated branches, and adapt the merged test helpers to current tuple, coordinate, optional deadline/view and party-session contracts without changing existing assertions.",
+    "qualification": "Source checks do not establish a passing Rust build, complete generated content or PostgreSQL qualification.",
+    "rust_unit_job_ids": [
+      130288640235,
+      130288640117,
+      130288640333
+    ],
+    "rust_unit_log_sha256s": [
+      "8b1ea74a6ff0633d316ed909c70ece540d9f056b0ad26ef2b8f6546ba0f35162",
+      "d87d2d7afd24f04f889235c8cb3add1ebcaaa75a9a6bca255f577b4ba7fed01a",
+      "a1b66951f04657a3b064b9d582ffb6528bbd3227e89706837512dab23710a0e5"
+    ]
   },
   "followup_source_repair": {
     "parent": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
@@ -132,5 +142,51 @@
     "path": "crates/gameplay/quests/src/quest/reward_callbacks/peer_tests.rs",
     "repair": "Replace the removed wrapper with validate_document_with_capacity(document, questpc7_registry_bounds::PER_DOCUMENT). The named bound remains 256, exactly matching the old wrapper.",
     "verification": "All seven existing tests and assertions are unchanged apart from the equivalent invocation. Whole-crate old-name scan, scoped parsing/formatting and independent source review passed."
+  },
+  "kill_reward_integration_repair": {
+    "parent": "2e66d733b595fd0ed0ad08ee11947bea629d2c8a",
+    "native_entry_failure": {
+      "run_id": 42948846530,
+      "job_id": 130288093488,
+      "log_sha256": "3ff83eecc840ffa6fa609c7e497fd2f3a8a109d487f2aaa743c1bb894b843f01",
+      "result": "Compilation failed with E0308 for an optional loot-table reference and E0382 for a repeated move of damage_shares; runtime tests were not reached."
+    },
+    "repair": "Require the existing concrete loot-table reference before tutorial loot reservation. Keep exactly one unconditional move of damage_shares after activity capture, retaining the rowless source-death and M24 participation ledger.",
+    "preserved": "No new loot reference or clone is introduced. Empty corpse rows retain their distinct route; existing settlement guards continue to reject nonempty loot without its required references.",
+    "qualification": "Source parsing, formatting and semantic checks do not establish Rust compilation or PostgreSQL execution."
+  },
+  "identity_predecessor_runner_result": {
+    "head": "2e66d733b595fd0ed0ad08ee11947bea629d2c8a",
+    "run_id": 42948846230,
+    "job_id": 130288092448,
+    "result": "The actual Quest authoring runner executed and passed all five Rotten Item and membership tests. Nine other Quest data groups still failed before the complete canonical generation result was available.",
+    "scope": "This is a focused result, not a passing whole Quest workflow or a full generated-content qualification.",
+    "log_sha256": "0ff8259f77d1977f748451e8bdd3ffbc5e56f760dabf22113336e7a466e99f85",
+    "counts": {
+      "modules": 181,
+      "successful_modules": 172,
+      "failed_modules": 9,
+      "passed_test_cases": 1433,
+      "failed_or_errored_test_cases": 9,
+      "skipped_test_cases": 8
+    }
+  },
+  "ai_route_integration_repair": {
+    "path": "crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_paths.rs",
+    "finding": "A merged explicit diagonal arm followed an existing catch-all refusal and was unreachable; strict Clippy rejected it.",
+    "repair": "Remove only the four unreachable lines. The complete file is byte-identical to integrated main f01f18582443f482b7adcfaf32cae3f9d3616876.",
+    "preserved": "All four cardinal AI node IDs, route cost, path limits, admission and stop behavior remain unchanged. Player STEP handling is outside this change.",
+    "verification": "Full-file inverse, main comparison, source parsing, scoped formatting and independent source peer review passed; no Rust execution is claimed."
+  },
+  "test_helper_contract_repair": {
+    "fresh_admission": "Forward the actual snapshot and committed operation tuple from the existing source-owned helper. The snapshot-only wrapper keeps its projection; committed receipt and current-session assertions are unchanged.",
+    "chest_catalogue": "Rename only the embedded QuestStateCatalogue Arc and its three clone uses so the original optional CatalogueChest parameter controls source-alias refusal and reward assertions.",
+    "npc_scenario": "Remove the second occurrence of npc-item-exchanges from the same match list and its later unreachable else-if branch. The earlier exercise call and all 46 unique classic_npc literals remain.",
+    "qualification": "These are source-level integration repairs, not passing Rust or PostgreSQL test evidence.",
+    "corruptor": "Require the actual ordinary loot-table reference before witness selection and require the actual decay deadline before the unchanged 1810000 millisecond assertion. No fallback or skipped witness is introduced.",
+    "grizzly": "Pass the real frozen position before task snapshots to freeze_at. Preserve every original x/y/floor fixture and use checked i16 conversion to the existing MovementLocalPosition type.",
+    "bundle_views": "Require successful Option-returning bundle views in Rotten and Soul War fixtures; original cells, scope digests and start coordinates remain unchanged.",
+    "personal_encounter": "Initialize the additional party-session list as empty for the existing personal Asura callback, which has no party_transfer. This matches current production Pending creation; all fence assertions remain unchanged.",
+    "verification": "Bounded full-file inverse, actual helper/source contract checks, Syn parsing and scoped formatting passed. Independent source peers review each frozen repair group before publication; no Rust or PostgreSQL execution is claimed."
   }
 }

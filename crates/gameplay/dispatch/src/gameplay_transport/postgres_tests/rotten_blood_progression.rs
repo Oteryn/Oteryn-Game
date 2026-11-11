@@ -115,7 +115,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
                     floor: 7,
                 },
             )
-            .map_err(debug)?;
+            .ok_or("Rotten progression bundle view")?;
         let channel_pin = ChannelContentPin::from_activation(
             world,
             pin.activation_sequence(),

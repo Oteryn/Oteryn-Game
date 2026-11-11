@@ -328,14 +328,18 @@ fn qn5_grimvale_area_uses_frozen_victim_position_and_retains_first_capture() -> 
         ]
     );
     let snapshots = [observed];
-    let capture = |position| {
+    let capture = |position: Option<[i32; 3]>| {
         freeze_at(
             Some(party(1, &[], false)),
             id(1),
             true,
             "oteryn:creature.werewolf",
+            position.map(|[x, y, floor]| crate::foundation::MovementLocalPosition {
+                x,
+                y,
+                floor: i16::try_from(floor).expect("fixture floor"),
+            }),
             &snapshots,
-            position,
         )
     };
     for position in [

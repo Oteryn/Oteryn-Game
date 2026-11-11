@@ -418,7 +418,7 @@ fn scenario_case(
         } else {
             None
         };
-        let catalogue = std::sync::Arc::new(
+        let embedded_catalogue = std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
                 .catalogue()
@@ -568,7 +568,7 @@ fn scenario_case(
             owner.active_generation = Some(generation);
             owner.quest_catalogue = quest_catalogue.clone();
             owner.movement_cells = (&cells).into();
-            owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
+            owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
             owner.admit_progression_session(&mut admitted).await;
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
@@ -713,7 +713,7 @@ fn scenario_case(
                 owner.active_generation = Some(generation);
                 owner.quest_catalogue = quest_catalogue.clone();
                 owner.movement_cells = (&cells).into();
-                owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
+                owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
                 owner.admit_progression_session(&mut admitted).await;
                 owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
@@ -809,7 +809,7 @@ fn scenario_case(
                 owner.active_generation = Some(generation);
                 owner.quest_catalogue = quest_catalogue.clone();
                 owner.movement_cells = (&cells).into();
-                owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
+                owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
                 owner.admit_progression_session(&mut admitted).await;
                 owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;

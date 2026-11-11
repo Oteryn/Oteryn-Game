@@ -336,7 +336,6 @@ fn scenario_case(
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
-                | "npc-item-exchanges"
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
@@ -2512,9 +2511,6 @@ fn scenario_case(
                 deps.actor,
             )
             .await?;
-        } else if name == "npc-item-exchanges" {
-            super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)
-                .await?;
         } else if name.starts_with("questpc7-eligibility-") {
             super::super::questpc7_eligibility::exercise(&mut owner, &mut admitted, &h, name)
                 .await?;

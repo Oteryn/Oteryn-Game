@@ -2172,7 +2172,6 @@ pub fn record_creature_kill(
                 entry.encounter_experience =
                     Some(oteryn_simulation_determinism::ExactI64::new(amount));
                 entry.activity_at_death = activity;
-                entry.damage_shares = damage_shares;
             }
             // Crystal creaturescripts_magma_bubble_death.lua:12-23 and M24 kill
             // steps use actual damaging players independently of corpse MINT
@@ -3914,11 +3913,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         // retry's live modifiers reserved. Charge only its positive shortfall;
         // the existing take and extras are both released on every requeue/end.
         if tutorial_corruptor.is_some()
-            && let Ok(plan) = plan_creature_loot(
-                loot_plan_seed(entry.facts.death),
-                &row.loot_table_ref,
-                &loot_table,
-            )
+            && let Some(reference) = row.loot_table_ref.as_ref()
+            && let Ok(plan) =
+                plan_creature_loot(loot_plan_seed(entry.facts.death), reference, &loot_table)
             && !admission
                 .states
                 .attack

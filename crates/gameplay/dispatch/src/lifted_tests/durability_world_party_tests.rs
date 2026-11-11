@@ -1035,11 +1035,7 @@ pub(crate) async fn committed_fresh_player_with_operation(
     crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
     crate::foundation::fresh_admission_durability::FreshAdmissionOperationV1,
 )> {
-    Ok(
-        committed_fresh_player_from_source_owned(h, character, account, session, now, None)
-            .await?
-            .0,
-    )
+    committed_fresh_player_from_source_owned(h, character, account, session, now, None).await
 }
 /// Reuse an independently installed native source without replacing its singleton registration.
 /// Return the actual committed Fresh operation for its equipment initialization.
