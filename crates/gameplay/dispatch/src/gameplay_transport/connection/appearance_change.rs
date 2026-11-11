@@ -166,7 +166,7 @@ impl SessionAppearance {
         )?;
         if self.selected {
             self.select_hirelings(channel);
-            let players = self.players(&snapshot.entities);
+            let mut players = self.players(&snapshot.entities);
             let observation = note_none(
                 authority
                     .appearance_observation_projected(
@@ -178,6 +178,23 @@ impl SessionAppearance {
                     .await,
                 "observation",
             )?;
+            players.retain(|entity| !observation.skipped.contains(entity));
+            if !observation.skipped.is_empty() {
+                let mut channel = channel.clone();
+                channel.entities.retain(|entity| {
+                    !observation.skipped.contains(&WireEntityRef {
+                        identity: entity.identity,
+                        generation: entity.generation,
+                    })
+                });
+                snapshot = note_none(
+                    view.snapshot(&channel, &mut |entities| {
+                        attach_spatial_handles(item_view.as_deref_mut(), entities)
+                    })
+                    .ok(),
+                    "mappings",
+                )?;
+            }
             note_none(self.upserts(observation, &players), "mappings")?;
             note_none(self.attach(&mut snapshot.entities), "attach")?;
             let payload = note_none(

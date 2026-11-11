@@ -238,3 +238,83 @@ fn foreground_demand_survives_holder_return_without_background_gap() -> TestResu
         database.cleanup().await
     })
 }
+
+#[test]
+fn background_fairness_window_serves_idle_holder_despite_a_waiting_ticket() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = migrated_database("holder_background_waiting_ticket").await?;
+        let root = ready_root(&url).await?;
+        let foreground = root.foreground_demand()?;
+        let until = std::time::Instant::now() + super::ROOT_RECOVERY_WINDOW;
+        // A different retry owner keeps its ticket while the scheduler asks for a pass.
+        let ticket = tokio::spawn({
+            let root = root.clone();
+            async move { root.holder_waiter() }
+        });
+        let owner = super::holder_queue::OwnerKey::Task(ticket.id());
+        let ticket = ticket.await?.ok_or("waiting owner's ticket")?;
+        assert!(root.pool.num_idle() > 0);
+        assert!(matches!(
+            root.try_issue_semantic_pass(),
+            Err(crate::durability::DurabilityError::RootUnavailable)
+        ));
+        assert!(
+            matches!(
+                root.try_issue_background_semantic_pass(),
+                Err(crate::durability::DurabilityError::RootUnavailable)
+            ),
+            "tickets keep priority before the fairness window expires"
+        );
+        loop {
+            let now = std::time::Instant::now();
+            root.holder_queue
+                .lock()
+                .map_err(|_| "holder queue poisoned")?
+                .refused(owner, now);
+            if now >= until {
+                break;
+            }
+            // Keep the ticket live through the window, as sustained retries do.
+            tokio::time::sleep_until(tokio::time::Instant::from_std(
+                (now + std::time::Duration::from_millis(100)).min(until),
+            ))
+            .await;
+        }
+        assert!(matches!(
+            root.try_issue_semantic_pass(),
+            Err(crate::durability::DurabilityError::RootUnavailable)
+        ));
+        let pass = root.try_issue_background_semantic_pass();
+        assert!(
+            pass.is_ok(),
+            "expired fairness window must serve background despite a waiting ticket"
+        );
+        let value: i32 = pass?
+            .run(|holder, _| {
+                Box::pin(async move {
+                    Ok(sqlx::query_scalar("SELECT 1")
+                        .fetch_one(&mut **holder)
+                        .await?)
+                })
+            })
+            .await?;
+        assert_eq!(value, 1);
+        assert!(
+            matches!(
+                root.try_issue_background_semantic_pass(),
+                Err(crate::durability::DurabilityError::RootUnavailable)
+            ),
+            "one background pass renews foreground preference"
+        );
+        assert!(
+            matches!(
+                root.try_issue_semantic_pass(),
+                Err(crate::durability::DurabilityError::RootUnavailable)
+            ),
+            "background service must preserve the waiting ticket"
+        );
+        drop(ticket);
+        drop(foreground);
+        database.cleanup().await
+    })
+}

@@ -1502,7 +1502,13 @@ impl DurabilityRoot {
         let holder = self
             .holder_priority
             .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
-                self.try_acquire_ready().ok()
+                // Priority already granted this pass its fairness turn. The ticket
+                // queue must not reserve an idle holder against that grant.
+                let holder = self.pool.try_acquire();
+                if holder.is_none() {
+                    self.request_ready();
+                }
+                holder
             })
             .ok_or_else(|| {
                 record_holder_usage(Some(caller), None);

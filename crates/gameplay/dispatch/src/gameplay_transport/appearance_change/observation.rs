@@ -8,6 +8,8 @@ mod house;
 pub struct Observation {
     pub catalogue: wire::Catalogue,
     pub bindings: Vec<wire::Binding>,
+    /// Requested entities deliberately omitted while their appearance is unobservable.
+    pub skipped: Vec<wire::EntityRef>,
 }
 
 /// Only a proven exhausted holder retry may defer an established observer's refresh.
@@ -166,6 +168,7 @@ async fn observe_once(
     let states = admission.states.spell_states.lock().await;
     let (census, hirelings) = note_none(house::census(&runtime, observer, session), "visibility")?;
     let mut bindings = Vec::new();
+    let mut skipped = Vec::new();
     let now = admission.owner_now().get();
     for &entity in entities {
         if let Some(entry) = hirelings.iter().find(|entry| {
@@ -269,7 +272,10 @@ async fn observe_once(
             // Another player between its durable death and the respawn placement has no
             // observable appearance yet: it gets no binding, as a hidden player does, and
             // the observer's projection is not lost to it.
-            Err(ReadFailure::RespawnPending) if target_session != session => continue,
+            Err(ReadFailure::RespawnPending) if target_session != session => {
+                skipped.push(entity);
+                continue;
+            }
             result => read_state_result(result, failure)?,
         };
         let in_house = runtime.house_actor_state(*actor, target_session).is_ok();
@@ -365,7 +371,10 @@ async fn observe_once(
         // The selection and root are re-read after observer preparation. Runtime pin,
         // incarnation and condition state stay locked through this bounded DB read.
         let reread = match house::read_state(admission, fence, content.earned_grant_keys()).await {
-            Err(ReadFailure::RespawnPending) if target_session != session => continue,
+            Err(ReadFailure::RespawnPending) if target_session != session => {
+                skipped.push(entity);
+                continue;
+            }
             result => read_state_result(result, failure)?,
         };
         if reread != current {
@@ -391,6 +400,7 @@ async fn observe_once(
     Some(Observation {
         catalogue,
         bindings,
+        skipped,
     })
 }
 fn temporary(

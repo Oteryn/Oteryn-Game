@@ -46,7 +46,7 @@ impl SessionAppearance {
     ) -> Result<(u64, u64), ObservationError> {
         let mut staged_view = view.clone();
         let mut staged_items = items.as_deref().cloned();
-        let update = staged_view
+        let mut update = staged_view
             .refresh(channel, &mut |entities| {
                 attach_spatial_handles(staged_items.as_mut(), entities)
             })
@@ -77,7 +77,7 @@ impl SessionAppearance {
         let mut candidate = self.clone();
         candidate.select_hirelings(channel);
         let visible = staged_view.appearance_actors(self.forge);
-        let player_refs = candidate.players(&visible);
+        let mut player_refs = candidate.players(&visible);
         let observation = authority
             .appearance_observation_projected_result(
                 actor,
@@ -86,6 +86,23 @@ impl SessionAppearance {
                 player_refs.clone(),
             )
             .await?;
+        player_refs.retain(|entity| !observation.skipped.contains(entity));
+        if !observation.skipped.is_empty() {
+            let mut channel = channel.clone();
+            channel.entities.retain(|entity| {
+                !observation.skipped.contains(&WireEntityRef {
+                    identity: entity.identity,
+                    generation: entity.generation,
+                })
+            });
+            staged_view = view.clone();
+            staged_items = items.as_deref().cloned();
+            update = staged_view
+                .refresh(&channel, &mut |entities| {
+                    attach_spatial_handles(staged_items.as_mut(), entities)
+                })
+                .map_err(|_| Unavailable)?;
+        }
         let old_catalogue = self.catalogue.as_ref().ok_or(Unavailable)?;
         let upserts = candidate
             .upserts(observation, &player_refs)
