@@ -16,6 +16,101 @@ struct SpatialPhase {
     caster_protection: bool,
 }
 
+/// WU26-14 (Winter Update 2026 test server): what `aim_at_target` with `NONE` or `POSITION` asks
+/// of a wave or beam spell, the old form of the `aim_mode` options TARGET and CURSOR.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Aim {
+    /// Towards the held attack target, or the facing without one.
+    Target,
+    /// Towards the tile under the cursor.
+    Cursor(TilePosition),
+}
+
+/// WU26-14: the target option of `intent`. A wave or beam (`needs_direction`) honours TARGET and
+/// CURSOR; a strike (`target_or_direction`) keeps the SPELL-D7 behaviour; any other spell refuses
+/// them. `ATTACK_TARGET` and casts without `aim_at_target` are unchanged.
+fn aim(
+    spell: &SpellDefinition,
+    intent: &SpellCastIntent,
+) -> Result<Option<Aim>, SpellCastDisposition> {
+    let aim = match (intent.target, intent.aim_at_target) {
+        (SpellTarget::None, true) => Aim::Target,
+        (SpellTarget::Position(p), true) => Aim::Cursor(TilePosition {
+            x: p.x,
+            y: p.y,
+            floor: p.floor,
+        }),
+        _ => return Ok(None),
+    };
+    if spell
+        .authored
+        .as_ref()
+        .is_some_and(|p| p.header.targeting.needs_direction)
+    {
+        Ok(Some(aim))
+    } else if spell.target_or_direction {
+        Ok(None)
+    } else {
+        reject()
+    }
+}
+
+/// WU26-14: the geometry origin and facing of a wave or beam aimed at `point`. The direction is
+/// the cardinal one towards it (east and west win a tie), else the caster's facing; the origin is
+/// the tile next to the caster. The character's own facing is not changed.
+fn aimed_origin(
+    caster: TilePosition,
+    facing: Option<Direction>,
+    point: Option<TilePosition>,
+) -> Result<(TilePosition, Direction), SpellCastDisposition> {
+    let d = point
+        .and_then(|p| plans::aimed_cardinal(plan_position(caster), plan_position(p)))
+        .map(cast_direction)
+        .or(facing)
+        .ok_or(SpellCastDisposition::TargetRequired)?;
+    let (dx, dy) = delta(d);
+    Ok((offset(caster, dx, dy)?, d))
+}
+
+/// WU26-14 TARGET: the tile of the held attack target while it is a visible creature or player the
+/// caster sees on its floor and that is not hidden from it; otherwise none, so the cast keeps the
+/// facing.
+fn aimed_target_tile(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    actor: ExactActorRef,
+    caster: MovementLocalPosition,
+    attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+    now: SemanticTimeMicros,
+) -> Option<TilePosition> {
+    let held = attack_target?;
+    let visible = runtime.visible_entities();
+    let target = visible
+        .creatures
+        .iter()
+        .find(|c| c.actor.placement_identity() == held.identity && c.generation == held.generation)
+        .map(|c| c.actor)
+        .or_else(|| {
+            visible
+                .players
+                .iter()
+                .find(|p| {
+                    p.actor.placement_identity() == held.identity && p.generation == held.generation
+                })
+                .map(|p| p.actor)
+        })?;
+    if target == actor || states.player_hidden_from(runtime, actor, target, now) {
+        return None;
+    }
+    let seen = runtime.read_actor_position(target).ok()?.position();
+    (seen.floor == caster.floor && crate::gameplay_transport::attack::sees(caster, seen))
+        .then(|| tile(seen))
+}
+
+#[cfg(test)]
+#[path = "aim_tests.rs"]
+mod aim_tests;
+
 struct TargetPhase {
     world: World<Direction>,
     operational: OperationalCastFacts,
@@ -109,6 +204,17 @@ pub(super) async fn prepare_inner(
         .authored
         .as_ref()
         .ok_or(SpellCastDisposition::Rejected)?;
+    let aim = aim(spell, intent)?;
+    // An aimed wave or beam qualifies its targets as a facing cast does.
+    let targeted = if aim.is_some() {
+        SpellCastIntent {
+            target: SpellTarget::None,
+            aim_at_target: false,
+            ..*intent
+        }
+    } else {
+        *intent
+    };
     let party = if matches!(spell.execution, Execution::PartyBuff(_))
         || may_heal_player(spell)
         || matches!(
@@ -151,6 +257,7 @@ pub(super) async fn prepare_inner(
         objects,
         spell,
         intent,
+        aim,
         profile,
         actor,
         attack_target,
@@ -167,8 +274,8 @@ pub(super) async fn prepare_inner(
         chain_start,
         bindings,
     } = qualify_targets(
-        tx, root, authority, runtime, states, room, objects, spell, intent, profile, actor, named,
-        pvp_modes, &players, &creatures, spatial, now,
+        tx, root, authority, runtime, states, room, objects, spell, &targeted, profile, actor,
+        named, pvp_modes, &players, &creatures, spatial, now,
     )
     .await?;
     let PaidPreparation {
@@ -238,6 +345,7 @@ async fn prepare_spatial(
     objects: &LocalObjectRuntime,
     spell: &SpellDefinition,
     intent: &SpellCastIntent,
+    aim: Option<Aim>,
     profile: &crate::spell::executable_catalog::OperationalProfile,
     actor: ExactActorRef,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
@@ -300,16 +408,41 @@ async fn prepare_spatial(
     };
     let attack_target_tile = attack_target_actor.map(|(_, t)| t);
     let attack_target_actor = attack_target_actor.map(|(a, _)| a);
+    // WU26-14: an aimed wave or beam picks only its direction; a cursor on another floor is illegal.
+    let aimed = match aim {
+        Some(Aim::Cursor(p)) if p.floor != caster_position.floor => {
+            return Err(SpellCastDisposition::TargetIllegal);
+        }
+        Some(Aim::Cursor(p)) => Some(aimed_origin(
+            caster_position,
+            position.facing().map(direction),
+            Some(p),
+        )?),
+        Some(Aim::Target) => Some(aimed_origin(
+            caster_position,
+            position.facing().map(direction),
+            aimed_target_tile(
+                runtime,
+                states,
+                actor,
+                position.position(),
+                attack_target,
+                now,
+            ),
+        )?),
+        None => None,
+    };
     // A directional or aimed spell keeps the caster as geometry origin; the target only picks
     // the facing (`aim_at_target`). A single-target spell is centred on the target.
     let directional = profile.header.targeting.needs_direction || spell.target_or_direction;
-    let origin = match intent.target {
-        SpellTarget::Position(p) => TilePosition {
+    let origin = match (aimed, intent.target) {
+        (Some((origin, _)), _) => origin,
+        (None, SpellTarget::Position(p)) => TilePosition {
             x: p.x,
             y: p.y,
             floor: p.floor,
         },
-        SpellTarget::None
+        (None, SpellTarget::None)
             if profile.header.targeting.needs_direction || spell.target_or_direction =>
         {
             let d = position
@@ -319,8 +452,8 @@ async fn prepare_spatial(
             let (dx, dy) = delta(d);
             offset(caster_position, dx, dy)?
         }
-        SpellTarget::None => caster_position,
-        SpellTarget::AttackTarget => {
+        (None, SpellTarget::None) => caster_position,
+        (None, SpellTarget::AttackTarget) => {
             let target = attack_target_tile.ok_or(SpellCastDisposition::TargetRequired)?;
             attack_target_origin(caster_position, target, directional)?.0
         }
@@ -328,7 +461,9 @@ async fn prepare_spatial(
     if origin.floor != caster_position.floor {
         return Err(SpellCastDisposition::TargetIllegal);
     }
-    let facing = if let Some(target) = attack_target_tile {
+    let facing = if let Some((_, d)) = aimed {
+        Some(d)
+    } else if let Some(target) = attack_target_tile {
         attack_target_origin(caster_position, target, directional)?.1
     } else if intent.aim_at_target && origin != caster_position {
         Some(facing_to(caster_position, origin))
