@@ -1,7 +1,7 @@
 //! SRVGAP-B22: the admitted arena route must also accept a distinct Drome lifecycle.
 use super::TestResult;
 use super::arena_match::fixture;
-use super::fixture::Harness;
+use super::fixture::{Harness, debug, id};
 
 #[path = "reaudit_arena_lifecycle/source.rs"]
 mod source_map;
@@ -399,6 +399,7 @@ enum Physical {
     DelayedObservation,
     PendingCorpseEffects,
     ThreeWaveCommandCatchup,
+    SharedLowerWave,
     SomersaultFx,
 }
 
@@ -422,6 +423,11 @@ fn srvenc_tibiadrome_postgres_native_victory_credits_before_reserved_corpse_effe
 #[test]
 fn srvenc_tibiadrome_postgres_three_native_waves_command_catchup_counts_each_once() -> TestResult {
     run_physical_regression(Physical::ThreeWaveCommandCatchup)
+}
+
+#[test]
+fn srvenc_tibiadrome_postgres_cadence_credits_higher_personal_start_once() -> TestResult {
+    run_physical_regression(Physical::SharedLowerWave)
 }
 
 #[test]
@@ -464,6 +470,52 @@ pub(super) fn physical_unqualified() -> TestResult {
 
 pub(super) fn physical_hazards() -> TestResult {
     physical_context(0, true, true, Physical::Standard)
+}
+
+async fn persisted_drome_record(
+    harness: &Harness,
+) -> TestResult<crate::durability::tibiadrome::Record> {
+    let body: serde_json::Value = sqlx::query_scalar(
+        "SELECT body FROM game_character_tibiadrome WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&harness.pool)
+    .await?;
+    Ok(serde_json::from_value(body)?)
+}
+
+async fn replay_observed_drome_update(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+    observed: &crate::durability::tibiadrome::Record,
+) -> TestResult {
+    let mut fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "current Drome replay fence")?
+        .ok_or("current Drome replay fence")?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    fence.expected_character_revision = slot
+        .cursor(owner.root, owner.character)
+        .await
+        .map_err(debug)?;
+    owner
+        .root
+        .settle_tibiadrome(
+            owner.character,
+            owner.holder,
+            fence,
+            crate::durability::tibiadrome::RunUpdate {
+                run: observed.run,
+                completed: observed.completed,
+                level: observed.progress.level,
+                ended: !observed.active,
+                wave: observed.wave,
+            },
+        )
+        .await
+        .map_err(debug)?;
+    Ok(())
 }
 
 fn physical_context(
@@ -805,6 +857,34 @@ fn physical_context(
             0,
             "no client-authored kills"
         );
+        let before_clears = if matches!(case, Physical::ThreeWaveCommandCatchup) {
+            let observed = persisted_drome_record(&harness).await?;
+            assert!(observed.active);
+            assert_eq!((observed.completed, observed.progress.level), (0, 0));
+            Some(observed)
+        } else {
+            None
+        };
+        if matches!(case, Physical::SharedLowerWave) {
+            // A higher-start participant can join an existing wave-zero run.
+            // Seed only that personal predecessor; all clears below still
+            // require the actual admitted native opponents and lethal receipts.
+            let mut joined = persisted_drome_record(&harness).await?;
+            assert_eq!(
+                (joined.wave, joined.completed, joined.progress.start),
+                (0, 0, 0)
+            );
+            joined.progress.start = 10;
+            joined.progress.lifetime_levels = Some(20);
+            let updated = sqlx::query(
+                "UPDATE game_character_tibiadrome SET body=$2 WHERE character_id=encode($1,'hex')::uuid",
+            )
+            .bind(id(41).as_slice())
+            .bind(serde_json::to_value(joined)?)
+            .execute(&harness.pool)
+            .await?;
+            assert_eq!(updated.rows_affected(), 1);
+        }
         {
             let mut runtime = deps.runtime.lock().await;
             crate::gameplay_transport::tibiadrome::tick_at(
@@ -1252,6 +1332,21 @@ fn physical_context(
             let waves:i64=sqlx::query_scalar("SELECT (body->'progress'->>'waves')::bigint FROM game_character_tibiadrome WHERE character_id=encode($1,'hex')::uuid")
                 .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
             assert_eq!(waves, 3);
+            let latest = persisted_drome_record(&harness).await?;
+            assert_eq!(latest.progress.lifetime_levels, Some(3));
+            let earlier = before_clears
+                .as_ref()
+                .ok_or("actual pre-clear Drome snapshot")?;
+            assert!(latest.active);
+            assert_eq!(earlier.run, latest.run);
+            assert!(earlier.completed < latest.completed);
+            assert!(earlier.wave < latest.wave);
+            replay_observed_drome_update(&owner, session, earlier).await?;
+            assert_eq!(
+                persisted_drome_record(&harness).await?,
+                latest,
+                "an older cadence observation cannot rewind the wave or duplicate credit"
+            );
         }
         if matches!(case, Physical::PendingCorpseEffects) {
             // Manual combat.md:255,264: native defeat earns the wave even
@@ -1288,6 +1383,24 @@ fn physical_context(
             );
         }
         assert!(owner.drome_sync(session, false).await);
+        if matches!(case, Physical::SharedLowerWave) {
+            let settled = persisted_drome_record(&harness).await?;
+            assert_eq!(
+                (
+                    settled.progress.start,
+                    settled.progress.level,
+                    settled.completed
+                ),
+                (11, 1, 1),
+                "cadence awards the native clear on top of the higher personal start"
+            );
+            assert_eq!(
+                (settled.progress.waves, settled.progress.lifetime_levels),
+                (1, Some(21))
+            );
+            assert!(owner.drome_sync(session, false).await);
+            assert_eq!(persisted_drome_record(&harness).await?, settled);
+        }
         let status = drome_exchange(
             &owner,
             &mut admitted,
@@ -1300,6 +1413,18 @@ fn physical_context(
                 (300, 295, 300, 0)
             );
             assert!(status.cooldown > 0);
+            let terminal = persisted_drome_record(&harness).await?;
+            assert!(!terminal.active);
+            assert_eq!(
+                (terminal.wave, terminal.progress.level),
+                (status.wave, status.level)
+            );
+            replay_observed_drome_update(&owner, session, &terminal).await?;
+            assert_eq!(
+                persisted_drome_record(&harness).await?,
+                terminal,
+                "terminal replay cannot extend cooldown or award credit again"
+            );
             let runtime = deps.runtime.lock().await;
             assert!(
                 !runtime
@@ -1315,8 +1440,12 @@ fn physical_context(
         } else {
             1
         };
-        assert_eq!((status.level, status.start), (expected, expected));
-        if expected == 1 {
+        if matches!(case, Physical::SharedLowerWave) {
+            assert_eq!((status.level, status.start), (1, 11));
+        } else {
+            assert_eq!((status.level, status.start), (expected, expected));
+        }
+        if expected == 1 && !matches!(case, Physical::SharedLowerWave) {
             super::srx3_drome::lifetime_highscore_job(
                 std::sync::Arc::new(harness.root.clone()),
                 &harness.pool,
