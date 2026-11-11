@@ -24,7 +24,7 @@ pub fn dispatch_atelier(
 /// Server commands on the admitted Character owner, shared by admission and the Wheel wire route.
 pub enum GemBuildCommand<'a> {
     Atelier(crate::durability::character_atelier::AtelierRequest<'a>),
-    Wheel(crate::durability::character_wheel::WheelChangeRequest),
+    Wheel(Box<crate::durability::character_wheel::WheelChangeRequest>),
 }
 #[derive(Debug)]
 pub enum GemBuildOutcome {
@@ -528,7 +528,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     self.character,
                     self.holder,
                     fence,
-                    request,
+                    *request,
                     std::sync::Arc::clone(ruleset),
                     crate::durability::character_wheel::WheelChangeFacts { at_temple },
                     gate,

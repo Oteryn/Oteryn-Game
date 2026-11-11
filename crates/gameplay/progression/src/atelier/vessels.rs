@@ -351,9 +351,9 @@ mod tests {
     #[test]
     fn gem_fits_any_open_slot_of_its_quality() {
         let atelier = state(&[(1, GemQuality::Lesser), (2, GemQuality::Greater)]);
-        for slot in 0..GEM_VESSEL_SLOTS {
+        for (slot, &quality) in GEM_VESSEL_SLOT_QUALITIES.iter().enumerate() {
             let after = place(&NO_GEM_VESSELS, slot, Some([1; 16])).unwrap_or(NO_GEM_VESSELS);
-            let lesser = GEM_VESSEL_SLOT_QUALITIES[slot] == GemQuality::Lesser;
+            let lesser = quality == GemQuality::Lesser;
             assert_eq!(
                 valid_change(
                     &NO_GEM_VESSELS,

@@ -229,7 +229,7 @@ fn uuid(text: &str) -> Option<[u8; 16]> {
         _ => None,
     };
     let mut id = [0u8; 16];
-    for (slot, pair) in id.iter_mut().zip(digits.chunks_exact(2)) {
+    for (slot, pair) in id.iter_mut().zip(digits.as_chunks::<2>().0) {
         *slot = (nibble(pair[0])? << 4) | nibble(pair[1])?;
     }
     Some(id)

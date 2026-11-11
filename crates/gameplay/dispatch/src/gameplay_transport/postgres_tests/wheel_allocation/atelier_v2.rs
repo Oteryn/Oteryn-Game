@@ -12,7 +12,7 @@ async fn send_v2(
 ) -> TestResult<atelier::AtelierReply> {
     let (status, payload) = send_kind(owner, admitted, command_type, body).await?;
     assert_eq!(status, CommandStatus::Accepted);
-    Ok(atelier::decode_reply(&payload).map_err(debug)?)
+    atelier::decode_reply(&payload).map_err(debug)
 }
 
 fn replace(
@@ -21,13 +21,13 @@ fn replace(
     slot: u8,
     gem: Option<[u8; 16]>,
 ) -> TestResult<Vec<u8>> {
-    Ok(atelier::encode_replace_vessel(&atelier::ReplaceVesselRequest {
+    atelier::encode_replace_vessel(&atelier::ReplaceVesselRequest {
         occurrence: id(occurrence),
         expected_wheel_revision,
         slot,
         gem,
     })
-    .map_err(debug)?)
+    .map_err(debug)
 }
 
 async fn character_revision(h: &Harness, character: &[u8]) -> TestResult<String> {

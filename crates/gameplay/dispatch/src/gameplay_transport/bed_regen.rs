@@ -94,11 +94,10 @@ mod tests {
                             .0
                     );
                 }
-                assert_eq!(
+                assert!(
                     projection
                         .cadence(session, actor, true, true, stamina, 120)
                         .0,
-                    true,
                     "Winter Update 2026: stamina regenerates at every streak"
                 );
             }

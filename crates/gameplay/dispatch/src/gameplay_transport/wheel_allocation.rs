@@ -83,7 +83,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let change = self
             .commit_wheel_client(
                 admitted.game_session_id,
-                super::atelier::GemBuildCommand::Wheel(request),
+                super::atelier::GemBuildCommand::Wheel(Box::new(request)),
                 removal_permitted,
                 Some(item_fence),
             )
