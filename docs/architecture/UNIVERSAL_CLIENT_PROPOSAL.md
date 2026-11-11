@@ -138,14 +138,19 @@ an estimate from the measured size, not from measured throughput.
 
 ## 10. Order and dependencies
 
-1. Owner decision on this proposal and on ADR-0018.
+1. Owner decision on this proposal (taken, §11) and on ADR-0018.
 2. Audit lane for the 61 `client-ui` views (one day).
 3. Step 3 (3a, then 3b and 3c in parallel lanes, 3d) and step 1 in parallel.
 4. Step 2, then step 4 under the web plan's gates.
 
-## 11. Open owner questions
+## 11. Owner decisions (2026-11-11)
 
-- Q1. Accept the goal of one Rust client for Windows, Linux, macOS and the browser?
-- Q2. Order: native Linux/macOS first (steps 1 and 3), browser later; or browser first?
-- Q3. Run the one-day audit of the 61 `client-ui` views before any code work?
-- Q4. macOS distribution: get an Apple developer account for signing, or Linux and Windows first only?
+- D1. Goal accepted: one Rust client for Windows, Linux, macOS and the browser.
+- D2. Order: native Linux and macOS first (steps 1 and 3), browser later (steps 2 and 4).
+- D3. The one-day audit of the 61 `client-ui` views runs before any code work.
+- D4. macOS: built and tested in CI without signing, and given to testers unsigned. The Apple Developer account
+  (needed for signing and notarisation) is bought only before a Mac release to players. Windows and Linux are the first
+  player releases.
+
+The decisions accept the direction of this proposal. Implementation still needs the owner to lift the 2026-11-10 pause,
+and ADR-0018 stays Proposed until accepted on its own.
