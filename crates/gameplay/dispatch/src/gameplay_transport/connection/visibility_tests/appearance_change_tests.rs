@@ -52,6 +52,7 @@ impl FreshAdmissionAuthority for AppearanceChannel {
             cosmetics_digest: [7; 32],
         };
         Some(Observation {
+            skipped: Vec::new(),
             catalogue: appearance::Catalogue {
                 context,
                 root_revision: self.revision.get(),

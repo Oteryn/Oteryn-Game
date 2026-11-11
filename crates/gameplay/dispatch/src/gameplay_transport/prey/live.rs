@@ -1,4 +1,5 @@
 use super::*;
+use crate::gameplay_transport::AdmissionRetryBudget;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::durability::prey::PreyCheckpoint;
@@ -211,7 +212,17 @@ impl ChannelSpellStates {
     }
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[cfg(test)]
     pub(in crate::gameplay_transport) async fn flush_prey(&self, session: GameSessionId) -> bool {
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        self.flush_prey_with_budget(session, &budget).await
+    }
+
+    pub(in crate::gameplay_transport) async fn flush_prey_with_budget(
+        &self,
+        session: GameSessionId,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> bool {
         if !self
             .states
             .spell_states
@@ -231,7 +242,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(permit) = self.spell_lane_permit().await else {
             return false;
         };
-        self.flush_prey_under_lane(session, &permit).await
+        self.flush_prey_under_lane_with_budget(session, &permit, budget).await
     }
 
     pub(in crate::gameplay_transport) async fn flush_prey_under_lane(
@@ -239,13 +250,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     ) -> bool {
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        self.flush_prey_under_lane_with_budget(session, permit, &budget).await
+    }
+
+    async fn flush_prey_under_lane_with_budget(
+        &self,
+        session: GameSessionId,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> bool {
         if permit
             .check_channel(self.world_id, self.channel_id)
             .is_err()
         {
             return false;
         }
-        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+        let Ok(Some(fence)) = budget
+            .retry_durability("prey_checkpoint_fence", || {
+                self.current_quest_fence_durable(session)
+            })
+            .await
+        else {
             return false;
         };
         // A bonus mutation must not reprice an already captured party reward. The lane
@@ -262,7 +288,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // First reconcile a retained attempt, then persist any hunting accumulated meanwhile.
         for _ in 0..2 {
-            if !self.flush_prey_once(session).await {
+            if !self.flush_prey_once(session, budget).await {
                 return false;
             }
             if !self
@@ -279,7 +305,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         false
     }
-    async fn flush_prey_once(&self, session: GameSessionId) -> bool {
+    async fn flush_prey_once(
+        &self,
+        session: GameSessionId,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> bool {
         let pending = {
             let mut states = self.states.spell_states.lock().await;
             let Some(p) = states.prey.iter_mut().find(|p| p.session == session) else {
@@ -301,10 +331,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some((occurrence, checkpoints)) = pending else {
             return true;
         };
-        let Ok(current) =
-            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
-                .current_session(session)
-                .await
+        let store =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone());
+        let Ok(current) = budget
+            .retry_durability("prey_checkpoint_session", || store.current_session(session))
+            .await
         else {
             return false;
         };

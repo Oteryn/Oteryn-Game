@@ -7,3 +7,7 @@ Berrypest, Furious Fire Elemental and Nightslayer have sourced partial profiles.
 Known disagreements are recorded per creature: Berrypest pushability; Elder Forest Fury attack/debuff descriptions and old TFS XP/charm values; Furious Fire Elemental damage/mitigation; Nightslayer damage/mitigation; Undead Jester mitigation, summon identity, pushability, charm points and old loot table. Source strings and uncertain bounds are preserved. No attack schedule, probability or native identity is fabricated.
 
 The profiles are reference evidence, not validator-ready native Monster bundles. Exact native materialization requires those unresolved mechanics and bindings to be qualified first. Cake Golem's separately validated partial bundle remains under ../cake-golem/.
+
+## Fugue: QMECH M28
+
+`fugue.json` records the complete pinned OTServBR-derived combat variant selected for the owner's M28 native-definition task, its source URLs and SHA-256, and the discrepant incomplete Wiki conversion. It does not establish current official Global balance. `tools/content-migration/engenc2_fugue_profile.py` derives this one authorized native successor; the runtime melee admission binds the exact source body. This admission does not change the pending status of the five Prey profiles above.

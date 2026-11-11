@@ -102,9 +102,15 @@ async fn character_core(
     if saved == initial {
         return Err("core step did not leave the configured spawn".into());
     }
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("core logout refused: {logout:?}").into());
+    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+    if busy_timed_out {
+        return Err(format!(
+            "core logout refused after Busy retries: {logout}; attempt count: {attempts}"
+        )
+        .into());
+    }
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("core logout refused: {logout}").into());
     }
     drop(client);
     client = connect_world(clients, 0x76).await?;

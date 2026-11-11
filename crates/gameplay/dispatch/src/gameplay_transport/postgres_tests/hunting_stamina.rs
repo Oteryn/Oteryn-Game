@@ -13,6 +13,95 @@ fn hunting_stamina_postgres_kill_experience_idle_checkpoint_and_reload() -> Test
     party_xp::run(Case::Stamina)
 }
 
+async fn save_with_busy_readback(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    player: (ExactActorRef, GameSessionId),
+    item: crate::durability::item_transfer::CurrentCharacterItemFence,
+    gain: bool,
+    expected: (u16, u16),
+) -> TestResult {
+    use crate::durability::character_build::BuildOccurrence;
+    use crate::gameplay_transport::{AdmissionRetryBudget, hunting_stamina::STAMINA_READBACK_PAUSE};
+    use std::sync::Arc;
+    use tokio::sync::Notify;
+
+    let (actor, session) = player;
+    let receipts_before: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_build_receipts WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(item.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    // The existing root budget includes deterministic inspection while the save is paused;
+    // every production read below still shares this one unchanged deadline.
+    let budget = AdmissionRetryBudget::for_foreground_root(&session, owner.root)?;
+    let deadline = budget.deadline;
+    let pause = Arc::new((Notify::new(), Notify::new()));
+    let saving = STAMINA_READBACK_PAUSE.scope(Arc::clone(&pause), async {
+        if gain {
+            owner.save_resting_stamina_with_budget(actor, session, &budget).await
+        } else {
+            owner.save_hunting_stamina_with_budget(actor, session, &budget).await
+        }
+    });
+    tokio::pin!(saving);
+    tokio::select! {
+        () = pause.0.notified() => {}
+        result = &mut saving => return Err(format!("stamina save ended before readback: {result:?}").into()),
+    }
+    assert!(owner.runtime.try_lock().is_ok());
+    assert!(owner.states.spell_states.try_lock().is_ok());
+    let receipt: (Vec<u8>, i32, i32) = sqlx::query_as(
+        "SELECT uuid_send(build_occurrence_id),stamina_minutes_before,stamina_minutes_after FROM game_character_build_receipts WHERE character_id=encode($1,'hex')::uuid AND stamina_minutes_before<>stamina_minutes_after ORDER BY committed_character_revision DESC LIMIT 1",
+    ).bind(item.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    let pending = (
+        BuildOccurrence::from_bytes(receipt.0.as_slice().try_into()?).map_err(debug)?,
+        u16::try_from(receipt.1)?,
+        u16::try_from(receipt.2)?,
+    );
+    assert_eq!((pending.1, pending.2), expected);
+    let mut stale = item;
+    stale.character_lease_generation = stale.character_lease_generation.checked_add(1)
+        .ok_or("stale lease generation")?;
+    assert_eq!(
+        owner.stamina_readback_once(actor, session, stale, pending, gain).await.map_err(debug)?,
+        TrainingSave::FencedOut,
+        "readback must independently reject a stale durable fence",
+    );
+    let mut different = *pending.0.as_bytes();
+    different[15] ^= 1;
+    for changed in [
+        (BuildOccurrence::from_bytes(different).map_err(debug)?, pending.1, pending.2),
+        (pending.0, pending.1.checked_add(1).ok_or("changed before")?, pending.2),
+        (pending.0, pending.1, pending.2.checked_add(1).ok_or("changed after")?),
+    ] {
+        assert_eq!(
+            owner.stamina_readback_once(actor, session, item, changed, gain).await.map_err(debug)?,
+            TrainingSave::Unknown,
+            "readback must not acknowledge a different occurrence or either changed value",
+        );
+    }
+    let held = owner.root.try_issue_semantic_pass()?;
+    pause.1.notify_one();
+    let polled = std::future::poll_fn(|cx| {
+        std::task::Poll::Ready(std::future::Future::poll(saving.as_mut(), cx))
+    }).await;
+    assert!(polled.is_pending(), "post-write readback must wait for the busy holder");
+    assert!(owner.runtime.try_lock().is_ok(), "retry waits outside the runtime lock");
+    assert!(owner.states.spell_states.try_lock().is_ok(), "retry waits outside spell state");
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    assert_eq!(saving.await, TrainingSave::Saved);
+    assert_eq!(budget.deadline, deadline, "readback must not renew the shared budget");
+    let receipts_after: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_build_receipts WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(item.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(receipts_after, receipts_before + 1, "busy readback must never replay the write");
+    assert_eq!(
+        h.root.read_hunting_stamina(owner.character, item.character_id).await.map_err(debug)?,
+        expected.1,
+        "busy readback must not apply an extra debit or gain",
+    );
+    Ok(())
+}
+
 pub(super) async fn qualify(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -282,10 +371,7 @@ pub(super) async fn qualify(
         corpse_loot, 0,
         "the highest-damage owner in the final fourteen stamina hours receives no monster loot"
     );
-    assert_eq!(
-        owner.save_hunting_stamina(actor, session).await,
-        TrainingSave::Saved
-    );
+    save_with_busy_readback(owner, h, (actor, session), item, false, (840, live)).await?;
     assert_eq!(
         h.root
             .read_hunting_stamina(owner.character, item.character_id)
@@ -348,8 +434,8 @@ pub(super) async fn qualify(
         .lock()
         .await
         .gain_resting_stamina(actor, session));
-    assert_eq!(owner.save_resting_stamina(actor, session).await, TrainingSave::Saved);
     let restored = live + 1;
+    save_with_busy_readback(owner, h, (actor, session), item, true, (live, restored)).await?;
     assert_eq!(
         h.root
             .read_hunting_stamina(owner.character, item.character_id)
