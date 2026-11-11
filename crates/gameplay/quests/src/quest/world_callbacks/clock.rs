@@ -51,7 +51,7 @@ impl Callback {
 
     /// A command cannot manufacture a reward epoch without waiting on the SQL clock.
     pub fn clock_reward_epoch(&self, track: &str) -> bool {
-        self.state_ops.iter().any(|operation| {
+        self.operations().any(|operation| {
             operation.track == track
                 && matches!(
                     operation.from,
@@ -62,6 +62,6 @@ impl Callback {
     }
 
     pub fn has_personal_state(&self) -> bool {
-        !self.storage.is_empty() || !self.state_ops.is_empty()
+        self.has_state()
     }
 }

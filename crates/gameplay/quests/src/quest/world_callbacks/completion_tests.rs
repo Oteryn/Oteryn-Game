@@ -28,7 +28,7 @@ fn child_completion_keeps_the_parent_incomplete_and_requires_native_reward_admis
     for invalid in 0..9 {
         let mut c = original.clone();
         match invalid {
-            0 => c.effects.quest_completion = Some(c.quest.clone()),
+            0 => c.effects.quest_completion = Some(c.quest.clone().into()),
             1 => c.effects.quest_completion = Some("not a quest".into()),
             2 => c.trigger = Trigger::StepIn,
             3 => c.effects.item_reward = None,

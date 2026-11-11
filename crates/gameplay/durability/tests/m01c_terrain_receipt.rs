@@ -571,6 +571,9 @@ async fn production_fanfare_collection(
     assert!(catalogue.transition(transition_key).is_some());
     for (ordinal, number) in [(80_u32, 3519_u16), (81, 3520)] {
         let request = RewardClaimMintRequest {
+            backpack_outputs: false,
+            root_charges_remaining: None,
+            root_fluid_subtype: None,
             command: reward_fixture::command(9800 + u64::from(ordinal))?,
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
@@ -804,6 +807,9 @@ async fn production_black_knight_collection(
     assert_eq!(admission.minimum_level, 50);
     for (ordinal, number) in [(90_u32, 5009_u16), (91, 5010)] {
         let request = RewardClaimMintRequest {
+            backpack_outputs: false,
+            root_charges_remaining: None,
+            root_fluid_subtype: None,
             command: reward_fixture::command(9800 + u64::from(ordinal))?,
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),

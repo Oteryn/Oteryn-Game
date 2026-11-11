@@ -1,0 +1,86 @@
+\bNaginataPick\b
+crates/gameplay/world/src/map/facts/quest_callbacks.rs:12:struct NaginataPick {
+crates/gameplay/world/src/map/facts/quest_callbacks.rs:28:    naginata_picks: Vec<NaginataPick>,
+crates/gameplay/world/src/map/facts/quest_callbacks.rs:130:        states.naginata_picks.push(NaginataPick {
+
+\bCallbackStates\b
+crates/gameplay/world/src/map/facts/quest_callbacks.rs:19:pub(super) struct CallbackStates {
+crates/gameplay/world/src/map/facts/quest_callbacks.rs:31:impl CallbackStates {
+crates/gameplay/world/src/map/facts.rs:38:use quest_callbacks::CallbackStates;
+crates/gameplay/world/src/map/facts.rs:126:    callbacks: Mutex<Arc<CallbackStates>>,
+crates/gameplay/world/src/map/facts.rs:975:    callbacks: Option<Arc<CallbackStates>>,
+
+\bChest\s*\{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:16:struct Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:56:const NAGINATA: Chest = Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:66:const NIGHTMARE_TEDDY: Chest = Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:76:const NOBLE_ARMOR: Chest = Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:86:const CROWN_HELMET: Chest = Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:97:const PANPIPE_ACCESS_KEY: Chest = Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:110:    Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:120:    Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:130:    Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:140:    Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:150:    Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:160:    Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:170:    Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:182:    Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:196:    Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:210:    Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:224:    Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:238:const PHASE_A_KEY_CONTAINER: &[Chest] = &[Chest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:255:const PHASE_A_BOOK: &[Chest] = &[Chest {
+
+\bGate\s*\{
+crates/gameplay/spell/src/spell/source_player_conditions.rs:197:        S::Gate { gate, duration_ms } => N::gate(gate.key(), duration_ms)?,
+apps/game-server/src/lifted_tests/creature_condition_content_gate_tests.rs:39:        let ConditionValues::Gate { gate, duration_ms } = definition.values() else {
+crates/gameplay/entities/src/carrier/runtime_actor_conditions.rs:236:                } | ConditionValues::Gate {
+crates/gameplay/entities/src/carrier/soulpit/oppressor.rs:80:        ConditionValues::Gate {
+crates/gameplay/entities/src/carrier/soulpit/oppressor.rs:234:                    values.push(ConditionValues::Gate {
+crates/gameplay/spell/src/spell/companion_execution.rs:859:            ConditionValues::Gate {
+apps/game-server/src/node/runtime_status.rs:95:    async fn check(&mut self) -> Gate {
+crates/gameplay/foundation/src/foundation/condition.rs:132:                | ConditionValues::Gate { duration_ms, .. } => duration_ms > 0,
+crates/gameplay/foundation/src/foundation/condition.rs:398:            ConditionValues::Gate { gate, .. } => ConditionType::Gate(gate),
+crates/gameplay/foundation/src/foundation/condition.rs:796:                    | ConditionValues::Gate { .. }
+crates/gameplay/foundation/src/foundation/condition.rs:857:            | ConditionValues::Gate { duration_ms, .. }
+crates/gameplay/foundation/src/foundation/condition.rs:1120:            ConditionValues::Gate { duration_ms, .. } => {
+crates/gameplay/foundation/src/foundation/condition.rs:1250:            ConditionValues::Gate {
+crates/gameplay/foundation/src/foundation/condition_gate_tests.rs:36:    def("cond.gate", ConditionValues::Gate { gate, duration_ms })
+crates/gameplay/foundation/src/foundation/condition_gate_tests.rs:98:            ConditionValues::Gate {
+crates/gameplay/foundation/src/foundation/condition_gate_tests.rs:614:    values.extend(GATES.map(|gate| ConditionValues::Gate {
+crates/gameplay/native-admission-source/src/runtime_status.rs:421:pub enum Gate {
+crates/gameplay/native-admission-source/src/public_projections.rs:866:struct Gate {
+crates/gameplay/native-admission-source/src/public_projections.rs:1209:                *gate = Gate {
+apps/game-server/tests/integration_rest/native_runtime_status.rs:443:    async fn check(&mut self) -> Gate {
+apps/game-server/tests/integration_rest/native_runtime_status.rs:529:    async fn check(&mut self) -> Gate {
+crates/gameplay/domain/src/domain/condition.rs:309:    Gate {
+crates/gameplay/domain/src/domain/condition.rs:339:        Some(Self::Gate { gate, duration_ms })
+crates/gameplay/dispatch/src/gameplay_transport/bundle_gates_tests.rs:20:enum Gate {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:27:struct Gate {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:34:const NAGINATA_GATE: Gate = Gate {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:40:const NOBLE_ARMOR_GATE: Gate = Gate {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs:46:const ORC_FORTRESS_GATE: Gate = Gate {
+
+\bnaginata_pick_replay\b
+crates/gameplay/world/src/map/facts/quest_callbacks.rs:58:    pub fn naginata_pick_replay(
+crates/gameplay/dispatch/src/gameplay_transport/item_craft/terrain.rs:47:            map.facts.naginata_pick_replay(
+
+\bapply_naginata_pick\b
+crates/gameplay/world/src/map/facts/quest_callbacks.rs:81:    pub fn apply_naginata_pick(
+crates/gameplay/dispatch/src/gameplay_transport/item_craft/terrain.rs:266:                let committed = at.map.facts.apply_naginata_pick(
+
+oriental_trader::open_alias
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:685:        oriental_trader::open_alias(admission, actor, command, &intent, &runtime, ordinary);
+
+ProjectV2DialogueKeyword\s*\{
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:217:) -> ProjectV2DialogueKeyword {
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:218:    ProjectV2DialogueKeyword {
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:238:) -> ProjectV2DialogueKeyword {
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:239:    ProjectV2DialogueKeyword {
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:262:                ProjectV2DialogueKeyword {
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:273:                ProjectV2DialogueKeyword {
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:325:fn dialogue_keyword_chain(depth: u32) -> ProjectV2DialogueKeyword {
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:942:            ProjectV2DialogueKeyword {
+apps/game-server/tests/integration_rest/content_world_project_v2_npc_admission.rs:951:            ProjectV2DialogueKeyword {
+crates/gameplay/content/src/content/project/v2.rs:1211:pub struct ProjectV2DialogueKeyword {
+crates/gameplay/npc/src/npc_talk.rs:234:                    .map(|word| crate::content::ProjectV2DialogueKeyword {

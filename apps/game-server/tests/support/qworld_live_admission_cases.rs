@@ -775,6 +775,9 @@ mod native_binding {
         callback.offerings.clear();
         callback.item_on_target = None;
         callback.storage = vec![Storage {
+            add: None,
+            read_only: false,
+            set_if: None,
             track: "oteryn:quest-progress/qm03-admission/stage".into(),
             minimum: 0,
             maximum: 0,

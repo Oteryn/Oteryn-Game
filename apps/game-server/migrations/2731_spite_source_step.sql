@@ -72,7 +72,7 @@ BEGIN
    AND p->>'source_body'='9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916'
    AND p->>'character'=r.character_id::text AND p->>'item'=i.item_instance_id::text
    AND p->>'cause'=r.cause_id::text AND p->>'world'=i.world_id::text
-   AND p->>'scope_kind'=g.runtime_scope_kind::text
+   AND p->>'scope_kind'=g.scope_kind::text
    AND p->>'scope'=coalesce(g.channel_id,g.instance_id)::text
    AND p->>'scope_generation'=g.runtime_scope_ownership_generation::text
    AND p->>'server' ~ '^[0-9a-f]{64}$' AND p->>'client' ~ '^[0-9a-f]{64}$'
@@ -100,7 +100,7 @@ BEGIN
    -- The source getItemById chooses the first current stack member, not a
    -- retained GlobalEvent's old UUID and not every matching field on the tile.
    AND NOT EXISTS(SELECT 1 FROM game_item_ground_locations other JOIN game_item_instances item USING(item_instance_id)
-     WHERE other.world_id=g.world_id AND other.runtime_scope_kind=g.runtime_scope_kind
+     WHERE other.world_id=g.world_id AND other.scope_kind=g.scope_kind
       AND other.channel_id IS NOT DISTINCT FROM g.channel_id AND other.instance_id IS NOT DISTINCT FROM g.instance_id
       AND other.spatial_position=g.spatial_position AND other.map_revision=g.map_revision
       AND other.content_revision=g.content_revision AND other.native_room_placement_context=g.native_room_placement_context
@@ -112,7 +112,7 @@ BEGIN
  SELECT * INTO session_row FROM game_durability_reconnect_sessions s
  WHERE s.game_session_id=(p->>'session')::uuid AND s.character_id=r.character_id
   AND s.world_id=i.world_id AND s.runtime_scope_world_id=i.world_id
-  AND s.runtime_scope_kind=g.runtime_scope_kind
+  AND s.runtime_scope_kind=g.scope_kind
   AND s.runtime_scope_channel_id IS NOT DISTINCT FROM g.channel_id
   AND s.runtime_scope_instance_id IS NOT DISTINCT FROM g.instance_id
   AND s.runtime_scope_house_key IS NULL AND s.session_state IN(1,2)
@@ -121,7 +121,7 @@ BEGIN
   AND s.scope_ownership_generation=g.runtime_scope_ownership_generation;
  IF NOT FOUND THEN RETURN false; END IF;
  RETURN coalesce(
-  (g.runtime_scope_kind=1 OR game_activity_session_origin_valid(session_row.game_session_id,r.character_id))
+  (g.scope_kind=1 OR game_activity_session_origin_valid(session_row.game_session_id,r.character_id))
   AND game_runtime_scope_assignment_history_valid() AND game_node_registration_history_valid()
   AND EXISTS(SELECT 1 FROM game_durability_admission_character_guards c
    JOIN game_durability_admission_account_guards a ON a.account_id=c.account_id
@@ -132,19 +132,19 @@ BEGIN
   AND EXISTS(SELECT 1 FROM game_runtime_scope_assignments a
    JOIN game_node_registrations n ON n.node_id=a.holder_node_id
    JOIN game_durability_admission_runtime_guards ready
-    ON ready.scope_key=set_byte(a.scope_key,0,g.runtime_scope_kind)
+    ON ready.scope_key=set_byte(a.scope_key,0,g.scope_kind)
    WHERE a.world_id=i.world_id AND a.state=1 AND a.house_key IS NULL
     AND a.ownership_generation=g.runtime_scope_ownership_generation
     AND a.holder_node_id=(p->>'node')::uuid AND a.holder_registration_revision=(p->>'node_registration')::numeric
     AND a.source_revision=(p->>'assignment_revision')::numeric
     AND n.state=1 AND n.registration_revision=a.holder_registration_revision
     AND ready.ready AND ready.ownership_generation=a.ownership_generation
-    AND ((g.runtime_scope_kind=1 AND a.scope_kind=1 AND a.channel_id=g.channel_id AND a.activity_instance_id IS NULL)
-      OR (g.runtime_scope_kind=2 AND a.scope_kind=3 AND a.channel_id IS NULL AND a.activity_instance_id=g.instance_id)))
+    AND ((g.scope_kind=1 AND a.scope_kind=1 AND a.channel_id=g.channel_id AND a.activity_instance_id IS NULL)
+      OR (g.scope_kind=2 AND a.scope_kind=3 AND a.channel_id IS NULL AND a.activity_instance_id=g.instance_id)))
   AND EXISTS(SELECT 1 FROM game_content_activations c WHERE c.world_id=i.world_id
    AND c.activation_sequence=(p->>'activation')::numeric AND c.server_artifact_digest=decode(p->>'server','hex')
    AND c.client_artifact_digest=decode(p->>'client','hex')
-   AND (g.runtime_scope_kind=2 OR (c.channel_id=g.channel_id AND c.frame_binding_digest=decode(p->>'frame','hex')))
+   AND (g.scope_kind=2 OR (c.channel_id=g.channel_id AND c.frame_binding_digest=decode(p->>'frame','hex')))
    AND NOT EXISTS(SELECT 1 FROM game_content_activations later WHERE later.world_id=c.world_id
     AND later.channel_id=c.channel_id AND later.activation_sequence>c.activation_sequence)),false);
 END $$;

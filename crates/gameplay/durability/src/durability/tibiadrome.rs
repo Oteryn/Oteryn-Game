@@ -70,7 +70,8 @@ impl Progress {
         self.start = self.start.max(level);
         self.waves = self.waves.saturating_add(1);
     }
-    fn reached_level(&mut self, level: u32) {
+    /// Advance the level and preserve an explicitly unknown lifetime baseline.
+    pub fn reached_level(&mut self, level: u32) {
         let gained = u64::from(level.saturating_sub(self.level));
         if let Some(lifetime) = &mut self.lifetime_levels {
             *lifetime = lifetime.saturating_add(gained);
@@ -390,6 +391,8 @@ pub struct RunUpdate {
     pub completed: u32,
     pub level: u32,
     pub ended: bool,
+    /// Actual owner wave retained when the terminal runtime state is removed.
+    pub wave: u32,
 }
 
 impl DurabilityRoot {
@@ -407,6 +410,7 @@ impl DurabilityRoot {
             completed,
             level,
             ended,
+            wave,
         } = update;
         let recovery = authority
             .record_for(self)
@@ -433,7 +437,7 @@ impl DurabilityRoot {
                     }
                 }
                 if ended || state.progress.rotation!=now/ROTATION_SECONDS {
-                    state.active=false;state.progress.finish(now);
+                    state.wave=wave;state.active=false;state.progress.finish(now);
                 }
                 if state.progress.rotation < now/ROTATION_SECONDS && !rotation_eligible(&mut tx, fence.character_id, state.progress.rotation).await? { state.progress.waves=0; }
                 state.progress.rotate(now/ROTATION_SECONDS);

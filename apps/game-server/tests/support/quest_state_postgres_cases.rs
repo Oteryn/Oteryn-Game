@@ -1647,7 +1647,19 @@ fn embedded_transitions(catalogue: &QuestStateCatalogue) -> TestResult<(String, 
     for quest in document["quests"].as_array().ok_or("quests")? {
         for transition in quest["transitions"].as_array().ok_or("transitions")? {
             let key = transition["key"].as_str().ok_or("key")?;
-            let loaded = catalogue.transition(key).ok_or("transition")?;
+            // The retained source packet includes Dawnport; the owner's served
+            // scope explicitly holds it out. Assert that boundary rather than
+            // treating the source inventory as the executable boot catalogue.
+            if quest["quest"].as_str() == Some("oteryn:quest.dawnport_quest") {
+                assert!(
+                    catalogue.transition(key).is_none(),
+                    "held Dawnport transition {key}"
+                );
+                continue;
+            }
+            let loaded = catalogue
+                .transition(key)
+                .ok_or_else(|| format!("missing boot transition {key}"))?;
             match catalogue.evaluate(loaded, &std::collections::BTreeMap::new(), 0) {
                 Ok(_)
                     if loaded.experience.is_none()

@@ -9,7 +9,21 @@ pub(crate) fn uneasy_crystal() -> Callback {
     let mut effects = CallbackEffectSet::default();
     effects.transform = Some(10187);
     effects.reset_after_ms = Some(10_000);
-    Callback { track_initials: Default::default(), required_completed_quests: Vec::new(), admission: None, requires_premium: false,
+    Callback {
+        use_range: 1,
+        disguise: None,
+        remote_teleport: None,
+        state_operations: Vec::new(),
+        completes: false,
+        premium_required: false,
+        present: Vec::new(),
+        required_travel: Vec::new(),
+        failure_teleport: None,
+        item_reward: None,
+        reward_bundle: false,
+        achievements: Vec::new(),
+        activation: None,
+        requirements: None, track_initials: Default::default(), required_completed_quests: Vec::new(), admission: None, requires_premium: false,
         world_change: None,
         actor_kind: Default::default(),
         opening_only: false,
@@ -18,6 +32,8 @@ pub(crate) fn uneasy_crystal() -> Callback {
         quest: "oteryn:quest.an_uneasy_alliance_quest".into(),
         trigger: Trigger::Use,
         selector: Selector {
+        position_aliases: Vec::new(),
+        ordinal: None,
             // The retained B3 counterpart has no legacy action attribute.
             native: Some(NativeSelector {
                 position: Position { x: 33155, y: 31297, floor: -3 },
@@ -37,6 +53,9 @@ pub(crate) fn uneasy_crystal() -> Callback {
         state_ops: Vec::new(),
         world_requirements: Vec::new(),
         storage: vec![Storage {
+        set_if: None,
+        add: None,
+        read_only: false,
             track: "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline".into(),
             minimum: 3,
             maximum: 3,
@@ -104,6 +123,8 @@ pub(crate) fn lions_amphora() -> Vec<Callback> {
             callback.trigger = Trigger::StepIn;
             callback.requires_world_admission = true;
             callback.selector = Selector {
+        position_aliases: Vec::new(),
+        ordinal: None,
                 native: Some(NativeSelector { position: Position { x, y, floor: -9 }, ordinal: 0, appearance }),
                 position: None, unique: None, action: None, appearance: Some(appearance),
             };
@@ -112,10 +133,15 @@ pub(crate) fn lions_amphora() -> Vec<Callback> {
                 position: Position { x: 33119, y: 32247, floor: -9 }, from: 21945, to: 21946, reset_after_ms: 15_000,
             });
             callback.effects.item_reward = Some(ItemReward {
+        key_number: None,
+        backpack_outputs: Vec::new(),
                 premium: false, item: "oteryn:item.tibia.i21467".into(), count: 1,
                 contents: Vec::new(), text: None, additional: Vec::new(),
             });
             callback.storage = vec![Storage {
+                add: None,
+                read_only: false,
+                set_if: None,
                 track: "oteryn:quest-progress/quest/u10_70/lions_rock/questline".into(),
                 minimum: 4, maximum: 4, set: 5, preserve: false, increment: false, at_least: false,
             }];
@@ -139,13 +165,17 @@ pub(crate) fn lions_flowers() -> Vec<Callback> {
         callback.quest = "oteryn:quest.tibia_tales".into();
         callback.requires_world_admission = true;
         callback.selector = Selector {
+        position_aliases: Vec::new(),
+        ordinal: None,
             native: Some(NativeSelector { position: Position { x,y,floor }, ordinal, appearance: 21388 }),
             position: None, unique: None, action: None, appearance: Some(21388),
         };
         callback.effects = CallbackEffectSet::default();
         callback.effects.transform = Some(21935);
         callback.effects.reset_after_ms = Some(60_000);
-        callback.effects.item_reward = Some(ItemReward { premium: false,
+        callback.effects.item_reward = Some(ItemReward {
+        key_number: None,
+        backpack_outputs: Vec::new(), premium: false,
             item: "oteryn:item.tibia.i21389".into(), count: 1, contents: Vec::new(),
             text: None, additional: Vec::new(),
         });
@@ -153,6 +183,9 @@ pub(crate) fn lions_flowers() -> Vec<Callback> {
             ("oteryn:quest-progress/quest/u10_70/lions_rock/questline", i64::from(i32::MAX)),
             ("oteryn:quest-progress/quest/u8_1/tibia_tales/default_start", 1),
         ].into_iter().map(|(track,maximum)| Storage {
+            add: None,
+            read_only: false,
+            set_if: None,
             track: track.into(), minimum: 0, maximum, set: 1,
             preserve: false, increment: false, at_least: true,
         }).collect();

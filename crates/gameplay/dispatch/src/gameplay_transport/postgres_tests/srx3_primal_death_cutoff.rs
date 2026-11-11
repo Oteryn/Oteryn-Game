@@ -177,11 +177,17 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                 // source task or wave state is seeded by this test.
                 for _ in 0..5 {
                     let native_drain: std::pin::Pin<
-                        Box<dyn std::future::Future<Output = ()> + '_>,
+                        Box<dyn std::future::Future<Output = TestResult> + '_>,
                     > = Box::pin(async {
-                        owner.runtime_view(&registered).drain_monster_melee().await;
+                        let view = owner.runtime_view(&registered);
+                        super::srx3_primal::drain_actual_native_through(
+                            &view,
+                            view.owner_now().get(),
+                            true,
+                        )
+                        .await
                     });
-                    native_drain.await;
+                    native_drain.await?;
                     if owner
                         .runtime_view(&registered)
                         .states
@@ -217,15 +223,22 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         11
                     }))
                     .ok_or("source first wave clock")?;
-                let native_drain: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + '_>> =
-                    Box::pin(async {
-                        owner.runtime_view(&registered).drain_monster_melee().await;
-                    });
-                native_drain.await;
+                let native_drain: std::pin::Pin<
+                    Box<dyn std::future::Future<Output = TestResult> + '_>,
+                > = Box::pin(async {
+                    let view = owner.runtime_view(&registered);
+                    super::srx3_primal::drain_actual_native_through(
+                        &view,
+                        view.owner_now().get(),
+                        true,
+                    )
+                    .await
+                });
+                native_drain.await?;
                 let mut old_pod = None;
                 let mut future_pod = None;
                 if pod_expiry_case {
-                    let pod_due = owner
+                    let source_pods = owner
                         .runtime_view(&registered)
                         .states
                         .spell_states
@@ -234,9 +247,21 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         .primal_callbacks
                         .pods
                         .iter()
-                        .map(|pod| pod.due_us())
+                        .map(|pod| (pod.source_transaction_id(), pod.due_us()))
+                        .collect::<Vec<_>>();
+                    assert!(
+                        (1..=2).contains(&source_pods.len()),
+                        "the actual hazard1 first wave authors one or two Pods: {source_pods:?}"
+                    );
+                    let pod_due = source_pods
+                        .iter()
+                        .map(|(_, due)| *due)
                         .min()
                         .ok_or("prerequisite: actual source Think scheduled Pod creates")?;
+                    assert!(
+                        source_pods.iter().all(|(_, due)| *due == pod_due),
+                        "all selected Pods retain their same real first-wave deadline"
+                    );
                     let delta = pod_due
                         .checked_add(100_000)
                         .ok_or("pod due bounds")?
@@ -262,8 +287,67 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         .into_iter()
                         .find(|row| row.3)
                         .ok_or("prerequisite: first actual Pod create committed")?;
+                    assert!(source_pods.iter().any(|(source, _)| *source == first.0));
                     assert_eq!(first.2, first.1.checked_add(4_000_000).ok_or("source TTL")?);
                     if lock_normal_read {
+                        // Finish the original callbacks and native continuations
+                        // before holding the Item row needed by the target Map read.
+                        let view = owner.runtime_view(&registered);
+                        super::srx3_primal::drain_actual_native_through(
+                            &view,
+                            view.owner_now().get(),
+                            true,
+                        )
+                        .await?;
+                        let next_boss_think = view
+                            .states
+                            .spell_states
+                            .lock()
+                            .await
+                            .monster_melee
+                            .creature_ai
+                            .due(boss)
+                            .ok_or("actual next native Primal Think deadline")?;
+                        drop(view);
+                        let before_think = next_boss_think
+                            .checked_sub(1)
+                            .ok_or("actual native Think predecessor boundary")?;
+                        owner.clock_origin = owner
+                            .clock_origin
+                            .checked_sub(std::time::Duration::from_micros(
+                                before_think.saturating_sub(owner.owner_now().get()),
+                            ))
+                            .ok_or("actual predecessor execution clock")?;
+                        let view = owner.runtime_view(&registered);
+                        super::srx3_primal::drain_actual_native_through(&view, before_think, true)
+                            .await?;
+                        assert_eq!(
+                            view.states
+                                .spell_states
+                                .lock()
+                                .await
+                                .monster_melee
+                                .creature_ai
+                                .due(boss),
+                            Some(next_boss_think),
+                            "predecessor drain must not consume the target Primal Think"
+                        );
+                        drop(view);
+                        owner.clock_origin = owner
+                            .clock_origin
+                            .checked_sub(std::time::Duration::from_micros(
+                                next_boss_think.saturating_sub(owner.owner_now().get()),
+                            ))
+                            .ok_or("actual next native Think execution clock")?;
+                        let normal_now = owner.owner_now().get();
+                        let view = owner.runtime_view(&registered);
+                        super::srx3_primal::drain_actual_native_through(&view, normal_now, false)
+                            .await?;
+                        assert!(
+                            normal_now < first.2,
+                            "prerequisite: the locked Pod must still be live at the target native Think"
+                        );
+                        drop(view);
                         let mut blocker = h.pool.begin().await?;
                         let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
                             .fetch_one(&mut *blocker)
@@ -292,9 +376,13 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         }
                         // pg_stat_activity truncates at configured1kB. Match the
                         // exact visible TILE_ROWS prefix, not its FROM at byte1959.
-                        let (_, observed) = tokio::join!(
-                            Box::pin(view.drain_monster_melee())
-                                as std::pin::Pin<Box<dyn std::future::Future<Output = ()> + '_>>,
+                        let (drained, observed) = tokio::join!(
+                            Box::pin(super::srx3_primal::drain_actual_native_through(
+                                &view, normal_now, true,
+                            ))
+                                as std::pin::Pin<
+                                    Box<dyn std::future::Future<Output = TestResult> + '_>,
+                                >,
                             Box::pin(async {
                                 let observation: TestResult = async {
                                     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(8);
@@ -335,6 +423,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                                 >
                         );
                         observed?;
+                        drained?;
                         drop(view);
                         drop(registered);
                         drop(owner);
@@ -344,23 +433,46 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                     }
                     // Wait real SQL receipt+4s independently of native owner time.
                     wait_actual_pod_sql_due(&h.pool, first.0).await?;
-                    owner
-                        .runtime_view(&registered)
-                        .drain_primal_pod_creates_through(pod_due)
-                        .await
-                        .map_err(|_| "actual source Pod callback owner")?;
-                    let second = owner
-                        .runtime_view(&registered)
-                        .states
-                        .spell_states
-                        .lock()
-                        .await
-                        .primal_callbacks
-                        .pod_execution_deadlines_for_test()
-                        .into_iter()
-                        .find(|row| row.0 != first.0 && row.3)
-                        .ok_or("prerequisite: actual second Pod create at later execution")?;
-                    assert!(second.2 > first.2);
+                    let second = if source_pods.len() == 2 {
+                        owner
+                            .runtime_view(&registered)
+                            .drain_primal_pod_creates_through(pod_due)
+                            .await
+                            .map_err(|_| "actual source Pod callback owner")?;
+                        let second = owner
+                            .runtime_view(&registered)
+                            .states
+                            .spell_states
+                            .lock()
+                            .await
+                            .primal_callbacks
+                            .pod_execution_deadlines_for_test()
+                            .into_iter()
+                            .find(|row| row.0 != first.0 && row.3)
+                            .ok_or("prerequisite: actual second Pod create at later execution")?;
+                        assert!(source_pods.iter().any(|(source, _)| *source == second.0));
+                        assert!(second.2 > first.2);
+                        Some(second)
+                    } else {
+                        assert!(
+                            owner
+                                .runtime_view(&registered)
+                                .states
+                                .spell_states
+                                .lock()
+                                .await
+                                .primal_callbacks
+                                .pods
+                                .is_empty(),
+                            "one-Pod source wave leaves no fabricated second callback"
+                        );
+                        None
+                    };
+                    eprintln!(
+                        "SRX3_PRIMAL_ACTUAL_POD_CUTOFF_SHAPE first_wave_pods={} future_second_expiry_covered={}",
+                        source_pods.len(),
+                        second.is_some()
+                    );
                     owner
                         .runtime_view(&registered)
                         .drain_primal_pod_expiries()
@@ -378,7 +490,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         "prerequisite: actual SQL-due first Pod expiry queued before physical lethal"
                     );
                     old_pod = Some(first);
-                    future_pod = Some(second);
+                    future_pod = second;
                 }
                 let scheduled = owner
                     .runtime_view(&registered)
@@ -501,11 +613,11 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                             .any(|(_, due)| due.saturating_mul(1000) > cutoff)
                     );
                 }
-                if let (Some(old), Some(future)) = (old_pod, future_pod) {
-                    assert!(
-                        old.2 <= cutoff && future.2 > cutoff,
-                        "actual expiry/core chronological split"
-                    );
+                if let Some(old) = old_pod {
+                    assert!(old.2 <= cutoff, "actual first expiry precedes core");
+                }
+                if let Some(future) = future_pod {
+                    assert!(future.2 > cutoff, "actual expiry/core chronological split");
                     wait_actual_pod_sql_due(&h.pool, future.0).await?;
                 }
                 drop(view);
@@ -516,7 +628,8 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                     .into_iter()
                     .chain(future_pod.map(|row| row.2))
                     .max()
-                    .ok_or("future actual callback or expiry")?;
+                    .or_else(|| old_pod.map(|row| row.2))
+                    .ok_or("actual future callback or existing first expiry")?;
                 let now = owner.owner_now().get();
                 let late_target = latest
                     .checked_add(1_000_000)

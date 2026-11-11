@@ -10,6 +10,7 @@ fn reward(command_id: u64) -> TestResult<RewardClaimMintRequest> {
         1,
     );
     request.additional_items.push(RewardClaimMintContent {
+        charges_remaining: None,
         item: facts(COIN, STACKABLE),
         quantity: 7,
         key_number: None,

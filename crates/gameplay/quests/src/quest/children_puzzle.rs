@@ -79,6 +79,9 @@ pub(crate) fn callbacks() -> Vec<Callback> {
             callback.effects.transform = None;
             callback.effects.reset_after_ms = Some(5000);
             callback.storage = vec![Storage {
+        set_if: None,
+        add: None,
+        read_only: false,
                 track: "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline"
                     .into(),
                 minimum: 14,
@@ -91,6 +94,9 @@ pub(crate) fn callbacks() -> Vec<Callback> {
             if solved {
                 callback.effects.player_speech = Some(SPEECH.into());
                 callback.storage.push(Storage {
+                    add: None,
+                    read_only: false,
+                    set_if: None,
                     track: "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04"
                         .into(),
                     minimum: -1,

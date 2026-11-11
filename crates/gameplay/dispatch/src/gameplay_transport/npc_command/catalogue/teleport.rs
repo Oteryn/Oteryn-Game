@@ -190,6 +190,7 @@ pub(in crate::gameplay_transport) async fn commit(
             proof.catalogue,
             &super::super::super::item_ref_admission::NativeItemWeights(native)
                 .with_wheel(admission.premium_coordinator),
+            &admission.premium_coordinator,
             NpcTeleportAdmission { arrival },
         )
         .await;

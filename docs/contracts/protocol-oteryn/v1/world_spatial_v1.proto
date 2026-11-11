@@ -14,13 +14,17 @@ enum StepDirection {
   STEP_DIRECTION_EAST = 2;
   STEP_DIRECTION_SOUTH = 3;
   STEP_DIRECTION_WEST = 4;
-  STEP_DIRECTION_NORTH_EAST = 5;
-  STEP_DIRECTION_SOUTH_EAST = 6;
-  STEP_DIRECTION_SOUTH_WEST = 7;
-  STEP_DIRECTION_NORTH_WEST = 8;
+  // Only command1 intent with capability371. State/entity facing remains NORTH..WEST.
+  STEP_DIRECTION_NORTHEAST = 5;
+  STEP_DIRECTION_SOUTHEAST = 6;
+  STEP_DIRECTION_SOUTHWEST = 7;
+  STEP_DIRECTION_NORTHWEST = 8;
 }
 
 // ClientCommand.payload of command type 1. At most 4 encoded bytes.
+// Without capability371 only NORTH..WEST; with it the four diagonal values are admitted.
+// Diagonal step cost is three rounded cardinal durations. With13+371, receipt max333450ms;
+// capability13 alone retains111150ms. No field or byte bound changes.
 message WorldActorStepIntentV1 {
   StepDirection direction = 1;
 }

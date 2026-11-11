@@ -7,6 +7,8 @@ rule. No source asset or identity is introduced.
 import copy
 import hashlib
 import json
+
+from native_profile_composition import encode_native_profile
 import xml.etree.ElementTree as ET
 
 IDS = {23721, 35524, 35562, 35848, 35849, 36666, 39150, 39160, 45644}
@@ -69,7 +71,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if key in taxonomy:
             record['authoring']['taxonomy'] = copy.deepcopy(taxonomy[key])
     document['records'].sort(key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()

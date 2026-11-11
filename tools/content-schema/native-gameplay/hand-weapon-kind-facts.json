@@ -1,0 +1,253 @@
+{
+  "schema": "OTERYN_NATIVE_HAND_KIND_FACTS/v1",
+  "source": "imports/canary/items-xml/items.xml",
+  "source_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+  "binding_sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
+  "records": [
+    {
+      "key": "oteryn:item.tibia.i3409",
+      "source_id": 3409,
+      "source_line": 10226,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3410",
+      "source_id": 3410,
+      "source_line": 10244,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3411",
+      "source_id": 3411,
+      "source_line": 10253,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3412",
+      "source_id": 3412,
+      "source_line": 10262,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3413",
+      "source_id": 3413,
+      "source_line": 10271,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3414",
+      "source_id": 3414,
+      "source_line": 10280,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3415",
+      "source_id": 3415,
+      "source_line": 10299,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3416",
+      "source_id": 3416,
+      "source_line": 10308,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3418",
+      "source_id": 3418,
+      "source_line": 10335,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3419",
+      "source_id": 3419,
+      "source_line": 10353,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3420",
+      "source_id": 3420,
+      "source_line": 10371,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3421",
+      "source_id": 3421,
+      "source_line": 10390,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3425",
+      "source_id": 3425,
+      "source_line": 10447,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3426",
+      "source_id": 3426,
+      "source_line": 10456,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3428",
+      "source_id": 3428,
+      "source_line": 10474,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3429",
+      "source_id": 3429,
+      "source_line": 10492,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3430",
+      "source_id": 3430,
+      "source_line": 10502,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3431",
+      "source_id": 3431,
+      "source_line": 10511,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3433",
+      "source_id": 3433,
+      "source_line": 10538,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3434",
+      "source_id": 3434,
+      "source_line": 10556,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3435",
+      "source_id": 3435,
+      "source_line": 10575,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3436",
+      "source_id": 3436,
+      "source_line": 10593,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3439",
+      "source_id": 3439,
+      "source_line": 10638,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3440",
+      "source_id": 3440,
+      "source_line": 10657,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3441",
+      "source_id": 3441,
+      "source_line": 10666,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i3442",
+      "source_id": 3442,
+      "source_line": 10675,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i6131",
+      "source_id": 6131,
+      "source_line": 17032,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i7460",
+      "source_id": 7460,
+      "source_line": 20556,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i13998",
+      "source_id": 13998,
+      "source_line": 31991,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i14000",
+      "source_id": 14000,
+      "source_line": 32024,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i14042",
+      "source_id": 14042,
+      "source_line": 32239,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i14088",
+      "source_id": 14088,
+      "source_line": 32375,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i21175",
+      "source_id": 21175,
+      "source_line": 41927,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i22726",
+      "source_id": 22726,
+      "source_line": 45121,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    },
+    {
+      "key": "oteryn:item.tibia.i34099",
+      "source_id": 34099,
+      "source_line": 64354,
+      "taxonomy": "Shields",
+      "weapon_type": "SHIELD"
+    }
+  ]
+}

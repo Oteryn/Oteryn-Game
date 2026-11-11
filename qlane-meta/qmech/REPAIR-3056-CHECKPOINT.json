@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
+  "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
+  "parents": {
+    "previous_published_head": "87da88a0b1f519f810d50897b017117442b43d1b",
+    "integrated_main": "f01f18582443f482b7adcfaf32cae3f9d3616876"
+  },
+  "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
+  "generation": {
+    "workflow": ".github/workflows/g4-canonical-worldproject-package-seed.yml",
+    "label": "content-candidate",
+    "outputs": "Exact-head canonical World and reviewable generated-content patch; no automatic commit/ref update."
+  },
+  "pending": [
+    "Replay canonical World materializer from its pinned predecessor, complete dependent native/Prey providers, source witnesses, census and World pins.",
+    "Read back all exact merged-provider fixture inventories, including activation boss partitions and native output-key residual; existing prior pins are not final merged results.",
+    "Replay full canonical Quest source tree on the runner and recheck final source/state products. Current Quest-state and claims replay restored the five standalone chest transitions; historical USE proof bytes were not edited.",
+    "Compile and run required normal CI on the resulting published head.",
+    "Run PostgreSQL partitions and node boot on the final head; reconcile individual prior failing test identities.",
+    "The two-review quota is exhausted; later material changes have no fresh Codex approval. An owner decision is needed before any merge."
+  ],
+  "previous_execution_only": {
+    "merge_run": 42917781849,
+    "postgres_run": 42919473901,
+    "head": "c74d5f31a3a3c6ddea2313e7da878f37167190c1",
+    "both_conclusions": "failure; not evidence for this integration"
+  },
+  "completed_current_inputs": {
+    "quest_state": {
+      "quests": 101,
+      "tracks": 1344,
+      "transitions": 3270
+    },
+    "reward_claims": {
+      "records": 345,
+      "native_authored": 9
+    },
+    "historical_reward_use_proof_guard": "accepted after canonical state/claims replay; no PostgreSQL rerun asserted",
+    "source_compiler_amendment": "all frozen SOURCE cores verified unchanged"
+  },
+  "deferred_p2": [
+    {
+      "finding": "Conflicting duplicate migration keys in five inherited questpc7 historical JSON inventories",
+      "classification": "P2; no current runtime or required-CI consumer found",
+      "incoming_bytes_unchanged": true,
+      "paths": [
+        "qlane-meta/questpc7/MIGRATION-REGISTRY-PROOF.json",
+        "qlane-meta/questpc7/restart2-baseline.json",
+        "qlane-meta/questpc7/restart3-baseline.json",
+        "qlane-meta/questpc7/restart4-baseline.json",
+        "qlane-meta/questpc7/restart5-inherited-product-files.json"
+      ],
+      "action": "Preserve historical evidence; resolve provenance representation in the final grouped backlog."
+    },
+    {
+      "finding": "Candidate operation.txt summarizes content and pin commands but omits the earlier Quest prerequisite commands",
+      "classification": "P2 documentation; exact workflow and head remain available",
+      "path": ".github/workflows/g4-canonical-worldproject-package-seed.yml",
+      "action": "Collect with final grouped documentation work."
+    }
+  ]
+}

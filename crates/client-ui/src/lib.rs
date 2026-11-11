@@ -30,7 +30,7 @@ pub mod charm_progression;
 pub mod container_sort;
 #[path = "features/0057-cyclopedia-map/mod.rs"]
 pub mod cyclopedia_map;
-#[path = "features/0452-diagonal-movement/mod.rs"]
+#[path = "features/0371-diagonal-movement/input.rs"]
 pub mod diagonal_movement;
 #[path = "features/0055-guild-bank/mod.rs"]
 pub mod guild_bank;
@@ -348,7 +348,7 @@ pub mod action_bar_cooldowns;
 #[path = "features/0462-support-intake/mod.rs"]
 pub mod support_intake;
 
-#[path = "features/0371-native-creature-icons/mod.rs"]
+#[path = "features/0372-native-creature-icons/mod.rs"]
 pub mod native_creature_icons;
 
 #[path = "features/0451-personal-map-marks/mod.rs"]

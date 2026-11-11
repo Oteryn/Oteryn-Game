@@ -119,14 +119,24 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             for capture in containers:
                 self.assertEqual(capture['revision'], container_native.REVISION)
                 self.assertEqual(capture['source_sha256'], container_native.SOURCE_SHA256)
-        # ITEMHOLD-Q adds Power Ring's full-charge amulet to W15b's ready claims.
-        self.assertEqual(128, self.result["summary"]["reward_claim_ready_refs"])
-        self.assertEqual(132, self.result["summary"]["reward_claim_placements"])
+        # Native Item qualification can resolve a live claim without rewriting
+        # its historical SOURCE witness or declaring the whole quest playable.
+        draconia = by_title["Draconia Quest"]
+        self.assertEqual(draconia["reward_claim_owner"]["state"],
+                         "REWARD_CLAIM_IMPLEMENTATION_PENDING")
+        self.assertIn("claim_item_semantics_missing",
+                      draconia["canonical"][0]["missing_data_codes"])
+        self.assertEqual(draconia["playable_verification"], "NOT_ASSESSED")
+        # QUEST-FINISH admits eight additional exact full-default charge claims.
+        # Resolving the remaining fluid Items moves two reward-only owners from
+        # data pending to implementation pending; SOURCE and runtime stay distinct.
+        self.assertEqual(132, self.result["summary"]["reward_claim_ready_refs"])
+        self.assertEqual(136, self.result["summary"]["reward_claim_placements"])
         self.assertEqual(
             {
-                "REWARD_CLAIM_DATA_PENDING": 7,
-                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 45,
-                "REWARD_CLAIM_USE_PENDING": 53 - enabled - verified,
+                "REWARD_CLAIM_DATA_PENDING": 3,
+                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 46,
+                "REWARD_CLAIM_USE_PENDING": 56 - enabled - verified,
                 "REWARD_CLAIM_USE_ENABLED": enabled,
                 "REWARD_CLAIM_USE_VERIFIED": verified,
             },

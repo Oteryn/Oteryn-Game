@@ -61,7 +61,24 @@ mod reaudit_starting_progression {
     #[test]
     fn reaudit_starting_progression_pins_both_inputs_and_preserves_legacy_bytes()
     -> Result<(), ContentError> {
-        let base = pin(br#"{"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","records":[]}"#);
+        // These exact thirteen starter identities may already be owned by the base provider.
+        let starter_ids = [
+            3571, 3572, 7773, 7774, 7991, 7992, 8095, 50171, 34017, 21348, 21400, 21350, 50166,
+        ];
+        let mut base_doc: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../../content/items/definitions/spell-native-profiles.json"
+        ))
+        .map_err(|_| invalid("base starter source"))?;
+        base_doc["records"]
+            .as_array_mut()
+            .ok_or_else(|| invalid("base records"))?
+            .retain(|row| {
+                starter_ids.iter().any(|id| {
+                    row["production_definition"]["production_key"]
+                        == format!("oteryn:item.tibia.i{id}")
+                })
+            });
+        let base = pin(&serde_json::to_vec(&base_doc).map_err(|_| invalid("base encoding"))?);
         let original =
             merge(Some(base.clone()), None)?.ok_or_else(|| invalid("legacy provider"))?;
         assert_eq!(original.bytes, base.bytes);
@@ -74,6 +91,16 @@ mod reaudit_starting_progression {
             serde_json::from_slice(&merged.bytes).map_err(|_| invalid("merged test provider"))?;
         // The original eight starter profiles plus the five source-qualified Newhaven items.
         assert_eq!(items.records.len(), 13);
+        for id in starter_ids {
+            assert!(
+                items
+                    .records
+                    .iter()
+                    .any(|r| r.production_definition.production_key
+                        == format!("oteryn:item.tibia.i{id}")),
+                "missing starter {id}"
+            );
+        }
         for tibia_id in [34017, 21348, 21400, 21350, 50166] {
             let key = format!("oteryn:item.tibia.i{tibia_id}");
             assert!(

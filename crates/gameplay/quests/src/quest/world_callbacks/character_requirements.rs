@@ -140,7 +140,7 @@ pub(super) fn entry_admitted(callback: &super::Callback) -> bool {
                         scripted_teleport: true,
                         ..Default::default()
                     }))
-        && callback.state_ops.is_empty()
+        && callback.operation_count() == 0
         && callback.experience.is_none()
         && callback.monk_reward.is_none()
         && callback.sources.iter().any(|entry| entry == source)

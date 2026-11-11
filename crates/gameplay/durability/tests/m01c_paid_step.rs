@@ -210,6 +210,9 @@ async fn paid_step(h: &f::Harness) -> f::TestResult {
         "missing carrot: {empty:?}"
     );
     let mint = RewardClaimMintRequest {
+        backpack_outputs: false,
+        root_charges_remaining: None,
+        root_fluid_subtype: None,
         command: reward_fixture::command(22001)?,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),

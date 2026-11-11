@@ -38,6 +38,8 @@ use std::{
 };
 
 // D1093 mounts the existing source-bound compiler once, without a shared mod.rs edit.
+mod authored_items;
+
 pub mod cosmetics_loader;
 
 mod cosmetics_view;
@@ -1292,6 +1294,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 return Err(invalid("native gameplay candidate Item binding conflict"));
             }
         }
+        authored_items::admit(&items, sections[5], &mut admitted)?;
         let mut source_reward_items = boss_reward_bindings::qualified_records()?;
         for record in &source_reward_items {
             let binding = &record.production_binding;
@@ -1461,7 +1464,9 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                         "native gameplay40450 closed candidate source policy",
                     ));
                 }
-            } else if record.production_binding_qualification.is_some() {
+            } else if record.production_binding_qualification.is_some()
+                && binding.source_key != authored_items::SOURCE
+            {
                 return Err(invalid("native gameplay unexpected Item candidate proof"));
             }
             exact(&binding.target, ProjectV2Family::Item)?;
@@ -3730,6 +3735,50 @@ mod tests {
             .boss("oteryn:creature.ferumbras")
             .unwrap();
         assert_eq!(boss.category.as_str(), "nemesis");
+    }
+    #[test]
+    fn reward_boss_empty_corpse_does_not_admit_missing_private_loot() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        let rewards = native.reward_table();
+        use crate::content::creature_reward::NoSettlementReason;
+        let (creature, item, private_refusal) = (
+            "oteryn:creature.bakragore",
+            "oteryn:item.tibia.i44012",
+            NoSettlementReason::LootItemInadmissible,
+        );
+        assert_eq!(rewards.row(creature).err(), Some(private_refusal));
+        let corpse = rewards.reward_boss_corpse(creature).unwrap();
+        assert_eq!(corpse.corpse_item.production_key, item);
+        assert!(corpse.loot_table.entries.is_empty());
+        assert!(rewards.reward_boss_corpse("oteryn:creature.rat").is_none());
+        assert!(rewards.reward_boss_corpse("fixture:unknown").is_none());
+        assert!(rewards.row("oteryn:creature.the_primal_menace").is_ok());
+        // Main separates a reward boss's physical body from its private loot
+        // budget. The branch's exact native-goal loot closure now qualifies Spite.
+        let spite = rewards.row("oteryn:creature.goshnar_s_spite").unwrap();
+        assert_eq!(spite.corpse_item.production_key, "oteryn:item.tibia.i33867");
+        assert!(!spite.loot_table.entries.is_empty());
+        let supplied = NativeGameplayInput::from_manifest(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json"),
+        )
+        .unwrap();
+        let loot: crate::content::creature_reward::LootTablesSection =
+            serde_json::from_slice(&supplied.loot_tables.as_ref().unwrap().bytes).unwrap();
+        let body = loot
+            .items
+            .iter()
+            .find(|facts| facts.item.key == "oteryn:item.tibia.i33867")
+            .unwrap();
+        assert!(body.materializable);
+        assert_eq!(body.container_capacity, Some(48));
+        let empty = rewards
+            .reward_boss_corpse("oteryn:creature.goshnar_s_spite")
+            .unwrap();
+        assert_eq!(empty.corpse_item, spite.corpse_item);
+        assert!(empty.loot_table.entries.is_empty());
     }
     #[test]
     fn item_key_set_section_is_pinned_digest_bound_and_absent_or_empty_offers_no_index() {

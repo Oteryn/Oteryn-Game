@@ -1,9 +1,7 @@
-//! Real native damage/capture proves Primal's admitted corpse settlement and the
-//! remaining bosses' corpse-content refusals. Refused deaths exercise the fenced
-//! party-XP/Quest consumer seam, followed by real NPC mutations and immutable
-//! reconciliation. Per ANSWER6548332205, the refused bosses remain consumer
-//! integration; their native corpse qualification and instance admission remain
-//! owner dependencies.
+//! Real native damage and draining prove Primal's admitted corpse settlement and
+//! Rotten Blood's independently sourced XP/Quest progression despite unavailable
+//! corpse content. Captured-death consumer calls only replay those native writes;
+//! real NPC mutations, cleanse fences and immutable reconciliation remain covered.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -30,11 +28,36 @@ fn rotten_blood_postgres_native_chain_final_reward_replay_and_cleanse() -> TestR
 }
 
 fn scenario() -> TestResult {
+    scenario_with_outfit(false)
+}
+
+#[test]
+fn qengine_l13_decaying_defender_parent_and_accessories() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result =
+        super::kill_reward_e2e::scenario_thread::run("qengine-l13-decaying_defender", || {
+            scenario_with_outfit(true)
+        });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qengine-l13-decaying_defender duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
     run(async |admin| {
         reset();
-        let h =
+        let h = if qualify_outfit {
+            Harness::create_quest_reward(admin, "rotten_blood_progression_outfit", true).await?
+        } else {
             Harness::create_with_admission_seed(admin, "rotten_blood_progression", false, false)
-                .await?;
+                .await?
+        };
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -43,13 +66,22 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+        let source = Some(
+            include_bytes!(
+                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+            )
+            .as_slice(),
+        );
+        let (controller, pin) = if qualify_outfit {
+            // Appearance selection must use the Character's actual content revision.
+            super::death_ml_loss_composed::production_generation_with_source(
                 world,
-                Some(include_bytes!(
-                    "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-                )),
-            );
+                "content-1",
+                source,
+            )?
+        } else {
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, source)
+        };
         let active = controller.active().ok_or("activated content")?;
         let native = active.native_gameplay().ok_or("native content")?;
         let room = pin.qualified_room().clone();
@@ -72,6 +104,18 @@ fn scenario() -> TestResult {
             .movement_cells(room.movement_cells())
             .map_err(|error| format!("Rotten progression bundle movement cells: {error:?}"))?;
         let frame = bundle.frame_binding_digest(world);
+        let room = room
+            .bundle_view(
+                cells.clone(),
+                frame,
+                bundle.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: 2,
+                    y: 11,
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
         let channel_pin = ChannelContentPin::from_activation(
             world,
             pin.activation_sequence(),
@@ -118,7 +162,13 @@ fn scenario() -> TestResult {
                 .initialize_first_entry_position(deps.actor)
                 .map_err(debug)?;
         }
+        let premium = if qualify_outfit {
+            Some(super::qengine_endgame_stories::current_premium(&h).await?)
+        } else {
+            None
+        };
         let mut owner = deps.owner(&h, &authority);
+        owner.premium_coordinator = premium.as_ref().map(|premium| premium as _);
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
         owner.quest_catalogue = Some(std::sync::Arc::new(
@@ -270,6 +320,21 @@ fn scenario() -> TestResult {
         let addons: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key LIKE '%rotten-blood%addon%'")
             .fetch_one(&h.pool).await?;
         assert_eq!(addons, 0);
+        if qualify_outfit {
+            admitted.runtime_actor = Some(deps.actor);
+            super::qengine_endgame_stories::accessories(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                "decaying_defender",
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
 
         // A later failed final attempt is decided once by the shared owner.
         // Earn a fresh chain through real native kills so the reset must retain
@@ -604,6 +669,7 @@ async fn kill_key(
     use crate::content::creature_reward::NoSettlementReason;
 
     let primal = creature_key == "oteryn:creature.the_primal_menace";
+    let empty_bakragore = creature_key == "oteryn:creature.bakragore";
     if primal {
         // PR #2851 admits Primal corpse stages 39527-39530 from Crystal.
         let row = rewards.row(creature_key).map_err(debug)?;
@@ -621,8 +687,28 @@ async fn kill_key(
                 .refresh_source_party_presence(deps.actor, deps.admitted.game_session_id)
                 .await
         );
+    } else if empty_bakragore {
+        assert_eq!(
+            rewards.row(creature_key).err(),
+            Some(NoSettlementReason::LootItemInadmissible)
+        );
+        let corpse = rewards
+            .reward_boss_corpse(creature_key)
+            .ok_or("admitted empty Bakragore corpse")?;
+        assert_eq!(
+            corpse.corpse_item,
+            Some(crate::combat::LootDefinitionRef::new(
+                "Item",
+                "oteryn:item.tibia.i44012",
+                "definition-r1"
+            ))
+        );
+        assert!(
+            corpse.loot_table.entries.is_empty(),
+            "physical admission grants no private loot"
+        );
     } else {
-        // The five Rotten Blood corpses still lack admitted container facts.
+        // The other four Rotten Blood corpses still lack admitted container facts.
         assert!(
             matches!(
                 rewards.row(creature_key),
@@ -786,6 +872,20 @@ async fn kill_key(
                     entry.bosstiary_only.is_none(),
                     "Primal must use the full reward path"
                 );
+            } else if empty_bakragore {
+                let row = entry.row.as_ref().ok_or("queued empty Bakragore corpse")?;
+                assert_eq!(
+                    row.corpse_item
+                        .as_ref()
+                        .ok_or("queued Bakragore physical body")?
+                        .production_key,
+                    "oteryn:item.tibia.i44012"
+                );
+                assert!(row.loot_table.entries.is_empty());
+                assert!(
+                    entry.bosstiary_only.is_none(),
+                    "the admitted body uses physical settlement"
+                );
             } else {
                 assert!(
                     entry.row.is_none(),
@@ -819,19 +919,26 @@ async fn kill_key(
     } else {
         assert_eq!(
             progression_receipts(h).await?,
-            before_physical,
-            "physical corpse refusal must not create a native XP, Hazard or Rotten receipt"
+            (
+                before_physical.0 + 1,
+                before_physical.1 + 1,
+                before_physical.2,
+                before_physical.3 + 1
+            ),
+            "native drain must commit exactly one Rotten, XP and party receipt without granting Hazard"
         );
-        eprintln!(
-            "ROTTEN_BLOOD PHYSICAL_CORPSE_REFUSED creature={creature_key} reason=corpse_item_inadmissible"
-        );
-        settle_captured_endgame_death(owner, &h.pool, session, &source)
-            .await
-            .map_err(|error| {
-                format!(
-                    "Rotten captured death settlement {creature_key} command {command_id}: {error}"
-                )
-            })?;
+        if empty_bakragore {
+            let (corpses, children): (i64, i64) = sqlx::query_as("SELECT count(*), (SELECT count(*) FROM game_item_corpse_container_entries e JOIN game_item_instances parent ON parent.item_instance_id=e.parent_item_instance_id WHERE parent.definition_production_key='oteryn:item.tibia.i44012') FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i44012'").fetch_one(&h.pool).await?;
+            assert_eq!(corpses, 1, "the admitted Bakragore body materializes once");
+            assert_eq!(
+                children, 0,
+                "no unavailable private loot enters the physical corpse"
+            );
+        } else {
+            eprintln!(
+                "ROTTEN_BLOOD PHYSICAL_CORPSE_REFUSED creature={creature_key} reason=corpse_item_inadmissible"
+            );
+        }
     }
     let before_replay = progression_receipts(h).await?;
     settle_captured_endgame_death(owner, &h.pool, session, &source)

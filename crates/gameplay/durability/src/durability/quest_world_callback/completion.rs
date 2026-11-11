@@ -16,7 +16,12 @@ pub(in crate::durability) async fn apply(
     callback: &Callback,
     catalogue: &QuestStateCatalogue,
 ) -> Result<bool, DurabilityError> {
-    let Some(quest) = &callback.effects.quest_completion else {
+    let Some(quest) = callback
+        .effects
+        .quest_completion
+        .as_ref()
+        .and_then(|completion| completion.child_quest())
+    else {
         return Ok(true);
     };
     let QuestCause::Use(command) = request.cause else {

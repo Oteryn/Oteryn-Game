@@ -77,6 +77,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
             return Ok(Err(RewardClaimMintError::InvalidInput));
         }
         additional_items.push(RewardClaimMintContent {
+            charges_remaining: None,
             item,
             quantity: *quantity,
             key_number: None,
@@ -85,6 +86,9 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         });
     }
     let request = RewardClaimMintRequest {
+        root_fluid_subtype: None,
+        root_charges_remaining: None,
+        backpack_outputs: false,
         additional_items,
         command,
         claim: TypedDefinitionRef {

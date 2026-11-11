@@ -2,6 +2,7 @@
 import hashlib
 import json
 from pathlib import Path
+from questpc2_reward_capture import reward_rows
 
 PLACEMENTS = 'content/world/placements/index.json'
 
@@ -16,7 +17,7 @@ def enabled_claims(root: Path, claims):
         raw = (root / pin['path']).read_bytes()
         if hashlib.sha256(raw).hexdigest() != pin['sha256']:
             raise ValueError('reward runtime capture digest differs from applied World input')
-        for row in json.loads(raw)['bindings']:
+        for row in reward_rows(pin['path'], raw):
             bound.add((row['claim'], tuple(row['position']), row['appearance'], row['unique']))
     enabled = set()
     for key, claim in claims.items():

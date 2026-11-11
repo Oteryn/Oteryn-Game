@@ -425,7 +425,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                     fence,
                     refused,
                     catalogue.clone(),
-                    &Content
+                    &Content, &crate::durability::quest_state::grizzly::NoGrizzlyPremium
                 )
                 .await
                 .map_err(fixture::debug)?
@@ -445,6 +445,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                     request.clone(),
                     catalogue.clone(),
                     &Content,
+                    &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
                 )
                 .await
                 .map_err(fixture::debug)?;
@@ -476,6 +477,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                         request.clone(),
                         catalogue.clone(),
                         &Content,
+                        &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
                     )
                     .await
                     .is_err()
@@ -516,6 +518,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                         request.clone(),
                         catalogue.clone(),
                         &Content,
+                        &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
                     )
                     .await
                     .is_err()
@@ -534,6 +537,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 request.clone(),
                 catalogue.clone(),
                 &Content,
+                &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
             )
             .await
             .map_err(fixture::debug)?;
@@ -571,6 +575,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 request.clone(),
                 catalogue.clone(),
                 &Content,
+                &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
             )
             .await
             .map_err(fixture::debug)?;
@@ -594,6 +599,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 repeated,
                 catalogue,
                 &Content,
+                &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
             )
             .await
             .map_err(fixture::debug)?;

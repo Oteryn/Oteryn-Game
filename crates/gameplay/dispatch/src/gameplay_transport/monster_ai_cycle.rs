@@ -148,6 +148,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
+        // Qualification binds these immutable cells to the compiled artifact.
+        // Compare that retained generation without bulk hashing under the runtime lock.
         let mut runtime = self.runtime.lock().await;
         let (retained_work, source_due) = {
             let Ok(states) = self.states.spell_states.try_lock() else {

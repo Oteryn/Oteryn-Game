@@ -316,12 +316,19 @@ impl Bindings {
                         if callback.trigger != expected {
                             return Err("authored world trigger mismatch".into());
                         }
+                        if callback.operations().any(|operation| !tracks.contains(&operation.track)) {
+                            return Err("authored foreign clock track".into());
+                        }
                         (&callback.key, &callback.quest, &callback.storage)
                     }
                 };
                 if owner != &quest.quest
                     || !transitions.insert(key)
-                    || (storage.is_empty() && !stage.is_native_encounter())
+                    || (storage.is_empty()
+                        && !stage.is_native_encounter()
+                        && !matches!(&stage.trigger,
+                            Trigger::MapUse { callback } | Trigger::StepIn { callback }
+                            if callback.operation_count() > 0))
                     || storage.iter().any(|s| {
                         !tracks.contains(&s.track)
                             || quest
@@ -347,15 +354,20 @@ impl Bindings {
         let mut normalized = self.clone();
         for quest in &mut normalized.quests {
             for stage in &mut quest.stages {
-                if let Trigger::NpcDialogue {
-                    callback,
-                    alternatives,
-                } = &mut stage.trigger
-                {
-                    callback.completes = stage.completes;
-                    for other in alternatives {
-                        other.completes = stage.completes;
+                match &mut stage.trigger {
+                    Trigger::NpcDialogue { callback, alternatives } => {
+                        callback.completes = stage.completes;
+                        for other in alternatives {
+                            other.completes = stage.completes;
+                        }
                     }
+                    Trigger::CarriedUse { callback } => {
+                        callback.completes = stage.completes;
+                    }
+                    Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
+                        callback.completes = stage.completes;
+                    }
+                    _ => {}
                 }
             }
         }
@@ -472,7 +484,7 @@ impl Stage {
     /// Native entry mutates the physical owner atomically and grants no quest value.
     pub(in crate::quest) fn is_native_encounter(&self) -> bool {
         matches!(&self.trigger, Trigger::MapUse { callback }
-            if !self.completes && callback.storage.is_empty() && callback.state_ops.is_empty()
+            if !self.completes && callback.storage.is_empty() && callback.operation_count() == 0
                 && callback.effects.encounter.as_ref().is_some_and(|encounter| encounter.timing.is_none()))
     }
     /// All exact operations registered for this stage share one ownership boundary.
@@ -574,3 +586,6 @@ mod collector_delivery_tests;
 
 #[cfg(test)]
 mod task_board_use_tests;
+
+#[cfg(test)]
+mod tests;

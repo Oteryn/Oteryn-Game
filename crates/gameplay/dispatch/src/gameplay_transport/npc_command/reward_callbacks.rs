@@ -71,6 +71,27 @@ pub(super) fn prepare(
         .get()
         .unwrap_or(&callbacks);
     let offers = offers::load(admission)?;
+    let context = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent,
+    )?;
+    let text = intent.text.trim().to_ascii_lowercase();
+    if text == "no"
+        || (!matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
+            && offers
+                .offers
+                .iter()
+                .any(|offer| offer.npc == context.2 && offer.keywords.contains(&text)))
+    {
+        let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
+        sessions
+            .get_mut(&command.game_session_id)?
+            .quest_dialogue
+            .reward_request = (text != "no").then_some(context);
+    }
     let catalogue = admission.quest_catalogue.as_deref()?;
     let mut failure_reply = Vec::new();
     let mut refused = false;
@@ -166,6 +187,22 @@ pub(super) fn prepare(
                     reply: offer.reply.clone(),
                 });
             }
+            // Earlier stages may share the terminal reward's keyword. Grizzly's
+            // dedicated native dialogue and admitted programmes retain those stages;
+            // the locked reward writer still proves every source predicate.
+            if context.2 == oteryn_gameplay_quests::quest::grizzly_adams::NPC
+                || oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
+                    .ok()
+                    .and_then(|source| {
+                        source
+                            .admitted_for_npc(&context.2, catalogue)
+                            .ok()
+                            .flatten()
+                    })
+                    .is_some()
+            {
+                return None;
+            }
             // A source-owned offer may explain why a mission prerequisite is
             // missing. Select an unambiguous stage before falling back to lore.
             let mut blocked = offers.offers.iter().filter(|offer| {
@@ -257,4 +294,50 @@ pub(in crate::gameplay_transport) fn fixture_rafzan_resume(
         .iter()
         .find(|o| o.admits(npc, topic, text, catalogue, tracks))?;
     Some((offer.next_topic, offer.reply.clone()))
+}
+
+/// A recognized reward confirmation may not fall through to ordinary dialogue
+/// when every native quest owner declined it. Greeting words retain their owner.
+pub(super) fn unhandled_confirmation(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> bool {
+    let text = intent.text.trim().to_ascii_lowercase();
+    if matches!(text.as_str(), "hi" | "hello" | "bye" | "farewell") {
+        return false;
+    }
+    let Some(context) = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent,
+    ) else {
+        return false;
+    };
+    if admission.has_pending_paid_confirmation(command, intent, &context) {
+        return false;
+    }
+    let Ok(sessions) = admission.states.npc_conversations.sessions.lock() else {
+        return true;
+    };
+    let Some(state) = sessions.get(&command.game_session_id) else {
+        return false;
+    };
+    let topic = state.quest_dialogue.topic(&context).number;
+    let requested = state.quest_dialogue.reward_request.as_ref() == Some(&context);
+    drop(sessions);
+    let Some(catalogue) = admission.quest_catalogue.as_deref() else {
+        return false;
+    };
+    reward_callbacks::offered_for(catalogue).is_ok_and(|callbacks| {
+        callbacks.iter().any(|callback| {
+            callback.npc == context.2
+                && (callback.topic == topic || requested)
+                && callback.keywords.contains(&text)
+        })
+    })
 }

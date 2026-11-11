@@ -237,7 +237,8 @@ async fn current_clock(h: &f::Harness) -> f::TestResult {
                 stale,
                 request(9100)?,
                 catalogue.clone(),
-                &NoItems
+                &NoItems,
+                &crate::durability::quest_state::grizzly::NoGrizzlyPremium
             )
             .await,
         Err(CharacterProgressionError::AuthorityRejected)
@@ -264,6 +265,7 @@ async fn current_clock(h: &f::Harness) -> f::TestResult {
             request(9101)?,
             catalogue,
             &NoItems,
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await
         .map_err(f::debug)?;

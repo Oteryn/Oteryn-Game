@@ -85,6 +85,9 @@ mod tests {
         source.state_ops.clear();
         source.requires_world_admission = true;
         source.storage = vec![world_callbacks::Storage {
+            add: None,
+            read_only: false,
+            set_if: None,
             track: "oteryn:quest-progress/m02-resolved-owner/stage".into(),
             minimum: 0,
             maximum: 1,

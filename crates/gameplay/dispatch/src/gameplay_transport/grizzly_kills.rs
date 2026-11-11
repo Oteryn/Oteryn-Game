@@ -1,9 +1,11 @@
-//! Grizzly death capture on the existing kill queue. The most-damage principal and
+//! Grizzly and personal native-goal capture on the existing kill queue. The most-damage principal and
 //! the task runs observed at death never change while a delayed settlement is retried.
 //! Crystal 201189f `creaturescripts_monster_kill.lua:18-56`, `party.lua:129-139`.
 
 use std::sync::Arc;
 mod encounters;
+mod guardians;
+pub(super) mod native_goals;
 
 use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction};
 
@@ -28,6 +30,8 @@ struct TaskSnapshot {
     active_tasks: Vec<u8>,
     native_counters: Vec<NativeCounterCapture>,
     source_objectives: Vec<&'static str>,
+    active_goals: Vec<String>,
+    objective_keys: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -71,15 +75,28 @@ struct Recipient {
     character: [u8; 16],
     lease_generation: u64,
     actions: Vec<GrizzlyAction>,
+    objective_actions: Vec<String>,
 }
 
-/// At most the native PartySnapshot bound (50) recipients, each with at most the
-/// source active-task bound (3) plus one boss action. This belongs to the queued death.
+/// At most 50 source-party recipients with three tasks and one boss action each,
+/// plus one personal native principal with at most 16 goals. Retained by the queued death.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct FrozenGrizzlyDeath {
     source: Option<PartySnapshot>,
     recipients: Vec<Recipient>,
     pub(super) native: Vec<super::quest_kills::Recipient>,
+    native_goals: Option<native_goals::Recipient>,
+}
+
+impl FrozenGrizzlyDeath {
+    /// Only the captured loot principal's eligible objectives may select a corpse drop.
+    pub(super) fn loot_objectives(&self, principal: &[u8; 16]) -> Vec<&str> {
+        self.recipients
+            .iter()
+            .filter(|recipient| &recipient.character == principal)
+            .flat_map(|recipient| recipient.objective_actions.iter().map(String::as_str))
+            .collect()
+    }
 }
 
 /// Capture memory only; there is no independently drained queue here. Sessions are
@@ -87,6 +104,7 @@ pub(super) struct FrozenGrizzlyDeath {
 /// their first capture, bounded by the carrier's existing pinned/unpinned corpse ceilings.
 #[derive(Debug, Default)]
 pub(super) struct GrizzlyCaptureCache {
+    guardians: Vec<guardians::GuardianSlot>,
     sessions: Vec<TaskSnapshot>,
     deaths: Vec<(ExactActorRef, [u8; 16], Arc<FrozenGrizzlyDeath>)>,
     encounters: Vec<encounters::EncounterRun>,
@@ -126,32 +144,15 @@ fn participants(source: &PartySnapshot, principal: [u8; 16]) -> Option<Vec<[u8; 
     })
 }
 
-#[cfg(test)]
-fn freeze(
-    source: Option<PartySnapshot>,
-    principal: [u8; 16],
-    principal_present: bool,
-    creature: &str,
-    snapshots: &[TaskSnapshot],
-) -> FrozenGrizzlyDeath {
-    freeze_at(
-        source,
-        principal,
-        principal_present,
-        creature,
-        snapshots,
-        None,
-    )
-}
-
 fn freeze_at(
     source: Option<PartySnapshot>,
     principal: [u8; 16],
     principal_present: bool,
     creature: &str,
+    corpse: Option<crate::foundation::MovementLocalPosition>,
     snapshots: &[TaskSnapshot],
-    death_position: Option<[i32; 3]>,
 ) -> FrozenGrizzlyDeath {
+    let death_position = corpse.map(|position| [position.x, position.y, i32::from(position.floor)]);
     if !principal_present {
         return FrozenGrizzlyDeath::default();
     }
@@ -228,13 +229,30 @@ fn freeze_at(
                 observed_revision: snapshot.observed_revision,
             });
         }
-        if !actions.is_empty() {
+        let objective_actions: Vec<_> = if character == principal {
+            oteryn_gameplay_quests::quest::death_objectives::load()
+                .ok()
+                .into_iter()
+                .flatten()
+                .filter(|objective| {
+                    snapshot.objective_keys.contains(&objective.key)
+                        && corpse.is_some_and(|position| {
+                            objective.matches(creature, position.x, position.y, position.floor)
+                        })
+                })
+                .map(|objective| objective.key.clone())
+                .collect()
+        } else {
+            Vec::new()
+        };
+        if !actions.is_empty() || !objective_actions.is_empty() {
             recipients.push(Recipient {
                 actor: snapshot.actor,
                 session: snapshot.session,
                 character,
                 lease_generation: snapshot.lease_generation,
                 actions,
+                objective_actions,
             });
         }
     }
@@ -242,7 +260,19 @@ fn freeze_at(
         source: Some(source),
         recipients,
         native,
+        native_goals: None,
     }
+}
+
+#[cfg(test)]
+fn freeze(
+    source: Option<PartySnapshot>,
+    principal: [u8; 16],
+    present: bool,
+    creature: &str,
+    snapshots: &[TaskSnapshot],
+) -> FrozenGrizzlyDeath {
+    freeze_at(source, principal, present, creature, None, snapshots)
 }
 
 /// Membership in the pinned Grizzly catalogue permits capture only, never a reward
@@ -261,14 +291,20 @@ pub(super) fn tracks_native_creature(queue: &KillSettlementQueue, creature: &str
 }
 
 pub(super) fn tracks_creature(creature: &str) -> bool {
-    quest::catalogue().is_ok_and(|catalogue| {
-        catalogue.bosses.iter().any(|boss| {
-            boss.creature_key == creature || boss.creature_name.eq_ignore_ascii_case(creature)
-        }) || catalogue
-            .tasks
-            .iter()
-            .any(|task| task.creatures.iter().any(|member| member.matches(creature)))
-    })
+    native_goals::tracks_creature(creature)
+        || oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives| {
+            objectives
+                .iter()
+                .any(|objective| objective.creature == creature)
+        })
+        || quest::catalogue().is_ok_and(|catalogue| {
+            catalogue.bosses.iter().any(|boss| {
+                boss.creature_key == creature || boss.creature_name.eq_ignore_ascii_case(creature)
+            }) || catalogue
+                .tasks
+                .iter()
+                .any(|task| task.creatures.iter().any(|member| member.matches(creature)))
+        })
 }
 
 /// Runs synchronously under the lethal turn's runtime and attack guards. The existing
@@ -342,12 +378,8 @@ pub(super) fn capture(
                 *principal.character.as_bytes(),
                 principal_present,
                 &entry.creature,
+                Some(entry.facts.corpse),
                 &live,
-                Some([
-                    entry.facts.corpse.x,
-                    entry.facts.corpse.y,
-                    i32::from(entry.facts.corpse.floor),
-                ]),
             );
             if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
                 for recipient in &mut frozen.native {
@@ -415,18 +447,7 @@ pub(super) fn capture(
                     runs,
                     principal_present,
                 ));
-                frozen.native.extend(super::quest_batch3_c::capture(
-                    runtime,
-                    entry,
-                    live.iter().map(|snapshot| super::quest_batch3_c::Snapshot {
-                        actor: snapshot.actor,
-                        session: snapshot.session,
-                        character: snapshot.character,
-                        lease_generation: snapshot.lease_generation,
-                        observed_revision: snapshot.observed_revision,
-                        objectives: snapshot.source_objectives.clone(),
-                    }),
-                ));
+            frozen.native_goals = native_goals::freeze(runtime, entry, principal_present, &live);
             frozen
         }),
     );
@@ -438,6 +459,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// capture it. The durable owner also rejects a task run restarted after this revision.
     pub(super) async fn refresh_grizzly_kill_snapshot(&self, session: GameSessionId) {
         let runtime = self.runtime.lock().await;
+        self.refresh_grizzly_kill_snapshot_in_runtime(&runtime, session)
+            .await;
+    }
+
+    /// Publish capture eligibility while the callback already holds the runtime owner.
+    pub(super) async fn refresh_grizzly_kill_snapshot_in_runtime(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+    ) {
         let (snapshot, hit_snapshot) = self.grizzly_kill_snapshots_in_turn(&runtime, session);
         let attack = self.states.attack.lock().await;
         let Ok(mut cache) = attack.kills().1.lock() else {
@@ -473,7 +504,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|entry| entry.copy.as_ref())
                 .and_then(|copy| {
                     let revision = copy.character_revision()?.get();
-                    let active_tasks = quest::started_tasks(copy.tracks());
+                    let catalogue = self.quest_catalogue.as_deref()?;
+                    let tracks = copy.read_tracks(catalogue)?;
+                    let active_tasks = quest::started_tasks(&tracks);
                     if active_tasks.len() > quest::ACTIVE_TASK_LIMIT {
                         return None;
                     }
@@ -491,7 +524,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             session,
                             lease,
                             revision,
-                            copy.tracks(),
+                            &tracks,
                         )
                     });
                     Some((
@@ -505,10 +538,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             native_counters: self
                                 .quest_catalogue
                                 .as_deref()
-                                .map(|catalogue| capture_native(catalogue, copy.tracks()))
+                                .map(|catalogue| capture_native(catalogue, &tracks))
                                 .unwrap_or_default(),
+                            active_goals: native_goals::active(&tracks),
+                            objective_keys: oteryn_gameplay_quests::quest::death_objectives::load()
+                                .ok()
+                                .into_iter()
+                                .flatten()
+                                .filter(|objective| objective.active(&tracks))
+                                .map(|objective| objective.key.clone())
+                                .collect(),
                             source_objectives: oteryn_gameplay_quests::quest::source_deaths::active(
-                                copy.tracks(),
+                                &tracks,
                             ),
                         },
                         hit_snapshot,
@@ -621,6 +662,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     Err(error) => {
                         super::operator_event(&format!("grizzly_kill_refused reason={error:?}"))
+                    }
+                }
+            }
+            for transition in &recipient.objective_actions {
+                let outcome = slot
+                    .commit_quest_transition(
+                        self.root,
+                        self.character,
+                        self.holder,
+                        fence,
+                        crate::durability::quest_state::QuestTransitionRequest {
+                            transition_key: transition.clone(),
+                            cause,
+                        },
+                        Arc::clone(catalogue),
+                    )
+                    .await;
+                match outcome {
+                    Ok(
+                        QuestTransitionOutcome::Committed(_)
+                        | QuestTransitionOutcome::AlreadyCommitted(_),
+                    ) => changed = true,
+                    Ok(_) => {}
+                    Err(
+                        CharacterProgressionError::Unavailable(_)
+                        | CharacterProgressionError::CharacterRevisionMismatch,
+                    ) => {
+                        self.schedule_quest_refresh(recipient.session);
+                        return false;
+                    }
+                    Err(error) => {
+                        super::operator_event(&format!("quest_death_refused reason={error:?}"))
                     }
                 }
             }

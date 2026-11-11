@@ -33,11 +33,12 @@ BEGIN
     body:=pg_get_functiondef('game_quest_reward_complete()'::regprocedure);
     -- The later M09 sibling proof uses the SQL alias actual. Keep the carried
     -- input PL/pgSQL variable distinct, both before and after that migration.
+    -- Retain actual for main 2709, which later adds its Ground-offering loop.
     FOREACH anchor IN ARRAY ARRAY['actual BIGINT','INTO actual FROM','IF actual IS DISTINCT'] LOOP
         IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
             RAISE EXCEPTION 'native claim requires the exact carried input proof anchor: %',anchor; END IF;
     END LOOP;
-    body:=replace(replace(replace(body,'actual BIGINT','native_consumed_count BIGINT'),
+    body:=replace(replace(replace(body,'actual BIGINT','actual BIGINT; native_consumed_count BIGINT'),
         'INTO actual FROM','INTO native_consumed_count FROM'),
         'IF actual IS DISTINCT','IF native_consumed_count IS DISTINCT');
     anchor:='r.cause_kind=''command''';

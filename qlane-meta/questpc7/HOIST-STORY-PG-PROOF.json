@@ -1,0 +1,231 @@
+{
+  "status": "QUALIFIED complete selected Formorgar hoist native knowledge/control route and reusable native selector/world completion support",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 41.109126339,
+    "log": "/tmp/questpc7-hoist-story-red.log",
+    "error": "missing complete hoist programme entry"
+  },
+  "authoring": {
+    "tests": 20,
+    "seconds": 10.571,
+    "log": "/tmp/questpc7-hoist-story-authoring.log",
+    "result": "PASS"
+  },
+  "generic_support": [
+    "Exact expected-selector native bindings replace absent source UID with declared native position/appearance; all guards/effects remain unchanged.",
+    "Stateful once-only world callback completion reuses the existing fenced Quest writer and receipt; generic caller bypass and read-only completion are refused."
+  ],
+  "assumptions": [
+    "The chosen floor plan/instructions are learned knowledge flags, matching the existing hoist predicate; no unverified physical paper Item ID is invented.",
+    "Recover the plan from admitted chest2472 at32154,31116,-9, then read the admitted metal fittings5772 at32156,31125,-9. This is an explicit selected Oteryn acquisition adaptation, not a claim of original donor clue locations.",
+    "Complete at existing lower lever2773 at32156,31125,-10; transform it to2772 through existing lever projection. Preserve legacy remote/asymmetric effects.",
+    "Legacy skeleton/chest track names do not determine ownership; PG asserts both declared owners are the hoist quest.",
+    "The Ice Islands completion is a read-only prerequisite; only that foreign parent is arranged by the fenced fixture. No hoist state is seeded."
+  ],
+  "physical_evidence": [
+    "content/world/placements/region-z09-x125-y121.b3:sha256:70df9da5a434155ce919dd5057ac24d948afe684fc01e0e8ae4a5a077451eb5e",
+    "All three platform5770 positions32157,31125 on floors9/10/11 have no unique attr; authoring checks the actual B3 records."
+  ],
+  "remaining_checks": [],
+  "fixture_repairs": [
+    "First fixed-source PG run stopped before its first step result because this NPC-free fixture had not bound the player native lease. Bind the same admitted Character lease as existing hoist/death fixtures; keep all protocol and quest guards unchanged.",
+    "A paced run proved both instruction flags but the fixed movement-count route stopped one tile north of the platform. Read-only probes confirmed destination admission and the durable predicate. Use bounded native walking against actual runtime coordinates; no actor position or quest state is seeded."
+  ],
+  "world_units": {
+    "tests": 19,
+    "result": "PASS",
+    "log": "/tmp/questpc7-hoist-story-world-units.log"
+  },
+  "green": {
+    "seconds": 51.524086401,
+    "log": "/tmp/questpc7-hoist-story-green-walked.log",
+    "scope": [
+      "fresh subject programme; parent-only fenced prerequisite fixture",
+      "typed ownership of both legacy knowledge tracks",
+      "parent and fresh Current Premium refusal without progress",
+      "native chest/fitting USE acquires both instruction flags",
+      "durable read-only transport admission and destination checked",
+      "real native walking reaches position-bound drawbridge with no donor UID",
+      "legacy first-floor transport to lower control",
+      "control lever USE and durable quest completion",
+      "exact USE replay",
+      "parent completion revision remains unchanged"
+    ]
+  },
+  "environment_repair": {
+    "error": "No space left on device while content verification created target/debug/deps/rmeta temporary directories; sandbox subsequently could not start.",
+    "resolution": "Verified all Cargo/rustc/clippy/world compiler processes idle, then removed inactive incremental caches while retaining focused PG dispatch cache.12GB free. Strict clippy had passed; restart failed content step and remaining checks only.",
+    "tests_not_skipped": true
+  },
+  "checks": [
+    {
+      "check": "legacy-hoist-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "formorgar_hoist",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 182.269,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hoist-story-legacy-hoist-pg.log"
+    },
+    {
+      "check": "loader-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "loader::tests::"
+      ],
+      "seconds": 5.533,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hoist-story-loader-units.log"
+    },
+    {
+      "check": "world-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "world_callbacks::"
+      ],
+      "seconds": 2.688,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hoist-story-world-units.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 52.659,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hoist-story-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 128.974,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hoist-story-clippy.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 134.824,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hoist-story-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 49.114,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hoist-story-world.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 113.856,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hoist-story-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-hoist-story-pin-check"
+      ],
+      "seconds": 124.145,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hoist-story-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.044,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hoist-story-fmt.log"
+    }
+  ],
+  "legacy_transport": {
+    "floors": [
+      -9,
+      -10,
+      -11
+    ],
+    "seconds": [
+      47.368278739,
+      45.877307756,
+      47.095951736
+    ],
+    "result": "PASS",
+    "boundary": "Original read-only guards and asymmetric remote lever effects retained."
+  }
+}

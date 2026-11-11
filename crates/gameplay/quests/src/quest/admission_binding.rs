@@ -61,7 +61,7 @@ fn registry() -> Result<&'static Registry, String> {
             let shared_world = shared_world::catalogue()?;
             for callback in world_callbacks::load()? {
                 let protect = world_callbacks::gated_binding(&callback)?.is_some()
-                    || !callback.state_ops.is_empty();
+                    || callback.operation_count() > 0;
                 let transition = if callback.key == super::rotten_blood::SACRIFICE {
                     super::rotten_blood::altar_transition()
                 } else if let Some(operation) = shared_world.transition(&callback.key) {
@@ -185,6 +185,26 @@ pub fn validate_for_catalogue(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn embedded_reward_operations_match_their_registered_owners() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("owner-consistency")
+            .map_err(|error| format!("{error:?}"))?;
+        for callback in reward_callbacks::load()? {
+            let transition = lowered
+                .catalogue()
+                .transition(&callback.key)
+                .ok_or_else(|| format!("missing reward {}", callback.key))?;
+            assert_eq!(
+                *transition,
+                reward_callbacks::primary_transition(&callback)?,
+                "{}",
+                callback.key
+            );
+            validate(transition, false)?;
+        }
+        Ok(())
+    }
 
     #[test]
     fn kesar_final_report_keeps_exact_gate_and_rejects_stripped_aliases() -> Result<(), String> {

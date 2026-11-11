@@ -1,5 +1,34 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
+use sha2::{Digest, Sha256};
+
+// A committed callback can replace or remove one exact native door. Keep every
+// other door on the tile authoritative; an overlay never opens its neighbours.
+impl crate::map::floor::CellBlocker for BundleFacts {
+    fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
+        let (Ok(x), Ok(y), Ok(z)) = (
+            u16::try_from(cell.x),
+            u16::try_from(cell.y),
+            u8::try_from(cell.z),
+        ) else {
+            return false;
+        };
+        if z > 15 {
+            return false;
+        }
+        let pos = TilePos {
+            x,
+            y,
+            floor: -(z as i8),
+        };
+        let Ok(states) = self.callbacks.lock() else {
+            return true;
+        };
+        self.doors.blocks_unless(pos, |key| {
+            states.hidden.contains(&key) || states.passable.get(&key) == Some(&true)
+        })
+    }
+}
 
 #[path = "elemental_arrival.rs"]
 mod elemental_arrival;
@@ -87,11 +116,22 @@ pub enum QuestCallbackProjection {
         position: TilePos,
         entry: EntryFacts,
     },
+    Scene {
+        mutations: Vec<QuestSceneMutation>,
+        remove_self: bool,
+    },
     ItemCycle {
         position: TilePos,
         remove: Option<u64>,
         create: Option<EntryFacts>,
     },
+}
+
+#[derive(Clone, Debug)]
+struct NaginataPick {
+    session: [u8; 16],
+    command: u64,
+    binding: [u8; 32],
 }
 
 type EffectScope = (
@@ -121,6 +161,7 @@ pub(super) struct CallbackStates {
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
+    naginata_picks: Vec<NaginataPick>,
 }
 
 impl CallbackStates {
@@ -410,6 +451,14 @@ impl CallbackStates {
                     self.presences.insert(owner, (*position, entry));
                 }
             }
+            QuestCallbackProjection::Scene {
+                mutations,
+                remove_self,
+            } => {
+                if !project_scene(self, owner, mutations, *remove_self) {
+                    return false;
+                }
+            }
             QuestCallbackProjection::ItemCycle {
                 position,
                 remove,
@@ -472,6 +521,7 @@ impl CallbackStates {
 
     pub(super) fn has_capacity(&self, additional: usize) -> bool {
         let used = self.feroxa_phase.as_ref().map_or(0, |p| p.footprint())
+            + self.naginata_picks.len()
             + self.reserved.len()
             + self.arena_pillars.len()
             + self.arena_recreated.len()
@@ -577,6 +627,92 @@ impl BundleFacts {
             );
         }
         Some(mask)
+    }
+
+    /// The six source rock hits are Channel-local, like the rock's removal.
+    /// Retain their exact command payload bindings beside that projection across reconnect.
+    pub fn naginata_pick_replay(
+        &self,
+        session: [u8; 16],
+        command: u64,
+        payload: &[u8],
+    ) -> Option<bool> {
+        let binding: [u8; 32] = Sha256::digest(payload).into();
+        self.callbacks
+            .lock()
+            .ok()?
+            .naginata_picks
+            .iter()
+            .find(|hit| hit.session == session && hit.command == command)
+            .map(|hit| hit.binding == binding)
+    }
+
+    /// Crystal register_actions.lua:751-774: the sixth shared pick removes the
+    /// exact Naginata rock. The runtime owner applies its physical hit in the same
+    /// turn; a refused hit leaves both the counter and the map unchanged.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "exact map state, command binding and health-owner commit"
+    )]
+    pub fn apply_naginata_pick(
+        &self,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        session: [u8; 16],
+        command: u64,
+        payload: &[u8],
+        hit: impl FnOnce() -> bool,
+    ) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if pos
+            != (TilePos {
+                x: 32356,
+                y: 32074,
+                floor: -10,
+            })
+            || after.appearance_id != 1791
+            || self.action_at(key) != Some(40031)
+            || command == 0
+            || payload.len() > oteryn_protocol_oteryn::world_object::MAX_USE_INTENT_BYTES
+        {
+            return false;
+        }
+        let binding = Sha256::digest(payload).into();
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if states.naginata_picks.len() >= 6
+            || states
+                .naginata_picks
+                .iter()
+                .any(|hit| hit.session == session && hit.command == command)
+            || states
+                .changed
+                .get(&key)
+                .map_or(0, |(revision, _)| *revision)
+                != expected
+            || expected != states.naginata_picks.len() as u64
+            || !states.has_capacity(2)
+        {
+            return false;
+        }
+        let states = Arc::make_mut(&mut states);
+        if states.naginata_picks.try_reserve(1).is_err() || !hit() {
+            return false;
+        }
+        states.naginata_picks.push(NaginataPick {
+            session,
+            command,
+            binding,
+        });
+        states.changed.insert(key, (expected + 1, after));
+        if states.naginata_picks.len() == 6 {
+            states.hidden.insert(key);
+        }
+        true
     }
 
     pub fn emit_creature_visual(
@@ -994,6 +1130,7 @@ impl BundleFacts {
     }
     /// Crystal trap.lua:39-42. Reserve the map projection before consuming the wolf.
     /// The caller holds the exclusive runtime owner through the physical removal.
+    /// Effect zero creates a silent source object, such as the Devil Helmet sewer.
     pub fn create_movement_item(
         &self,
         pos: TilePos,
@@ -1016,7 +1153,7 @@ impl BundleFacts {
         let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
             return false;
         };
-        if !states.has_capacity(2) {
+        if !states.has_capacity(1 + usize::from(effect != 0)) {
             return false;
         }
         let entry = view::ComposedEntry {
@@ -1029,12 +1166,14 @@ impl BundleFacts {
         }
         states.movement_sequence = sequence;
         states.movement_items.entry(pos).or_default().push(entry);
-        if states.movement_effects.len() == 512 {
-            states.movement_effects.pop_front();
+        if effect != 0 {
+            if states.movement_effects.len() == 512 {
+                states.movement_effects.pop_front();
+            }
+            states
+                .movement_effects
+                .push_back((sequence, None, pos, effect));
         }
-        states
-            .movement_effects
-            .push_back((sequence, None, pos, effect));
         true
     }
 
@@ -1315,6 +1454,16 @@ impl BundleFacts {
             })
     }
 
+    /// Source UID/AID bindings keep their explicit owner when a position callback overlaps.
+    pub fn quest_callback_source_bound(&self, key: u64) -> bool {
+        self.placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .is_ok_and(|at| {
+                let attrs = &self.placements[at].1.attrs;
+                attrs.unique.is_some() || attrs.action.is_some()
+            })
+    }
+
     /// Match an exact authored counterpart only while the retained base object is bare.
     /// Sparse placements and plain palette entries share the same original appearance proof.
     pub fn quest_callback_native_object(&self, key: u64, id: u32, appearance: u16) -> bool {
@@ -1468,6 +1617,9 @@ impl BundleFacts {
                     .saturating_mul(3)
                     .saturating_add(1 + usize::from(source_reset.is_some()))
             }
+            Some(QuestCallbackProjection::Scene { mutations, .. }) => {
+                mutations.len().saturating_mul(3).saturating_add(1)
+            }
             _ => usize::from(projection.is_some()) * 8,
         };
         if states
@@ -1500,6 +1652,16 @@ impl BundleFacts {
                 }
                 QuestCallbackProjection::TimedEntrance { position, .. } => {
                     states.position_reserved(*position)
+                }
+                QuestCallbackProjection::Scene { mutations, .. } => {
+                    mutations.iter().any(|mutation| match mutation {
+                        QuestSceneMutation::Restore { key, .. }
+                        | QuestSceneMutation::Remove { key, .. }
+                        | QuestSceneMutation::Replace { key, .. } => states.key_reserved(*key),
+                        QuestSceneMutation::Create { position, .. } => {
+                            states.position_reserved(*position)
+                        }
+                    })
                 }
                 QuestCallbackProjection::TimedTransform { .. } => false,
             })
@@ -1612,6 +1774,63 @@ impl BundleFacts {
             states.passable.insert(wall, false);
         }
         states.changed.insert(key, (expected + 1, lever));
+        true
+    }
+
+    /// Qualify the future open state of exactly one selected native door.
+    /// Other solid entries, live callback effects and other closed doors remain blocking.
+    pub fn opening_door_enterable(&self, base: &super::super::WorldBase, key: u64) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if !self.doors.contains(key) || self.doors.blocks_except(pos, Some(key)) {
+            return false;
+        }
+        let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
+            return false;
+        };
+        let Ok(states) = self.callbacks.lock() else {
+            return false;
+        };
+        if !tile.walkable()
+            || states.solid_items.contains(&pos)
+            || states.changed.contains_key(&key)
+            || states.hidden.contains(&key)
+            || states.passable.contains_key(&key)
+        {
+            return false;
+        }
+        let mut ordinal = 0_u8;
+        for (&id, &depth) in tile.ids().iter().zip(tile.depths()) {
+            if depth != 0 {
+                continue;
+            }
+            let Some(entry) = placement_key(pos, ordinal) else {
+                return false;
+            };
+            ordinal = ordinal.saturating_add(1);
+            if entry == key || states.hidden.contains(&entry) {
+                continue;
+            }
+            if let Some(passable) = states.passable.get(&entry) {
+                if !passable {
+                    return false;
+                }
+                continue;
+            }
+            if self.doors.contains(entry) {
+                continue;
+            }
+            let palette = self
+                .placements
+                .binary_search_by_key(&entry, |(k, _)| *k)
+                .ok()
+                .map(|i| self.placements[i].1.palette)
+                .or_else(|| self.unique_index(id));
+            if palette.is_none_or(|p| self.blocks(p)) {
+                return false;
+            }
+        }
         true
     }
 
@@ -1734,6 +1953,123 @@ impl BundleFacts {
     }
 }
 
+/// A fully resolved edit; only the projection owner can publish these together.
+#[derive(Clone, Debug)]
+pub enum QuestSceneMutation {
+    Restore {
+        key: u64,
+        revision: u64,
+        facts: EntryFacts,
+        passable: bool,
+    },
+    Remove {
+        key: u64,
+        revision: u64,
+    },
+    Replace {
+        key: u64,
+        revision: u64,
+        facts: EntryFacts,
+        passable: bool,
+    },
+    Create {
+        position: TilePos,
+        facts: EntryFacts,
+        passable: bool,
+    },
+}
+
+fn project_scene(
+    states: &mut CallbackStates,
+    owner: u64,
+    edits: &[QuestSceneMutation],
+    remove_self: bool,
+) -> bool {
+    if edits.len() > 32 {
+        return false;
+    }
+    for edit in edits {
+        if matches!(edit, QuestSceneMutation::Create { facts, .. } | QuestSceneMutation::Replace { facts, .. } | QuestSceneMutation::Restore { facts, .. } if facts.pickupable)
+        {
+            return false;
+        }
+        if let QuestSceneMutation::Remove { key, revision }
+        | QuestSceneMutation::Replace { key, revision, .. } = edit
+            && (*key == owner
+                || *revision == u64::MAX
+                || states.hidden.contains(key)
+                || states.changed.get(key).map_or(0, |(current, _)| *current) != *revision)
+        {
+            return false;
+        }
+    }
+    for edit in edits {
+        if let QuestSceneMutation::Restore { key, revision, .. } = edit
+            && (*key == owner
+                || *revision == u64::MAX
+                || !states.hidden.contains(key)
+                || states.changed.get(key).map_or(0, |(current, _)| *current) != *revision)
+        {
+            return false;
+        }
+    }
+    for edit in edits {
+        match edit {
+            QuestSceneMutation::Restore {
+                key,
+                revision,
+                facts,
+                passable,
+            } => {
+                states.hidden.remove(key);
+                states.changed.insert(*key, (revision + 1, *facts));
+                states.passable.insert(*key, *passable);
+            }
+            QuestSceneMutation::Remove { key, .. } => {
+                states.hidden.insert(*key);
+                states.passable.remove(key);
+            }
+            QuestSceneMutation::Replace {
+                key,
+                revision,
+                facts,
+                passable,
+            } => {
+                states.changed.insert(*key, (revision + 1, *facts));
+                states.passable.insert(*key, *passable);
+            }
+            QuestSceneMutation::Create {
+                position,
+                facts,
+                passable,
+            } => {
+                let Some(sequence) = states.movement_sequence.checked_add(1) else {
+                    return false;
+                };
+                let Some(entry) = EntryId::callback(sequence) else {
+                    return false;
+                };
+                states.movement_sequence = sequence;
+                states
+                    .movement_items
+                    .entry(*position)
+                    .or_default()
+                    .push(view::ComposedEntry {
+                        source: view::EntrySource::Added(entry),
+                        facts: *facts,
+                    });
+                if !passable {
+                    states.solid_items.insert(*position);
+                }
+            }
+        }
+    }
+    if remove_self {
+        states.hidden.insert(owner);
+    }
+    true
+}
+
 #[cfg(test)]
 mod primal_pod_removal_tests {
     use super::*;
@@ -1782,6 +2118,66 @@ mod primal_pod_removal_tests {
         let state = facts.callbacks.lock().map_err(|_| "callback lock")?;
         assert_eq!(state.movement_items.get(&position).map(Vec::len), Some(1));
         assert_eq!(state.movement_sequence, 3);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod door_projection_tests {
+    use super::*;
+    use crate::content::LogicalCell;
+    use crate::map::floor::CellBlocker;
+    use std::num::NonZeroU32;
+
+    #[test]
+    fn callback_opening_excludes_only_the_exact_projected_door() -> Result<(), String> {
+        let pos = TilePos {
+            x: 6,
+            y: 7,
+            floor: -8,
+        };
+        let first = placement_key(pos, 0).ok_or("first door")?;
+        let second = placement_key(pos, 1).ok_or("second door")?;
+        let open = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 1643,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: false,
+            count: 1,
+            sub_type: 0,
+        };
+        let mut facts = BundleFacts::default();
+        for key in [first, second] {
+            facts
+                .doors
+                .push(key, true, false, open, false, None, None, None);
+        }
+        facts.doors.finish();
+        let cell = LogicalCell { x: 6, y: 7, z: 8 };
+        assert!(CellBlocker::blocks(&facts, cell));
+        {
+            let mut callbacks = facts.callbacks.lock().map_err(|_| "callbacks")?;
+            Arc::make_mut(&mut callbacks).hidden.insert(first);
+        }
+        assert!(
+            CellBlocker::blocks(&facts, cell),
+            "a different closed door still blocks"
+        );
+        {
+            let mut callbacks = facts.callbacks.lock().map_err(|_| "callbacks")?;
+            Arc::make_mut(&mut callbacks).passable.insert(second, true);
+        }
+        assert!(!CellBlocker::blocks(&facts, cell));
+        {
+            let mut callbacks = facts.callbacks.lock().map_err(|_| "callbacks")?;
+            Arc::make_mut(&mut callbacks).passable.insert(second, false);
+        }
+        assert!(
+            CellBlocker::blocks(&facts, cell),
+            "a later closing projection blocks again"
+        );
         Ok(())
     }
 }

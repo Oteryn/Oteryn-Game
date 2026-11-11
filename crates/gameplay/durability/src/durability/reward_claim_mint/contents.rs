@@ -24,17 +24,27 @@ pub(super) fn weight_pin_matches(
 
 pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
     if request.contents.is_empty() {
-        return Ok(());
+        return if request.backpack_outputs {
+            Err(RewardClaimMintError::InvalidInput)
+        } else {
+            Ok(())
+        };
     }
-    let capacity = request
-        .item
-        .container_capacity
-        .ok_or(RewardClaimMintError::InvalidInput)?;
+    let capacity = (if request.backpack_outputs {
+        &request.backpack
+    } else {
+        &request.item
+    })
+    .container_capacity
+    .ok_or(RewardClaimMintError::InvalidInput)?;
     if capacity == 0
-        || request.quantity != 1
-        || request.item.stack != ItemStackClass::NonStackable
-        || request.key_number.is_some()
-        || request.contents.len() > capacity.min(GAMEITEM01_CONTAINER_ENTRIES_MAX) as usize
+        || (request.backpack_outputs && request.root_text.is_some())
+        || (!request.backpack_outputs
+            && (request.quantity != 1
+                || request.item.stack != ItemStackClass::NonStackable
+                || request.key_number.is_some()))
+        || request.contents.len() + usize::from(request.backpack_outputs)
+            > capacity.min(GAMEITEM01_CONTAINER_ENTRIES_MAX) as usize
     {
         return Err(RewardClaimMintError::InvalidInput);
     }
@@ -94,10 +104,13 @@ pub(super) fn capacity(request: &RewardClaimMintRequest) -> Option<i16> {
     if request.contents.is_empty() {
         None
     } else {
-        request
-            .item
-            .container_capacity
-            .and_then(|capacity| i16::try_from(capacity.min(GAMEITEM01_CONTAINER_ENTRIES_MAX)).ok())
+        (if request.backpack_outputs {
+            &request.backpack
+        } else {
+            &request.item
+        })
+        .container_capacity
+        .and_then(|capacity| i16::try_from(capacity.min(GAMEITEM01_CONTAINER_ENTRIES_MAX)).ok())
     }
 }
 
@@ -178,8 +191,13 @@ pub(super) fn reservation_matches(
     reservation: &Reservation,
 ) -> std::result::Result<bool, DurabilityError> {
     let saved: sqlx::types::Json<Value> = row.try_get("contents_plan")?;
+    let fluids: sqlx::types::Json<Value> = row.try_get("fluid_plan")?;
+    let charges: sqlx::types::Json<Value> = row.try_get("charges_plan")?;
     Ok(
-        row.try_get::<Option<i16>, _>("contents_capacity")? == capacity(request)
+        row.try_get::<bool, _>("backpack_outputs")? == request.backpack_outputs
+            && charges.0 == super::charges::plan(request)
+            && fluids.0 == fluid::plan(request)
+            && row.try_get::<Option<i16>, _>("contents_capacity")? == capacity(request)
             && saved.0 == plan(request, reservation)
             && row.try_get::<Option<String>, _>("root_text")? == request.root_text,
     )
@@ -195,6 +213,12 @@ pub(super) async fn check_capacity(
     request: &RewardClaimMintRequest,
     weights: &dyn ItemWeightLookup,
 ) -> Pass<()> {
+    if request.backpack_outputs {
+        match super::backpack_outputs::check_capacity(tx, character, request).await? {
+            Ok(()) => {}
+            Err(error) => return Ok(Err(error)),
+        }
+    }
     let mut incoming = 0_u64;
     for (facts, quantity) in std::iter::once((&request.item, request.quantity))
         .chain(
@@ -287,6 +311,19 @@ pub(super) async fn apply_plan(
     }
     let (_, root_message) = audit::decode_reward_claim_mint_envelope(root_envelope)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let root_entry = root_message
+        .destination
+        .as_ref()
+        .and_then(|destination| destination.container_entry.as_ref())
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let root_position = ContainerEntryPosition {
+        parent_item_instance_id: root_entry
+            .parent_item_instance_id
+            .as_slice()
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        placement_ordinal: root_entry.placement_ordinal,
+    };
     for (index, child) in plan.items.iter().enumerate() {
         let ordinal = index + 1;
         let transaction = (plan.derive)(&reservation.transaction_id, ordinal, 1);
@@ -305,14 +342,19 @@ pub(super) async fn apply_plan(
             lifecycle: ITEM_LIFECYCLE_LIVE,
             key_number: u32::from(child.key_number.unwrap_or(0)),
         });
+        let destination = if frozen.request.backpack_outputs && plan.nested {
+            super::backpack_outputs::position(root_position, ordinal)?
+        } else {
+            ContainerEntryPosition {
+                parent_item_instance_id: plan.parent,
+                placement_ordinal,
+            }
+        };
         message
             .destination
             .as_mut()
             .ok_or(DurabilityError::InvalidStoredState)?
-            .container_entry = Some(entry_message(ContainerEntryPosition {
-            parent_item_instance_id: plan.parent,
-            placement_ordinal,
-        }));
+            .container_entry = Some(entry_message(destination));
         let envelope = audit::encode_reward_claim_mint_event(
             RewardClaimMintEventIdentity {
                 event_id: event,
@@ -332,7 +374,17 @@ pub(super) async fn apply_plan(
             .bind(&child.item.definition.family).bind(&child.item.definition.production_key)
             .bind(&child.item.definition.revision_ref).bind(i64::from(child.quantity))
             .bind(transaction.as_slice()).execute(&mut **tx).await?;
-        if plan.nested {
+        if frozen.request.backpack_outputs && plan.nested {
+            super::backpack_outputs::insert(
+                tx,
+                reservation,
+                item,
+                transaction,
+                root_position,
+                ordinal,
+            )
+            .await?;
+        } else if plan.nested {
             sqlx::query(
                 "INSERT INTO game_item_nested_entries(item_instance_id,world_id,\
             parent_item_instance_id,placement_ordinal,placed_transaction_id) \
@@ -382,9 +434,6 @@ pub(super) async fn apply_plan(
             .execute(&mut **tx)
             .await?;
         }
-        if let Some(fluid) = child.fluid_subtype {
-            super::fluid::initialize(tx, reservation, item, transaction, fluid).await?;
-        }
         if let Some(text) = &child.text {
             super::super::item_text::initialize_authored_reward_text(
                 tx,
@@ -394,6 +443,9 @@ pub(super) async fn apply_plan(
                 frozen.occurred_at_unix_ms,
             )
             .await?;
+        }
+        if let Some(subtype) = child.fluid_subtype {
+            super::fluid::initialize(tx, reservation, item, transaction, subtype).await?;
         }
     }
     Ok(())

@@ -1,0 +1,50 @@
+[
+  {
+    "name": "customs",
+    "path": "data-global/scripts/creaturescripts/customs",
+    "sha": "0275e4b29602819fe3440c01064a7915dbc900e2",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/customs?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/customs",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/0275e4b29602819fe3440c01064a7915dbc900e2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/customs?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/0275e4b29602819fe3440c01064a7915dbc900e2",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/customs"
+    }
+  },
+  {
+    "name": "monster",
+    "path": "data-global/scripts/creaturescripts/monster",
+    "sha": "07a59ff907ac6450678a4e8687560728b91e9066",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/07a59ff907ac6450678a4e8687560728b91e9066",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/07a59ff907ac6450678a4e8687560728b91e9066",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster"
+    }
+  },
+  {
+    "name": "others",
+    "path": "data-global/scripts/creaturescripts/others",
+    "sha": "8f53cea116641e2977761937244e4196cbf47de2",
+    "size": 0,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/others?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/others",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/8f53cea116641e2977761937244e4196cbf47de2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/others?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/trees/8f53cea116641e2977761937244e4196cbf47de2",
+      "html": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/others"
+    }
+  }
+]

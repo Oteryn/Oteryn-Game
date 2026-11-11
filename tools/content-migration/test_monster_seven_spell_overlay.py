@@ -29,21 +29,24 @@ class AcceptedOverlayTests(unittest.TestCase):
         for entry in self.receipt["files"]:
             self.assertEqual(overlay.digest(adopted[entry["path"]]),entry["output_sha256"])
         bound=bind_definitions(ROOT,adopted)
+        # Thaian is a separate source-qualified Creature/Presentation successor.
+        import questpc7_thaian_native
+        questpc7_thaian_native.apply(ROOT, bound, producer.canonical_bytes)
         actual=dict(bound)
         appearance_path=producer.PROVIDER_DESTINATIONS["spell_appearances"]
         # Match registration.outputs: the accepted Seven snapshot is followed
         # by the independently pinned W11 callback outfit provider.
         source_appearances.admit(ROOT,actual,appearance_path,registration.NATIVE_MANIFEST)
-        # This isolated stage retains the frozen presentation definitions.
+        # This isolated outfit stage retains the preceding presentation definitions.
         # Current source composition and quest disguises run later; final bytes
         # are checked independently for every accepted output below.
         presentation_path = producer.PROVIDER_DESTINATIONS["presentation_profiles"]
-        self.assertEqual(actual[presentation_path], adopted[presentation_path])
+        self.assertEqual(actual[presentation_path], bound[presentation_path])
         # Independently replay the complete registered successor after every owner.
         for path in overlay.ALLOWED_PATHS:
             self.assertEqual(self.current[path],(ROOT/path).read_bytes(),path)
         self.assertEqual(before,{k:overlay.digest(v) for k,v in self.base.items()})
-        self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1870)
+        self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1871)
         looks=json.loads(actual['content/presentations/bindings/spell-appearances.json'])
         original_looks=json.loads(bound[appearance_path])
         fragment=json.loads((ROOT/source_appearances.SOURCE).read_bytes())
@@ -72,18 +75,27 @@ class AcceptedOverlayTests(unittest.TestCase):
             "tools/content-schema/native-gameplay/questpc7-hot-corpse-profiles.json",
             "tools/content-schema/native-gameplay/questpc7-hot-fishburger-profile.json",
         }
-        self.assertTrue(successor_proofs.issubset(actual))
+        # source-qualified reward Item proof alongside the SEASON and quest constructor outputs.
+        merged_outputs = {
+            'content/cosmetics/outfits/native-cosmetics.json',
+            *{f'tools/content-schema/native-gameplay/questpc7-{name}.json' for name in (
+                'marsh-corpse-profiles', 'slug-corpse-profiles',
+                'smith-corpse-profiles', 'smith-item-profile',
+                'hot-fishburger-profile', 'hot-corpse-profiles',
+            )},
+        }
+        self.assertTrue((successor_proofs | merged_outputs) <= actual.keys())
         self.assertEqual(len(actual.keys() - {qengine.PROOF} - successor_proofs),43)
         self.assertIn(qengine.PROOF,actual)
-        # Independently rebuild the complete pinned95-identity packet (including the merged quest lanes); a count
+        # Independently rebuild the packet from the producer's closed source IDs; a count
         # alone cannot authorize a missing, duplicate or substituted reward.
         expected_packet=qengine.capture(ROOT)
         expected_raw=(json.dumps(expected_packet,ensure_ascii=False,indent=2)+'\n').encode()
         self.assertEqual(actual[qengine.PROOF],expected_raw)
         packet=json.loads(actual[qengine.PROOF])
         keys=[row['production_definition']['production_key'] for row in packet['records']]
-        self.assertEqual(len(keys),95)
-        self.assertEqual(len(set(keys)),95)
+        self.assertEqual(len(keys),len(qengine.IDS))
+        self.assertEqual(len(set(keys)),len(qengine.IDS))
         self.assertEqual(set(keys),{f'oteryn:item.tibia.i{item}' for item in qengine.IDS})
         self.assertTrue({'oteryn:item.tibia.i21291', 'oteryn:item.tibia.i21504',
                          'oteryn:item.tibia.i21505'}.issubset(keys))
@@ -97,8 +109,13 @@ class AcceptedOverlayTests(unittest.TestCase):
             for field,value in row['attributes'].items():
                 self.assertEqual(by_key[key]['attributes'][field],value,(key,field))
         self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual)
+        self.assertIn('content/items/authored-static-admissions.json',actual)
+        for cohort in ('marsh', 'slug'):
+            self.assertIn(f'tools/content-schema/native-gameplay/questpc7-{cohort}-corpse-profiles.json', actual)
+        self.assertIn('tools/content-schema/native-gameplay/source-gate-item-profiles.json', actual)
         self.assertIn('content/items/definitions/srx1-item-updates.json',actual)
         self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)
+        self.assertIn('content/cosmetics/outfits/native-cosmetics.json',actual)
         self.assertIn('content/creatures/prey-tiers.json',actual)
         self.assertIn('content/creatures/prey-slot-values.json',actual)
         self.assertIn('content/items/readable-profiles.json',actual)

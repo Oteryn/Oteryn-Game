@@ -566,6 +566,34 @@ mod tests {
         oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };
     #[test]
+    fn diagonal_player_duration_uses_three_rounded_source_steps() {
+        let onto = MovementLocalPosition {
+            x: 32673,
+            y: 32085,
+            floor: 8,
+        };
+        let cardinal = duration_onto(
+            &EngineeringGroundSpeed,
+            onto,
+            Some(220),
+            CardinalStep::North,
+        )
+        .expect("source speed table");
+        let diagonal = duration_onto(
+            &EngineeringGroundSpeed,
+            onto,
+            Some(220),
+            CardinalStep::NorthEast,
+        )
+        .expect("source diagonal speed");
+        assert_eq!(Some(diagonal), cardinal.checked_mul(3));
+        assert_eq!(diagonal.as_millis() % 150, 0);
+        assert!(
+            duration_onto(&EngineeringGroundSpeed, onto, None, CardinalStep::NorthEast).is_err()
+        );
+    }
+
+    #[test]
     fn qn6_diagonal_duration_is_tripled_and_fits_the_wire_ceiling() -> Result<(), String> {
         use oteryn_protocol_oteryn::world_spatial::{
             MAX_STEP_WAIT_MS, StepDisposition, StepResult, decode_step_result_receipt,

@@ -217,7 +217,11 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         deps.initialize(&owner).await;
-        // The production catalogue's revision, plus one trader buying meat at 4 gold each.
+        // Rashid's captured source buys white cloth at 150 gold, after the quest.
+        // Alice retains the synthetic four-gold meat offer for the generic case.
+        let sold_item = if wandering_rashid { "oteryn:item.tibia.i5917" } else { MEAT };
+        let unit_price: u32 = if wandering_rashid { 150 } else { 4 };
+        let total_gold = 8 * u64::from(unit_price);
         let catalogue = NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
             std::ffi::OsStr::new("world"),
@@ -228,11 +232,11 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
         let offer = ProjectV2ServiceOffer {
             item: ProjectV2DefinitionRef {
                 family: ProjectV2Family::Item,
-                key: MEAT.to_owned(),
+                key: sold_item.to_owned(),
                 revision: "definition-r1".to_owned(),
             },
             direction: ProjectV2ServiceOfferDirection::BuyFromPlayer,
-            unit_price: 4,
+            unit_price: u64::from(unit_price),
             currency: None,
             count: None,
             sub_type: None,
@@ -302,7 +306,7 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
             }
         };
         // Two meat stacks and a fish the trader does not buy.
-        seed_main_backpack(&h, &[(MEAT, 5), (FISH, 2), (MEAT, 3)]).await?;
+        seed_main_backpack(&h, &[(sold_item, 5), (FISH, 2), (sold_item, 3)]).await?;
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)
@@ -324,12 +328,12 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
             offer_index: 0,
             side: NpcTradeSide::Sell,
             action,
-            expected_unit_price: 4,
+            expected_unit_price: unit_price,
         };
         let seeded = vec![
-            (MEAT.to_owned(), 5),
+            (sold_item.to_owned(), 5),
             (FISH.to_owned(), 2),
-            (MEAT.to_owned(), 3),
+            (sold_item.to_owned(), 3),
         ];
         assert_eq!(carried(&h).await?, seeded);
         let empty = footprint(&h).await?;
@@ -349,19 +353,44 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
         assert_eq!(footprint(&h).await?, empty);
         assert_eq!(carried(&h).await?, seeded);
 
-        // SELL_ALL sells both meat stacks, 8 units for 32 gold, in one durable trade.
+        if wandering_rashid {
+            use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition};
+            use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+            let quest = "oteryn:quest.the_travelling_trader_quest";
+            let track = "oteryn:quest-progress/chosen/travelling-trader/stage";
+            let key = "oteryn:quest-transition/fixture/rashid-shop-access";
+            let refused = owner.npc_shop(deps.actor, UseCommand { game_session_id: session, command_id: 899, item_fence: Some(fence) }, intent(NpcShopAction::SellAll)).await;
+            assert_eq!(refused.result().disposition, NpcIntentDisposition::Rejected);
+            assert_eq!(footprint(&h).await?, empty);
+            assert_eq!(carried(&h).await?, seeded);
+            // Only the prior quest is seeded; shop authority, payment and replay
+            // still run through their production dispatch and locked item owner.
+            let catalogue = Arc::new(QuestStateCatalogue::new("content-1", vec![QuestTrack {
+                key: track.into(), quest: quest.into(), initial: -1, min: -1, max: 13,
+            }], vec![QuestTransition {
+                world_change: None, key: key.into(), quest: quest.into(), completes: true, experience: None,
+                effects: vec![QuestEffect { track: track.into(), from: QuestComparison::Eq(-1), effect: QuestEffectKind::Set(13) }],
+            }]).map_err(debug)?);
+            let quest_fence = owner.current_quest_fence(session).await.map_err(|()| "quest fence")?.ok_or("quest fence")?;
+            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+            let completed = slot.commit_quest_transition(owner.root, owner.character, owner.holder, quest_fence,
+                QuestTransitionRequest { transition_key: key.into(), cause: QuestCause::Command(crate::foundation::CommandRef::new(session, crate::foundation::CommandId::new(900).map_err(debug)?)) }, catalogue).await.map_err(debug)?;
+            assert!(matches!(completed, QuestTransitionOutcome::Committed(_)), "{completed:?}");
+        }
+
+        // SELL_ALL sells both stacks, eight units in one durable trade.
         let sell_all = intent(NpcShopAction::SellAll);
         let (status, sold) = exchange(&owner, &mut admitted, Some((4, 5)), 6, &sell_all).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(
             (sold.disposition, sold.sold_units, sold.total_gold_units),
-            (NpcIntentDisposition::Ok, 8, 32)
+            (NpcIntentDisposition::Ok, 8, total_gold)
         );
         assert_eq!(
             carried(&h).await?,
             vec![
                 (FISH.to_owned(), 2),
-                (crate::domain::currency::Coin::Gold.production_key().to_owned(), 32),
+                (if wandering_rashid { crate::domain::currency::Coin::Platinum } else { crate::domain::currency::Coin::Gold }.production_key().to_owned(), if wandering_rashid { 12 } else { 32 }),
             ]
         );
         let after = footprint(&h).await?;
@@ -371,7 +400,7 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
         )
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!((units, gold.as_str(), flag), (8, "32", true));
+        assert_eq!((units, gold, flag), (8, total_gold.to_string(), true));
 
         // The resend of command 6 replays the retained result; the durable receipt answers the
         // same command again with its first outcome and writes nothing.
@@ -389,7 +418,7 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
                 sell_all,
             )
             .await;
-        assert!(matches!(again, NpcShopStep::Sold { units: 8, gold: 32 }));
+        assert!(matches!(again, NpcShopStep::Sold { units: 8, gold } if gold == total_gold));
         assert_eq!(footprint(&h).await?, after);
 
         // A new sell-all finds no meat: refused, nothing written.

@@ -166,6 +166,19 @@ impl ChannelRuntimeV1 {
         self.quest_encounter_entry(players, monsters, project, true)
     }
 
+    /// The same bounded carrier transaction for a source party rite that has
+    /// no summoned monsters. Encounter admission keeps its nonempty-monster gate.
+    pub fn commit_source_steps_and_project<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        if !(1..=8).contains(&players.len()) {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.commit_quest_relocation(players, project)
+    }
+
     /// Validate the complete encounter admission while retaining the exclusive owner borrow.
     /// No actor, movement revision, slot generation or projection escapes this preview.
     pub fn preflight_quest_encounter_entry<P: SourceStepCommitProof>(

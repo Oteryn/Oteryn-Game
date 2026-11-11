@@ -29,9 +29,14 @@
 //! because the bundle carries no height facts.
 
 use super::floor_catalogue::{OBJECT, TERRAIN};
+mod door_displacement;
 mod house;
+pub use door_displacement::{prepare_quest_door_displacement, prepare_quest_door_opening};
+mod source_scene;
+pub use source_scene::{SceneEvacuation, SourceSceneRelocation, prepare_source_scene};
 mod platform;
 mod quest_callback;
+mod quest_callback_scene;
 mod rope;
 mod scripted_teleport;
 use super::overlay::TilePos;
@@ -48,6 +53,7 @@ pub use quest_callback::{
     prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing,
     prepare_quest_encounter_ejection,
 };
+pub use quest_callback_scene::{PreparedSceneRelocations, prepare_scene_relocations};
 pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};
 pub use scripted_teleport::prepare_scripted_quest_teleport_facing;
 use std::collections::{BTreeMap, BTreeSet};
@@ -253,11 +259,11 @@ impl CellBlocker for BTreeSet<LogicalCell> {
 
 /// The closed bundle doors, read live through the indexed door lookup. The native floor is the
 /// legacy `z` negated.
-pub struct BundleDoors<'a>(pub &'a super::door::DoorBook);
+pub struct BundleDoors<'a>(pub &'a dyn CellBlocker);
 
 impl CellBlocker for BundleDoors<'_> {
     fn blocks(&self, cell: LogicalCell) -> bool {
-        pos(cell.x, cell.y, cell.z).is_some_and(|tile| self.0.blocks(tile))
+        self.0.blocks(cell)
     }
 }
 
@@ -803,6 +809,12 @@ impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
     ) {
         let facing = self.direction.facing();
         (self.actor, self.expected, self.destination, facing)
+    }
+}
+
+impl CellBlocker for crate::map::door::DoorBook {
+    fn blocks(&self, cell: LogicalCell) -> bool {
+        pos(cell.x, cell.y, cell.z).is_some_and(|tile| self.blocks(tile))
     }
 }
 

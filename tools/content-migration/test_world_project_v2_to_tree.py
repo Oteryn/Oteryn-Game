@@ -70,13 +70,22 @@ def test_relation_rows_route_by_owner():
     real_targets = migration.use_relation_targets
     migration.use_relation_targets = lambda: real_targets() - {dropped}
     try:
-        migration.validate_item_enrichment(
-            *enrichment_args.args, **enrichment_args.kwargs
-        )
-    except migration.ValidationError as error:
-        assert str(error) == "RELATION_COVERAGE", error
-    else:
-        raise AssertionError("PR Use row without its sealed owner accepted")
+        try:
+            migration.validate_item_enrichment(
+                *enrichment_args.args, **enrichment_args.kwargs
+            )
+        except migration.ValidationError as error:
+            assert str(error) == "RELATION_COVERAGE", error
+        else:
+            raise AssertionError("PR Use row without its sealed owner accepted")
+        with patch("register_spell_families.outputs", side_effect=AssertionError(
+                "invalid ownership reached full content replay")):
+            try:
+                migration.main()
+            except migration.ValidationError as error:
+                assert str(error) == "RELATION_COVERAGE", error
+            else:
+                raise AssertionError("PR Use row without its sealed owner accepted")
     finally:
         migration.use_relation_targets = real_targets
     print("ok test_relation_rows_route_by_owner")
@@ -304,7 +313,7 @@ family_counts = {
     family: sum(row["identity"]["family"] == family for row in reference["records"])
     for family in creature_families
 }
-assert family_counts["Creature"] == 1_864
+assert family_counts['Creature'] == 1_865
 # One Crystal 201189f8 star-herb handler extends the frozen129 conversion cohort.
 # The alternate tainted-antler key was a duplicate of the same whole-stack transform.
 conversion_keys = {
@@ -336,13 +345,7 @@ assert lock["family_counts"] == {
     "item_conversion": 130,
     **{family: value["records"] for family, value in quest_families.items()},
 }
-assert lock["source_binding_counts"] == {
-    "Item": 476,
-    "Mount": 252,
-    "Creature": 1_864,
-    "Encounter": 108,
-    "NPC": 2747,
-}
+assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1_865, "Encounter": 108, "NPC": 2747}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]

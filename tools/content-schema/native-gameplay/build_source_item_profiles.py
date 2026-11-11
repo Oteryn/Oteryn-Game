@@ -81,7 +81,7 @@ def profile(i,node,obj,physical,bindings,field):
   if target and str(target) not in bindings:raise ValueError('unbound temporal target')
   sem['temporal']=K({'consumption_mode':K('DURABLE_ABSOLUTE_DEADLINE'),'duration':K(duration),'stop_duration':K(a.get('stopduration','0') in ['1','true']),
    'decay_target':K({'key':bindings[str(target)]['target']['key'],'revision':bindings[str(target)]['target']['revision']}) if target else copy.deepcopy(NA)})
- typ=a.get('type'); itemtypes={'bed':'BED','carpet':'CARPET','door':'DOOR','magicfield':'MAGIC_FIELD','teleport':'TELEPORT','container':'CONTAINER','rune':'RUNE','key':'KEY','mailbox':'MAILBOX','trashholder':'TRASH_HOLDER','depot':'DEPOT'}
+ typ=a.get('type'); itemtypes={'bed':'BED','carpet':'CARPET','door':'DOOR','ladder':'LADDER','magicfield':'MAGIC_FIELD','teleport':'TELEPORT','container':'CONTAINER','rune':'RUNE','key':'KEY','mailbox':'MAILBOX','trashholder':'TRASH_HOLDER','depot':'DEPOT'}
  if 'field' in a:typ='magicfield'
  if container and typ is None:typ='container'
  sem['classification']=K({'item_type':K(itemtypes[typ]) if typ in itemtypes else copy.deepcopy(NA),'capabilities':copy.deepcopy(U)})

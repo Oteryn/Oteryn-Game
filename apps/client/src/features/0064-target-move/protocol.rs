@@ -24,6 +24,7 @@ impl Outbox {
                 oteryn_session::StepDirection::East => crate::input::StepDir::East,
                 oteryn_session::StepDirection::South => crate::input::StepDir::South,
                 oteryn_session::StepDirection::West => crate::input::StepDir::West,
+                _ => return,
                 oteryn_session::StepDirection::NorthEast => crate::input::StepDir::NorthEast,
                 oteryn_session::StepDirection::SouthEast => crate::input::StepDir::SouthEast,
                 oteryn_session::StepDirection::SouthWest => crate::input::StepDir::SouthWest,

@@ -87,6 +87,9 @@ fn callback_key(suffix: &str) -> String {
 }
 fn state(track: String, minimum: i64, maximum: i64, set: i64, preserve: bool) -> Storage {
     Storage {
+        set_if: None,
+        add: None,
+        read_only: false,
         track,
         minimum,
         maximum,
@@ -105,6 +108,20 @@ fn callback(
     destination: Position,
 ) -> Callback {
     Callback {
+        use_range: 1,
+        disguise: None,
+        remote_teleport: None,
+        state_operations: Vec::new(),
+        completes: false,
+        premium_required: false,
+        present: Vec::new(),
+        required_travel: Vec::new(),
+        failure_teleport: None,
+        item_reward: None,
+        reward_bundle: false,
+        achievements: Vec::new(),
+        activation: None,
+        requirements: None,
         track_initials: Default::default(),
         character_requirements: None,
         required_completed_quests: Vec::new(),
@@ -115,6 +132,8 @@ fn callback(
         trigger,
         actor_kind: Default::default(),
         selector: Selector {
+        position_aliases: Vec::new(),
+        ordinal: None,
             native: Some(NativeSelector {
                 position,
                 ordinal: 1,

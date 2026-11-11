@@ -152,6 +152,9 @@ mod tests {
         };
         super::super::parse(&encode(&callback))?;
         callback.storage.push(super::super::Storage {
+        set_if: None,
+        add: None,
+        read_only: false,
             track: "oteryn:quest-progress/srv7-m02-fixture".into(),
             minimum: 0,
             maximum: 0,

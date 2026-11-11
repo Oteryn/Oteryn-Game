@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 
 import container_native
+import charge_native
+import poison_daggers
 import itemhold_charge_precedence
 import reward_claim_variant_migration as migration
 
@@ -51,6 +53,9 @@ def canonical_schema(root):
             'schema': {'const': 'OTERYN_NATIVE_CONTAINER_REWARD/v1'},
             'revision': {'const': container_native.REVISION},
             'source_sha256': {'const': container_native.SOURCE_SHA256},
+            'source_difference': {'enum': [container_native.MEDUSA_DIFFERENCE,
+                'WIKI_MILK_OVERRIDES_DONOR_WATER', 'WIKI_WINE_OVERRIDES_DONOR_WATER',
+                'CRYSTAL_PRESENT_WATER_SUBTYPES', 'EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS']},
             'placements': {'type': 'array', 'minItems': 1, 'items': {
                 'type': 'object', 'additionalProperties': False,
                 'required': ['unique_id', 'line', 'root', 'capacity', 'contents', 'completion'],
@@ -61,6 +66,7 @@ def canonical_schema(root):
                     'capacity': {'type': ['integer', 'null'], 'minimum': 1, 'maximum': 65535},
                     'achievement': {'$ref': '#/$defs/ref'},
                     'root_text': {'type': 'string', 'minLength': 1, 'maxLength': 4000},
+                    'root_charges_remaining': {'const': 1},
                     'completion': {'type': 'object', 'additionalProperties': False,
                         'required': ['kind', 'key'], 'properties': {
                             'kind': {'enum': ['storage', 'quest_kv']}, 'key': {'type': 'string', 'minLength': 1}}},
@@ -69,7 +75,8 @@ def canonical_schema(root):
                         'properties': {'item': {'$ref': '#/$defs/ref'},
                             'count': {'type': 'integer', 'minimum': 1, 'maximum': 100},
                             'key_number': {'type': 'integer', 'minimum': 1, 'maximum': 65535},
-                            'fluid_subtype': {'const': 1},
+                            'fluid_subtype': {'type': 'integer', 'minimum': 1, 'maximum': 255},
+                            'charges_remaining': {'const': 1},
                             'text': {'type': 'string', 'minLength': 1, 'maxLength': 4000}}}}
                 }}}
         }}
@@ -179,7 +186,8 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                 if (semantic_digest({k: v for k, v in source.items() if k != 'progress_write'}) != case['source_claim_sha256']
                         or semantic_digest(items[case['item_identity']['key']]) != case['item_definition_sha256']):
                     raise ValueError('selected source/Item stack normalization inputs changed')
-                serialized_item_stacks(reward, items, stack_problem)
+                serialized_item_stacks(reward, claim_items, stack_problem)
+            poison_daggers.correct_canonical(source['identity']['key'], placement['position'], reward)
             for qi, quantity in enumerate(reward.get('items', [])):
                 problem = stack_problem(claim_items[quantity['item']['key']], quantity['count'])
                 if problem:
@@ -213,7 +221,19 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
             'source_variant': copy.deepcopy(row)}
         if source.get('quest'):
             definition['quest'] = copy.deepcopy(source['quest'])
-        native_contents = container_native.derive(definition, claim_items, stack_problem)
+        if (definition['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield'
+                and source['placements'][0]['reward']['items'][2]['count'] == 1
+                and charges[(0, 'items', 2)]['source_raw_argument'] == 1):
+            # Retain the historical default-charge conflict in source_variant.
+            # Clear the live hold only after the complete donor recipe qualifies.
+            candidate = {**definition, 'data_holds': [g for g in holds
+                if g != {'category': 'source', 'code': 'SOURCE_CHARGE_MISMATCH',
+                         'placement_index': 0, 'reward_field': 'items', 'reward_index': 2}]}
+            if charge_native.derive(candidate, claim_items, stack_problem) is not None:
+                definition = candidate
+                definition['readiness'] = 'waiting_implementation'
+        native_contents = (charge_native.derive(definition, claim_items, stack_problem)
+                           or container_native.derive(definition, claim_items, stack_problem))
         if native_contents is not None:
             definition['native_contents'] = native_contents
         key = definition['identity']['key']

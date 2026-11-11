@@ -1,6 +1,7 @@
-# DIAGONAL_MOVEMENT_V1 (452)
+# DIAGONAL_MOVEMENT_V1 (371)
 
-Extends core command 1 and requires PACED_MOVEMENT_V1 (13). Existing cardinal
+Extends core command 1. Paced receipts additionally require PACED_MOVEMENT_V1 (13).
+Existing cardinal
 codes remain North=1, East=2, South=3, West=4. New STEP codes are NorthEast=5,
 SouthEast=6, SouthWest=7, NorthWest=8. An unselected diagonal is rejected before
 pacing, movement or quest callbacks. No new command, state domain or facing is

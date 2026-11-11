@@ -160,6 +160,8 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
     }
     entries.retain(|entry| entry.key != super::super::monk_shrines::QUEST);
     entries.push(super::super::monk_shrines::journal());
+    entries.retain(|entry| entry.key != super::super::kill_objectives::QUEST);
+    entries.push(super::super::kill_objectives::journal());
     super::super::world_change_journals::append_journals(&mut entries)?;
     let catalogue = QuestLogCatalogue::new(lowered.catalogue(), entries)
         .map_err(|e| format!("journal catalogue: {e:?}"))?;

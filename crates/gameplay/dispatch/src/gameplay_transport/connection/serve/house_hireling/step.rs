@@ -188,7 +188,10 @@ impl State {
         command: oteryn_protocol_oteryn::ClientCommandView<'_>,
         arrived_while_buffered: bool,
     ) -> route::StepAction {
-        let dispatch = match decode_step_intent(command.payload) {
+        let dispatch = match decode_step_intent_selected(
+            admitted.continuity.selected_capabilities.as_slice(),
+            command.payload,
+        ) {
             Err(_) => Dispatch::Step(StepOutcome::rejected(), 0),
             Ok(_) if arrived_while_buffered => {
                 let now = tokio::time::Instant::now();

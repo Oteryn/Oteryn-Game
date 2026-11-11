@@ -1,6 +1,6 @@
 //! Pinned Crystal creatures_definitions.hpp: native categories and icon IDs.
 use super::*;
-pub const CAPABILITY_NATIVE_CREATURE_ICONS_V1: u32 = 371;
+pub const CAPABILITY_NATIVE_CREATURE_ICONS_V1: u32 = 372;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NativeCreatureIcon {
     pub category: u8,

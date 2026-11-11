@@ -1,0 +1,1513 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.questpc2-gerimor-assignments",
+  "quest": "oteryn:quest.cults_of_tibia_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 7,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:255-452"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:255-452"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:255-452"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 10,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:255-452"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:255-452"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:255-452"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:255-452"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:255-452"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:255-452"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/menu-minotaurs",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "lt",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "op": "ne",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "In which of the following topics are you interested in? Cult of {Life}, Cult of {Prosperity}, Cult of the {Minotaurs}, Cult of the {Barkless}, Cult of the {Misguided}, Cult of the {Orcs}, Cult of the {Humans}?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:355-390"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/offer-minotaurs",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "minotaurs"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "op": "lt",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "This is an animal-like cult. Only minotaurs can be found there, but no idea what there are expecting and what they are worshipping. ...",
+        "Maybe they are a bit different to the creatures you already know. Would you like to dinf out more for me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 300
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:256-266"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-minotaurs-first",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        300
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-minotaurs-later",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        300
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/pending-minotaurs",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not finished your work yet. Come back when you're done."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:420-425"
+      ],
+      "topics": [
+        300
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/menu-prosperity",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "lt",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "op": "ne",
+          "value": 15
+        }
+      ],
+      "reply": [
+        "In which of the following topics are you interested in? Cult of {Life}, Cult of {Prosperity}, Cult of the {Minotaurs}, Cult of the {Barkless}, Cult of the {Misguided}, Cult of the {Orcs}, Cult of the {Humans}?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:355-390"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/offer-prosperity",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "prosperity"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "op": "lt",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "The alleged incentive to follow this cult is infinite prosperity. Therefore most of the worshippers are already very rich citizens of Tibia. ...",
+        "This cult is abandoned in the recently opened new museum in Thais. This can be entered in the Thais exhibition. Would you like to have a look at this cult?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 301
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:268-279"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-prosperity-first",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        301
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-prosperity-later",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        301
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/pending-prosperity",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not finished your work yet. Come back when you're done."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:420-425"
+      ],
+      "topics": [
+        301
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/menu-barkless",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "lt",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "op": "ne",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "In which of the following topics are you interested in? Cult of {Life}, Cult of {Prosperity}, Cult of the {Minotaurs}, Cult of the {Barkless}, Cult of the {Misguided}, Cult of the {Orcs}, Cult of the {Humans}?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:355-390"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/offer-barkless",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "barkless"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "op": "lt",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "However, recently they became more prominent as their leader seems to hava taken a turn for the worse. Rumors of violent acts and disappearing people are linked to this cult. ...",
+        "Someone... Should look into that, don't you think?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 302
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:281-292"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-barkless-first",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        302
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-barkless-later",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        302
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/pending-barkless",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not finished your work yet. Come back when you're done."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:420-425"
+      ],
+      "topics": [
+        302
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/menu-orcs",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "lt",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "op": "ne",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "In which of the following topics are you interested in? Cult of {Life}, Cult of {Prosperity}, Cult of the {Minotaurs}, Cult of the {Barkless}, Cult of the {Misguided}, Cult of the {Orcs}, Cult of the {Humans}?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:355-390"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/offer-orcs",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "orcs"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "op": "lt",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Several Edron orcs have taken to a dangerous idol it seems. It may not be too late to stop them if you act quickly. A powerful cult of orcs with a broad following could prove unsurmountable in the end. ..."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 303
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:294-303"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-orcs-first",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        303
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-orcs-later",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        303
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/pending-orcs",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not finished your work yet. Come back when you're done."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:420-425"
+      ],
+      "topics": [
+        303
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/menu-life",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "lt",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "op": "ne",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "In which of the following topics are you interested in? Cult of {Life}, Cult of {Prosperity}, Cult of the {Minotaurs}, Cult of the {Barkless}, Cult of the {Misguided}, Cult of the {Orcs}, Cult of the {Humans}?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:355-390"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/offer-life",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "life"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "op": "lt",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "Its worshippers wish for eternal, life free of pain and sorrow. The entrance to this cult can be found in the dark pyramid. Would you life to investigate it for me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 304
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:305-315"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-life-first",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        304
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-life-later",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        304
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/pending-life",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not finished your work yet. Come back when you're done."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:420-425"
+      ],
+      "topics": [
+        304
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/menu-misguided",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "lt",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "op": "ne",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "In which of the following topics are you interested in? Cult of {Life}, Cult of {Prosperity}, Cult of the {Minotaurs}, Cult of the {Barkless}, Cult of the {Misguided}, Cult of the {Orcs}, Cult of the {Humans}?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:355-390"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/offer-misguided",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "misguided"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "op": "lt",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "There's a camp of outlaws to the east of Thais. Rumour has it that people are going missing but it's not linked to the bandits. ...",
+        "Lights have been seen at night in the abandoned ruin in the vicinity of the camp, somewhere to the south-west. Brave enough to check it out?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 305
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:317-327"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-misguided-first",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        305
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-misguided-later",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        305
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/pending-misguided",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not finished your work yet. Come back when you're done."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:420-425"
+      ],
+      "topics": [
+        305
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/menu-humans",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "lt",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "op": "ne",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "In which of the following topics are you interested in? Cult of {Life}, Cult of {Prosperity}, Cult of the {Minotaurs}, Cult of the {Barkless}, Cult of the {Misguided}, Cult of the {Orcs}, Cult of the {Humans}?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:355-390"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/offer-humans",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "humans"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "op": "lt",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "It's a forbidden and abandoned place but... There is an ancient temple of Zathroth beneath Carlin. Some say it's not that abandoned anymore. ...",
+        "Voices, flickering lights in the dead of night, and even a strange gate like sphere wich leads to who knows where. I can't really request this from you but... Someone should take a look, or not?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 306
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:329-339"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-humans-first",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        306
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/accept-humans-later",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very nice! Come back if you have found what's going on in this cult."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:411-421"
+      ],
+      "topics": [
+        306
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/pending-humans",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have not finished your work yet. Come back when you're done."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:420-425"
+      ],
+      "topics": [
+        306
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/decline",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [],
+      "reply": [
+        "What a pitty! You can come back, when ever you want, if you have changed your opinion."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:449-452"
+      ],
+      "topics": [
+        0,
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        306
+      ],
+      "exclude_keywords": [
+        "mission",
+        "yes"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/gerimor.lua",
+      "sha256": "bf0fba86d07bb8a70d6242c2cc748fbb137cc7b583b47f0886530b6b5c584b2f",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    }
+  ]
+}

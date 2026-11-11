@@ -49,7 +49,26 @@ fn nx5_every_global_item_rule_qualifies_against_source_bound_production_cosmetic
                     .map_err(|e| format!("item {}: {e:?}", rule.item_id))?;
                 count += 1;
             }
-            assert_eq!(count, 46);
+            // The merged native producer retains all 46 global rules and adds
+            // the source-qualified Glooth Glider construction recipe.
+            let global: serde_json::Value = serde_json::from_str(include_str!(
+                "../../../../../../tools/content-schema/native-gameplay/item-cosmetic-actions.json"
+            )).map_err(|error| error.to_string())?;
+            let mut expected = global["rules"].as_array().ok_or("global rules")?
+                .iter()
+                .filter(|rule| !matches!(rule["mode"].as_str(), Some("random_outfit" | "random_mount")))
+                .map(|rule| rule["item_id"].as_u64().ok_or("global item identity"))
+                .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
+            assert_eq!(expected.len(), 46);
+            assert!(expected.insert(21897), "construction has its own source cohort");
+            let actual = catalogue.rules.iter()
+                .filter(|rule| !matches!(rule.mode,
+                    oteryn_gameplay_items::item_cosmetics::Mode::RandomOutfit
+                    | oteryn_gameplay_items::item_cosmetics::Mode::RandomMount))
+                .map(|rule| u64::from(rule.item_id))
+                .collect::<std::collections::BTreeSet<_>>();
+            assert_eq!(actual, expected);
+            assert_eq!(count, expected.len());
             use crate::domain::appearance::{
                 AppearanceContent, EarnedCosmetic, EarnedCosmetics, Sex, UnlockFact,
             };

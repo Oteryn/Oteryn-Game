@@ -1,0 +1,1165 @@
+diff --git a/apps/game-server/src/node/serve/qualification_fixture.rs b/apps/game-server/src/node/serve/qualification_fixture.rs
+index b8682e554..122fa11fb 100644
+--- a/apps/game-server/src/node/serve/qualification_fixture.rs
++++ b/apps/game-server/src/node/serve/qualification_fixture.rs
+@@ -167,6 +167,8 @@ async fn prepare_items(
+             quantity: 1,
+             contents: Vec::new(),
+             root_text: None,
++            root_fluid_subtype: None,
++            root_charges_remaining: None,
+             backpack: backpack.clone(),
+             content_revision: inventory.content_revision.clone(),
+             ruleset_revision: inventory.ruleset_revision.clone(),
+diff --git a/apps/game-server/src/quest_catalogue_boot_tests.rs b/apps/game-server/src/quest_catalogue_boot_tests.rs
+index 13fd608f0..b510e2868 100644
+--- a/apps/game-server/src/quest_catalogue_boot_tests.rs
++++ b/apps/game-server/src/quest_catalogue_boot_tests.rs
+@@ -140,12 +140,22 @@ fn computed_transitions_refuse_and_the_event_line_counts_them() -> TestResult {
+     let grizzly_tracks = oteryn_gameplay_quests::quest::grizzly_adams::storage_keys();
+     for transition in &transitions {
+         let key = transition["key"].as_str().ok_or("key")?;
+-        let loaded = catalogue.transition(key).ok_or(key.to_owned())?;
+-        let not_supported =
+-            catalogue.evaluate(loaded, &BTreeMap::new(), 0) == Err(QuestRefusal::NotSupported);
+         let computed = effects(transition)?
+             .iter()
+             .any(|effect| explicit_computed(effect) || inexact(effect));
++        // The event line counts raw SOURCE effects, including owner-excluded quests.
++        refused += usize::from(computed);
++        for effect in effects(transition)? {
++            explicit += usize::from(explicit_computed(effect));
++            inexact_effects += usize::from(inexact(effect));
++        }
++        if transition["quest"] == "oteryn:quest.dawnport_quest" {
++            assert!(catalogue.transition(key).is_none(), "{key}");
++            continue;
++        }
++        let loaded = catalogue.transition(key).ok_or(key.to_owned())?;
++        let not_supported =
++            catalogue.evaluate(loaded, &BTreeMap::new(), 0) == Err(QuestRefusal::NotSupported);
+         // W15c fences the old single-write Grizzly fragments behind its compound
+         // owner. The event line still counts the original lowered SOURCE document.
+         let grizzly_fragment = transition["quest"]
+@@ -156,11 +166,6 @@ fn computed_transitions_refuse_and_the_event_line_counts_them() -> TestResult {
+                     .is_some_and(|track| grizzly_tracks.iter().any(|owned| owned == track))
+             });
+         assert_eq!(not_supported, computed || grizzly_fragment, "{key}");
+-        refused += usize::from(computed);
+-        for effect in effects(transition)? {
+-            explicit += usize::from(explicit_computed(effect));
+-            inexact_effects += usize::from(inexact(effect));
+-        }
+     }
+     assert!(refused > 0 && explicit > 0 && inexact_effects > 0);
+     assert_eq!(
+@@ -183,6 +188,10 @@ fn an_exact_transition_of_the_boot_catalogue_applies() -> TestResult {
+     let mut applied = 0;
+     for transition in document_transitions()? {
+         let key = transition["key"].as_str().ok_or("key")?;
++        if transition["quest"] == "oteryn:quest.dawnport_quest" {
++            assert!(catalogue.transition(key).is_none(), "{key}");
++            continue;
++        }
+         let loaded = catalogue.transition(key).ok_or(key.to_owned())?;
+         if let Ok(changes) = catalogue.evaluate(loaded, &BTreeMap::new(), 0) {
+             assert_eq!(changes.len(), loaded.effects.len(), "{key}");
+diff --git a/crates/gameplay/combat/src/combat/death_reward.rs b/crates/gameplay/combat/src/combat/death_reward.rs
+index 332eba41b..ccb7cdca4 100644
+--- a/crates/gameplay/combat/src/combat/death_reward.rs
++++ b/crates/gameplay/combat/src/combat/death_reward.rs
+@@ -231,6 +231,8 @@ impl<const N: usize> RewardProgressionBinding<N> {
+ /// Complete semantic input of one death's reward composition.
+ #[derive(Debug, Clone)]
+ pub struct CreatureDeathRewardInput<const N: usize> {
++    /// Trusted one-shot Newhaven gear; consumed in the atomic corpse/loot transaction.
++    pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+     /// The corpse `ItemInstance`'s definition, supplied by the caller exactly
+     /// as the loot definitions are (Content binding of `i00005801` waits on
+     /// the Content revision, D3-7).
+@@ -472,6 +474,7 @@ async fn settle_loot(
+     loot_table: &LootTableDefinition,
+     inflight_before_this_death: usize,
+     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
++    tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+ ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
+     // Ground custody has no Instance placement contract. This typed refusal does
+     // not suppress the independent XP path or W03's personal reward entitlements.
+@@ -480,8 +483,62 @@ async fn settle_loot(
+             ItemMintError::AuthorityRejected,
+         ));
+     }
+-    let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
++    let mut plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
+         .map_err(CombatDeathRewardLootError::Plan)?;
++    if let Some(claim) = &tutorial_corruptor {
++        if claim.source_outputs().len() != claim.items().len() {
++            return Err(CombatDeathRewardLootError::Corpse(
++                ItemMintError::InvalidInput,
++            ));
++        }
++        let mut ordinary_ordinal = u32::try_from(claim.items().len())
++            .map_err(|_| CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
++        // Extra event rolls already follow the appended guarantees. Compact
++        // ordinary root slots instead of adding N to those existing positions.
++        for entry in &mut plan.entries {
++            if entry.parent.is_none()
++                && !claim
++                    .source_outputs()
++                    .any(|(_, source)| source == entry.draw_ordinal)
++            {
++                ordinary_ordinal =
++                    ordinary_ordinal
++                        .checked_add(1)
++                        .ok_or(CombatDeathRewardLootError::Corpse(
++                            ItemMintError::InvalidInput,
++                        ))?;
++                entry.placement_ordinal = ordinary_ordinal;
++            }
++        }
++        for (offset, (id, source)) in claim.source_outputs().enumerate() {
++            let entry = plan
++                .entries
++                .iter_mut()
++                .find(|entry| entry.parent.is_none() && entry.draw_ordinal == source)
++                .ok_or(CombatDeathRewardLootError::Corpse(
++                    ItemMintError::InvalidInput,
++                ))?;
++            if entry.item.production_key != format!("oteryn:item.tibia.i{id}")
++                || entry.quantity != 1
++            {
++                return Err(CombatDeathRewardLootError::Corpse(
++                    ItemMintError::InvalidInput,
++                ));
++            }
++            // A replay's guaranteed causes do not change when ordinary loot
++            // gains/loses a stamina, event or duplex roll before preparation.
++            let purpose = crate::durability::tutorial_corruptor::guarantee_purpose(id);
++            if purpose.len() > entry.purpose_key.len() {
++                return Err(CombatDeathRewardLootError::Plan(
++                    crate::combat::LootPlanError::PlanBytesExceeded,
++                ));
++            }
++            entry.purpose_key = purpose;
++            entry.draw_ordinal = u32::try_from(offset)
++                .map_err(|_| CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
++            entry.placement_ordinal = entry.draw_ordinal + 1;
++        }
++    }
+     // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.
+     if plan
+         .entries
+@@ -527,7 +584,7 @@ async fn settle_loot(
+         .freeze_item_mint(session.authority, session.node, corpse_request)
+         .await
+         .map_err(CombatDeathRewardLootError::Corpse)?;
+-    if plan.entries.iter().any(|entry| entry.parent.is_some()) {
++    if tutorial_corruptor.is_some() || plan.entries.iter().any(|entry| entry.parent.is_some()) {
+         let mut children = Vec::with_capacity(plan.entries.len());
+         for entry in &plan.entries {
+             let parent = match entry.parent {
+@@ -578,6 +635,7 @@ async fn settle_loot(
+                 &mut children,
+                 top_damage_character_id,
+                 ground.boss_spawn.clone(),
++                tutorial_corruptor,
+             )
+             .await
+             .map_err(CombatDeathRewardLootError::Corpse)?;
+@@ -815,6 +873,7 @@ pub async fn settle_creature_death_rewards<const N: usize>(
+         &input.loot_table,
+         input.inflight_loot_mints_before_this_death,
+         &mut committed_loot,
++        input.tutorial_corruptor.clone(),
+     )
+     .await;
+
+diff --git a/crates/gameplay/content/src/content/world_reward_claims.rs b/crates/gameplay/content/src/content/world_reward_claims.rs
+index 5c7071e30..b47d0138f 100644
+--- a/crates/gameplay/content/src/content/world_reward_claims.rs
++++ b/crates/gameplay/content/src/content/world_reward_claims.rs
+@@ -6,6 +6,8 @@
+ //! placement's canonical [`PlacementKey`], bound cell and bundle `placement_key`, plus the
+ //! placements that did not bind and the records left out, so the caller can gate boot on it.
+
++mod native_state;
++
+ use crate::content::{
+     ContentError, DefinitionFamily, DefinitionRevisionRef, PlacementKey, ProductionKey,
+     RewardClaimItem, RewardClaimPlacement, TypedDefinitionRef,
+@@ -77,6 +79,8 @@ pub enum UnboundReason {
+ /// Why a record is not a served candidate (§1.5).
+ #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+ pub enum LeftOut {
++    /// QUEST-FINISH owner scope excludes Dawnport from the Newhaven runtime.
++    OwnerExcluded,
+     /// An authored variant record other than a key reward.
+     Variant,
+     /// `readiness` is not `ready` (`WAITING_*`).
+@@ -109,6 +113,8 @@ pub struct BoundPlacement {
+     pub contents: Vec<RewardContainerItem>,
+     /// Source-authored text on a leaf reward; this is not player writing.
+     pub root_text: Option<String>,
++    pub root_fluid_subtype: Option<u8>,
++    pub root_charges_remaining: Option<u32>,
+ }
+
+ #[derive(Debug, Clone, PartialEq, Eq)]
+@@ -117,6 +123,8 @@ pub struct RewardContainerItem {
+     pub count: u32,
+     pub key_number: Option<u16>,
+     pub text: Option<String>,
++    pub fluid_subtype: Option<u8>,
++    pub charges_remaining: Option<u32>,
+ }
+
+ /// A claim whose placements are all bound.
+@@ -234,6 +242,8 @@ struct CandidatePlacement {
+     achievement: Option<String>,
+     contents: Vec<RewardContainerItem>,
+     root_text: Option<String>,
++    root_fluid_subtype: Option<u8>,
++    root_charges_remaining: Option<u32>,
+ }
+
+ const DEFINITION_FIELDS: [&str; 6] = [
+@@ -274,18 +284,35 @@ fn candidate(
+     definition: &serde_json::Map<String, Value>,
+     admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
+ ) -> Result<Result<Candidate, LeftOut>, ClaimsError> {
++    if definition
++        .get("quest")
++        .and_then(|quest| quest.get("key"))
++        .and_then(Value::as_str)
++        == Some("canary:quest/dawnport_quest")
++    {
++        return Ok(Err(LeftOut::OwnerExcluded));
++    }
+     let key_variant = definition.contains_key("definition_profile");
++    let medusa = crystal_medusa_reconciliation(definition);
++    let reconciled = native_state::reconciled(definition);
+     let native_contents = native_container_placements(definition);
++    if definition.contains_key("native_contents") && native_contents.is_none() {
++        return Ok(Err(LeftOut::UnencodedField));
++    }
+     if key_variant && !waits_only_for_key_lowering(definition) && native_contents.is_none() {
+         return Ok(Err(LeftOut::Variant));
+     }
+-    if !key_variant && definition.get("readiness").and_then(Value::as_str) != Some("ready") {
++    if !key_variant
++        && !reconciled
++        && definition.get("readiness").and_then(Value::as_str) != Some("ready")
++    {
+         return Ok(Err(LeftOut::NotReady));
+     }
+     let whole = Value::Object(definition.clone());
+     let claim = definition.get("claim");
+     let encoded = definition.keys().all(|key| {
+         DEFINITION_FIELDS.contains(&key.as_str())
++            || (reconciled && key == "native_contents")
+             || (key_variant && KEY_VARIANT_FIELDS.contains(&key.as_str()))
+     }) && claim.is_some_and(|claim| {
+         only(claim, &["per", "repeat"])
+@@ -315,6 +342,14 @@ fn candidate(
+     }
+     for (index, placement) in placements.iter().enumerate() {
+         let parsed_placement = match native_contents {
++            Some(recipes) if medusa => {
++                let mut native = placement.clone();
++                native["reward"]
++                    .as_object_mut()
++                    .ok_or(ClaimsError("Medusa reward is malformed"))?
++                    .remove("written_text");
++                candidate_container_placement(&native, &recipes[index])?
++            }
+             Some(recipes) => candidate_container_placement(placement, &recipes[index])?,
+             None => candidate_placement(placement, key_variant)?,
+         };
+@@ -381,35 +416,112 @@ fn key_number(binding: &str) -> Option<u16> {
+ /// The source DATA packet is immutable evidence. Only the additional authored
+ /// native projection admits a filled container; missing source or Item facts
+ /// still refuse the entire claim (no partial rewards).
++fn crystal_medusa_reconciliation(definition: &serde_json::Map<String, Value>) -> bool {
++    if definition
++        .get("identity")
++        .and_then(|value| value.get("key"))
++        .and_then(Value::as_str)
++        != Some("oteryn:reward-claim.quest.u7_3.the_medusa_quest")
++    {
++        return false;
++    }
++    // Crystal201189f chest.lua:2017-2024 and handler:42-49: the fox text
++    // belongs to6179/book2815. Canary47dfd handler:40-47,119-123 attaches it
++    // to all Medusa children. Only this complete, exact Crystal projection
++    // resolves that SOURCE-only conflict; no other hold or carrier is erased.
++    let item = |number: u16| {
++        serde_json::json!({"family":"Item",
++        "key":format!("oteryn:item.tibia.i{number}"),"revision":"definition-r1"})
++    };
++    let contents: Vec<_> = [3436, 3567, 3324]
++        .into_iter()
++        .map(|number| serde_json::json!({"item":item(number),"count":1}))
++        .collect();
++    let Some(projection) = definition.get("native_contents") else {
++        return false;
++    };
++    projection.get("source_difference").and_then(Value::as_str)
++        == Some("CRYSTAL_MEDUSA_WITHOUT_CANARY_TEXT")
++        && definition.get("readiness").and_then(Value::as_str) == Some("waiting_data")
++        && definition.get("data_holds")
++            == Some(&serde_json::json!([
++            {"category":"source","code":"SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED","placement_index":0}]))
++        && definition
++            .get("source_variant")
++            .and_then(|value| value.get("source_data"))
++            == Some(&serde_json::json!({"status":"WAITING_SOURCE","missing":[
++                {"code":"SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED","placement_index":0}]}))
++        && definition.get("placements")
++            == Some(&serde_json::json!([{
++            "appearance_tibia_id":1983,"source_binding":{
++                "project_position":{"x":33049,"y":32399,"z":10},
++                "legacy_unique_ids":[{"server":"canary","unique_id":6183},
++                                     {"server":"crystalserver","unique_id":6183}]},
++            "reward":{"container":item(2853),"items":contents,"written_text":{
++                "item":null,"text_ref":{"length":70,"placeholders":[],
++                    "sha256":"3d95b7c96da6a14a36118fbbd5a8397239e7e3cc9931c5f60f65d136bd72ff27"}}}}]))
++        && projection.get("placements")
++            == Some(&serde_json::json!([{
++            "unique_id":6183,"line":2017,"root":item(2853),"capacity":8,"contents":contents,
++            "completion":{"kind":"storage","key":"Storage.Quest.U7_3.TheMedusaQuest"}}]))
++}
++
+ fn native_container_placements(definition: &serde_json::Map<String, Value>) -> Option<&Vec<Value>> {
+-    if definition.get("definition_profile")?.as_str()? != "authored_variant_v1"
+-        || definition.get("native_admission")?.as_str()? != "WAITING_IMPLEMENTATION"
+-        || definition.get("readiness")?.as_str()? != "waiting_implementation"
+-        || !definition.get("data_holds")?.as_array()?.is_empty()
+-        || definition
+-            .get("source_variant")?
+-            .get("source_data")?
+-            .get("status")?
+-            .as_str()?
+-            != "COMPLETE"
++    let medusa = crystal_medusa_reconciliation(definition);
++    let reconciled = native_state::reconciled(definition);
++    if !reconciled
++        && (definition.get("definition_profile")?.as_str()? != "authored_variant_v1"
++            || definition.get("native_admission")?.as_str()? != "WAITING_IMPLEMENTATION"
++            || (!medusa
++                && (definition.get("readiness")?.as_str()? != "waiting_implementation"
++                    || !definition.get("data_holds")?.as_array()?.is_empty()
++                    || definition
++                        .get("source_variant")?
++                        .get("source_data")?
++                        .get("status")?
++                        .as_str()?
++                        != "COMPLETE")))
+     {
+         return None;
+     }
+     let projection = definition.get("native_contents")?;
+     if !only(
+         projection,
+-        &["schema", "revision", "source_sha256", "placements"],
++        &[
++            "schema",
++            "revision",
++            "source_sha256",
++            "placements",
++            "source_difference",
++        ],
+     ) || projection.get("schema")?.as_str()? != "OTERYN_NATIVE_CONTAINER_REWARD/v1"
+         || projection.get("revision")?.as_str()? != "201189f871d23597b82caf88fd611454a2ddefb8"
+         || projection.get("source_sha256")?.as_str()?
+             != "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
++        || (projection.get("source_difference").is_some() && !medusa && !reconciled)
++    {
++        return None;
++    }
++    let placements = projection.get("placements")?.as_array()?;
++    if placements.is_empty()
++        || (!reconciled
++            && placements.iter().any(|recipe| {
++                recipe.get("root_charges_remaining").is_some()
++                    || recipe.get("root_fluid_subtype").is_some()
++                    || recipe
++                        .get("contents")
++                        .and_then(Value::as_array)
++                        .is_some_and(|children| {
++                            children.iter().any(|child| {
++                                child.get("fluid_subtype").is_some()
++                                    || child.get("charges_remaining").is_some()
++                            })
++                        })
++            }))
+     {
+         return None;
+     }
+-    projection
+-        .get("placements")?
+-        .as_array()
+-        .filter(|entries| !entries.is_empty())
++    Some(placements)
+ }
+
+ fn candidate_container_placement(
+@@ -437,6 +549,7 @@ fn candidate_container_placement(
+             "completion",
+             "achievement",
+             "root_text",
++            "root_charges_remaining",
+         ],
+     ) {
+         return Ok(None);
+@@ -505,7 +618,12 @@ fn candidate_container_placement(
+                 Some(body.to_owned())
+             }
+             None if achievement.is_some() && only(reward, &["items"]) => None,
+-            None if achievement.is_none() && key_leaf => None,
++            None if achievement.is_none()
++                && (key_leaf
++                    || recipe.get("root_charges_remaining").and_then(Value::as_u64) == Some(1)) =>
++            {
++                None
++            }
+             None => return Ok(None),
+         };
+         if !key_leaf {
+@@ -519,6 +637,10 @@ fn candidate_container_placement(
+         }
+         result.achievement = achievement;
+         result.root_text = root_text;
++        result.root_charges_remaining = recipe
++            .get("root_charges_remaining")
++            .and_then(Value::as_u64)
++            .and_then(|v| u32::try_from(v).ok());
+         return Ok(Some(result));
+     }
+     if recipe.get("root_text").is_some() {
+@@ -568,8 +690,17 @@ fn candidate_container_placement(
+     }
+     result.achievement = achievement;
+     for (row, source) in rows.iter().zip(source_rows) {
+-        if !only(row, &["item", "count", "key_number", "text"])
+-            || !only(source, &["item", "count"])
++        if !only(
++            row,
++            &[
++                "item",
++                "count",
++                "key_number",
++                "text",
++                "fluid_subtype",
++                "charges_remaining",
++            ],
++        ) || !only(source, &["item", "count"])
+             || row.get("item") != source.get("item")
+             || row.get("count") != source.get("count")
+         {
+@@ -633,6 +764,16 @@ fn candidate_container_placement(
+             count: child.count,
+             key_number: number,
+             text,
++            fluid_subtype: row
++                .get("fluid_subtype")
++                .and_then(Value::as_u64)
++                .map(|n| u8::try_from(n).map_err(|_| bad.clone()))
++                .transpose()?,
++            charges_remaining: row
++                .get("charges_remaining")
++                .and_then(Value::as_u64)
++                .map(|n| u32::try_from(n).map_err(|_| bad.clone()))
++                .transpose()?,
+         });
+     }
+     if result
+@@ -828,6 +969,8 @@ fn candidate_placement(
+         achievement: None,
+         contents: Vec::new(),
+         root_text: None,
++        root_fluid_subtype: None,
++        root_charges_remaining: None,
+     }))
+ }
+
+@@ -871,6 +1014,8 @@ fn bind_candidate(
+                 bundle_placement_key,
+                 contents: placement.contents.clone(),
+                 root_text: placement.root_text.clone(),
++                root_fluid_subtype: placement.root_fluid_subtype,
++                root_charges_remaining: placement.root_charges_remaining,
+             }),
+             Err(reason) => unbound.push(UnboundPlacement {
+                 claim: key.to_owned(),
+@@ -932,6 +1077,102 @@ fn bind_placement(
+ mod container_tests {
+     use super::*;
+
++    #[test]
++    fn source_charge_and_fluid_projections_reach_the_native_candidate() {
++        for suffix in [
++            "kv.deeperfibula4",
++            "quest.u7_2.the_queen_of_the_banshees.reward.stone_skin_amulet",
++            "quest.u15_24.targuna.silver_amulet_chest",
++            "quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield",
++            "kv.ornamentedshield",
++            "kv.goblintemple2",
++            "quest.u7_9.dreamers_challenge.chests_wine",
++            "kv.present_box",
++        ] {
++            let source = authored(suffix).expect("source recipe");
++            let parsed = candidate(source.as_object().expect("definition"), &|_| true)
++                .expect("decoded")
++                .expect(suffix);
++            assert!(
++                parsed
++                    .placements
++                    .iter()
++                    .all(|placement| placement.root_charges_remaining == Some(1)
++                        || placement
++                            .contents
++                            .iter()
++                            .any(|child| child.charges_remaining == Some(1)
++                                || child.fluid_subtype.is_some())),
++                "{suffix}: explicit instance state must survive projection"
++            );
++            let mut changed = source.clone();
++            changed["native_contents"]
++                .as_object_mut()
++                .expect("projection")
++                .remove("source_difference");
++            assert!(
++                candidate(changed.as_object().expect("definition"), &|_| true)
++                    .expect("decoded")
++                    .is_err(),
++                "{suffix}: source choice is mandatory"
++            );
++            for field in ["schema", "source_sha256"] {
++                let mut changed = source.clone();
++                changed["native_contents"][field] = "invalid".into();
++                assert!(
++                    candidate(changed.as_object().expect("definition"), &|_| true)
++                        .expect("decoded")
++                        .is_err(),
++                    "{suffix}: invalid {field} must not fall back to default state"
++                );
++            }
++        }
++    }
++
++    #[test]
++    fn medusa_uses_exact_crystal_bag_without_canary_text_carrier_guess() {
++        let source = authored("quest.u7_3.the_medusa_quest").expect("Medusa source");
++        let parsed = candidate(source.as_object().expect("definition"), &|_| true)
++            .expect("decoded")
++            .expect("complete Crystal bag");
++        assert_eq!(parsed.placements[0].contents.len(), 3);
++        for mutation in ["sibling hold", "carrier", "count", "difference"] {
++            let mut changed = source.clone();
++            match mutation {
++                "sibling hold" => changed["data_holds"]
++                    .as_array_mut()
++                    .expect("holds")
++                    .push(serde_json::json!({"category":"item","code":"ITEM_SEMANTICS_MISSING"})),
++                "carrier" => {
++                    changed["placements"][0]["reward"]["written_text"]["item"] =
++                        changed["placements"][0]["reward"]["items"][0]["item"].clone()
++                }
++                "count" => changed["placements"][0]["reward"]["items"][0]["count"] = 2.into(),
++                "difference" => changed["native_contents"]["source_difference"] = "guessed".into(),
++                _ => unreachable!(),
++            }
++            assert!(
++                candidate(changed.as_object().expect("definition"), &|_| true)
++                    .expect("decoded")
++                    .is_err(),
++                "{mutation}"
++            );
++        }
++    }
++
++    #[test]
++    fn owner_scope_excludes_dawnport_rewards_even_when_items_are_admitted() {
++        for suffix in ["quest.key.id0010", "quest.u10_55.dawnport.torn_log_book"] {
++            let definition = authored(suffix).expect("Dawnport source claim retained");
++            assert!(
++                candidate(definition.as_object().expect("definition"), &|_| true)
++                    .expect("well-formed source claim")
++                    .is_err(),
++                "{suffix}"
++            );
++        }
++    }
++
+     fn authored(suffix: &str) -> Option<Value> {
+         for shard in REWARD_CLAIM_SHARDS {
+             let document: Value = serde_json::from_str(shard).expect("embedded shard");
+diff --git a/crates/gameplay/content/src/content/world_reward_claims/native_state.rs b/crates/gameplay/content/src/content/world_reward_claims/native_state.rs
+new file mode 100644
+index 000000000..681560685
+--- /dev/null
++++ b/crates/gameplay/content/src/content/world_reward_claims/native_state.rs
+@@ -0,0 +1,136 @@
++//! Exact source choices for fluid contents and explicit one-charge rewards.
++use super::*;
++
++type StateChoice = (
++    &'static [u64],
++    &'static [(usize, u16, u8)],
++    &'static [(usize, u16)],
++    Option<u16>,
++);
++
++pub(super) fn reconciled(definition: &serde_json::Map<String, Value>) -> bool {
++    let key = definition
++        .get("identity")
++        .and_then(|v| v.get("key"))
++        .and_then(Value::as_str);
++    let Some(native) = definition.get("native_contents") else {
++        return false;
++    };
++    let difference = native.get("source_difference").and_then(Value::as_str);
++    // (UIDs, exact per-child fluid/charge values, exact root charge).
++    let (uids, fluids, charges, root_charge): StateChoice = match (key, difference) {
++        (Some("oteryn:reward-claim.kv.goblintemple2"), Some("WIKI_MILK_OVERRIDES_DONOR_WATER")) => {
++            (&[6119], &[(2, 2874, 9)], &[], None)
++        }
++        (
++            Some("oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine"),
++            Some("WIKI_WINE_OVERRIDES_DONOR_WATER"),
++        ) => (&[6197, 6198, 6199, 6200], &[(1, 2874, 2)], &[], None),
++        (Some("oteryn:reward-claim.kv.present_box"), Some("CRYSTAL_PRESENT_WATER_SUBTYPES")) => {
++            (&[6113], &[(0, 2882, 1), (2, 2881, 1)], &[], None)
++        }
++        (
++            Some("oteryn:reward-claim.kv.deeperfibula4"),
++            Some("EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"),
++        ) => (&[6011], &[], &[], Some(3082)),
++        (
++            Some(
++                "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.stone_skin_amulet",
++            ),
++            Some("EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"),
++        ) => (&[6056], &[], &[], Some(3081)),
++        (
++            Some("oteryn:reward-claim.quest.u15_24.targuna.silver_amulet_chest"),
++            Some("EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"),
++        ) => (&[14093], &[], &[], Some(3054)),
++        (
++            Some("oteryn:reward-claim.quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield"),
++            Some("EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"),
++        ) => (&[6062], &[], &[(6, 3085), (7, 3048)], None),
++        (
++            Some("oteryn:reward-claim.kv.ornamentedshield"),
++            Some("EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"),
++        ) => (&[6063], &[], &[(2, 3083)], None),
++        _ => return false,
++    };
++    let Some(placements) = definition.get("placements").and_then(Value::as_array) else {
++        return false;
++    };
++    let Some(recipes) = native.get("placements").and_then(Value::as_array) else {
++        return false;
++    };
++    if placements.len() != uids.len() || recipes.len() != uids.len() {
++        return false;
++    }
++    if !fluids.is_empty()
++        && definition
++            .get("source_variant")
++            .and_then(|v| v.get("source_data"))
++            != Some(&serde_json::json!({"status":"COMPLETE","missing":[]}))
++    {
++        return false;
++    }
++    let mut expected_holds = Vec::new();
++    for (index, ((source, recipe), uid)) in placements.iter().zip(recipes).zip(uids).enumerate() {
++        if recipe.get("unique_id").and_then(Value::as_u64) != Some(*uid)
++            || !source["source_binding"]["legacy_unique_ids"]
++                .as_array()
++                .is_some_and(|ids| {
++                    ids.iter()
++                        .any(|v| v["server"] == "crystalserver" && v["unique_id"] == *uid)
++                })
++        {
++            return false;
++        }
++        let Some(children) = recipe.get("contents").and_then(Value::as_array) else {
++            return false;
++        };
++        if recipe.get("root_fluid_subtype").is_some() {
++            return false;
++        }
++        if let Some(number) = root_charge {
++            if recipe["root"]["key"] != format!("oteryn:item.tibia.i{number}")
++                || recipe.get("root_charges_remaining").and_then(Value::as_u64) != Some(1)
++            {
++                return false;
++            }
++        } else if recipe.get("root_charges_remaining").is_some() {
++            return false;
++        }
++        for (ordinal, child) in children.iter().enumerate() {
++            let fluid = fluids.iter().find(|(i, _, _)| *i == ordinal);
++            let charge = charges.iter().find(|(i, _)| *i == ordinal);
++            match fluid {
++                Some((_, number, subtype))
++                    if child["item"]["key"] == format!("oteryn:item.tibia.i{number}")
++                        && child["fluid_subtype"].as_u64() == Some(u64::from(*subtype)) => {}
++                None if child.get("fluid_subtype").is_none() => {}
++                _ => return false,
++            }
++            match charge {
++                Some((_, number))
++                    if child["item"]["key"] == format!("oteryn:item.tibia.i{number}")
++                        && child["charges_remaining"].as_u64() == Some(1) => {}
++                None if child.get("charges_remaining").is_none() => {}
++                _ => return false,
++            }
++        }
++        for (ordinal, number, _) in fluids {
++            if children.get(*ordinal).is_none() {
++                return false;
++            }
++            expected_holds.push(serde_json::json!({"category":"item","code":"ITEM_SEMANTICS_MISSING","item":format!("oteryn:item.tibia.i{number}"),"placement_index":index,"reason":"waiting","reward_field":"items","reward_index":ordinal}));
++        }
++        for (ordinal, _) in charges {
++            if children.get(*ordinal).is_none() {
++                return false;
++            }
++            expected_holds.push(serde_json::json!({"category":"source","code":"SOURCE_CHARGE_MISMATCH","placement_index":index,"reward_field":"items","reward_index":ordinal}));
++        }
++    }
++    match definition.get("data_holds") {
++        None => root_charge.is_some(),
++        Some(Value::Array(holds)) => holds.is_empty() || holds == &expected_holds,
++        _ => false,
++    }
++}
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
+index 8b4d709e7..f6256693d 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
+@@ -110,6 +110,8 @@ pub struct PendingKillSettlement {
+     /// Frozen callback facts survive corpse replay and actor-slot reuse.
+     pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
+     pub(super) callback_loot: Vec<crate::combat::LootDefinitionRef>,
++    /// The first prepared tutorial table survives retries and retained-corpse replay.
++    pub(super) tutorial_loot: Arc<OnceLock<crate::domain::loot_data::LootTableDefinition>>,
+     /// Frozen under the existing party/Character locks before the first commit attempt.
+     /// Clones and a requeued entry retain the original recipients and occurrence IDs.
+     pub(super) task_board_recipients: Arc<OnceLock<Vec<TaskBoardKillRecipient>>>,
+@@ -189,6 +191,7 @@ impl PendingKillSettlement {
+             forge: None,
+             echo: None,
+             callback_loot: Vec::new(),
++            tutorial_loot: Arc::default(),
+             task_board_recipients: Arc::default(),
+             talisman: Arc::default(),
+             boss_reward: None,
+@@ -259,6 +262,12 @@ struct KillQueueState {
+     /// At most one clock per bounded native corpse projection, including settled
+     /// deaths whose original command may still replay. Pruned on every capture.
+     activity_deaths: Vec<(ExactActorRef, CapturedActivityDeath)>,
++    /// Same retained-projection bound as activity_deaths; no uncommitted death is
++    /// recovered across a lost scope incarnation (D52).
++    tutorial_loot: Vec<(
++        ExactActorRef,
++        Arc<OnceLock<crate::domain::loot_data::LootTableDefinition>>,
++    )>,
+     queued: VecDeque<PendingKillSettlement>,
+     /// Admission order survives retries and release parks. Bounded by KILLRW-RL-01.
+     accepted_order: VecDeque<CreatureDeathOccurrenceKey>,
+@@ -696,6 +705,29 @@ impl KillSettlementQueue {
+         Some(frozen)
+     }
+
++    fn freeze_tutorial_loot(
++        &self,
++        runtime: &ChannelRuntimeV1,
++        target: ExactActorRef,
++    ) -> Arc<OnceLock<crate::domain::loot_data::LootTableDefinition>> {
++        let mut state = self.state();
++        state
++            .tutorial_loot
++            .retain(|(actor, _)| runtime.retains_corpse_projection(*actor));
++        if let Some((_, table)) = state
++            .tutorial_loot
++            .iter()
++            .find(|(actor, _)| *actor == target)
++        {
++            return Arc::clone(table);
++        }
++        let table = Arc::default();
++        if runtime.retains_corpse_projection(target) {
++            state.tutorial_loot.push((target, Arc::clone(&table)));
++        }
++        table
++    }
++
+     pub fn append(&self, entry: PendingKillSettlement) -> AppendOutcome {
+         let mut state = self.state();
+         if state.holds(entry.facts.death) {
+@@ -1023,6 +1055,36 @@ impl KillSettlementQueue {
+         true
+     }
+
++    /// Top up this death's existing take and extra reservations to its frozen
++    /// exact plan, under the same scope counter lock used by take/release.
++    fn ensure_loot_mint_reservation(
++        &self,
++        death: CreatureDeathOccurrenceKey,
++        initial: usize,
++        required: usize,
++    ) -> bool {
++        let mut state = self.state();
++        if !state.in_flight.iter().any(|(held, _, _, _)| *held == death) {
++            return false;
++        }
++        let held = initial
++            + state
++                .extra_loot_mints
++                .iter()
++                .filter(|(held, _)| *held == death)
++                .map(|(_, extra)| *extra)
++                .sum::<usize>();
++        let extra = required.saturating_sub(held);
++        if check_inflight_loot_mint_capacity(state.reserved_loot_mints, extra).is_err() {
++            return false;
++        }
++        state.reserved_loot_mints += extra;
++        if extra > 0 {
++            state.extra_loot_mints.push((death, extra));
++        }
++        true
++    }
++
+     /// The number of releases holding `principal`'s mark.
+     #[cfg(test)]
+     pub fn holders(&self, principal: Principal) -> Option<usize> {
+@@ -1410,6 +1472,7 @@ pub fn record_creature_kill(
+                             forge: None,
+                             echo,
+                             callback_loot: Vec::new(),
++                            tutorial_loot: Arc::default(),
+                             task_board_recipients: Arc::default(),
+                             talisman: Arc::default(),
+                             boss_reward: None,
+@@ -1733,6 +1796,7 @@ pub fn record_creature_kill(
+         forge,
+         echo,
+         callback_loot,
++        tutorial_loot: Arc::default(),
+         task_board_recipients: Arc::default(),
+         talisman: Arc::default(),
+         grizzly: None,
+@@ -1762,6 +1826,9 @@ fn accept_kill(
+     mut entry: PendingKillSettlement,
+ ) -> AppendOutcome {
+     super::grizzly_kills::capture(runtime, queue, &mut entry);
++    if entry.creature == "oteryn:creature.the_corruptor" {
++        entry.tutorial_loot = queue.freeze_tutorial_loot(runtime, entry.target);
++    }
+     let target = entry.target;
+     let creature = entry.creature.clone();
+     let outcome = queue.append(entry);
+@@ -2228,6 +2295,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+                 admission: self,
+                 fence,
+                 event_rates: taken.event_rates,
++                initial_loot_mints: taken.loot_mints,
+             }
+             .settle(entry, taken.inflight_before())
+             .await;
+@@ -2327,6 +2395,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
+     }
+ }
+ struct DurableKillSettle<'s, 'a, 'f, 'g> {
++    initial_loot_mints: usize,
+     event_rates: oteryn_gameplay_foundation::scheduled_events::EventRates,
+     admission: &'s ComposedFreshAdmission<'a, 'f, 'g>,
+     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+@@ -2736,12 +2805,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
+             expected_character_revision,
+             ..self.fence
+         };
+-        let Ok(mut loot_table) = admission.tutorial_corruptor_table(fence, &entry).await else {
+-            return SettleReport {
+-                verdict: SettleVerdict::Retry,
+-                no_progression: false,
+-            };
+-        };
++        let mut loot_table = row.loot_table.clone();
+         if let Some(race) = &row.race {
+             let bonus = entry
+                 .talisman
+@@ -2803,7 +2867,45 @@ impl DurableKillSettle<'_, '_, '_, '_> {
+             }
+         }
+         super::echo_warden::drops::append_callback_loot(&mut loot_table, &entry.callback_loot);
++        // Ordinary stamina/event/duplex transforms must never remove or multiply
++        // the one-shot tutorial reward. Its arm is consumed by the atomic MINT.
++        let Ok((loot_table, tutorial_corruptor)) = admission
++            .tutorial_corruptor_table(fence, &entry, loot_table)
++            .await
++        else {
++            return SettleReport {
++                verdict: SettleVerdict::Retry,
++                no_progression: false,
++            };
++        };
++        // The cached first table can contain more ordinary rolls than this
++        // retry's live modifiers reserved. Charge only its positive shortfall;
++        // the existing take and extras are both released on every requeue/end.
++        if tutorial_corruptor.is_some()
++            && let Ok(plan) = plan_creature_loot(
++                loot_plan_seed(entry.facts.death),
++                &row.loot_table_ref,
++                &loot_table,
++            )
++            && !admission
++                .states
++                .attack
++                .lock()
++                .await
++                .kills()
++                .ensure_loot_mint_reservation(
++                    entry.facts.death,
++                    self.initial_loot_mints,
++                    plan.entries.len(),
++                )
++        {
++            return SettleReport {
++                verdict: SettleVerdict::Retry,
++                no_progression: false,
++            };
++        }
+         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
++            tutorial_corruptor,
+             corpse_item: row.corpse_item.clone(),
+             loot_table_ref: row.loot_table_ref.clone(),
+             loot_table,
+diff --git a/crates/gameplay/durability/src/durability/tutorial_corruptor.rs b/crates/gameplay/durability/src/durability/tutorial_corruptor.rs
+index 9a038a3ff..9b181faf2 100644
+--- a/crates/gameplay/durability/src/durability/tutorial_corruptor.rs
++++ b/crates/gameplay/durability/src/durability/tutorial_corruptor.rs
+@@ -1,4 +1,5 @@
+-//! Claim one Corruptor reward using the existing death identity and tutorial reducer.
++//! Newhaven's one-shot entitlement is consumed by the atomic corpse/loot MINT owner.
++use super::DurabilityError;
+ use super::DurabilityRoot;
+ use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
+ use super::character_progression::{
+@@ -12,22 +13,56 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
+ use crate::foundation::CreatureDeathOccurrenceKey;
+ use oteryn_gameplay_quests::tutorial::{TutorialEvent, corruptor_items, tutorial_transition};
+
++/// Trusted preparation only. Preparing this value never consumes an entitlement.
++#[derive(Debug, Clone)]
++pub struct TutorialCorruptorClaim {
++    pub(crate) fence: CurrentCharacterGameplayFence,
++    pub(crate) death: CreatureDeathOccurrenceKey,
++    items: Vec<u32>,
++    pub(crate) draw_ordinals: Vec<u32>,
++}
++
++impl TutorialCorruptorClaim {
++    /// The exact vocation gear selected under the current Character fence.
++    pub fn items(&self) -> &[u32] {
++        &self.items
++    }
++
++    /// Bind guaranteed outputs to distinct first-roll planner source ordinals.
++    pub fn bind_draw_ordinals(mut self, first: u32) -> Option<Self> {
++        self.draw_ordinals = (0..self.items.len())
++            .map(|offset| first.checked_add(u32::try_from(offset).ok()?))
++            .collect::<Option<Vec<_>>>()?;
++        Some(self)
++    }
++
++    /// Selected Item IDs paired with their distinct first-roll planner sources.
++    pub fn source_outputs(&self) -> impl ExactSizeIterator<Item = (u32, u32)> + '_ {
++        self.items
++            .iter()
++            .copied()
++            .zip(self.draw_ordinals.iter().copied())
++    }
++}
++
++/// The one-shot branch has a stable MINT cause separate from ordinary drops.
++pub fn guarantee_purpose(item: u32) -> String {
++    // Shorter than the original canonical Item purpose, so remapping cannot
++    // exceed the planner's already validated byte-footprint budget.
++    format!("oteryn:nhc.i{item}")
++}
++
+ impl DurabilityRoot {
+-    /// A same-death retry gets exactly the first selection; another death gets nothing
+-    /// after the track is cleared. No client input constructs a creature-death key.
+-    pub async fn claim_tutorial_corruptor(
++    /// Replays retain the original item selection; an uncommitted preparation leaves
++    /// the arm available after a process loss. Only the atomic batch writer consumes it.
++    pub async fn prepare_tutorial_corruptor(
+         &self,
+         authority: &ReconciledCharacterAuthority<'_, '_>,
+         node: &NodeIncarnationProof,
+         fence: CurrentCharacterGameplayFence,
+         death: CreatureDeathOccurrenceKey,
+-        defined: Vec<u32>,
+-    ) -> Result<Vec<u32>, CharacterProgressionError> {
+-        let channel_id = death
+-            .channel_id()
+-            .ok_or(CharacterProgressionError::InvalidInput)?;
+-        if defined.len() > 3
+-            || death.world_id() != fence.runtime_scope.world_id()
++    ) -> Result<Option<TutorialCorruptorClaim>, CharacterProgressionError> {
++        if death.channel_id().is_none()
+             || fence.runtime_scope != death.runtime_scope()
+             || death.scope_ownership_generation() != fence.scope_ownership_generation
+         {
+@@ -37,31 +72,119 @@ impl DurabilityRoot {
+             .record_for(self)
+             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+         let node = node.clone();
+-        self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
+-            let mut tx=begin_semantic_transaction(holder,deadline).await?;
+-            assert_recovery_fence(&mut tx,&recovery).await?;
+-            lock_admission_relations(&mut tx).await?;
+-            if let Err(error)=assert_gameplay_fence(&mut tx,&fence,&node).await? {return Ok(Err(error));}
+-            let previous:Option<Vec<i32>>=sqlx::query_scalar("SELECT item_ids FROM game_tutorial_corruptor_claims WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid AND scope_generation=$4::text::numeric(20,0) AND actor_id=$5 AND actor_generation=$6::text::numeric(20,0)")
+-                .bind(fence.character_id.as_bytes().as_slice()).bind(death.world_id().as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
+-                .bind(death.scope_ownership_generation().get().to_string()).bind(i64::from(death.actor_local_id())).bind(death.actor_local_generation().to_string())
+-                .fetch_optional(&mut *tx).await?;
+-            if let Some(previous)=previous {
+-                let previous=previous.into_iter().map(|id|u32::try_from(id).map_err(|_|super::DurabilityError::InvalidStoredState)).collect::<Result<Vec<_>,_>>()?;
+-                commit_semantic_transaction(tx,deadline).await?;
+-                return Ok(Ok(previous));
+-            }
+-            let TutorialProgressOutcome::Read(Some(stored))=tutorial_progress_in_transaction(&mut tx,fence.character_id,None).await? else {return Ok(Ok(Vec::new()));};
+-            let Some(next)=tutorial_transition(true,Some(stored.progress),TutorialEvent::Corruptor,"none",false) else {return Ok(Ok(Vec::new()));};
+-            let build=super::character_death::load_death_build(&mut tx,fence.character_id).await?;
+-            if !defined.is_empty() && defined!=corruptor_items(build.vocation()) {return Ok(Err(CharacterProgressionError::InvalidInput));}
+-            let ids=defined.iter().map(|id|i32::try_from(*id)).collect::<Result<Vec<_>,_>>().map_err(|_|super::DurabilityError::InvalidStoredState)?;
+-            sqlx::query("INSERT INTO game_tutorial_corruptor_claims(character_id,world_id,channel_id,scope_generation,actor_id,actor_generation,item_ids) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),$5,$6::text::numeric(20,0),$7)")
+-                .bind(fence.character_id.as_bytes().as_slice()).bind(death.world_id().as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
+-                .bind(death.scope_ownership_generation().get().to_string()).bind(i64::from(death.actor_local_id())).bind(death.actor_local_generation().to_string()).bind(ids).execute(&mut *tx).await?;
+-            tutorial_progress_in_transaction(&mut tx,fence.character_id,Some((stored.version,next.progress))).await?;
+-            commit_semantic_transaction(tx,deadline).await?;
+-            Ok(Ok(defined))
+-        })).await?
++        self.try_issue_semantic_pass()?
++            .run(move |holder, deadline| {
++                Box::pin(async move {
++                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
++                    assert_recovery_fence(&mut tx, &recovery).await?;
++                    lock_admission_relations(&mut tx).await?;
++                    if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
++                        return Ok(Err(error));
++                    }
++                    let prior = prior_claim(&mut tx, fence, death).await?;
++                    let items = if let Some(items) = prior {
++                        items
++                    } else {
++                        let TutorialProgressOutcome::Read(Some(stored)) =
++                            tutorial_progress_in_transaction(&mut tx, fence.character_id, None)
++                                .await?
++                        else {
++                            return Ok(Ok(None));
++                        };
++                        if !stored.progress.corruptor {
++                            return Ok(Ok(None));
++                        }
++                        let build =
++                            super::character_death::load_death_build(&mut tx, fence.character_id)
++                                .await?;
++                        corruptor_items(build.vocation()).to_vec()
++                    };
++                    commit_semantic_transaction(tx, deadline).await?;
++                    Ok(Ok((!items.is_empty()).then_some(TutorialCorruptorClaim {
++                        fence,
++                        death,
++                        items,
++                        draw_ordinals: Vec::new(),
++                    })))
++                })
++            })
++            .await?
++    }
++}
++
++async fn prior_claim(
++    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
++    fence: CurrentCharacterGameplayFence,
++    death: CreatureDeathOccurrenceKey,
++) -> Result<Option<Vec<u32>>, DurabilityError> {
++    let channel = death
++        .channel_id()
++        .ok_or(DurabilityError::InvalidStoredState)?;
++    let prior: Option<Vec<i32>> = sqlx::query_scalar("SELECT item_ids FROM game_tutorial_corruptor_claims WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid AND scope_generation=$4::text::numeric(20,0) AND actor_id=$5 AND actor_generation=$6::text::numeric(20,0)")
++        .bind(fence.character_id.as_bytes().as_slice()).bind(death.world_id().as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
++        .bind(death.scope_ownership_generation().get().to_string()).bind(i64::from(death.actor_local_id())).bind(death.actor_local_generation().to_string())
++        .fetch_optional(&mut **tx).await?;
++    prior
++        .map(|ids| {
++            ids.into_iter()
++                .map(|id| u32::try_from(id).map_err(|_| DurabilityError::InvalidStoredState))
++                .collect()
++        })
++        .transpose()
++}
++
++/// Called only inside the same root-locked transaction that inserted the corpse
++/// and its entire frozen gear set. Any subsequent MINT failure rolls this back too.
++pub(super) async fn consume_in_transaction(
++    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
++    node: &NodeIncarnationProof,
++    claim: &TutorialCorruptorClaim,
++) -> Result<(), DurabilityError> {
++    let fence = claim.fence;
++    assert_gameplay_fence(tx, &fence, node)
++        .await?
++        .map_err(|_| DurabilityError::InvalidStoredState)?;
++    if let Some(prior) = prior_claim(tx, fence, claim.death).await? {
++        if prior != claim.items {
++            return Err(DurabilityError::InvalidStoredState);
++        }
++        return Ok(());
++    }
++    let build = super::character_death::load_death_build(tx, fence.character_id).await?;
++    if claim.items.is_empty() || claim.items != corruptor_items(build.vocation()) {
++        return Err(DurabilityError::InvalidStoredState);
+     }
++    let TutorialProgressOutcome::Read(Some(stored)) =
++        tutorial_progress_in_transaction(tx, fence.character_id, None).await?
++    else {
++        return Err(DurabilityError::InvalidStoredState);
++    };
++    let next = tutorial_transition(
++        true,
++        Some(stored.progress),
++        TutorialEvent::Corruptor,
++        "none",
++        false,
++    )
++    .ok_or(DurabilityError::InvalidStoredState)?;
++    let death = claim.death;
++    let channel = death
++        .channel_id()
++        .ok_or(DurabilityError::InvalidStoredState)?;
++    let ids: Vec<i32> = claim
++        .items
++        .iter()
++        .map(|id| i32::try_from(*id).map_err(|_| DurabilityError::InvalidStoredState))
++        .collect::<Result<_, _>>()?;
++    sqlx::query("INSERT INTO game_tutorial_corruptor_claims(character_id,world_id,channel_id,scope_generation,actor_id,actor_generation,item_ids) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),$5,$6::text::numeric(20,0),$7)")
++        .bind(fence.character_id.as_bytes().as_slice()).bind(death.world_id().as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
++        .bind(death.scope_ownership_generation().get().to_string()).bind(i64::from(death.actor_local_id())).bind(death.actor_local_generation().to_string())
++        .bind(ids).execute(&mut **tx).await?;
++    tutorial_progress_in_transaction(
++        tx,
++        fence.character_id,
++        Some((stored.version, next.progress)),
++    )
++    .await?;
++    Ok(())
+ }

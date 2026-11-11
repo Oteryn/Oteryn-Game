@@ -23,6 +23,7 @@ pub(super) fn initialize<T: Stepper>(
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
     outbox.targeting_initialize(session.feature_selected(15));
+    outbox.diagonal_movement_initialize(session.feature_selected(371));
     // Publish sources only after their equipment, movement and targeting routes are ready.
     outbox.inventory_initialize(session.inventory(), session.item_count_selected());
     outbox.container_initialize_with_house_capacity(

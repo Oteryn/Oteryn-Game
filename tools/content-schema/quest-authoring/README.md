@@ -289,7 +289,7 @@ not a signature or runtime authority; all actual game journeys remain NOT_RUN.
 
 ITEMHOLD-Q's live claim admissions preserve that historical SOURCE frame, as the
 earlier Mad Mage admission does. `claim_catalogue()` retains the frozen Power Ring
-readiness and the Ornamented Shield, Present and Triangle Tower hold categories
+readiness and the Draconia, Ornamented Shield, Present and Triangle Tower hold categories
 only for SOURCE compilation. Canonical claim holds and native contents remain the
 current admitted values. `amend_itemhold_source_receipt.py` refreshes only the
 compiler pin after comparing every frozen SOURCE core; it verifies all other
@@ -299,6 +299,8 @@ unchanged. Its `--check` mode verifies the exact generated receipt.
 After changing this compatibility projection, regenerate in dependency order:
 
 ```sh
+python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py
+python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content
 python tools/content-schema/quest-authoring/amend_itemhold_source_receipt.py
 python tools/content-schema/quest-authoring/quest_tree_authoring.py content --source-packet tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json
 python tools/content-schema/quest-authoring/quest_binding_authoring.py
@@ -448,6 +450,10 @@ evidence retain their original identities; this projection does not admit
 native triggers or reward delivery. Regenerate with the tree command above;
 check reproducibility with `--check`. Resolver tests run with
 `python -m unittest discover -s . -p test_quest_item_keys.py`.
+
+Shared atomic NPC item exchanges and outfit/addon grants are described in
+[shared-reward-callbacks.md](shared-reward-callbacks.md), with the closed callback
+schema and offline donor catalogue producer beside it.
 
 Item or RewardClaim promotions also change the Rust chest witness inventory.
 Regenerate `quest_callback_coverage.py --canary <pinned-root> --crystal <pinned-root>`

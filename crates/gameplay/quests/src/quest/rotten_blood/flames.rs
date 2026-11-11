@@ -62,17 +62,33 @@ pub fn by_inactive(id: u16) -> Option<&'static FlameSource> {
 }
 
 pub(crate) fn callbacks() -> Vec<Callback> {
-    FLAMES.iter().map(|source| Callback { track_initials: Default::default(), character_requirements: None, required_completed_quests: Vec::new(), requires_premium: false,
+    FLAMES.iter().map(|source| Callback {
+        use_range: 1,
+        disguise: None,
+        remote_teleport: None,
+        state_operations: Vec::new(),
+        completes: false,
+        premium_required: false,
+        present: Vec::new(),
+        required_travel: Vec::new(),
+        failure_teleport: None,
+        item_reward: None,
+        reward_bundle: false,
+        achievements: Vec::new(),
+        activation: None,
+        requirements: None, track_initials: Default::default(), character_requirements: None, required_completed_quests: Vec::new(), requires_premium: false,
         admission: None,
         world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         state_ops: Vec::new(), world_requirements: Vec::new(), facing: None,
         key:source.key.into(), quest:QUEST.into(), trigger:Trigger::Use,
-        selector:Selector { native: None, position:None, unique:None, action:None, appearance:Some(source.inactive) },
+        selector:Selector {
+        position_aliases: Vec::new(),
+        ordinal: None, native: None, position:None, unique:None, action:None, appearance:Some(source.inactive) },
         // Fixed optional source targets are resolved by the sealed current World
         // caller. They are neither a portable Item nor the clicked object's lever.
         lever:None, reversible:false, passages:Vec::new(), teleport:None,
-        storage:vec![Storage { track:source.storage.into(), minimum:1, maximum:1, set:0, preserve:false, increment: false, at_least: false }],
+        storage:vec![Storage {add: None, read_only: false, set_if: None,  track:source.storage.into(), minimum:1, maximum:1, set:0, preserve:false, increment: false, at_least: false }],
         minimum_level:None, experience:None, monk_reward:None, offerings:Vec::new(), item_on_target:None,
         return_on_failure:false, failure_message:None,
         success_message:Some(format!("essence of {} activated.",source.flavor)), native_rule:None, effects:Default::default(),

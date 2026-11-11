@@ -212,12 +212,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         // starting level; the latest wave level is a single floor.
                         // Match the durable server-cadence settlement calculation.
                         let count = battle.clears - after.completed;
-                        after.progress.level = after.progress.level.max(battle.completed);
-                        after.progress.start = after
-                            .progress
-                            .start
-                            .saturating_add(count)
-                            .max(battle.completed);
+                        let level = battle.completed.saturating_add(1);
+                        after.progress.reached_level(level);
+                        after.progress.start =
+                            after.progress.start.saturating_add(count).max(level);
                         after.progress.waves = after.progress.waves.saturating_add(count);
                         after.completed = battle.clears;
                     }
@@ -815,6 +813,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .collect::<String>()
         );
         Some(RewardClaimMintRequest {
+            backpack_outputs: false,
+            root_charges_remaining: None,
+            root_fluid_subtype: None,
             additional_items: Vec::new(),
             command,
             claim: TypedDefinitionRef {
@@ -840,6 +841,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn drome_sync(&self, session: GameSessionId, ending: bool) -> bool {
+        let _gate = self.states.tibiadrome.command.lock().await;
         let snapshot = {
             let mut runtime = self.runtime.lock().await;
             tick(self, &mut runtime);
@@ -868,6 +870,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     0
                 },
                 current.ended || battle.ended,
+                battle.wave,
             )
         };
         let mut fence = match self.current_quest_fence(session).await {
@@ -891,6 +894,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     completed: snapshot.2,
                     level: snapshot.3,
                     ended: snapshot.4,
+                    wave: snapshot.5,
                 },
             )
             .await

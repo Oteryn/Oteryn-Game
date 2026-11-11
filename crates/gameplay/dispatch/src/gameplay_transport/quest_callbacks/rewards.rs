@@ -65,6 +65,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let backpack = generation_item_facts(native, &bag.backpack.definition).ok()?;
         let id = CommandId::new(command.command_id).ok()?;
         let request = RewardClaimMintRequest {
+            backpack_outputs: false,
             additional_items: Vec::new(),
             command: CommandRef::new(command.game_session_id, id),
             claim: TypedDefinitionRef {
@@ -77,6 +78,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             quantity: 1,
             contents: Vec::new(),
             root_text: None,
+            root_fluid_subtype: None,
+            root_charges_remaining: None,
             backpack,
             // The entitlement retains the earning generation as evidence. Delivery
             // resolves the exact stable Item identity in the current pinned generation,

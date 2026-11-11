@@ -57,6 +57,9 @@ fn world() -> f::TestResult<Callback> {
     c.quest = QUEST.into();
     c.storage = vec![
         Storage {
+            add: None,
+            read_only: false,
+            set_if: None,
             track: PHASE.into(),
             minimum: 0,
             maximum: 0,
@@ -66,6 +69,9 @@ fn world() -> f::TestResult<Callback> {
             increment: false,
         },
         Storage {
+            add: None,
+            read_only: false,
+            set_if: None,
             track: CYCLE.into(),
             minimum: 0,
             maximum: 2,

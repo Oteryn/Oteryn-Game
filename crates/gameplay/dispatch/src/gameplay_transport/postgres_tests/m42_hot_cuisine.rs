@@ -91,6 +91,7 @@ async fn cook(
         request,
         catalogue,
         &NativeItemWeights(native).with_wheel(owner.premium_coordinator),
+        &owner.premium_coordinator,
     )
     .await
     .map_err(debug)
@@ -126,6 +127,9 @@ async fn fluids(
         .ok_or("fence")?
         .item_fence();
     let request = RewardClaimMintRequest {
+        backpack_outputs: false,
+        root_charges_remaining: None,
+        root_fluid_subtype: None,
         command: CommandRef::new(
             admitted.game_session_id,
             CommandId::new(9000 + u64::from(subtype) + 100 * occurrence).map_err(debug)?,
@@ -141,6 +145,7 @@ async fn fluids(
         contents: (0..2)
             .map(|_| {
                 Ok(RewardClaimMintContent {
+                    charges_remaining: None,
                     item: facts(2874)?,
                     quantity: 1,
                     fluid_subtype: Some(subtype),

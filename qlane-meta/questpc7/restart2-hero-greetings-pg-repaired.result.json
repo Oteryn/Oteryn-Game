@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-npc -p oteryn-gameplay-dispatch --all-features --no-fail-fast --lib -- native_quest_book_admits_only_requested_source_greetings hero_of_rathleton_pipe_greeting_commits_access_once_and_replays catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic --test-threads=1 --nocapture",
+  "exit": 101,
+  "duration_seconds": 537.517
+}

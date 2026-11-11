@@ -1,5 +1,11 @@
 //! Reused native activation fixture and LOOP-MONSTER source-profile variants.
 use super::*;
+#[cfg(test)]
+#[path = "source_loot_assertions.rs"]
+mod source_loot_assertions;
+#[cfg(test)]
+#[path = "source_loot_refusals.rs"]
+mod source_loot_refusals;
 
 fn manifest_input() -> NativeGameplayInput {
     let manifest = Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
@@ -251,18 +257,22 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         .filter(|policy| policy.reward_boss == Some(true))
         .collect::<Vec<_>>();
     assert!(!bosses.is_empty());
-    // Exact native corpse/yield producer admission qualifies thirty-one source
-    // reward bosses. Eighteen further admitted corpses retain unresolved loot yields;
-    // those rows must remain refused rather than silently dropping their Items.
-    // Shared demon, vampire and dragon bodies retain independent loot qualification.
+    // Exact native corpse/yield producers qualify complete source rows.
+    // A newly admitted body still requires independent private-loot closure;
+    // no missing yield may be silently dropped from a boss reward.
     // Keep each exact admission reason:
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
+    let newly_admitted = [
+        "oteryn:creature.the_percht_queen",
+        "oteryn:creature.goshnar_s_spite",
+    ];
     let mut missing = 0;
     let mut inadmissible = 0;
     let mut inadmissible_loot = 0;
     let mut admitted = Vec::new();
     let mut shared_body = Vec::new();
+    let mut refreshed_body_loot_refusals = Vec::new();
     for policy in &bosses {
         let record = source
             .creature_profiles()
@@ -288,11 +298,83 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     && facts.container_capacity.is_some_and(|capacity| capacity > 0)
             })
         });
+        if let Some(corpse) = materializable_corpse.filter(|_| {
+            matches!(
+                policy.definition_key.as_str(),
+                "oteryn:creature.bazir"
+                    | "oteryn:creature.infernatil"
+                    | "oteryn:creature.demodras"
+                    | "oteryn:creature.the_old_widow"
+            )
+        }) {
+            // Loot regeneration refreshes their already qualified source body;
+            // The native-goal owner now qualifies these three identities;
+            // the other five still forbid this entire private loot table.
+            for key in [
+                "oteryn:item.tibia.i3061",
+                "oteryn:item.tibia.i3072",
+                "oteryn:item.tibia.i2903",
+            ] {
+                let facts = loot
+                    .items
+                    .iter()
+                    .find(|facts| facts.item.key == key)
+                    .ok_or("qualified native-goal loot identity")?;
+                assert!(facts.materializable);
+                assert_eq!(facts.item.family, "Item");
+                assert_eq!(facts.item.revision, "definition-r1");
+            }
+            let (body, refused): (&str, &[&str]) = match policy.definition_key.as_str() {
+                "oteryn:creature.demodras" => {
+                    ("oteryn:item.tibia.i5984", &["oteryn:item.tibia.i5919"])
+                }
+                "oteryn:creature.the_old_widow" => (
+                    "oteryn:item.tibia.i5977",
+                    &["oteryn:item.tibia.i7416", "oteryn:item.tibia.i12320"],
+                ),
+                _ => (
+                    "oteryn:item.tibia.i4097",
+                    &[
+                        "oteryn:item.tibia.i3002",
+                        "oteryn:item.tibia.i3070",
+                        "oteryn:item.tibia.i3069",
+                        "oteryn:item.tibia.i3116",
+                        "oteryn:item.tibia.i3309",
+                    ],
+                ),
+            };
+            assert_eq!(corpse.key, body);
+            let binding = loot
+                .creature_loot
+                .iter()
+                .find(|binding| binding.creature.key == policy.definition_key)
+                .ok_or("source refused boss loot binding")?;
+            let reference = binding.loot.as_ref().ok_or("source refused boss loot")?;
+            let table = loot
+                .tables
+                .iter()
+                .find(|table| table.identity == *reference)
+                .ok_or("source refused boss table")?;
+            assert_eq!(
+                source_loot_refusals::items(&table.entries, &loot.items),
+                refused
+            );
+            assert_eq!(
+                source.reward_table().row(&policy.definition_key).err(),
+                Some(NoSettlementReason::LootItemInadmissible)
+            );
+            inadmissible_loot += 1;
+            refreshed_body_loot_refusals.push(policy.definition_key.as_str());
+            continue;
+        }
         if materializable_corpse.is_some()
             && matches!(
                 policy.definition_key.as_str(),
                 "oteryn:creature.an_observer_eye"
+                    | "oteryn:creature.apprentice_sheng"
                     | "oteryn:creature.armenius_creature"
+                    | "oteryn:creature.bakragore"
+                    | "oteryn:creature.dharalion"
                     | "oteryn:creature.grand_mother_foulscale"
                     | "oteryn:creature.orshabaal"
                     | "oteryn:creature.the_weakened_count"
@@ -304,7 +386,9 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             && matches!(
                 policy.definition_key.as_str(),
                 "oteryn:creature.an_observer_eye"
+                    | "oteryn:creature.apprentice_sheng"
                     | "oteryn:creature.bazir"
+                    | "oteryn:creature.dharalion"
                     | "oteryn:creature.demodras"
                     | "oteryn:creature.earth_overlord"
                     | "oteryn:creature.energy_overlord"
@@ -377,6 +461,15 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     .find(|table| table.identity == *reference)
                     .ok_or("original complete source loot table")?;
                 assert_eq!(row.loot_table.entries.len(), table.entries.len());
+                if newly_admitted.contains(&policy.definition_key.as_str()) {
+                    assert!(!table.entries.is_empty());
+                }
+                assert_eq!(table.algorithm, "IndependentBernoulliPpm");
+                source_loot_assertions::entries(
+                    &row.loot_table.entries,
+                    &table.entries,
+                    &loot.items,
+                );
                 if policy.definition_key == "oteryn:creature.sugar_daddy" {
                     // W02 admits the unchanged source table and all its 22 Items.
                     assert_eq!(table.entries.len(), 22);
@@ -411,6 +504,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     }
                 }
             } else {
+                assert!(!newly_admitted.contains(&policy.definition_key.as_str()));
                 assert_ne!(
                     policy.definition_key, "oteryn:creature.sugar_daddy",
                     "Sugar keeps its actual source Loot binding"
@@ -442,6 +536,10 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         );
     }
     admitted.sort_unstable();
+    assert_eq!(
+        missing + inadmissible + inadmissible_loot + admitted.len(),
+        bosses.len()
+    );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
         (52, 287, 18, 31)
@@ -477,17 +575,31 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.sugar_daddy",
             "oteryn:creature.tazhadur",
             "oteryn:creature.the_first_dragon",
+            "oteryn:creature.the_percht_queen",
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.the_scion_of_havoc",
             "oteryn:creature.vemiath",
         ]
     );
     shared_body.sort_unstable();
+    refreshed_body_loot_refusals.sort_unstable();
+    assert_eq!(
+        refreshed_body_loot_refusals,
+        [
+            "oteryn:creature.bazir",
+            "oteryn:creature.demodras",
+            "oteryn:creature.infernatil",
+            "oteryn:creature.the_old_widow"
+        ]
+    );
     assert_eq!(
         shared_body,
         [
             "oteryn:creature.an_observer_eye",
+            "oteryn:creature.apprentice_sheng",
             "oteryn:creature.armenius_creature",
+            "oteryn:creature.bakragore",
+            "oteryn:creature.dharalion",
             "oteryn:creature.grand_mother_foulscale",
             "oteryn:creature.orshabaal",
             "oteryn:creature.the_weakened_count",
@@ -608,6 +720,9 @@ fn loop_monster_input(summons: bool) -> NativeGameplayInput {
             .clone();
         attack.interval_ms = 1000;
         attack.chance_ppm = 1_000_000;
+        // The donor body may be uncapped (0); this synthetic schedule qualifies
+        // the explicit seven-tile creature override, independent of record order.
+        attack.range_tiles = Some(7);
         let rat = creatures
             .records
             .iter_mut()
