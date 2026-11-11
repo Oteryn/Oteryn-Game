@@ -12,20 +12,39 @@ mod ground_fixture;
 #[cfg(test)]
 mod personal_event_tests;
 
-/// Empty donor missions stay unavailable. These separately authored surveys
-/// already passed the canonical resolved-World ownership check; their live
+/// Empty donor missions stay unavailable. Selected personal programmes and
+/// surveys require their exact canonical operation and physical cause; live
 /// Premium, map/reset and native placement evidence still belongs to consume.
 fn unavailable_personal_event(
     transition: &oteryn_gameplay_quests::quest::QuestTransition,
     cause: QuestCause,
     world_context: bool,
     callback: Option<&oteryn_gameplay_quests::quest::world_callbacks::Callback>,
+    native_death: bool,
 ) -> bool {
-    use oteryn_gameplay_quests::quest::{authored_bindings, world_callbacks};
+    use oteryn_gameplay_quests::quest::{authored_bindings, world_callbacks, world_change_journals};
     if !matches!(
         authored_bindings::personal_event_profile(&transition.quest),
         Some(authored_bindings::PersonalEventProfile::Unavailable { .. })
     ) {
+        return false;
+    }
+    if world_context
+        && callback.is_some_and(|callback| {
+            matches!(
+                (callback.trigger, cause),
+                (world_callbacks::Trigger::Use, QuestCause::Use(_))
+                    | (world_callbacks::Trigger::StepIn, QuestCause::Step(_))
+            ) && world_change_journals::selected_personal_world_transition(transition, callback)
+        })
+    {
+        return false;
+    }
+    if native_death
+        && callback.is_none()
+        && matches!(cause, QuestCause::CreatureDeath(_))
+        && world_change_journals::selected_personal_counter_transition(transition)
+    {
         return false;
     }
     let required_world = match (transition.quest.as_str(), transition.key.as_str()) {
@@ -1043,7 +1062,8 @@ impl DurabilityRoot {
                     let Some(transition) = catalogue.transition(&request.transition_key) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
-                    if unavailable_personal_event(transition, request.cause, context.is_some(), callback.as_ref()) {
+                    if unavailable_personal_event(transition, request.cause, context.is_some(), callback.as_ref(),
+                        matches!(native.as_ref(), Some(super::native_observation::NativeQuestObservation::Death(_)))) {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::NotSupported)));
                     }
                     let arena = if transition.quest == oteryn_gameplay_quests::quest::arena_completion::QUEST && transition.completes {
