@@ -340,7 +340,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // for in turn, or the poll loses it to steady holder use and the release never runs.
         let retry = AdmissionRetryBudget::for_command(self.root);
         let current = match retry
-            .retry_durability("staff_release_session", || {
+            .retry_durability("staff_release", || {
                 store.current_session(admitted.game_session_id)
             })
             .await
@@ -369,7 +369,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return GraceExpiryResult::NotApplicable;
                 };
                 match retry
-                    .retry_durability("staff_release_lost_kick", || {
+                    .retry_durability("staff_release", || {
                         self.root.staff_lost_session_kicked(
                             self.character,
                             self.holder,
@@ -388,7 +388,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             _ => return GraceExpiryResult::NotApplicable,
         };
         match retry
-            .retry_durability("staff_release_live_status", || {
+            .retry_durability("staff_release", || {
                 self.root
                     .staff_live_status(self.character, self.holder, fence)
             })
