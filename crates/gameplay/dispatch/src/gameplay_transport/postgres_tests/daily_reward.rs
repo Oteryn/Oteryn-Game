@@ -527,7 +527,9 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
             .filter_map(|d| oteryn_gameplay_progression::daily_reward::reward_for_day(d, premium))
             .map(|r| i64::from(r.cosmetic_tokens))
             .sum::<i64>();
-        assert_eq!(tokens, (total, 30, 30));
+        // WU26-02: thirty one-token daily credits stop at the 10-token cap; the
+        // capped claims still record a zero entry.
+        assert_eq!(tokens, (total, 10, 30));
         let flags: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_character_daily_reward_claims WHERE premium=$1",
         )
