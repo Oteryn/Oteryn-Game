@@ -4,9 +4,10 @@
 //! temple landing taken at commit rolls the burn back: the scroll is kept. A scroll past its
 //! seven-day deadline is refused with nothing written, and one Item deadline pass removes every
 //! due scroll wherever it is (carried, worn, in the Inbox, in a container in the Inbox, in a
-//! depot box, on a House tile, in a corpse, in a container on Ground), for an online or an
-//! offline Character: expiry applies in all custodies. Due scrolls the session-bound pass owns
-//! never hold back the others.
+//! depot box, on a House tile, in a corpse, in a container on Ground, containers and corpses
+//! nested at any depth), for an online or an offline Character: expiry applies in all custodies.
+//! Due scrolls the session-bound pass owns never hold back the others. Instance Ground has no
+//! deadline pass: a due scroll there leaves with the Instance at teardown.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
@@ -29,9 +30,19 @@ const IN_CORPSE: u8 = 182;
 const GROUND_BAG: u8 = 183;
 const ON_GROUND: u8 = 184;
 const ON_TILE: u8 = 185;
+const MID_BAG: u8 = 189;
+const DEEP_BAG: u8 = 190;
+const DEEP: u8 = 191;
+const INNER_CORPSE: u8 = 192;
+const DEEP_IN_CORPSE: u8 = 193;
+const INSTANCE_CORPSE: u8 = 194;
+const INSTANCE_IN_CORPSE: u8 = 195;
+const INSTANCE_GROUND: u8 = 196;
 const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 const DUE: [u8; 5] = [OLD, INBOX, DEPOT, NESTED, WORN];
 const WORLD_DUE: [u8; 3] = [ON_TILE, IN_CORPSE, ON_GROUND];
+/// Three containers deep in the Inbox parcel, and in a corpse inside the corpse on Ground.
+const DEEP_DUE: [u8; 2] = [DEEP, DEEP_IN_CORPSE];
 const START: MovementLocalPosition = MovementLocalPosition {
     x: 7,
     y: 0,
@@ -85,6 +96,17 @@ fn temple_scroll_vanishes_in_every_custody_of_an_offline_character() -> TestResu
 #[test]
 fn temple_scroll_backlog_of_online_scrolls_never_holds_back_stored_ones() -> TestResult {
     on_big_stack("temple_scroll_backlog", Case::Backlog)
+}
+
+#[test]
+fn temple_scroll_on_instance_ground_leaves_with_the_instance() -> TestResult {
+    std::thread::Builder::new()
+        .name("temple_scroll_instance".into())
+        .stack_size(256 << 20)
+        .spawn(|| instance_teardown().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "temple scroll instance scenario panicked")?
+        .map_err(Into::into)
 }
 
 fn on_big_stack(name: &'static str, case: Case) -> TestResult {
@@ -298,25 +320,36 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
             }
             Case::Offline => {
                 // The Character logs out with due scrolls carried, worn, in the Inbox, in a
-                // container in the Inbox and in a depot box; others lie on a House tile, in a
-                // corpse and in a backpack on Ground. One pass removes each of them under no
-                // session; the fresh scroll stays.
+                // container in the Inbox (one of them three containers deep) and in a depot
+                // box; others lie on a House tile, in a corpse (one in a corpse inside it) and
+                // in a backpack on Ground. One pass removes each of them under no session; the
+                // fresh scroll and every container stay.
                 go_offline(&harness).await?;
                 owner.drain_source_item_deadlines().await;
-                let due: Vec<u8> = DUE.into_iter().chain(WORLD_DUE).collect();
+                let due: Vec<u8> = DUE.into_iter().chain(WORLD_DUE).chain(DEEP_DUE).collect();
                 for seed in due.iter().copied() {
                     assert_eq!(item(seed).await?, (0, 2));
                 }
-                assert_eq!(item(FRESH).await?, (1, 1));
+                for seed in [FRESH, PARCEL, MID_BAG, DEEP_BAG, CORPSE, INNER_CORPSE] {
+                    assert_eq!(item(seed).await?, (1, 1));
+                }
                 assert_eq!(
                     custody(pool, &due).await?,
-                    (0, vec![2, 2, 2, 3, 4, 5, 6, 7], 8, 0)
+                    (0, vec![2, 2, 2, 2, 3, 4, 5, 6, 7, 7], 10, 0)
                 );
+                let inner: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid), (SELECT count(*) FROM game_item_corpse_entry_removal_evidence WHERE item_instance_id=encode($3,'hex')::uuid AND parent_item_instance_id=encode($1,'hex')::uuid AND channel_id=encode($4,'hex')::uuid AND scope_kind=1)")
+                    .bind(id(INNER_CORPSE).as_slice())
+                    .bind(id(CORPSE).as_slice())
+                    .bind(id(DEEP_IN_CORPSE).as_slice())
+                    .bind(id(43).as_slice())
+                    .fetch_one(pool)
+                    .await?;
+                assert_eq!(inner, (1, 1));
                 let world: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_item_house_reclaim_provenance WHERE item_instance_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_spell_item_temporal_receipts WHERE character_id IS NULL AND custody_kind IN(2,6,7))")
                     .bind(id(ON_TILE).as_slice())
                     .fetch_one(pool)
                     .await?;
-                assert_eq!(world, (0, 3));
+                assert_eq!(world, (0, 4));
                 let worn: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid), (SELECT revision::bigint FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid)")
                     .bind(id(41).as_slice())
                     .fetch_one(pool)
@@ -428,8 +461,8 @@ async fn seed_backlog(h: &Harness) -> TestResult {
 
 /// One main backpack holding two scrolls, a scroll in the Character Inbox, a container in the
 /// Inbox holding a scroll and a scroll in depot box 1 of town 1 (and, for the offline case, a
-/// scroll in the left hand, one on a House tile, one in a corpse on Ground and one in a backpack
-/// on Ground), each with its deadline on the Item deadline owner as the daily claim writes it: the
+/// scroll in the left hand, one on a House tile, one in a corpse on Ground, one in a backpack
+/// on Ground, one three containers deep in the Inbox and one in a corpse inside the corpse), each with its deadline on the Item deadline owner as the daily claim writes it: the
 /// carried fresh scroll is due in seven days less an hour, every other one was due a day ago.
 async fn seed_scrolls(h: &Harness, offline: bool) -> TestResult {
     let mut tx = h.pool.begin().await?;
@@ -469,6 +502,20 @@ async fn seed_scrolls(h: &Harness, offline: bool) -> TestResult {
                 .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice())
                 .bind(vec![seed, 0, 7]).bind(9_170_000 + i64::from(seed)).execute(&mut *tx).await?;
         }
+        // Two more backpacks under the Inbox parcel, one in the other, and a corpse inside the
+        // corpse on Ground: the deep scrolls lie at the bottom of each chain.
+        for (seed, key) in [(MID_BAG, "oteryn:item.tibia.i2854"), (DEEP_BAG, "oteryn:item.tibia.i2854"), (INNER_CORPSE, "oteryn:item.tibia.i4240")] {
+            sqlx::raw_sql(sqlx::AssertSqlSafe(item(seed, key, 1)))
+                .execute(&mut *tx)
+                .await?;
+        }
+        for (seed, parent, ordinal, placed) in [(MID_BAG, PARCEL, 2_i64, 198), (DEEP_BAG, MID_BAG, 1, 199)] {
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::bigint,encode($5,'hex')::uuid)")
+                .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(parent).as_slice()).bind(ordinal).bind(id(placed).as_slice()).execute(&mut *tx).await?;
+        }
+        sqlx::query("INSERT INTO game_item_corpse_container_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,encode($4,'hex')::uuid)")
+            .bind(id(INNER_CORPSE).as_slice()).bind(id(42).as_slice()).bind(id(CORPSE).as_slice()).bind(id(201).as_slice()).execute(&mut *tx).await?;
+        scrolls.extend(DEEP_DUE.map(|seed| (seed, -86_400_000)));
     }
     for (seed, due_in_ms) in scrolls {
         sqlx::raw_sql(sqlx::AssertSqlSafe(item(seed, SCROLL, 1)))
@@ -500,6 +547,14 @@ async fn seed_scrolls(h: &Harness, offline: bool) -> TestResult {
                 sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
                     .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(GROUND_BAG).as_slice()).bind(id(188).as_slice()).execute(&mut *tx).await?;
             }
+            DEEP => {
+                sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+                    .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(DEEP_BAG).as_slice()).bind(id(200).as_slice()).execute(&mut *tx).await?;
+            }
+            DEEP_IN_CORPSE => {
+                sqlx::query("INSERT INTO game_item_corpse_container_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+                    .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(INNER_CORPSE).as_slice()).bind(id(202).as_slice()).execute(&mut *tx).await?;
+            }
             WORN => {
                 sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,6,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
                     .bind(id(41).as_slice()).bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(248).as_slice()).execute(&mut *tx).await?;
@@ -522,6 +577,208 @@ async fn seed_scrolls(h: &Harness, offline: bool) -> TestResult {
         .bind(id(41).as_slice())
         .execute(&mut *tx)
         .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+fn instance_teardown() -> TestResult {
+    let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
+        eprintln!("TEMPLE_SCROLL_INSTANCE POSTGRES_CASE_SKIPPED: no configured admin");
+        return Ok(());
+    };
+    let runtime = crate::bestiary_postgres_harness::runtime()?;
+    let harness = runtime.block_on(Harness::create_with_admission_seed(
+        admin,
+        "temple_scroll_instance",
+        true,
+        false,
+    ))?;
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        runtime.block_on(instance_case(&harness))
+    }));
+    let cleanup = runtime.block_on(harness.cleanup());
+    match result {
+        Ok(result) => {
+            result?;
+            cleanup
+        }
+        Err(panic) => std::panic::resume_unwind(panic),
+    }
+}
+
+/// Instance Ground has no deadline pass. A due scroll lying on the entered Instance's Ground and
+/// one in a corpse there are left alone by the Channel pass, and leave with every other Instance
+/// Ground Item when the completed Instance is torn down (activity retirement).
+#[allow(
+    clippy::too_many_lines,
+    reason = "one Instance lifecycle from entry to teardown keeps the production setup in one place"
+)]
+async fn instance_case(h: &Harness) -> TestResult {
+    use crate::durability::activity_handoff::{
+        ActivityHandoffOwner, ActivityReturnOutcome, ActivityReturnReason, ActivityReturnRequest,
+    };
+    use crate::durability::item_decay_retire::ActivityGroundRetirement;
+    use crate::durability::spell_owner_commit::SpellLane;
+    use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId};
+    let entered = super::activity_runtime::enter_fixture(h).await?;
+    let scope = entered.fence.runtime_scope;
+    let instance = scope.instance_id().ok_or("Instance scope")?;
+    let world = *scope.world_id().as_bytes();
+    seed_instance_ground(
+        h,
+        world,
+        instance,
+        entered.fence.scope_ownership_generation.get(),
+    )
+    .await?;
+    let pool = &h.pool;
+    let items: Vec<Vec<u8>> = [INSTANCE_CORPSE, INSTANCE_IN_CORPSE, INSTANCE_GROUND]
+        .iter()
+        .map(|seed| id(*seed).to_vec())
+        .collect();
+    let state = || async {
+        sqlx::query_as::<_, (i64, i64)>(
+            "SELECT count(*) FILTER (WHERE i.lifecycle=1), count(*) FILTER (WHERE i.lifecycle=2 AND i.quantity=0) \
+               FROM game_item_instances i JOIN unnest($1::bytea[]) b ON i.item_instance_id=encode(b,'hex')::uuid",
+        )
+        .bind(items.clone())
+        .fetch_one(pool)
+        .await
+    };
+    // The Channel pass of the same World holds no custody on Instance Ground.
+    let retired: i32 = sqlx::query_scalar("SELECT game_temple_scroll_expire_due(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,500)")
+        .bind(world.as_slice())
+        .bind(id(43).as_slice())
+        .fetch_one(pool)
+        .await?;
+    assert_eq!(retired, 0);
+    assert_eq!(state().await?, (3, 0));
+
+    // The participant returns; the completed Instance is torn down.
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let owner = ActivityHandoffOwner::new(h.root.clone());
+    let placement = owner
+        .read_return_placement(&authority, &h.node, entered.fence)
+        .await?
+        .ok_or("return placement")?;
+    let request = ActivityReturnRequest {
+        return_id: id(100),
+        handoff_id: entered.receipt.handoff_id,
+        command_id: None,
+        source: entered.fence,
+        destination_game_session_id: GameSessionId::decode(&id(101)).map_err(debug)?,
+        destination_transport: Some(
+            AuthenticatedTransportRefV1::decode(&[101; 16]).map_err(debug)?,
+        ),
+        destination_generation: placement.destination_generation,
+        reason: ActivityReturnReason::IdleLogout,
+        current_vitals: entered.request.participants[0].source_position.vitals,
+        current_rest: entered.request.participants[0].source_position.rest,
+    };
+    match owner
+        .return_participant(&authority, &h.node, request)
+        .await?
+    {
+        ActivityReturnOutcome::Returned(_) => {}
+        other => return Err(format!("Instance return refused: {other:?}").into()),
+    }
+    let proof = owner
+        .retirement_ready(
+            &authority,
+            &h.node,
+            entered.fence.runtime_scope,
+            entered.fence.scope_ownership_generation,
+        )
+        .await?
+        .ok_or("complete returned activity")?;
+    let lane = SpellLane::for_scope(scope);
+    let permit = lane
+        .acquire()
+        .await
+        .map_err(|_| "Instance lane unresolved")?;
+    let mut steps = 0;
+    while let ActivityGroundRetirement::Progress(_) = h
+        .root
+        .retire_activity_ground_step(&permit, &authority, &h.node, &proof)
+        .await
+        .map_err(debug)?
+    {
+        steps += 1;
+        assert!(steps <= 3, "bounded Instance teardown must advance");
+    }
+    assert_eq!(steps, 3);
+    assert_eq!(state().await?, (0, 3));
+    let left: (i64, i64, i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_item_ground_locations WHERE scope_kind=2 AND instance_id=encode($2,'hex')::uuid), \
+                (SELECT count(*) FROM game_item_corpse_container_entries e JOIN unnest($1::bytea[]) b ON e.item_instance_id=encode(b,'hex')::uuid), \
+                (SELECT count(*) FROM game_item_decay_retire_receipts r JOIN unnest($1::bytea[]) b ON r.item_instance_id=encode(b,'hex')::uuid WHERE r.cause_kind='ACTIVITY_RETIREMENT'), \
+                (SELECT count(*) FROM game_spell_item_temporal_receipts r JOIN unnest($1::bytea[]) b ON r.item_instance_id=encode(b,'hex')::uuid)",
+    )
+    .bind(items.clone())
+    .bind(instance.as_slice())
+    .fetch_one(pool)
+    .await?;
+    assert_eq!(left, (0, 0, 3, 0));
+    eprintln!("temple_scroll_instance: cases executed");
+    Ok(())
+}
+
+/// A corpse holding a due scroll and a due scroll of its own on the entered Instance's Ground,
+/// placed in the activity's ownership generation as an Instance drop is.
+async fn seed_instance_ground(
+    h: &Harness,
+    world: [u8; 16],
+    instance: [u8; 16],
+    generation: u64,
+) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (seed, key) in [
+        (INSTANCE_CORPSE, "oteryn:item.tibia.i4240"),
+        (INSTANCE_IN_CORPSE, SCROLL),
+        (INSTANCE_GROUND, SCROLL),
+    ] {
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,game_character_uuid_v7())")
+            .bind(id(seed).as_slice())
+            .bind(world.as_slice())
+            .bind(key)
+            .execute(&mut *tx)
+            .await?;
+    }
+    for seed in [INSTANCE_CORPSE, INSTANCE_GROUND] {
+        sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,scope_kind,instance_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,encode($3,'hex')::uuid,$4::text::numeric,$5,'\\x01'::bytea,'map-r1','content-1','\\x01'::bytea,$6)")
+            .bind(id(seed).as_slice())
+            .bind(world.as_slice())
+            .bind(instance.as_slice())
+            .bind(generation.to_string())
+            .bind(vec![seed, 0, 7])
+            .bind(9_170_000 + i64::from(seed))
+            .execute(&mut *tx)
+            .await?;
+    }
+    sqlx::query("INSERT INTO game_item_corpse_container_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+        .bind(id(INSTANCE_IN_CORPSE).as_slice())
+        .bind(world.as_slice())
+        .bind(id(INSTANCE_CORPSE).as_slice())
+        .bind(id(197).as_slice())
+        .execute(&mut *tx)
+        .await?;
+    for seed in [INSTANCE_IN_CORPSE, INSTANCE_GROUND] {
+        sqlx::query("INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,content_digest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3,floor(extract(epoch FROM clock_timestamp())*1000)::bigint-86400000,'Item',$4,'definition-r1',sha256(convert_to($4||'|definition-r1','UTF8')))")
+            .bind(id(seed).as_slice())
+            .bind(id(DELIVERY).as_slice())
+            .bind(crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_LIFETIME_MS)
+            .bind(SCROLL)
+            .execute(&mut *tx)
+            .await?;
+    }
     tx.commit().await?;
     Ok(())
 }

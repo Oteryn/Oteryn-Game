@@ -8,7 +8,8 @@
 -- movement with its deadline and its removal wherever it is, for an online or an
 -- offline Character: expiry applies in all custodies (section 7; session-less
 -- receipt custody 2 container entry, 3 equipment, 4 Inbox root, 5 depot root,
--- 6 House tile, 7 corpse entry). All prior item-use causes and
+-- 6 House tile, 7 corpse entry, at any depth of nesting; Instance Ground is
+-- retired whole at Instance teardown). All prior item-use causes and
 -- shapes, deadline sources, custody kinds and movement guards stay admitted
 -- unchanged.
 --
@@ -169,8 +170,11 @@ END $migration$;
 -- container rooted in the Inbox, a depot, on Ground, on a House tile or in a
 -- backpack dropped at death), 3
 -- equipment of an offline Character, 4 Inbox root, 5 depot root (box or locker),
--- 6 House floor tile, 7 corpse container entry. Ground-rooted custody belongs to
--- the pass of its own Channel. Nothing inside bazaar custody is touched: an
+-- 6 House floor tile, 7 corpse container entry, each at any depth of nesting.
+-- Ground-rooted custody belongs to the pass of its own Channel. Instance Ground
+-- has no deadline pass: every Item on it, a due scroll included, is retired when
+-- the Instance is torn down (activity retirement, 0630), so this seam never
+-- touches Instance-rooted custody. Nothing inside bazaar custody is touched: an
 -- escrowed Item has no custody here and a Character locked for a bazaar transfer
 -- is skipped, so its due scroll goes on the first pass after the escrow or lock
 -- ends. The Supply Stash holds stackable balances only and refuses scheduled
@@ -206,22 +210,29 @@ END $migration$;
 -- the custody (a container entry's own Character; for a nested Item, the
 -- Character of its chain's root; none in the world), whether the chain's root is
 -- unattended by a session (Inbox, depot, Ground, House tile: a backpack dropped at
--- death included) and, for Ground-rooted custody, the Channel that owns it.
+-- death included) and, for Ground-rooted custody, the Channel that owns it. The
+-- chain is walked through container, nested and corpse entries at any depth (the
+-- 500-link bound and cycle guard of the corpse owner lock, 1152); a corpse entry
+-- leaves only through a chain of corpse entries rooted live on Channel Ground.
 -- No row: the scroll lies on Ground itself (the Channel pass's kind 1), in
--- bazaar custody, or in a custody no pass hosts.
+-- bazaar custody, on or under Instance Ground (retired at teardown), or in a
+-- custody no pass hosts.
 CREATE FUNCTION game_temple_scroll_custody(p_item UUID)
 RETURNS TABLE(kind SMALLINT,character_id UUID,parent UUID,ordinal NUMERIC,slot SMALLINT,
  equipment_revision NUMERIC,stored BOOLEAN,channel_id UUID)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
- WITH RECURSIVE up(item,depth) AS (
-   SELECT p_item,0
+ WITH RECURSIVE up(item,depth,path,corpse_chain) AS (
+   SELECT p_item,0,ARRAY[p_item]::uuid[],true
    UNION ALL
-   SELECT coalesce(e.parent_item_instance_id,n.parent_item_instance_id,c.parent_item_instance_id),u.depth+1 FROM up u
+   SELECT coalesce(e.parent_item_instance_id,n.parent_item_instance_id,c.parent_item_instance_id),u.depth+1,
+     u.path||coalesce(e.parent_item_instance_id,n.parent_item_instance_id,c.parent_item_instance_id),
+     u.corpse_chain AND num_nonnulls(e.item_instance_id,n.item_instance_id)=0 FROM up u
     LEFT JOIN public.game_item_container_entries e ON e.item_instance_id=u.item
     LEFT JOIN public.game_item_nested_entries n ON n.item_instance_id=u.item
     LEFT JOIN public.game_item_corpse_container_entries c ON c.item_instance_id=u.item
-   WHERE u.depth<24 AND num_nonnulls(e.item_instance_id,n.item_instance_id,c.item_instance_id)>0
- ), root AS (SELECT item FROM up ORDER BY depth DESC LIMIT 1),
+   WHERE u.depth<500 AND num_nonnulls(e.item_instance_id,n.item_instance_id,c.item_instance_id)>0
+     AND NOT coalesce(e.parent_item_instance_id,n.parent_item_instance_id,c.parent_item_instance_id)=ANY(u.path)
+ ), root AS (SELECT item,corpse_chain FROM up ORDER BY depth DESC LIMIT 1),
  owner AS (
    SELECT s.character_id,false AS stored,NULL::uuid AS channel_id
      FROM public.game_item_container_slots s JOIN root ON root.item=s.item_instance_id
@@ -256,12 +267,12 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
  SELECT 6::smallint,NULL::uuid,NULL::uuid,h.stack_ordinal::numeric,NULL::smallint,NULL::numeric,true,NULL::uuid
    FROM public.game_item_house_interior_locations h WHERE h.item_instance_id=p_item
  UNION ALL
- -- A corpse entry leaves only while its corpse lies live on Channel Ground.
- SELECT 7::smallint,NULL::uuid,c.parent_item_instance_id,c.placement_ordinal::numeric,NULL::smallint,NULL::numeric,true,g.channel_id
-   FROM public.game_item_corpse_container_entries c
-   JOIN public.game_item_ground_locations g ON g.item_instance_id=c.parent_item_instance_id AND g.world_id=c.world_id
-   JOIN public.game_item_instances corpse ON corpse.item_instance_id=g.item_instance_id
-  WHERE c.item_instance_id=p_item AND g.scope_kind=1 AND g.channel_id IS NOT NULL AND corpse.lifecycle=1
+ -- A corpse entry, at any depth of corpses, leaves only while its outermost
+ -- corpse lies live on Channel Ground.
+ SELECT 7::smallint,NULL::uuid,c.parent_item_instance_id,c.placement_ordinal::numeric,NULL::smallint,NULL::numeric,true,o.channel_id
+   FROM public.game_item_corpse_container_entries c,owner o,root
+   JOIN public.game_item_instances corpse ON corpse.item_instance_id=root.item
+  WHERE c.item_instance_id=p_item AND root.corpse_chain AND o.channel_id IS NOT NULL AND corpse.lifecycle=1
 $$;
 
 -- Whether no session or bazaar transfer holds this custody: a Character-less
@@ -509,7 +520,39 @@ $arm$;
 $arm$;
  EXECUTE overlay(body placing E'BEGIN\n'||arm from begin_at for 5);
 
- -- A House tile row and a corpse entry leave with their exact retired scroll.
+ -- A House tile row and a corpse entry leave with their exact retired scroll. A
+ -- corpse entry's removal evidence names the scope of its outermost corpse, which
+ -- the session-less pass reached through a chain of corpse entries at any depth.
+ body:=pg_get_functiondef('game_item_corpse_entry_removal_evidence_capture()'::regprocedure);
+ begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+ IF begin_at=0 THEN RAISE EXCEPTION 'missing corpse entry removal capture'; END IF;
+ arm:=$arm$
+ IF EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts r
+   WHERE r.custody_kind=7 AND r.game_session_id IS NULL AND r.item_instance_id=OLD.item_instance_id
+     AND r.world_id=OLD.world_id AND r.source_parent=OLD.parent_item_instance_id
+     AND r.source_ordinal=OLD.placement_ordinal AND r.created_xact_id=pg_current_xact_id()) THEN
+  WITH RECURSIVE up(id,path) AS (
+    SELECT OLD.parent_item_instance_id,ARRAY[OLD.parent_item_instance_id]::uuid[]
+    UNION ALL
+    SELECT e.parent_item_instance_id,u.path||e.parent_item_instance_id FROM up u
+     JOIN game_item_corpse_container_entries e ON e.item_instance_id=u.id
+     WHERE NOT e.parent_item_instance_id=ANY(u.path) AND cardinality(u.path)<500)
+  INSERT INTO game_item_corpse_entry_removal_evidence
+   (item_instance_id,parent_item_instance_id,placement_ordinal,world_id,channel_id,scope_kind,instance_id)
+  SELECT OLD.item_instance_id,OLD.parent_item_instance_id,OLD.placement_ordinal,
+   g.world_id,g.channel_id,g.scope_kind,g.instance_id
+   FROM up JOIN game_item_ground_locations g ON g.item_instance_id=up.id
+   JOIN game_item_instances ci ON ci.item_instance_id=g.item_instance_id
+  WHERE g.world_id=OLD.world_id AND g.scope_kind=1 AND ci.lifecycle=1;
+  IF NOT FOUND THEN
+   RAISE EXCEPTION 'temple scroll corpse entry removal requires its outermost corpse live on Channel Ground'
+    USING ERRCODE='23514';
+  END IF;
+  RETURN OLD;
+ END IF;
+$arm$;
+ EXECUTE overlay(body placing E'BEGIN\n'||arm from begin_at for 5);
+
  body:=pg_get_functiondef('game_house_location_proven()'::regprocedure);
  begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
  IF begin_at=0 THEN RAISE EXCEPTION 'missing House removal proof'; END IF;

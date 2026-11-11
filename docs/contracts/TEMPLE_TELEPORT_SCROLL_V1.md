@@ -113,6 +113,14 @@ third original source of that owner; no new clock, sweep or table is introduced.
     equipment revision advanced) of an offline Character. An offline Character's scroll does
     not wait for login. Ground-rooted custody (corpses, containers on Ground) is retired by the
     pass of the Channel that owns that Ground.
+  - Depth never matters: the seam walks container, nested and corpse entries at any depth of
+    nesting to the custody's root (the corpse owner lock's 500-link bound and cycle guard), so
+    a scroll in a backpack inside a backpack, or in a corpse inside a corpse, expires like one
+    at the top level. The corpse entry's removal evidence names the outermost corpse's Ground.
+  - Instance Ground has no deadline pass of its own. A due scroll on an Instance's Ground,
+    directly, in a corpse or in a backpack dropped at death there, is retired with every other
+    Item on that Ground when the completed Instance is torn down (activity retirement); the
+    Channel pass never touches Instance-rooted custody.
   - The seam's window holds only scrolls it may retire, earliest deadline first, so due scrolls
     the session-bound removal owns never hold back stored, offline or world scrolls. A scroll
     whose removal a native guard refuses at that moment (a House under disposition, a busy
@@ -144,8 +152,9 @@ Character) in both receipt CHECKs, its predecessor capture in
 `game_spell_item_temporal_capture`, its outcome in `game_spell_item_temporal_receipt_proven`
 and the Inbox, depot, House tile and corpse entry removals in `game_character_inbox_remove`,
 `game_character_depot_remove`, `game_house_location_proven` and
-`game_item_corpse_entry_removal_proven`, each as a prepended arm that keeps every previous
-arm; and creates the seam `game_temple_scroll_expire_due` with its custody resolver
+`game_item_corpse_entry_removal_proven`, and the outermost corpse's Ground in
+`game_item_corpse_entry_removal_evidence_capture`, each as a prepended arm that keeps every
+previous arm; and creates the seam `game_temple_scroll_expire_due` with its custody resolver
 `game_temple_scroll_custody`.
 Applied migrations are immutable: a rollback is a successor migration that stops new
 writes (the dispatch branch, the claim's schedule insert and the INSERT grant) and keeps
@@ -166,9 +175,13 @@ under the session and the due scrolls in the Inbox, in a container in the Inbox 
 depot box under no session, receipt custody kinds 2, 2, 4 and 5, and removes their custody
 and the depot box count, while the fresh scroll stays and still teleports) and
 `temple_scroll_vanishes_in_every_custody_of_an_offline_character` (offline: one pass
-retires the due scrolls carried, worn, in the Inbox, in a container in the Inbox, in a depot
-box, on a House tile, in a corpse and in a backpack on Ground, receipt custody kinds 2, 2, 2,
-3, 4, 5, 6 and 7, all under no session) and
+retires the due scrolls carried, worn, in the Inbox, in a container in the Inbox, three
+containers deep in the Inbox, in a depot box, on a House tile, in a corpse, in a corpse inside
+that corpse and in a backpack on Ground, receipt custody kinds 2, 2, 2, 2, 3, 4, 5, 6, 7 and
+7, all under no session, every container staying) and
+`temple_scroll_on_instance_ground_leaves_with_the_instance` (a due scroll on an Instance's
+Ground and one in a corpse there are left alone by the Channel seam and retired with the
+corpse by the Instance's teardown, cause `ACTIVITY_RETIREMENT`) and
 `temple_scroll_backlog_of_online_scrolls_never_holds_back_stored_ones` (501 earlier-due
 scrolls carried by the live Character do not fill the seam's window: a one-scroll seam call
 retires a stored scroll and leaves them to the session-bound pass).
