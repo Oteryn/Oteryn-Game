@@ -219,6 +219,51 @@ class CorpseQualification(unittest.TestCase):
         self.assertEqual({key: after[key] for key in before}, before)
         self.assertEqual(set(after) - set(before), set(self.plan.records) - set(before))
 
+class BossQuestAdmission(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.plan = corpse.qualifications()
+
+    def test_boss_then_quest_admission_preserves_the_qualified_terminal_and_replays(self):
+        import boss_corpse_profiles as boss
+        generated = {'profiles': boss.encode({'records': []}),
+                     'manifest': boss.encode({'item_profiles': {}})}
+        order = lambda row: row['production_definition']['production_key']
+
+        def admit(generated):
+            # Reuse this class's actual source-qualified plan at the admission
+            # seam; parsing the same immutable inputs again is not the assertion.
+            with patch.object(corpse, 'qualifications', return_value=self.plan):
+                corpse.admit(corpse.ROOT, generated, 'profiles', 'manifest', order, boss.encode)
+
+        boss.admit(corpse.ROOT, generated, 'profiles', 'manifest', order, boss.encode)
+        before = {row['production_definition']['production_key']: row
+                  for row in json.loads(generated['profiles'])['records']}
+        admit(generated)
+        once = copy.deepcopy(generated)
+        admit(generated)
+        self.assertEqual(generated, once)
+        after = {row['production_definition']['production_key']: row
+                 for row in json.loads(generated['profiles'])['records']}
+        self.assertEqual({key: after[key] for key in before}, before)
+        self.assertEqual(set(after), set(before) | set(self.plan.records))
+        self.assertEqual(after['oteryn:item.tibia.i4027']['semantics']['container'],
+                         {'state': 'NOT_APPLICABLE'})
+
+        # The later owner still rejects a real disagreement without publishing
+        # any partial profile or manifest change.
+        conflict = copy.deepcopy(generated)
+        document = json.loads(conflict['profiles'])
+        terminal = next(row for row in document['records']
+                        if row['production_definition']['production_key'] == 'oteryn:item.tibia.i4027')
+        terminal['semantics']['container'] = corpse.grizzly.source.K(
+            {'capacity': corpse.grizzly.source.K(8)})
+        conflict['profiles'] = boss.encode(document)
+        refused = copy.deepcopy(conflict)
+        with self.assertRaisesRegex(ValueError, 'QUEST_CORPSE_EXISTING_NATIVE_CONFLICT'):
+            admit(conflict)
+        self.assertEqual(conflict, refused)
+
 
 class SelectionBounds(unittest.TestCase):
     def test_active_rule_objective_creature_join_and_bound(self):

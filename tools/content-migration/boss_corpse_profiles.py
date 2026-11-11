@@ -118,6 +118,33 @@ def capture(cache: Path, root: Path = ROOT):
             'roots':sorted(ROOT_IDS), 'decay_chains':chains, 'xml_source_lines':xml_source_lines(blobs['data/items/items.xml'],wanted), 'records':records}
 
 
+def native_corpse_profile(root, record):
+    if record['production_binding']['external_id'] != '4027':
+        return record
+    # The immutable Crystal capture includes the DAT container/default8. The
+    # already accepted encounter owner makes this exact terminal stage a
+    # non-container. Prove both bodies before composing that one native fact.
+    if hashlib.sha256(encode(record)).hexdigest() != '7ed34644e4f25de7828aac46e5319fbd59fcbee31aef25fed9a54614659f1c9b':
+        raise ValueError('BOSS_CORPSE_TERMINAL_SOURCE_BODY')
+    import encounter_corpse_items as encounter
+    import primal_corpse_items as primal
+    if encounter.source_policies(root, roots=(5973,), explicit_weights=True) != {
+            5973: (12, 10000, 4025), 4025: (10, 300000, 4026),
+            4026: (10, 300000, 4027), 4027: (None, 60000, None)}:
+        raise ValueError('BOSS_CORPSE_TERMINAL_SOURCE_POLICY')
+    expected = primal.corpse_definition(
+        {'identity': {'family': 'Item', 'key': 'oteryn:item.tibia.i4027',
+                      'revision': 'definition-r1'}, 'client_projection': 'ClientSafe'},
+        None, 60000, None, True)
+    rows = json.loads((root / 'content/items/definitions/items-24500-24999.json').read_bytes())['records']
+    if (len(rows) > 500 or [row['definition'] for row in rows
+                          if row['definition']['identity']['key'] == expected['identity']['key']] != [expected]):
+        raise ValueError('BOSS_CORPSE_TERMINAL_CANONICAL_BODY')
+    native = copy.deepcopy(record)
+    native['semantics']['container'] = copy.deepcopy(expected['semantics']['container'])
+    return native
+
+
 def admit(root, generated, destination, manifest_path, order, canonical):
     raw = (root/PATH).read_bytes()
     pin = json.loads((root/PIN_PATH).read_bytes())
@@ -151,6 +178,7 @@ def admit(root, generated, destination, manifest_path, order, canonical):
                 or record['admission'] != corpse_admission(item_id)):
             raise ValueError(f'BOSS_CORPSE_NATIVE_AUTHORITY:{key}')
         seen.add(item_id)
+        record = native_corpse_profile(root, record)
         if key in existing:
             previous = existing[key]
             expected = copy.deepcopy(record)

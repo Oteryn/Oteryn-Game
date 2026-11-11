@@ -1,7 +1,10 @@
 """Exact sharing of the two pre-existing gathering/corpse Item profiles."""
 import copy
+import hashlib
 import json
+from pathlib import Path
 import unittest
+from unittest.mock import patch
 import boss_corpse_profiles as corpses
 
 
@@ -47,6 +50,118 @@ class SharedSourceCorpseTests(unittest.TestCase):
         shared[0]['attributes']['speed_bonus']=1
         with self.assertRaisesRegex(ValueError,'BOSS_CORPSE_PROFILE_CONFLICT'):
             self.apply(shared)
+
+
+class NativeTerminalCompositionTests(unittest.TestCase):
+    def generated(self, rows=()):
+        return {'profiles': corpses.encode({'records': list(rows)}),
+                'manifest': corpses.encode({'item_profiles': {}})}
+
+    def admit(self, generated):
+        corpses.admit(corpses.ROOT, generated, 'profiles', 'manifest',
+                      lambda row: row['production_definition']['production_key'], corpses.encode)
+
+    def refuse(self, replacements, expected):
+        generated = self.generated()
+        before = copy.deepcopy(generated)
+        read_bytes = Path.read_bytes
+        with patch.object(Path, 'read_bytes', lambda path: replacements[path]
+                          if path in replacements else read_bytes(path)):
+            with self.assertRaisesRegex(ValueError, expected):
+                self.admit(generated)
+        self.assertEqual(generated, before)
+
+    def test_native_terminal_changes_only_container_and_preserves_raw_capture(self):
+        path = corpses.ROOT / corpses.PATH
+        raw = path.read_bytes()
+        expected = json.loads(raw)['records']
+        terminal = next(row for row in expected if row['production_binding']['external_id'] == '4027')
+        self.assertEqual(terminal['semantics']['container'],
+                         {'state': 'KNOWN', 'value': {'capacity': {'state': 'KNOWN', 'value': 8}}})
+        terminal['semantics']['container'] = {'state': 'NOT_APPLICABLE'}
+        generated = self.generated()
+        self.admit(generated)
+        actual = json.loads(generated['profiles'])['records']
+        self.assertEqual(len(actual), 199)
+        self.assertEqual(actual, sorted(expected, key=lambda row: row['production_definition']['production_key']))
+        self.assertEqual(path.read_bytes(), raw)
+        # A previously composed native terminal is accepted exactly on replay.
+        replay = self.generated([terminal])
+        self.admit(replay)
+        self.assertEqual(replay, generated)
+        rejected = copy.deepcopy(terminal)
+        rejected['semantics']['container']['state'] = 'UNKNOWN'
+        refused = self.generated([rejected])
+        before = copy.deepcopy(refused)
+        with self.assertRaisesRegex(ValueError, 'BOSS_CORPSE_PROFILE_CONFLICT'):
+            self.admit(refused)
+        self.assertEqual(refused, before)
+
+    def test_rehashed_source_capacity_metadata_and_identity_tampering_is_atomic(self):
+        source = json.loads((corpses.ROOT / corpses.PATH).read_bytes())
+        for mutation in ('capacity', 'speed', 'duration', 'binding'):
+            changed = copy.deepcopy(source)
+            terminal = next(row for row in changed['records']
+                            if row['production_binding']['external_id'] == '4027')
+            if mutation == 'capacity':
+                terminal['semantics']['container']['value']['capacity']['value'] = 9
+            elif mutation == 'speed':
+                terminal['attributes']['speed_bonus'] = 1
+            elif mutation == 'duration':
+                terminal['semantics']['temporal']['value']['duration']['value'] = 60001
+            else:
+                terminal['production_binding']['target']['revision'] = 'definition-r2'
+            raw = corpses.encode(changed)
+            replacements = {corpses.ROOT / corpses.PATH: raw,
+                            corpses.ROOT / corpses.PIN_PATH: corpses.encode(
+                                {'path': corpses.PATH, 'sha256': hashlib.sha256(raw).hexdigest()})}
+            with self.subTest(mutation=mutation):
+                self.refuse(replacements, 'BOSS_CORPSE_(TERMINAL_SOURCE_BODY|NATIVE_AUTHORITY)')
+
+    def test_canonical_body_identity_and_duplicate_tampering_is_atomic(self):
+        path = corpses.ROOT / 'content/items/definitions/items-24500-24999.json'
+        original = json.loads(path.read_bytes())
+        for mutation in ('capacity', 'movable', 'duration', 'identity', 'client', 'admission',
+                         'presentation', 'duplicate'):
+            changed = copy.deepcopy(original)
+            terminal = next(row['definition'] for row in changed['records']
+                            if row['definition']['identity']['key'] == 'oteryn:item.tibia.i4027')
+            if mutation == 'capacity':
+                terminal['semantics']['container'] = {
+                    'state': 'KNOWN', 'value': {'capacity': {'state': 'KNOWN', 'value': 8}}}
+            elif mutation == 'movable':
+                terminal['semantics']['physical']['value']['movable']['value'] = False
+            elif mutation == 'duration':
+                terminal['semantics']['temporal']['value']['duration']['value'] = 60001
+            elif mutation == 'identity':
+                terminal['identity']['revision'] = 'definition-r2'
+            elif mutation == 'client':
+                terminal['client_projection'] = 'Unknown'
+            elif mutation == 'admission':
+                terminal['materializable'] = False
+            elif mutation == 'presentation':
+                terminal['semantics']['presentation'] = {'state': 'NOT_APPLICABLE'}
+            else:
+                other = next(i for i, row in enumerate(changed['records'])
+                             if row['definition']['identity']['key'] != terminal['identity']['key'])
+                changed['records'][other] = {'definition': copy.deepcopy(terminal)}
+            with self.subTest(mutation=mutation):
+                self.refuse({path: corpses.encode(changed)}, 'BOSS_CORPSE_TERMINAL_CANONICAL_BODY')
+
+    def test_native_terminal_requires_the_pinned_source_chain(self):
+        import encounter_corpse_items as encounter
+        self.refuse({corpses.ROOT / encounter.XML: b'<items/>'}, 'source XML differs')
+        policies = encounter.source_policies(corpses.ROOT, roots=(5973,), explicit_weights=True)
+        for mutation in ('root', 'capacity', 'successor'):
+            changed = copy.deepcopy(policies)
+            if mutation == 'root':
+                changed.pop(5973)
+            elif mutation == 'capacity':
+                changed[4027] = (8, 60000, None)
+            else:
+                changed[4027] = (None, 60000, 4026)
+            with self.subTest(mutation=mutation), patch.object(encounter, 'source_policies', return_value=changed):
+                self.refuse({}, 'BOSS_CORPSE_TERMINAL_SOURCE_POLICY')
 
 
 class ActualElderCorpseTests(unittest.TestCase):
@@ -96,7 +211,11 @@ class ActualCompleteSoulWarCorpseClosureTests(unittest.TestCase):
             self.assertTrue(item in actual,f'actual native source corpse Item{item} is missing')
             self.assertEqual(actual[item]['admission'],expected['admission'],item)
             for part in ('physical','stack','container','temporal'):
-                self.assertEqual(actual[item]['semantics'][part],expected['semantics'][part],f'{item}/{part}')
+                # The source capture retains Crystal's fallback8; the accepted
+                # encounter terminal owns native non-container custody.
+                value = ({'state':'NOT_APPLICABLE'} if (item,part) == ('4027','container')
+                         else expected['semantics'][part])
+                self.assertEqual(actual[item]['semantics'][part],value,f'{item}/{part}')
 
 
 if __name__=='__main__':unittest.main()
