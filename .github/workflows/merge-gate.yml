@@ -377,9 +377,11 @@ jobs:
         if: steps.jr_hit.outputs.hit != 'true'
         run: python tools/repository/validate_repository_policy.py
 
-      - name: Test canonical PG/SIM gate regressions
+      - name: Test canonical PG/SIM and job-result cache regressions
         if: steps.jr_hit.outputs.hit != 'true'
-        run: python tools/repository/test_validate_pr_gate_pg_sim.py
+        run: |
+          python tools/repository/test_validate_pr_gate_pg_sim.py
+          python tools/repository/test_job_result_key.py
 
       - name: Record job-result marker
         if: success() && steps.jr_key.outputs.key != '' && steps.jr_hit.outputs.hit != 'true'
@@ -872,6 +874,7 @@ jobs:
           fi
           mapfile -t package_args < "$RUNNER_TEMP/rust-fast-package-args.txt"
           cargo +1.99.1 clippy --locked "${package_args[@]}" --all-targets -- -D warnings
+          echo 'completed=true' >> "$GITHUB_OUTPUT"
 
       # cargo-nextest 0.9.146 (released 2026-09-21), pinned by SHA-256. nextest runs each test
       # in its own process; the game-server unit tests have no env mutation and no ordering or
@@ -933,6 +936,8 @@ jobs:
           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           set -euo pipefail
+          # Cache restoration may include an older report; only this invocation can supply one.
+          rm -f -- "${CARGO_TARGET_DIR:-target}/nextest/rust-fast/junit.xml"
           filters=()
           while IFS=$'\t' read -r package flags; do
             if [[ -z "$flags" ]]; then
@@ -967,32 +972,42 @@ jobs:
             --config-file "$RUNNER_TEMP/nextest.toml" --profile rust-fast -E "$expression" \
             --partition "hash:${SHARD}" --no-tests=pass --no-fail-fast < /dev/null || code=$?
           echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo 'completed=true' >> "$GITHUB_OUTPUT"
           exit "$code"
 
       - name: Record passed crates in the job-result ledger
         id: jr_record
         if: >-
-          always() && steps.jr_plan.outputs.keyed == 'true' && steps.jr_hit.outputs.hit == 'false'
-          && (steps.clippy.outcome == 'success'
-              || steps.nextest.outputs.code == '0' || steps.nextest.outputs.code == '100')
+          always() && !cancelled()
+          && steps.jr_plan.outputs.keyed == 'true' && steps.jr_hit.outputs.hit == 'false'
+          && ((matrix.kind == 'clippy' && steps.clippy.outcome == 'success'
+               && steps.clippy.outputs.completed == 'true')
+              || (matrix.kind == 'tests' && steps.nextest.outputs.completed == 'true'
+                  && steps.nextest.outputs.code != ''
+                  && ((steps.nextest.outcome == 'success' && steps.nextest.outputs.code == '0')
+                      || (steps.nextest.outcome == 'failure' && steps.nextest.outputs.code == '100'))))
         env:
           KIND: ${{ matrix.kind }}
         run: |
           set -euo pipefail
           if [[ "$KIND" == 'tests' ]]; then
             junit="${CARGO_TARGET_DIR:-target}/nextest/rust-fast/junit.xml"
-            if [[ ! -f "$junit" ]]; then
-              printf '<testsuites/>\n' > "$RUNNER_TEMP/empty-junit.xml"
-              junit="$RUNNER_TEMP/empty-junit.xml"
+            if [[ ! -s "$junit" ]]; then
+              echo '::notice::No current JUnit report; no test results will be cached'
+              exit 0
             fi
             python -I tools/repository/job_result_key.py junit-passed --junit "$junit" --packages "$RUNNER_TEMP/rust-fast-run.tsv" --out "$RUNNER_TEMP/rust-fast-passed.txt" | tee -a "$GITHUB_STEP_SUMMARY"
+            if [[ ! -s "$RUNNER_TEMP/rust-fast-passed.txt" ]]; then
+              exit 0
+            fi
             python -I tools/repository/job_result_key.py record --plan "$RUNNER_TEMP/jr-plan.json" --dir "$RUNNER_TEMP/jobresult" --passed "$RUNNER_TEMP/rust-fast-passed.txt"
           else
             python -I tools/repository/job_result_key.py record --plan "$RUNNER_TEMP/jr-plan.json" --dir "$RUNNER_TEMP/jobresult" --packages "$RUNNER_TEMP/rust-fast-run.tsv"
           fi
+          echo 'recorded=true' >> "$GITHUB_OUTPUT"
 
       - name: Save job-result ledger
-        if: always() && steps.jr_record.outcome == 'success'
+        if: always() && !cancelled() && steps.jr_record.outcome == 'success' && steps.jr_record.outputs.recorded == 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ${{ runner.temp }}/jobresult

@@ -31,7 +31,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut pending_stages = std::collections::BTreeSet::new();
         let mut pending = |stage: &'static str| {
             if pending_stages.insert(stage) {
-                operator_event(&format!("event=control_loss_grace stage={stage} kind=pending"));
+                operator_event(&format!(
+                    "event=control_loss_grace stage={stage} kind=pending"
+                ));
             }
         };
         let Some(actor) = admitted.runtime_actor else {

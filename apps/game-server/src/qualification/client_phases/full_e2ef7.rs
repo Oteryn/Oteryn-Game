@@ -1390,6 +1390,10 @@ mod clock_tests {
 #[path = "full_e2ef7_clock_epochs_tests.rs"]
 mod clock_epoch_tests;
 
+#[cfg(test)]
+#[path = "full_e2ef7_logout_cleanup_tests.rs"]
+mod logout_cleanup_tests;
+
 // Continuation rows keep their own action sets and cleanup outside timed futures.
 use native::world_spatial_entities as spatial;
 use oteryn_protocol_oteryn::{self as native, actor_spell as casts, party as parties};
@@ -4565,6 +4569,15 @@ fn inventory_counts(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>>
     Ok(counts)
 }
 
+fn valid_cleanup_turn_reply(status: CommandStatus, payload: &[u8]) -> bool {
+    // A registered TURN refreshes activity even when gameplay refuses it.
+    // Cleanup still requires a subsequent accepted LOGOUT.
+    matches!(
+        (status, payload),
+        (CommandStatus::Accepted, [8, 1]) | (CommandStatus::Rejected, [8, 3])
+    )
+}
+
 async fn player_turn(client: &mut DevClientSession) -> TestResult {
     let mut payload = Vec::new();
     bytes_field(&mut payload, 3, &encode_step_intent(StepDirection::North));
@@ -4576,7 +4589,7 @@ async fn player_turn(client: &mut DevClientSession) -> TestResult {
             &payload,
         )
         .await?;
-    if result.status != CommandStatus::Accepted || result.payload != [8, 1] {
+    if !valid_cleanup_turn_reply(result.status, &result.payload) {
         return Err(format!("ordinary activity turn refused:{result:?}").into());
     }
     Ok(())
@@ -5067,7 +5080,7 @@ async fn pvp_release(client: &mut PvpClient, budget: Duration) -> TestResult {
         let mut payload = Vec::new();
         bytes_field(&mut payload, 3, &encode_step_intent(StepDirection::North));
         let turn = client.gated_command(64, 81, &payload).await?;
-        if turn.status != CommandStatus::Accepted || turn.payload != [8, 1] {
+        if !valid_cleanup_turn_reply(turn.status, &turn.payload) {
             return Err(format!("PvP lock-wait activity refused:{turn:?}").into());
         }
     }
