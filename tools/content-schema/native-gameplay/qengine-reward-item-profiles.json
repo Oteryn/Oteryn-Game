@@ -20,6 +20,9 @@
           "family": "Item",
           "key": "candidate:item/131",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -138,15 +141,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -1259,6 +1264,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2973",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Keys"
         }
       },
       "semantics": {
@@ -1362,15 +1370,15 @@
       "attributes": {
         "always_on_top": false,
         "always_on_top_order": 0,
-        "speed_bonus": 0,
-        "spell_augments": [],
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -5525,6 +5533,9 @@
           "family": "Item",
           "key": "candidate:item/4852",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -5643,15 +5654,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -5852,6 +5865,9 @@
           "family": "Item",
           "key": "candidate:item/5467",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Tools"
         }
       },
       "semantics": {
@@ -5970,15 +5986,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -9017,6 +9035,9 @@
           "family": "Item",
           "key": "candidate:item/7253",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -9135,15 +9156,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -9344,6 +9367,9 @@
           "family": "Item",
           "key": "candidate:item/7785",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -9463,15 +9489,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -9960,6 +9988,9 @@
           "family": "Item",
           "key": "candidate:item/9106",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -10078,15 +10109,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -13884,6 +13917,9 @@
           "family": "Item",
           "key": "candidate:item/12785",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -13984,15 +14020,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -14193,6 +14231,9 @@
           "family": "Item",
           "key": "candidate:item/14021",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Creature Products"
         }
       },
       "semantics": {
@@ -14312,15 +14353,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -14355,6 +14398,9 @@
           "family": "Item",
           "key": "candidate:item/14022",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Creature Products"
         }
       },
       "semantics": {
@@ -14474,15 +14520,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -14517,6 +14565,9 @@
           "family": "Item",
           "key": "candidate:item/14023",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Creature Products"
         }
       },
       "semantics": {
@@ -14636,15 +14687,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -14679,6 +14732,9 @@
           "family": "Item",
           "key": "candidate:item/14682",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -14797,15 +14853,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -18451,6 +18509,9 @@
           "family": "Item",
           "key": "candidate:item/21291",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -18552,15 +18613,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -18595,6 +18658,9 @@
           "family": "Item",
           "key": "candidate:item/21389",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -18712,15 +18778,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -18755,6 +18823,9 @@
           "family": "Item",
           "key": "candidate:item/21466",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -18855,15 +18926,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -18898,6 +18971,9 @@
           "family": "Item",
           "key": "candidate:item/21504",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -18998,15 +19074,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -19041,6 +19119,9 @@
           "family": "Item",
           "key": "candidate:item/21505",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Liquids"
         }
       },
       "semantics": {
@@ -19159,15 +19240,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -19202,6 +19285,9 @@
           "family": "Item",
           "key": "candidate:item/21506",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -19303,15 +19389,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -19346,6 +19434,9 @@
           "family": "Item",
           "key": "candidate:item/21507",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -19464,15 +19555,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -20795,6 +20888,9 @@
           "family": "Item",
           "key": "candidate:item/22008",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -20913,15 +21009,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -22130,6 +22228,9 @@
           "family": "Item",
           "key": "candidate:item/27654",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
         }
       },
       "semantics": {
@@ -22248,15 +22349,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -24980,6 +25083,9 @@
           "family": "Item",
           "key": "candidate:item/36543",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Tools"
         }
       },
       "semantics": {
@@ -25098,15 +25204,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -25141,6 +25249,9 @@
           "family": "Item",
           "key": "candidate:item/36544",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Tools"
         }
       },
       "semantics": {
@@ -25259,15 +25370,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -25302,6 +25415,9 @@
           "family": "Item",
           "key": "candidate:item/36545",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Tools"
         }
       },
       "semantics": {
@@ -25421,15 +25537,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -25923,14 +26041,15 @@
       "attributes": {
         "always_on_top": false,
         "always_on_top_order": 0,
-        "spell_augments": [],
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -26090,14 +26209,15 @@
       "attributes": {
         "always_on_top": false,
         "always_on_top_order": 0,
-        "spell_augments": [],
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
