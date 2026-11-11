@@ -1,6 +1,7 @@
 //! WU26-14 (Winter Update 2026 test server): a wave cast aimed at the cursor tile through the
 //! wire command, the cast route and the ordinary combat preparation, with real Character owners.
-//! The old `aim_at_target` flag with a POSITION is the CURSOR option.
+//! The old `aim_at_target` flag with a POSITION is the CURSOR option; a session holding capability
+//! 480 sends field 5 `aim_mode` CURSOR instead, which a session without it has refused.
 use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -13,7 +14,9 @@ use crate::durability::character_progression::{
 use crate::foundation::{
     ChannelContentPin, CharacterLease, MessageType, WorldId, decode_wire_envelope,
 };
-use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::capabilities::{
+    BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+};
 use crate::gameplay_transport::connection::{
     AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
 };
@@ -36,21 +39,33 @@ const MANA: i64 = 8;
 
 #[test]
 fn spell_aim_mode_postgres_cursor_wave_hits_the_cursor_direction_from_the_caster() -> TestResult {
+    run_case("spell_aim_mode", false)
+}
+
+/// Capability 480: field 5 `aim_mode` CURSOR is refused without the capability and casts the
+/// aimed wave with it, through the negotiated decode of the cast route.
+#[test]
+fn spell_aim_mode_postgres_capability_480_aim_mode_cursor_needs_the_capability() -> TestResult {
+    run_case("spell_aim_mode_480", true)
+}
+
+fn run_case(tag: &'static str, negotiated: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
-            run(async move |admin| scenario(admin).await).map_err(|error| error.to_string())
+            run(async move |admin| scenario(admin, tag, negotiated).await)
+                .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "spell aim mode thread panicked")?
         .map_err(Into::into)
 }
 
-async fn scenario(admin: String) -> TestResult {
-    let h = Harness::create_with_admission_seed(admin, "spell_aim_mode", false, false).await?;
+async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
+    let h = Harness::create_with_admission_seed(admin, tag, false, false).await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -268,15 +283,68 @@ async fn scenario(admin: String) -> TestResult {
         .mana;
     // The cursor lies four tiles beyond the rat: a position cast would start the wave there and
     // miss it; the aimed wave turns east and starts next to the caster.
-    let payload = actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
-        spell,
-        target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
-            x: caster.x + 5,
-            y: caster.y,
-            floor: caster.floor,
-        }),
-        aim_at_target: true,
+    let cursor = actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
+        x: caster.x + 5,
+        y: caster.y,
+        floor: caster.floor,
     });
+    let payload = if negotiated {
+        actor_spell::encode_aimed_spell_cast_intent(&actor_spell::AimedSpellCastIntent {
+            intent: actor_spell::SpellCastIntent {
+                spell,
+                target: cursor,
+                aim_at_target: false,
+            },
+            aim_mode: Some(actor_spell::SpellAimMode::Cursor),
+        })
+        .map_err(debug)?
+    } else {
+        actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
+            spell,
+            target: cursor,
+            aim_at_target: true,
+        })
+    };
+    if negotiated {
+        // Without capability 480 field 5 is unknown: the route refuses it and nothing is spent.
+        let refused = exchange(
+            &owner,
+            &mut admitted,
+            &[(
+                actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+                payload.clone(),
+            )],
+        )
+        .await?;
+        assert_eq!(
+            actor_spell::decode_spell_cast_result(&refused[0].1).map_err(debug)?,
+            actor_spell::SpellCastDisposition::Rejected
+        );
+        assert_eq!(
+            deps.runtime.lock().await.live_creature_health(target),
+            Some(u64::try_from(RAT_HEALTH)?),
+            "the refused cast must not damage the creature"
+        );
+        let unchanged = owner
+            .observe_vitals(actor, session)
+            .await
+            .ok_or("refused vitals")?
+            .1
+            .mana;
+        assert_eq!(unchanged, before, "the refused cast must not spend mana");
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            &[6, 7, actor_spell::CAPABILITY_SPELL_AIM_MODE_V1],
+        )
+        .ok_or("aim mode capabilities")?;
+        assert!(
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(actor_spell::CAPABILITY_SPELL_AIM_MODE_V1),
+            "capability 480 selected"
+        );
+    }
     let results = exchange(
         &owner,
         &mut admitted,

@@ -75,8 +75,8 @@ pub(in crate::gameplay_transport) fn aimed_origin(
 }
 
 /// WU26-14: the tile an aimed cast turns toward. TARGET is the held target the caster sees;
-/// CURSOR is the cursor tile while it lies in the caster's view on its floor. Outside it, as
-/// without a seen target, there is none and the cast keeps the facing.
+/// CURSOR is the cursor tile while it lies in the caster's view on its floor. Outside the view on
+/// the caster's floor, as without a seen target, there is none and the cast keeps the facing.
 pub(in crate::gameplay_transport) fn aim_point(
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
@@ -85,11 +85,30 @@ pub(in crate::gameplay_transport) fn aim_point(
     aim: Aim,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     now: SemanticTimeMicros,
-) -> Option<TilePosition> {
+) -> Result<Option<TilePosition>, SpellCastDisposition> {
     match aim {
-        Aim::Target => aimed_target_tile(runtime, states, actor, caster, attack_target, now),
-        Aim::Cursor(p) => in_view(caster, p).then_some(p),
+        Aim::Target => Ok(aimed_target_tile(
+            runtime,
+            states,
+            actor,
+            caster,
+            attack_target,
+            now,
+        )),
+        Aim::Cursor(p) => cursor_point(caster, p),
     }
+}
+
+/// WU26-14 CURSOR: a cursor tile on another floor is `TargetIllegal` (`actor_spell_v1.proto`,
+/// `SPELL_AIM_MODE_CURSOR`); one outside the caster's view on its floor gives no tile.
+fn cursor_point(
+    caster: MovementLocalPosition,
+    p: TilePosition,
+) -> Result<Option<TilePosition>, SpellCastDisposition> {
+    if p.floor != caster.floor {
+        return Err(SpellCastDisposition::TargetIllegal);
+    }
+    Ok(in_view(caster, p).then_some(p))
 }
 
 /// WU26-14: `p` is on the caster's floor and inside its view.
@@ -454,7 +473,7 @@ async fn prepare_spatial(
                 aim,
                 attack_target,
                 now,
-            ),
+            )?,
         )?),
         None => None,
     };
