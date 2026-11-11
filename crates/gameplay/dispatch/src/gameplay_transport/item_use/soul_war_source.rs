@@ -4,13 +4,18 @@ use crate::durability::item_use::soul_war_source::{
     QualifiedSoulWarUseTarget, SelectedSoulWarUseTarget, SoulWarUseTargetRead, source_use,
 };
 use crate::foundation::{
-    SourceActorReservation, SourceActorReservationProof, source_reservation_seal,
+    CommandId, CommandRef, SourceActorReservation, SourceActorReservationProof,
+    source_reservation_seal,
 };
 use crate::gameplay_transport::soul_war_callbacks::cruelty::maw::PreparedMawUse;
 use crate::gameplay_transport::soul_war_callbacks::megalomania::sanity::PreparedSanityUse;
 use crate::map::view::{self, MapEntryKey};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent, UseTarget};
+
+#[cfg(test)]
+#[path = "soul_war_source/test_pause.rs"]
+mod test_pause;
 
 struct CurrentSelection<'a> {
     command: UseCommand,
@@ -278,6 +283,14 @@ pub(super) struct PendingSourceUse {
     sanity: Option<PreparedSanityUse>,
     sorrow: Option<PreparedSorrowUse>,
     reservation: Option<SourceActorReservation>,
+    phase: SourceUsePhase,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SourceUsePhase {
+    Preparing,
+    WriteIssued,
+    Completed(UseDisposition),
 }
 impl PendingSourceUse {
     fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
@@ -389,6 +402,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 sanity: None,
                 sorrow: None,
                 reservation: None,
+                phase: SourceUsePhase::Preparing,
                 input: SoulWarSourceUse {
                     target: qualified,
                     item: ItemUseRequest {
@@ -495,16 +509,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .item_uses
                 .0
                 .iter()
-                .filter_map(|(_, _, gate)| {
-                    gate.source_pending
-                        .as_deref()
-                        .filter(|pending| {
-                            pending.maw.is_some()
-                                || pending.sanity.is_some()
-                                || pending.sorrow.is_some()
-                        })
-                        .cloned()
-                })
+                .filter_map(|(_, _, gate)| gate.source_pending.as_deref().cloned())
                 .collect::<Vec<_>>();
             if pending.len() > runtime.actor_slot_capacity() {
                 return Err(());
@@ -515,6 +520,123 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.settle_soul_war_source_use(permit, pending).await?;
         }
         Ok(())
+    }
+
+    /// The last disconnected player has no connected native tick. Lifecycle
+    /// recovery therefore settles only this actor's original retained USE.
+    pub(in crate::gameplay_transport) async fn recover_pending_soul_war_source_use(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let pending = {
+            let states = self.states.spell_states.lock().await;
+            states
+                .item_uses
+                .0
+                .iter()
+                .find(|(a, s, _)| *a == actor && *s == session)
+                .and_then(|(_, _, gate)| gate.source_pending.as_deref())
+                .cloned()
+        };
+        let Some(pending) = pending else {
+            return true;
+        };
+        let Some(permit) = self.spell_lane_permit().await else {
+            return false;
+        };
+        self.settle_soul_war_source_use(&permit, pending)
+            .await
+            .is_ok()
+    }
+
+    fn finish_soul_war_source_use(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        pending: &PendingSourceUse,
+        disposition: UseDisposition,
+    ) -> Result<UseOutcome, ()> {
+        let held = rotten_essence::gate(
+            states,
+            runtime,
+            pending.actor,
+            pending.command.game_session_id,
+        );
+        let retained = held.source_pending.as_mut().ok_or(())?;
+        if retained.actor != pending.actor
+            || retained.command != pending.command
+            || retained.wire != pending.wire
+            || matches!(retained.phase, SourceUsePhase::Completed(previous) if previous != disposition)
+        {
+            return Err(());
+        }
+        // Physical publication has already finished (or no write was issued).
+        // Keep that fact if ingress cannot take the original result, so retry
+        // never repeats the volatile effect or fabricates a second command.
+        retained.phase = SourceUsePhase::Completed(disposition);
+        let reference = CommandRef::new(
+            pending.command.game_session_id,
+            CommandId::new(pending.command.command_id).map_err(|_| ())?,
+        );
+        #[cfg(test)]
+        if test_pause::refuse_handoff(reference) {
+            return Err(());
+        }
+        self.states
+            .command_ingress
+            .complete_item_use(reference, disposition)
+            .ok_or(())?;
+        // Handoff and marker removal are one synchronous owner turn.
+        held.source_pending = None;
+        held.source_last = Some((pending.command.command_id, pending.wire, disposition));
+        held.unspendable
+            .retain(|id| *id != pending.input.item.source_item_instance_id);
+        held.settle(pending.command.command_id, disposition, &[]);
+        Ok(UseOutcome {
+            disposition,
+            ..UseOutcome::rejected()
+        })
+    }
+
+    async fn start_soul_war_source_write(
+        &self,
+        pending: &mut PendingSourceUse,
+    ) -> Result<Option<UseOutcome>, ()> {
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if pending.phase == SourceUsePhase::Preparing && !pending.current_for(&runtime) {
+            if pending.reservation.is_some() {
+                return Err(());
+            }
+            return self
+                .finish_soul_war_source_use(
+                    &runtime,
+                    &mut states,
+                    pending,
+                    UseDisposition::NotPossible,
+                )
+                .map(Some);
+        }
+        let held = rotten_essence::gate(
+            &mut states,
+            &runtime,
+            pending.actor,
+            pending.command.game_session_id,
+        );
+        let retained = held.source_pending.as_mut().ok_or(())?;
+        if retained.actor != pending.actor
+            || retained.command != pending.command
+            || retained.wire != pending.wire
+            || retained.phase != pending.phase
+        {
+            return Err(());
+        }
+        // Retain before the first await that can issue this exact transaction.
+        // Cancellation from here is ambiguous until the durable owner answers.
+        retained.phase = SourceUsePhase::WriteIssued;
+        pending.phase = SourceUsePhase::WriteIssued;
+        Ok(None)
     }
 
     async fn settle_soul_war_source_use(
@@ -547,14 +669,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
             }
             let retained = gate.source_pending.as_deref().ok_or(())?;
-            if retained.actor != actor
-                || retained.command != command
-                || retained.wire != wire
-                || !retained.current_for(&runtime)
-            {
+            if retained.actor != actor || retained.command != command || retained.wire != wire {
                 return Err(());
             }
-            retained.clone()
+            let retained = retained.clone();
+            if let SourceUsePhase::Completed(disposition) = retained.phase {
+                return self.finish_soul_war_source_use(
+                    &runtime,
+                    &mut states,
+                    &retained,
+                    disposition,
+                );
+            }
+            if retained.phase == SourceUsePhase::Preparing && !retained.current_for(&runtime) {
+                if retained.reservation.is_some() {
+                    return Err(());
+                }
+                return self.finish_soul_war_source_use(
+                    &runtime,
+                    &mut states,
+                    &retained,
+                    UseDisposition::NotPossible,
+                );
+            }
+            retained
         };
         if pending.input.target.source_use()
             == crate::durability::item_use::soul_war_source::SourceUse::Sorrow
@@ -565,6 +703,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             == crate::durability::item_use::soul_war_source::SourceUse::MortalEssence
         {
             if pending.maw.is_none() {
+                if pending.phase != SourceUsePhase::Preparing {
+                    return Err(());
+                }
                 let plan = {
                     let runtime = self.runtime.lock().await;
                     if !pending.current_for(&runtime) {
@@ -572,6 +713,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     self.prepare_source_names(&runtime, &["Goshnar's Cruelty"])?
                 };
+                #[cfg(test)]
+                test_pause::at(test_pause::Point::BeforeNames, command).await;
                 let read = self.read_source_names(permit, &plan).await?;
                 let mut runtime = self.runtime.lock().await;
                 let mut states = self.states.spell_states.lock().await;
@@ -579,20 +722,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(());
                 }
                 let names = self.seal_source_names(&runtime, read)?;
-                let named = crate::gameplay_transport::source_names::creature_named(
+                let Ok(named) = crate::gameplay_transport::source_names::creature_named(
                     &names,
                     "Goshnar's Cruelty",
-                )?;
+                ) else {
+                    return self.finish_soul_war_source_use(
+                        &runtime,
+                        &mut states,
+                        &pending,
+                        UseDisposition::NotPossible,
+                    );
+                };
                 let native = self
                     .active_generation
                     .and_then(|active| active.native_gameplay())
                     .ok_or(())?;
-                let prepared = states.soul_war_callbacks.maw.prepare(
+                let Ok(prepared) = states.soul_war_callbacks.maw.prepare(
                     &runtime,
                     native,
                     pending.input.item.event_id,
                     named,
-                )?;
+                ) else {
+                    return self.finish_soul_war_source_use(
+                        &runtime,
+                        &mut states,
+                        &pending,
+                        UseDisposition::NotPossible,
+                    );
+                };
                 pending.maw = Some(prepared);
                 let mut reservation = runtime
                     .prepare_source_actor_reservation(&pending)
@@ -624,6 +781,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && pending.input.target.target_accepted()
         {
             if pending.sanity.is_none() {
+                if pending.phase != SourceUsePhase::Preparing {
+                    return Err(());
+                }
                 let plan = {
                     let runtime = self.runtime.lock().await;
                     if !pending.current_for(&runtime) {
@@ -631,6 +791,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     self.prepare_source_names(&runtime, &["Goshnar's Megalomania"])?
                 };
+                #[cfg(test)]
+                test_pause::at(test_pause::Point::BeforeNames, command).await;
                 let read = self.read_source_names(permit, &plan).await?;
                 let mut runtime = self.runtime.lock().await;
                 let mut states = self.states.spell_states.lock().await;
@@ -638,20 +800,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(());
                 }
                 let names = self.seal_source_names(&runtime, read)?;
-                let named = crate::gameplay_transport::source_names::creature_named(
+                let Ok(named) = crate::gameplay_transport::source_names::creature_named(
                     &names,
                     "Goshnar's Megalomania",
-                )?;
+                ) else {
+                    return self.finish_soul_war_source_use(
+                        &runtime,
+                        &mut states,
+                        &pending,
+                        UseDisposition::NotPossible,
+                    );
+                };
                 let native = self
                     .active_generation
                     .and_then(|active| active.native_gameplay())
                     .ok_or(())?;
-                let prepared = states.soul_war_callbacks.sanity.prepare(
+                let Ok(prepared) = states.soul_war_callbacks.sanity.prepare(
                     &runtime,
                     native,
                     pending.input.item.event_id,
                     named,
-                )?;
+                ) else {
+                    return self.finish_soul_war_source_use(
+                        &runtime,
+                        &mut states,
+                        &pending,
+                        UseDisposition::NotPossible,
+                    );
+                };
                 pending.sanity = Some(prepared);
                 let mut reservation = runtime
                     .prepare_source_actor_reservation(&pending)
@@ -678,35 +854,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(|_| ())?;
             }
         }
-        let fence = if pending.maw.is_some() || pending.sanity.is_some() {
-            // Reconcile this exact original occurrence even after durable control
-            // loss. The sole writer reads its immutable receipt before gameplay
-            // admission; if nothing committed, its original fence must still
-            // pass. No reconnect or successor grants a fresh source action.
-            let original = pending.command.item_fence.ok_or(())?;
-            crate::durability::character_progression::CurrentCharacterGameplayFence {
-                character_id: original.character_id,
-                game_session_id: original.game_session_id,
-                connection_generation: original.connection_generation,
-                character_lease_generation: original.character_lease_generation,
-                runtime_scope: original.runtime_scope,
-                scope_ownership_generation: original.scope_ownership_generation,
-                // The existing revision sequencer supplies its canonical cursor.
-                expected_character_revision: crate::domain::CharacterRevision::new(1)
-                    .map_err(|_| ())?,
-            }
-        } else {
-            let current = self
-                .current_quest_fence(command.game_session_id)
-                .await?
-                .ok_or(())?;
-            if Some(current.item_fence()) != pending.command.item_fence {
-                return Err(());
-            }
-            current
+        // Every issued source USE, including wrong-target Sanity with no
+        // volatile preparation, reconciles its immutable receipt before fresh
+        // gameplay authority. The sole writer still fences any missing receipt.
+        let original = pending.command.item_fence.ok_or(())?;
+        let fence = crate::durability::character_progression::CurrentCharacterGameplayFence {
+            character_id: original.character_id,
+            game_session_id: original.game_session_id,
+            connection_generation: original.connection_generation,
+            character_lease_generation: original.character_lease_generation,
+            runtime_scope: original.runtime_scope,
+            scope_ownership_generation: original.scope_ownership_generation,
+            // The existing revision sequencer supplies its canonical cursor.
+            expected_character_revision: crate::domain::CharacterRevision::new(1)
+                .map_err(|_| ())?,
         };
         let catalogue = self.quest_catalogue.as_ref().ok_or(())?;
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        #[cfg(test)]
+        test_pause::at(test_pause::Point::BeforeWrite, command).await;
+        if let Some(outcome) = self.start_soul_war_source_write(&mut pending).await? {
+            return Ok(outcome);
+        }
         let result = slot
             .commit_soul_war_source_action(
                 self.root,
@@ -718,6 +887,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None,
             )
             .await;
+        #[cfg(test)]
+        test_pause::at(test_pause::Point::AfterWrite, command).await;
         drop(slot);
         let committed = match &result {
             Ok(
@@ -879,12 +1050,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     disposition = UseDisposition::NotPossible;
                 }
             }
-            let held = rotten_essence::gate(&mut states, &runtime, actor, command.game_session_id);
-            held.source_pending = None;
-            held.source_last = Some((command.command_id, wire, disposition));
-            held.unspendable
-                .retain(|id| *id != pending.input.item.source_item_instance_id);
-            held.settle(command.command_id, disposition, &[]);
+            self.finish_soul_war_source_use(&runtime, &mut states, &pending, disposition)?;
         }
         if known_transition {
             Box::pin(self.refresh_quest_session(command.game_session_id, false)).await;
@@ -898,7 +1064,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     async fn settle_sorrow_use(
         &self,
         _permit: &crate::durability::spell_owner_commit::SpellLanePermit,
-        pending: PendingSourceUse,
+        mut pending: PendingSourceUse,
     ) -> Result<UseOutcome, ()> {
         use crate::durability::item_use::{ItemUseError, ItemUseOutcome};
         let actor = pending.actor;
@@ -917,6 +1083,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &pending.sorrow.as_ref().ok_or(())?.before,
             )?;
         }
+        #[cfg(test)]
+        test_pause::at(test_pause::Point::BeforeWrite, command).await;
+        if let Some(outcome) = self.start_soul_war_source_write(&mut pending).await? {
+            return Ok(outcome);
+        }
         let result = self
             .root
             .commit_soul_war_sorrow_use(
@@ -927,6 +1098,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.input.target.clone(),
             )
             .await;
+        #[cfg(test)]
+        test_pause::at(test_pause::Point::AfterWrite, command).await;
         let (committed, disposition) = match result {
             Ok(ItemUseOutcome::Written { .. } | ItemUseOutcome::AlreadyCommitted { .. }) => {
                 (true, UseDisposition::Committed)
@@ -957,12 +1130,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &prepared.before,
             committed.then_some(&prepared.after),
         )?;
-        let held = rotten_essence::gate(&mut states, &runtime, actor, command.game_session_id);
-        held.source_pending = None;
-        held.source_last = Some((command.command_id, pending.wire, disposition));
-        held.unspendable
-            .retain(|item| *item != pending.input.item.source_item_instance_id);
-        held.settle(command.command_id, disposition, &[]);
         if committed
             && let Some(map) = self.bundle_map()
             && let Some(position) = super::super::soul_war_scene::wire_position(prepared.at)
@@ -983,9 +1150,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     captured_name,
                 });
         }
-        Ok(UseOutcome {
-            disposition,
-            ..UseOutcome::rejected()
-        })
+        self.finish_soul_war_source_use(&runtime, &mut states, &pending, disposition)
     }
 }

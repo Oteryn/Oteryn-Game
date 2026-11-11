@@ -13,6 +13,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // original CommandRef and audit identity, until a known durable result.
         if !self.reconcile_pending_item_effects(actor, session).await
             || !super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await
+            || !self
+                .recover_pending_soul_war_source_use(actor, session)
+                .await
         {
             return false;
         }

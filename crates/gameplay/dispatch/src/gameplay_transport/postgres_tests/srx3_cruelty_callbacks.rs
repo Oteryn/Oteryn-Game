@@ -15,7 +15,38 @@ fn srx3_cruelty_actual_source_entry_and_native_defense_chain_postgres() -> TestR
     run_source_entry(false)
 }
 
+#[test]
+fn srx3_cruelty_canceled_before_names_drains_original_source_use_postgres() -> TestResult {
+    run_source_entry_case(
+        false,
+        Some(super::srx3_soul_war_source_use::RecoveryPoint::BeforeNames),
+    )
+}
+
+#[test]
+fn srx3_cruelty_canceled_after_write_reconciles_source_effect_once_postgres() -> TestResult {
+    run_source_entry_case(
+        false,
+        Some(super::srx3_soul_war_source_use::RecoveryPoint::AfterWrite),
+    )
+}
+
+#[test]
+fn srx3_cruelty_completed_handoff_retry_preserves_source_effect_once_postgres() -> TestResult {
+    run_source_entry_case(
+        false,
+        Some(super::srx3_soul_war_source_use::RecoveryPoint::Handoff),
+    )
+}
+
 pub(super) fn run_source_entry(attack_cancellation: bool) -> TestResult {
+    run_source_entry_case(attack_cancellation, None)
+}
+
+fn run_source_entry_case(
+    attack_cancellation: bool,
+    recovery: Option<super::srx3_soul_war_source_use::RecoveryPoint>,
+) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -298,9 +329,20 @@ pub(super) fn run_source_entry(attack_cancellation: bool) -> TestResult {
                 .fetch_one(&h.pool).await?, 0);
             let payload = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent)
                 .map_err(debug)?;
-            let reply =
+            let reply = if let Some(point) = recovery {
+                super::srx3_soul_war_source_use::recover_source_use(
+                    &view,
+                    &mut admitted,
+                    2,
+                    &intent,
+                    point,
+                    UseDisposition::Committed,
+                )
+                .await?
+            } else {
                 super::quest_world_callbacks::wire(&view, &mut admitted, 2, 2, payload.clone())
-                    .await?;
+                    .await?
+            };
             assert_eq!(
                 oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
                 UseDisposition::Committed,
