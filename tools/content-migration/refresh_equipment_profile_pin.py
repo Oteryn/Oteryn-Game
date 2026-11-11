@@ -63,6 +63,49 @@ def registered_source_document(root, document):
     return result
 
 
+def registered_npc_source_document(root, qengine, npc):
+    """Compose only the shared Jar's later House rendering facts for this pin."""
+    from qnpcfx_item_profiles import KEYS
+    jar = 'oteryn:item.tibia.i27654'
+    npc_keys = keys(npc)
+    if npc_keys != KEYS or keys(qengine) & npc_keys != {jar}:
+        raise ValueError('NPC_HOUSE_SHARED_IDENTITY_SET')
+    engine_row = next(row for row in qengine['records']
+                      if row['production_definition']['production_key'] == jar)
+    index = next(i for i, row in enumerate(npc['records'])
+                 if row['production_definition']['production_key'] == jar)
+    npc_row = npc['records'][index]
+
+    def registered_flags(row):
+        attributes = row.get('attributes')
+        if not isinstance(attributes, dict):
+            raise ValueError('NPC_HOUSE_TOP_ORDER_PREDECESSOR')
+        present = ('always_on_top' in attributes, 'always_on_top_order' in attributes)
+        if present == (False, False):
+            return False
+        if (present != (True, True) or attributes['always_on_top'] is not False
+                or type(attributes['always_on_top_order']) is not int
+                or attributes['always_on_top_order'] != 0):
+            raise ValueError('NPC_HOUSE_TOP_ORDER_PREDECESSOR')
+        return True
+
+    engine_registered = registered_flags(engine_row)
+    registered_flags(npc_row)
+    result = copy.deepcopy(npc)
+    # The first registration may capture the raw/raw pair. Never introduce a
+    # successor or erase a known field merely to make that pair compare equal.
+    if not engine_registered:
+        return result
+    expected = copy.deepcopy(npc_row)
+    expected['attributes'].update(always_on_top=False, always_on_top_order=0)
+    projected = registered_source_document(root, {'records': [npc_row]})
+    if (projected != {'records': [expected]}
+            or not registered_flags(projected['records'][0])):
+        raise ValueError('NPC_HOUSE_REGISTRATION_DELTA')
+    result['records'][index] = projected['records'][0]
+    return result
+
+
 def source_cohorts(root):
     """Re-use each closed source authority before counting its independent keys."""
     taxonomy = {
@@ -540,8 +583,10 @@ def main():
         baseline_cohorts = declared_cohorts(published)
         baseline_qengine = subprocess.check_output(['git', 'show', custody['base'] + ':tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'], cwd=ROOT)
         baseline_qengine_count = len(keys(json.loads(baseline_qengine)))
+    documents = [json.loads((ROOT / p).read_text()) for p in paths]
+    documents[3] = registered_npc_source_document(ROOT, documents[2], documents[3])
     generated, count = regenerate(
-        register(source), *(json.loads((ROOT / p).read_text()) for p in paths), srx3=srx3,
+        register(source), *documents, srx3=srx3,
         coowners=source_coowners(ROOT), engine_npc_shared=("oteryn:item.tibia.i27654",),
         duplicate_keys=merged_source_duplicates(ROOT, source),
         custody=custody,

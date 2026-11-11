@@ -428,5 +428,174 @@ class M25SourceCohortTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "M25_CAPTURE_DRIFT"):
                     refresh.source_cohorts(root)
 
+class NpcHouseProjectionTests(unittest.TestCase):
+    JAR = 'oteryn:item.tibia.i27654'
+    TOP = ('always_on_top', 'always_on_top_order')
+
+    @classmethod
+    def setUpClass(cls):
+        cls.engine = json.loads((refresh.ROOT / 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json').read_bytes())
+        cls.npc = json.loads((refresh.ROOT / 'tools/content-schema/native-gameplay/qnpcfx-item-profiles.json').read_bytes())
+        cls.house = refresh.importlib.import_module('house_decoration_actions')
+        cls.raw_jar = copy.deepcopy(cls.row(cls.npc))
+        if any(name in cls.raw_jar['attributes'] for name in cls.TOP):
+            raise AssertionError('the retained NPC source must keep its raw Jar observation')
+        cls.house_jar = refresh.registered_source_document(
+            refresh.ROOT, {'records': [cls.raw_jar]})['records'][0]
+        cls.raw_engine = copy.deepcopy(cls.engine)
+        # The actual packet may be from either registration pass. Model the
+        # first pass by removing only House's two separately qualified fields.
+        for name in cls.TOP:
+            cls.row(cls.raw_engine)['attributes'].pop(name, None)
+        cls.registered_engine = copy.deepcopy(cls.raw_engine)
+        cls.row(cls.registered_engine)['attributes'].update(
+            always_on_top=False, always_on_top_order=0)
+
+    @classmethod
+    def row(cls, packet):
+        return next(row for row in packet['records']
+                    if row['production_definition']['production_key'] == cls.JAR)
+
+    def compose(self, engine, npc, root=None):
+        before = copy.deepcopy((engine, npc))
+        try:
+            return refresh.registered_npc_source_document(root or refresh.ROOT, engine, npc)
+        finally:
+            self.assertEqual((engine, npc), before, 'qualification must not rewrite either source packet')
+
+    def qualify(self, engine, npc):
+        # Drive the unchanged complete-record/intersection guard with real Jar
+        # rows; other cohorts do not participate in this one-identity seam.
+        source = EquipmentPinTests.SOURCE.replace('usize = 1', 'usize = 0').replace(
+            'cohorts add 1 + 1 keys', 'cohorts add 0 + 0 keys')
+        engine = {'records': [self.row(engine)]}
+        npc = {'records': [self.row(npc)]}
+        return regenerate(source, engine, {'records': []}, engine, npc,
+                          engine_npc_shared=(self.JAR,))
+
+    def test_current_immutable_packets_have_only_the_proven_house_successor(self):
+        expected = copy.deepcopy(self.raw_jar)
+        expected['attributes'].update(always_on_top=False, always_on_top_order=0)
+        self.assertEqual(self.house_jar, expected)
+        self.assertIs(self.house_jar['attributes']['always_on_top'], False)
+        self.assertIs(type(self.house_jar['attributes']['always_on_top_order']), int)
+        self.assertEqual(self.row(self.raw_engine), self.raw_jar)
+        self.assertIn(self.row(self.engine), (self.raw_jar, self.house_jar))
+        self.assertEqual(len(self.npc['records']), 8)
+
+    def test_raw_equal_pair_keeps_the_first_registration_pass(self):
+        with patch.object(refresh, 'registered_source_document', side_effect=AssertionError('raw pair needs no House replay')):
+            result = self.compose(self.raw_engine, self.npc)
+        self.assertEqual(result, self.npc)
+        self.assertEqual(self.qualify(self.raw_engine, result)[1], 1)
+
+    def test_real_house_projection_changes_only_the_jar_and_keeps_full_equality(self):
+        result = self.compose(self.registered_engine, self.npc)
+        expected = copy.deepcopy(self.npc)
+        self.row(expected)['attributes'].update(always_on_top=False, always_on_top_order=0)
+        self.assertEqual(result, expected, 'all packet metadata and seven other complete rows stay unchanged')
+        self.assertEqual(self.row(result), self.house_jar)
+        self.assertEqual(self.qualify(self.registered_engine, result),
+                         self.qualify(self.raw_engine, self.npc))
+
+    def test_already_registered_pair_and_replay_keep_identical_packets(self):
+        registered = self.compose(self.registered_engine, self.npc)
+        self.assertEqual(self.compose(self.registered_engine, registered), registered)
+        self.assertEqual(self.compose(self.registered_engine, self.npc), registered)
+        self.assertEqual(self.qualify(self.registered_engine, registered)[1], 1)
+
+    def test_raw_engine_cannot_silently_downgrade_registered_npc(self):
+        registered = copy.deepcopy(self.npc)
+        self.row(registered)['attributes'].update(always_on_top=False, always_on_top_order=0)
+        result = self.compose(self.raw_engine, registered)
+        self.assertEqual(result, registered)
+        with self.assertRaisesRegex(ValueError, 'QENGINE/NPC shared source identity or facts differ'):
+            self.qualify(self.raw_engine, result)
+
+    def test_partial_wrong_or_wrongly_typed_flags_refuse_before_house_replay(self):
+        invalid = [{'always_on_top': False}, {'always_on_top_order': 0}]
+        invalid += [{'always_on_top': value, 'always_on_top_order': 0}
+                    for value in (True, 0, None, 'false')]
+        invalid += [{'always_on_top': False, 'always_on_top_order': value}
+                    for value in (1, False, 0.0, None, '0')]
+        for owner in ('engine', 'npc'):
+            for flags in invalid:
+                with self.subTest(owner=owner, flags=flags):
+                    engine, npc = copy.deepcopy((self.registered_engine, self.npc))
+                    attributes = self.row(engine if owner == 'engine' else npc)['attributes']
+                    for name in self.TOP:
+                        attributes.pop(name, None)
+                    attributes.update(flags)
+                    with patch.object(refresh, 'registered_source_document', side_effect=AssertionError('invalid predecessor must not reach House')):
+                        with self.assertRaisesRegex(ValueError, 'NPC_HOUSE_'):
+                            self.compose(engine, npc)
+
+    def test_missing_duplicate_foreign_or_extra_shared_identities_are_refused(self):
+        for owner in ('engine', 'npc'):
+            for mode in ('missing', 'duplicate', 'foreign'):
+                with self.subTest(owner=owner, mode=mode):
+                    engine, npc = copy.deepcopy((self.registered_engine, self.npc))
+                    packet = engine if owner == 'engine' else npc
+                    row = self.row(packet)
+                    if mode == 'missing':
+                        packet['records'].remove(row)
+                    elif mode == 'duplicate':
+                        packet['records'].append(copy.deepcopy(row))
+                    else:
+                        row['production_definition']['production_key'] = 'oteryn:item.tibia.i1'
+                    with self.assertRaises(ValueError):
+                        self.compose(engine, npc)
+        engine = copy.deepcopy(self.registered_engine)
+        engine['records'].append(copy.deepcopy(next(row for row in self.npc['records']
+                                                    if row['production_definition']['production_key'] == 'oteryn:item.tibia.i919')))
+        with self.assertRaisesRegex(ValueError, 'NPC_HOUSE_'):
+            self.compose(engine, self.npc)
+
+    def test_full_record_disagreements_survive_projection_and_are_refused(self):
+        for field in ('authoring', 'semantics', 'attributes', 'admission',
+                      'production_binding', 'production_definition'):
+            with self.subTest(field=field):
+                npc = copy.deepcopy(self.npc)
+                self.row(npc)[field]['unreviewed_field'] = 'not a House fact'
+                result = self.compose(self.registered_engine, npc)
+                self.assertEqual(self.row(result)[field]['unreviewed_field'], 'not a House fact')
+                with self.assertRaisesRegex(ValueError, 'QENGINE/NPC shared source identity or facts differ'):
+                    self.qualify(self.registered_engine, result)
+
+    def test_real_house_source_schema_and_catalogue_guards_are_retained(self):
+        for mode in ('schema', 'catalogue_sha256'):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                for path in (self.house.PROFILES, self.house.CATALOGUE):
+                    target = root / path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes((refresh.ROOT / path).read_bytes())
+                overlay_path = root / self.house.PROFILES
+                overlay = json.loads(overlay_path.read_bytes())
+                overlay[mode] = 'unreviewed source'
+                overlay_path.write_text(json.dumps(overlay))
+                with self.assertRaisesRegex(ValueError, 'HOUSE_DECORATION_PROFILE_SOURCE_DRIFT'):
+                    self.compose(self.registered_engine, self.npc, root)
+
+    def test_house_projection_cannot_change_other_fields_or_lose_exact_types(self):
+        for mode in ('extra_field', 'identity', 'partial', 'top_type', 'order_type'):
+            with self.subTest(mode=mode):
+                output = {'records': [copy.deepcopy(self.house_jar)]}
+                row = output['records'][0]
+                if mode == 'extra_field':
+                    row['admission']['unreviewed'] = True
+                elif mode == 'identity':
+                    row['production_definition']['production_key'] = 'oteryn:item.tibia.i1'
+                elif mode == 'partial':
+                    del row['attributes']['always_on_top']
+                elif mode == 'top_type':
+                    row['attributes']['always_on_top'] = 0
+                else:
+                    row['attributes']['always_on_top_order'] = False
+                with patch.object(refresh, 'registered_source_document', return_value=output):
+                    with self.assertRaisesRegex(ValueError, 'NPC_HOUSE_'):
+                        self.compose(self.registered_engine, self.npc)
+
+
 if __name__ == "__main__":
     unittest.main()

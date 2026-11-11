@@ -1,12 +1,12 @@
-"""Retain three custody-owned UNKNOWN speed leaves without granting a new mechanic."""
+"""Qualify the closed three source speeds while preserving generated guard integrity."""
 
 import qengine_reward_item_profiles as producer
 
 IDS = frozenset({2833, 5805, 5806})
-BEGIN = '    // BEGIN GENERATED CUSTODY-RETAINED UNKNOWN SPEED\n'
-END = '    // END GENERATED CUSTODY-RETAINED UNKNOWN SPEED\n'
-LEGACY_BEGIN = '    // BEGIN GENERATED SOURCE-QUALIFIED ZERO SPEED\n'
-LEGACY_END = '    // END GENERATED SOURCE-QUALIFIED ZERO SPEED\n'
+BEGIN = '    // BEGIN GENERATED SOURCE-QUALIFIED ZERO SPEED\n'
+END = '    // END GENERATED SOURCE-QUALIFIED ZERO SPEED\n'
+LEGACY_BEGIN = '    // BEGIN GENERATED CUSTODY-RETAINED UNKNOWN SPEED\n'
+LEGACY_END = '    // END GENERATED CUSTODY-RETAINED UNKNOWN SPEED\n'
 FILTER_BEGIN = '        // BEGIN GENERATED KNOWN SPEED EXCLUSIONS\n'
 FILTER_END = '        // END GENERATED KNOWN SPEED EXCLUSIONS\n'
 ANCHOR = ('    let content = native(&input)?;\n'
@@ -15,7 +15,7 @@ FILTER_ANCHOR = '        .chain([3503, 3504, 3506].map(|id| format!("oteryn:item
 
 
 def _assertion(expected, *, unknown):
-    begin, end = (BEGIN, END) if unknown else (LEGACY_BEGIN, LEGACY_END)
+    begin, end = (LEGACY_BEGIN, LEGACY_END) if unknown else (BEGIN, END)
     comment = ('    // Physical custody retains UNKNOWN speed for parchment and the two trophies.\n'
                if unknown else
                '    // Pinned Canary XML/client: parchment and the two arena trophy promotions.\n')
@@ -54,29 +54,36 @@ def refresh(source, packet):
          'sha256': producer.XML_SHA},
         {'path': producer.CLIENT, 'sha256': producer.CLIENT_SHA},
     ]
-    # The raw decoder's default zero is outside this physical custody owner's
-    # authority. Its composed capture must retain the established UNKNOWN value.
+    # The dedicated QENGINE source owner qualifies only these three speeds.
+    # Require its pinned, composed integer zero before excluding any UNKNOWN leaf.
     if (packet.get('sources') != sources or len(records) != len(IDS)
             or {r['production_definition']['production_key'] for r in records} != expected
-            or any(r['attributes'].get('speed_bonus') is not None for r in records)):
+            or any(type(r['attributes'].get('speed_bonus')) is not int
+                   or r['attributes']['speed_bonus'] != 0 for r in records)):
         raise ValueError('EQUIPMENT_KNOWN_SPEED_SOURCE')
     if (source.count(ANCHOR) != 1 or source.count(FILTER_ANCHOR) != 1
             or source.count(BEGIN) != source.count(END) or source.count(BEGIN) > 1
             or (LEGACY_BEGIN in source and BEGIN in source)):
         raise ValueError('EQUIPMENT_KNOWN_SPEED_ANCHOR')
-    assertion = _assertion(expected, unknown=True)
+    assertion = _assertion(expected, unknown=False)
     source, legacy = _replace_block(
         source, LEGACY_BEGIN, LEGACY_END,
-        _assertion(expected, unknown=False), assertion)
+        _assertion(expected, unknown=True), assertion)
     if not legacy:
         source, present = _replace_block(source, BEGIN, END, assertion, assertion)
         if not present:
             source = source.replace(ANCHOR, assertion + ANCHOR)
     keys = ', '.join(f'"{key}"' for key in sorted(expected))
-    filter_body = f'        .filter(|key| ![{keys}].contains(&key.as_str()))\n'
+    compact_body = f'        .filter(|key| ![{keys}].contains(&key.as_str()))\n'
+    filter_body = ('        .filter(|key| ![\n'
+                   + ',\n'.join(f'            "{key}"' for key in sorted(expected))
+                   + '\n        ]\n        .contains(&key.as_str()))\n')
+    compact = FILTER_BEGIN + compact_body + FILTER_END
+    formatted = FILTER_BEGIN + filter_body + FILTER_END
+    # Accept only the exact prior compact block or its rustfmt rendering.
     source, _ = _replace_block(
         source, FILTER_BEGIN, FILTER_END,
-        FILTER_BEGIN + filter_body + FILTER_END, '')
-    if filter_body in source:
+        compact if compact in source else formatted, '')
+    if compact_body in source or filter_body in source:
         raise ValueError('EQUIPMENT_KNOWN_SPEED_ANCHOR')
-    return source
+    return source.replace(FILTER_ANCHOR, FILTER_ANCHOR + formatted)
