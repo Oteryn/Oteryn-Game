@@ -17,18 +17,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        417,
-        "0ef9ad0c870054e7d07ee3f91c58d203f7fba2a12aaef40fe43531328aecf04e",
+        418,
+        "a3d2c2a737c27f30442913b8e9b0333120b920ad57b15a5447d2070d807ab723",
     ),
     (
         "definitions/declarations.json",
-        27_791_566,
-        "f6c3980dc2fcd15196375d1840b8d8369c74e345af2f28f2d0ec71161dc6dd8e",
+        27_791_527,
+        "a5c68fbe5da865be4c6c4468fc40358e299c351a68c7de5c27da060d8145182e",
     ),
     (
         "definitions/reference.json",
         27_393_337,
-        "69efd3de7cc33ae662856712130d29a261adbe850ebcfc763ebcc827617ead11",
+        "1d1b38e4222dfeb2ed7d96693826163259563c1b3b73d34765f56195b994699a",
     ),
     (
         "editor/author.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1956,
-        "05b01d2741da5876121e5ddd1365e8289aeafee91098dfb975581d995b9261a5",
+        1957,
+        "a42131006a41a930dbb6b0058a17183103e9092435c31f6ecc922198ccecc949",
     ),
     (
         "presentations/bindings.json",
@@ -47,18 +47,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        407,
-        "d18ce93a7c3f256750ef042fe336c2949956083f8e0883ddfd2b35ce780c8762",
+        408,
+        "ff82b8725a910d8c9971360ad933b03a46934e2fbec9bf8f306ac30573b353ea",
     ),
     (
         "provenance/imports.json",
         6_774_564,
-        "3790f330f3b822b0c614d36c40e0cff52f3675885d9b8220b1c531b9a6adf0fe",
+        "7508a9a8e95446cdd6681f8f1163e18c15c6118ff95347e16013e0b8f84c4583",
     ),
     (
         "provenance/sources.json",
         1_668_021,
-        "80f9e1e50f35ee74f45b2a91d91b21b6b1c90213a1101a31efc446f069c177dd",
+        "58d8ce37b1c537184c990fd091c16908bd7c69dd5435ef3da0c553466019feab",
     ),
     (
         "worlds/world.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "663b7541a05e5f03452833124bb2adaac4194831557b49b575125b78cde808ec";
+const TREE_SHA256: &str = "74ff1708c9f85dbe20997265430fff5e5b157fa7c47dbfc4e28cff209bfe8b13";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -396,7 +396,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         project.project_revision(),
         "seasonal-cake-creature-20261107-r1"
     );
-    // E06 adds its client market mint batch; Cake adds one separate qualified batch.
+    // Thaian adds the 37th separately qualified batch; the historical cohort remains 25.
     assert_eq!(project.imports().len(), 37);
     let legacy_imports: Vec<_> = project
         .imports()
@@ -410,6 +410,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 && b.batch_id != "item-market-crystal-parity-201189f"
                 && b.batch_id != "item-client-market-mint-2dfa943b"
                 && b.batch_id != "seasonal-cake-creature-crystal-201189f-r1"
+                && b.batch_id != "questpc7-thaian-wiki-chosen-r1"
         })
         .collect();
     assert_eq!(legacy_imports.len(), 25);
@@ -440,6 +441,37 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .find(|i| i.batch_id == batch)
             .expect("exact import batch")
     };
+    let thaian = import_for("questpc7-thaian-wiki-chosen-r1");
+    assert_eq!(thaian.source_repository, "tibiawiki.com.br");
+    assert_eq!(
+        thaian.source_revision,
+        "questpc7-thaian-wiki-445240-chosen-r1"
+    );
+    assert_eq!(thaian.importer, "OTERYN_QUESTPC7_THAIAN_AUTHORING/v1");
+    assert_eq!(thaian.mapper, "OTERYN_CREATURE_ADMISSION_STAGE/v1");
+    assert_eq!(thaian.mapper_revision, "creature-admission-r1");
+    for (actual, source) in [
+        (
+            &thaian.source_artifact_sha256,
+            include_bytes!(
+                "../../../tools/content-schema/quest-authoring/questpc7-thaian-authoring.json"
+            )
+            .as_slice(),
+        ),
+        (
+            &thaian.mapper_sha256,
+            include_bytes!("../../../tools/content-migration/creature_admission_stage.py")
+                .as_slice(),
+        ),
+    ] {
+        let expected = Sha256::digest(source)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        assert_eq!(actual, &expected);
+    }
+    assert!(thaian.candidates.is_empty());
+    assert!(thaian.reimport_states.is_empty());
     let provenance = import_for("cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
