@@ -18,11 +18,25 @@ puller; `oteryn_game_control` has no `EXECUTE` on them (migrations 2802, 2803).
 
 ## Transport
 
-Each request is one `POST` with `Content-Type: application/json` over the node's existing
-private Platform client: the Premium snapshot client of `OTERYN_PREMIUM_SNAPSHOT_URL`,
-`OTERYN_PREMIUM_CLIENT_IDENTITY_PEM` and `OTERYN_PREMIUM_PLATFORM_CA_PEM` (HTTPS only, TLS 1.3
-mutual TLS, only the Platform CA trusted, no proxy, no redirects, 5-second timeout). No other
-transport, credential or dependency is used.
+Each request is one `POST` with `Content-Type: application/json` over private mutual TLS, built
+by the node's shared Platform client builder (the one the Premium snapshot read uses: HTTPS only,
+TLS 1.3, only the Platform CA trusted, no proxy, no redirects, 5-second timeout). No other
+transport or dependency is used.
+
+Each stream has its own dedicated client identity, distinct from the Premium, native-evidence
+and bootstrap identities and from the other stream's; Platform answers a repeated identity with
+`503`. Each identity's certificate carries a DNS SAN that Platform binds to that stream.
+
+| Variable | Value |
+|---|---|
+| `OTERYN_PLATFORM_STREAMS_URL` | Platform's private origin, `https://host:port`, shared by both streams |
+| `OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM` | PEM file of the Platform CA bundle, shared by both streams |
+| `OTERYN_PLATFORM_SANCTION_STREAM_CLIENT_IDENTITY_PEM` | PEM file: the sanction stream's client certificate chain and private key |
+| `OTERYN_PLATFORM_LOYALTY_STREAM_CLIENT_IDENTITY_PEM` | PEM file: the loyalty stream's client certificate chain and private key |
+
+Game refuses a configuration in which an enabled stream's leaf certificate equals the Premium
+identity's (`OTERYN_PREMIUM_CLIENT_IDENTITY_PEM`) or the other enabled stream's; no puller
+starts then.
 
 - Only a `200` with `application/json` and a body of at most 262,144 bytes is a page. Any other
   status, a redirect, another content type, an oversized body, a timeout or a transport failure
@@ -32,7 +46,7 @@ transport, credential or dependency is used.
 
 Each stream is off unless its variable is exactly `true`: `OTERYN_PLATFORM_SANCTION_STREAM_ENABLED`
 and `OTERYN_PLATFORM_LOYALTY_STREAM_ENABLED`. Unset or `false` is off. Any other value, or an
-enabled stream without the client configuration, starts no puller and logs
+enabled stream without its own valid identity, origin or CA, starts no puller and logs
 `platform_streams_disabled`. Gameplay and admission never wait on a pull.
 
 ## Cursor and paging

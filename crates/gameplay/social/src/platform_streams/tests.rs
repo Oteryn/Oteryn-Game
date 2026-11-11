@@ -223,3 +223,56 @@ fn streams_are_off_unless_explicitly_true() {
         assert!(enabled(LOYALTY_ENABLED_VAR, Some(other.into())).is_err());
     }
 }
+
+fn identity(leaf: &str) -> Vec<u8> {
+    format!(
+        "-----BEGIN CERTIFICATE-----\n{leaf}\n-----END CERTIFICATE-----\n-----BEGIN PRIVATE KEY-----\nS0VZ\n-----END PRIVATE KEY-----\n"
+    )
+    .into_bytes()
+}
+
+#[test]
+fn each_stream_presents_its_own_identity_never_premium_or_the_other_streams() {
+    let sanction = identity("U0FOQ1RJT04=");
+    let loyalty = identity("TE9ZQUxUWQ==");
+    let premium = identity("UFJFTUlVTQ==");
+    assert_eq!(
+        check_identities(
+            &[
+                (SANCTION_IDENTITY_VAR, sanction.as_slice()),
+                (LOYALTY_IDENTITY_VAR, loyalty.as_slice())
+            ],
+            Some(premium.as_slice())
+        ),
+        Ok(())
+    );
+    assert_eq!(
+        check_identities(&[(LOYALTY_IDENTITY_VAR, loyalty.as_slice())], None),
+        Ok(())
+    );
+    // The Premium identity, also when only the PEM layout differs.
+    let premium_rewrapped = identity("UFJF\n  TUlVTQ==");
+    assert_eq!(
+        check_identities(
+            &[(LOYALTY_IDENTITY_VAR, premium_rewrapped.as_slice())],
+            Some(premium.as_slice())
+        ),
+        Err(ClientConfigError::Invalid(LOYALTY_IDENTITY_VAR))
+    );
+    // The other stream's identity.
+    assert_eq!(
+        check_identities(
+            &[
+                (SANCTION_IDENTITY_VAR, sanction.as_slice()),
+                (LOYALTY_IDENTITY_VAR, sanction.as_slice())
+            ],
+            Some(premium.as_slice())
+        ),
+        Err(ClientConfigError::Invalid(LOYALTY_IDENTITY_VAR))
+    );
+    // A file without a certificate.
+    assert_eq!(
+        check_identities(&[(SANCTION_IDENTITY_VAR, b"not a pem".as_slice())], None),
+        Err(ClientConfigError::Invalid(SANCTION_IDENTITY_VAR))
+    );
+}

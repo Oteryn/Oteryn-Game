@@ -1,18 +1,20 @@
 //! N009/N014: Game pulls Platform's sanction and loyalty streams (`PLATFORM_SANCTION_LOYALTY_EXPORT_V1`,
-//! owner decision 2026-11-11) over the node's private `/internal/v1` mutual-TLS client, the one
-//! the Premium snapshot read uses ([`crate::premium::client`]). Platform never calls Game SQL.
+//! owner decision 2026-11-11) over private `/internal/v1` mutual TLS, built by the shared Platform
+//! client builder ([`crate::premium::client`]). Each stream has its own client identity, never the
+//! Premium one and never the other stream's. Platform never calls Game SQL.
 //!
 //! Each enabled stream has one task: it reads the durable cursor, requests the next page after
 //! it, checks the page and projects it with the cursor in one transaction
 //! ([`DurabilityRoot::apply_platform_stream_page`]). A full page is followed at once; a short one
 //! waits [`IDLE_POLL`]; a failure backs off like the Premium pull. Both streams are off unless
-//! their variable is `true`, and they need the Premium client configuration.
+//! their variable is `true`, and an enabled stream needs its own identity.
 use crate::durability::DurabilityRoot;
 use crate::durability::platform_streams::{
     LoyaltySnapshot, PageCounts, PageOutcome, PlatformStream, SanctionDecision, StreamPage,
 };
 use crate::premium::client::{
-    ClientConfigError, PULL_TIMEOUT, PremiumClientConfig, PullFailure, platform_http, post_json,
+    ClientConfigError, IDENTITY_VAR, PLATFORM_CA_VAR, PULL_TIMEOUT, PremiumClientConfig,
+    PullFailure, URL_VAR, platform_http, post_json,
 };
 use oteryn_protocol_oteryn::sanction_record as wire;
 use serde::Deserialize;
@@ -27,6 +29,12 @@ pub const LOYALTY_PAGE_SCHEMA: &str = "oteryn.loyalty_stream_page.v1";
 /// `true` enables the stream; unset or `false` leaves it off; any other value is invalid.
 pub const SANCTIONS_ENABLED_VAR: &str = "OTERYN_PLATFORM_SANCTION_STREAM_ENABLED";
 pub const LOYALTY_ENABLED_VAR: &str = "OTERYN_PLATFORM_LOYALTY_STREAM_ENABLED";
+/// Platform's private origin (`https://host:port`) and CA bundle (PEM file), shared by both streams.
+pub const STREAMS_URL_VAR: &str = "OTERYN_PLATFORM_STREAMS_URL";
+pub const STREAMS_PLATFORM_CA_VAR: &str = "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM";
+/// Each stream's own client identity: a PEM file with its certificate chain and private key.
+pub const SANCTION_IDENTITY_VAR: &str = "OTERYN_PLATFORM_SANCTION_STREAM_CLIENT_IDENTITY_PEM";
+pub const LOYALTY_IDENTITY_VAR: &str = "OTERYN_PLATFORM_LOYALTY_STREAM_CLIENT_IDENTITY_PEM";
 /// Records asked for per page; the contract allows 1..=500.
 pub const PAGE_LIMIT: usize = 200;
 pub const MAX_LIMIT: usize = 500;
@@ -244,6 +252,34 @@ pub fn enabled(
     }
 }
 
+/// The base64 body of the first certificate (the leaf) of a PEM identity, whitespace removed.
+fn leaf_certificate(pem: &[u8]) -> Option<String> {
+    let text = std::str::from_utf8(pem).ok()?;
+    let (_, rest) = text.split_once("-----BEGIN CERTIFICATE-----")?;
+    let (body, _) = rest.split_once("-----END CERTIFICATE-----")?;
+    let body: String = body.chars().filter(|c| !c.is_whitespace()).collect();
+    (!body.is_empty()).then_some(body)
+}
+
+/// Every enabled stream's identity must carry a certificate that no other Platform client of
+/// this node presents: not the Premium identity and not the other stream's. Platform answers a
+/// repeated identity with 503, so a shared one is refused here instead.
+pub fn check_identities(
+    identities: &[(&'static str, &[u8])],
+    premium_identity: Option<&[u8]>,
+) -> Result<(), ClientConfigError> {
+    let premium = premium_identity.and_then(leaf_certificate);
+    let mut seen = Vec::new();
+    for &(var, pem) in identities {
+        let leaf = leaf_certificate(pem).ok_or(ClientConfigError::Invalid(var))?;
+        if premium.as_ref() == Some(&leaf) || seen.contains(&leaf) {
+            return Err(ClientConfigError::Invalid(var));
+        }
+        seen.push(leaf);
+    }
+    Ok(())
+}
+
 /// One stream's puller.
 #[derive(Debug, Clone)]
 pub struct StreamPuller {
@@ -253,18 +289,27 @@ pub struct StreamPuller {
 }
 
 impl StreamPuller {
+    /// `config` carries this stream's own identity; `identity_var` names it in errors.
     pub fn new(
         config: &PremiumClientConfig,
         stream: PlatformStream,
+        identity_var: &'static str,
     ) -> Result<Self, ClientConfigError> {
-        let (http, origin) = platform_http(config)?;
+        let rename = |ClientConfigError::Invalid(var)| {
+            ClientConfigError::Invalid(match var {
+                URL_VAR => STREAMS_URL_VAR,
+                PLATFORM_CA_VAR => STREAMS_PLATFORM_CA_VAR,
+                _ => identity_var,
+            })
+        };
+        let (http, origin) = platform_http(config).map_err(rename)?;
         let path = match stream {
             PlatformStream::Sanctions => SANCTION_STREAM_PATH,
             PlatformStream::Loyalty => LOYALTY_STREAM_PATH,
         };
         let endpoint = origin
             .join(path)
-            .map_err(|_| ClientConfigError::Invalid(crate::premium::client::URL_VAR))?;
+            .map_err(|_| ClientConfigError::Invalid(STREAMS_URL_VAR))?;
         Ok(Self {
             stream,
             http,
@@ -273,25 +318,62 @@ impl StreamPuller {
     }
 
     /// The pullers the environment enables; none when both variables are unset or `false`.
+    /// An enabled stream without its own valid identity, or with one another Platform client
+    /// of this node presents, is a configuration error and starts no puller.
     pub fn from_env() -> Result<Vec<Self>, ClientConfigError> {
         let mut streams = Vec::new();
-        if enabled(
-            SANCTIONS_ENABLED_VAR,
-            std::env::var_os(SANCTIONS_ENABLED_VAR),
-        )? {
-            streams.push(PlatformStream::Sanctions);
-        }
-        if enabled(LOYALTY_ENABLED_VAR, std::env::var_os(LOYALTY_ENABLED_VAR))? {
-            streams.push(PlatformStream::Loyalty);
+        for (stream, enable_var, identity_var) in [
+            (
+                PlatformStream::Sanctions,
+                SANCTIONS_ENABLED_VAR,
+                SANCTION_IDENTITY_VAR,
+            ),
+            (
+                PlatformStream::Loyalty,
+                LOYALTY_ENABLED_VAR,
+                LOYALTY_IDENTITY_VAR,
+            ),
+        ] {
+            if enabled(enable_var, std::env::var_os(enable_var))? {
+                streams.push((stream, identity_var));
+            }
         }
         if streams.is_empty() {
             return Ok(Vec::new());
         }
-        let config = PremiumClientConfig::from_env()?
-            .ok_or(ClientConfigError::Invalid(crate::premium::client::URL_VAR))?;
-        streams
+        let read = |var: &'static str| {
+            std::env::var_os(var)
+                .and_then(|path| std::fs::read(path).ok())
+                .ok_or(ClientConfigError::Invalid(var))
+        };
+        let origin = std::env::var(STREAMS_URL_VAR)
+            .map_err(|_| ClientConfigError::Invalid(STREAMS_URL_VAR))?;
+        let platform_ca_pem = read(STREAMS_PLATFORM_CA_VAR)?;
+        let premium_identity = match std::env::var_os(IDENTITY_VAR) {
+            Some(_) => Some(read(IDENTITY_VAR)?),
+            None => None,
+        };
+        let identities = streams
+            .iter()
+            .map(|&(stream, var)| Ok((stream, var, read(var)?)))
+            .collect::<Result<Vec<_>, ClientConfigError>>()?;
+        check_identities(
+            &identities
+                .iter()
+                .map(|(_, var, pem)| (*var, pem.as_slice()))
+                .collect::<Vec<_>>(),
+            premium_identity.as_deref(),
+        )?;
+        identities
             .into_iter()
-            .map(|stream| Self::new(&config, stream))
+            .map(|(stream, var, identity_pem)| {
+                let config = PremiumClientConfig {
+                    origin: origin.clone(),
+                    identity_pem,
+                    platform_ca_pem: platform_ca_pem.clone(),
+                };
+                Self::new(&config, stream, var)
+            })
             .collect()
     }
 
