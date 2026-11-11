@@ -70,10 +70,11 @@ UI and drift from the native client. The rejection reasons are in ADR-0018 §2.
 
 | Item | State |
 |---|---|
-| `crates/client-ui` | Platform-neutral, drawn by the game renderer: 732 files, about 45,600 lines, views for 141 features. Depends only on `client-domain`, `client-runtime`, `input-actions`, `renderer`. |
+| `crates/client-ui` | Platform-neutral **view-model layer** (state, actions, protocol, text), not a widget toolkit: 732 files, about 45,600 lines, 141 features. Depends only on `client-domain`, `client-runtime`, `input-actions`, `renderer`. It has no layout, widgets, focus or text editing (audit, 2026-11-11). |
+| Text rendering | The only renderer text is `crates/renderer/src/name_text.rs`, a 5x7 ASCII bitmap: no Polish characters. |
 | `apps/client` | 1,023 files, about 138,100 lines. |
 | Win32 UI code in `apps/client` | 190 files, about 39,700 lines, in 65 features plus about 9 shell/system files. 0 of these are test files. |
-| Win32 features with a `client-ui` view already | 61 of 65. |
+| Win32 features by `client-ui` coverage | 30 complete, 30 partial, 2 skeleton, 3 none (audit, 2026-11-11). Another 31 files (3,328 lines) use Win32 through `use super::*`. |
 | Largest Win32 areas | options/preferences (40 files), Wheel of Destiny (10), Cyclopedia character (9), chat (8), spell action bar (5), Store (5), attack (5), account achievements (4). |
 | Non-feature Win32 files | `about.rs`, `cast_watch/native_hud.rs`, `crash_report.rs`, `device_login/confirmation.rs`, `play/status_window.rs`, `updater/window.rs`, `win_mutex.rs`, `windows_shell/application_handler.rs`, `windows_shell/capture.rs`. |
 | Renderer | `wgpu = "=30.0.1"` with features `std`, `dx12`, `wgsl` only. |
@@ -101,18 +102,20 @@ by every non-Windows target.
 
 | Part | Content | Estimate |
 |---|---|---|
-| 3a. Shared controls in `client-ui` | Text field (Polish characters, IME, selection, clipboard), scrolling list, focus and Tab order, checkbox, combo box, context menu, modal dialog. Win32 provided these; the game-drawn UI must provide them itself. | 1-2 weeks |
-| 3b. Feature switch-over | Switch the 61 features that already have a `client-ui` view from Win32 to `client-ui` and delete the Win32 path. Options/preferences first (largest), then wheel, cyclopedia, chat, the rest. | 2-4 weeks |
-| 3c. Missing views and non-game windows | Build `client-ui` views for the 4 features that have none; move about, status window, device-login confirmation, crash report, updater window and cast-watch HUD. | 1-2 weeks |
+| 3a. Widget kit and text in `client-ui` | Layout, buttons, checkboxes, combo box, scrolling and multi-column/tree lists, focus and Tab order, rendered context menu and modal dialog, text field (caret, selection, IME, clipboard), and a Unicode font renderer so Polish characters display. An upstream text crate is preferred over writing one (dependency custody review). Win32 provided all of this. | about 22 person-days |
+| 3b. Feature switch-over | 65 features: 30 complete, 30 partial, 2 skeleton (minimap, options/preferences), 3 none (account services, character selection, native login). Sized S 32, M 24, L 9. Options/preferences (40 files, 6,808 lines) is about three L tasks on its own. Four groups of near-duplicate Win32 windows (in 0195, 0153, 0230, 0148) are merged, not ported. | about 109 person-days (+ about 10 for options) |
+| 3c. Non-game windows | About, status window, device-login confirmation, crash report, updater window, cast-watch HUD; mostly Yes/No prompts. Only the status window has a `client-ui` equivalent. | about 4 person-days |
 | 3d. System services behind interfaces | Credentials, single-instance lock, shell integration and capture behind a platform trait with a Windows implementation; Linux/macOS implementations come with step 1. | a few days |
 
-Total: **about 5-8 weeks** with 2-3 parallel agent lanes plus review and CI; several months for one developer. This is
-an estimate from the measured size, not from measured throughput.
+Total: **about 135-145 person-days.** 3a comes first and is mostly serial (about 4-5 weeks); 3b then splits well
+across 3-4 parallel lanes. With lanes, review and CI that is roughly **3-4 months** of calendar time; for one developer,
+6-7 months. The earlier figure of 5-8 weeks was too low: it assumed `client-ui` already drew its own widgets.
+Per-feature table: `reviews/CLIENT-UI-WIN32-AUDIT-2026-11-11.md`.
 
 ### 7.2 Uncertainty
 
-- How many of the 61 `client-ui` views are complete and how many are skeletons is not measured. A one-day audit lane
-  (one row per feature: complete / partial / skeleton, size S/M/L) would make the estimate firm.
+- The audit read about 17 features in full and the headers of 12 more; the rest are classified from automated
+  signals. The 3a figure is an estimate, not a measurement.
 - Text input in a game-drawn UI (IME, Polish characters, clipboard) usually takes longer than planned.
 - Linux and macOS testing (Vulkan/Metal drivers, HiDPI, keyboard layouts) adds about 1-2 weeks outside step 3.
 
@@ -130,7 +133,7 @@ an estimate from the measured size, not from measured throughput.
 
 | Risk | Effect | Mitigation |
 |---|---|---|
-| Game-drawn text input is weaker than native | Players notice at once (chat, login) | Do 3a first; test Polish layout and IME before any feature switch |
+| Game-drawn text input is weaker than native; today's font has no Polish characters | Players notice at once (chat, login) | Do 3a first; test Polish layout and IME before any feature switch |
 | Step 3 conflicts with ongoing client feature work | Merge conflicts in hot client files | One feature per PR, package per feature area, rebase-free merges of `origin/main` |
 | Windows regression | First-class target gets worse | Baseline measurement before 3b, budget gate in CI |
 | macOS needs signing and notarisation | Unsigned builds are blocked by Gatekeeper | Owner decision on an Apple developer account before macOS release |
@@ -139,7 +142,7 @@ an estimate from the measured size, not from measured throughput.
 ## 10. Order and dependencies
 
 1. Owner decision on this proposal (taken, §11) and on ADR-0018.
-2. Audit lane for the 61 `client-ui` views (one day).
+2. Audit of `client-ui` coverage (done 2026-11-11, `reviews/CLIENT-UI-WIN32-AUDIT-2026-11-11.md`).
 3. Step 3 (3a, then 3b and 3c in parallel lanes, 3d) and step 1 in parallel.
 4. Step 2, then step 4 under the web plan's gates.
 
