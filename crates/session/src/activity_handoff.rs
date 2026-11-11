@@ -153,6 +153,7 @@ impl<S: SessionStream> Session<S> {
         };
         next.install(self);
         self.connection_generation = receipt.connection_generation;
+        self.activity_scope = Some(projected_receipt);
         self.last_server_sequence = u64::from(receipt.requires_ack);
         self.next_command_id = 1 + u64::from(receipt.requires_ack);
         self.first_command_id = 1;

@@ -128,6 +128,10 @@ fn soulpit_scope_barrier_adopts_fresh_instance_and_return_without_replaying_sour
                         let envelope = decode_wire_envelope(&frame)?;
                         let command = envelope.client_command(2)?;
                         assert_eq!(command.command_id, 1, "source command is never retried");
+                        assert_eq!(
+                            envelope.client_command_session_id()?,
+                            Some(uuid_v7(4).as_slice())
+                        );
                         write_frame(
                             &mut server,
                             &encode_command_result(
@@ -144,6 +148,10 @@ fn soulpit_scope_barrier_adopts_fresh_instance_and_return_without_replaying_sour
                         let frame = read_frame(&mut server).await?;
                         let envelope = decode_wire_envelope(&frame)?;
                         assert_eq!(envelope.client_command(3)?.command_id, 1);
+                        assert_eq!(
+                            envelope.client_command_session_id()?,
+                            Some(uuid_v7(5).as_slice())
+                        );
                         write_frame(
                             &mut server,
                             &encode_command_result(
@@ -175,6 +183,7 @@ fn soulpit_scope_barrier_adopts_fresh_instance_and_return_without_replaying_sour
                         &uuid_v7(4)
                     );
                     assert_eq!(session.connection_generation, 2);
+                    assert_eq!(session.activity_scope(), Some(&receipt(1, 4, 2, false)));
                     assert_eq!(session.world_spatial.actor_position.x, 123);
                     assert_eq!(session.last_server_sequence, 0);
                     assert!(!session.unusable);
@@ -187,6 +196,7 @@ fn soulpit_scope_barrier_adopts_fresh_instance_and_return_without_replaying_sour
                     );
                     assert_eq!(session.world_spatial.actor_position.x, 0);
                     assert_eq!(session.connection_generation, 3);
+                    assert_eq!(session.activity_scope(), Some(&receipt(4, 5, 3, true)));
                     session.step(StepDirection::North).await?;
                     drop(session);
                     peer.await??;

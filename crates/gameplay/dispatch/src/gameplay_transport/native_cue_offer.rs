@@ -65,7 +65,35 @@ pub(super) fn offered(
     result
 }
 
+fn current_actor_frame(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    native_source: bool,
+) -> Option<bool> {
+    runtime.owner_fence().ok()?;
+    if runtime.house_actor_state(actor, session).is_ok() {
+        runtime.house_player_control_facts(actor, session).ok()?;
+        return Some(false);
+    }
+    runtime.player_control_facts(actor, session).ok()?;
+    native_source.then_some(true)
+}
+
 impl super::ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn current_actor_map_cue_frame(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+    ) -> Option<bool> {
+        let runtime = self.runtime.lock().await;
+        let native_source = self
+            .active_generation
+            .zip(self.effective_rooms().gate_wire_position())
+            .is_some_and(|(active, room)| source_available(active, room, runtime.content_pin()));
+        current_actor_frame(&runtime, actor, session, native_source)
+    }
+
     pub(super) async fn native_map_cue_source_frame(&self) -> Option<bool> {
         let active = self.active_generation?;
         let room = self.effective_rooms().gate_wire_position()?;
@@ -77,6 +105,41 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
 
 #[cfg(test)]
 mod boot_tests {
+    #[test]
+    fn house_map_cue_frame_uses_current_custody_and_rejects_foreign_session() -> Result<(), String>
+    {
+        std::thread::Builder::new().stack_size(64 << 20).spawn(|| -> Result<(), String> {
+            use crate::foundation::{CharacterId, CharacterLease, GameSessionId, LocalPosition, ScopeOwnershipGeneration};
+            use oteryn_gameplay_entities::carrier::house_custody::HouseActorState;
+            let (mut runtime, actor, _, source) = crate::gameplay_transport::spell_presentations::tests::runtime();
+            let physical = runtime.read_actor_position(actor).map_err(|e| format!("{e:?}"))?.position();
+            assert_eq!(super::current_actor_frame(&runtime, actor, source, true), Some(true));
+            let mut bytes = *source.as_bytes();
+            bytes[15] = 90;
+            let destination = GameSessionId::decode(&bytes).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(super::current_actor_frame(&runtime, actor, destination, true), None);
+            let mut character_bytes = *source.as_bytes();
+            character_bytes[15] = 89;
+            let character = CharacterId::decode(&character_bytes).map_err(|e| format!("{e:?}"))?;
+            let lease = CharacterLease::new(character, 1).map_err(|e| format!("{e:?}"))?;
+            runtime.bind_attacker_lease(actor, source, lease).map_err(|e| format!("{e:?}"))?;
+            let house = crate::durability::house_scope_handoff::HouseId::new(
+                runtime.binding().world_id(), "oteryn:content.house.cue_fixture").ok_or("House identity")?;
+            let lease = CharacterLease::new(character, 2).map_err(|e| format!("{e:?}"))?;
+            let position = LocalPosition { x: physical.x, y: physical.y, floor: physical.floor };
+            let actor = runtime.restore_transfer_actor(source, destination, lease, position,
+                Some(HouseActorState {
+                    house: house.house_key().into(), scope: house.runtime_scope().map_err(|e| format!("{e:?}"))?,
+                    generation: ScopeOwnershipGeneration::new(1).map_err(|e| format!("{e:?}"))?,
+                    position, lease, origin_position: position,
+                })).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(super::current_actor_frame(&runtime, actor, destination, true), Some(false),
+                "House custody retains positive floors even when the origin has native Bundle cues");
+            assert_eq!(super::current_actor_frame(&runtime, actor, source, true), None);
+            Ok(())
+        }).map_err(|e| e.to_string())?.join().map_err(|_| "House cue test thread panicked")?
+    }
+
     #[test]
     fn srx3_qualified_native_cue_boot_and_resume_preserve_exact_selection() -> Result<(), String> {
         std::thread::Builder::new()
