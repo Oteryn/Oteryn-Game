@@ -132,6 +132,27 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    /// Mod Reshaping reads the Supply Stash through a hireling only where the stash owner
+    /// already grants it: the current Steward hireling serving this session's open stash.
+    pub(super) async fn reshape_hireling_stash(
+        &self,
+        actor: Option<crate::foundation::ExactActorRef>,
+        game_session_id: crate::foundation::GameSessionId,
+        item_fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+    ) -> bool {
+        let Some(actor) = actor else {
+            return false;
+        };
+        let command = super::connection::UseCommand {
+            game_session_id,
+            command_id: 0,
+            item_fence,
+        };
+        super::npc_command::hireling_services::stash_access(self, actor, command)
+            .await
+            .is_some()
+    }
+
     /// Commits one decoded request through the one Atelier writer and builds the capability
     /// 148 reply. Mod Reshaping (capability 483) enters here with its own decoded request.
     pub(super) async fn atelier_v1_apply(
@@ -164,6 +185,20 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     return AtelierWireReply::Rejected;
                 }
             }
+            // A Steward hireling serving an open stash grants the same stash access as a
+            // depot locker; it is re-read here, before the runtime lock is taken.
+            let reshape = matches!(
+                request.mutation,
+                crate::durability::character_atelier::AtelierMutation::Reshape { .. }
+            );
+            let hireling_stash = reshape
+                && self
+                    .reshape_hireling_stash(
+                        admitted.runtime_actor,
+                        admitted.game_session_id,
+                        Some(expected),
+                    )
+                    .await;
             let backpack = match self
                 .root
                 .read_character_backpack(self.character, expected.character_id)
@@ -205,17 +240,21 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // Pinned native definitions and the ordinary backpack/coin owner supply all
                 // economic facts. Missing resources do not hide an already committed receipt.
-                // Mod Reshaping may draw on the Supply Stash only at a depot locker,
-                // read from the live position at commit time (owner decision WU26-10).
-                let supply_stash = matches!(
-                    request.mutation,
-                    crate::durability::character_atelier::AtelierMutation::Reshape { .. }
-                ) && admitted.runtime_actor.is_some_and(|actor| {
-                    super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
-                        .as_ref()
-                        .and_then(super::depot::locker)
-                        .is_some()
-                });
+                // Mod Reshaping may draw on the Supply Stash only where the stash is open:
+                // at a depot locker, read from the live position at commit time, or at a
+                // Steward hireling serving the stash (owner decisions WU26-10).
+                let at_locker = reshape
+                    && admitted.runtime_actor.is_some_and(|actor| {
+                        super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
+                            .as_ref()
+                            .and_then(super::depot::locker)
+                            .is_some()
+                    });
+                let supply_stash = reshape
+                    && oteryn_gameplay_progression::atelier::reshape::supply_stash_open(
+                        at_locker,
+                        hireling_stash,
+                    );
                 if let Some(content) = &content {
                     request.resources = atelier_wire_resources(
                         self,

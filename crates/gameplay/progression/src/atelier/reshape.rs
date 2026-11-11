@@ -44,6 +44,12 @@ pub fn admitted(in_temple: bool, premium: bool) -> Result<(), ReshapeRefusal> {
     }
 }
 
+/// The Supply Stash is open for Mod Reshaping at a depot locker or at a hireling serving
+/// its depot/stash function (the Steward stash service), and nowhere else (WU26-10).
+pub fn supply_stash_open(at_depot_locker: bool, hireling_stash: bool) -> bool {
+    at_depot_locker || hireling_stash
+}
+
 /// Where a reshape's `needed` fragments come from: carried containers first; the Supply
 /// Stash pays the remainder only while it is open at a depot (owner decision WU26-10).
 /// Returns the (carried, stash) split, or `None` when the reachable fragments fall short.
@@ -109,6 +115,19 @@ mod tests {
         assert_eq!(admitted(false, true), Err(ReshapeRefusal::OutsideTemple));
         assert_eq!(admitted(true, false), Err(ReshapeRefusal::NoPremium));
         assert_eq!(admitted(false, false), Err(ReshapeRefusal::OutsideTemple));
+    }
+
+    #[test]
+    fn reshape_supply_stash_opens_at_a_locker_or_a_stash_hireling() {
+        assert!(supply_stash_open(true, false));
+        assert!(supply_stash_open(false, true));
+        assert!(supply_stash_open(true, true));
+        assert!(!supply_stash_open(false, false));
+        // A stash hireling pays the remainder exactly like a depot locker.
+        let hireling = supply_stash_open(false, true);
+        assert_eq!(fragment_sources(2, 1, 9, hireling), Some((1, 1)));
+        let neither = supply_stash_open(false, false);
+        assert_eq!(fragment_sources(2, 1, 9, neither), None);
     }
 
     #[test]
