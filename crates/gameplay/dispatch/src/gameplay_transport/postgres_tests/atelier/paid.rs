@@ -213,7 +213,7 @@ pub(super) async fn exercise(
     };
     advance_ex_action(owner)?;
     assert!(
-        matches!(owner.execute_gem_atelier(session,GemBuildCommand::Wheel(wrong)).await.map_err(debug)?,GemBuildOutcome::Wheel(ref change) if matches!(**change,WheelCommitOutcome::Refused(_)))
+        matches!(owner.execute_gem_atelier(session,GemBuildCommand::Wheel(Box::new(wrong))).await.map_err(debug)?,GemBuildOutcome::Wheel(ref change) if matches!(**change,WheelCommitOutcome::Refused(_)))
     );
     let mut points = [0; 36];
     points[14] = 11;
@@ -229,7 +229,7 @@ pub(super) async fn exercise(
     };
     advance_ex_action(owner)?;
     assert!(
-        matches!(owner.execute_gem_atelier(session,GemBuildCommand::Wheel(closed)).await.map_err(debug)?,GemBuildOutcome::Wheel(ref change) if matches!(**change,WheelCommitOutcome::Refused(_)))
+        matches!(owner.execute_gem_atelier(session,GemBuildCommand::Wheel(Box::new(closed))).await.map_err(debug)?,GemBuildOutcome::Wheel(ref change) if matches!(**change,WheelCommitOutcome::Refused(_)))
     );
     let wheel = WheelChangeRequest {
         occurrence: WheelOccurrence::from_bytes(id(188)).map_err(debug)?,
@@ -239,7 +239,7 @@ pub(super) async fn exercise(
     };
     advance_ex_action(owner)?;
     let outcome = owner
-        .execute_gem_atelier(session, GemBuildCommand::Wheel(wheel))
+        .execute_gem_atelier(session, GemBuildCommand::Wheel(Box::new(wheel)))
         .await
         .map_err(debug)?;
     assert!(
@@ -262,7 +262,7 @@ pub(super) async fn exercise(
             .vessel
     );
     let replay = owner
-        .execute_gem_atelier(session, GemBuildCommand::Wheel(wheel))
+        .execute_gem_atelier(session, GemBuildCommand::Wheel(Box::new(wheel)))
         .await
         .map_err(debug)?;
     assert!(matches!(
@@ -280,7 +280,7 @@ pub(super) async fn exercise(
     advance_ex_action(owner)?;
     assert!(matches!(
         owner
-            .execute_gem_atelier(session, GemBuildCommand::Wheel(over))
+            .execute_gem_atelier(session, GemBuildCommand::Wheel(Box::new(over)))
             .await
             .map_err(debug)?,
         GemBuildOutcome::Wheel(ref change) if matches!(**change, WheelCommitOutcome::Refused(crate::durability::character_wheel::WheelRefusal::OverPoints))
@@ -359,7 +359,7 @@ pub(super) async fn exercise(
     wheel.slots = WheelSlots::new(full).map_err(debug)?;
     advance_ex_action(owner)?;
     let outcome = owner
-        .execute_gem_atelier(session, GemBuildCommand::Wheel(wheel))
+        .execute_gem_atelier(session, GemBuildCommand::Wheel(Box::new(wheel)))
         .await
         .map_err(debug)?;
     assert!(

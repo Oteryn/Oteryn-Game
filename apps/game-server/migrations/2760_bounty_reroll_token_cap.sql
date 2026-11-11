@@ -28,7 +28,7 @@ END $migration$;
 DO $migration$
 DECLARE definition TEXT;
     previous TEXT := $old$AND delta<>1 THEN$old$;
-    replacement TEXT := $new$AND delta<>CASE WHEN (NEW.reply->>'reroll_tokens')::bigint-delta>=10 THEN 0 ELSE 1 END THEN$new$;
+    replacement TEXT := $new$AND delta<>(CASE WHEN (NEW.reply->>'reroll_tokens')::bigint-delta>=10 THEN 0 ELSE 1 END) THEN$new$;
 BEGIN
     SELECT pg_get_functiondef('game_task_board_token_receipt_guard()'::regprocedure) INTO definition;
     IF strpos(definition,previous)=0 THEN RAISE EXCEPTION 'unexpected task board token receipt guard shape'; END IF;

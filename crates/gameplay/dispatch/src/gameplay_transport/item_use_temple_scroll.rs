@@ -171,7 +171,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // The move runs inside the burn's transaction, before COMMIT (the writer calls it).
         let landing = ScrollLanding {
-            runtime: &*self.runtime,
+            runtime: &self.runtime,
             spell_states: &self.states.spell_states,
             cells: self.movement_cells(),
             actor,

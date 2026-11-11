@@ -487,7 +487,7 @@ async fn seed_scrolls(h: &Harness, offline: bool) -> TestResult {
     sqlx::raw_sql(sqlx::AssertSqlSafe(item(PARCEL, "oteryn:item.tibia.i2854", 1)))
         .execute(&mut *tx)
         .await?;
-    into_inbox(&mut *tx, PARCEL).await?;
+    into_inbox(&mut tx, PARCEL).await?;
     let lifetime = crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_LIFETIME_MS;
     let mut scrolls = vec![(FRESH, lifetime - 3_600_000)];
     scrolls.extend(DUE.into_iter().filter(|seed| offline || *seed != WORN).map(|seed| (seed, -86_400_000)));
@@ -522,7 +522,7 @@ async fn seed_scrolls(h: &Harness, offline: bool) -> TestResult {
             .execute(&mut *tx)
             .await?;
         match seed {
-            INBOX => into_inbox(&mut *tx, seed).await?,
+            INBOX => into_inbox(&mut tx, seed).await?,
             DEPOT => {
                 sqlx::query("INSERT INTO game_item_character_depot_locations(item_instance_id,world_id,character_id,town_id,box_number,ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,1)")
                     .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;

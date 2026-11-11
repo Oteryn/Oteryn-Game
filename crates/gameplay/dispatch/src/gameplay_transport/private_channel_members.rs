@@ -43,6 +43,7 @@ pub(super) fn extension(
             .iter()
             .filter(|member| member.joined && listed(list, member.channel_id))
         {
+            let len = extension.participants.len();
             match extension.participants.last_mut() {
                 Some(entry) if entry.channel_id == member.channel_id => {
                     if entry.names.len() < MAX_PRIVATE_CHANNEL_PARTICIPANTS {
@@ -50,7 +51,7 @@ pub(super) fn extension(
                     }
                 }
                 Some(entry) if entry.channel_id > member.channel_id => {}
-                _ if extension.participants.len() < MAX_JOINED_PRIVATE_CHANNELS => {
+                _ if len < MAX_JOINED_PRIVATE_CHANNELS => {
                     extension.participants.push(ChannelParticipants {
                         channel_id: member.channel_id,
                         names: vec![member.name.clone()],
@@ -122,7 +123,7 @@ pub(super) fn notices(
                 && row.session != viewer
                 && row.joined
         };
-        for member in before.iter().filter(|row| other(*row)) {
+        for member in before.iter().filter(|row| other(row)) {
             let kind = match find(after, member) {
                 Some(true) => continue,
                 Some(false) => ChannelNoticeKind::Left,
@@ -135,7 +136,7 @@ pub(super) fn notices(
                 name: member.name.clone(),
             });
         }
-        for member in after.iter().filter(|row| other(*row)) {
+        for member in after.iter().filter(|row| other(row)) {
             if find(before, member) != Some(true) {
                 out.push(ChannelNotice {
                     channel_id,
