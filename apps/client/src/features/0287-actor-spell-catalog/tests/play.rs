@@ -153,3 +153,21 @@ fn o080_archive_has_its_own_window_lifetime_and_menu_request()
 
 #[path = "profession.rs"]
 mod profession;
+
+#[test]
+fn n003_alt_l_toggles_the_spell_list_widget() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, _, _): (PlayLink, _, Outbox) = play_channel();
+    let alt_l = [NormalizedInputEvent::Key {
+        code: KeyCode::new(15)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE.with(Modifier::Alt),
+        repeat: false,
+    }];
+    assert!(!link.spell_catalog_panel().open);
+    assert!(link.spell_catalog_input(&alt_l));
+    assert!(link.spell_catalog_panel().open);
+    assert!(link.spell_catalog_input(&alt_l));
+    assert!(!link.spell_catalog_panel().open);
+    Ok(())
+}

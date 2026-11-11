@@ -94,7 +94,8 @@ fn each_bar_accepts_fifty_buttons_through_play_queue() -> Result<(), Box<dyn std
         assert!(link.assign_bar_action(
             slot,
             crate::play::BarAction::Text {
-                text: "fifty".into()
+                text: "fifty".into(),
+                send_automatically: true
             }
         ));
         view.cast(std::num::NonZeroU32::new(slot as u32 + 1).ok_or("slot")?);
@@ -104,7 +105,8 @@ fn each_bar_accepts_fifty_buttons_through_play_queue() -> Result<(), Box<dyn std
     assert!(!link.assign_bar_action(
         150,
         crate::play::BarAction::Text {
-            text: "overflow".into()
+            text: "overflow".into(),
+            send_automatically: true
         }
     ));
     Ok(())
