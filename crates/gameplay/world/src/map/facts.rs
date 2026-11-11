@@ -1277,6 +1277,17 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
 }
 
 impl MapFacts for BundleFacts {
+    fn base_ground_pushable(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        id: u32,
+        depths: &[u8],
+        definition: NonZeroU32,
+    ) -> bool {
+        self.empty_amphora_pushable(pos, ordinal, id, depths, definition)
+    }
+
     fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
         Ok(self
             .callbacks
@@ -1363,6 +1374,18 @@ pub struct PinnedFacts<'a> {
 }
 
 impl MapFacts for PinnedFacts<'_> {
+    fn base_ground_pushable(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        id: u32,
+        depths: &[u8],
+        definition: NonZeroU32,
+    ) -> bool {
+        self.facts
+            .empty_amphora_pushable(pos, ordinal, id, depths, definition)
+    }
+
     fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
         Ok(self
             .callbacks

@@ -19,6 +19,17 @@ VALIDATOR = 'tools/content-migration/validate_world_project_v2_to_tree.py'
 GOLDEN = 'tools/content-migration/test_world_project_v2_to_tree.py'
 CHARM = 'crates/gameplay/dispatch/src/gameplay_transport/charm_progression_tests.rs'
 SHARD = 'content/creatures/definitions/creatures-00000-00002.json'
+GOLDEN_FORMS = (
+    (
+        "assert family_counts['Creature'] == 1_864\n",
+        'assert lock["source_binding_counts"] == {"Item": 476, "Creature": 1_864, "NPC": 2747}\n',
+    ),
+    (
+        'assert family_counts["Creature"] == 1_864\n',
+        'assert lock["source_binding_counts"] == {\n'
+        '    "Item": 476,\n    "Creature": 1_864,\n    "NPC": 2747,\n}\n',
+    ),
+)
 
 class InventoryTests(unittest.TestCase):
     def fixture(self, root):
@@ -79,7 +90,6 @@ class InventoryTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'LEGACY_CREATURE_COUNT'):
                 namespace['creature_family_counts'](reference)
             golden_text = (root / GOLDEN).read_text()
-            self.assertIn("assert family_counts['Creature'] == 3", golden_text)
             assertions = [node for node in ast.parse(golden_text).body
                           if isinstance(node, ast.Assert) and isinstance(node.test, ast.Compare)
                           and isinstance(node.test.left, ast.Subscript)
@@ -88,6 +98,8 @@ class InventoryTests(unittest.TestCase):
                           and isinstance(node.test.left.slice, ast.Constant)
                           and node.test.left.slice.value in ('Creature', 'source_binding_counts')]
             self.assertEqual(len(assertions), 2)
+            family = next(node for node in assertions if node.test.left.value.id == 'family_counts')
+            self.assertEqual(ast.literal_eval(family.test.comparators[0]), 3)
             binding = next(node for node in assertions if node.test.left.value.id == 'lock')
             expected = ast.literal_eval(binding.test.comparators[0])
             self.assertEqual(expected['Creature'], 3)
@@ -106,6 +118,36 @@ class InventoryTests(unittest.TestCase):
             before = (target.read_bytes(), (root / VALIDATOR).read_bytes(), (root / GOLDEN).read_bytes())
             module.refresh_bestiary_inventory(root)
             self.assertEqual(before, (target.read_bytes(), (root / VALIDATOR).read_bytes(), (root / GOLDEN).read_bytes()))
+
+    def test_refresh_preserves_original_and_current_golden_formatting(self):
+        for statements in GOLDEN_FORMS:
+            with self.subTest(statements=statements), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.fixture(root)
+                golden_text = ''.join(statements)
+                (root / GOLDEN).write_text(golden_text)
+                module.refresh_bestiary_inventory(root)
+                self.assertEqual((root / GOLDEN).read_text(), golden_text.replace('1_864', '3'))
+
+    def test_missing_or_duplicate_golden_seams_never_publish(self):
+        for form, statements in enumerate(GOLDEN_FORMS):
+            for seam in range(2):
+                for mutation in ('missing', 'duplicate'):
+                    with self.subTest(form=form, seam=seam, mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                        root = Path(directory)
+                        self.fixture(root)
+                        changed = list(statements)
+                        if mutation == 'missing':
+                            changed[seam] = changed[seam].replace('Creature', 'Other')
+                        else:
+                            changed.append(changed[seam])
+                        # A Creature count in a different dictionary is not this seam.
+                        (root / GOLDEN).write_text(''.join(changed) + 'assert unrelated == {"Creature": 1_864}\n')
+                        paths = (TARGET, VALIDATOR, GOLDEN, CHARM)
+                        before = {path: (root / path).read_bytes() for path in paths}
+                        with self.assertRaisesRegex(RuntimeError, 'BESTIARY_CORPUS_GOLDEN_SEAM'):
+                            module.refresh_bestiary_inventory(root)
+                        self.assertEqual(before, {path: (root / path).read_bytes() for path in paths})
 
     def test_malformed_authoring_or_profile_never_publishes_a_new_pin(self):
         for bad in [None, {'kind': 'Creature'}, {'kind': 'Creature', 'profile': []}, {'kind': 'Item', 'profile': {}}, {'kind': 'Creature', 'profile': {} }]:

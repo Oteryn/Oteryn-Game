@@ -625,6 +625,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.native_map_cue_source_frame().await
     }
 
+    async fn native_current_actor_map_cue_frame(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<bool> {
+        self.current_actor_native_map_cue_frame(actor, session)
+            .await
+    }
+
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
         store::with_store_offer(
             loop_training::offer(

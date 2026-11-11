@@ -1,9 +1,9 @@
 //! Source-qualified Spite room: real entry, native pursuit, death, Soul War state and return.
 use super::fixture::{Harness, debug, id};
+use super::srx3_activity_source_fixture::{SourceScene, install_scene};
 use super::{Dependencies, TestResult};
-use crate::content::channel_content_pin::ChannelContentPin;
-use crate::content::native_gameplay::NativeGameplayInput;
-use crate::durability::activity_handoff::{ActivityHandoffOwner, ActivityReturnReason};
+use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
+use crate::durability::activity_handoff::ActivityReturnReason;
 use crate::durability::character_equipment::{EquipmentError, MovementEquipmentSnapshot};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::runtime_actor_spell_types::{
@@ -16,9 +16,9 @@ use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
 use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::item_fence_of;
 use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_batch_kills};
 use crate::gameplay_transport::native_activity::NativeActivityOutcome;
-use crate::gameplay_transport::{SeamRooms, item_fence_of};
 const SPITE_KEY: &str = "oteryn:creature.goshnar_s_spite";
 use oteryn_protocol_oteryn::boss_encounter as wire;
 use std::time::{Duration, Instant};
@@ -37,32 +37,25 @@ async fn scenario(admin: String) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "m26_spite_chain", true, false).await?;
     let evidence = super::house_transfer::RecoverySource::start(&h).await?;
     super::house_transfer::prepare_owned_session(&h).await?;
-    let world = super::fixture::fence(1)?.runtime_scope.world_id();
-    let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../content/spells.manifest.json");
-    let mut input = NativeGameplayInput::from_manifest(&manifest).map_err(debug)?;
-    // Rebind only the harness's historical Character interpretation. Keep every
-    // production creature, source region, hook, room policy and reward unchanged.
-    input
-        .build_training
-        .as_mut()
-        .ok_or("training")?
-        .content_revision = "content-1".into();
-    let (controller, source_pin) =
-        crate::content::native_gameplay::test_support::try_activate_input(world, &input)
-            .map_err(debug)?;
-    let active = controller.active().ok_or("active production content")?;
+    let source = PinnedActivitySourceRoom::GoshnarsSpite;
+    // Crystal soul_war.lua:296: the first actual Spite waiting pad.
+    let scene = SourceScene::new(
+        source,
+        MovementLocalPosition {
+            x: 33774,
+            y: 31634,
+            floor: 14,
+        },
+    )?;
+    let active = scene
+        .controller
+        .active()
+        .ok_or("active production content")?;
     let native = active
         .native_gameplay()
         .ok_or("native production content")?;
-    let room = source_pin.qualified_room().clone();
-    let candidate = crate::content::bosses::activity_template::captured_boss_levers()
-        .map_err(debug)?
-        .into_iter()
-        .find(|row| row.creature_key.as_deref() == Some(SPITE_KEY))
-        .ok_or("Spite source candidate")?;
-    let template = controller
-        .qualify_activity_template(&room, &room, "content-1", &candidate)
+    let template = active
+        .qualify_soul_war_activity_template(&scene.room, "content-1", source)
         .map_err(debug)?;
     assert_eq!(
         (
@@ -73,19 +66,9 @@ async fn scenario(admin: String) -> TestResult {
         (250, 1, 60)
     );
     let lever = *template.lever_positions().first().ok_or("source lever")?;
-    let pin = source_pin.into_channel_pin();
-    let pin = ChannelContentPin::from_activation(
-        world,
-        pin.activation_sequence(),
-        pin.server_artifact_digest(),
-        pin.client_artifact_digest(),
-        pin.frame_binding_digest(),
-        pin.map_revision_digest(),
-        (lever.x, lever.y, i16::try_from(lever.z)?),
-    );
     let deps = Dependencies::with_content_and_capacity(
-        pin.clone(),
-        room,
+        scene.pin.clone(),
+        scene.room.clone(),
         native.spell_book().clone(),
         64,
     )?;
@@ -97,8 +80,7 @@ async fn scenario(admin: String) -> TestResult {
         .map_err(debug)?;
     let mut owner = deps.owner(&h, &authority);
     owner.evidence = &evidence.evidence;
-    owner.active_generation = Some(active);
-    owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
+    install_scene(&mut owner, &scene, source)?;
     // A qualified level-250 participant, with the actual native progression policy.
     let progression = native
         .progression()
@@ -229,14 +211,7 @@ async fn scenario(admin: String) -> TestResult {
         .activity_runtimes
         .remember(admitted)
         .map_err(|_| "remember origin")?;
-    super::boss_activity::issue_content_and_reset(&h, &pin).await?;
-    ActivityHandoffOwner::new(h.root.clone())
-        .publish_qualified_boss_rooms(&h.node, std::slice::from_ref(&template))
-        .await?;
-    owner
-        .activity_runtimes
-        .register_template(&template)
-        .map_err(|_| "register source template")?;
+    super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
     let instance = super::activity_runtime::allocate_ready_instance(&h, 88).await?;
     let origin_session = admitted.game_session_id;
     let (_, reply, barrier) = super::boss_activity::exchange_command(
@@ -316,30 +291,93 @@ async fn scenario(admin: String) -> TestResult {
         .map_err(debug)?
         .position();
     {
+        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+        use crate::map::boot::BundleCollisionIndexExt;
         use crate::spell::source_map_initialization::CurrentNativeMapInitialization;
         let runtime = destination.runtime.lock().await;
         let room = destination
             .rooms()
-            .gate_source_map_initialization()
+            .gate_field_step_ingress()
             .ok_or("actual bounded source Instance map")?;
         assert!(
-            room.source_world()
-                .ok_or("source Instance")?
-                .pending_mutable_placements()
-                .is_empty()
+            destination
+                .rooms()
+                .gate_source_map_initialization()
+                .is_none(),
+            "the actual Bundle keeps the SourceWorld Item initializer closed"
         );
-        assert!(
-            CurrentNativeMapInitialization::qualify_static_instance(&runtime, room, native).is_ok()
+        assert_eq!(room.pinned_activity_source_room(), Some(source));
+        let NativeMovementCollisionIndex::Bundle(index) = room.movement_cells().index() else {
+            return Err("actual Instance Bundle".into());
+        };
+        let NativeMovementCollisionIndex::Bundle(origin) = deps.room.movement_cells().index()
+        else {
+            return Err("actual origin Bundle".into());
+        };
+        assert_eq!(index.map().overlay.runtime_scope(), instance);
+        assert_eq!(
+            origin.map().overlay.runtime_scope(),
+            super::fixture::fence(1)?.runtime_scope
         );
-        assert!(
-            CurrentNativeMapInitialization::qualify_current_binding(&runtime, room, native)
-                .is_err(),
-            "a static Instance never borrows Channel Item custody"
+        assert_ne!(
+            index.map().overlay.runtime_scope(),
+            origin.map().overlay.runtime_scope(),
+            "the Instance owns its map instead of borrowing the origin Channel overlay"
         );
+        assert!(runtime.owner_fence().is_ok());
+        assert_eq!(runtime.binding().runtime_scope(), instance);
+        assert_eq!(
+            runtime.binding().scope_generation(),
+            admitted
+                .item_fence
+                .ok_or("Instance Item fence")?
+                .scope_ownership_generation
+        );
+        let pin = runtime.content_pin();
+        assert_eq!(
+            (
+                pin.world_id(),
+                pin.activation_sequence(),
+                pin.server_artifact_digest(),
+                pin.client_artifact_digest(),
+                pin.frame_binding_digest(),
+                pin.map_revision_digest(),
+            ),
+            (
+                instance.world_id(),
+                active.activation_sequence(),
+                active.identity().server_artifact_digest(),
+                active.identity().client_artifact_digest(),
+                room.frame_binding().digest(),
+                room.map_revision_digest(),
+            )
+        );
+        assert_eq!(
+            room.compiled().server_digest(),
+            pin.server_artifact_digest()
+        );
+        assert_eq!(
+            room.compiled().client_digest(),
+            pin.client_artifact_digest()
+        );
+        assert_eq!(native.source_digest(), pin.server_artifact_digest());
+        assert_eq!(room.movement_cells().scope().world_id, instance.world_id());
+        assert_eq!(
+            room.movement_cells().scope().generation_digest,
+            pin.server_artifact_digest()
+        );
+        assert!(matches!(
+            CurrentNativeMapInitialization::qualify_static_instance(&runtime, room, native),
+            Err("source map initializer requires actual source world")
+        ));
+        assert!(matches!(
+            CurrentNativeMapInitialization::qualify_current_binding(&runtime, room, native),
+            Err("source map initializer requires actual source world")
+        ));
         assert!(
             CurrentNativeMapInitialization::qualify_static_instance(&runtime, &deps.room, native)
                 .is_err(),
-            "the full source map cannot borrow the bounded room's empty-placement proof"
+            "the origin Bundle cannot grant a SourceWorld empty-placement proof"
         );
     }
     // Match the production movement preflight: its bounded PvP read also
@@ -391,9 +429,28 @@ async fn scenario(admin: String) -> TestResult {
         ),
         "a stale activity lease grants no equipment read: {stale_lease:?}"
     );
-    assert!(
-        destination.ensure_source_map_initialized().await,
-        "static source map admission"
+    let custody_counts = "SELECT (SELECT count(*) FROM game_native_map_item_receipts), (SELECT count(*) FROM game_native_map_item_audit)";
+    let custody_before: (i64, i64) = sqlx::query_as(custody_counts).fetch_one(&h.pool).await?;
+    for _ in 0..2 {
+        assert!(
+            destination.ensure_source_map_initialized().await,
+            "the real scoped Bundle is ready on initial and repeated Movement preflight"
+        );
+        assert!(
+            destination
+                .states
+                .spell_states
+                .lock()
+                .await
+                .source_map_initialized
+                .is_none(),
+            "Bundle readiness never claims Channel Item initialization"
+        );
+    }
+    let custody_after: (i64, i64) = sqlx::query_as(custody_counts).fetch_one(&h.pool).await?;
+    assert_eq!(
+        custody_after, custody_before,
+        "initial and repeated Bundle readiness writes no Channel map Item receipts or audit"
     );
     assert!(
         destination

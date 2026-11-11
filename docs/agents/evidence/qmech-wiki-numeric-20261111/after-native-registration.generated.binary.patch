@@ -1,0 +1,534 @@
+diff --git a/content/content.lock.json b/content/content.lock.json
+index 1a205e67ec213352c57f9e732f0b7f701d026a29..515f7f284c3d87535e196d80942beaa8bf01bf65 100644
+GIT binary patch
+delta 190
+zcmWN{F=|3V5CBkOY*JWBkYF9K3GD97&dxMxtZkDj#qR9PH3Hs1*2+@^K3I7JJ8zIK
+z$B6LC_h<XBpXKaud!Dwl{4kD>r%gvoH3qA~C<Gl!(b%0?L5o+eK|tB-_?YiD`M#Qw
+z-g)()Or2A*Xws;(ge=Kf4aaqUna)qk#e3ESO&zjPL<*q^nn?9%QK<C54khGFzzE)u
+YQq0zZqdBH7<M++R_si>aSbeVl0mi#ISO5S3
+
+delta 1143
+zcma)*%W70X5QZ^E7s1OSUO>f!fS`CuU#f4e+_-SzLPcCi2-VfqdSo&a=gdSUgn+Mb
+zT=^72wmyWf;LgXeW@5$(DtH#XsIIE-ufO_y-1xy?mKQEO?9*V}AMx<sQ*6rG{Z#|%
+z;LO646W8u6t;)C7jCgC42K^l#w#}d~8QQ9D<K*X?mSb>+G&*u2vMm8}vYZS-w5b}h
+z&MQmQtt>vinU%&8vJ0qmbfCEU;C<B&fHPpUm>hcLyHAT>_lM&iw>%Q8NNWYTd#L5n
+zRvz;f&&NbzmaMYLZ^zB{<Zg3&IH-*@kUDST;TV!uajWSy)3AYA^fmY9YX`aI;r<Se
+zWYkFm>t>mwMjVh(FtgCOKjc?UEAH`plZj=MOg&Y-C+FUzWbJ6IBXxh9>ZK%}o*2Ko
+z)b-9?S()})Z)St9BN4aly*I7w;?7d{eP#I>QOuk&=@>G3bdgF-I++kEBXCWWYsF%j
+z*`l@-fJ}%kXr@RR-P%;=FO|R9)77{0Y{C)t2Cv3^46l-}ro^mc$r!N+hI5WUm16OP
+z)kLsbL$(1Nml{DSM?obOU4k0_8$Vm|F+3(rHOQcu9aNXAIFy44DOqD`b}Ch0C?d&Q
+zG=x~u)Id<gpAt**|G;1W!}+FP`28_7F%~G8R1V3g;2>CtUNbu*UYN;%aw}3yG$ufT
+z#NGxGVT0_5_#fySf1n5N`aHb5J?J&`VP3)WJo(u)B%8Cb$`t|o06t})A}kHH7L8C5
+zye2@c90!3L3Zj-mnJJh)fekt3sdnEkUO2#03uhn5UUg0ylNGx-8gGhJ85h0Rm9^JU
+nVhspTtxTIra>0@fI$1@v7}xFHqVDD8OWpd#^9Q$=UtIkOyXs1@
+
+diff --git a/content/cosmetics/mounts/index.json b/content/cosmetics/mounts/index.json
+index 842973af8572aa719f4c2eb3a6d4685e4233ea9c..bc56ea2440e18bb0a81fcae850c6fdb6b89b5be5 100644
+GIT binary patch
+delta 50
+zcmeyu^o40cfkui+s!^h$L29C<g^8t^af-3Id9q<jnuSHOak6<@qD7*CrE#)FTH?eR
+FcL1F#5P1Lq
+
+delta 50
+zcmeyu^o40cfrfFag}JFwvSFfWvZ=X6s&R_BNs^^;s-;n~iG{Icno+W`shNRsa`MC(
+FcL0x>54!*W
+
+diff --git a/content/creatures/definitions/index.json b/content/creatures/definitions/index.json
+index 74d8608a8a1d4acb0c57aa769286370c34641ca1..73369b786b126bd3a8b1e9b69a4401ea0d6b78e5 100644
+GIT binary patch
+delta 77
+zcmV~$yA^;S3;@7FS_?J_`AIrgF_6sXd(PniF2Ee#t-9*{Zl??+A4wA0SOMHP%&u(F
+bOpggY=>QR>&XmrIO~N5Ll5v{ivzM>@kFgdX
+
+delta 77
+zcmV~$yA^;S3;@7FS_?KI9}?2J3J@}%?>UD9xBzo_xAV^Tdt8AI!=M|v;c6)8JQZsb
+cfmk5G-a<Qb5Lz*}sx(Q#sLXJz&zZjT1CG8G`Tzg`
+
+diff --git a/content/creatures/definitions/spell-native-profiles.json b/content/creatures/definitions/spell-native-profiles.json
+index 73db3efb5b529ac0702248a923c4516afb7c1759..83c59528c6bbe87a9503e3166f2277a68ef64063 100644
+GIT binary patch
+delta 1365
+zcmaLNcU;tU9LMp;2SJ&NIB|g>I8gZ=cfkEzxE1%nh4bz>+zL+Is4rK3>$1T${gIVr
+zOPe+{&~{n2vn*{|HnCyTl+U02(;x5WKkwJ>ssr(R>Q{*nK?5R*q9KilCWctzh$n%@
+zG$E0uB+-oKw4f!eXiYM0XiGcV(}5IH=|~#sbRvUHI@5)&bR&!I^q?o%Sh&c+jfY(F
+z$j6IKFM895zVxGj{tRFsgBZ*ZhBA!d6f%O5jAArn7|S@uGl7W|F^S1cVJg!oW;!#N
+z$t-3w2OoX{ln|tpxy)le3s}e^7PEw<lu^zyma~GDtYS44tYIzdSkDGFvWZGIvxTj|
+zHny{ao$TT&c4N4jYY1^Id$^A4xq%z0BFs(P%q`r?ZQRaY9ICm4ecZ`i+|7RO;a(1K
+zANTVB5AqNPImE*}!lOLK<2=D(p5!T><{6G~lxL}-mSY^}IiBYQUgRZS<`rJ$HBRt4
+zZ*Y<~d5gDshj)38_xXTRe8@+f=3_qL3}^Y2&-k1#_>!+U$JczrdA{X4zUK#i<R|L5
+zz|Z``ul&YEe&-MV<S+i_A1?7Pmv@R0F%e=Kh=~*vC8nX6Mq;AH#E6L%6DKBKOoEuk
+zVw#9a6w_2pl9*;<nu}>6rlpuxVp@wy7Sl#dTQTj#v=`GsOp2IPF&)LEiAfjJNlb>A
+zOfj9sbP>~4OgAxEV!DgzA*QF8Y&l}d(Np2t6UnLJ+B2gQo$A7tGX8LNQh8Z~lNxeK
+zWX-|TmK;y`zr@ibBV3lXFYF{HTjF+3UbZCKslKG1t#V09*t!sBJJlOwB;-`?w<OX@
+zjCcJfX&*jRlwRS~p3km73!+@&b*j&0%CWr{Es1l=>dn-`<D~kNrFSS)XGuLSB}Z{9
+z9wk@FQ}PwBVk^Cr-bx>(uhLH`Q2Hwal!3}1Ww0_t8LA9ZhAV~22xX))N*S$;QN}9c
+zl<~?0Wuj7~Oj0H*Q<SO7G^JRXuFOzoDzlW?${fX~_?3WCq6C#vWv(($nXfER7AlLB
+z#mW+8sZyqtE6bGS$_izrvPxO4R48kdwaPkWy|O{ssBBUymCec)Wvha+P1&yOP<Bd9
+zsBV|o#e?ji<q4G9?p&``;tvLWzFaF{l?L42K*09;^6eZu=<}4?fuP@$XXod5JpotH
+SZ|C}RT(;kB``l?8Vy^%pFIhSO
+
+delta 1359
+zcmaLQ_gB>g7{~GRxKKm|_e8~koA15A<pNG{58PXn%jM!$#63ZMyYeZu;ce-chLuel
+zW<!I@_K?U*TVi`zW_zjk`3L&pd7aNW&pDsZzWs+|c1Nxhp$0XnMQ!R3MP2F<O?_f$
+zKtmc4OB{`9LQ|U2oEEgC6|HGQTiOv%dpgjO1Uk`~E_5Z4Zgi&yJ?TYn`jCW!2QSH_
+zkcy8q{G^jXCVlBge+Dp+L1dB5V1_W1VGL&kBN@eL#*o8U#xb4=Ok@(1nZi`2F`XIA
+zWEQ#1W)67-$R|hvAqttxJm#~2g)Cw*OIS(~%P3|!D_F@YR<nk+tYbYJ*vKYIC}lHS
+z*a~c8J3H9PF0NrW%C%g_9`>@2>$!m&xrzORxtUwImD{+T102Mqj61lKySSS}+{3-x
+z$6@a00UqQb9_A5_@F<V*I8ShtCppGbJk2va%W+Qd9OYE-JTLGfCwYmNd4*Sbjn{dD
+zH+hS<IYlM!P{q5P<~`o$1I}=k5BZ3X`Gik7M>Xg9jL-RkFZqhE`G#-#j_>(_3;f7W
+zT;yji@e9B58^7}hfASZ9^AG>>AD6kZQ&dE2h}IOXC0bjwj%bu<UD0}?(W3Q5V?-N>
+zHWY0n8Y>zn+E}!SXj9Q<qRmBHh_)1MCE8lFjc8lZcB1j3?L|9?b`(tz?IhY+w2Nq0
+z(L~X1qTNM%i1rliCE8oGk7$w{cjUyGaHCL8eE8zolip*_(JKdQxaXoAsqLOR=SZjU
+z#iF<aZgr(2p74>QNfX@xQHhdu@Vp~lw`@~_jCPA6*>Pj9I5OBRsd6MKTvipg+&y*L
+zk#268`ed?O8Oe$6l2#cq!>x{V*DAN}L-qb|*e%P+ld10BOPR9Ft-c)D2oEgopSh>v
+zf+G<;hSx|oQjAo?XQUZ^Bi+a_GL61QKcl}fz!+!@GO~<pW3VyA7-|eNh8rV{k;W)v
+zv@yoWF~%C>jPb?<W1=z1m~2cjrW(_X>BbCWrZLONHD()gj65S?<QqYwzz7+I#$02b
+zG2d8VEHoAwi;X45QlrRNW)vICjTOd9W0kSmSYxa;)*0)K4aP=elTl)n8k>zR##RGk
+zo3Y*4VeFLhiVM4>VQzMy(C_g%fk0uhufUrcNb!eKJU&mV-y3jz1<Bt0v|wuFSD2pW
+cDNGLqgMpww6!Q5CLY_b%nD6tYC2Wko3d2op-~a#s
+
+diff --git a/content/creatures/prey-slot-values.json b/content/creatures/prey-slot-values.json
+index dd1a148cf793e9261451e8c3cc1f0e13ade69329..afd5987e79785617b63086829639fe2b5bbac7d8 100644
+GIT binary patch
+delta 82
+zcmWN`yAgmO3;@uhv0xg0A?9pcg^)0ZCHu&oHI20+N&DXHc6NIW^WJBu;!|O%DJwHK
+i3Q+b%9zj(DtaDTWf*?{8Oh7KjtilMfd3v^Cj_(J3aT)*s
+
+delta 82
+zcmV~$u@QhE3;@8Rv2dCsK!RuEDv5zPEZIlytZA$r$^Y5c+1G1?_dc>Gq-@|68v~fe
+hXv&PDrJ}k!XEjQiyw#1RoG6C12~mSA3ePga{{38z8P@;+
+
+diff --git a/content/dialogues/definitions/index.json b/content/dialogues/definitions/index.json
+index 75a5c6b99812db79d184bf3eb026fb0575cfbe44..2974db9c2ce7bb15480f4e2bb6ac31e29b2c0492 100644
+GIT binary patch
+delta 51
+zcmeBU?qi-{rjcTjYLsYbkeX;|VPa`!oMLQlo@|(sW?_+RoNS(!Xpv}OX`F14mbfv_
+GfDr(CJPxn`
+
+delta 51
+zcmeBU?qi-{reU0FVQy-aY?x@8Y-(<iYMf$jl4NO|YH5^gVqt8VW|VAfYGz=ZoV+p4
+GfDr&|?G5q(
+
+diff --git a/content/documents/index.json b/content/documents/index.json
+index d0e81e45559618ad0dd5b9dd314e42c9d575e4a1..45de9743dfe0f8231c5db5a7581c2491901c8d7b 100644
+GIT binary patch
+delta 51
+zcmcc0e3f~EnMR69s!^h$L29C<g^8t^af-3Id9q<jnuSHOak6<@qD7*CrE#)FTH?mI
+Gaz+4_h7W}R
+
+delta 51
+zcmcc0e3f~EnTBzyg}JFwvSFfWvZ=X6s&R_BNs^^;s-;n~iG{Icno+W`shNRsa`MKw
+Gaz+4%Hx9=D
+
+diff --git a/content/encounters/definitions/index.json b/content/encounters/definitions/index.json
+index 7997eefa2158b9ad14e1604f39d64c35200c29d9..bf575981f56c9570c665a86a93c1bbd8711f97d5 100644
+GIT binary patch
+delta 50
+zcmbQvJe_$$g+_`=s!^h$L29C<g^8t^af-3Id9q<jnuSHOak6<@qD7*CrE#)FTH?e7
+F-vN7r59|N{
+
+delta 50
+zcmbQvJe_$$g@$peg}JFwvSFfWvZ=X6s&R_BNs^^;s-;n~iG{Icno+W`shNRsa`MCl
+F-vMp%4=w-z
+
+diff --git a/content/manifest.json b/content/manifest.json
+index 583da1465bedba82accfbe09afb49ebd27932d43..46d89d6ed49ba898f91df84945ca1e882a0c88dd 100644
+GIT binary patch
+delta 147
+zcmV;E0Brx}gaYaL0kHN1vtR_>1+$$B%M+9DAQY3WAPAFPYYek+A3g??uqYd|pC+m!
+zlWhnJlMo05v#Cn#2(#~0aRZa|U=g#zS%nNfHDfX}Vq<1AHDxw2G&V3WVmUNrIXPiw
+zF=a71HaBE2IA$|9Ff}zcGdMIeW@0opGBGt}VlZYjWo9%oWI2;xePxqBYZkI+W*a=c
+BGlBpB
+
+delta 884
+zcmaJ<O=}ZT6r~-5iHT@wsbH`fGc|&3GMP7%j}aGsBDI38xQ{Py?!<@lk<LeIl~4tD
+zE)?EURNM-JFgwAY;36xxu7rwf(VcH5O&DnLEgrmc&pn*;?%n%4^W*vKr{4m5A>=Z(
+zyO<hmG<$}9k@82p_%Syl3P`I*d&1Am{OU20pE3==?hw}*fakN#te7DlHUqYqD+!8P
+zkG|$c^Fj=~x}+46l5FFC)x>PHP|J@24+!nE`=Xo>Uv8{0aV^W9l127$Da*b?fnB(A
+zZvUN+3QK=7v85BSC0`~uz?Rz!fjv99662@GI1H!(4uNVtKKxdYGNFvqjLsrfuN0%w
+z@(1bsRtSFJ%MK3c0ID8rW6!7(Y*}4Q9{MskJz`;Mv-h`F*_)%sqi;8VWf$Y@zD(_I
+z2sSvp9TNgR!{V~!g%<e0p#z+>Vd+0S*a~SsmgTOcg~RliEY&K96~<=VZ3nz+-?b>&
+zi8Z3n8;^zE3BP<%d@`Qk+SLCP<8vi$$P=Xyj&(U^bf(5Sea|&1&&gR$)E+NHvJ@t^
+zsYR0l(o*;X*tOCEZr2BI!2jHJViC2G;s%s&6bD-<1%{3XJ?aPGL0TvIWX@HRM4~vH
+zw3Ml1z$0EM@8_O7FcH4hrz$)vwV{IzoBBR?6L(y_edpTxjqBw^bI9*uB;R{oxNIUr
+z>FNsBRYOP6MonaBq=g#oW>YaiX)2o0Hd|QJOcm*M-Ow8?m8dO6SL?(yP=j?~hrKHm
+Jqqlgy_z$4;B)I?p
+
+diff --git a/content/npcs/definitions/index.json b/content/npcs/definitions/index.json
+index 0c762b568c3cae6e056f8191619e9f392427fe6d..3a3ea192c1dea1ccbdd623a7e2ca4bdea5e334fd 100644
+GIT binary patch
+delta 51
+zcmX@ke4Kegphk*Gs!^h$L29C<g^8t^af-3Id9q<jnuSHOak6<@qD7*CrE#)FTH?k^
+GKSltR=MQ!O
+
+delta 51
+zcmX@ke4KegpoVd(g}JFwvSFfWvZ=X6s&R_BNs^^;s-;n~iG{Icno+W`shNRsa`MJX
+GKSltDm=3rA
+
+diff --git a/content/project.json b/content/project.json
+index 9f2ab8aecbaaf799262b0e05c0019d4856396bb1..c9c1f620efb7e74715a9792eb20a7d6ab1507ca9 100644
+GIT binary patch
+delta 15
+XcmdnPcAs^_LB`4N7^^4GWLgXWI9>+l
+
+delta 98
+zcmcc5x`%DUK}H=NE(IV^$}CCEjZe<cD@!dZ&dkqKf(pClCFhssm82Hw1tn&tOg_L^
+rqnck(nv+<Pni5}Bnv+_bT2icJr4S7<#4|UkG&MIhucUagA=5elO$#9f
+
+diff --git a/content/services/bank/index.json b/content/services/bank/index.json
+index b62cb7c5ce2e053fba4aeec85599f5bd598f83cd..8b5d9f0a5124369421c34c8d9e43dedca1df4823 100644
+GIT binary patch
+delta 50
+zcmX@Xbb@Jul}3t5s!^h$L29C<g^8t^af-3Id9q<jnuSHOak6<@qD7*CrE#)FTH?f{
+FX8?k755E8a
+
+delta 50
+zcmX@Xbb@Jum4<Pug}JFwvSFfWvZ=X6s&R_BNs^^;s-;n~iG{Icno+W`shNRsa`MEa
+FX8?5J4*>uG
+
+diff --git a/content/services/blessings/index.json b/content/services/blessings/index.json
+index 8ce2f15bbef72867d5213561b9073a09422acba3..dde7f8e73f3dfdb9240b2cc6c6866092137eed78 100644
+GIT binary patch
+delta 50
+zcmcb{bd70(okogDs!^h$L29C<g^8t^af-3Id9q<jnuSHOak6<@qD7*CrE#)FTH?gC
+F4*-ai5A6T|
+
+delta 50
+zcmcb{bd70(orZC$g}JFwvSFfWvZ=X6s&R_BNs^^;s-;n~iG{Icno+W`shNRsa`MEq
+F4*+`u4=(@!
+
+diff --git a/content/services/promotion/index.json b/content/services/promotion/index.json
+index 5e8d0a4dc43218fcbf5a07230e01a32f81258804..bff9501f3247b7d887ae3e174a49c1f7932739d4 100644
+GIT binary patch
+delta 50
+zcmcc4be(B}y+(>js!^h$L29C<g^8t^af-3Id9q<jnuSHOak6<@qD7*CrE#)FTH?g?
+F4*-cJ5Ags1
+
+delta 50
+zcmcc4be(B}y@qkBg}JFwvSFfWvZ=X6s&R_BNs^^;s-;n~iG{Icno+W`shNRsa`MFV
+F4*+|V4>JG&
+
+diff --git a/content/services/trade/index.json b/content/services/trade/index.json
+index 6b60d6d9f0b6cc5e1eb1664d88a2dcf5d84a827a..35ee5e8e176ec9620b08efa74657d39db0ed4313 100644
+GIT binary patch
+delta 50
+zcmX@hbe3s?wML3bs!^h$L29C<g^8t^af-3Id9q<jnuSHOak6<@qD7*CrE#)FTH?gy
+FR{(^M56=Jq
+
+delta 50
+zcmX@hbe3s?wT5x3g}JFwvSFfWvZ=X6s&R_BNs^^;s-;n~iG{Icno+W`shNRsa`MFF
+FR{(bY4-o(W
+
+diff --git a/content/services/travel/index.json b/content/services/travel/index.json
+index 1452f9ee76c4b066e325e5c3fe0657ea00418532..3f59a4e147fbec3166b55149bde868912fa5dd84 100644
+GIT binary patch
+delta 50
+zcmX@lbe?H~jYf(|s!^h$L29C<g^8t^af-3Id9q<jnuSHOak6<@qD7*CrE#)FTH?f%
+F*8qis57qzx
+
+delta 50
+zcmX@lbe?H~jfQcmg}JFwvSFfWvZ=X6s&R_BNs^^;s-;n~iG{Icno+W`shNRsa`MEK
+F*8q3&4;TOd
+
+diff --git a/content/spells.manifest.json b/content/spells.manifest.json
+index c038eadeca0a0d2eabe79b8a1913d47d7a2d3e21..92346af53d1ad978d85877d7a4950fabc02e7d75 100644
+GIT binary patch
+delta 77
+zcmV~$%ME}a3;@u?lMAp%=?{7{@$3*5+HKs$#6=j%_f}cuy|zOJl8+<_t*iiU9A<ac
+csHSZ~Pii2d)S1#*u}U~3M>0-R{GRRHe_@0bW&i*H
+
+delta 77
+zcmV~$%ME}a3;@uClMAp1{m{~ziD!mDO1E(r6Bl75-`jcTx2H4E;WijXZnzo>I#0#g
+dL?9Lju(!~`9E4WPttw4YFe)<~>-VJV_yJ&%6+r+1
+
+diff --git a/content/world/content.lock.json b/content/world/content.lock.json
+index 34fb377aeebadb46d1192fec44d81ab6634ddca8..867749b2fbf448b9d53831d06fdd7dd14772f8bb 100644
+GIT binary patch
+delta 76
+zcmV~$(G`Fo2nEp7ahm=FOdfx&A__Y+M;kanBX;jDyL@)s0-0<|vIOap#1PZQ>O$^4
+YV_le0mq8G%HqxG)W4c>KV7$+9{vIV25dZ)H
+
+delta 76
+zcmV~$(G`Fo2nEpNahm=>g!HdffP6bNM;kanBX;kuyMD7=2?3*_NeX5sXsE`_MQ(zi
+Y)6EqlQkj<v-)2KBS~>$t`99_N0b3^)3;+NC
+
+diff --git a/content/world/definitions/declarations.json b/content/world/definitions/declarations.json
+index 3e8752c1a5c578e3d74b93e92c4839f2c35603cc..d4e2a10ea984963d377c1df88c3c7fa8a093c8fa 100644
+GIT binary patch
+delta 1401
+zcmWl}cU%q#0D$4&my8hE<jc<9WbeKA$lfb^6DqufC`2JC`<A=wj&tWmZtp$abbFuM
+zog1CrKc44udT#iYB1r@Yp%|eQrvxP_MHr<iLs`NpM|mQsKt(E1nJQGJ8r7*mBsB>V
+zMJ;Mmhq~0GJ`ISbA&qEE6PnVD=Cq(Ct!Paf+R~2p#L$6`bfPm|=t?)b(}SM$qBni$
+zOF#NEfPoBRFhdy1ForXNk&I$AV;IXg#xsG5#4?G=Okpb1n9dAlGK<;FVJ`ES&jJ>*
+zh&UFrgrzKFIV)JnDps?GwX9=38`wxZo7l`25=bP8t!!gEu!Ef>vy0vAA%(r{Bb7Av
+zbAW@SbBM!akjW8_a*QmFlg$Zo$mJxbIL#T(a*p%d#_im}o!rF*?&couC6D{KpNm}L
+z0WR|(4{?Qud4xxKjC`*0I8X2-Pw_O*@GQ^qJTLGfFYz+3@G7tII&bhMZ}B$o@GkFh
+zjraM05BZ3X`Go6y%4dAe7ktTAe9bp}%XfUw5B$ha+~8+^;a7g+cmCi{3iykg{LMf7
+z%YPRO3oc|{Ew~Y#8JT!9D&taNOnz=ySRgwj=X!i<AT%f8T3jF^Iha>i<o}dlULdWA
+zg;+5Qwc=L7N?Iukv(i?^%38RUv+@>U6|ACFvdUJ)s#-OxZZ#~@YFf~utd`ZbI#$=}
+zS$%6@(bmu!Sz~KrO|6+Vw-(mYT3KsrV{NUSwYM1SU>&WKb+#_n)w)@C>tQ{um-V(j
+z*4O%3e;Z%}ZIBJNAvV;8*>D?SBW;w8wlOx=#@TqAU=uCYCfQ`0VpDCJO}7~~(`MOh
+zn`3irp3S!fw$K(?oGrE`w$zr{a$8|5ZI!LIHMZ8)*?QYx8!g^8*=E~f36^L{w$--T
+zcEfhqPD{33w%hhtitV+1mTGCX-wxP8OSeOI*fK2Bj@VH<W?6RJvh9TBSgxJ4Q+C?U
+Q*jYOl$Peb74`jvO0u32BsQ>@~
+
+delta 1378
+zcmWl}Wt<NN0D$4&X~%K;@Ymg^ySqD2cX#I<?>QU}hr@ABkIijrhHbX7X$!evW1V7Q
+zA$ISF=Q$al9CAEWBtfJhE$K*41~QU~%mkB#tb~w_?1Ykooa7=mdB{sX!pKhn3KF0Y
+zg(*T&icy>rl%y1;DMMMxQJxA^q!N{>LO4~aMs;dXlUmfK4t1$VeHze^Ml_}gO=(7R
+zTF{bKw5APhX-9iH(2-7brVCx^Mt6G9lV0?u4}IxJ1pOJnKn5|GAq-_0!x_OyMlqT(
+zjAb0-nZQIQF_|e$Wg63&!Axc`n>oy79`jkiLKYE86pL8`M6;9_ma&`_#IllAtR{{%
+ztYsbXtY-roNnjJ3*+L>)*+vrENoEH-*~M=5u$O(j#C{I&GOuuu6kg>u4sn<x9OW3V
+zbDTFg!AVZ>CU5aJr+J5Wd5<%k<$XTj9Ot>fMJ{ofD_rG6KH_6O;TqSu!A)*)n@{<S
+z&-sEo+~rHY;vV<;ns4})@A#e{_>rIZnP2#o-*~`79`Tsp`GY_CizoceKm5yoJmuNZ
+z=T8nMJd3&>mJptJD>x>Q@;udx*g#59Tq;XrX)T?lw+xoiGFfH|wk(#_LM)qQw@}Mr
+zIW3pvwmg>C@>!VWw*pqs0#?WhTM;X2#jLoMu##5FN?RE#YvruGRj`Uy$tqhF3%9CP
+z&8k}st7)~Yw$-t^R?q5N18ZoFtg$t*rq;}wTMKJxt*o`Rv9{LE+FJ+fXq~LHb+NA2
+z&AM9;>uJ5LxAn2U*3TlWzYVZ~Hpm9s5F2X4Y`BfEkv7Uk+ZY>b<7~W5u!%OwCfgL7
+zYSV1G&9Ip^%Vyggn``rIzAdnYw#Xta$`;!a!=i1e#n>`iZYwO-R@y3CZE?27*4jFY
+sxAnHcHd=yhvdy-|5^bw(vn1PY$+p9G+AiB|du(se=|IZ9prnZZ0SjF$!2kdN
+
+diff --git a/content/world/manifest.json b/content/world/manifest.json
+index 8fc2727e3af97ef4e86d766c131dc69a6f98e82f..1ee2f897ac97b4f3c6aaa751c972d5ab171521a3 100644
+GIT binary patch
+delta 159
+zcmV~$u?+$-3<XdD67A8^Urmwt+fGcy04xzFv1q86g%PetqGCJV+m>zlJok6LtglBS
+z(e=723X!HjlG=KOGOHE@qbJfCMNEedqmJ5U^^j>n62oWalI;82pAWaJB<Skk?zspL
+hpyia!HKI3|&FnB@c%_zx8Q8=JvL>H3<a;{4cYjg9Dx&}Z
+
+delta 159
+zcmV~$I}XAy3;<A3B-XOAcV=)B$F-R_0GIG577G(+;RxN4I&nMR+vaWlzNSaHF7Kz-
+zPRni4PHxpI7j#6ylEjXQr0JXy*%AmLYJjIEnn-5`gE}~}@cx@F$9wNFQYcD8)q<U*
+hXftsgZi*{;(@3*)3K`8EM1iV~SXrF`_w(s<_yapTE#?3K
+
+diff --git a/content/world/project.json b/content/world/project.json
+index 95a6355944b2cc4b43583b5d91d6de8d01f14dd7..f8187f3b42088a5ebf4ba58f2b1dba0f59c853f5 100644
+GIT binary patch
+delta 143
+zcmWN|yA8rX3;<A}babr11peFCMS?|qK4%MdK%&W7Yy_`==XP%I@7^WRHl>VVh6rdP
+zBMIjrNLrxX&gBijagZG>h_TEULi4K6?ectNteKF#rm(mL0b7B&GpHg82S`u(f0;d4
+Pt(_pKQis!^aerNZ6hS4s
+
+delta 143
+zcmWN@yA47y3;;l(*U_;86U2YJLxM#TJKlmFkZ4$ojo_;L9G~O$y}3mpR&^F8Oi}3o
+z_f!qWP@iQeyVY`XZ>G_sE!P0m%|-COoE~>u+#|^)vUOlaFJvV4h;|p=A&yNmCPQQ_
+P;s01*8jZ@_*XQ{MZSp5w
+
+diff --git a/content/world/provenance/imports.json b/content/world/provenance/imports.json
+index b01ad7b57a018540ef6766f1544eb4a83a95a606..5a98be6ce6cfaf0c86d822e1e9b67b24892f8ce4 100644
+GIT binary patch
+delta 642
+zcmbu%xl$BC0D$3wg$3l2LtPX^5fJg}>7JSH#%qy7P(VOXyy@<l+0=J1@By|;YXjeb
+zj3S}f%r_wC4G7Hr-@)L^{`yakewR*h@aLpzinOrKn@nnBliWxhlvCP-I2VcXQI@14
+zWJFnFMB(z-6*}>`kg1bKCZXQaG4$V)U*8sLrha@}{@!T*Xf#{UiW1t;jxsvXi7s3~
+zH+s;EKJ?=v1~7;r4C4|m;|eMm!Bt$tD8_Id<G6vFn7}PeVhYo^jTzj*EbihS?&AR-
+zLLh>KLW~3{Gz=`}@Cc9b1W)k{Rm|f#7O;pVEaL@Mu!@&>g*B{W1Fx}(Eo|crcCd@L
+zc!xc_#|M1GCw#^ie8oN-JOVQ0hmB@&{<EsR_Gt(@O1v{ZNUeM<A|-_q)+uY_kSedz
+eLQ5ZPrd%X!2)58BGbWP3)d$Lz!?V5G-_k!LpdBFq
+
+delta 642
+zcmbu-xmFZG0EOWLBLfN|i?YZf$f~kTS66peso(%A`>F!6S65e&`VIy@z?=hT0^Y%l
+zL&9+~-+<gVFfixm84SMQ-rz>}=ISDMgP*^D71PidEp22Yucb-~$_Hsuh=n!6L^ATi
+z#EFbV>}(vRvDSeMLm>hs&0VmnR8`yh-y`SW=1x`V`a1u;T=`M1RG}I<+(QlWs6`#_
+z;{oc?fQM+rBQ&8IEojAKJV6`U(Sc4pMHjl!gI+vCANuhe0~o{*hB1OsyueGm!WhOe
+zfk_k)Kp=!fgcu1FG+yHk-eL;Vc!wfpFpD|7#|M1GJQlEsB`jkFt60N2Hn52;e8OjZ
+z!8UfVi?7(jJ`Qk*BOK!d1}Q8uxXW_I|2-@E%t@PR5qOsg=Zr{|w_fW^r(s~sT_X~w
+el(GRoQJK?9s5JFf@)Q@kQggoJ^3U$+zuYYV4;&Q$
+
+diff --git a/crates/gameplay/content/src/content/native_monster_callback_witness.json b/crates/gameplay/content/src/content/native_monster_callback_witness.json
+index d60da574d8ec974d57f6af0c4cd0bf907a463553..3b56d9343611bbb4a71b3d695e5f17bed905d9e6 100644
+GIT binary patch
+delta 126
+zcmWN<#}UFn3<c03Cj%zBjr9h+x={d4NJ3kO51*6UVaDyjo7aE1|HlMV%rM6SORTWQ
+z23zb<VUGijsByv>7hG|}{o7Q-lgvde6jF9?F=I|nUD1$LDRW1jjAJ1+i4W?0j@p_~
+O65o;p;xN93CXPRkJSF`A
+
+delta 126
+zcmWN`$qj=r5I|97-^jku1~z6ew-k^j24mO3;pap<k!UYS@Amqy_7i5zS+Hcqnhjfa
+z>^YEe<iwc^S8m*S@Z|N&v*E4D8!1#%DV?p<`RI(8%3Cd@D{WhcYP!_aCN(hx4L(Nk
+PT{Nnp6{*M1kh}2@d$}e@
+
+diff --git a/crates/gameplay/content/src/content/native_soul_war_callbacks/w01_prepare_death_witness.json b/crates/gameplay/content/src/content/native_soul_war_callbacks/w01_prepare_death_witness.json
+index e2a3c875337b73539ff2103c2754b04633378338..44d171d0d5a7e07a2546c6c3d5b97fc2e8f186ad 100644
+GIT binary patch
+delta 89
+zcmV~$y%j((6b8^Em17LGBJxANN|8z4dtO%1Dzbw`C~U<9-22w{t?hm`_m`nINP&;Z
+ruB=KFt=J+yi6GGo2c=LT%3;FnQjk#@k=+RPAm0z&@oY`L7URqhXEPia
+
+delta 89
+zcmey^!tt?%qhSl<&i~GdX%>cN28oGj#%3u-rimsNsV0VIhNc!qi3VmV#zslz$)-TL
+sG)r^CG|SZF<iuo))KoKzlvKmS#N;G1Gjk;!uIV4j8J)M<GZ`@f09CdeVgLXD
+
+diff --git a/crates/gameplay/content/src/content/native_w01_death_events_pin.rs b/crates/gameplay/content/src/content/native_w01_death_events_pin.rs
+index 1783918ae..17d0ba4d9 100644
+--- a/crates/gameplay/content/src/content/native_w01_death_events_pin.rs
++++ b/crates/gameplay/content/src/content/native_w01_death_events_pin.rs
+@@ -1,5 +1,5 @@
+ // Generated by build_native_death_event_witness.py; do not edit.
+-pub(super) const WITNESS_SHA256: [u8;32] = [169, 244, 70, 238, 28, 98, 249, 155, 20, 86, 232, 152, 181, 27, 57, 168, 170, 178, 37, 54, 185, 214, 254, 230, 225, 104, 99, 58, 168, 233, 37, 62];
++pub(super) const WITNESS_SHA256: [u8;32] = [227, 211, 173, 211, 127, 39, 162, 32, 38, 77, 224, 180, 70, 30, 200, 123, 24, 213, 167, 101, 19, 32, 133, 168, 23, 54, 143, 31, 60, 11, 200, 15];
+ pub(super) const COVERED_KEYS: &[&str] = &[
+     "oteryn:creature.anomaly",
+     "oteryn:creature.baby_dragon",
+diff --git a/crates/gameplay/content/src/content/native_w01_death_events_witness.json b/crates/gameplay/content/src/content/native_w01_death_events_witness.json
+index e13e7b73641171d136794505f522654cbf15e0d5..8d99fc8770b65e6998c8b4c1ee8e41e6ec9bca2d 100644
+GIT binary patch
+delta 88
+zcmV~$I}v~|5Cy>D*HF@=M?t=j*JI@FxVT`3B9hR8f+#=%yKggZGk5K3UxzwA)AAiq
+p8>JwmY)@7tN>*%<kVTMbhlf%u5aqaG_c@AFMq=;40TkBxntwPK8yWxr
+
+delta 88
+zcmcciMEu$l@rD-07N!>F7M3lnLZ4g`(<}_l3=$L5jLlMvOcPBkQcVoa3{5SJ5)I5!
+qjE$1alTCqgX_n@OX_l$U$%)Apsi|fbDXE5uiOET3X68y<wOjxs02^cg
+
+diff --git a/docs/balance/PREY-SLOT-VALUE-2026-11-01.md b/docs/balance/PREY-SLOT-VALUE-2026-11-01.md
+index b94d93f09..6db2ea42f 100644
+--- a/docs/balance/PREY-SLOT-VALUE-2026-11-01.md
++++ b/docs/balance/PREY-SLOT-VALUE-2026-11-01.md
+@@ -2,7 +2,7 @@
+ 
+ Generated by the same deterministic model and content generator; do not edit.
+ 
+-Model input SHA-256: `5d4125b0d23f600ba33ba6617a8e1addd65ab24a4dfe9678c17b1ef722f057a0`. NPC policy: `maximum_catalogue_offer`. Source: `content/services/trade/trade-*.json`, `BuyFromPlayer` offers; coin worth from `domain/currency.rs`. Items without an NPC offer contribute zero NPC sell value. Loot expectation sums exact source chance × average count × NPC value, with exact rational arithmetic until micro-gold truncation.
++Model input SHA-256: `2cd14abdc46ebbbf925a8d14175eee254ab09c552d779fd74590636edb753f19`. NPC policy: `maximum_catalogue_offer`. Source: `content/services/trade/trade-*.json`, `BuyFromPlayer` offers; coin worth from `domain/currency.rs`. Items without an NPC offer contribute zero NPC sell value. Loot expectation sums exact source chance × average count × NPC value, with exact rational arithmetic until micro-gold truncation.
+ 
+ Coverage: 777 eligible creatures, 1437 whole-gold NPC/coin prices. 40 creatures have zero physical throughput because they did not complete all 32 required bounded duels with kills; sampling stopped at the first failed duel. The zero is specific to this preset and bound, not a claim about other builds.
+ 
+diff --git a/docs/balance/PREY-TIME-SIM-2026-11-01.md b/docs/balance/PREY-TIME-SIM-2026-11-01.md
+index db4af556b..e6d08bb1e 100644
+--- a/docs/balance/PREY-TIME-SIM-2026-11-01.md
++++ b/docs/balance/PREY-TIME-SIM-2026-11-01.md
+@@ -2,7 +2,7 @@
+ 
+ Generated by `python3 tools/content-migration/prey_difficulty.py --simulate`; do not edit.
+ 
+-Input SHA-256: `5d4125b0d23f600ba33ba6617a8e1addd65ab24a4dfe9678c17b1ef722f057a0`. Seed: `20261101`. Prey duration: `7200` seconds, read from `progression::prey::HUNTING_SECONDS`.
++Input SHA-256: `2cd14abdc46ebbbf925a8d14175eee254ab09c552d779fd74590636edb753f19`. Seed: `20261101`. Prey duration: `7200` seconds, read from `progression::prey::HUNTING_SECONDS`.
+ 
+ Sampling: up to 32 seeded duels per creature; each duel is bounded to 3600 seconds. Sampling stops at the first duel without a kill; a positive throughput estimate requires all 32 duels to finish with kills. Each route is observed for at most 24 hours, or until all four time policies exhaust the Prey.
+ 
+diff --git a/imports/tibiawiki/batches.json b/imports/tibiawiki/batches.json
+index e599c92234c42973f249696a33496a23b2596f0a..e4105fb424953ad49b31814ef2ba60861ebea14a 100644
+GIT binary patch
+delta 164
+zcmeCN?y=s`!(4BXW|n4|m}HS+WNu+;nrdNWo@|_GY;KWkl4@XToMf0{YG#m}0#uY@
+zYGII;m}-)kW^S64YG7oRXk=kznyjRwl$%&kkXjU9oRMf`YNlkRM2eBZSj?Op$Y``V
+IfW<}<0G5d_2><{9
+
+delta 165
+zcmeCN?y=s`!(5+aoS0~7l5Co6nr3NYVQyfNW|(AdU}lt@Xq0GbVwz@@Xl8C=YGjt0
+zY-XBdW@%|?Vr*<=WN2ZM2;wALDCsEWCKeQ=7R485BpR8TDOo9zVx$N*GbcX~G29%$
+HVj~Fv`QR-8
+
+diff --git a/tools/content-schema/native-gameplay/build_srx3_soul_war_witness.py b/tools/content-schema/native-gameplay/build_srx3_soul_war_witness.py
+index e21b573c2..998e5e2a5 100644
+--- a/tools/content-schema/native-gameplay/build_srx3_soul_war_witness.py
++++ b/tools/content-schema/native-gameplay/build_srx3_soul_war_witness.py
+@@ -21,7 +21,10 @@ KEYS = ("goshnar_s_greed", "greedbeast", "soulsnatcher", "weak_soul",
+ CALLBACKS = {'data-global/monster/quests/soul_war/goshnars_greed.lua': 'e9c11a26a1c18f42947b8a5b37ba9dcea8ca5b0322dfb2fc047c3d2e33b07ad0', 'data-global/monster/quests/soul_war/greedbeast.lua': 'c2500e72847896d8db62eda89a2674e4a7443cd9b4db9a98d35b46443477d158', 'data-global/monster/quests/soul_war/weak_soul.lua': '91d0f2a5f5d82a63f72e71260f0d1d70571e2d6a41b3e07a71c136fede4414a6', 'data-global/monster/quests/soul_war/strong_soul.lua': 'c8baadc57f446ab7ba972ae4d93ce92c3eba1e3b4db4c47c6c2b19d81b48cbbb', 'data-global/monster/quests/soul_war/powerful_soul.lua': '86e23cad8a54abc6dde2adb32644ddb29f6d6efab8ee137c36f86acd7bfb5f2e', 'data-global/monster/quests/soul_war/soulsnatcher.lua': 'd852709c53c6099051b8009bb88a23283ece21ed9ebb9b905b43f59b5e63155b', 'data-global/monster/quests/soul_war/soul_sphere.lua': '6a986338ec930ed02bbecc6da59230a2355b50a11091b59f4489f1210b2ef2dc', 'data-global/lib/quests/soul_war.lua': '89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75', 'data-global/scripts/quests/soul_war/soul_war_mechanics.lua': '9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916'}
+ # Reviewed callback participant bodies; rebinding a whole-project SHA cannot
+ # silently change the qualified source schedules or numerical closure.
+-REVIEWED_PROFILES = {'oteryn:creature.goshnar_s_greed': 'a34f3727a81bd4e9081be79f94ab9ba0612007a526e0dd38f78a7beb3df9f6e6', 'oteryn:creature.greedbeast': '6b68327edac1000527bc14ef8dfa012c16f1f3e5995fe9a0cd9e4ed26adf48eb', 'oteryn:creature.soulsnatcher': 'b38d2658acfcdc6f61363594fac3c39ee87d9b291c94bd4d7e50885fff8c5f42', 'oteryn:creature.weak_soul': 'a94e228b2079465abad5b53df29cd40e04df4d97bc7d8045c71d88ba9c4410a6', 'oteryn:creature.strong_soul': 'f547124cd0a8bb46adc960efa057e5e8fc6e59a76cc8e1c9207541529b5f2b57', 'oteryn:creature.powerful_soul': 'df149c323b2e562c3d526b9161af87c4d53314b800a8a4a0072c6aebfcbe5b9e', 'oteryn:creature.soul_sphere': '5d0fad5e2e7375b3c18d8053ed198f8655208e5e76107aa2278c7f251d10a8ba'}
++# D15: Soul Sphere hp "15.000" is 15000 in accepted Fandom revision 1002465.
++# Its admission manifest supersedes Canary 10000; retained source SHA256:
++# 0a78bf485aeef1dd4eeeec5f487ae513e14ce2203a45b1173e0280eba6cfc79b
++REVIEWED_PROFILES = {'oteryn:creature.goshnar_s_greed': 'a34f3727a81bd4e9081be79f94ab9ba0612007a526e0dd38f78a7beb3df9f6e6', 'oteryn:creature.greedbeast': '6b68327edac1000527bc14ef8dfa012c16f1f3e5995fe9a0cd9e4ed26adf48eb', 'oteryn:creature.soulsnatcher': 'b38d2658acfcdc6f61363594fac3c39ee87d9b291c94bd4d7e50885fff8c5f42', 'oteryn:creature.weak_soul': 'a94e228b2079465abad5b53df29cd40e04df4d97bc7d8045c71d88ba9c4410a6', 'oteryn:creature.strong_soul': 'f547124cd0a8bb46adc960efa057e5e8fc6e59a76cc8e1c9207541529b5f2b57', 'oteryn:creature.powerful_soul': 'df149c323b2e562c3d526b9161af87c4d53314b800a8a4a0072c6aebfcbe5b9e', 'oteryn:creature.soul_sphere': 'b63228b0188ff2bfadd3bac08a2fd25d8e85098d7b3f4d54b01ba9b564c5ee8c'}
+ 
+ REVIEWED_PROFILES.update({
+     'oteryn:creature.goshnar_s_malice': 'f5e07266408035e8b18ff3ce02b456547ef0ec3965ea3c23371a638e328b50d0',
+diff --git a/tools/content-schema/native-gameplay/prey-model-results.json b/tools/content-schema/native-gameplay/prey-model-results.json
+index 4bec586aa567d336c1ffdb7a4dba66df6907536b..c7ce224e0439879a7fd503f903138cf3e0491bd3 100644
+GIT binary patch
+delta 80
+zcmWN`u@QhE3;@8hVi^kvgqY4%2niKSxPg06+u|n9BJKZ}ZcKOYCsYloh}M)%L>dE@
+gV^JV9Gr)D8D<UWnH>HH^bIhhf7+c`0KYe?@9}zeicK`qY
+
+delta 80
+zcmV~$u@QhU2mrvd$}$!}0>sW$K$0p;xPg15w$)9X#sB%F`J`*zISLXx1m!LOZaKS&
+gpjvHc5g}|&#Y*(HiPi(vv2`Wtz-n-gdo1tw1MnRgP5=M^
+
+diff --git a/tools/content-schema/native-gameplay/srx3-omrafir-attacks.json b/tools/content-schema/native-gameplay/srx3-omrafir-attacks.json
+index 98a9e7df2f8a37055caf7dce48f594ed90f3257d..f17afa8e2ccca3695c085ec54198a3f47eee02eb 100644
+GIT binary patch
+delta 81
+zcmV~$K^cG`3<l7T139b!3}pY!i$S(Ia@fKmW}t=_g81H=am{$Y;nM@2str)%bg8>Y
+gOO}Qan}MaHz@-kDYu(WcSIe$wS~8R%^lTQ+ABlV!od5s;
+
+delta 81
+zcmWN`u@!(I3<bbP!5pqY5JKo|9OM(i9B$zv&cGTr45HWGntn}xJ??D>h7bo}?A&8U
+i5=+FCB_eR&V=J2f8@14=rV14^mTm-SV=nim?)(6CuNmh6
+
+diff --git a/tools/content-schema/native-gameplay/srx3-primal-witness.json b/tools/content-schema/native-gameplay/srx3-primal-witness.json
+index 716ca72e2cc1711ca4bf6990e1e5d129801a0d39..e7a7d9f213a9f6f70ccb30d63012151f7b734903 100644
+GIT binary patch
+delta 92
+zcmV~$%MF7-3<W@i0FkJH6E|-Ag?)D#v5mKjNQvZ<Xkja$A!gb=w|oBC%Q|~oZ-b53
+t=f56Mm!u-*;!aj2%1&IBSVT~0M}ShQ5aqOC4<(6LM&{tb5fqo{J3V%j8=C+C
+
+delta 92
+zcmWN`xeb6Y3;;m!OPPU+jt&Rnn4U$9<7|Nhl1E|%CSW1B_MW$Y-u|@0N~^54#@f5P
+t#*H%pPRx16<O46H3m^pYJYkys9wq#j*9du45f)NKN(#)fBgVlU?gL_c8|451
+
+diff --git a/tools/content-schema/native-gameplay/srx3-rotten-blood-witness.json b/tools/content-schema/native-gameplay/srx3-rotten-blood-witness.json
+index ce68fb4e64feb00ecc8c86c3acf0ab408b4553a4..bf7fadd1a070ba9873bf332bee83a5594f044339 100644
+GIT binary patch
+delta 106
+zcmV~$$q~XZ5Cp&i%wcf^K?Jf6tnr&Hc&*l}EU4l!c{l=oWaDJ$Ue;+@rw=#Wa>tH)
+z9(d%5Jsr=y@cO&GzE7A>+7NT`b2SsmUVYP8R8eF^fJtgltLcF;l%#`I<QfLl2#I(1
+Fc7HDCAL0N2
+
+delta 106
+zcmWN`$q~XZ3<b~u!V<F-K?RW$%Sz64!AX(jE|}r)`$z@c=qAm;yS`<emUVh#gDrMw
+zu*U&MoX{fRj0>*c+w=3#D#V>??YYFHgZMy9NuqXK`Z#Ax|EpuBI=Y#fxU&=|Rhyaf
+HJ-osX8qgpt
+
+diff --git a/tools/content-schema/native-gameplay/srx3-rotten-death-events.json b/tools/content-schema/native-gameplay/srx3-rotten-death-events.json
+index bc93382e1f40db97bb178c0cccd85854b91aca2e..176cfd10b1396488d1c5892b8adaad5ac22eecde 100644
+GIT binary patch
+delta 77
+zcmV~$(G7qw2nE1j7w8_eP|N!;aTP$iPe*VA6Bly?@7A%7$I6K$i3#pXmuH%F3Yx(h
+b0kwgKG?|EW*)f_*)O2)j70xhz@A7RwoDCO^
+
+delta 77
+zcmWN`%MpMe3<bce4bTVS6T*QRTX}?}A4;$TXKc(8bg#R|9yh`X7vczb=9ManSRtk=
+d36WP$vuXX$dn50r3KcV!Wd!JCZqF6o;{%957uNs)
+
+diff --git a/tools/content-schema/native-gameplay/srx3-soul-war-attacks.json b/tools/content-schema/native-gameplay/srx3-soul-war-attacks.json
+index 2e8b3b899b069e40217575a955f64adafe8c641c..6f91f97a5733a04c3ae639aa4e1fdb7890d7b4d7 100644
+GIT binary patch
+delta 91
+zcmV~$y%9h_5C+gW*(pE)V!^o|?u(_G*j;;FFakYjL}wC#8Qyzd`@D8P%vIg%1a(mg
+tLdtGoRifm?6$x1cnMQah#R5@|14f^t^vX!=dvE}SwyV!iOmog#)&1OH9f<${
+
+delta 91
+zcmezIhx5lD&W0AoEli(lofFe649yG@6Vr^%QjAO!O)OGP49yHpEsPQk%u<YvlFXA$
+ufpTe<=7wpOsmaNS$rh=pW)>-_hKY&ENoHo|N;+KA|0gqwP4}r|(g6U<;~mog
+
+diff --git a/tools/content-schema/native-gameplay/srx3-soul-war-death-events.json b/tools/content-schema/native-gameplay/srx3-soul-war-death-events.json
+index ab979541a19157107c0007282930c4983b434a49..6e0fbac2a247533cdc75ec4f754a6cadf1477d1a 100644
+GIT binary patch
+delta 79
+zcmV~$(G7qg3<bc%i3$|y`_fTtYner-U<DJ$<3sPpT*h3U@7fW>-chR1X%VWGoVpir
+bhiF4aD0g@muV`7=Qy8k{1S`<;Zuh}IWb+y5
+
+delta 79
+zcmWN`%MpMe3<ba$Dk6MBIB6+9La0Tnpao|vkAu3`oy*PT?)Tg=gxCWkat|3vED=+d
+d0M9*!Ry6-NYN1h06)I*d-3ZXeT%PSZ(g#r{8ZrO?
+
+diff --git a/tools/content-schema/native-gameplay/srx3-soul-war-witness.json b/tools/content-schema/native-gameplay/srx3-soul-war-witness.json
+index 639e7b01b9cc8477972004f518d0b4d06b6bf4ef..7f845d32226248f7835d929b7e88529b70827010 100644
+GIT binary patch
+delta 243
+zcmWm6y-LGS7zSWY+SnM=nkH&p1oZ|?o5bcU;@}lHIhu1k85~61{Tbw&9E5_Oi;zvb
+zNJX*W)YbU~@gful!8%&^hv#!_zQ^Y5Ts&F7_k5s&CLg|u8ZW<l+e80VEIC~62OeL3
+z2%G)u@Q4Q&6`R*a*5+fmLxKk<qRP8B*2>jw<6&67SU;`*W`jq4C+wYm)p@ea5-dW6
+zP$k%eDMF3l5T*$(VTRxl>VyViB7H)W5D-Gb9ATcYKxjQ<v46KEO_b<D#%UJqDP!_H
+pjdWD#IMZ5Yc~^F%$&*5Aqmp&m?PQ5=8zocKX-gH$JYIE=-9NNsUqt`_
+
+delta 273
+zcmezTJ@xJP)P@$uElfYwO*eYLEV^A_JyWOh^oLHY(bEM^GV)J9|C&u;`-dbUTej^E
+ztA$h<r%y1D6rJvHib;QS!14;l=??crxTY&SW#XNl@SjOya)2W1<PBQ;w>Q{}x-!DW
+zg{B|)Eq=5;;64)&GXpUT5VHa?8xXStF$WNH0x=g5a|1CC5c2{t9}x2cu>cSY0<jPf
+z3j?tT5Q_q_7!ZqZ54bN8KgT68&BD;kATcq`*eu1!G||K&)x^-u(A2^x(ZDRl*eJ<7
+m*%T<3W@&DiW|^9toS1Bpnrdc|l4_Wkn4Dy0X0F6l%LM>(0%{}x
+

@@ -4,6 +4,7 @@ use super::{
     ComposedFreshAdmission, FreshAdmissionStore, GameSessionId, QUEST_OBLIGATION_RETRY, domain,
     operator_event,
 };
+use crate::durability::character_progression::CharacterProgressionError;
 
 /// One admitted session's quest state (QUEST-STATE-0 §5.4, §7).
 #[derive(Debug)]
@@ -89,9 +90,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .collect(),
                         );
                     }
-                    Err(_) => {
+                    Err(error) => {
                         map_marks = Some(Vec::new());
-                        retry = true;
+                        // A rejected controller fence is final for this refresh; a
+                        // cadence retry must not adopt its replacement generation.
+                        // Unavailable reads and revision races still need a fresh pass.
+                        retry = !matches!(error, CharacterProgressionError::AuthorityRejected);
                     }
                 }
                 (Some(admission.copy), retry)

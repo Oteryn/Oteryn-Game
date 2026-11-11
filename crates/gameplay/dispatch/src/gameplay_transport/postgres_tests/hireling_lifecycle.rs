@@ -469,6 +469,14 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                     .collect()
             })
             .as_slice()
+    } else if matches!(case, Case::EssenceUse | Case::EssenceCue) {
+        let runtime = owner.runtime.lock().await;
+        crate::gameplay_transport::world_required_capabilities::with_native_map_presentation_offer(
+            OFFERS,
+            Some(generation),
+            Some(&deps.room),
+            runtime.content_pin(),
+        )
     } else {
         OFFERS
     };
@@ -476,17 +484,6 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         &[11, 18]
     } else {
         &[]
-    };
-    let boot_offers = if matches!(case, Case::EssenceUse | Case::EssenceCue) {
-        let runtime = owner.runtime.lock().await;
-        crate::gameplay_transport::world_required_capabilities::with_native_map_presentation_offer(
-            boot_offers,
-            Some(generation),
-            Some(&deps.room),
-            runtime.content_pin(),
-        )
-    } else {
-        boot_offers
     };
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
         declared,crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id,deps.admitted.channel_id),1,"policy-1",boot_offers,
@@ -643,7 +640,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     assert_eq!(
         owner
             .required_capabilities
-            .authenticate_resume_support(source_selection.as_slice(), source_selection,)
+            .authenticate_resume_support(source_selection.as_slice(), source_selection)
             .map_err(debug)?
             .selected(),
         source_selection,

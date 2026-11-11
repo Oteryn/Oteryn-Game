@@ -1822,10 +1822,17 @@ def loot_chances(source, stats):
     return rows
 
 
-def number(value):
+def number(value, *, integer=False):
     """Exact number of a wiki field value, with thousands separators; None when absent, approximate or uncertain."""
-    if value is None or re.search(r'[?~]', value):
+    if not isinstance(value, str) or re.search(r'[?~]', value):
         return None
+    if integer:
+        # Integer fields use both grouping spellings in the captured wiki corpus.
+        # Do not reinterpret decimal percentages or accept a numeric prefix.
+        value = value.strip()
+        if not re.fullmatch(r'-?(?:\d+|[1-9]\d{0,2}(?:,\d{3})+|[1-9]\d{0,2}(?:\.\d{3})+)', value):
+            return None
+        return Fraction(value.replace(',', '').replace('.', ''))
     match = re.match(r'^\s*(-?\d{1,3}(?:,\d{3})+|-?\d+)(\.\d+)?', value)
     return Fraction(match.group(1).replace(',', '') + (match.group(2) or '')) if match else None
 
@@ -1964,7 +1971,7 @@ def compare(relative, canary, _batch_dir, cache):
         return result
     for field, key, value in (('max_health', 'hp', stats['max_health']), ('experience', 'exp', stats['experience']),
                               ('armor', 'armor', stats['armor']), ('speed', 'speed', stats['speed'])):
-        row(field, value, fields.get(key), as_number(number(fields.get(key))),
+        row(field, value, fields.get(key), as_number(number(fields.get(key), integer=True)),
             'Canary monster.speed is the raw engine value; the wiki lists observed speed.' if field == 'speed' else None, key)
     mitigation = stats.get('mitigation_percent')
     row('mitigation_percent', float(Fraction(mitigation['numerator'], mitigation['denominator'])) if mitigation else None,
@@ -1978,7 +1985,8 @@ def compare(relative, canary, _batch_dir, cache):
     summoning = c['summoning']
     for field, key, flag in (('summon_mana_cost', 'summon', 'summonable'), ('convince_mana_cost', 'convince', 'convinceable')):
         raw = fields.get(key)
-        wiki_value = as_number(number(raw)) if number(raw) is not None else ('--' if raw and raw.strip().lower() in ('--', '-', 'no') else None)
+        value = number(raw, integer=True)
+        wiki_value = as_number(value) if value is not None else ('--' if raw and raw.strip().lower() in ('--', '-', 'no') else None)
         row(field, summoning.get('mana_cost') if summoning[flag] else '--', raw, wiki_value, key=key)
     for field, key, value in (('illusionable', 'illusionable', c['flags']['illusionable']),
                               ('pushable', 'pushable', b['movement']['pushable']),
@@ -1987,7 +1995,7 @@ def compare(relative, canary, _batch_dir, cache):
                               ('paralyze_immune', 'paraimmune', 'paralyze' in c['immunities']['conditions'])):
         raw = fields.get(key)
         row(field, value, raw, {'yes': True, 'no': False}.get((raw or '').strip().lower()), key=key)
-    row('flee_health', b['targeting']['flee_health'], fields.get('runsat'), as_number(number(fields.get('runsat'))), key='runsat')
+    row('flee_health', b['targeting']['flee_health'], fields.get('runsat'), as_number(number(fields.get('runsat'), integer=True)), key='runsat')
     bestiary = c.get('bestiary', {})
     for field, key in (('bestiary.class', 'bestiaryclass'), ('bestiary.difficulty', 'bestiarylevel'), ('bestiary.occurrence', 'occurrence')):
         canary_value = bestiary.get(field.split('.')[1])

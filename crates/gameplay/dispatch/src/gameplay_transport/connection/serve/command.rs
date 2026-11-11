@@ -282,6 +282,10 @@ where
     } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
         match route::step(authority, session, command, arrived_while_buffered).await {
             route::StepAction::Wait(due) => {
+                session
+                    .commands
+                    .buffer_step(command)
+                    .ok_or(ServeEnd::Disconnected)?;
                 // Pacing throttled this input; the buffered original is charged only once.
                 session
                     .integrity

@@ -328,7 +328,7 @@ fn plan_with_teleport(
     if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
         return Err(NpcRuleError::Invalid("invalid NPC input".into()));
     }
-    for program in &catalogue.programs {
+    for program in super::questpc2_gnomus_source::evaluation_order(catalogue, input) {
         if !program
             .document
             .rules

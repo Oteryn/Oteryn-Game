@@ -193,7 +193,9 @@ impl ActiveGeneration {
         let entries: Vec<_> = candidate.entry_positions.into_iter().map(cell).collect();
         let boss = cell(candidate.boss_position.ok_or(R::IncompleteLayout)?);
         let source_exit = cell(candidate.exit_position.ok_or(R::IncompleteLayout)?);
-        let exit = if source == PinnedActivitySourceRoom::Vemiath {
+        let exit = if source == PinnedActivitySourceRoom::Ichgahal {
+            ichgahal_exit::qualify(room, source_exit, resolved_exit.ok_or(R::UnknownPlacement)?)?
+        } else if source == PinnedActivitySourceRoom::Vemiath {
             vemiath_exit::qualify(room, source_exit, resolved_exit.ok_or(R::UnknownPlacement)?)?
         } else if source == PinnedActivitySourceRoom::Ichgahal {
             ichgahal_exit::qualify(room, source_exit, resolved_exit.ok_or(R::UnknownPlacement)?)?

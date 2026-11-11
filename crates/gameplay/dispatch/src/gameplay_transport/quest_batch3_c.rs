@@ -1,6 +1,7 @@
 //! Source boss-death quest continuations on the existing captured lethal queue.
 //! Crystal 201189f HeartBossDeath:26-138; CourtWarlock:323-329;
 //! MagmaBubbleDeath:12-23 and GoblinLeaderDeath:3-8. Never infer social-party credit.
+//! Herald's qualified local recipient is the present most-damage player only.
 use super::{kill_reward::PendingKillSettlement, quest_kills::Recipient};
 use crate::durability::quest_state::{
     native_kills::{NativeDeathSource, NativeQuestDeath},
@@ -24,6 +25,7 @@ pub(super) struct Snapshot {
 pub(super) fn capture(
     runtime: &ChannelRuntimeV1,
     entry: &PendingKillSettlement,
+    principal_present: bool,
     snapshots: impl Iterator<Item = Snapshot>,
 ) -> Vec<Recipient> {
     if !source_deaths::tracks_creature(&entry.creature) {
@@ -34,6 +36,7 @@ pub(super) fn capture(
     };
     let scope = entry.facts.death.runtime_scope();
     let generation = entry.facts.death.scope_ownership_generation().get();
+    let principal = entry.facts.principal;
     if runtime.binding().runtime_scope() != scope || runtime.owner_fence().is_err() {
         return Vec::new();
     }
@@ -66,7 +69,15 @@ pub(super) fn capture(
             let Some(rule) = source_deaths::rule(key) else {
                 continue;
             };
-            if rule.creature != entry.creature || !rule.recipient(position, damaged) {
+            if rule.creature != entry.creature
+                || !rule.recipient(position, damaged)
+                || (rule.top_damage_only
+                    && (!principal_present
+                        || principal.actor != snapshot.actor
+                        || principal.session != snapshot.session
+                        || principal.character.as_bytes() != &snapshot.character
+                        || principal.lease_generation != snapshot.lease_generation))
+            {
                 continue;
             }
             recipients.push(Recipient {
@@ -87,6 +98,9 @@ pub(super) fn capture(
                         lease_generation: snapshot.lease_generation,
                         position,
                         dealt_damage: damaged,
+                        top_damage_character: rule
+                            .top_damage_only
+                            .then_some(*principal.character.as_bytes()),
                     }),
                 },
             });

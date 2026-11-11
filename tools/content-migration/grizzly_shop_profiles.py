@@ -278,10 +278,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     generated[manifest_path] = canonical(manifest)
 
 
-def refresh_canonical_input_pins(root, baseline, *, packet_path=PATH, keys=None):
-    """Repin shared shards only when every selected Item definition is unchanged."""
-    path = root / packet_path
-    packet = json.loads(path.read_bytes())
+def plan_canonical_input_pins(root, baseline, *, packet_path=PATH, keys=None, packet_bytes=None):
+    """Prove selected rows and return new pins without writing the packet."""
+    packet = json.loads((root / packet_path).read_bytes() if packet_bytes is None else packet_bytes)
     if keys is None:
         keys, _ = selected(root)
     def selected_definitions(raw):
@@ -312,7 +311,13 @@ def refresh_canonical_input_pins(root, baseline, *, packet_path=PATH, keys=None)
                 'GRIZZLY_SHOP_REPIN_SELECTED_DEFINITION_CHANGED:'
                 f"{descriptor['path']}:SELECTED_ROWS\n{difference}")
         descriptor['sha256'] = digest
-    path.write_bytes(encode(packet))
+    return encode(packet)
+
+
+def refresh_canonical_input_pins(root, baseline, *, packet_path=PATH, keys=None):
+    """Repin shared shards only when every selected Item definition is unchanged."""
+    planned = plan_canonical_input_pins(root, baseline, packet_path=packet_path, keys=keys)
+    (root / packet_path).write_bytes(planned)
 
 
 if __name__ == '__main__':

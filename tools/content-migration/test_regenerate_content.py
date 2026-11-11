@@ -431,6 +431,26 @@ def test_source_cohort_includes_installed_successors() -> None:
             raise AssertionError("the complete World cohort must be measured")
 
 
+def test_normal_generation_orders_native_callback_producers() -> None:
+    commands: list[tuple[str, ...]] = []
+    assert full_generation_trace(commands, lambda *_: None) == 0
+    native = "tools/content-schema/native-gameplay/"
+    tree = ("python3", "tools/content-migration/world_project_v2_to_tree.py")
+    pairs = [
+        (("python3", native + producer), ("python3", native + consumer, "--refresh-native-pin"))
+        for producer, consumer in (
+            ("build_native_callback_witness.py", "build_native_death_event_witness.py"),
+            ("build_srx3_soul_war_witness.py", "build_srx3_soul_war_death_events.py"),
+            ("build_srx3_rotten_blood_witness.py", "build_srx3_rotten_death_events.py"),
+        )
+    ]
+    required = [tree, *(command for pair in pairs for command in pair)]
+    nonunique = {command[1]: commands.count(command) for command in required if commands.count(command) != 1}
+    assert not nonunique, nonunique
+    for producer, consumer in pairs:
+        assert commands.index(tree) < commands.index(producer) < commands.index(consumer), (producer, consumer)
+
+
 def full_generation_trace(events, inspect_command, *, prepare=None, checks=False) -> int:
     """Exercise the actual dispatcher without running any producer or Git write."""
     def record(command):
@@ -461,7 +481,7 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
                 patch.object(rc, "run", side_effect=record), \
                 patch.object(rc, "unresolved_worktree_paths", return_value=[]) as unresolved, \
                 patch.object(rc, "refresh_quest_callback_proof"), \
-                patch.object(rc, "materialize_world"), \
+                patch.object(rc, "materialize_world", side_effect=lambda: events.append(("materialize-world",))), \
                 patch("questpc7_thaian_authoring.install"), \
                 patch.object(rc, "refresh_source_cohort_extent"), \
                 patch.object(rc, "repin_rust_inventory"), \
@@ -738,6 +758,34 @@ def test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_ch
             assert check not in events
 
 
+def test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work() -> None:
+    store = ("python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers")
+    imbuement = ("python3", "tools/content-schema/imbuement-authoring/imbuement_authoring.py", "build")
+    bootstrap = ("python3", "tools/content-migration/world_project_v2_to_tree.py", "--items-only")
+    materializer = ("materialize-world",)
+    tree = ("python3", "tools/content-migration/world_project_v2_to_tree.py")
+    ordered = (store, imbuement, bootstrap, materializer, tree)
+    events = []
+    assert full_generation_trace(events, lambda *_: None) == 0
+    assert all(events.count(step) == 1 for step in ordered)
+    assert [events.index(step) for step in ordered] == sorted(events.index(step) for step in ordered)
+    for refused in ordered[:3]:
+        def refuse(command, _events):
+            if command == refused:
+                raise subprocess.CalledProcessError(1, list(command))
+
+        events = []
+        try:
+            full_generation_trace(events, refuse)
+        except subprocess.CalledProcessError as error:
+            assert error.cmd == list(refused)
+        else:
+            raise AssertionError("a failed Item prerequisite must stop before materializing World")
+        assert events.count(refused) == 1
+        assert materializer not in events and tree not in events
+        assert not any(command in events for command in downstream_quest_commands())
+
+
 def item_index_fixture(root: Path) -> tuple[dict, list[str]]:
     shards = []
     for start, count in ((0, 500), (500, 2)):
@@ -858,8 +906,8 @@ def test_item_inventory_emitter_matches_converter_format_and_explicit_output_set
         assert item_index_fields(root) == expected
         assert item_index_fields(root, shards) == expected
         assert canonical_bytes({**index, **item_index_fields(root)}) == canonical_bytes({**index, **expected})
-        # The converter removes its superseded tail after index emission. Its
-        # explicit freshly written output list must exclude that old file;
+        # The converter's explicit freshly written output list must exclude a
+        # superseded tail even while that old file is still present;
         # bootstrap has no such list and must reject overlapping actual shards.
         stale = "content/items/definitions/items-00500-00500.json"
         write(root, stale, {"superseded": True})
@@ -874,6 +922,10 @@ def test_item_inventory_emitter_matches_converter_format_and_explicit_output_set
 
 def main() -> None:
     tests = [
+        test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work,
+        test_normal_generation_orders_native_callback_producers,
+
+
         test_materializer_bootstraps_complete_item_index_before_running,
         test_item_inventory_rejects_incomplete_or_ambiguous_shards_before_materialization,
         test_item_inventory_emitter_matches_converter_format_and_explicit_output_set,

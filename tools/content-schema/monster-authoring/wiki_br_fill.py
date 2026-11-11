@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parent
 FANDOM_SAMPLE = ROOT / 'samples' / 'wiki-population-2026-09-27.json'
 OUT = ROOT / 'samples' / 'wiki-br-fill-2026-09-27.json'
 FIELDS = {'hp': 'max_health', 'exp': 'experience'}
-NUMBER = re.compile(r'\d{1,3}(?:\.\d{3})+|\d+')
+NUMBER = re.compile(r'[1-9]\d{0,2}(?:\.\d{3})+|\d+')
 
 
 def plain_number(raw):
@@ -33,7 +33,7 @@ def plain_number(raw):
 
 def fandom_certain(raw):
     """The D15 rule of wiki_compare.py: an exact number, not uncertain or approximate."""
-    return wc.number(raw) is not None
+    return wc.number(raw, integer=True) is not None
 
 
 def fill(capture, fandom_sample, fandom_infobox):

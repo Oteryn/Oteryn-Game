@@ -97,7 +97,12 @@ impl RottenDeathAction {
                 &self.begin,
                 source,
             )?;
-            if !credited {
+            if !credited
+                && attack
+                    .kills()
+                    .source_drop_refusal(&runtime, &self.begin)?
+                    .is_none()
+            {
                 if self.begin.has_reward_damage_credit()
                     || self.begin.uncredited_corpse_item_key().is_none()
                 {

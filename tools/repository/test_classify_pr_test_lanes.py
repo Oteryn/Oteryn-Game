@@ -656,12 +656,119 @@ def test_scope_identity_drift():
         {"base": {"ref": "main", "sha": "c" * 40}},
         {"base": {"ref": "other", "sha": "b" * 40}},
     )
-    for second_count in (1, 2):
-        for change in changes:
-            after = dict(scope_pull(second_count), **change)
-            code, wire, errors, _ = run_scope(scope_pull(1), after, records)
-            assert code == 1 and wire == "", (second_count, change, code, wire, errors)
-    print("Scope identity fences PASS: five identity changes fail with stable or drifting counts and no outputs")
+    for phase in ("before", "after"):
+        for second_count in (1, 2):
+            for change in changes:
+                before, after = scope_pull(1), scope_pull(second_count)
+                (before if phase == "before" else after).update(change)
+                code, wire, errors, _ = run_scope(before, after, records)
+                assert code == 1 and wire == "", (phase, second_count, change, code, wire, errors)
+    before = scope_pull(1, base="invalid")
+    code, wire, errors, _ = run_scope(before, scope_pull(1), records)
+    assert code == 1 and wire == "", (code, wire, errors)
+    print("Scope identity fences PASS: both reads reject identity changes and malformed base evidence without outputs")
+
+
+def test_scope_count_drift(module):
+    """Mutable counts cannot block exact heads or authorize stale narrowed lanes."""
+    import urllib.request
+    gate = (ROOT / ".github/workflows/merge-gate.yml").read_text(encoding="utf-8")
+    block = gate.split("  scope:\n", 1)[1].split("  lanes:\n", 1)[0]
+    script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        git(root, "init", "-q")
+        git(root, "config", "user.email", "ci@example.invalid")
+        git(root, "config", "user.name", "CI")
+        server = root / "apps/game-server/src/lib.rs"
+        server.parent.mkdir(parents=True)
+        server.write_text("// before\n", encoding="utf-8")
+        git(root, "add", ".")
+        git(root, "commit", "-qm", "base")
+        base = git(root, "rev-parse", "HEAD")
+        server.write_text("// after\n", encoding="utf-8")
+        git(root, "add", ".")
+        git(root, "commit", "-qm", "candidate")
+        head = git(root, "rev-parse", "HEAD")
+        git(root, "checkout", "-q", base)
+        live = {"state": "open", "changed_files": 1,
+                "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+                "base": {"ref": "main", "sha": base}}
+
+        def scope(before=live, after=live):
+            output = root / "scope-output"
+            output.write_text("", encoding="utf-8")
+            pulls = iter((before, after))
+            def urlopen(request, timeout):
+                if "/compare/" in request.full_url:
+                    assert request.full_url.endswith(f"/compare/{base}...{head}?per_page=1")
+                    # This apparently auxiliary record must be discarded on count drift.
+                    value = {"files": [{"filename": "README.md", "status": "modified"}]}
+                else:
+                    value = next(pulls)
+                return io.StringIO(json.dumps(value))
+            env = {"REPOSITORY": "Oteryn/Oteryn-Game", "EVENT_PR_NUMBER": "3042",
+                   "EVENT_PR_HEAD_SHA": head, "GH_TOKEN": "fixture", "GITHUB_OUTPUT": str(output)}
+            errors = io.StringIO()
+            with patch.dict(os.environ, env), patch.object(urllib.request, "urlopen", side_effect=urlopen), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(errors):
+                try:
+                    exec(compile(script, "merge-gate:scope", "exec"), {})
+                except SystemExit as error:
+                    assert error.code == 1 and not output.read_text(), error
+                    return None, errors.getvalue()
+            return dict(line.split("=", 1) for line in output.read_text().splitlines()), errors.getvalue()
+
+        stable, errors = scope()
+        assert not errors and stable["complete"] == "true", (stable, errors)
+        assert json.loads(stable["file_records"])[0]["filename"] == "README.md"
+        for before_count, after_count in ((1, 2), (2, 1), (1, 301), (301, 1), (2507, 2508), (0, 1)):
+            result, errors = scope(dict(live, changed_files=before_count), dict(live, changed_files=after_count))
+            assert result is not None and not errors, (before_count, after_count, errors)
+            assert result["target_sha"] == head and result["base_sha"] == base, result
+            assert result["complete"] == "false" and result["file_records"] == "[]", result
+            assert result["file_count"] == str(before_count or after_count), result
+
+        # All exact-candidate fences still reject, even when the count also drifts.
+        for changes in (
+            {"state": "closed"},
+            {"head": {"sha": "d" * 40, "repo": {"full_name": "Oteryn/Oteryn-Game"}}},
+            {"head": {"sha": head, "repo": {"full_name": "fork/Game"}}},
+            {"base": {"ref": "main", "sha": "c" * 40}},
+            {"base": {"ref": "stack", "sha": base}},
+        ):
+            result, errors = scope(after=dict(live, changed_files=2, **changes))
+            assert result is None and errors, changes
+        for count in (True, False, -1, "1", 1.0, None, [], {}):
+            invalid = dict(live, changed_files=count)
+            for before, after in ((invalid, live), (live, invalid)):
+                result, errors = scope(before, after)
+                assert result is None and "count is invalid" in errors, (count, result, errors)
+
+        result, errors = scope(after=dict(live, changed_files=2))
+        metadata = root / "metadata.json"
+        metadata.write_text(json.dumps(fixture()), encoding="utf-8")
+        def lanes(cwd):
+            output = root / "lanes-output"
+            output.write_text("", encoding="utf-8")
+            env = {"CHANGED_FILE_RECORDS": result["file_records"], "CHANGED_FILE_COUNT": result["file_count"],
+                   "ENUMERATION_COMPLETE": result["complete"], "EXPECTED_HEAD": result["target_sha"],
+                   "GITHUB_OUTPUT": str(output), "GITHUB_EVENT_NAME": "pull_request"}
+            run = subprocess.run([sys.executable, str(MODULE), str(metadata)], cwd=cwd,
+                                 env=dict(os.environ, **env), capture_output=True, text=True, check=False)
+            assert run.returncode == 0, run
+            return dict(line.split("=", 1) for line in output.read_text().splitlines())
+        recovered = lanes(root)
+        assert recovered["reason"] == "server-only-exact-consumer-closure", recovered
+        assert recovered["rust"] == "true" and recovered["server_qualification"] == "true", recovered
+        assert recovered["windows"] == "false" and recovered["world_bundle"] == "false", recovered
+        unavailable = root / "unavailable"
+        unavailable.mkdir()
+        git(unavailable, "init", "-q")
+        fallback = lanes(unavailable)
+        assert fallback["routing_health"] == "degraded", fallback
+        for lane in ("rust", "windows", "atlas_fullworld", "server_qualification", "world_bundle"):
+            assert fallback[lane] == "true", (lane, fallback)
+    print("Scope count drift PASS: immutable recovery or FULL fallback; authority and count validity stay strict")
 
 
 def test_scope_count_drift(module):
@@ -857,6 +964,44 @@ def test_metadata_events():
     assert "          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}\n" in final
     assert "      pull-requests: read\n" in final
     print("Metadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate")
+
+
+def test_scope_policy_contract():
+    """The real policy accepts reviewed scope recovery and rejects altered guards."""
+    core_path = ROOT / "tools/repository/validate_repository_policy_core.py"
+    spec = importlib.util.spec_from_file_location("scope_policy_core", core_path)
+    core = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(core)
+    gate_path = ROOT / ".github/workflows/merge-gate.yml"
+    gate = gate_path.read_text(encoding="utf-8")
+    scope = core.indented_yaml_mapping_block(gate, "scope", 2)
+    assert scope is not None
+    read_text = Path.read_text
+
+    def validate(candidate):
+        def candidate_text(path, *args, **kwargs):
+            return candidate if path == gate_path else read_text(path, *args, **kwargs)
+
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with patch.object(Path, "read_text", candidate_text), \
+                contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            status = core.main()
+        return status, stdout.getvalue() + stderr.getvalue()
+
+    status, diagnostic = validate(gate)
+    assert status == 0, diagnostic
+    for guard in (
+        "if pull_after_files.get('head', {}).get('sha', '').lower() != expected_head:",
+        "if type(changed_files) is not int or changed_files < 0:",
+        "elif not errors and changed_files_after != changed_files:",
+    ):
+        assert scope.count(guard) == 1, guard
+        replacement = "elif False:" if guard.startswith("elif ") else "if False:"
+        changed_scope = scope.replace(guard, replacement, 1)
+        status, diagnostic = validate(gate.replace(scope, changed_scope, 1))
+        assert status == 1, (guard, diagnostic)
+        assert "merge gate scope job must exactly match the canonical" in diagnostic, diagnostic
+    print("Scope policy PASS: reviewed scope accepted, identity/count/recovery mutations rejected")
 
 
 def test_aggregate():
@@ -1102,6 +1247,8 @@ def main() -> int:
     test_scope_identity_drift()
     test_scope_invalid_file_counts()
     test_scope_stable_small_pr()
+    test_scope_policy_contract()
+    test_scope_count_drift(module)
     test_aggregate()
     test_server_qualification(module)
     test_world_bundle(module)

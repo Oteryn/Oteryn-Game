@@ -163,16 +163,44 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 .filter(|(key, _)| key == &chest.claim)
                 .collect::<Vec<_>>()
         );
-        let catalogue = if bound.served.iter().any(|claim| {
+        use oteryn_gameplay_quests::quest::world_callbacks;
+        let mut world_claim_callback = None;
+        for callback in world_callbacks::load()? {
+            if callback.selector.position
+                != Some(world_callbacks::Position {
+                    x: chest.position.0,
+                    y: chest.position.1,
+                    floor: chest.position.2,
+                })
+                || callback.selector.appearance != Some(chest.appearance)
+            {
+                continue;
+            }
+            if world_callbacks::legacy_world_claim(&callback)?
+                .is_some_and(|claim| claim.key == chest.claim)
+                && world_claim_callback.replace(callback).is_some()
+            {
+                return Err("source claim has more than one canonical World callback".into());
+            }
+        }
+        let has_claim_obligation = bound.served.iter().any(|claim| {
             claim.key.as_str() == chest.claim
                 && claim
                     .placements
                     .iter()
                     .any(|placement| placement.placement.quest_transition.is_some())
-        }) {
+        });
+        let catalogue = if has_claim_obligation || world_claim_callback.is_some() {
             let lowered =
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?;
+            if let Some(callback) = &world_claim_callback {
+                let transition = world_callbacks::primary_transition(callback)?;
+                assert_eq!(
+                    lowered.catalogue().transition(&callback.key),
+                    Some(&transition)
+                );
+            }
             Some(std::sync::Arc::new(lowered.catalogue().clone()))
         } else {
             None
@@ -358,7 +386,14 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 vec![
                     (CommandStatus::Accepted, UseDisposition::Committed),
                     (CommandStatus::DuplicateReplay, UseDisposition::Committed),
-                    (CommandStatus::Accepted, UseDisposition::NothingToUse),
+                    (
+                        CommandStatus::Accepted,
+                        if world_claim_callback.is_some() {
+                            UseDisposition::Rejected
+                        } else {
+                            UseDisposition::NothingToUse
+                        },
+                    ),
                 ]
             };
             let commands = if cold {
@@ -521,7 +556,34 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 )
                 .fetch_one(&h.pool)
                 .await?;
-                assert_eq!(quest_counts, (1, 1, 0), "{}", chest.claim);
+                if let Some(callback) = &world_claim_callback {
+                    assert_eq!(quest_counts, (1, 0, 0), "{}", chest.claim);
+                    let storage = callback.storage.first().ok_or("source World claim track")?;
+                    let value: i64 = sqlx::query_scalar(
+                        "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+                    )
+                    .bind(&storage.track)
+                    .fetch_one(&h.pool)
+                    .await?;
+                    assert_eq!(value, storage.set);
+                    let coupled: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_character_quest_receipts q \
+                         JOIN game_reward_claim_mint_receipts r ON r.character_id=q.character_id \
+                         AND r.game_session_id=q.cause_id AND r.command_id=q.cause_ordinal \
+                         AND r.created_xact_id=q.created_xact_id \
+                         WHERE q.transition_key=$1 AND r.claim_production_key=$2)",
+                    )
+                    .bind(&callback.key)
+                    .bind(&chest.claim)
+                    .fetch_one(&h.pool)
+                    .await?;
+                    assert!(
+                        coupled,
+                        "source World progress and original claim MINT are atomic"
+                    );
+                } else {
+                    assert_eq!(quest_counts, (1, 1, 0), "{}", chest.claim);
+                }
             }
         }
         drop(authority);

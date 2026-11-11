@@ -17,6 +17,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+#[path = "session_ingress/buffered_step.rs"]
+mod buffered_step;
 #[path = "session_ingress/native.rs"]
 mod native;
 #[cfg(test)]
@@ -41,6 +43,7 @@ struct PendingDelivery {
     command: u64,
     selected: SelectedCapabilities,
     proven_native: Option<ProvenNativeReply>,
+    buffered_step: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -335,6 +338,7 @@ impl SessionCommands {
     pub(super) fn recover_trade_continuity(&self, admitted: &mut AdmittedSession) -> Option<()> {
         let commands = self.0.lock().ok()?;
         let mut state = commands.get(&admitted.game_session_id)?.lock().ok()?;
+        state.complete_discarded_step(admitted)?;
         state.complete_native_if_disconnected()?;
         let (next, sequence) = state.recovered_continuity(
             admitted.continuity.next_command_id,
@@ -462,6 +466,13 @@ impl SessionCommandStream {
         match state.ingress.classify_duplicate(id, &identity) {
             DuplicateDisposition::PendingOriginal => {
                 return Ok(if buffered_original {
+                    // Taking the original out of its pacing buffer is not terminal proof.
+                    // Before any execution await, stop treating it as never dispatched.
+                    let pending = state.pending_delivery.as_mut().ok_or(unavailable)?;
+                    if pending.command != command {
+                        return Err(unavailable);
+                    }
+                    pending.buffered_step = false;
                     CommandAction::Execute
                 } else {
                     CommandAction::Pending
@@ -492,6 +503,7 @@ impl SessionCommandStream {
                     command,
                     selected: self.selected,
                     proven_native: None,
+                    buffered_step: false,
                 });
                 state.reconciled_sequence = None;
                 Ok(CommandAction::Execute)

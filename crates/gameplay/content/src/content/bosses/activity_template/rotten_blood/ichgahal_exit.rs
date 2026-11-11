@@ -30,13 +30,12 @@ fn matches_capture(capture: &serde_json::Value) -> bool {
     else {
         return false;
     };
-    let teleport = raw["items"].as_array().is_some_and(|items| {
-        items.iter().any(|item| {
-            item["server_item_id"] == 34111
-                && item["depth"] == 0
-                && item["attributes"]["dest"] == serde_json::json!([FINAL.x, FINAL.y, FINAL.z])
-        })
-    });
+    let teleport = raw["items"]
+        == serde_json::json!([
+            {"server_item_id": 42852, "depth": 0, "attributes": {}},
+            {"server_item_id": 34111, "depth": 0,
+             "attributes": {"dest": [FINAL.x, FINAL.y, FINAL.z]}}
+        ]);
     let stack = target["items"].as_array().is_some_and(|items| {
         items.len() == 2
             && items[0]["server_item_id"] == 36344
@@ -98,6 +97,7 @@ mod tests {
             serde_json::from_slice(PinnedActivitySourceRoom::Ichgahal.bytes())
                 .map_err(|error| error.to_string())?;
         assert!(matches_capture(&capture));
+        assert!(capture_matches());
         let mut changed = capture.clone();
         let raw = changed["tiles"]
             .as_array_mut()
@@ -131,6 +131,17 @@ mod tests {
             !matches_capture(&changed),
             "Vemiath's stack is not Ichgahal's"
         );
+        let mut changed = capture.clone();
+        let target = changed["tiles"]
+            .as_array_mut()
+            .and_then(|tiles| {
+                tiles.iter_mut().find(|tile| {
+                    tile["source_position"] == serde_json::json!([FINAL.x, FINAL.y, FINAL.z])
+                })
+            })
+            .ok_or("actual Ichgahal arrival tile")?;
+        target["items"][0]["attributes"] = serde_json::json!({"15": 2});
+        assert!(!matches_capture(&changed));
         let mut changed = capture;
         changed["source_revision"] = serde_json::json!("unverified");
         assert!(!matches_capture(&changed));

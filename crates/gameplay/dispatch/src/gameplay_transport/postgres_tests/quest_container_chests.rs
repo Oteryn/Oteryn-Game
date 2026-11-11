@@ -401,29 +401,14 @@ fn scenario_case(
             catalogue.is_none_or(|chest| chest.servable),
             "source namespace must match the native World binder"
         );
-        // Quest-coupled source chests need the real catalogue at every owner,
-        // including command and cold replay, just as they do at channel boot.
-        let quest_catalogue = if report.served.iter().any(|claim| {
-            claim
-                .placements
-                .iter()
-                .any(|bound| bound.placement.quest_transition.is_some())
-        }) {
-            Some(std::sync::Arc::new(
-                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-                    .map_err(debug)?
-                    .catalogue()
-                    .clone(),
-            ))
-        } else {
-            None
-        };
-        let embedded_catalogue = std::sync::Arc::new(
+        // Every live/cold owner gets the real catalogue and current Quest admission.
+        // The optional source-chest descriptor remains independent fixture metadata.
+        let quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
                 .catalogue()
                 .clone(),
-        );
+        ));
         let cells = world
             .movement_cells(if matches!(case, Case::ChoiceDoor) {
                 activated_pin.qualified_room().movement_cells()
@@ -528,6 +513,7 @@ fn scenario_case(
                 owner.quest_catalogue = quest_catalogue.clone();
                 owner.movement_cells = (&cells).into();
                 owner.admit_progression_session(&mut admitted).await;
+                owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
                 let key =
                     oteryn_world_bundle::bundle::placement_key(chest.2, chest.0 - 1, chest.1, 1)
@@ -568,7 +554,6 @@ fn scenario_case(
             owner.active_generation = Some(generation);
             owner.quest_catalogue = quest_catalogue.clone();
             owner.movement_cells = (&cells).into();
-            owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
             owner.admit_progression_session(&mut admitted).await;
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
@@ -713,7 +698,6 @@ fn scenario_case(
                 owner.active_generation = Some(generation);
                 owner.quest_catalogue = quest_catalogue.clone();
                 owner.movement_cells = (&cells).into();
-                owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
                 owner.admit_progression_session(&mut admitted).await;
                 owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
@@ -763,6 +747,7 @@ fn scenario_case(
             owner.quest_catalogue = quest_catalogue.clone();
             owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
+            owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
             assert_eq!(
                 wire_use_targets(
@@ -809,7 +794,6 @@ fn scenario_case(
                 owner.active_generation = Some(generation);
                 owner.quest_catalogue = quest_catalogue.clone();
                 owner.movement_cells = (&cells).into();
-                owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
                 owner.admit_progression_session(&mut admitted).await;
                 owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;

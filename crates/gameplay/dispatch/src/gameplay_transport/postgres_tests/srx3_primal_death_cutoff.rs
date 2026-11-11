@@ -217,11 +217,7 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                 );
                 owner.clock_origin = owner
                     .clock_origin
-                    .checked_sub(std::time::Duration::from_secs(if pod_expiry_case {
-                        21
-                    } else {
-                        11
-                    }))
+                    .checked_sub(std::time::Duration::from_secs(11))
                     .ok_or("source first wave clock")?;
                 let native_drain: std::pin::Pin<
                     Box<dyn std::future::Future<Output = TestResult> + '_>,
@@ -238,6 +234,51 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                 let mut old_pod = None;
                 let mut future_pod = None;
                 if pod_expiry_case {
+                    // Finish the actual first Beast wave before the first Pod
+                    // wave. Only Pod count draws then lead this source Think.
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_secs(3))
+                        .ok_or("actual first Beast callbacks clock")?;
+                    {
+                        let view = owner.runtime_view(&registered);
+                        super::srx3_primal::drain_actual_native_through(
+                            &view,
+                            view.owner_now().get(),
+                            true,
+                        )
+                        .await?;
+                        assert!(
+                            view.states
+                                .spell_states
+                                .lock()
+                                .await
+                                .primal_callbacks
+                                .pods
+                                .is_empty()
+                        );
+                    }
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_secs(7))
+                        .ok_or("actual first Pod wave clock")?;
+                    {
+                        let view = owner.runtime_view(&registered);
+                        let now = two_pod_wave_time(&view, boss)?;
+                        super::srx3_primal::drain_actual_native_through(&view, now.get(), true)
+                            .await?;
+                        assert_eq!(
+                            view.states
+                                .spell_states
+                                .lock()
+                                .await
+                                .primal_callbacks
+                                .pods
+                                .len(),
+                            2,
+                            "actual hazard1 source Think must schedule two real Pod callbacks before ordering them"
+                        );
+                    }
                     let source_pods = owner
                         .runtime_view(&registered)
                         .states
@@ -249,9 +290,10 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         .iter()
                         .map(|pod| (pod.source_transaction_id(), pod.due_us()))
                         .collect::<Vec<_>>();
-                    assert!(
-                        (1..=2).contains(&source_pods.len()),
-                        "the actual hazard1 first wave authors one or two Pods: {source_pods:?}"
+                    assert_eq!(
+                        source_pods.len(),
+                        2,
+                        "the selected actual source clock must produce two Pods for the expiry-ordering proof"
                     );
                     let pod_due = source_pods
                         .iter()
@@ -451,6 +493,12 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                             .find(|row| row.0 != first.0 && row.3)
                             .ok_or("prerequisite: actual second Pod create at later execution")?;
                         assert!(source_pods.iter().any(|(source, _)| *source == second.0));
+                        let created: i64 = sqlx::query_scalar("SELECT count(*) FROM game_primal_pod_callbacks p JOIN game_item_instances i USING(item_instance_id) JOIN game_item_ground_locations g USING(item_instance_id) WHERE p.source_transaction_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid) AND i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i39176'")
+                            .bind(first.0.as_slice()).bind(second.0.as_slice()).fetch_one(&h.pool).await?;
+                        assert_eq!(
+                            created, 2,
+                            "two actual durable Pod creates precede the expiry/core ordering assertions"
+                        );
                         assert!(second.2 > first.2);
                         Some(second)
                     } else {
@@ -799,6 +847,59 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
         result.is_ok()
     );
     result
+}
+
+fn two_pod_wave_time(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    boss: crate::foundation::ExactActorRef,
+) -> TestResult<oteryn_simulation_determinism::SemanticTimeMicros> {
+    use oteryn_gameplay_encounters::bosses::hazard_primal::primal_menace_think as source;
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros, deterministic_decision_u64,
+    };
+    use sha2::{Digest, Sha256};
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("actual Primal source generation")?;
+    let root = GameplayDecisionRoot::from_bytes(
+        Sha256::new()
+            .chain_update(b"srx3:primal:callbacks:v1")
+            .chain_update(native.source_digest())
+            .chain_update(boss.placement_identity())
+            .finalize()
+            .into(),
+    );
+    let base = owner.owner_now().get();
+    let limit = u64::MAX - u64::MAX % u64::from(source::DRAW_PPM);
+    // Constrain only the source-clock input, as other deterministic branch
+    // fixtures do. The real reserved Think performs its original draws and
+    // must independently publish both callbacks; no source work is injected.
+    for offset in 0..1024_u64 {
+        let now = base
+            .checked_add(offset)
+            .ok_or("actual Pod wave clock bounds")?;
+        let mut occurrence = [0; 16];
+        occurrence[..8].copy_from_slice(&now.to_be_bytes());
+        let occurrence = DecisionOccurrenceId::from_bytes(occurrence);
+        let variance =
+            deterministic_decision_u64(&root, occurrence, "primal_waves", 0).map_err(debug)?;
+        let sign =
+            deterministic_decision_u64(&root, occurrence, "primal_waves", 1).map_err(debug)?;
+        if variance >= limit || sign >= limit {
+            continue;
+        }
+        if source::wave_count(
+            &source::POD_WAVE,
+            1,
+            (variance % u64::from(source::DRAW_PPM)) as u32,
+            (sign % u64::from(source::DRAW_PPM)) as u32,
+        ) == 2
+        {
+            return Ok(SemanticTimeMicros::from_micros(now));
+        }
+    }
+    Err("actual hazard1 source clock did not select two Pods within 1024 occurrences".into())
 }
 
 async fn wait_actual_pod_sql_due(pool: &sqlx::PgPool, source: [u8; 16]) -> TestResult {
