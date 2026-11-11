@@ -109,20 +109,25 @@ pub fn activated_charm_points() -> Option<Vec<BestiaryCharmEntry>> {
 
 /// HIGHSCORES0 §3 row 12 and Crystal `game.cpp:434`: Boss Points.
 pub const BOSS_POINTS_CATEGORY: u8 = 12;
+/// N014 (`highscores-loyalty-v1.md`): Loyalty points from Platform's account projection (0406).
+/// Published with every cut; the dispatch route serves it only to sessions that selected
+/// capability 498, and it is never queued to the public projection (migration 2801).
+pub const LOYALTY_CATEGORY: u8 = 13;
 /// docs/reference/tibia-manual/combat.md:262: cumulative levels and the current two-week rotation.
 pub const TIBIADROME_LIFETIME_CATEGORY: u8 = 14;
 pub const TIBIADROME_ROTATION_CATEGORY: u8 = 17;
 pub const PHOSPHORUS_RECORD_CATEGORY: u8 = 16;
 const DROME_ROTATION_MS: i64 = super::tibiadrome::ROTATION_SECONDS as i64 * 1000;
 
-/// Categories 1-10, 12, 14, 16 and 17 are always served; category 11 requires an activated Charm point
-/// source.
+/// Categories 1-10, 12, 13, 14, 16 and 17 are always served; category 11 requires an activated
+/// Charm point source.
 pub fn served_category(category: u8) -> bool {
     (1..=10).contains(&category)
         || category == BOSS_POINTS_CATEGORY
         || matches!(
             category,
-            TIBIADROME_LIFETIME_CATEGORY
+            LOYALTY_CATEGORY
+                | TIBIADROME_LIFETIME_CATEGORY
                 | PHOSPHORUS_RECORD_CATEGORY
                 | TIBIADROME_ROTATION_CATEGORY
         )
@@ -168,7 +173,8 @@ impl SnapshotCatalogues {
         })
     }
 
-    /// The categories one publication writes: 1..=10, 12, 14, 16 and 17, plus 11 with a Charm source.
+    /// The categories one publication writes, ascending: 1..=10, 12, 13, 14, 16 and 17, plus 11
+    /// with a Charm source.
     fn published_categories(&self) -> Vec<i32> {
         let mut categories: Vec<i32> = (1..=10).collect();
         if self.charm_points {
@@ -176,6 +182,7 @@ impl SnapshotCatalogues {
         }
         categories.extend([
             i32::from(BOSS_POINTS_CATEGORY),
+            i32::from(LOYALTY_CATEGORY),
             i32::from(TIBIADROME_LIFETIME_CATEGORY),
             i32::from(PHOSPHORUS_RECORD_CATEGORY),
             i32::from(TIBIADROME_ROTATION_CATEGORY),
@@ -355,7 +362,8 @@ impl DurabilityRoot {
         if !(1..=12).contains(&category)
             && !matches!(
                 category,
-                TIBIADROME_LIFETIME_CATEGORY
+                LOYALTY_CATEGORY
+                    | TIBIADROME_LIFETIME_CATEGORY
                     | PHOSPHORUS_RECORD_CATEGORY
                     | TIBIADROME_ROTATION_CATEGORY
             )
@@ -647,6 +655,52 @@ async fn read_boss_points(
     Ok(bosses)
 }
 
+/// Category 13 rows of one page of eligible Characters: each Character whose account holds
+/// positive projected loyalty points in `points`, ranked by those points. A Character without
+/// a projection or with zero points gets no row, never a fabricated zero.
+fn loyalty_sources(page: &[Source], points: &BTreeMap<CharacterId, u64>) -> Vec<Source> {
+    page.iter()
+        .filter_map(|source| {
+            let earned = *points.get(&source.character_id)?;
+            (earned > 0).then(|| {
+                let mut values = [(0, 0); 9];
+                values[0] = (earned, 0);
+                Source {
+                    character_id: source.character_id,
+                    name: source.name.clone(),
+                    vocation: source.vocation.clone(),
+                    level: source.level,
+                    values,
+                }
+            })
+        })
+        .collect()
+}
+
+/// N014 category 13: the account loyalty projection of 0406/0925, which Platform alone writes;
+/// same eligibility as categories 1-9, one set-based read per page inside the cut.
+async fn read_loyalty(
+    tx: &mut Transaction<'_, Postgres>,
+    characters: &[Source],
+    limits: CutLimits,
+) -> Result<Vec<Source>> {
+    let mut loyalty = Vec::new();
+    for page in characters.chunks(limits.page_rows) {
+        let ids: Vec<String> = page
+            .iter()
+            .map(|source| uuid_hex(source.character_id.as_bytes()))
+            .collect();
+        let rows = sqlx::query("SELECT uuid_send(r.character_id) AS character_id,l.loyalty_points FROM game_character_roots r JOIN game_account_loyalty_projections l USING(account_id) WHERE r.character_id=ANY($1::text[]::uuid[]) AND l.loyalty_points>0 ORDER BY r.character_id")
+            .bind(&ids).fetch_all(&mut **tx).await?;
+        let mut points = BTreeMap::new();
+        for row in rows {
+            points.insert(character(&row)?, nonnegative(&row, "loyalty_points")?);
+        }
+        loyalty.extend(loyalty_sources(page, &points));
+    }
+    Ok(loyalty)
+}
+
 /// Only victorious characters enter the Phosphorus Record; no zero-score rows.
 async fn read_phosphorus(
     tx: &mut Transaction<'_, Postgres>,
@@ -925,6 +979,7 @@ async fn publish_cut(
     let source = read_source_within(tx, world, limits).await?;
     let extra = read_extra_sources(tx, world, &source, catalogues, limits).await?;
     let bosses = read_boss_points(tx, &source, limits).await?;
+    let loyalty = read_loyalty(tx, &source, limits).await?;
     let drome_characters = read_tibiadrome_characters(tx, world, limits, computed_at_ms).await?;
     let drome = read_tibiadrome(tx, world, &drome_characters, limits, computed_at_ms).await?;
     let phosphorus = read_phosphorus(tx, world, limits).await?;
@@ -940,6 +995,7 @@ async fn publish_cut(
             10 => materialize(&extra[0], 0)?,
             11 => materialize(&extra[1], 0)?,
             BOSS_POINTS_CATEGORY => materialize(&bosses, 0)?,
+            LOYALTY_CATEGORY => materialize(&loyalty, 0)?,
             PHOSPHORUS_RECORD_CATEGORY => materialize(&phosphorus, 0)?,
             TIBIADROME_LIFETIME_CATEGORY => materialize(&drome[0], 0)?,
             TIBIADROME_ROTATION_CATEGORY => materialize_ordered(&drome[1], 0, true)?,
@@ -1066,9 +1122,11 @@ async fn read_in_transaction(
 #[cfg(test)]
 mod category_set_tests {
     use super::{
-        BOSS_POINTS_CATEGORY, DROME_ROTATION_MS, SNAPSHOT_INTERVAL_MS, next_refresh_delay,
-        served_category,
+        BOSS_POINTS_CATEGORY, DROME_ROTATION_MS, LOYALTY_CATEGORY, SNAPSHOT_INTERVAL_MS, Source,
+        loyalty_sources, materialize, next_refresh_delay, served_category,
     };
+    use crate::foundation::CharacterId;
+    use std::collections::BTreeMap;
 
     #[test]
     fn drome_rotation_boundary_wakes_before_the_highscore_refresh_interval() -> Result<(), String> {
@@ -1092,12 +1150,58 @@ mod category_set_tests {
         assert!(served_category(10));
         assert!(!served_category(11));
         assert!(!served_category(0));
-        assert!(!served_category(13));
+        assert!(served_category(13));
         assert!(served_category(14));
         assert!(!served_category(15));
         assert!(served_category(17));
         assert!(!served_category(18));
         assert!(served_category(16));
         assert_eq!(BOSS_POINTS_CATEGORY, 12);
+        assert_eq!(LOYALTY_CATEGORY, 13);
+    }
+
+    fn character(tag: u8) -> Result<CharacterId, String> {
+        CharacterId::decode(&[1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag])
+            .map_err(|e| format!("{e:?}"))
+    }
+
+    #[test]
+    fn loyalty_category_ranks_characters_by_account_points_without_zero_rows() -> Result<(), String>
+    {
+        let eligible = [(1, "knight"), (2, "druid"), (3, "knight"), (4, "sorcerer")]
+            .into_iter()
+            .map(|(tag, vocation)| {
+                Ok(Source {
+                    character_id: character(tag)?,
+                    name: format!("Player {tag}"),
+                    vocation: vocation.into(),
+                    level: 8,
+                    values: [(7, 7); 9],
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        // Characters 1 and 3 share one account (50), 2 has 900, 4's account has zero points.
+        let points = BTreeMap::from([
+            (character(1)?, 50),
+            (character(2)?, 900),
+            (character(3)?, 50),
+            (character(4)?, 0),
+        ]);
+        let loyalty = loyalty_sources(&eligible, &points);
+        assert_eq!(loyalty.len(), 3);
+        assert!(loyalty.iter().all(|row| row.values[0].1 == 0));
+        let rows = materialize(&loyalty, 0).map_err(|e| format!("{e:?}"))?;
+        let all: Vec<_> = rows.iter().filter(|row| row.filter == 0).collect();
+        assert_eq!(all.len(), 3);
+        assert_eq!(all[0].rank, 1);
+        assert_eq!(all[0].value_primary, 900);
+        assert_eq!(all[0].name, "Player 2");
+        assert!(all[1..].iter().all(|row| row.value_primary == 50 && row.rank > 1));
+        assert!(!rows.iter().any(|row| row.name == "Player 4"));
+        // The knight list (public filter 2) holds only the account's two knights.
+        let knights: Vec<_> = rows.iter().filter(|row| row.filter == 2).collect();
+        assert_eq!(knights.len(), 2);
+        assert!(knights.iter().all(|row| row.vocation == "knight"));
+        Ok(())
     }
 }
