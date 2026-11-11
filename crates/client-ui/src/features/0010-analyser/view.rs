@@ -351,7 +351,7 @@ pub(super) fn session_text_at(panel: &Panel, seconds: u64) -> String {
     } else {
         balance * 3600 / i128::from(seconds)
     };
-    let mut text = format!("Session clock: {}\r\n", clock_text(seconds));
+    let mut text = lfmt!("Session clock: {}\r\n", clock_text(seconds));
     text.push_str(&lfmt!(
         "Hunting Session\r\nElapsed: {seconds} seconds\r\nXP/h: {}\r\nRaw XP/h: {}\r\nPriced balance: {balance} gold\r\nPriced balance/h: {balance_rate} gold\r\nOnly resolved, priced items and confirmed gold enter the balance.\r\n{}\r\nKills by creature race",
         super::state::per_hour(panel.gained_xp, seconds),
