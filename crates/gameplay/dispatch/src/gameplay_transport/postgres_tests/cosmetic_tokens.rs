@@ -173,7 +173,8 @@ fn scenario(tokens: bool) -> TestResult {
                 let content = crate::content::daily_reward::DailyRewardContent::catalogue()
                     .ok_or("daily content")?;
                 let mut earned = 0_u64;
-                for epoch in 1..=1000_u64 {
+                // WU26-07: a Free seven-day cycle earns 5 tokens, so 870 needs 1218 claims.
+                for epoch in 1..=1300_u64 {
                     super::daily_reward::epoch(&harness, epoch).await?;
                     let fence = crate::gameplay_transport::character_gameplay_fence::current(
                         &owner,
@@ -199,7 +200,6 @@ fn scenario(tokens: bool) -> TestResult {
                     },
                     crate::durability::daily_reward_delivery::DailyRewardDeliveryPlan {
                         content_revision: content.revision.clone(),
-                        selection: None,
                     },
                     &crate::gameplay_transport::spell_premium_coordinator::DailyRewardPremium(None),
                 )

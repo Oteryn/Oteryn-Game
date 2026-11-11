@@ -9,10 +9,10 @@ pub(super) async fn kills_before_and_at_expiry(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     premium: bool,
 ) -> TestResult {
-    // Crystal 201189f: data/modules/scripts/daily_reward/daily_reward.lua:518-527.
-    let stacked: bool = sqlx::query_scalar("WITH daily AS (SELECT min(effect_started_at) AS starts FROM game_character_daily_reward_lines WHERE kind='XP_BOOST') SELECT EXISTS(SELECT 1 FROM game_character_store_xp_boosts s,daily WHERE s.expires_at<=daily.starts)")
+    // Winter Update 2026 (thread 565): the daily boost runs beside the Store boost.
+    let beside: bool = sqlx::query_scalar("WITH daily AS (SELECT max(effect_started_at) AS starts FROM game_character_daily_reward_lines WHERE kind='XP_BOOST') SELECT EXISTS(SELECT 1 FROM game_character_store_xp_boosts s,daily WHERE s.starts_at<=daily.starts AND s.expires_at>daily.starts)")
         .fetch_one(&h.pool).await?;
-    assert!(stacked, "daily duration begins after the Store duration");
+    assert!(beside, "the newest daily boost starts while the Store boost runs");
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     let (generation, pin) =
         super::super::death_ml_loss_composed::production_generation_with_source(
@@ -42,9 +42,9 @@ pub(super) async fn kills_before_and_at_expiry(
         .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.activation_sequence().to_string())
         .bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice())
         .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-    // Each pass reconstructs runtime/session owners from durable authority. Appended
-    // durations queue future intervals: observe the latest grant's start, then its
-    // exact expiry on the same server clock, without waiting for wall time.
+    // Each pass reconstructs runtime/session owners from durable authority. Observe the
+    // newest grant's start (Store boost still running), then the latest expiry on the
+    // same server clock, without waiting for wall time.
     for expired in [false, true] {
         let clock = if expired {
             "CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT max(effect_expires_at) FROM public.game_character_daily_reward_lines WHERE kind='XP_BOOST' $$"
@@ -179,8 +179,8 @@ pub(super) async fn kills_before_and_at_expiry(
                 .await?;
         assert_eq!(
             xp,
-            if premium { if expired { 22 } else { 12 } } else if expired { 21 } else { 11 },
-            "level 1: daily tier percentage adds to the 100% low-level bonus, then expires"
+            if premium { if expired { 25 } else { 15 } } else if expired { 23 } else { 13 },
+            "level 1: Store 50% plus the daily tier percentage add to the 100% low-level bonus, then expire"
         );
     }
     Ok(())

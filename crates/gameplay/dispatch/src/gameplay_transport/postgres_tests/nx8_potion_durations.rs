@@ -70,16 +70,16 @@ fn nx8_potion_durations_postgres_online_offline_xp_sources_and_expiry() -> TestR
                 sqlx::query("INSERT INTO game_character_store_xp_boosts(operation_id,character_id,world_id,starts_at,expires_at,percent) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,game_daily_effect_now()+make_interval(mins=>$4),game_daily_effect_now()+make_interval(mins=>$5),50)")
                 .bind(id(seed).as_slice()).bind(id(41).as_slice()).bind(id(42).as_slice()).bind(start).bind(end).execute(&mut *tx).await?;
             }
-            sqlx::query("INSERT INTO game_character_daily_reward_claims(character_id,world_id,reset_epoch,reset_day,transaction_id,request_binding,lane_day,streak_before,streak_after,jokers_spent,premium) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,123,1,encode($3,'hex')::uuid,$4,7,6,7,0,false)")
-            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(94).as_slice()).bind([1_u8;32].as_slice()).execute(&mut *tx).await?;
-            for (line, percent, start, end) in [
-                (0_i16, 25_i16, -27_i32, 3_i32),
-                (1, 50, -26, 4),
-                (2, 10, 5, 35),
-                (3, 20, -31, -1),
+            // Winter Update 2026: an older claim's longer daily line is replaced by the
+            // newest claim's line; only that one projects, beside the Store line.
+            for (claim, epoch, lane_day, percent, start, end) in [
+                (96_u8, 122_i64, 6_i16, 25_i16, -27_i32, 30_i32),
+                (94, 123, 7, 50, -1, 4),
             ] {
-                sqlx::query("INSERT INTO game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) VALUES(encode($1,'hex')::uuid,$2,'XP_BOOST',30,'DELIVERED',encode($3,'hex')::uuid,game_daily_effect_now()+make_interval(mins=>$4),game_daily_effect_now()+make_interval(mins=>$5),$6)")
-                .bind(id(94).as_slice()).bind(line).bind(id(95).as_slice()).bind(start).bind(end).bind(percent).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_character_daily_reward_claims(character_id,world_id,reset_epoch,reset_day,transaction_id,request_binding,lane_day,streak_before,streak_after,jokers_spent,premium) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$5,$5-122,encode($3,'hex')::uuid,$4,$6,$6-1,$6,0,false)")
+                .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(claim).as_slice()).bind([claim;32].as_slice()).bind(epoch).bind(lane_day).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) VALUES(encode($1,'hex')::uuid,0,'XP_BOOST',30,'DELIVERED',encode($1,'hex')::uuid,game_daily_effect_now()+make_interval(mins=>$2),game_daily_effect_now()+make_interval(mins=>$3),$4)")
+                .bind(id(claim).as_slice()).bind(start).bind(end).bind(percent).execute(&mut *tx).await?;
             }
             tx.commit().await?;
             let (status, payload) = super::cyclopedia::support::exchange(
@@ -98,12 +98,7 @@ fn nx8_potion_durations_postgres_online_offline_xp_sources_and_expiry() -> TestR
                     .iter()
                     .map(|entry| (entry.source, entry.percent, entry.remaining_ms))
                     .collect::<Vec<_>>(),
-                vec![
-                    (1, 0, 3_000_000),
-                    (3, 50, 120_000),
-                    (4, 25, 180_000),
-                    (4, 50, 240_000)
-                ]
+                vec![(1, 0, 3_000_000), (3, 50, 120_000), (4, 50, 240_000)]
             );
             // Wall time advances while this session is online. Its current Drome timer spends
             // exactly one minute; expired XP entries disappear and queued ones remain absent.
@@ -124,7 +119,7 @@ fn nx8_potion_durations_postgres_online_offline_xp_sources_and_expiry() -> TestR
                     .iter()
                     .map(|entry| entry.remaining_ms)
                     .collect::<Vec<_>>(),
-                vec![2_940_000, 60_000, 120_000, 180_000]
+                vec![2_940_000, 60_000, 180_000]
             );
             // Two hours of online time exhaust Wealth; every XP interval is expired too.
             sqlx::query("UPDATE nx8_potion_clock SET at=at+interval '2 hours'")
@@ -152,7 +147,7 @@ fn nx8_potion_durations_postgres_online_offline_xp_sources_and_expiry() -> TestR
                 .character_lease_generation = 1;
             assert!(owner.potion_durations_page(stale).await.is_none());
             eprintln!(
-                "POSTGRES_EXECUTED NX-8 W09 durations elapsed={:.3}s wealth_offline=3000000 wealth_online=2940000 xp_sources=3 expired=0",
+                "POSTGRES_EXECUTED NX-8 W09 durations elapsed={:.3}s wealth_offline=3000000 wealth_online=2940000 xp_sources=2 expired=0",
                 started.elapsed().as_secs_f64()
             );
         }

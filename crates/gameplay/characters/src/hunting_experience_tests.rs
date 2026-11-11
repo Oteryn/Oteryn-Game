@@ -78,3 +78,17 @@ fn daily_v2_percentages_are_additive_before_stamina() {
         );
     }
 }
+
+#[test]
+fn daily_xp_boost_adds_to_store_boost_percent() {
+    // Winter Update 2026 (thread 565): two overlapping 50% boosts give +100%.
+    assert_eq!(hunting_experience(100, 0, 100, 2520, false, 50), Ok(200));
+    // A daily 25% beside the Store 50%.
+    assert_eq!(hunting_experience(100, 0, 75, 2520, false, 50), Ok(175));
+    for sum in [60, 70, 75, 100] {
+        assert!(hunting_experience(100, 0, sum, 2520, false, 50).is_ok());
+    }
+    for invalid in [30, 55, 101, 150] {
+        assert!(hunting_experience(100, 0, invalid, 2520, false, 50).is_err());
+    }
+}
