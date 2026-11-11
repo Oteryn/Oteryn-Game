@@ -419,6 +419,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 && b.batch_id != "item-market-crystal-parity-201189f"
                 && b.batch_id != "item-client-market-mint-2dfa943b"
                 && b.batch_id != "seasonal-cake-creature-crystal-201189f-r1"
+                && b.batch_id != "questpc7-thaian-wiki-chosen-r1"
         })
         .collect();
     assert_eq!(legacy_imports.len(), 25);
@@ -449,6 +450,25 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .find(|i| i.batch_id == batch)
             .expect("exact import batch")
     };
+    let thaian = import_for("questpc7-thaian-wiki-chosen-r1");
+    assert_eq!(thaian.source_repository, "tibiawiki.com.br");
+    assert_eq!(
+        thaian.source_revision,
+        "questpc7-thaian-wiki-445240-chosen-r1"
+    );
+    assert_eq!(
+        thaian.source_artifact_sha256,
+        "8add67b2bc718ad04f4e6ebbeceabf4ed375d48d38f80f530a68e1bd3356799a"
+    );
+    assert_eq!(
+        thaian.source_generation_profile,
+        "OTERYN_QUESTPC7_THAIAN_AUTHORING/v1"
+    );
+    assert_eq!(thaian.importer, "OTERYN_QUESTPC7_THAIAN_AUTHORING/v1");
+    assert_eq!(thaian.mapper, "OTERYN_CREATURE_ADMISSION_STAGE/v1");
+    assert_eq!(thaian.mapper_revision, "creature-admission-r1");
+    assert!(thaian.candidates.is_empty());
+    assert!(thaian.reimport_states.is_empty());
     let provenance = import_for("cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");

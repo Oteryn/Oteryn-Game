@@ -423,6 +423,7 @@ def test_source_cohort_includes_installed_successors() -> None:
             patch.object(rc, "refresh_quest_callback_proof"), \
             patch.object(rc, "materialize_world"), \
             patch("questpc7_thaian_authoring.install", side_effect=installed.append), \
+            patch.object(rc, "canonicalize_world"), \
             patch.object(rc, "refresh_source_cohort_extent", side_effect=measure):
         try:
             rc.main()
@@ -483,9 +484,10 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
                 patch.object(rc, "unresolved_worktree_paths", return_value=[]) as unresolved, \
                 patch.object(rc, "refresh_quest_callback_proof"), \
                 patch.object(rc, "materialize_world", side_effect=lambda: events.append(("materialize-world",))), \
-                patch("questpc7_thaian_authoring.install"), \
-                patch.object(rc, "refresh_source_cohort_extent"), \
-                patch.object(rc, "repin_rust_inventory"), \
+                patch("questpc7_thaian_authoring.install", side_effect=lambda _: record(("install-thaian",))), \
+                patch.object(rc, "canonicalize_world", side_effect=lambda: record(("canonicalize-world",))), \
+                patch.object(rc, "refresh_source_cohort_extent", side_effect=lambda: record(("source-cohort",))), \
+                patch.object(rc, "repin_rust_inventory", side_effect=lambda: record(("repin-world",))), \
                 patch.object(rc, "refresh_world_metadata", side_effect=lambda: events.append(("world-metadata",))), \
                 patch.object(subprocess, "run", side_effect=AssertionError("unexpected subprocess")):
             result = rc.main()
@@ -494,6 +496,102 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
         if not checks:
             assert not any("--check" in command for command in events)
         return result
+
+
+def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them() -> None:
+    ordered = [
+        ("materialize-world",), ("install-thaian",), ("canonicalize-world",),
+        ("source-cohort",), ("repin-world",),
+        ("python3", "tools/content-migration/world_project_v2_to_tree.py"),
+    ]
+    events = []
+    assert full_generation_trace(events, lambda *_: None) == 0
+    assert all(events.count(command) == 1 for command in ordered), events
+    positions = [events.index(command) for command in ordered]
+    assert positions == sorted(positions), events
+
+    def refuse(command, _events):
+        if command == ("canonicalize-world",):
+            raise subprocess.CalledProcessError(1, list(command))
+
+    refused = []
+    try:
+        full_generation_trace(refused, refuse)
+    except subprocess.CalledProcessError as error:
+        assert error.cmd == ["canonicalize-world"]
+    else:
+        raise AssertionError("canonical rewrite refusal must stop generation")
+    assert not any(command in refused for command in ordered[3:]), refused
+
+
+def test_world_canonicalizer_copies_only_a_complete_document_inventory() -> None:
+    documents = {"project.json": b"canonical project\n", "definitions/reference.json": b"canonical reference\n"}
+    for scenario in ("complete", "missing", "unexpected", "refused"):
+        with tempfile.TemporaryDirectory() as temp:
+            world = Path(temp) / "world"
+            for locator in documents:
+                write(world, locator, "original " + locator)
+            write(world, "terrain/index.json", "successor remains unchanged")
+            before = {p.relative_to(world).as_posix(): p.read_bytes() for p in world.rglob("*") if p.is_file()}
+
+            def generate(command):
+                assert command[:8] == [
+                    "cargo", "run", "--locked", "-p", "oteryn-game-server", "--example",
+                    "materialize_content_world_project_v2", "--",
+                ]
+                assert command[8] == "--output-root"
+                assert command[10:] == ["--canonicalize-root", str(world)]
+                output = Path(command[9])
+                assert not output.exists()
+                if scenario == "refused":
+                    raise subprocess.CalledProcessError(1, command)
+                emitted = dict(documents)
+                if scenario == "missing":
+                    del emitted["definitions/reference.json"]
+                if scenario == "unexpected":
+                    emitted["unexpected.json"] = b"unexpected\n"
+                for locator, data in emitted.items():
+                    target = output / locator
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(data)
+
+            with patch.object(rc, "WORLD", world), \
+                    patch.object(rc, "document_locators", return_value=list(documents)), \
+                    patch.object(rc, "run", side_effect=generate):
+                try:
+                    rc.canonicalize_world()
+                except (SystemExit, subprocess.CalledProcessError):
+                    assert scenario != "complete"
+                else:
+                    assert scenario == "complete", scenario
+            after = {p.relative_to(world).as_posix(): p.read_bytes() for p in world.rglob("*") if p.is_file()}
+            assert after == ({**before, **documents} if scenario == "complete" else before), scenario
+
+
+def test_npc_service_counts_follow_final_producers_even_when_checks_are_skipped() -> None:
+    refresh = ("python3", "tools/contracts/refresh_npc_service_counts.py")
+    donor = ("python3", "tools/content-schema/quest-authoring/quest_donor_source_authoring.py")
+    check = ("python3", "fixture/final_check.py", "--check")
+    for checks in (False, True):
+        events = []
+        assert full_generation_trace(events, lambda *_: None, checks=checks) == 0
+        assert events.count(refresh) == 1, events
+        assert events.index(donor) < events.index(refresh)
+        expected_tail = [refresh, check] if checks else [refresh]
+        assert events[-len(expected_tail):] == expected_tail
+
+    def refuse(command, _events):
+        if command == refresh:
+            raise subprocess.CalledProcessError(1, list(command))
+
+    refused = []
+    try:
+        full_generation_trace(refused, refuse, checks=True)
+    except subprocess.CalledProcessError as error:
+        assert error.cmd == list(refresh)
+    else:
+        raise AssertionError("NPC count capture refusal must stop generation")
+    assert check not in refused
 
 
 def test_imbuement_candidate_precedes_content_consumers_and_refusal_stops_them() -> None:
@@ -925,8 +1023,9 @@ def main() -> None:
     tests = [
         test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work,
         test_normal_generation_orders_native_callback_producers,
-
-
+        test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them,
+        test_world_canonicalizer_copies_only_a_complete_document_inventory,
+        test_npc_service_counts_follow_final_producers_even_when_checks_are_skipped,
         test_materializer_bootstraps_complete_item_index_before_running,
         test_item_inventory_rejects_incomplete_or_ambiguous_shards_before_materialization,
         test_item_inventory_emitter_matches_converter_format_and_explicit_output_set,

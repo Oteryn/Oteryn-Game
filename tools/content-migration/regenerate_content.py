@@ -35,8 +35,9 @@ It does not regenerate other Item-derived artifacts (the weapon proficiency samp
 snapshot re-key and promotion packet, the pins in `item_stats_promotion.rs`, the Crystal binding
 output); where a `--check` exists it runs it, and a failure there needs a manual regeneration.
 The native catalogue source budgets and World/NPC cohort fixtures are refreshed from the
-normal canonical package by refresh_source_cohort_extent. Other derived count pins require
-their corresponding source authoring tool.
+normal canonical package by refresh_source_cohort_extent. The NPC service model count pins
+are captured from the final production catalogue by refresh_npc_service_counts.py.
+Other derived count pins require their corresponding source authoring tool.
 """
 
 from __future__ import annotations
@@ -552,6 +553,25 @@ def literal(length: int, previous: str) -> str:
     return f"{length:_}" if "_" in previous or length >= 10_000 else str(length)
 
 
+def canonicalize_world() -> None:
+    """Serialize installed successors through the same typed writer used by recapture."""
+    with tempfile.TemporaryDirectory() as temp:
+        output = Path(temp) / "world"
+        run([
+            "cargo", "run", "--locked", "-p", "oteryn-game-server", "--example",
+            "materialize_content_world_project_v2", "--", "--output-root", str(output),
+            "--canonicalize-root", str(WORLD),
+        ])
+        produced = sorted(
+            p.relative_to(output).as_posix() for p in output.rglob("*") if p.is_file()
+        )
+        expected = sorted(document_locators())
+        if produced != expected:
+            raise SystemExit(f"canonical writer produced {produced}, expected {expected}")
+        for locator in produced:
+            shutil.copyfile(output / locator, WORLD / locator)
+
+
 def repin_rust_inventory() -> None:
     """Rewrite byte lengths and SHA-256 pins so the test pins exactly the regenerated package."""
     text = PIN_TEST.read_text(encoding="utf-8")
@@ -791,6 +811,7 @@ def main() -> int:
     materialize_world()
     import questpc7_thaian_authoring
     questpc7_thaian_authoring.install(ROOT)
+    canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
     repin_rust_inventory()
@@ -840,12 +861,17 @@ def main() -> int:
                  "quest_reward_only_binding_candidates.py"):
         run(["python3", "tools/content-schema/quest-authoring/" + name])
     refresh_quest_donor_capture()
+    run(["python3", "tools/contracts/refresh_npc_service_counts.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
                 run(command)
     if args.resolve:
-        derived = derived_paths() | {PIN_PATH, "apps/game-server/tests/content_npc_catalogue.rs"}
+        derived = derived_paths() | {
+            PIN_PATH,
+            "apps/game-server/tests/content_npc_catalogue.rs",
+            "apps/game-server/tests/content_npc_service_model.rs",
+        }
         changed = [
             path
             for path in git(
