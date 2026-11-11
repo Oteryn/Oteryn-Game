@@ -1,5 +1,6 @@
 """Carry already admitted quest offering and chest definitions into the native Item provider."""
 import copy
+import difflib
 import hashlib
 import json
 
@@ -379,7 +380,14 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
             record = lion_records[key]
             if key in present:
                 if present[key] != record:
-                    raise ValueError('LION_TRIAL_NATIVE_PROFILE_DRIFT')
+                    before = (json.dumps(present[key], ensure_ascii=False,
+                                         sort_keys=True, indent=2) + '\n').splitlines(keepends=True)
+                    after = (json.dumps(record, ensure_ascii=False,
+                                        sort_keys=True, indent=2) + '\n').splitlines(keepends=True)
+                    difference = ''.join(difflib.unified_diff(
+                        before, after, fromfile='existing/' + key, tofile='qualified/' + key,
+                        n=max(len(before), len(after))))
+                    raise ValueError('LION_TRIAL_NATIVE_PROFILE_DRIFT:' + key + '\n' + difference)
             else:
                 document['records'].append(record)
             continue

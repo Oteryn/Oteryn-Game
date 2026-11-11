@@ -3,7 +3,7 @@
   "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
   "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
   "parents": {
-    "previous_published_head": "73aaf0231d3b250ec59e2384920712f64d854f97",
+    "previous_published_head": "0cd82d254bacd76e418cf613d7c546605ecb3676",
     "integrated_main": "f01f18582443f482b7adcfaf32cae3f9d3616876"
   },
   "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
@@ -58,50 +58,51 @@
     {
       "finding": "Historical questpc7_merge_audit_inventories.py assumes a monolithic112-callback Feaster output; the accepted producer splits110+2.",
       "classification": "P2; no current workflow or regeneration-dispatcher caller found. External manual consumers are unknown.",
-      "path": "tools/content-schema/quest-authoring/questpc7_merge_audit_inventories.py",
+      "path": "tools/content-migration/questpc7_merge_audit_inventories.py",
       "action": "Deferred to the final grouped backlog. The abandoned exploratory edit was fully reverted; current active generation is not blocked by this historical helper."
     }
   ],
   "last_checkpoint_execution": {
-    "head": "73aaf0231d3b250ec59e2384920712f64d854f97",
-    "merge_run": 42959149543,
-    "generator_run": 42959149485,
-    "generator_job": 130321264440,
-    "generator_result": "Quest prerequisites passed. The materializer compiled in4m00s and executed through the npc_presence1122 report. Imbuement candidate generation passed24types/72tiers. The converter then refused strict Grizzly shop input refresh with GRIZZLY_SHOP_REPIN_SELECTED_DEFINITION_CHANGED. The prior diagnostic combined a baseline digest mismatch and selected full-row drift; the generated after-state was not exported, so the actual first failing arm is unknown. Final World pins, export and upload were skipped; artifact inventory was empty.",
-    "generator_log_sha256": "88deba76c54bb569648977b3d64982173962299ecccd493bbe990cdec531a13d",
-    "rust_policy_result": "Actual cache-miss job130321763474 passed metadata, formatting, boundaries, JSON and production-closure checks.",
-    "rust_policy_log_sha256": "3685442e96e87c318036de6c130a0f687e377bec7d1c7201cf33587502adaac9",
-    "clippy_result": "Actual strict cargo1.99.1 clippy --locked --all-targets -- -D warnings passed all67selected packages in4m28s, with zero result-cache reuse. The protected-main Cargo build cache was used. This is compilation/lint evidence, not unit or PostgreSQL execution.",
-    "clippy_job": 130321763519,
-    "clippy_log_sha256": "b656091212f2e1534de0163c2ef7cac26b5ea699deda4099dac64544bb899735",
-    "rust_unit_result": "All three shards compiled and ran nextest. Their disjoint terminal identity union contains12507actual executions:11877passed and630failed. Reused package results are excluded from these counts. No current full not-executed inventory census is asserted. This is unit execution, not PostgreSQL.",
+    "head": "0cd82d254bacd76e418cf613d7c546605ecb3676",
+    "merge_run": 42965164245,
+    "generator_run": 42965164132,
+    "generator_job": 130340573252,
+    "generator_result": "Quest prerequisites passed. The materializer compiled in2m50s and ran. The converter passed both Grizzly pin refresh and admission, then failed in quest_callback_profiles.admit with LION_TRIAL_NATIVE_PROFILE_DRIFT. No item key or row difference was emitted. Final registration, World pins, export and upload were not reached; artifact inventory was empty.",
+    "generator_log_sha256": "8eddb851e3c8325a8f3855b1d026e23f43314f277d99445502caac26b105479b",
+    "registered_output_count": "UNKNOWN: zero actual PASS registered spell import completion markers.",
+    "rust_policy_result": "Actual cache-miss job130341138222 passed metadata, formatting, boundaries, JSON and production-closure checks.",
+    "rust_policy_log_sha256": "85e29ab97ef88581d4404b190b07418764d0f4796f5cb0d5c4b9a01c2c9e2733",
+    "clippy_result": "Actual strict cargo1.99.1 clippy --locked --all-targets -- -D warnings passed all67 selected packages in5m16s, with zero result-cache reuse. The protected-main Cargo build cache was used. This is compilation/lint evidence, not test execution.",
+    "clippy_job": 130341138151,
+    "clippy_log_sha256": "a76f396490c04ecd67d017d97acded13c6a8b2af651fc7ed6f62c6fdfbc953bd",
+    "rust_unit_result": "All three shards compiled and ran nextest. The disjoint terminal identity union contains12509 actual executions:11880 passed and629 failed. Reused package results are excluded. All629 failed identities also failed on parent73aaf023; one prior failure actually passed and two new regressions actually passed. No PostgreSQL execution is established.",
     "rust_unit_jobs": [
       {
-        "job_id": 130321763550,
+        "job_id": 130341138129,
         "executed": 4174,
         "passed": 3951,
         "failed": 223,
         "packages_to_run": 59,
         "packages_reused": 8,
-        "log_sha256": "2cc7cc7d19c7a41e88c0ebe1f7c80887313288024b77e48d46bc29fb8364c40a"
+        "log_sha256": "0ccea0c3c2ab9592d35a9ef0551f83a88a783d33a30dd7d2f0894a000053591a"
       },
       {
-        "job_id": 130321763502,
-        "executed": 4223,
-        "passed": 4024,
+        "job_id": 130341138111,
+        "executed": 4225,
+        "passed": 4026,
         "failed": 199,
         "packages_to_run": 59,
         "packages_reused": 8,
-        "log_sha256": "687d93c7c246a4309b0ea76a23b6447002e875a849cdc5b4b50d0be9af2e7ad5"
+        "log_sha256": "80473342c22f79478577824f2749565eb3bc95d1a07fa466fbdfd6998ea94b1b"
       },
       {
-        "job_id": 130321763525,
+        "job_id": 130341138169,
         "executed": 4110,
-        "passed": 3902,
-        "failed": 208,
+        "passed": 3903,
+        "failed": 207,
         "packages_to_run": 61,
         "packages_reused": 6,
-        "log_sha256": "4f1ab0827af1c7c2c45b3ef8be08d6b9f00a8055b079dd647702f77b33177da3"
+        "log_sha256": "5992f6de28e56664e48aca4db09d144ef42b27841531ad14eec939657d937841"
       }
     ],
     "unit_result_cache_provenance": {
@@ -111,22 +112,86 @@
     },
     "unit_failure_groups": {
       "literal_Item_updates_refusal": 316,
-      "literal_Feaster_callback_refusal": 283,
-      "other": 31
+      "literal_Feaster_callback_refusal": 287,
+      "other": 26
     },
-    "unit12_parent_comparison": "All422current failed identities in shards1+2 also failed on the prior parent;59prior failures actually passed. This comparison covers these two shards only.",
+    "unit_comparison": {
+      "parent_head": "73aaf0231d3b250ec59e2384920712f64d854f97",
+      "counts": {
+        "prior_fail_actual_pass": 1,
+        "new_failure_identities": 0,
+        "prior_fail_still_failed": 629,
+        "prior_fail_not_executed": 0,
+        "new_actual_executed": 2
+      },
+      "root_reconciliation_sha256": "819d8170181f524e232614cdf840c1a3922562a3bd0af0cbe35eda72276e7013"
+    },
+    "focused_source_regressions": {
+      "npc_only_track_owners_keep_exact_existing_quest_predecessors": [
+        {
+          "status": "PASS",
+          "duration": "0.688s",
+          "ordinal": 3335,
+          "total": 4225,
+          "binary": "oteryn-gameplay-quests",
+          "test": "quest::npc_rules::tests::npc_only_track_owners_keep_exact_existing_quest_predecessors",
+          "archive": null,
+          "line": 6471,
+          "shard": 2,
+          "job_id": 130341138111
+        }
+      ],
+      "published_ungated_quest_hash_baseline": [
+        {
+          "status": "FAIL",
+          "duration": "0.763s",
+          "ordinal": 3348,
+          "total": 4110,
+          "binary": "oteryn-gameplay-quests",
+          "test": "quest::reward_callbacks::tests::published_ungated_quest_hash_baseline",
+          "archive": null,
+          "line": 6900,
+          "repeated_summary_lines": [
+            8346
+          ],
+          "evidence": [
+            {
+              "line": 6914,
+              "text": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\""
+            }
+          ],
+          "root_cause_group": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\"",
+          "shard": 3,
+          "job_id": 130341138169
+        }
+      ],
+      "qn5_structured_premium_world_entry_requires_personal_world_fences": [
+        {
+          "status": "PASS",
+          "duration": "0.009s",
+          "ordinal": 3403,
+          "total": 4225,
+          "binary": "oteryn-gameplay-quests",
+          "test": "quest::world_callbacks::admission_tests::qn5_structured_premium_world_entry_requires_personal_world_fences",
+          "archive": null,
+          "line": 6887,
+          "shard": 2,
+          "job_id": 130341138111
+        }
+      ]
+    },
+    "existing_npc_catalogue_tests": "Both existing NPC activation tests and the Citizen published hash baseline now fail on the global Feaster callback, not an observed predecessor/count/hash mismatch. The direct predecessor test passed separately.",
     "native_entry": {
-      "run_id": 42959149639,
-      "job_id": 130321265259,
-      "result": "Actual compilation and three tests passed; zero failed, ignored or filtered. This qualifies only Native entry on the recorded head.",
+      "run_id": 42965164296,
+      "job_id": 130340574098,
+      "result": "Actual compilation and three tests passed; zero failed, ignored or filtered. Only Native entry is qualified.",
       "platform_pin": "eb65ce453949a352fdc0e3ed0132d2cde0084fb7",
-      "log_sha256": "bdd7f06da53b17e79c6d1a85e3bdfdc8e5eaf0ed072b0b7c9174f64dbce4fbf1"
+      "log_sha256": "1cd7eacc5ca7769723a1350a1fe3a66a6f867b88b5facec3936cea769602b75c"
     },
-    "boss_inventory": "No NATIVE_REWARD_BOSS_QUALIFICATION marker was reached. The newly authored private-drop regression executed but failed in the shared native fixture before its behavioral assertions; it is not runtime-qualified.",
-    "postgres": "heavy-tests label absent; wrapper success denotes skipped database legs. No PostgreSQL qualification on73aaf023 is claimed.",
-    "qualification": "Canonical generated content, successor Rust execution and final PostgreSQL qualification remain pending.",
+    "boss_inventory": "No NATIVE_REWARD_BOSS_QUALIFICATION marker was reached. The private-drop regression ran but failed in the shared native fixture on Item updates discriminator, bounds or base pin before its behavioral assertions; it is not runtime-qualified.",
+    "postgres": "heavy-tests label absent; wrapper success denotes skipped database legs. No PostgreSQL qualification on0cd82d25 is claimed.",
     "quest_authoring": {
-      "run_id": 42959149569,
+      "run_id": 42965164228,
       "attempt": 1,
       "unit_modules": {
         "total": 182,
@@ -136,34 +201,16 @@
         "failure_cases": 8,
         "error_cases": 1
       },
-      "unit_job": 130321264706,
-      "unit_log_sha256": "fbaa082387f8c5558722500a85840ecbb910494720403a1556a48f84c35066e7",
+      "unit_job": 130340574219,
+      "unit_log_sha256": "2e7245d730a999ccc3844899cf9899e01f17b90f8260dbd1f9471e990e8f283e",
       "other_failed_jobs": {
-        "130321265053": "stale donor Source capture: npc.json.gz",
-        "130321265091": "variant migration packet is stale"
+        "130340573687": "stale donor Source capture: npc.json.gz",
+        "130340573955": "variant migration packet is stale"
       },
-      "focused_actual_passes": [
-        {
-          "module": "test_questpc2_rotten_membership_facts",
-          "rc": 0,
-          "summary": "Ran 1 test in 4.634s, OK",
-          "line": 588
-        },
-        {
-          "module": "test_questpc2_rotten_item_facts",
-          "rc": 0,
-          "summary": "Ran 4 tests in 14.808s, OK",
-          "line": 597
-        },
-        {
-          "module": "test_reward_greeting_ownership",
-          "rc": 0,
-          "summary": "Ran 6 tests in 15.859s, OK",
-          "line": 624
-        }
-      ],
-      "failure_comparison": "The nine failed module identities match the prior bounded diagnosis58 exactly. No new independent source/code blocker was identified in this intake; full generated output remains unqualified."
-    }
+      "failure_comparison": "All nine failed module identities and exception texts match run60. No new independent source blocker was identified. Module counts:182 total,173passed,9failed; per-case skips are not successes.",
+      "receipt_sha256": "e61dbe74c6d22ce1d2dd948fa951958dd53b19940d65f48b8169d970d550d485"
+    },
+    "qualification": "Canonical generated content, successor execution and final PostgreSQL qualification remain pending."
   },
   "followup_source_repair": {
     "parent": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
@@ -350,101 +397,33 @@
     "qualification": "Independent bounded source peer passed. Actual canonical110+2 generation and Rust execution remain pending; no generated JSON was hand-edited."
   },
   "source_review_at_checkpoint": {
-    "base_head": "73aaf0231d3b250ec59e2384920712f64d854f97",
-    "source_files": 9,
-    "scope": "All six bounded repair groups have author source checks and independent source peers. This does not represent successor Rust execution, full canonical generation, PostgreSQL qualification or new Codex approval.",
+    "base_head": "0cd82d254bacd76e418cf613d7c546605ecb3676",
+    "source_files": 2,
+    "scope": "One bounded diagnostic and fixture group has author checks and an independent source peer. This is not a full-suite pass, generation, PostgreSQL qualification or fresh Codex approval.",
     "groups": [
       {
-        "name": "feaster_loader",
-        "source_count": 1,
-        "source_files": [
-          {
-            "path": "crates/gameplay/quests/src/quest/loader.rs",
-            "sha256": "a0ab98b6284d07e91760d1cd1f5b45325b9ead131cdb4a0212fbee529cf1bfbc"
-          }
-        ],
-        "author_manifest_sha256": "f9808d5356a286be52ce3ad10ccccd3123e16a302c3e8600597c710422a29c76",
-        "independent_peer_sha256": "13de83463ec107e90764524e21e78b6981a4a3912aa718acd62bba0c876ba27d"
-      },
-      {
-        "name": "grizzly_retained_pin",
-        "source_count": 1,
-        "source_files": [
-          {
-            "path": "tools/content-schema/native-gameplay/grizzly-shop-profiles.json",
-            "sha256": "8120d7585824bffa7598a7ebb8b0c27ec34740ddaf44723079865455fc2b975f"
-          }
-        ],
-        "author_manifest_sha256": "3716c81a8c08d6770cc04a20eb6f2fcebe6f331038b25e5329c5584d1a9112a5",
-        "independent_peer_sha256": "cfd8e1759d93f57750303ddc0b6f877c8c9568e6a4c8abc999f55c54fbfc5f3d"
-      },
-      {
-        "name": "grizzly_refusal_diagnostics",
-        "source_count": 1,
-        "source_files": [
-          {
-            "path": "tools/content-migration/grizzly_shop_profiles.py",
-            "sha256": "30b2f9f2ea5592b4255e969845f47089914739e7c9b7459208e2f6cd64326fa6"
-          }
-        ],
-        "author_manifest_sha256": "a8eb789b8f81b92d761af7d4bf627c598f3f1d4672c955d6a9b0bef0bcd66615",
-        "independent_peer_sha256": "271e235d80aa5ef9aecf1983742ef37b6045bce46d29a0b3fe7eb36c154d02ba"
-      },
-      {
-        "name": "npc_fixtures",
+        "name": "lion_refusal_diagnostics",
         "source_count": 2,
         "source_files": [
           {
-            "path": "crates/gameplay/quests/src/quest/npc_rules.rs",
-            "sha256": "507feef4feea3bd135afc097da98fa0b68a466ad27d05a3a79b3fb64231ef318"
+            "path": "tools/content-migration/quest_callback_profiles.py",
+            "sha256": "a8332f0a9f1e1b685553c112e584f1134aa73936ca4de381a16ecb8373531a60"
           },
           {
-            "path": "crates/gameplay/quests/src/quest/npc_rules/tests.rs",
-            "sha256": "c819ac8aa5d3e948de43dd6fb2590b6dab82e2462423d28d72db06e0f102655c"
+            "path": "tools/content-migration/test_lion_trial_item_profiles.py",
+            "sha256": "cd97fd20d2cd363dc3863711fee9600c15001fea3c0839207f156207f04330f5"
           }
         ],
-        "author_manifest_sha256": "96f2fb8cedb7b581f0e453b243451ce5483d265822440f3aea9808b7a691e6e4",
-        "independent_peer_sha256": "fc2d8b90aae18bed6d9a404f9e88ae9a8215a72153bdcaf50f72c1d86edec055"
-      },
-      {
-        "name": "qn5_structured_admission",
-        "source_count": 2,
-        "source_files": [
-          {
-            "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
-            "sha256": "d5a5215c2346f054d9804610ec56c1f7826e9c10a179b70119d1ff011d2e4972"
-          },
-          {
-            "path": "crates/gameplay/quests/src/quest/world_callbacks/admission_tests.rs",
-            "sha256": "27e1d19f4d9e8d8a206e1fb91337532521f01c0aac7a85cf847e2177c0de9ee0"
-          }
-        ],
-        "author_manifest_sha256": "b0ec31917e82a8f22fc8f03de2c6d07cafcef23ed0893869ee14688b1560b629",
-        "independent_peer_sha256": "b1ae9aec96c3ea4f52ba00b49c469ac9c7fcfc559f3cb0aeb244bd78fe2894b2"
-      },
-      {
-        "name": "native_callback_witness_order",
-        "source_count": 2,
-        "source_files": [
-          {
-            "path": "tools/content-migration/regenerate_content.py",
-            "sha256": "6420607c958d07857b859b312adedb468220749279b43db4b530510dedd19a35"
-          },
-          {
-            "path": "tools/content-migration/test_regenerate_content.py",
-            "sha256": "3d3d701d37bbba7281f7522c46c3c9f425f60beeb7a0989c4835188ebfa51fb8"
-          }
-        ],
-        "author_manifest_sha256": "acda8c707d89a37ed4b5a97a72c854661068bed35fbad1c001e98457b207f5d6",
-        "independent_peer_sha256": "82e5f596247bb6a687781d9dc711abdaf6e86452c709d9930adc59d5b91079c8"
+        "author_manifest_sha256": "4850e11846651a228d447b7691e71d21a07574bd9776fa30e79e3dd047e9469b",
+        "independent_peer_sha256": "1bbeef2722daf6ba0530f5ca9ecc55686391513563bbaa4492d9d4ee9e1f0ba6"
       }
     ]
   },
   "prior_source_checkpoint": {
-    "head": "73aaf0231d3b250ec59e2384920712f64d854f97",
-    "source_groups": 12,
-    "source_files": 32,
-    "source_review_matrix": "The exact preceding matrix is preserved in this file at commit73aaf0231d3b250ec59e2384920712f64d854f97."
+    "head": "0cd82d254bacd76e418cf613d7c546605ecb3676",
+    "source_groups": 6,
+    "source_files": 9,
+    "source_review_matrix": "The exact preceding matrix and run60 results are preserved in this file at commit0cd82d254bacd76e418cf613d7c546605ecb3676."
   },
   "grizzly_retained_pin_repair": {
     "cause": "The complete retained shop packet matched integrated main f01f1858. Its items-11000-11499 descriptor still referenced that main blob, while the merged HEAD shard includes a previously approved non-shop Item22008 materialization/stack change.",
@@ -484,5 +463,17 @@
     "preserved": "No capture, source-cache, native bodies, identity bindings, expected source fingerprints or witness-builder guard is changed. Callback or W01 refusal still stops all later producers.",
     "checks": "Both new dispatcher regressions failed on the original production script. The complete lightweight dispatcher suite passed28checks in1.063seconds. All26previous test-function ASTs and order are unchanged; no real producer subprocess was executed.",
     "qualification": "Independent bounded source peer passed. Actual callback/W01 producer execution and full canonical runner generation remain pending."
+  },
+  "lion_profile_refusal_diagnostics": {
+    "cause_status": "Actual conflicting runner key and record remain unknown; no repair of accepted native data is asserted.",
+    "source_diagnosis_sha256": "9f7dfdb4f83674b25cc3a9edae52fc660260cd3a59400f49087dfb858a1185ee",
+    "bounded_projection_sha256": "8f2a922028998a8096477537767b40499b9164371a1feb8091859ffa711e744b",
+    "consumer_contract_sha256": "2a993a57d3b69dadf2ae8812797b64c49c1191c6f3f8b69ae7003e5a77094f0b",
+    "observations": "The four-record current-input projection agrees with the three QENGINE overlaps. Current carrot differs only by House top-order enrichment, but that producer occurs after the failing guard, so this is not the runner cause.",
+    "change": "Keep strict whole-row refusal and add the exact item key plus a deterministic complete-record diff for the next runner observation.",
+    "fixture_repair": "Align the existing provider test with its pre-House stage using exact disjoint Emperor3 and chest5 captured rows, plus the actual authored-admissions input. All previous assertions and production qualification guards are retained.",
+    "verification": "The new real-admit regression passed on final sources: equal4, replay, three mutations, complete before/after record reconstruction, deterministic diagnostics and no writes after refusal. Full-file inverses, Python AST and diff checks passed. The final ten-test suite reached the30s local limit after6passes, with1active and3notstarted; full-suite completion remains unverified.",
+    "author_proof_sha256": "2b88b1a85ebd86c9b7d1317c2329f62556a681f722495840732b544d9aad702c",
+    "independent_peer_sha256": "1bbeef2722daf6ba0530f5ca9ecc55686391513563bbaa4492d9d4ee9e1f0ba6"
   }
 }

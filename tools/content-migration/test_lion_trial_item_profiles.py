@@ -1,8 +1,10 @@
 """M07 uses actual pinned item facts; source and custody drift fail closed."""
 import copy
 import json
+import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
 import grizzly_shop_profiles as owner
@@ -83,6 +85,7 @@ class LionTrialItemProfiles(unittest.TestCase):
                              profiles.qualify(*self.values(item_id)))
 
     def test_native_provider_contains_exact_records_once_and_is_repeatable(self):
+        import authored_static_item_constructors as authored
         import quest_callback_profiles as provider
 
         profile = 'content/items/definitions/spell-native-profiles.json'
@@ -97,10 +100,18 @@ class LionTrialItemProfiles(unittest.TestCase):
         packet = json.loads((ROOT / emperor.PATH).read_bytes())
         before = {row['production_definition']['production_key']: row
                   for row in packet['records']}
+        carriers = json.loads((ROOT / provider.CHEST_PROFILES).read_bytes())['records']
+        carrier_rows = {row['production_definition']['production_key']: row for row in carriers}
+        self.assertEqual(set(carrier_rows), {f'oteryn:item.tibia.i{item_id}'
+                                            for item_id in (1777, 2436, 2438, 2473, 2474)})
+        self.assertEqual(len(carriers), 5)
+        self.assertTrue(before.keys().isdisjoint(carrier_rows))
+        before.update(carrier_rows)
         original['records'] = [before.get(row['production_definition']['production_key'], row)
                                for row in original['records']]
         generated = {profile: json.dumps(original).encode(),
-                     manifest: b'{"item_profiles":{"sha256":"pending"}}'}
+                     manifest: b'{"item_profiles":{"sha256":"pending"}}',
+                     authored.ADMISSIONS: (ROOT / authored.ADMISSIONS).read_bytes()}
         def admit():
             provider.admit(ROOT, generated, profile, manifest,
                            lambda row: row['production_definition']['production_key'],
@@ -123,6 +134,74 @@ class LionTrialItemProfiles(unittest.TestCase):
         generated[profile] = json.dumps(document).encode()
         with self.assertRaisesRegex(ValueError, 'LION_TRIAL_NATIVE_PROFILE_DRIFT'):
             admit()
+
+    def test_native_profile_conflict_diagnostic_preserves_exact_refusal(self):
+        import authored_static_item_constructors as authored
+        import quest_callback_profiles as provider
+        from qualification_inputs import appearance_input_scope
+
+        profile = 'content/items/definitions/spell-native-profiles.json'
+        manifest = 'content/spells.manifest.json'
+        qualified = {f'oteryn:item.tibia.i{item_id}': profiles.qualify(*self.values(item_id))
+                     for item_id in profiles.SOURCE_RECORDS}
+        generated = {
+            profile: json.dumps({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1',
+                                 'records': list(qualified.values())}).encode(),
+            manifest: b'{"item_profiles":{"sha256":"pending"}}',
+            authored.ADMISSIONS: (ROOT / authored.ADMISSIONS).read_bytes(),
+        }
+
+        def admit():
+            provider.admit(ROOT, generated, profile, manifest,
+                           lambda row: row['production_definition']['production_key'],
+                           lambda value: (json.dumps(value, sort_keys=True) + '\n').encode())
+
+        # Isolate the selected cohort, retaining the actual source, binding,
+        # canonical definition, map-carrier and authored-admission checks.
+        with patch.object(provider, '_requested_inputs',
+                          return_value=(set(qualified), set(), [])), patch.object(
+                              sys, 'path', [str(ROOT / 'tools/content-schema/reward-claim-authoring'),
+                                            *sys.path]), appearance_input_scope():
+            admit()
+            accepted = copy.deepcopy(generated)
+            actual = {row['production_definition']['production_key']: row
+                      for row in json.loads(generated[profile])['records']}
+            self.assertEqual({key: actual[key] for key in qualified}, qualified)
+            admit()
+            self.assertEqual(generated, accepted)
+            for mutation in ('weight', 'extra_attributes', 'binding'):
+                with self.subTest(mutation=mutation):
+                    generated = copy.deepcopy(accepted)
+                    document = json.loads(generated[profile])
+                    key = 'oteryn:item.tibia.i21389'
+                    row = next(row for row in document['records']
+                               if row['production_definition']['production_key'] == key)
+                    if mutation == 'weight':
+                        row['semantics']['physical']['value']['weight']['value'] += 1
+                    elif mutation == 'extra_attributes':
+                        row['attributes'].update(always_on_top=False, always_on_top_order=0)
+                    else:
+                        row['production_binding']['target']['key'] = 'oteryn:item.tibia.i3031'
+                    expected_existing = copy.deepcopy(row)
+                    generated[profile] = json.dumps(document).encode()
+                    before = copy.deepcopy(generated)
+                    with self.assertRaises(ValueError) as first:
+                        admit()
+                    self.assertEqual(generated, before)
+                    message = str(first.exception)
+                    self.assertTrue(message.startswith('LION_TRIAL_NATIVE_PROFILE_DRIFT:' + key + '\n'))
+                    lines = message.splitlines(keepends=True)
+                    self.assertEqual(lines[1], '--- existing/' + key + '\n')
+                    self.assertEqual(lines[2], '+++ qualified/' + key + '\n')
+                    body = [line for line in lines[3:] if not line.startswith('@@')]
+                    existing = ''.join(line[1:] for line in body if line[0] in ' -')
+                    expected = ''.join(line[1:] for line in body if line[0] in ' +')
+                    self.assertEqual(json.loads(existing), expected_existing)
+                    self.assertEqual(json.loads(expected), qualified[key])
+                    with self.assertRaises(ValueError) as repeated:
+                        admit()
+                    self.assertEqual(str(repeated.exception), message)
+                    self.assertEqual(generated, before)
 
     def test_source_duration_and_custom_action_changes_are_refused(self):
         for item_id in profiles.SOURCE_RECORDS:
