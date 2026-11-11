@@ -398,7 +398,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("SEASON-W18-HOUSE", 1959),
     // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
     // QENGINE2 captures 156 source-qualified Items (qengine_reward_item_profiles.IDS).
-    // The exact packet carries speed_bonus=0 for every record, checked below.
+    // The exact packet carries known speed_bonus=0 except the pick i3456,
+    // whose existing UNKNOWN speed is preserved and checked below.
     ("QENGINE-REWARDS", 53),
     // W05d:48 canonical seasonal profiles;35 further keys are new after the
     // House cohort above. Source: seasonal-item-profiles.json (Santa, Ruprecht,
