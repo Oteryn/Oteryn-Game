@@ -182,3 +182,66 @@ fn native_per_use_producer_accepts_a_current_world_guard_without_widening_legacy
     parse(&document(&callback))?;
     Ok(())
 }
+
+#[test]
+fn committed_lion_per_use_producers_keep_the_strict_physical_reward_boundary() -> Result<(), String>
+{
+    let source: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/quests/world-callbacks/m07-lion-offerings.json"
+    )))
+    .map_err(|e| e.to_string())?;
+    let callbacks = source["callbacks"].as_array().ok_or("Lion callbacks")?;
+    let document = |c: &Callback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+
+    for key in [
+        "oteryn:quest-callback/m07/lion-well",
+        "oteryn:quest-callback/m07/lion-flower-west",
+        "oteryn:quest-callback/m07/lion-flower-east",
+    ] {
+        let value = callbacks
+            .iter()
+            .find(|value| value["key"] == key)
+            .ok_or(key)?;
+        let callback: Callback =
+            serde_json::from_value(value.clone()).map_err(|e| e.to_string())?;
+        assert!(super::per_use_reward::admitted(&callback), "{key}");
+        assert!(!callback.has_repeating_clock(), "{key}");
+        assert!(
+            !callback.storage.is_empty()
+                && callback
+                    .storage
+                    .iter()
+                    .all(|state| (state.minimum..=state.maximum).contains(&state.set)),
+            "{key} renews through its physical admission, not a once-only storage write"
+        );
+        assert!(super::effects::valid(&callback), "{key}");
+        let parsed = parse(&document(&callback))?;
+        assert_eq!(parsed.len(), 1, "{key}");
+        assert_eq!(parsed[0].key, key);
+        assert!(parsed[0].effects.item_reward_per_use, "{key}");
+        assert!(super::per_use_reward::admitted(&parsed[0]), "{key}");
+
+        for mutation in 0..3 {
+            let mut changed = callback.clone();
+            match mutation {
+                0 => changed.effects.item_reward_per_use = false,
+                1 => changed.selector.native = None,
+                _ => changed.requires_world_admission = false,
+            }
+            assert!(
+                !super::per_use_reward::admitted(&changed),
+                "{key}: invalid per-use admission {mutation}"
+            );
+            assert!(
+                !super::effects::valid(&changed),
+                "{key}: invalid per-use effect {mutation}"
+            );
+            assert!(
+                parse(&document(&changed)).is_err(),
+                "{key}: invalid per-use callback {mutation}"
+            );
+        }
+    }
+    Ok(())
+}

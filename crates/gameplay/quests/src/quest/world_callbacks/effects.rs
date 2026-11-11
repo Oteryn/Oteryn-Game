@@ -433,6 +433,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             })
             || !callback.has_state()
             || (!callback.has_repeating_clock()
+                && !super::per_use_reward::admitted(callback)
                 && callback
                     .storage
                     .iter()
