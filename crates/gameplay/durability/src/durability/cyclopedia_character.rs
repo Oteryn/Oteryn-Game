@@ -26,14 +26,14 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::CharacterId;
 use oteryn_protocol_oteryn::character_info::{HISTORY_WINDOW_MS, PageRequest};
 use oteryn_protocol_oteryn::cyclopedia_character::{
-    CharacterTab, EquippedItem, GeneralStats, KillStatus, StoreSummary, TabView, death_cause,
-    pvp_kill_description,
+    CharacterTab, EquippedItem, GeneralStats, KillStatus, StoreSummary, TabExtension, TabView,
+    death_cause, pvp_kill_description, vocation_id,
 };
 use sqlx::Row;
 
 const VISIBLE_SQL: &str = "SELECT $1=$2 OR EXISTS(SELECT 1 FROM game_vip_consents c JOIN game_character_roots v ON v.account_id=c.account_id AND v.world_id=c.world_id WHERE v.character_id=encode($1,'hex')::uuid AND c.character_id=encode($2,'hex')::uuid AND c.consent=2)";
 
-const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level,b.fist_level,b.club_level,b.sword_level,b.axe_level,b.distance_level,b.shielding_level,b.fishing_level,b.stamina_minutes,b.offline_pool_s,l.health,l.mana \
+const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level,b.fist_level,b.club_level,b.sword_level,b.axe_level,b.distance_level,b.shielding_level,b.fishing_level,b.stamina_minutes,b.offline_pool_s,b.vocation,l.health,l.mana \
  FROM game_character_progression_state p JOIN game_character_build_state b ON b.character_id=p.character_id \
  LEFT JOIN game_character_last_positions l ON l.character_id=p.character_id WHERE p.character_id=encode($1,'hex')::uuid";
 
@@ -86,6 +86,35 @@ impl DurabilityRoot {
         page: PageRequest,
         now_unix_ms: i64,
     ) -> Result<TabView, CharacterAuthorityError> {
+        self.read_cyclopedia_character_tab_extended(
+            authority,
+            node,
+            viewer_fence,
+            target,
+            tab,
+            page,
+            now_unix_ms,
+        )
+        .await
+        .map(|(view, _)| view)
+    }
+
+    /// [`Self::read_cyclopedia_character_tab`] with every extension field the tab carries
+    /// (capability 487 vocation id); the caller keeps only the fields its session selected.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the current viewer fence and target remain explicit at the durable privacy boundary"
+    )]
+    pub async fn read_cyclopedia_character_tab_extended(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        viewer_fence: CurrentCharacterItemFence,
+        target: CharacterId,
+        tab: CharacterTab,
+        page: PageRequest,
+        now_unix_ms: i64,
+    ) -> Result<(TabView, TabExtension), CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
         let viewer = viewer_fence.character_id;
@@ -102,6 +131,7 @@ impl DurabilityRoot {
             let id = target.as_bytes().to_vec();
             let window = now_unix_ms.saturating_sub(HISTORY_WINDOW_MS);
             let (offset, limit) = (i64::from(page.offset), i64::from(page.limit));
+            let mut extension = TabExtension::default();
             let view = match tab {
                 CharacterTab::GeneralStats => {
                     let Some(row) = sqlx::query(GENERAL_STATS_SQL).bind(&id).fetch_optional(&mut *tx).await? else {
@@ -115,6 +145,9 @@ impl DurabilityRoot {
                         (Some(health), Some(mana)) => Some((narrow(i64::from(health))?, narrow(i64::from(mana))?)),
                         _ => None,
                     };
+                    let vocation: String = row.try_get("vocation")?;
+                    extension.vocation_id = Some(vocation_id(&vocation)
+                        .ok_or_else(|| sqlx::Error::Decode("stored cyclopedia vocation".into()))?);
                     TabView::GeneralStats(GeneralStats {
                         experience: narrow(row.try_get::<i64, _>("total_experience")?)?,
                         level: narrow(row.try_get::<i64, _>("level")?)?,
@@ -190,7 +223,7 @@ impl DurabilityRoot {
                 }
             };
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(view))
+            Ok(Ok((view, extension)))
         })).await?
     }
 }

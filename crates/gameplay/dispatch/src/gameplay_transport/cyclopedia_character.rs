@@ -182,8 +182,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await?;
                 }
-                self.root
-                    .read_cyclopedia_character_tab(
+                let (view, mut extension) = self
+                    .root
+                    .read_cyclopedia_character_tab_extended(
                         self.character,
                         self.holder,
                         fence,
@@ -193,9 +194,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         now,
                     )
                     .await
-                    .map_err(|_| ())?
-                    .encode()
-                    .map_err(|_| ())
+                    .map_err(|_| ())?;
+                // Each extension field reaches only a session that selected its capability.
+                if !admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1)
+                {
+                    extension.vocation_id = None;
+                }
+                view.encode_extended(&extension).map_err(|_| ())
             }
             _ => Err(()),
         }

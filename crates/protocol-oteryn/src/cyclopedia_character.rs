@@ -30,6 +30,14 @@ pub const COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB: u32 = 388;
 pub const MAX_TAB_REQUEST_BYTES: usize = 20;
 /// The largest page: 50 entries of `u64 + u8 + u8 + 255` bytes and the headers.
 pub const MAX_TAB_RESULT_BYTES: usize = 16384;
+/// A tab reply that carries a selected extension (capabilities 487 and 488) stays within the
+/// command 388 registry bound of 32836 bytes.
+pub const MAX_EXTENDED_TAB_RESULT_BYTES: usize = 32768;
+/// Capability 487: the General Stats tab appends the character's vocation id.
+pub const CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1: u32 = 487;
+/// The highest vocation id; ids follow the spellbook details vocation order
+/// (`none`=1 … `exalted_monk`=11).
+pub const MAX_VOCATION_ID: u8 = 11;
 pub const MAX_BADGES_REQUEST_BYTES: usize = 0;
 /// One count byte and one byte per admitted badge.
 pub const MAX_BADGES_RESULT_BYTES: usize = 1 + BADGE_COUNT;
@@ -462,6 +470,53 @@ impl TabView {
     }
 }
 
+/// The vocation id of a stored vocation key, in the spellbook details order.
+pub fn vocation_id(key: &str) -> Option<u8> {
+    [
+        "none",
+        "druid",
+        "elder_druid",
+        "sorcerer",
+        "master_sorcerer",
+        "knight",
+        "elite_knight",
+        "paladin",
+        "royal_paladin",
+        "monk",
+        "exalted_monk",
+    ]
+    .iter()
+    .position(|candidate| *candidate == key)
+    .and_then(|index| u8::try_from(index + 1).ok())
+}
+
+/// The fields a tab reply appends when a session selected the matching extension
+/// capability. Each field is `None` when its capability is not selected.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TabExtension {
+    /// Capability 487, General Stats only: the vocation id (`1..=MAX_VOCATION_ID`).
+    pub vocation_id: Option<u8>,
+}
+
+impl TabView {
+    /// The tab reply with the selected extension fields. With an empty extension it is
+    /// byte-identical to [`TabView::encode`]. An extension field for another tab is rejected.
+    pub fn encode_extended(&self, extension: &TabExtension) -> Result<Vec<u8>, TabWireError> {
+        let mut bytes = self.encode()?;
+        if let Some(vocation) = extension.vocation_id {
+            if !matches!(self, Self::GeneralStats(_)) || !(1..=MAX_VOCATION_ID).contains(&vocation)
+            {
+                return Err(TabWireError);
+            }
+            bytes.push(vocation);
+        }
+        if bytes.len() > MAX_EXTENDED_TAB_RESULT_BYTES {
+            return Err(TabWireError);
+        }
+        Ok(bytes)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TabWireError;
 
@@ -572,6 +627,45 @@ mod tests {
             "Died at Level 100 by Alice and Bob"
         );
         assert_eq!(pvp_kill_description("Bob"), "Killed Bob.");
+    }
+
+    #[test]
+    fn general_stats_appends_the_vocation_only_when_extended() {
+        let stats = TabView::GeneralStats(GeneralStats::default());
+        let plain = stats.encode().unwrap_or_default();
+        assert!(!plain.is_empty());
+        assert_eq!(
+            stats.encode_extended(&TabExtension::default()),
+            Ok(plain.clone())
+        );
+        let extended = stats
+            .encode_extended(&TabExtension {
+                vocation_id: Some(3),
+            })
+            .unwrap_or_default();
+        assert_eq!(extended.len(), plain.len() + 1);
+        assert_eq!(extended[..plain.len()], plain[..]);
+        assert_eq!(extended.last(), Some(&3));
+        for invalid in [0, MAX_VOCATION_ID + 1] {
+            assert_eq!(
+                stats.encode_extended(&TabExtension {
+                    vocation_id: Some(invalid),
+                }),
+                Err(TabWireError)
+            );
+        }
+        let deaths = TabView::RecentDeaths(Vec::new());
+        assert_eq!(
+            deaths.encode_extended(&TabExtension {
+                vocation_id: Some(1),
+            }),
+            Err(TabWireError),
+            "a vocation belongs to General Stats only"
+        );
+        assert_eq!(vocation_id("none"), Some(1));
+        assert_eq!(vocation_id("sorcerer"), Some(4));
+        assert_eq!(vocation_id("exalted_monk"), Some(MAX_VOCATION_ID));
+        assert_eq!(vocation_id("Sorcerer"), None);
     }
 
     #[test]

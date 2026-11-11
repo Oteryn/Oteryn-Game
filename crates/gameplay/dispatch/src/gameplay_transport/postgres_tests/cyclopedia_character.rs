@@ -7,8 +7,8 @@ use crate::durability::pvp_death_consequences::{PvpContributorKind, PvpDeathCont
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::cyclopedia_character::{
-    CAPABILITY_CYCLOPEDIA_CHARACTER_V1, COMMAND_TYPE_CYCLOPEDIA_BADGES,
-    COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+    CAPABILITY_CYCLOPEDIA_CHARACTER_V1, CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
+    COMMAND_TYPE_CYCLOPEDIA_BADGES, COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, vocation_id,
 };
 
 #[test]
@@ -315,6 +315,29 @@ fn tabs_scenario() -> TestResult {
         let (status, kills) = exchange(&owner, &mut admitted, 9, tab, &killer).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(history(&kills, true)?, [(1, format!("Killed {victim}."))]);
+        // Capability 487 appends the build owner's vocation id in the spellbook details order.
+        let offers = [
+            OfferedCapability {
+                id: CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+                requires: &[],
+            },
+            OfferedCapability {
+                id: CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
+                requires: &[CAPABILITY_CYCLOPEDIA_CHARACTER_V1],
+            },
+        ];
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            &offers,
+            &[
+                CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+                CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
+            ],
+        )
+        .ok_or("cyclopedia vocation capability")?;
+        let (status, extended) = exchange(&owner, &mut admitted, 10, tab, &[1, 0, 0, 1]).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(extended[..stats.len()], stats[..], "the V1 body is unchanged");
+        assert_eq!(extended[stats.len()..], [vocation_id("knight").ok_or("knight")?]);
         drop(owner);
         drop(authority);
         drop(seal);

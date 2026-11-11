@@ -302,3 +302,16 @@ Effects 1–6 are base damage, base healing, critical chance, critical extra dam
 Production samples read native item declarations, the actual selected weapon-proficiency cast rewards, and the current Wheel projection/stages. Named facts and scalar combat facts are committed together after the existing current session/node/recovery, content and exact-equipment checks; named facts participate in the replay fingerprint. Legacy writers leave the optional column NULL. Reads preserve the existing accepted VIP consent and current viewer fence, including for offline targets. The read model grants no combat, item or cast authority.
 
 Stored modifiers also carry their sample revision. Reads accept them only when that revision matches the scalar sample, so older writers that leave optional columns untouched make prior modifiers unavailable instead of attaching them to a newer observation.
+
+## Vocation in General Stats (capability 487)
+
+Capability 487 `CYCLOPEDIA_CHARACTER_VOCATION_V1` requires 199. When a session
+selected it, a General Stats reply (tab 1) appends `vocation_id:u8` after the
+unchanged V1 body. Ids follow the spellbook details vocation order: `none`=1,
+`druid`=2, `elder_druid`=3, `sorcerer`=4, `master_sorcerer`=5, `knight`=6,
+`elite_knight`=7, `paladin`=8, `royal_paladin`=9, `monk`=10, `exalted_monk`=11.
+The value is the target's stored build-state vocation, read in the same fenced
+transaction as the rest of the tab. Other tabs never carry it, and a session
+without 487 receives byte-identical replies. Any reply with an extension is
+bounded by `MAX_EXTENDED_TAB_RESULT_BYTES` (32768), within the registry bound
+of command 388.
