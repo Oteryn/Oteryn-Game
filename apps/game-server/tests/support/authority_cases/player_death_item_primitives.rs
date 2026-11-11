@@ -3916,7 +3916,7 @@ async fn run_canonical_container_slot_reentry(admin: String, historical: bool) -
             let ddl = format!(
                 "CREATE OR REPLACE FUNCTION slot_tree_test_tamper() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $test$ BEGIN {attack}; RETURN {returned}; END $test$"
             );
-            sqlx::query(sqlx::AssertSqlSafe(&ddl))
+            sqlx::query(sqlx::AssertSqlSafe(ddl.as_str()))
                 .execute(&h.pool)
                 .await?;
             let create = if before_insert {
