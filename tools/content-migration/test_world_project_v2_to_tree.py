@@ -515,6 +515,22 @@ schedule_check(
     ],
     check=True,
 )
+# Exercise the closed M04 diary promotion, replay and refusal contract.
+schedule_check(
+    [
+        sys.executable,
+        str(ROOT / "tools/content-migration/test_engnpc_m04_item_profiles.py"),
+    ],
+    check=True,
+)
+# Preserve qualified earlier World Change owners and verify the source packet.
+schedule_check(
+    [
+        sys.executable,
+        str(ROOT / "tools/content-schema/native-gameplay/test_world_change_item_profiles.py"),
+    ],
+    check=True,
+)
 schedule_check(
     [
         sys.executable,

@@ -136,15 +136,15 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     document = json.loads(generated[profile_path])
     carriers = [row for row in document['records']
                 if row['production_definition']['production_key'] == DIARY]
-    if (len(carriers) != 1 or carriers[0]['admission'] != {
-            'materializable': False, 'stack_class': 'NonStackable',
-            'legal_destinations': ['Ground']}
-            or carriers[0]['semantics']['readable_writeable'] != DIARY_TEXT):
-        raise ValueError('M04_DIARY_CARRIER_DRIFT')
-    # This exact fixed-text carrier gains physical custody. The strict merger
-    # still checks identity, bindings and all known text/physical/attribute facts.
     diary = next(row for row in packet['records']
                  if row['production_definition']['production_key'] == DIARY)
+    if (len(carriers) != 1 or carriers[0]['admission'] not in ({
+            'materializable': False, 'stack_class': 'NonStackable',
+            'legal_destinations': ['Ground']}, diary['admission'])
+            or carriers[0]['semantics']['readable_writeable'] != DIARY_TEXT):
+        raise ValueError('M04_DIARY_CARRIER_DRIFT')
+    # Retain the exact qualified custody on replay or promote the old text carrier.
+    # The strict merger still checks identity, bindings and all known facts.
     carriers[0]['admission'] = copy.deepcopy(diary['admission'])
     working = dict(generated)
     working[profile_path] = shared.encode(document)

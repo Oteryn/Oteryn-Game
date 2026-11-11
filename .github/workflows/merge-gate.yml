@@ -144,17 +144,12 @@ jobs:
                   errors.append('pull request base ref changed during scope classification')
               changed_files_after = pull_after_files.get('changed_files')
               if type(changed_files_after) is not int or changed_files_after < 0:
-                  errors.append('pull request changed_files count is invalid after scope classification')
-              elif not errors and changed_files_after != changed_files:
-                  print(
-                      f'::notice::Pull request file count changed during scope classification: '
-                      f'{changed_files} -> {changed_files_after}; discarding API records for exact Git tree enumeration.'
-                  )
+                  errors.append('pull request changed_files count is invalid')
+              elif changed_files_after != changed_files:
+                  # Mutable summary drift invalidates transported file evidence, not
+                  # the fenced commits. Trusted-base routing recovers their Git diff
+                  # or selects FULL when that immutable enumeration is unavailable.
                   complete = False
-                  batch = []
-                  # The exact-tree fallback requires a positive observed transport count.
-                  if changed_files == 0:
-                      changed_files = changed_files_after
 
           if errors:
               for error in errors:
@@ -382,12 +377,11 @@ jobs:
         if: steps.jr_hit.outputs.hit != 'true'
         run: python tools/repository/validate_repository_policy.py
 
-      - name: Test gate, cache, and scope regressions
+      - name: Test canonical PG/SIM and job-result cache regressions
         if: steps.jr_hit.outputs.hit != 'true'
         run: |
           python tools/repository/test_validate_pr_gate_pg_sim.py
           python tools/repository/test_job_result_key.py
-          python tools/repository/test_classify_pr_test_lanes.py
 
       - name: Record job-result marker
         if: success() && steps.jr_key.outputs.key != '' && steps.jr_hit.outputs.hit != 'true'

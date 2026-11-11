@@ -609,8 +609,34 @@ def test_scope_file_count_drift(module):
                 outputs = dict(line.split("=", 1) for line in wire.splitlines())
                 assert outputs["complete"] == "false" and outputs["file_records"] == "[]", outputs
                 assert outputs["target_sha"] == head and outputs["base_sha"] == base, outputs
-                assert int(outputs["file_count"]) == (first if first else second), outputs
+                assert outputs["file_count"] == str(first), outputs
                 assert requests[0] == requests[-1] and len(requests) == (3 if first <= 300 else 2), requests
+                if first == 0:
+                    metadata = root / "zero-count-metadata.json"
+                    metadata.write_text(json.dumps(fixture()), encoding="utf-8")
+                    lane_output = root / "zero-count-lanes-output"
+                    lane_output.write_text("", encoding="utf-8")
+                    env = {
+                        "ENUMERATION_COMPLETE": outputs["complete"],
+                        "CHANGED_FILE_RECORDS": outputs["file_records"],
+                        "CHANGED_FILE_COUNT": outputs["file_count"],
+                        "EXPECTED_HEAD": outputs["target_sha"],
+                        "GITHUB_OUTPUT": str(lane_output),
+                        "GITHUB_EVENT_NAME": "pull_request",
+                    }
+                    run = subprocess.run(
+                        [sys.executable, str(MODULE), str(metadata)], cwd=root,
+                        env=dict(os.environ, **env), capture_output=True, text=True, check=False,
+                    )
+                    assert run.returncode == 0, run
+                    lanes = dict(line.split("=", 1) for line in lane_output.read_text().splitlines())
+                    assert lanes == {
+                        "rust": "true", "windows": "true", "atlas_fullworld": "true",
+                        "server_qualification": "true", "world_bundle": "true",
+                        "surface": "unknown", "reason": "classifier-or-metadata-failure",
+                        "routing_health": "degraded",
+                    }, lanes
+                    continue
                 with patch.dict(os.environ, {
                     "ENUMERATION_COMPLETE": outputs["complete"],
                     "CHANGED_FILE_RECORDS": outputs["file_records"],
@@ -626,7 +652,7 @@ def test_scope_file_count_drift(module):
                 assert result["rust"] is True and result["windows"] is True, result
         finally:
             os.chdir(old_cwd)
-    print("Scope count drift PASS: eight large/small/zero transitions recover the full exact Git delta")
+    print("Scope count drift PASS: seven positive-first transitions recover exact Git; zero-first selects FULL")
 
 
 def test_scope_invalid_file_counts():
@@ -721,7 +747,7 @@ def test_scope_count_drift(module):
             assert result is not None and not errors, (before_count, after_count, errors)
             assert result["target_sha"] == head and result["base_sha"] == base, result
             assert result["complete"] == "false" and result["file_records"] == "[]", result
-            assert result["file_count"] == str(before_count or after_count), result
+            assert result["file_count"] == str(before_count), result
 
         # All exact-candidate fences still reject, even when the count also drifts.
         for changes in (

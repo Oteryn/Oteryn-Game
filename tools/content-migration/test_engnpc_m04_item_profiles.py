@@ -95,7 +95,7 @@ class TerminalItemProfiles(unittest.TestCase):
                                 'legal_destinations': ['Ground']}
         carrier['semantics']['readable_writeable'] = copy.deepcopy(profiles.DIARY_TEXT)
         generated = {'profiles': json.dumps({'records': [carrier]}).encode(),
-                     'manifest': b'{"item_profiles":{}}'}
+                     'manifest': (profiles.ROOT / 'content/spells.manifest.json').read_bytes()}
         def canonical(value):
             return json.dumps(value).encode()
 
@@ -130,6 +130,115 @@ class TerminalItemProfiles(unittest.TestCase):
         generated = {'profiles': json.dumps({'records': [carrier]}).encode()}
         with self.assertRaisesRegex(ValueError, 'M04_DIARY_CARRIER_DRIFT'):
             profiles.admit(root, generated, 'profiles', 'manifest', str, json.dumps)
+
+    def generated(self, records):
+        return {
+            'profiles': profiles.shared.encode({
+                'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records}),
+            'manifest': (profiles.ROOT / 'content/spells.manifest.json').read_bytes(),
+        }
+
+    def publish(self, root, generated):
+        profiles.admit(root, generated, 'profiles', 'manifest',
+                       lambda row: row['production_definition']['production_key'],
+                       profiles.shared.encode)
+
+    def legacy_diary(self):
+        carrier = copy.deepcopy(next(row for row in self.packet['records']
+                                    if row['production_definition']['production_key'] == profiles.DIARY))
+        carrier['admission'] = {'materializable': False, 'stack_class': 'NonStackable',
+                                'legal_destinations': ['Ground']}
+        carrier['semantics']['readable_writeable'] = copy.deepcopy(profiles.DIARY_TEXT)
+        return carrier
+
+    def test_own_qualified_output_replays_byte_identically(self):
+        root = self.publication(self.packet)
+        generated = self.generated([self.legacy_diary()])
+        self.publish(root, generated)
+        first = dict(generated)
+        self.publish(root, generated)
+        self.assertEqual(generated, first)
+        rows = json.loads(generated['profiles'])['records']
+        self.assertEqual({row['production_definition']['production_key'] for row in rows},
+                         {row['production_definition']['production_key'] for row in self.packet['records']})
+        self.assertEqual(len(rows), 4)
+        diary = next(row for row in rows
+                     if row['production_definition']['production_key'] == profiles.DIARY)
+        self.assertEqual(diary['semantics']['readable_writeable'], profiles.DIARY_TEXT)
+
+    def test_source_qualified_qengine_prefix_is_preserved(self):
+        root = self.publication(self.packet)
+        # The earlier QENGINE owner selects i3212 through questl2_passages.
+        # Use its real source qualification, without running full registration.
+        prefix = profiles.merger.capture(profiles.ROOT, item_ids={3212})
+        self.assertEqual([row['production_definition']['production_key']
+                          for row in prefix['records']], [profiles.DIARY])
+        diary = prefix['records'][0]
+        self.assertEqual(diary['semantics']['readable_writeable'], profiles.DIARY_TEXT)
+        generated = self.generated(copy.deepcopy(prefix['records']))
+        self.publish(root, generated)
+        rows = json.loads(generated['profiles'])['records']
+        self.assertEqual(len(rows), 4)
+        self.assertEqual(next(row for row in rows
+                              if row['production_definition']['production_key'] == profiles.DIARY), diary)
+        for expected in self.packet['records']:
+            key = expected['production_definition']['production_key']
+            if key != profiles.DIARY:
+                self.assertEqual(next(row for row in rows
+                                      if row['production_definition']['production_key'] == key), expected)
+        first = dict(generated)
+        self.publish(root, generated)
+        self.assertEqual(generated, first)
+
+    def test_promoted_diary_refusals_leave_every_generated_byte_unchanged(self):
+        root = self.publication(self.packet)
+        original = self.generated([self.legacy_diary()])
+        self.publish(root, original)
+        rows = json.loads(original['profiles'])['records']
+
+        def diary(records):
+            return next(row for row in records
+                        if row['production_definition']['production_key'] == profiles.DIARY)
+
+        def wrong_text(records):
+            diary(records)['semantics']['readable_writeable']['value']['writeable'] = profiles.shared.source.K(True)
+
+        def wrong_admission(records):
+            diary(records)['admission']['legal_destinations'] = ['CharacterInventory']
+
+        def duplicate(records):
+            records.append(copy.deepcopy(diary(records)))
+
+        def missing(records):
+            records.remove(diary(records))
+
+        def wrong_binding(records):
+            diary(records)['production_binding']['target']['revision'] = 'unqualified-revision'
+
+        def wrong_physical(records):
+            diary(records)['semantics']['physical']['value']['weight'] = profiles.shared.source.K(1301)
+
+        def wrong_other_owner(records):
+            next(row for row in records if row['production_definition']['production_key']
+                 == 'oteryn:item.tibia.i901')['admission']['stack_class'] = 'StackCapable'
+
+        for mutate, error in (
+            (wrong_text, 'M04_DIARY_CARRIER_DRIFT'),
+            (wrong_admission, 'M04_DIARY_CARRIER_DRIFT'),
+            (duplicate, 'M04_DIARY_CARRIER_DRIFT'),
+            (missing, 'M04_DIARY_CARRIER_DRIFT'),
+            (wrong_binding, 'QENGINE_REWARD_ITEM_NATIVE_CONFLICT:production_binding'),
+            (wrong_physical, 'QENGINE_REWARD_ITEM_NATIVE_CONFLICT:semantics'),
+            (wrong_other_owner, 'QENGINE_REWARD_ITEM_NATIVE_CONFLICT:admission'),
+        ):
+            with self.subTest(mutation=mutate.__name__):
+                changed = copy.deepcopy(rows)
+                mutate(changed)
+                generated = self.generated(changed)
+                before = dict(generated)
+                with self.assertRaisesRegex(ValueError, error):
+                    self.publish(root, generated)
+                self.assertEqual(generated, before)
 
 
 if __name__ == '__main__':
