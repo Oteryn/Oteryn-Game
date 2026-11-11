@@ -124,21 +124,9 @@ pub(super) fn run(
         }
         // Capability 490: the value field sits below the choice list, above the buttons.
         let field = input.as_ref().map(|input| {
-            let multiline = input.kind == oteryn_client_runtime::server_modal::input::InputKind::Edit;
-            let field = control(
-                hwnd,
-                "EDIT",
-                &oteryn_client_ui::server_modal_input::initial_text(input),
-                13,
-                [120, 326, 572, if multiline { 100 } else { 26 }],
-                WS_BORDER
-                    | WS_TABSTOP
-                    | if multiline {
-                        WS_VSCROLL | ES_MULTILINE as u32 | ES_AUTOVSCROLL as u32
-                    } else {
-                        ES_AUTOHSCROLL as u32
-                    },
-            );
+            let field = super::input_control(input, |text, rect, style| {
+                control(hwnd, "EDIT", text, 13, rect, style)
+            });
             control(
                 hwnd,
                 "STATIC",

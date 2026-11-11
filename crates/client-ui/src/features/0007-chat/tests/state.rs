@@ -624,6 +624,31 @@ mod channels {
     }
 
     #[test]
+    fn chat_conversation_reopens_select_the_original_tab_and_preserve_other_tabs() {
+        let (mut chat, mut public, mut private) = selected();
+        assert!(open_conversation(&mut chat, "Bryn"));
+        assert!(open_conversation(&mut chat, "Ana"));
+        for name in ["bryn", "BRYN", "Bryn"] {
+            assert!(open_conversation(&mut chat, name));
+            assert_eq!(
+                chat.console.channels,
+                [
+                    ChannelTab::Conversation("Bryn".into()),
+                    ChannelTab::Conversation("Ana".into()),
+                ]
+            );
+            assert_eq!(chat.console.current, Some(chat.console.channels[0].clone()));
+            assert_eq!(chat.console.tab_index(), 4);
+        }
+        assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
+        assert_eq!(
+            chat.console.channels,
+            [ChannelTab::Conversation("Ana".into())]
+        );
+        assert_eq!(chat.console.current, None);
+    }
+
+    #[test]
     fn chat_channels_conversation_tab_opens_locally_and_closes_without_wire() {
         let (mut chat, mut public, mut private) = selected();
         assert!(!open_conversation(&mut chat, "  "));

@@ -135,10 +135,17 @@ impl Console {
     }
     /// Open a channel tab (once) and select it.
     pub fn open_channel(&mut self, channel: ChannelTab) {
-        if !self.channels.contains(&channel) {
+        if let Some(existing) = self.channels.iter().find(|tab| match (tab, &channel) {
+            (ChannelTab::Conversation(open), ChannelTab::Conversation(name)) => {
+                open.eq_ignore_ascii_case(name)
+            }
+            _ => **tab == channel,
+        }) {
+            self.current = Some(existing.clone());
+        } else {
             self.channels.push(channel.clone());
+            self.current = Some(channel);
         }
-        self.current = Some(channel);
     }
     /// Close the selected channel tab and fall back to its left neighbour. The fixed tabs,
     /// the default channel among them, cannot be closed.

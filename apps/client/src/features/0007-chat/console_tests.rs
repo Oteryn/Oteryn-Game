@@ -600,3 +600,35 @@ fn chat_snapshot_restarts_extension_notices_and_joined_tabs() {
     assert_eq!(panel.console.channel_notices[0].name, "After");
     assert!(panel.console.channels.contains(&ChannelTab::Private(120)));
 }
+
+#[test]
+fn channel_dialog_reuses_a_conversation_with_different_name_case()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::{ChannelTab, ConsoleTab};
+    use oteryn_input_actions::{Modifier, Modifiers};
+    let (link, mut commands, _outbox) = play_channel();
+    assert!(link.chat_open_conversation("Bryn"));
+    link.chat_console_tab(ConsoleTab::All);
+    let mut input = crate::play::PreferenceInput::default();
+    assert!(super::console::native_key(
+        &link,
+        &mut input,
+        0x4f,
+        Modifiers::one(Modifier::Control),
+        true,
+        false,
+        false
+    ));
+    assert!(link.chat_channel_dialog().0.open);
+    link.chat_channel_dialog_name(" bryn ");
+    assert!(link.chat_channel_dialog_confirm());
+    let panel = link.chat_panel();
+    let tab = ChannelTab::Conversation("Bryn".into());
+    assert_eq!(panel.console.channels, std::slice::from_ref(&tab));
+    assert_eq!(panel.console.current, Some(tab));
+    assert_eq!(panel.console.tab_index(), 4);
+    link.chat_close_current();
+    assert!(link.chat_panel().console.channels.is_empty());
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
