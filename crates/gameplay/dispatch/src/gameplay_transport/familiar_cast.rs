@@ -118,6 +118,7 @@ impl PreparedFamiliarLogout {
         end: FamiliarActorEnd,
         fence: CurrentCharacterGameplayFence,
         before: PlayerSpellState,
+        policy_digest: [u8; 32],
     ) -> Result<Self, String> {
         use crate::durability::character_familiar::{
             DurableFamiliarState, FamiliarStateOccurrence,
@@ -138,7 +139,7 @@ impl PreparedFamiliarLogout {
                 after,
                 content_revision: "content:1".into(),
                 policy_revision: "policy:1".into(),
-                policy_digest: [0; 32],
+                policy_digest,
             },
             before,
         })

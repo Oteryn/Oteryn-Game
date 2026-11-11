@@ -829,15 +829,12 @@ fn logout_of_a_superseded_controller_is_busy_and_lifts_its_fence() -> TestResult
     })
 }
 
-/// An earlier logout attempt whose familiar actor-end save stayed unknown retains it. Only the
-/// next actor end (a later logout, or a grace expiry after the loss) supersedes it, so neither
-/// that logout nor the closed connection's loss may wait for it beforehand.
+/// An earlier logout attempt whose familiar actor-end save stayed unknown retains it. The later
+/// logout and the closed connection's loss each settle it from the durable record first (here
+/// it was never written), so neither waits for the next actor end to supersede it.
 #[test]
 fn a_retained_familiar_logout_save_neither_blocks_a_later_logout_nor_the_loss() -> TestResult {
     run(async |admin| {
-        use crate::domain::{CharacterId, CharacterRevision};
-        use crate::durability::character_progression::CurrentCharacterGameplayFence;
-        use crate::foundation::{ConnectionGeneration, ScopeOwnershipGeneration};
         use crate::gameplay_transport::actor_spell::{FamiliarActorEnd, PreparedFamiliarLogout};
 
         async fn retain_unknown_logout(
@@ -846,22 +843,15 @@ fn a_retained_familiar_logout_save_neither_blocks_a_later_logout_nor_the_loss() 
         ) -> TestResult {
             let session = dependencies.admitted.game_session_id;
             let controller = dependencies.admitted.controller.ok_or("controller")?;
+            // The genuine writer of this session, as the logout attempt fenced its save.
+            let fence = super::death_ml_loss_composed::current_fence(owner, session).await?;
             let runtime = owner.runtime.lock().await;
-            let binding = runtime.binding();
+            let digest = runtime.content_pin().server_artifact_digest();
             let mut states = owner.states.spell_states.lock().await;
             let before = states
                 .get(&runtime, dependencies.actor, session)
                 .ok_or("spell state")?
                 .clone();
-            let fence = CurrentCharacterGameplayFence {
-                character_id: CharacterId::from_bytes(id(60)).map_err(debug)?,
-                game_session_id: session,
-                connection_generation: ConnectionGeneration::new(1).map_err(debug)?,
-                character_lease_generation: 1,
-                runtime_scope: binding.runtime_scope(),
-                scope_ownership_generation: ScopeOwnershipGeneration::new(1).map_err(debug)?,
-                expected_character_revision: CharacterRevision::new(1).map_err(debug)?,
-            };
             states
                 .pending_familiar_logouts
                 .push(PreparedFamiliarLogout::retained(
@@ -870,6 +860,7 @@ fn a_retained_familiar_logout_save_neither_blocks_a_later_logout_nor_the_loss() 
                     FamiliarActorEnd::Logout(controller.transport, u64::MAX),
                     fence,
                     before,
+                    digest,
                 )?);
             assert!(states.has_pending_spell_commit(dependencies.actor, session));
             Ok(())
