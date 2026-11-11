@@ -448,10 +448,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             self.private_channel_refresh_interest(admitted, fence).await;
         }
-        self.states
-            .chat
-            .private_world
-            .force_list(admitted.game_session_id);
+        // Membership operations and explicit queries request a fresh list. Invitations
+        // and exclusions use the next durable diff rather than forcing an unchanged list.
+        if matches!(
+            intent,
+            PrivateChannelIntent::Create
+                | PrivateChannelIntent::Join { .. }
+                | PrivateChannelIntent::Leave { .. }
+                | PrivateChannelIntent::List
+        ) {
+            self.states
+                .chat
+                .private_world
+                .force_list(admitted.game_session_id);
+        }
         reply
     }
 

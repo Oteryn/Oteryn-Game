@@ -437,8 +437,24 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                     vessels: Some(cells),
                     ..save.clone()
                 };
-                assert_eq!(send(&owner, &mut admitted, &wire::encode_wheel_request(&bad).map_err(debug)?).await?,
-                    expected(true, 1, vessels)?, "a duplicated or unowned gem refuses atomically");
+                if seed == 171 {
+                    // Duplicate identities are malformed on the wire, before the owner.
+                    assert!(wire::encode_wheel_request(&bad).is_err());
+                    let mut distinct = bad.clone();
+                    distinct.vessels = Some([Some(socketed), Some(id(199)), None, None]);
+                    let mut malformed = wire::encode_wheel_request(&distinct).map_err(debug)?;
+                    let offset = malformed.windows(16).position(|bytes| bytes == id(199))
+                        .ok_or("second vessel identity")?;
+                    malformed[offset..offset + 16].copy_from_slice(&socketed);
+                    assert_eq!(send(&owner, &mut admitted, &malformed).await?.0,
+                        CommandStatus::Rejected, "duplicated gems are rejected at ingress");
+                } else {
+                    assert_eq!(send(&owner, &mut admitted, &wire::encode_wheel_request(&bad).map_err(debug)?).await?,
+                        expected(true, 1, vessels)?, "an unowned gem refuses atomically");
+                }
+                assert_eq!(sqlx::query_scalar::<_, String>("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?, revision,
+                    "neither refusal changes the Character");
             }
             let stored = h.root.read_character_atelier(&authority, fence.character_id)
                 .await.map_err(debug)?.ok_or("socketed Atelier")?;

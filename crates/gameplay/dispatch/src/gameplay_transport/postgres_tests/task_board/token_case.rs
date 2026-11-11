@@ -62,6 +62,9 @@ pub(super) async fn completed_fixture(
         .bounty
         .offers
         .first()
+        // An earlier boundary refusal keeps the completed task and clears its
+        // offers. Reuse that production-generated task for the next boundary.
+        .or(data.bounty.active.as_ref())
         .cloned()
         .ok_or("generated bounty offer")?;
     task.current = task.required;

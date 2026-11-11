@@ -818,6 +818,11 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // mint for a returner claim; never writes Inbox rows.
                 "game_returner_claim_guard",
                 "game_reward_claim_inbox_mint_is_complete",
+                // WU26: exact due-scroll custody proofs and the receipt-proven
+                // expiry writer; native Inbox removal guards remain enabled.
+                "game_temple_scroll_custody",
+                "game_temple_scroll_expire_due",
+                "game_temple_scroll_receipt_proven",
             ]
         );
         // Register the exact read-only custody users independently of the
@@ -830,6 +835,8 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
             "game_house_disposition_native_removal_proven_before_t135",
             "game_house_nested_reclaim_reconcile",
             "game_returner_claim_guard",
+            "game_temple_scroll_custody",
+            "game_temple_scroll_receipt_proven",
         ] {
             let no_inbox_dml: bool = sqlx::query_scalar(
                 r#"SELECT prosrc !~* '\m(insert[[:space:]]+into|update|delete[[:space:]]+from|truncate([[:space:]]+table)?)[[:space:]]+(only[[:space:]]+)?(("[^"]+"|[a-z_][a-z_0-9$]*)[.])?"?game_(item_character_inbox_locations|character_inbox_(deliveries|counters|cause_kinds))"?\M'

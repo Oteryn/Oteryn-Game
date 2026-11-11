@@ -31,6 +31,15 @@ fn tibiadrome_category_migration_retires_old_tokens_and_preserves_revision_floor
         ] {
             h.pool.execute(sqlx::AssertSqlSafe(format!("ALTER TABLE {table} DROP CONSTRAINT {table}_category_check, ADD CONSTRAINT {table}_category_check CHECK(category BETWEEN 1 AND 14)"))).await?;
         }
+        // Restore the historical touch function too: today's 2801 function deliberately
+        // withholds Loyalty 13, while the pre1107 fixture must seed both revision floors.
+        let current_touch: String = sqlx::query_scalar("SELECT pg_get_functiondef('game_public_highscores_touch(uuid,smallint)'::regprocedure)")
+            .fetch_one(&h.pool).await?;
+        let withheld = "IF p_category = 13 THEN\n        RETURN;\n    END IF;";
+        assert_eq!(current_touch.matches(withheld).count(), 1);
+        h.pool
+            .execute(sqlx::AssertSqlSafe(current_touch.replace(withheld, "")))
+            .await?;
         let mut tokens = Vec::new();
         for category in [13_i32, 14] {
             let mut pair = Vec::new();
@@ -49,6 +58,7 @@ fn tibiadrome_category_migration_retires_old_tokens_and_preserves_revision_floor
             .bind(id(WORLD).as_slice()).fetch_all(&h.pool).await?;
         assert_eq!(metadata_before.len(), 2);
         assert!(metadata_before.iter().all(|row| row.1 == 2));
+        h.pool.execute(sqlx::AssertSqlSafe(current_touch)).await?;
         dataset(h, 300, 1, "druid", 1000, world()).await?;
         sqlx::query("INSERT INTO game_tibiadrome_scores(world_id,rotation,character_id,level,experience) VALUES(encode($1,'hex')::uuid,floor(extract(epoch FROM statement_timestamp())/1209600)::bigint,encode($2,'hex')::uuid,7,1000)")
             .bind(id(WORLD).as_slice()).bind(generated(300).as_slice()).execute(&h.pool).await?;
