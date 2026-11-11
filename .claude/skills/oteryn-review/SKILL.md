@@ -79,7 +79,16 @@ with CI and never blocks or delays it.
   one, and then only over the new diff. At most 2 reviews per PR. If the second
   review still finds a P0/P1, the design of the change is wrong: stop and
   report to the owner instead of a third round.
-- How: the coordinator (the review-dispatch owner) starts it with `codex exec`
+- Who (owner decision 2026-11-11): whoever owns the branch or PR runs the
+  review, also when it works alone without the coordinator: a Claude session,
+  a child session or a PC lane named as owner in its packet. On the PC that is
+  `bash ~/oteryn-cache/codex-review.sh <worktree> <tag>`. The owner puts
+  "Codex review <head SHA>: N findings, M fixed" in its report and, when it
+  opens the PR, in one PR comment; a head that already has that line is not
+  reviewed again. A session without Codex (no PC, no `codex` binary) reports
+  "not reviewed" and the coordinator runs it. A Codex lane never reviews its
+  own code.
+- How: the review owner starts it with `codex exec`
   in a read-only sandbox, single agent, model gpt-6.1-sol, reasoning effort high (an
   `@codex review` PR comment has gone unanswered since 2026-10-20, so it is not
   used), with the diff, `CODEX-CHECKLIST.md`, the risky areas of this diff
