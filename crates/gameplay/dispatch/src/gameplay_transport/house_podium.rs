@@ -34,6 +34,8 @@ pub enum Request {
     Preview(wire::preview::Request),
     Query([u8; 16]),
     Set(wire::SetRequest),
+    /// Command 175 from a session that selected capability 489.
+    FlaggedSet(wire::SetRequest, wire::DisplayFlags),
     Projection([u8; 16]),
 }
 
@@ -47,6 +49,18 @@ impl Request {
             wire::COMMAND_SET => wire::SetRequest::decode(payload).map(Self::Set),
             wire::COMMAND_PROJECTION => wire::decode_item(payload).map(Self::Projection),
             _ => None,
+        }
+    }
+
+    /// [`Self::decode`] for a session that selected capability 489 when `flagged`: command
+    /// 175 then requires the three visibility flags.
+    pub fn decode_selected(command_type: u32, payload: &[u8], flagged: bool) -> Option<Self> {
+        if command_type != wire::COMMAND_SET || !flagged {
+            return Self::decode(command_type, payload);
+        }
+        match wire::SetRequest::decode_selected(true, payload)? {
+            (set, Some(flags)) => Some(Self::FlaggedSet(set, flags)),
+            (_, None) => None,
         }
     }
 }
@@ -223,36 +237,54 @@ pub(super) async fn execute(
             .house
     };
     let house = HouseId::new(admitted.world_id, &house)?;
-    let item = match request {
+    let flagged = admitted
+        .continuity
+        .selected_capabilities
+        .contains(wire::CAPABILITY_HOUSE_PODIUM_FLAGS_V1);
+    let (set, flags) = match request {
         Request::Preview(_) => return None,
-        Request::Query(item) | Request::Projection(item) => item,
-        Request::Set(set) => {
-            let gameplay = owner.active_generation?.native_gameplay()?;
-            let content = PodiumContentView {
-                cosmetics: gameplay.cosmetics()?.clone(),
-                rewards: gameplay.reward_table().clone(),
-            };
-            let request = HousePodiumSet {
-                item_instance_id: set.item,
-                expected_revision: set.expected_revision,
-                display_kind: set.display_kind,
-                display_key: set.key,
-                direction: set.direction,
-            };
-            let result = owner
-                .root
-                .set_house_podium(owner.holder, fence, house, request, content)
-                .await
-                .ok()?;
-            return Some(
-                match result {
-                    Ok(revision) => wire::SetResult::Accepted { revision },
-                    Err(error) => wire::SetResult::Refused(refusal(error)),
-                }
-                .encode(),
-            );
+        Request::Set(set) => (set, None),
+        Request::FlaggedSet(set, flags) if flagged => (set, Some(flags)),
+        Request::FlaggedSet(..) => return None,
+        Request::Query(item) | Request::Projection(item) => {
+            return project(owner, fence, house, item, flagged).await;
         }
     };
+    let gameplay = owner.active_generation?.native_gameplay()?;
+    let content = PodiumContentView {
+        cosmetics: gameplay.cosmetics()?.clone(),
+        rewards: gameplay.reward_table().clone(),
+    };
+    let request = HousePodiumSet {
+        item_instance_id: set.item,
+        expected_revision: set.expected_revision,
+        display_kind: set.display_kind,
+        display_key: set.key,
+        direction: set.direction,
+    };
+    let result = owner
+        .root
+        .set_house_podium_flagged(owner.holder, fence, house, request, flags, content)
+        .await
+        .ok()?;
+    Some(
+        match result {
+            Ok(revision) => wire::SetResult::Accepted { revision },
+            Err(error) => wire::SetResult::Refused(refusal(error)),
+        }
+        .encode(),
+    )
+}
+
+/// The committed display of `item` (commands 174 and 176); with capability 489 selected a
+/// shown display carries its visibility flags.
+async fn project(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    house: HouseId,
+    item: [u8; 16],
+    flagged: bool,
+) -> Option<Vec<u8>> {
     let displays = owner
         .root
         .load_house_podiums(owner.holder, fence, house)
@@ -262,12 +294,21 @@ pub(super) async fn execute(
     let projection = displays
         .into_iter()
         .find(|display| display.item_instance_id == item)
-        .map(|display| wire::Projection {
-            podium_kind: display.podium_kind,
-            display_kind: display.display_kind,
-            direction: display.direction,
-            revision: display.revision,
-            key: display.display_key,
+        .map(|display| {
+            (
+                wire::Projection {
+                    podium_kind: display.podium_kind,
+                    display_kind: display.display_kind,
+                    direction: display.direction,
+                    revision: display.revision,
+                    key: display.display_key,
+                },
+                display.flags,
+            )
         });
-    wire::Projection::encode(projection.as_ref())
+    if flagged {
+        wire::Projection::encode_flagged(projection.as_ref().map(|(view, flags)| (view, *flags)))
+    } else {
+        wire::Projection::encode(projection.as_ref().map(|(view, _)| view))
+    }
 }

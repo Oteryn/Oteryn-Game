@@ -11,6 +11,7 @@ use crate::item_transfer_postgres_cases::{
     CHARACTER, Harness, TestResult, configured_admin, id, runtime,
 };
 use oteryn_gameplay_housing::house_podium::PodiumContent;
+use oteryn_protocol_oteryn::house_podium::DisplayFlags;
 
 const OUTFIT: &str = "oteryn:content.outfit.citizen";
 const MOUNT: &str = "oteryn:content.mount.widow_queen";
@@ -165,6 +166,30 @@ fn house_podium_runtime_path_is_fenced_checked_and_survives_restart() -> TestRes
                 restarted.set_house_podium(&h.node, fence, house.clone(), set(item(94)?, 1, 3, RAT), Content)
                     .await.map_err(native::debug)?,
                 Ok(2)
+            );
+            // Capability 489 flags persist with the display; a display stored without flags
+            // shows every part.
+            let hidden = DisplayFlags { show_platform: false, show_outfit: true, show_mount: false };
+            assert_eq!(
+                restarted.set_house_podium_flagged(&h.node, fence, house.clone(), set(item(94)?, 2, 3, RAT), Some(hidden), Content)
+                    .await.map_err(native::debug)?,
+                Ok(3)
+            );
+            let flags = restarted
+                .load_house_podiums(&h.node, fence, house.clone())
+                .await
+                .map_err(native::debug)?
+                .map_err(native::debug)?
+                .into_iter()
+                .map(|d| (d.item_instance_id, d.flags))
+                .collect::<std::collections::BTreeMap<_, _>>();
+            assert_eq!(flags.get(&item(94)?), Some(&hidden));
+            assert_eq!(flags.get(&item(91)?), Some(&DisplayFlags::default()));
+            assert_eq!(
+                restarted.set_house_podium(&h.node, fence, house.clone(), set(item(94)?, 3, 3, RAT), Content)
+                    .await.map_err(native::debug)?,
+                Ok(4),
+                "a V1 set replaces the display and its flags"
             );
             Ok(())
         }
