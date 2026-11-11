@@ -801,6 +801,81 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
         .iter()
         .map(|table| {
             format!(
+                "SELECT character_id, original_character_revision, committed_character_revision, \
+                 level_before, level_after, experience_before, experience_after, \
+                 profile_revision, ruleset_revision, content_revision, simulation_revision, \
+                 evidence_revision, declaration_revision, policy_revision, reward_revision \
+                 FROM {table}"
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(" UNION ALL ");
+    format!(
+        "WITH chain AS ({chain}) \
+         SELECT 1 FROM game_character_roots r \
+           LEFT JOIN game_character_progression_state s USING (character_id) \
+          WHERE (r.character_revision <> 1 AND s.character_id IS NULL) \
+             OR (s.character_id IS NOT NULL AND s.character_revision <> r.character_revision) \
+         UNION ALL \
+         SELECT 1 FROM game_character_progression_state s \
+           LEFT JOIN game_character_roots r USING (character_id) \
+          WHERE r.character_id IS NULL \
+         UNION ALL \
+         SELECT 1 FROM game_character_roots r \
+           LEFT JOIN chain x USING (character_id) \
+          GROUP BY r.character_id, r.character_revision \
+         HAVING count(x.committed_character_revision)::numeric <> r.character_revision - 1 \
+             OR count(DISTINCT x.committed_character_revision)::numeric \
+                <> r.character_revision - 1 \
+         UNION ALL \
+         SELECT 1 FROM chain x \
+           LEFT JOIN chain p \
+             ON p.character_id = x.character_id \
+            AND p.committed_character_revision = x.original_character_revision \
+          WHERE (x.original_character_revision <> 1 AND p.committed_character_revision IS NULL) \
+             OR (p.committed_character_revision IS NOT NULL AND \
+                 (p.experience_after <> x.experience_before OR p.level_after <> x.level_before)) \
+         UNION ALL \
+         SELECT 1 FROM game_character_progression_state s \
+           JOIN game_character_roots r USING (character_id) \
+           LEFT JOIN chain x \
+             ON x.character_id = s.character_id \
+            AND x.committed_character_revision = s.character_revision \
+          WHERE s.character_revision > 1 AND (x.committed_character_revision IS NULL \
+             OR x.experience_after <> s.total_experience OR x.level_after <> s.level \
+             OR x.profile_revision <> s.profile_revision \
+             OR x.ruleset_revision <> s.ruleset_revision \
+             OR x.content_revision <> s.content_revision \
+             OR x.simulation_revision <> s.simulation_revision \
+             OR x.evidence_revision <> s.evidence_revision \
+             OR x.declaration_revision <> s.declaration_revision \
+             OR x.policy_revision <> s.policy_revision \
+             OR x.reward_revision <> s.reward_revision) \
+         UNION ALL \
+         SELECT 1 FROM chain x \
+           LEFT JOIN game_character_progression_state s USING (character_id) \
+          WHERE s.character_id IS NULL \
+             OR x.committed_character_revision > s.character_revision \
+             OR x.profile_revision <> s.profile_revision \
+             OR x.ruleset_revision <> s.ruleset_revision \
+             OR x.content_revision <> s.content_revision \
+             OR x.simulation_revision <> s.simulation_revision \
+             OR x.evidence_revision <> s.evidence_revision \
+             OR x.declaration_revision <> s.declaration_revision \
+             OR x.policy_revision <> s.policy_revision \
+             OR x.reward_revision <> s.reward_revision \
+         LIMIT 1"
+    )
+});
+
+// The existence check above is the hot path (every authority pass runs it). The
+// diagnostic query below names the first violating row and runs only after the existence
+// check found one, so reporting never slows a healthy pass (LOGDBG-C).
+static CHARACTER_INTEGRITY_DIAGNOSTIC_SQL: LazyLock<String> = LazyLock::new(|| {
+    let chain = RECEIPT_CHAIN_TABLES
+        .iter()
+        .map(|table| {
+            format!(
                 "SELECT '{table}'::text AS family, \
                  character_id, original_character_revision, committed_character_revision, \
                  level_before, level_after, experience_before, experience_after, \
@@ -951,7 +1026,7 @@ fn observe_character_authority_check<T>(
     })
 }
 
-/// The first row [`CHARACTER_INTEGRITY_SQL`] finds in violation, without identities.
+/// The first row [`CHARACTER_INTEGRITY_DIAGNOSTIC_SQL`] finds in violation, without identities.
 #[derive(Debug, PartialEq, Eq)]
 struct RevisionChainViolation {
     family: String,
@@ -991,10 +1066,27 @@ impl RevisionChainViolation {
 async fn verify_revision_chain(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
 ) -> std::result::Result<Option<RevisionChainViolation>, DurabilityError> {
-    let violation = sqlx::query(CHARACTER_INTEGRITY_SQL.as_str())
+    if sqlx::query(CHARACTER_INTEGRITY_SQL.as_str())
         .fetch_optional(&mut **tx)
         .await?
-        .map(|row| RevisionChainViolation::from_row(&row));
+        .is_none()
+    {
+        return Ok(None);
+    }
+    let violation = Some(
+        sqlx::query(CHARACTER_INTEGRITY_DIAGNOSTIC_SQL.as_str())
+            .fetch_optional(&mut **tx)
+            .await?
+            .map_or_else(
+                || RevisionChainViolation {
+                    family: String::new(),
+                    violation: String::new(),
+                    before: None,
+                    after: None,
+                },
+                |row| RevisionChainViolation::from_row(&row),
+            ),
+    );
     if let Some(violation) = &violation {
         oteryn_error_codes::emit("oteryn-game-server", &violation.line());
     }
