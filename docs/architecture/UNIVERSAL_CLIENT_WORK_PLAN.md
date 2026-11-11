@@ -51,6 +51,38 @@ Bending it into a 1:1 copy would cost more than a thin layer of our own. So:
 | Clipboard | `arboard` |
 | Second skin later | The skin is data (images, fonts, layout files), so our own look is a data swap, not a code change |
 
+### 3.1a Market survey (2026-11-11, Codex web research)
+
+No library or engine ships a Tibia-like UI.
+
+| Rank | Option | Verdict |
+|---|---|---|
+| 1 | **Our own retained layer** on the existing sprite renderer, with `cosmic-text` + `glyphon` for Unicode text (glyphon 0.12 already targets wgpu 30) and `taffy` only where layout is flexible | Chosen. Full control over every pixel, and the skin stays data. |
+| 2 | RmlUi (C++, MIT): game UI with nine-patch, its own fonts and an IME interface | Good fit, but needs a C bridge to Rust and wgpu, and its browser build is harder. Fallback option. |
+| 3 | Slint (royalty-free licence allows proprietary desktop and web use with attribution on a web page) | wgpu 30 embedding is marked unstable, and font fidelity is unproven |
+| 4+ | egui, iced, GPUI, Xilem, bevy_ui, fyrox-ui, Noesis (paid), Gameface (paid), Ultralight (paid) | Weaker fit for a 1:1 skinned UI |
+
+The biggest accelerator is Tibia prior art. OTClient (`opentibiabr/otclient`, MIT) has OTUI layout files and modules
+for most Global windows:
+
+- Cyclopedia with its Bestiary, Bosstiary and Charms tabs;
+- Wheel of Destiny, Prey, Store, Market, Forge, Stash, Reward Wall and Quick Loot;
+- Imbuing, Highscores, Quests, Outfit, Trade, Action Bar, analysers and modal dialogs.
+
+OTUI carries:
+
+- the widget tree;
+- sizes, margins and anchors;
+- image clip and nine-slice border;
+- state styles and fonts.
+
+A converter from OTUI to our layout files gives every window a starting layout. It is then corrected against the Global
+reference screenshot. Lua behaviour is not imported: the logic is already in `client-ui`. OTClient's MIT licence covers
+its code, not CipSoft graphics or fonts.
+
+Global client resources: the Qt RCC tools `Beats-Assets-Editor` and `Nekiro-Rcc-Editor` extract images and fonts. Window
+layouts in a Qt Widgets client are compiled code, not files, so they come from OTUI or screenshot measurement.
+
 ### 3.2 Assets taken from Global (reference use, faithful reimplementation)
 
 | Asset | Where it comes from | Tool |
