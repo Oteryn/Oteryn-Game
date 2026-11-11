@@ -182,8 +182,11 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/5805",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i5805",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Decorations"
         }
       },
       "semantics": {
@@ -304,15 +307,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "spell_augments": [],
+        "speed_bonus": 0
       },
       "admission": {
         "materializable": true,
@@ -345,8 +350,11 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/5806",
-          "revision": "spell-p2-r21"
+          "key": "oteryn:item.tibia.i5806",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Decorations"
         }
       },
       "semantics": {
@@ -467,15 +475,17 @@
         }
       },
       "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
+        "rune_consumption": null,
+        "spell_augments": [],
+        "speed_bonus": 0
       },
       "admission": {
         "materializable": true,

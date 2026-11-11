@@ -117,6 +117,7 @@ LANGUAGE sql IMMUTABLE STRICT AS $$
  WHEN p_key='oteryn:item.tibia.i34121' THEN ARRAY[10000,600000,600000,600000]::BIGINT[]
  WHEN p_key='oteryn:item.tibia.i34125' THEN ARRAY[10000,600000,600000,600000]::BIGINT[]
  WHEN p_key='oteryn:item.tibia.i34133' THEN ARRAY[10000,600000,600000,600000]::BIGINT[]
+ WHEN p_key='oteryn:item.tibia.i52113' THEN ARRAY[600000,600000,10000,600000]::BIGINT[]
  WHEN p_key IN ('oteryn:item.tibia.i43832','oteryn:item.tibia.i43836') THEN ARRAY[5000,5000,5000,5000]::BIGINT[]
  WHEN p_key='oteryn:item.tibia.i43669' THEN ARRAY[10000,300000,300000,0]::BIGINT[]
  WHEN p_key IN ('oteryn:item.tibia.i44012','oteryn:item.tibia.i44015','oteryn:item.tibia.i44018','oteryn:item.tibia.i44021','oteryn:item.tibia.i44024') THEN ARRAY[5000,5000,5000]::BIGINT[]
@@ -132,10 +133,12 @@ DO $$ DECLARE body TEXT; old TEXT; replacement TEXT; BEGIN
  old:='FOR stage IN 1..3 LOOP';
  IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN RAISE EXCEPTION 'SRX-3 corpse schedule loop changed'; END IF;
  body:=replace(body,old,'durations:=game_source_corpse_durations_v1(item.definition_production_key); IF array_length(durations,1) IS DISTINCT FROM array_length(chain,1) THEN RAISE EXCEPTION ''source corpse durations differ from complete chain'' USING ERRCODE=''23514''; END IF; FOR stage IN 1..array_length(chain,1)-1 LOOP elapsed:=elapsed+durations[stage];');
- old:='CASE WHEN stage=1 THEN 10000 ELSE 300000 END';
+ -- Migration 1300 already installed the Corruptor's complete source timings.
+ -- Replace that whole expression, retaining the same policy in the registry.
+ old:='CASE WHEN chain[1]=52113 THEN CASE WHEN stage=3 THEN 10000 ELSE 600000 END ELSE CASE WHEN stage=1 THEN 10000 ELSE 300000 END END';
  IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN RAISE EXCEPTION 'SRX-3 corpse stage duration changed'; END IF;
  body:=replace(body,old,'durations[stage]');
- old:='NEW.materialized_at+CASE stage WHEN 1 THEN 10000 WHEN 2 THEN 310000 ELSE 610000 END';
+ old:='NEW.materialized_at+CASE WHEN chain[1]=52113 THEN CASE stage WHEN 1 THEN 600000 WHEN 2 THEN 1200000 ELSE 1210000 END ELSE CASE stage WHEN 1 THEN 10000 WHEN 2 THEN 310000 ELSE 610000 END END';
  IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN RAISE EXCEPTION 'SRX-3 corpse schedule deadline changed'; END IF;
  EXECUTE replace(body,old,'NEW.materialized_at+elapsed');
  body:=pg_get_functiondef('game_spell_field_temporal_schedule_proven()'::regprocedure);
@@ -148,10 +151,10 @@ DO $$ DECLARE body TEXT; old TEXT; replacement TEXT; BEGIN
  old:='NEW.source_stage NOT BETWEEN 1 AND 3';
  IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN RAISE EXCEPTION 'SRX-3 corpse policy stage bound changed'; END IF;
  body:=replace(body,old,'NEW.source_stage NOT BETWEEN 1 AND array_length(chain,1)-1 OR array_length(durations,1) IS DISTINCT FROM array_length(chain,1)');
- old:='(CASE WHEN NEW.source_stage=1 THEN 10000 ELSE 300000 END)';
+ old:='(CASE WHEN chain[1]=52113 THEN CASE WHEN NEW.source_stage=3 THEN 10000 ELSE 600000 END ELSE CASE WHEN NEW.source_stage=1 THEN 10000 ELSE 300000 END END)';
  IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN RAISE EXCEPTION 'SRX-3 corpse policy duration changed'; END IF;
  body:=replace(body,old,'durations[NEW.source_stage]');
- old:='(CASE NEW.source_stage WHEN 1 THEN 10000 WHEN 2 THEN 310000 ELSE 610000 END)';
+ old:='(CASE WHEN chain[1]=52113 THEN CASE NEW.source_stage WHEN 1 THEN 600000 WHEN 2 THEN 1200000 ELSE 1210000 END ELSE CASE NEW.source_stage WHEN 1 THEN 10000 WHEN 2 THEN 310000 ELSE 610000 END END)';
  IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN RAISE EXCEPTION 'SRX-3 corpse policy deadline changed'; END IF;
  EXECUTE replace(body,old,'(SELECT sum(v) FROM unnest(durations) WITH ORDINALITY d(v,n) WHERE n<=NEW.source_stage)');
 END $$;

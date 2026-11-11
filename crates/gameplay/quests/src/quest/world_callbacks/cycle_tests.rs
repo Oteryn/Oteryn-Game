@@ -4,7 +4,7 @@ use super::*;
 fn cycle_reward_requires_a_preserved_nonnegative_local_epoch() -> Result<(), String> {
     let mut callback = load()?
         .into_iter()
-        .find(|c| c.effects.item_reward.is_some())
+        .find(|c| c.key == "oteryn:quest-callback/l2-djinn-tear-fountain")
         .ok_or("existing World reward")?;
     assert!(
         serde_json::to_value(&callback.effects)
@@ -55,6 +55,10 @@ fn oramond_five_native_roots_reopen_only_on_daily_epoch() -> Result<(), String> 
     let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
         .map_err(|e| format!("{e:?}"))?;
     let catalogue = lowered.catalogue();
+    let clock = catalogue
+        .track("oteryn:quest-progress/oramond/native-roots/last-start")
+        .ok_or("daily clock")?;
+    assert_eq!((clock.initial, clock.min, clock.max), (0, 0, i64::MAX));
 
     let mut stored = std::collections::BTreeMap::new();
     for day in 0..2 {
@@ -110,6 +114,33 @@ fn oramond_five_native_roots_reopen_only_on_daily_epoch() -> Result<(), String> 
             }
             assert!(catalogue.evaluate(transition, &stored, now).is_err());
         }
+    }
+    Ok(())
+}
+
+#[test]
+fn native_lion_well_per_use_reward_keeps_its_physical_admission() -> Result<(), String> {
+    let document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/world-callbacks/m07-lion-offerings.json"
+    ))
+    .map_err(|error| error.to_string())?;
+    let well = document["callbacks"]
+        .as_array()
+        .ok_or("callbacks")?
+        .iter()
+        .find(|row| row["key"] == "oteryn:quest-callback/m07/lion-well")
+        .ok_or("native well")?;
+    let encode =
+        |row: &serde_json::Value| serde_json::json!({"schema":1,"callbacks":[row]}).to_string();
+    parse(&encode(well))?;
+    for field in ["requires_world_admission", "effects"] {
+        let mut changed = well.clone();
+        if field == "effects" {
+            changed[field]["item_reward_per_use"] = false.into();
+        } else {
+            changed[field] = false.into();
+        }
+        assert!(parse(&encode(&changed)).is_err(), "missing {field}");
     }
     Ok(())
 }

@@ -424,15 +424,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
     {
         return false;
     }
+    let paid_craft = effects
+        .item_reward_cycle
+        .as_deref()
+        .is_some_and(|track| callback.craft_reward_epoch(track));
     if effects.item_reward.as_ref().is_some_and(|reward| {
-        callback.trigger != Trigger::Use
+        (callback.trigger != Trigger::Use && !callback.has_fenced_step_reward())
             || callback.is_read_only()
-            || !callback.offerings.is_empty()
+            || (!callback.offerings.is_empty() && !paid_craft)
             || callback.item_on_target.as_ref().is_some_and(|input| {
                 input.reusable || input.replacement.is_some() || input.target_replacement.is_some()
             })
             || !callback.has_state()
             || (!callback.has_repeating_clock()
+                && !super::per_use_reward::admitted(callback)
+                && !callback.has_fenced_regrowth_reward()
+                && !paid_craft
                 && callback
                     .storage
                     .iter()
