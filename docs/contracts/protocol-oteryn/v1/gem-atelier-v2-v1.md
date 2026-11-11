@@ -53,10 +53,15 @@ Lock and paid requests run through the v1 Atelier writer unchanged.
 | premium | 10, varint | The Premium allocation gate is open |
 | vessel node | 11, varint, repeated | Wheel slots (1..=36) of the vocation's Gem Vessel nodes, ascending |
 | vessel_node_bonus | 12, varint | Flat damage and healing per fully allocated Gem Vessel node |
+| resistance_capped | 13, varint | The socketed gems' summed resistance against at least one element exceeds 30% |
 
 The gem rows carry no domain field. Slot qualities follow one fixed table in
 `crates/gameplay/progression/src/atelier/vessels.rs` (lesser, regular, greater, four times);
 the published order is still open. Quotes are present on a query only, as in v1.
+
+Summed gem resistance against one element is capped at 30% (test server reply "Resistances
+cap at 30%"); each element caps separately and the excess has no effect. `resistance_capped`
+is the client's warning for a setup above the cap.
 
 ## Migration
 

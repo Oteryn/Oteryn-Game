@@ -89,6 +89,9 @@ pub struct AtelierReply {
     pub vessel_nodes: Vec<u8>,
     /// Flat damage and healing each fully allocated Gem Vessel node grants.
     pub vessel_node_bonus: u32,
+    /// The socketed gems' summed resistance against at least one element exceeds the 30%
+    /// cap; the excess has no effect.
+    pub resistance_capped: bool,
 }
 
 pub fn encode_query() -> Vec<u8> {
@@ -282,6 +285,7 @@ pub fn encode_reply(value: &AtelierReply) -> Result<Vec<u8>, Error> {
         push_varint_field(&mut out, 11, u64::from(*node));
     }
     push_varint_field(&mut out, 12, u64::from(value.vessel_node_bonus));
+    push_varint_field(&mut out, 13, u64::from(value.resistance_capped));
     if out.len() > MAX_REPLY_BYTES {
         Err(Error::LimitExceeded)
     } else {
@@ -295,6 +299,7 @@ pub fn decode_reply(bytes: &[u8]) -> Result<AtelierReply, Error> {
     }
     let (mut refused, mut revision, mut wheel_revision) = (None, None, None);
     let (mut in_temple, mut premium, mut bonus) = (None, None, None);
+    let mut resistance_capped = None;
     let (mut gems, mut grades, mut vessels, mut vessel_nodes) =
         (Vec::new(), Vec::new(), Vec::new(), Vec::new());
     let (mut quality_quotes, mut grade_quotes) = (Vec::new(), Vec::new());
@@ -347,6 +352,7 @@ pub fn decode_reply(bytes: &[u8]) -> Result<AtelierReply, Error> {
                 &mut bonus,
                 u32::try_from(read_varint(bytes, &mut at)?).map_err(|_| Error::Malformed)?,
             )?,
+            104 => set_once(&mut resistance_capped, read_bool(bytes, &mut at)?)?,
             _ => return Err(Error::Malformed),
         }
     }
@@ -363,6 +369,7 @@ pub fn decode_reply(bytes: &[u8]) -> Result<AtelierReply, Error> {
         vessels,
         vessel_nodes,
         vessel_node_bonus: bonus.ok_or(Error::Malformed)?,
+        resistance_capped: resistance_capped.ok_or(Error::Malformed)?,
     };
     encode_reply(&value)?;
     Ok(value)
@@ -475,6 +482,7 @@ mod tests {
             vessels,
             vessel_nodes: vec![3, 5, 7, 10, 15, 18, 19, 22, 27, 30, 32, 34],
             vessel_node_bonus: 1,
+            resistance_capped: true,
         }
     }
 
@@ -495,6 +503,7 @@ mod tests {
             vessels: Vec::new(),
             vessel_nodes: Vec::new(),
             vessel_node_bonus: 1,
+            resistance_capped: false,
         };
         assert_eq!(decode_reply(&encode_reply(&refusal)?)?, refusal);
         let mut partial = value.clone();

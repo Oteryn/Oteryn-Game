@@ -210,9 +210,50 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             vessels: slots,
             vessel_nodes: vessels::node_slots(rules, &read.vocation),
             vessel_node_bonus: vessels::GEM_VESSEL_FLAT_DAMAGE_HEALING,
+            resistance_capped: resistance_capped(rules, &read),
         })
         .ok()
     }
+}
+
+/// The cap warning from the same projection the Wheel applies: gems contribute only to a
+/// current, eligible Wheel.
+fn resistance_capped(
+    rules: &oteryn_gameplay_progression::wheel::WheelRuleset,
+    read: &crate::durability::character_wheel::WheelPresentationRead,
+) -> bool {
+    let Some(atelier) = read.atelier.as_ref() else {
+        return false;
+    };
+    if !read.allocation.current
+        || oteryn_gameplay_progression::wheel::eligibility(
+            rules,
+            &read.vocation,
+            read.level,
+            read.promoted,
+            read.premium_permitted,
+        )
+        .is_err()
+    {
+        return false;
+    }
+    let Ok(data) = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded() else {
+        return false;
+    };
+    let Some(mut effects) = oteryn_gameplay_progression::wheel_effects::derive_runtime_effects(
+        data.wheel(),
+        &read.allocation,
+        &read.vocation,
+        read.level,
+        read.promoted,
+        read.premium_permitted,
+    ) else {
+        return false;
+    };
+    effects
+        .contribute_gems(atelier, &data, &read.allocation)
+        .is_some()
+        && effects.gem_resistance_over_cap()
 }
 
 fn quality_code(quality: oteryn_gameplay_progression::atelier::GemQuality) -> u8 {
