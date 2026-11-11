@@ -1639,9 +1639,6 @@ impl IssuedSemanticPass {
             .await
         {
             PoolConnectionReturnDisposition::ReturnedToIdle => {
-                if let Ok(mut queue) = self.root.holder_queue.lock() {
-                    queue.returned(Instant::now());
-                }
                 self.root.holder_returned.notify_waiters();
                 result
             }

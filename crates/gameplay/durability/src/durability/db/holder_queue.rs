@@ -5,9 +5,10 @@
 //! as a fresh admission, can lose every return until its recovery window runs out. An owner
 //! that retries a refused checkout takes a ticket ([`HolderWaiter`]). While a ticket older than
 //! a checkout's own is waiting, the checkout is refused, so a returned holder goes to the
-//! owner refused first. An owner whose pass just returned the holder keeps its place for a
-//! short grace, so a step of several passes is not lost to later owners between its passes and
-//! repeated whole. Tickets are keyed by the owning task; root tasks spawned on its behalf
+//! owner refused first. A served owner keeps its place until its retried step ends or a whole
+//! liveness passes without a refusal, so a step of several passes, with other work such as an
+//! evidence exchange between them, is not lost to later owners between its passes and repeated
+//! whole. Tickets are keyed by the owning task; root tasks spawned on its behalf
 //! inherit its key, and a future driven outside any task by its thread's `block_on` is keyed by
 //! that thread.
 use std::sync::{Arc, Mutex};
@@ -48,31 +49,30 @@ pub(super) fn spawned_for<F: Future>(
 /// A refusal older than this no longer holds the queue: its owner stopped retrying without
 /// leaving it. Every retry waits less than this between attempts.
 const WAITING_LIVENESS: Duration = Duration::from_secs(1);
-/// How long an owner whose pass returned the holder keeps its place for its next pass.
-const RETURN_GRACE: Duration = Duration::from_millis(50);
 
 struct Waiter {
     owner: OwnerKey,
     ticket: u64,
     /// Set by a refused checkout while the owner waits for the holder; cleared by a served one.
     refused_at: Option<Instant>,
-    /// When the owner's last served pass returned the holder.
-    returned_at: Option<Instant>,
+    /// The owner's last refusal, kept across its served passes: its place in the queue.
+    last_refused: Option<Instant>,
 }
 
 impl Waiter {
     fn refused(&self, now: Instant) -> bool {
-        self.refused_at
-            .is_some_and(|at| now.saturating_duration_since(at) < WAITING_LIVENESS)
+        live(self.refused_at, now)
     }
 
-    /// Whether the owner holds later owners back: refused, or within its return grace.
+    /// Whether the owner holds later owners back: refused within the liveness, also when a
+    /// pass has served it since.
     fn waiting(&self, now: Instant) -> bool {
-        self.refused(now)
-            || self
-                .returned_at
-                .is_some_and(|at| now.saturating_duration_since(at) < RETURN_GRACE)
+        live(self.last_refused, now)
     }
+}
+
+fn live(refused_at: Option<Instant>, now: Instant) -> bool {
+    refused_at.is_some_and(|at| now.saturating_duration_since(at) < WAITING_LIVENESS)
 }
 
 /// The current owner's position for an idle holder.
@@ -91,8 +91,6 @@ pub(super) enum Turn {
 pub(super) struct HolderQueue {
     next_ticket: u64,
     waiters: Vec<Waiter>,
-    /// The owner of the last served checkout.
-    holding: Option<OwnerKey>,
 }
 
 impl HolderQueue {
@@ -120,22 +118,15 @@ impl HolderQueue {
     pub(super) fn refused(&mut self, owner: OwnerKey, now: Instant) {
         if let Some(waiter) = self.waiter_mut(owner) {
             waiter.refused_at = Some(now);
+            waiter.last_refused = Some(now);
         }
     }
 
-    /// A served checkout: the owner's ticket holds no later owner back while it has the holder.
+    /// A served checkout: the owner keeps its place for the rest of its step, but a later
+    /// failure of that step is no refusal of the holder.
     pub(super) fn served(&mut self, owner: OwnerKey) {
-        self.stop_waiting(owner);
-        self.holding = Some(owner);
-    }
-
-    /// The last served checkout returned the holder to idle: its owner keeps its place for
-    /// [`RETURN_GRACE`].
-    pub(super) fn returned(&mut self, now: Instant) {
-        if let Some(owner) = self.holding.take()
-            && let Some(waiter) = self.waiter_mut(owner)
-        {
-            waiter.returned_at = Some(now);
+        if let Some(waiter) = self.waiter_mut(owner) {
+            waiter.refused_at = None;
         }
     }
 
@@ -143,7 +134,7 @@ impl HolderQueue {
     fn stop_waiting(&mut self, owner: OwnerKey) {
         if let Some(waiter) = self.waiter_mut(owner) {
             waiter.refused_at = None;
-            waiter.returned_at = None;
+            waiter.last_refused = None;
         }
     }
 
@@ -162,7 +153,7 @@ impl HolderQueue {
             owner,
             ticket,
             refused_at: Some(now),
-            returned_at: None,
+            last_refused: Some(now),
         });
         true
     }
@@ -244,10 +235,7 @@ mod tests {
             // An owner without a ticket, such as a background pass, comes after every ticket.
             assert_eq!(queue.turn(later, now), Turn::Kept);
 
-            // Served, the first owner holds nobody back; refused again, it keeps its old place.
-            queue.served(first);
-            assert_eq!(queue.turn(second, now), Turn::Mine);
-            assert_eq!(queue.turn(first, now), Turn::Free);
+            // Refused again, the first owner keeps its old place.
             queue.refused(first, now);
             assert_eq!(queue.turn(first, now), Turn::Mine);
             assert_eq!(queue.turn(second, now), Turn::Kept);
@@ -263,7 +251,7 @@ mod tests {
     }
 
     #[test]
-    fn an_owner_whose_pass_returned_the_holder_keeps_its_place_for_its_next_pass() -> TestResult {
+    fn a_served_owner_keeps_its_place_until_its_step_ends() -> TestResult {
         run(async || {
             let (first, second, _) = owners().await?;
             let mut queue = HolderQueue::default();
@@ -271,15 +259,17 @@ mod tests {
             assert!(queue.enqueue(first, now));
             assert!(queue.enqueue(second, now));
             queue.served(first);
-            assert_eq!(queue.turn(second, now), Turn::Mine);
-            queue.returned(now);
+            // Between its passes, however far apart, later owners wait for its next one.
+            let later = now + WAITING_LIVENESS / 2;
+            assert_eq!(queue.turn(second, later), Turn::Kept);
             // Its own retry keeps the backoff of a step that failed for another reason.
-            assert_eq!(queue.turn(first, now), Turn::Free);
-            assert_eq!(queue.turn(second, now), Turn::Kept);
-            assert_eq!(queue.turn(second, now + RETURN_GRACE), Turn::Mine);
-            // Only the owner of the returned pass gets the grace, once.
-            queue.returned(now + RETURN_GRACE);
-            assert_eq!(queue.turn(second, now + RETURN_GRACE), Turn::Mine);
+            assert_eq!(queue.turn(first, later), Turn::Free);
+            // A whole liveness without a refusal ends its place, as does its step's end.
+            queue.refused(second, later);
+            assert_eq!(queue.turn(second, later), Turn::Kept);
+            assert_eq!(queue.turn(second, now + WAITING_LIVENESS), Turn::Mine);
+            queue.remove(first);
+            assert_eq!(queue.turn(second, later), Turn::Mine);
             Ok(())
         })
     }
