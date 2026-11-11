@@ -1,5 +1,5 @@
-//! WU26-05: Winter Update 2026 retired the daily item picker. Its registered commands stay
-//! in capability 182 for old clients but are refused without touching the daily claim.
+//! WU26-05: Winter Update 2026 retired the daily item picker. Its commands left capability
+//! 182 and are refused as unregistered without touching the daily claim.
 use super::*;
 #[test]
 fn daily_picker_commands_are_refused_after_rework() -> TestResult {

@@ -39,11 +39,6 @@ pub(super) async fn dispatch(
             .daily_reward_returner(actor, command, command_type, payload)
             .await;
     }
-    // Winter Update 2026 retires the item picker: the claim is one click and no rune,
-    // potion or exercise weapon is chosen. Its registered commands are refused.
-    if matches!(command_type, wire::picker::QUERY | wire::picker::CLAIM) {
-        return None;
-    }
     if command_type == wire::details::COMMAND_TYPE {
         if !payload.is_empty() {
             return None;
@@ -440,84 +435,44 @@ mod returner;
 
 #[cfg(test)]
 mod picker_retired_tests {
-    use super::super::connection::{
-        AdmissionRefusal, AdmittedSession, FreshAdmissionAttempt, FreshAdmissionAuthority,
-    };
     use super::*;
-    use crate::foundation::{ChannelId, WorldId};
 
-    /// Answers every daily command as a committed claim, so only a refusal in
-    /// `dispatch` itself yields `None`.
-    struct Claims;
-    impl FreshAdmissionAuthority for Claims {
-        async fn admit(
-            &self,
-            _attempt: FreshAdmissionAttempt<'_>,
-        ) -> Result<AdmittedSession, AdmissionRefusal> {
-            Err(AdmissionRefusal::Unavailable)
-        }
-        async fn daily_reward(
-            &self,
-            _actor: ExactActorRef,
-            _command: UseCommand,
-            _claim: Option<wire::DailyRewardClaim>,
-        ) -> Option<Vec<u8>> {
-            Some(vec![8, 1])
-        }
-    }
-
-    fn id(n: u8) -> [u8; 16] {
-        [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
-    }
-
+    /// WU26-05: the retired item picker commands are routed nowhere. Dispatch routes exactly
+    /// the commands capability 182 owns, and neither picker command is among them, so the
+    /// connection refuses both as unregistered without reaching the daily owner.
     #[test]
-    fn daily_picker_query_and_claim_are_refused_without_reading_their_bytes()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let actor = ExactActorRef::transport_fixture(
-            WorldId::decode(&id(1)).map_err(|_| "world")?,
-            ChannelId::decode(&id(2)).map_err(|_| "channel")?,
+    fn daily_picker_commands_are_not_routed_after_rework() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mechanic = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/mechanics/0464-daily_reward_v2.mechanic"
+        ));
+        let routed = mechanic
+            .lines()
+            .find_map(|line| line.strip_prefix("commands="))
+            .ok_or("daily mechanic commands")?
+            .split(',')
+            .map(str::parse::<u32>)
+            .collect::<Result<Vec<_>, _>>()?;
+        let owned = oteryn_protocol_oteryn::capability_tables::GATED
+            .iter()
+            .find(|(capability, _, _)| *capability == wire::CAPABILITY_DAILY_REWARD_V2)
+            .map(|(_, commands, _)| commands.to_vec())
+            .ok_or("capability 182")?;
+        assert_eq!(routed, owned);
+        assert_eq!(
+            routed,
+            [
+                wire::COMMAND_TYPE_DAILY_REWARD_CLAIM,
+                wire::COMMAND_TYPE_DAILY_REWARD_QUERY,
+                wire::details::COMMAND_TYPE,
+                wire::returner::QUERY,
+                wire::returner::CLAIM,
+            ]
         );
-        let command = UseCommand {
-            game_session_id: GameSessionId::decode(&id(4)).map_err(|_| "session")?,
-            command_id: 1,
-            item_fence: None,
-        };
-        let selection = wire::picker::Claim {
-            epoch: 1,
-            day: 1,
-            picks: vec![wire::picker::Pick {
-                item: 266,
-                count: 5,
-            }],
+        for retired in [wire::picker::QUERY, wire::picker::CLAIM] {
+            assert!(!routed.contains(&retired), "picker command {retired} is not routed");
         }
-        .encode()?;
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?
-            .block_on(async {
-                for (kind, payload) in [
-                    (wire::picker::QUERY, &[][..]),
-                    (wire::picker::CLAIM, &selection[..]),
-                    (wire::picker::CLAIM, &[1, 2, 3][..]),
-                ] {
-                    let reply = dispatch(&Claims, actor, command, kind, payload).await;
-                    assert_eq!(reply, None, "picker command {kind} is refused");
-                    assert_eq!(
-                        result(kind, reply),
-                        (crate::foundation::CommandStatus::Rejected, Vec::new())
-                    );
-                }
-                // The one-click claim still reaches the daily owner.
-                let claim = dispatch(
-                    &Claims,
-                    actor,
-                    command,
-                    wire::COMMAND_TYPE_DAILY_REWARD_CLAIM,
-                    &[],
-                )
-                .await;
-                assert_eq!(claim, Some(vec![8, 1]));
-            });
         Ok(())
     }
 }

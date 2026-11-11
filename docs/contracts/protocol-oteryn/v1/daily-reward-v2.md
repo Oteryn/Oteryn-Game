@@ -52,9 +52,10 @@ bytes. Maximum 1104 bytes. The claim remains empty and server-owned.
 ## item picker (T144, owner decision B 2026-11-09), retired
 
 Retired by WU26-05 (Winter Update 2026 test server, thread 565: one-click claim, no
-choice of runes, potions or exercise weapons). Commands 6122 and 6123 stay registered
-under capability 182 so older clients still negotiate it, but Game refuses both with
-`Rejected` and an empty payload and never reads their bytes. The one-click claim is the
+choice of runes, potions or exercise weapons). Commands 6122 and 6123 left capability
+182 and the registry: no capability owns them, Dispatch routes them nowhere and refuses
+them as unregistered (`Rejected`, empty payload) without reading their bytes. Both
+numbers stay retired and are never reused. The one-click claim is the
 only daily claim; its request binding is unchanged. No picked item is minted and
 `game_daily_reward_picks` (migration 1711) is history only. The rules below describe
 the retired behaviour.
