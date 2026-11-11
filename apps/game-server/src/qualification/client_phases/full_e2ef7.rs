@@ -587,6 +587,18 @@ async fn journey(
 mod tests {
     use super::*;
 
+    #[test]
+    fn ordinary_hunt_one_hit_removal_with_corpse_proves_kill() {
+        assert!(hunt_kill_proven(false, true));
+    }
+
+    #[test]
+    fn ordinary_hunt_removal_without_corpse_does_not_prove_kill() {
+        assert!(!hunt_kill_proven(false, false));
+        assert!(!hunt_kill_proven(true, false));
+        assert!(!hunt_kill_proven(true, true));
+    }
+
     #[tokio::test(start_paused = true)]
     async fn ranking_deadline_retains_the_unfinished_query_and_completed_progress() {
         let mut progress = RankingProgress::new();
@@ -3420,6 +3432,10 @@ async fn earn_pvp_level(client: &mut DevClientSession, world: &BundleWorld) -> T
         })?;
     }
 }
+fn hunt_kill_proven(alive: bool, corpse_at_last_position: bool) -> bool {
+    !alive && corpse_at_last_position
+}
+
 async fn hunt_one(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -3513,17 +3529,17 @@ async fn hunt_one(client: &mut DevClientSession, world: &BundleWorld) -> TestRes
         let alive = client
             .world_entities()
             .is_some_and(|es| es.get(&target.entity).is_some());
-        if damaged
-            && !alive
-            && let Some(corpse) = client
-                .world_entities()
-                .and_then(|es| {
-                    es.iter().find(|e| {
-                        e.kind == oteryn_dev_client::EntityKind::Corpse
-                            && e.position == last_position
-                    })
+        let corpse = client
+            .world_entities()
+            .and_then(|es| {
+                es.iter().find(|e| {
+                    e.kind == oteryn_dev_client::EntityKind::Corpse
+                        && e.position == last_position
                 })
-                .copied()
+            })
+            .copied();
+        if hunt_kill_proven(alive, corpse.is_some())
+            && let Some(corpse) = corpse
         {
             break corpse;
         }
