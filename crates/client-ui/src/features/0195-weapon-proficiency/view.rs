@@ -53,23 +53,17 @@ pub fn panel_text(p: &WeaponProficiencyPanel) -> String {
             page.total
         );
         for entry in &page.entries {
-            let _ = lwriteln!(
-                state,
-                "{} (weapon id {}): {} XP",
-                entry.name,
-                entry.definition,
-                entry.experience
-            );
+            let _ = lwriteln!(state, "{}: {} XP", entry.name, entry.experience);
             let _ = lwriteln!(state, "Level thresholds: {:?}", entry.thresholds);
             for (level, data) in entry.levels.iter().enumerate() {
-                let _ = lwriteln!(
-                    state,
-                    "  Level {} (selected {:?})",
-                    level + 1,
-                    data.selected
-                );
+                let _ = lwriteln!(state, "  Level {}", level + 1);
                 for (index, perk) in data.perks.iter().enumerate() {
-                    let _ = writeln!(state, "    {index}: {perk}");
+                    let mark = if data.selected == Some(index as u8) {
+                        "☑"
+                    } else {
+                        "☐"
+                    };
+                    let _ = writeln!(state, "    {mark} {perk}");
                 }
             }
         }
@@ -137,12 +131,10 @@ pub fn panel_text(p: &WeaponProficiencyPanel) -> String {
         ));
         for row in &page.rows {
             catalogue.push_str(&lfmt!(
-                "{} [{}]: {} XP, level {}, perks {:?}\n",
+                "{}: {} XP, level {}\n",
                 row.name,
-                row.definition,
                 row.experience,
-                row.level,
-                row.selections
+                row.level
             ));
         }
     }

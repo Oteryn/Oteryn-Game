@@ -5,6 +5,28 @@ pub const COLUMNS: u32 = 31;
 pub const ROWS: u32 = 25;
 pub const TILE_PX: u32 = 4;
 
+pub const MIN_ZOOM: i32 = 1;
+pub const MAX_ZOOM: i32 = 8;
+pub const LOWEST_FLOOR: i16 = -15;
+pub const HIGHEST_FLOOR: i16 = 0;
+
+/// Zoom in halves the tiles per cell, never below one.
+pub fn zoom_in(zoom: i32) -> i32 {
+    (zoom / 2).max(MIN_ZOOM)
+}
+/// Zoom out doubles the tiles per cell, never above eight.
+pub fn zoom_out(zoom: i32) -> i32 {
+    zoom.saturating_mul(2).min(MAX_ZOOM)
+}
+/// One floor towards the surface; the surface is floor zero.
+pub fn floor_up(floor: i16) -> i16 {
+    floor.saturating_add(1).min(HIGHEST_FLOOR)
+}
+/// One floor deeper, never below the lowest map floor.
+pub fn floor_down(floor: i16) -> i16 {
+    floor.saturating_sub(1).max(LOWEST_FLOOR)
+}
+
 pub fn view() -> Result<TileView, BatchError> {
     TileView::new(TileCoord::new(0, 0), TILE_PX, COLUMNS, ROWS)
 }
@@ -40,6 +62,29 @@ pub fn click(own: TileCoord, x: f64, y: f64) -> Option<TileCoord> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn t076_zoom_and_floor_controls_clamp_at_their_limits() {
+        assert_eq!(zoom_out(1), 2);
+        assert_eq!(zoom_out(4), 8);
+        assert_eq!(zoom_out(8), 8);
+        assert_eq!(zoom_in(8), 4);
+        assert_eq!(zoom_in(2), 1);
+        assert_eq!(zoom_in(1), 1);
+        assert_eq!(floor_up(-7), -6);
+        assert_eq!(floor_up(0), 0);
+        assert_eq!(floor_down(-7), -8);
+        assert_eq!(floor_down(-15), -15);
+        let mut zoom = 1;
+        for _ in 0..6 {
+            zoom = zoom_out(zoom);
+        }
+        assert_eq!(zoom, MAX_ZOOM);
+        let mut floor = 0;
+        for _ in 0..20 {
+            floor = floor_down(floor);
+        }
+        assert_eq!(floor, LOWEST_FLOOR);
+    }
     #[test]
     fn center_edges_and_invalid_coordinates() {
         let own = TileCoord::new(100, 200);

@@ -200,15 +200,15 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
                     continue;
                 }
                 match id {
-                    100 => map.zoom = (map.zoom / 2).max(1),
-                    101 => map.zoom = (map.zoom * 2).min(8),
+                    100 => map.zoom = oteryn_client_ui::minimap::zoom_in(map.zoom),
+                    101 => map.zoom = oteryn_client_ui::minimap::zoom_out(map.zoom),
                     102 => {
                         map.tracking = false;
-                        map.floor = (map.floor + 1).min(0);
+                        map.floor = oteryn_client_ui::minimap::floor_up(map.floor);
                     }
                     103 => {
                         map.tracking = false;
-                        map.floor = (map.floor - 1).max(-15);
+                        map.floor = oteryn_client_ui::minimap::floor_down(map.floor);
                     }
                     104 => {
                         map.tracking = true;

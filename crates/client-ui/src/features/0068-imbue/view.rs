@@ -51,6 +51,11 @@ pub fn selected_detail_text(panel: &ImbuePanel) -> String {
                     .find(|quote| quote.family == offer.family && quote.tier == offer.tier)
             })
         {
+            text.push_str(&lfmt!(
+                "Quoted cost: {} gold; success chance: {}%\n",
+                quote.gold,
+                quote.success_percent
+            ));
             if quote.recipe_available {
                 text.push_str(tr!("Required materials (main backpack):\n"));
                 for material in &quote.materials {
