@@ -1072,7 +1072,7 @@ async fn field_scenario_inner(
             .ok_or("caster")?
             .vitals()
     };
-    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let (mut server, client) = tokio::io::duplex(1 << 20);
     let serving = async {
         let end = serve_admitted(&mut server, admitted, &owner, FIELD_SCENARIO_LIVENESS).await;
         drop(server);
@@ -1117,6 +1117,9 @@ async fn field_scenario_inner(
     let machete_definition = inventory_definition(machete_id)?;
     let destroy_definition = inventory_definition(3148)?;
     let casting = async {
+        // Drop the endpoint on every return, including an early client error.
+        // Otherwise join_two can retain that error while the server waits for EOF.
+        let mut client = client;
         let mut handle = None;
         let mut field_handle = None;
         let mut machete = None;
@@ -1647,7 +1650,9 @@ async fn field_scenario_inner(
         std::time::Duration::from_secs(if player_field { 90 } else { 30 }),
         async {
             let (served, result) = join_two(serving, casting).await;
-            result?;
+            result.map_err(|error| {
+                format!("FIELD-RUNES caster rune={rune} scenario={scenario:?}: {error}")
+            })?;
             served?;
             // The fixture root has one SQL holder. Finish the caster's wire
             // phase before driving the victim: the caster's vitals cadence
@@ -1674,7 +1679,10 @@ async fn field_scenario_inner(
             Ok::<_, Box<dyn std::error::Error>>(())
         },
     )
-    .await??;
+    .await
+    .map_err(|error| {
+        format!("FIELD-RUNES transport rune={rune} scenario={scenario:?}: {error}")
+    })??;
     eprintln!("FIELD-RUNES transport complete rune={rune} scenario={scenario:?}");
     if destroy_scenario(scenario) {
         drop(owner);
@@ -2380,7 +2388,10 @@ async fn step_creature_on_field(
         .active_generation
         .and_then(|active| active.native_gameplay())
         .ok_or("native content")?;
-    let room = owner.rooms().gate_field_step_ingress().ok_or("field room")?;
+    let room = owner
+        .rooms()
+        .gate_field_step_ingress()
+        .ok_or("field room")?;
     let pass = tokio::time::timeout(std::time::Duration::from_secs(10), async {
         loop {
             match owner.root.try_issue_semantic_pass() {
@@ -2675,6 +2686,7 @@ async fn drive_player_field(
     harmful: bool,
     output: u32,
 ) -> TestResult {
+    eprintln!("FIELD-RUNES victim scenario={scenario:?} stage=setup");
     let creator_session = admitted.game_session_id;
     let session = crate::foundation::GameSessionId::decode(&id(110)).map_err(debug)?;
     let mut admitted = admitted;
@@ -2736,18 +2748,26 @@ async fn drive_player_field(
     } else {
         0
     };
-    let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let serving =
-        async { serve_admitted(&mut server, admitted, owner, FIELD_SCENARIO_LIVENESS).await };
+    let (server, client) = tokio::io::duplex(1 << 20);
+    let serving = async {
+        // Close this endpoint on return so a waiting client observes EOF.
+        let mut server = server;
+        serve_admitted(&mut server, admitted, owner, FIELD_SCENARIO_LIVENESS).await
+    };
     let driving = async {
+        let mut client = client;
+        eprintln!("FIELD-RUNES victim scenario={scenario:?} stage=snapshot");
         loop {
-            let frame = read_frame(&mut client).await?;
+            let frame = read_frame(&mut client).await.map_err(|error| {
+                format!("FIELD-RUNES victim scenario={scenario:?} stage=snapshot: {error}")
+            })?;
             if decode_wire_envelope(&frame).map_err(debug)?.message_type()
                 == MessageType::SnapshotCommit
             {
                 break;
             }
         }
+        eprintln!("FIELD-RUNES victim scenario={scenario:?} stage=ready");
         if scenario == Scenario::Aged {
             wait_field_client(&mut client, std::time::Duration::from_secs(6)).await?;
         }
@@ -2778,6 +2798,7 @@ async fn drive_player_field(
             drop(permit);
         }
         if scenario == Scenario::Death {
+            eprintln!("FIELD-RUNES victim scenario={scenario:?} stage=death");
             let (outcome, _) = owner
                 .ordinary_paced_step(target, session, StepDirection::West, None, None)
                 .await;
@@ -2858,6 +2879,9 @@ async fn drive_player_field(
             (1, StepDirection::West, true),
             (2, StepDirection::North, false),
         ] {
+            eprintln!(
+                "FIELD-RUNES victim scenario={scenario:?} stage=step command={id} replay={replay}"
+            );
             if id == 2 {
                 // Drive the actor-owned pacing clock instead of guessing its deadline. If the
                 // fixed sleep wakes just before the deadline, the connection buffers this step
@@ -2889,6 +2913,9 @@ async fn drive_player_field(
                     break;
                 }
             }
+            eprintln!(
+                "FIELD-RUNES victim scenario={scenario:?} stage=reconciliation command={id} replay={replay}"
+            );
             drop(
                 owner
                     .spell_lane_permit()
@@ -2901,6 +2928,7 @@ async fn drive_player_field(
                 "scenario={scenario:?} output={output} step={id} replay={replay}: the actual player entry owner enforces protection and World policy; replay does no extra damage"
             );
         }
+        eprintln!("FIELD-RUNES victim scenario={scenario:?} stage=harm");
         let harm:(i64,i64)=sqlx::query_as("SELECT count(*),COALESCE(sum(damage),0)::bigint FROM game_character_pvp_harm WHERE octet_length(field_occurrence)=32").fetch_one(&harness.pool).await?;
         assert_eq!(
             harm,
@@ -2931,6 +2959,7 @@ async fn drive_player_field(
             );
         }
         if scenario == Scenario::RevokedCaster {
+            eprintln!("FIELD-RUNES victim scenario={scenario:?} stage=current-source");
             let creator = owner
                 .states
                 .spell_states
@@ -2951,6 +2980,7 @@ async fn drive_player_field(
                 account_id: id(40),
                 transport: current.current_transport().ok_or("creator transport")?,
             };
+            eprintln!("FIELD-RUNES victim scenario={scenario:?} stage=control-loss");
             assert_eq!(
                 owner
                     .commit_control_loss(
@@ -2962,17 +2992,19 @@ async fn drive_player_field(
                 crate::gameplay_transport::connection::ControlLossResult::Recorded
             );
         }
+        eprintln!("FIELD-RUNES victim scenario={scenario:?} stage=skull");
         let skull:bool=sqlx::query_scalar("SELECT COALESCE((SELECT white_skull_until>clock_timestamp() FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid),false)").bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
         assert!(
             skull
                 == (harmful && !matches!(scenario, Scenario::Hardcore | Scenario::DepartedCaster)),
             "only incidental field harm gives a skull, including with secure mode on"
         );
+        eprintln!("FIELD-RUNES victim scenario={scenario:?} stage=shutdown");
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
     };
     let (end, result) = join_two(serving, driving).await;
-    result?;
+    result.map_err(|error| format!("FIELD-RUNES victim scenario={scenario:?}: {error}"))?;
     assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
     Ok(())
 }
@@ -2996,7 +3028,10 @@ async fn qualify_barrier_consumers(
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .ok_or("native content")?;
-    let room = owner.rooms().gate_field_step_ingress().ok_or("field room")?;
+    let room = owner
+        .rooms()
+        .gate_field_step_ingress()
+        .ok_or("field room")?;
     let pass = tokio::time::timeout(std::time::Duration::from_secs(10), async {
         loop {
             match owner.root.try_issue_semantic_pass() {
