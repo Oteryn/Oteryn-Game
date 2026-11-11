@@ -37,14 +37,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return GuildReply::Rejected;
             }
         }
+        // Capability 492: progress windows of a pity boss carry the Moonsilver tracker.
+        let pity = admitted
+            .continuity
+            .selected_capabilities
+            .contains(wire::CAPABILITY_BOSS_DIFFICULTY_PITY_V1);
         match self
             .root
-            .boss_difficulty_command(self.character, self.holder, fence, command_id, payload)
+            .boss_difficulty_command_with_pity(
+                self.character,
+                self.holder,
+                fence,
+                command_id,
+                payload,
+                pity,
+            )
             .await
         {
             Ok(Some(reply)) => {
                 if let Ok(wire::Request::Start { context, .. }) = wire::decode_request(payload)
-                    && let Ok(wire::Reply::Window { boss_key, .. }) = wire::decode_reply(&reply)
+                    && let Ok((wire::Reply::Window { boss_key, .. }, _)) =
+                        wire::decode_reply_with_pity(&reply)
                 {
                     let Ok(key) =
                         oteryn_protocol_oteryn::boss_encounter::encode_boss_key(&boss_key)
