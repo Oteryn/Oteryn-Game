@@ -18,6 +18,9 @@ use crate::gameplay_transport::world_spatial::{
     ChannelEntities, ChannelEntity, VisibleKind, WorldSpatialObservation,
 };
 use crate::gameplay_transport::{COMMAND_HOLDER_WINDOW, ComposedFreshAdmission, item_fence_of};
+use oteryn_protocol_oteryn::world_spatial_entities::{
+    EntityFields, decode_world_spatial_entities_delta_with_fields,
+};
 use oteryn_protocol_oteryn::{appearance, decode_state_delta};
 use std::cell::Cell;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
@@ -100,7 +103,8 @@ impl FreshAdmissionAuthority for ProjectionOwner<'_, '_, '_, '_> {
                     item_definition_ref: std::num::NonZeroU32::new(1)?,
                 },
                 identity: id(120),
-                generation: 1,
+                // Ground items carry no actor incarnation on the wire.
+                generation: 0,
                 position,
                 revision: u64::try_from(offset).ok()?,
             });
@@ -148,7 +152,12 @@ impl FreshAdmissionAuthority for ProjectionOwner<'_, '_, '_, '_> {
             .appearance_observation_projected_result(actor, session, empty_outfit, entities)
             .await;
         match result {
-            Err(ObservationError::HolderBusy) => self.busy.set(self.busy.get() + 1),
+            Err(ObservationError::HolderBusy) => {
+                self.busy.set(self.busy.get() + 1);
+                // Change the source before another refresh can stage it, so
+                // reusing the originally rejected offset 1 still fails below.
+                self.item_offset.set(2);
+            }
             Err(ObservationError::Unavailable) => self.unavailable.set(self.unavailable.get() + 1),
             Ok(_) => {}
         }
@@ -327,7 +336,7 @@ fn scenario(case: Case) -> TestResult {
                     assert!(owner.runtime.try_lock().is_ok());
                     assert!(owner.states.spell_states.try_lock().is_ok());
                     // The previously staged position must also be discarded.
-                    projection.item_offset.set(2);
+                    assert_eq!(projection.item_offset.get(), 2);
                     drop(held);
                     let mut mapped = false;
                     let mut spatial = false;
@@ -366,7 +375,13 @@ fn scenario(case: Case) -> TestResult {
                             }
                             1 => {
                                 assert!(mapped && !spatial);
-                                let update = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta(delta.payload).map_err(debug)?;
+                                let (update, _) = decode_world_spatial_entities_delta_with_fields(
+                                    delta.payload,
+                                    EntityFields::selected(
+                                        admitted.continuity.selected_capabilities.as_slice(),
+                                    ),
+                                )
+                                .map_err(debug)?;
                                 assert_eq!(update.enter.len(), 1);
                                 assert_eq!(update.update.len(), 1);
                                 assert!(update.leave.is_empty());

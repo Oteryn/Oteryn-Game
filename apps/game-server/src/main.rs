@@ -90,10 +90,8 @@ fn serve(arguments: &[std::ffi::OsString]) -> ExitCode {
     };
     let path = std::path::PathBuf::from(path);
     let npc_data = npc_data.map(|(project, digest)| (project.to_path_buf(), digest.to_owned()));
-    let served = std::thread::Builder::new()
-        .name("game-node".into())
-        .stack_size(NODE_STACK_BYTES)
-        .spawn(move || {
+    let served =
+        oteryn_task_supervisor::spawn_thread_supervised("game-node", NODE_STACK_BYTES, move || {
             runtime.block_on(Box::pin(
                 oteryn_game_server::node::serve::run_with_npc_data_project(
                     &path,

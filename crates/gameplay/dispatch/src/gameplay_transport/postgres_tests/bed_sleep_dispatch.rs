@@ -176,9 +176,7 @@ pub(super) async fn production_rest(
     eprintln!("PG_MARKER C10 S07 reciprocal-pair acl reservation wake real-owner assertions-preserved");
     eprintln!("PG_MARKER C10 native-terminal-release rollback-verified");
     eprintln!("PG_MARKER C10 entering composed production bed sleep");
-    let result = crate::gameplay_transport::bed_sleep::dispatch(owner, actor, command,
-        Ok(BedSleepIntent {target:handle,skill:6}), Some(&view)).await.map_err(debug)?;
-    assert_eq!(result.disposition, UseDisposition::OfflineTraining);
+    super::server_modal_bed::sleep(h, owner, admitted).await?;
     let terminal: i16 = sqlx::query_scalar("SELECT session_state FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
         .bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(terminal, 3);

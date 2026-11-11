@@ -241,6 +241,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .training_release_store(releasing, admitted, logout.is_some())
             .await
         else {
+            self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
             return ReleaseAttempt::Retry;
         };
         let outcome = AdmissionRetryBudget::for_command(self.root)

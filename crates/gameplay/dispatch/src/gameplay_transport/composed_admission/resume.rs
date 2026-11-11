@@ -5,6 +5,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
+        // Recovery routing runs before the scoped owner is selected. Keep the
+        // same root preference across that handoff and every later readback.
+        let _foreground = self
+            .root
+            .foreground_demand()
+            .map_err(|_| AdmissionRefusal::Unavailable)?;
         let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
         if let Some(admitted) = self.recover_activity_session(&budget, &attempt).await? {
             return Ok(admitted);

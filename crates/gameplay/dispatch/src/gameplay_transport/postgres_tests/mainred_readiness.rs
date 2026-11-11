@@ -1,5 +1,5 @@
 //! Physical holder contention/retirement at the real projection and progression callers.
-use super::fixture::{Harness, debug, join_two};
+use super::fixture::{Harness, debug};
 use super::kill_reward_e2e::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -7,6 +7,8 @@ use crate::gameplay_transport::character_progression_binding::{
     ProgressionBinding, ProgressionDurable, ProgressionRounds, bind_character_progression,
 };
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use std::future::{Future, poll_fn};
+use std::task::Poll;
 use std::time::{Duration, Instant};
 
 #[test]
@@ -39,7 +41,7 @@ fn mainred_resume_projections_wait_for_real_holder_postgres() -> TestResult {
             assert!(h.root.maintain_ready_once().await?);
             let mut holder = h.root.try_acquire_ready().map_err(debug)?;
             assert!(!h.root.is_ready());
-            let reading = async {
+            let mut reading = Box::pin(async {
                 if house {
                     owner
                         .project_house_transfer(admitted)
@@ -51,21 +53,35 @@ fn mainred_resume_projections_wait_for_real_holder_postgres() -> TestResult {
                         .await
                         .map(|v| v.is_none())
                 }
-            };
-            let returning = async {
-                tokio::time::sleep(Duration::from_millis(150)).await;
-                holder
-                    .return_to_pool_observed_until(
-                        Instant::now() + crate::durability::DB_PASS_DEADLINE,
-                    )
+            });
+            assert!(
+                poll_fn(|cx| Poll::Ready(reading.as_mut().poll(cx)))
                     .await
-            };
-            let (projection, _) = join_two(reading, returning).await;
+                    .is_pending()
+            );
+            tokio::time::sleep(Duration::from_millis(150)).await;
+            let _ = holder
+                .return_to_pool_observed_until(Instant::now() + crate::durability::DB_PASS_DEADLINE)
+                .await;
+            // No repoll of the projection between the observed return and the
+            // scheduled owner's attempt to retake the same idle holder.
+            assert!(h.root.is_ready());
+            for _ in 0..16 {
+                assert!(matches!(
+                    h.root.try_issue_background_semantic_pass(),
+                    Err(crate::durability::DurabilityError::RootUnavailable)
+                ));
+            }
+            let projection = reading.await;
             assert_eq!(
                 projection,
                 Ok(true),
                 "house={house}: a busy holder is not missing scope truth"
             );
+            h.root
+                .try_issue_background_semantic_pass()?
+                .run(|_, _| Box::pin(async { Ok(()) }))
+                .await?;
         }
         eprintln!(
             "MAINRED_READINESS_POSTGRES projections=activity,house actual_holder_return=observed"

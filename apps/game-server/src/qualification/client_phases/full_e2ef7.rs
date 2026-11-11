@@ -1,5 +1,6 @@
 //! E2EF7: complete bounded ranking journey using ordinary admitted characters.
-//! No privileged provisioning: the retained snapshot must come from the served job.
+//! First prove the served job's snapshots, then prepare a cut through the existing fixture
+//! publisher so the ordinary newly admitted character can exercise own rank and retention.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::highscores::{self, wire};
@@ -344,6 +345,77 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+async fn prepare_ranking_cut(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    own_name: &str,
+    progress: &mut RankingProgress,
+) -> TestResult {
+    use crate::durability::highscore_snapshot::{CutLimits, SnapshotCatalogues};
+
+    let world = wire::WorldId::decode(&clients.world)?;
+    // Nothing in this fixture has published yet: all required categories must first
+    // be readable from the real served job, including its correctly echoed World.
+    // Keep this precondition and preparation inside the existing journey deadline.
+    let mut served_achievement_cut = None;
+    for category in (1..=10).chain(std::iter::once(12)) {
+        let mut probe = request(category, 0, 1, 0);
+        probe.details = true;
+        progress.stage("served_job_cut", Some(probe));
+        let page = observed_query(client, probe, progress).await?;
+        if page.world != Some(world) {
+            return Err("ranking served-job snapshot names another World".into());
+        }
+        if category == 10 {
+            served_achievement_cut = Some(page.snapshot_id);
+        }
+    }
+    let served_achievement_cut =
+        served_achievement_cut.ok_or("ranking served-job achievement snapshot absent")?;
+    evidence("E2EF7_SETUP S11 served-job-cut PASS categories=11 source=served-job");
+
+    // Boot may publish before the ordinary admission initializes progression. Do not
+    // alter the 30-minute scheduler or invent a planned reset: this existing test-only
+    // entry uses the same catalogue, role, RR cut, eligibility and registered limits.
+    progress.stage("fixture_cut_publication", None);
+    let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)
+        .map_err(|_| "ranking fixture root unavailable")?;
+    root.await_ready()
+        .await
+        .map_err(|_| "ranking fixture root not ready")?;
+    let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
+        .map_err(|_| "ranking fixture achievement catalogue unavailable")?;
+    let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements))
+        .map_err(|_| "ranking fixture snapshot catalogues unavailable")?;
+    // A failed or uncertain publication is final; never replay this write.
+    let published = root
+        .refresh_highscore_world_within(world, catalogues, CutLimits::REGISTERED)
+        .await
+        .map_err(|_| "ranking fixture cut publication failed")?;
+    let snapshot = published
+        .iter()
+        .find(|snapshot| snapshot.category == 10)
+        .ok_or("ranking fixture achievement cut absent")?;
+    if snapshot.snapshot_id <= served_achievement_cut {
+        return Err("ranking fixture publication did not advance its cut".into());
+    }
+    let mut probe = request(10, 0, 1, snapshot.snapshot_id);
+    probe.details = true;
+    progress.stage("fixture_cut_readback", Some(probe));
+    let page = observed_query(client, probe, progress).await?;
+    if page.world != Some(world)
+        || page.computed_at != snapshot.computed_at_ms
+        || page.own_row.as_ref().is_none_or(|own| own.name != own_name)
+    {
+        return Err("ranking fixture cut lacks the admitted character's own row".into());
+    }
+    evidence(&format!(
+        "E2EF7_SETUP S11 fixture-prepared-cut PASS category=10 snapshot_id={} source=fixture-publisher",
+        snapshot.snapshot_id
+    ));
+    Ok(())
+}
+
 async fn journey(
     row: &mut Row,
     clients: &SeamClients<'_>,
@@ -365,6 +437,7 @@ async fn journey(
         let own_name = own_name
             .as_str()
             .map_err(|e| format!("ranking own name: {e:?}"))?;
+        prepare_ranking_cut(&mut client, clients, own_name, progress).await?;
         let mut observed_own = false;
         // Charm points (11) have no activated source. Its unsupported response
         // is exercised as a refusal; it must never masquerade as an empty list.
@@ -625,12 +698,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         clock_journey(&mut row, &mut client, clients),
     )
     .await;
-    let mut result = match result {
-        Ok(result) => result,
-        Err(_) => Err("world-clock deadline: full cycle not observed within wall-time budget".into()),
-    };
-    // The session lives outside the timed future: even cancellation attempts an
-    // ordinary logout, and cleanup failure prevents a full-row PASS.
+    let mut result = clock_journey_outcome(result, &mut client);
+    // A completed journey may still need an ordinary logout. Cancellation
+    // instead discards the connection: its reply or frame may be only partly read.
     if let Some(client) = client.as_mut() {
         match tokio::time::timeout(Duration::from_secs(25), logout(client)).await {
             Ok(Ok(())) => row.pass("final-logout"),
@@ -647,6 +717,19 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     additional_rows(clients).await;
     continuation_rows(clients).await;
     forge_row(clients).await;
+}
+
+fn clock_journey_outcome(
+    result: Result<TestResult, tokio::time::error::Elapsed>,
+    connection: &mut Option<DevClientSession>,
+) -> TestResult {
+    match result {
+        Ok(result) => result,
+        Err(_) => {
+            *connection = None;
+            Err("world-clock deadline: full cycle not observed within wall-time budget".into())
+        }
+    }
 }
 
 const CLOCK_ACTIONS: &[&str] = &[
@@ -1063,7 +1146,8 @@ async fn clock_journey(
                 std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some(),
             )
             .await?;
-            // Final logout is checked by run_packet even on timeout or error.
+            // A completed journey's final logout is checked by run_packet.
+            // Cancellation drops its uncertain connection and leaves logout unproven.
             if CLOCK_ACTIONS
                 .iter()
                 .filter(|action| **action != "final-logout")
@@ -1396,9 +1480,18 @@ async fn additional_rows(clients: &SeamClients<'_>) {
         light_journey(&mut row, &mut light, clients),
     )
     .await;
-    let mut result = result.unwrap_or_else(|_| {
-        Err("personal-light journey exceeded wall-time deadline".into())
-    });
+    let mut result = match result {
+        Ok(result) => {
+            if observer_cancelled(&result) {
+                light = None;
+            }
+            result
+        }
+        Err(_) => {
+            light = None;
+            Err("personal-light journey exceeded wall-time deadline".into())
+        }
+    };
     if let Some(client) = light.as_mut() {
         match tokio::time::timeout(Duration::from_secs(25), client.logout()).await {
             Ok(Ok(())) => row.pass("final-logout"),
@@ -1422,7 +1515,10 @@ async fn additional_rows(clients: &SeamClients<'_>) {
             party_spell_journey(&mut gate, &mut cost, &mut pair, clients, world),
         )
         .await
-        .unwrap_or_else(|_| Err("party-spell journey deadline; remaining actions unproven".into())),
+        .unwrap_or_else(|_| {
+            pair = [None, None];
+            Err("party-spell journey deadline; remaining actions unproven".into())
+        }),
         Err(error) => Err(format!("party compiled-world load: {error}").into()),
     };
     let mut cleaned = 0;
@@ -1499,6 +1595,35 @@ const FORGE_SUPPORTED_CAPABILITIES: &[u32] = &[
 ];
 
 type LightStream = tokio_rustls::client::TlsStream<TcpStream>;
+
+#[derive(Debug)]
+struct ObserverIoDeadline {
+    operation: &'static str,
+    elapsed: tokio::time::error::Elapsed,
+}
+
+impl std::fmt::Display for ObserverIoDeadline {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(self.operation)
+    }
+}
+
+impl std::error::Error for ObserverIoDeadline {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.elapsed)
+    }
+}
+
+fn observer_cancelled(result: &TestResult) -> bool {
+    result
+        .as_ref()
+        .is_err_and(|error| observer_error_cancelled(error.as_ref()))
+}
+
+fn observer_error_cancelled(error: &(dyn std::error::Error + 'static)) -> bool {
+    error.is::<tokio::time::error::Elapsed>() || error.is::<ObserverIoDeadline>()
+}
+
 struct LightClient {
     stream: LightStream,
     generation: u64,
@@ -1528,7 +1653,10 @@ async fn light_read<S: tokio::io::AsyncRead + Unpin>(stream: &mut S) -> TestResu
         Ok(bytes)
     })
     .await
-    .map_err(|_| "personal-light frame deadline")?
+    .map_err(|elapsed| ObserverIoDeadline {
+        operation: "personal-light frame deadline",
+        elapsed,
+    })?
 }
 async fn light_write(stream: &mut LightStream, bytes: &[u8]) -> TestResult {
     tokio::time::timeout(Duration::from_secs(20), async {
@@ -1537,7 +1665,10 @@ async fn light_write(stream: &mut LightStream, bytes: &[u8]) -> TestResult {
         Ok(())
     })
     .await
-    .map_err(|_| "personal-light write deadline")?
+    .map_err(|elapsed| ObserverIoDeadline {
+        operation: "personal-light write deadline",
+        elapsed,
+    })?
 }
 fn post_frame(
     bytes: &[u8],
@@ -1982,7 +2113,13 @@ impl LightClient {
             let (status, payload) = self
                 .command(native::logout::COMMAND_TYPE_LOGOUT_INTENT, &[])
                 .await
-                .map_err(|error| format!("personal-light logout attempt {attempts} command_id={command_id} failed: {error}"))?;
+                .map_err(|error| {
+                    if observer_error_cancelled(error.as_ref()) {
+                        error
+                    } else {
+                        format!("personal-light logout attempt {attempts} command_id={command_id} failed: {error}").into()
+                    }
+                })?;
             let result = native::logout::decode_logout_result(&payload)
                 .map_err(|error| format!("personal-light logout codec: {error:?}; command_id={command_id}; status={status:?}; attempts={attempts}"))?;
             if status == CommandStatus::Accepted
@@ -3147,8 +3284,14 @@ async fn continuation_rows(clients: &SeamClients<'_>) {
         let mut result = tokio::time::timeout(Duration::from_secs(1_800), result)
             .await
             .unwrap_or_else(|_| {
+                connections = [None, None];
+                pvp_connections = [None, None];
                 Err(format!("{id}: journey deadline; required observations incomplete").into())
             });
+        if observer_cancelled(&result) {
+            connections = [None, None];
+            pvp_connections = [None, None];
+        }
         let admitted = connections.iter().flatten().count();
         let mut released = 0;
         for connection in connections.iter_mut().rev().flatten() {
@@ -4800,6 +4943,10 @@ async fn pvp_poll(a: &mut PvpClient, b: &mut PvpClient) -> TestResult {
         b.service_liveness(Duration::from_millis(25)),
     )
     .await;
+    // Preserve either stream's cancelled read even if its peer failed differently.
+    if observer_cancelled(&b) {
+        return b;
+    }
     a?;
     b?;
     Ok(())
@@ -5538,11 +5685,15 @@ async fn forge_row(clients: &SeamClients<'_>) {
     let mut result = tokio::time::timeout(Duration::from_secs(1_800), result)
         .await
         .unwrap_or_else(|_| {
+            connection = None;
             Err(
                 "P19: ordinary hunt/dust journey exceeded 1800s; remaining observations unproven"
                     .into(),
             )
         });
+    if observer_cancelled(&result) {
+        connection = None;
+    }
     if let Some(client) = connection.as_mut() {
         let cleanup = async {
             client.attack_target(None).await?;
@@ -5983,7 +6134,13 @@ async fn forge_journey(
             evidence(
                 "E2EF7_GAP P19 dust-acquisition pending required=60 native-reason=INSUFFICIENT_DUST; continuing ordinary influenced hunts",
             );
-            forge_hunt(client,world,false,sliver).await.map_err(|e|format!("earned-dust-acquisition-blocked:required=60;ordinary-influenced-hunt={e};premium-dust-gate=crates/gameplay/domain/src/domain/forge_creature.rs:93"))?;
+            forge_hunt(client,world,false,sliver).await.map_err(|error| {
+                if observer_error_cancelled(error.as_ref()) {
+                    error
+                } else {
+                    format!("earned-dust-acquisition-blocked:required=60;ordinary-influenced-hunt={error};premium-dust-gate=crates/gameplay/domain/src/domain/forge_creature.rs:93").into()
+                }
+            })?;
             continue;
         }
         break forge_conversion(&value, before, client.slivers(sliver))?;

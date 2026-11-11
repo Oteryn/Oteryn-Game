@@ -280,6 +280,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return GuildReply::Rejected;
             }
         }
+        let before_find = if action == MapAction::Find {
+            match slot.cursor(self.root, self.character).await {
+                Ok(revision) => Some(revision),
+                Err(_) => return GuildReply::Unavailable,
+            }
+        } else {
+            None
+        };
         match slot
             .cyclopedia(
                 self.root,
@@ -292,6 +300,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(bytes) if wire::decode_result(&bytes).is_ok() => {
+                if before_find.is_some_and(|before| {
+                    wire::decode_result(&bytes).is_ok_and(|result| {
+                        result.code == 0
+                            && result.discovered
+                            && result.found == 7
+                            && result.revision > before.get()
+                    })
+                }) {
+                    self.states.tutorial_sessions.notice(
+                        admitted.game_session_id,
+                        oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(
+                            "Subarea discovered! All seven points of interest found.".into(),
+                        ),
+                    );
+                }
                 drop(slot);
                 // The donation is complete; respawn initialization acquires its own lane.
                 drop(trade_permit);

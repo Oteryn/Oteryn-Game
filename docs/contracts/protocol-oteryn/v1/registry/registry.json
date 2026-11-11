@@ -7,7 +7,7 @@
     "path": "docs/contracts/protocol-oteryn/v1/foundation.proto",
     "source_syntax": "proto3",
     "schema_revision": 1,
-    "sha256": "6e1c614661e72daac529be9d0ec06317201b916cd47ae17ff1590da5c7205ebe",
+    "sha256": "61d6fabe6f0733eed983fcd2e753e816036844c7f05ca1f9514ba090f144ed38",
     "compatibility_role": "evidence_and_codegen_input_not_runtime_handshake_lock"
   },
   "transport_profiles": [

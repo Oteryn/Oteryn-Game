@@ -148,7 +148,7 @@ const S18: &[&str] = &[
 ];
 
 pub(super) async fn run(
-    client: &mut DevClientSession,
+    client: &mut Option<DevClientSession>,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
@@ -158,14 +158,22 @@ pub(super) async fn run(
     macro_rules! row {
         ($id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
             let mut row = Row::new($id, $actions);
-            let result = tokio::time::timeout(
-                Duration::from_secs(90),
-                $journey(&mut row, client $(, $arg)*),
-            ).await;
-            row.finish(match result {
-                Ok(result) => result,
-                Err(_) => Err("native-journey-deadline;remaining-assertions-unproven".into()),
-            });
+            let result = if let Some(active) = client.as_mut() {
+                match tokio::time::timeout(
+                    Duration::from_secs(90),
+                    $journey(&mut row, active $(, $arg)*),
+                ).await {
+                    Ok(result) => result,
+                    Err(_) => {
+                        // An interrupted command or frame cannot be resumed by another row.
+                        *client = None;
+                        Err("native-journey-deadline;remaining-assertions-unproven".into())
+                    }
+                }
+            } else {
+                Err("prior-native-journey-deadline;connection-closed;actions-unproven".into())
+            };
+            row.finish(result);
         }};
     }
     row!("E01", E01, shop, clients, world, npcs);
@@ -177,6 +185,9 @@ pub(super) async fn run(
     row!("S03", S03, guild);
     row!("S09", S09, logout, clients, world);
     row!("S18", S18, speech);
+    let Some(client) = client.as_mut() else {
+        return;
+    };
     // Restore the entry position expected by the pre-existing world phases.
     let restore: TestResult = async {
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| {

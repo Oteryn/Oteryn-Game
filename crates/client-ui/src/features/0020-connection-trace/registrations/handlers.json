@@ -1,0 +1,15 @@
+{
+  "mechanic": "0020-connection-trace",
+  "kind": "handlers",
+  "id": "0020-connection-trace-diagnostic",
+  "status": "unsupported",
+  "reason": "ERR-TRACE-5 is decoded by oteryn-session and has no UI command or panel.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The trace is retained only in the terminal diagnostic error.",
+    "protocol": "Implemented in oteryn-session rather than client-ui.",
+    "view": "The terminal error text shows the stable code and trace.",
+    "input": "Diagnostic server output has no client input.",
+    "settings": "Capability negotiation is automatic."
+  }
+}

@@ -9,6 +9,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
+        if !self.reconcile_pending_familiar_logout(actor, session).await {
+            operator_event("event=control_loss_reconcile_pending stage=familiar_logout");
+            return false;
+        }
         // These sealed native owners retain uncertain Item work, including its
         // original CommandRef and audit identity, until a known durable result.
         if !self.reconcile_pending_item_effects(actor, session).await {

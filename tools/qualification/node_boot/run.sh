@@ -15,13 +15,15 @@ readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 readonly TOPOLOGY_REVISION=wp5-node-boot-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
+readonly PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000003
+readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
 readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404)
 # CHAR-NAME-1: bootstrap intent contract version 2 names each Character (naming policy revision 1).
-readonly INTENT_NAMES=("Qualification One" "Qualification Two")
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
@@ -51,6 +53,12 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
+BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  # Packet journeys may move, loot or kill their Characters before the required core runs.
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID")
+fi
+readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
 NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
 NODE_GAMEPLAY_ENV=()
@@ -86,6 +94,8 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
 fi
 
 WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/node-boot.XXXXXX")"
+node_log="$WORK/node.log"
+failed_node_log="$WORK/failed-node.log"
 WP5_PKI="$WORK/pki"
 WP5_SCRATCH="$WORK/scratch"
 mkdir -p "$WP5_PKI" "$WP5_SCRATCH"
@@ -137,6 +147,14 @@ cleanup() {
   compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
   docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
   sudo rm -rf "$BASE" || true
+  if [[ $rc != 0 && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
+    mkdir -p "$NODE_BOOT_FAILURE_LOG_DIR"
+    if [[ -f "$failed_node_log" ]]; then
+      cp "$failed_node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
+    elif [[ -f "$node_log" ]]; then
+      cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
+    fi
+  fi
   find "$WORK" -type f -delete 2>/dev/null || true
   find "$WORK" -depth -type d -empty -delete 2>/dev/null || true
   evidence "cleanup=complete"
@@ -218,7 +236,10 @@ compose up --detach --wait db platform nginx
 # Platform output is kept: a failing operator command must be diagnosable.
 php_exec() { compose exec --no-TTY --user www-data platform php -r "$1"; }
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","nb-one@example.invalid"],["'"$SECOND_ACCOUNT_ID"'","nb-two@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",hex2bin("'"$FRESH_PUBLIC_HEX"'")); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey("urn:oteryn:platform:game-recovery","oteryn-reauth-recovery-v1","existing_actor_recovery","'"$RECOVERY_KEY_ID"'",hex2bin("'"$RECOVERY_PUBLIC_HEX"'"));'
-evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_only client_identities=1"
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$PACKET_ACCOUNT_ID"'","nb-three@example.invalid"],["'"$SECOND_PACKET_ACCOUNT_ID"'","nb-four@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); }'
+fi
+evidence "platform_seed=synthetic_accounts=${#BOOTSTRAP_ACCOUNTS[@]} fresh_trust=published_public_key_only client_identities=1"
 
 # The accelerated build is disposable: production binaries omit its file input.
 # Real-clock qualification deliberately builds the ordinary shipping binary.
@@ -447,7 +468,6 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
 fi
 
 ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
-node_log="$WORK/node.log"
 start_node() {
   # Detached from the stage's output pipe, so the stage ends while it serves.
   sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
@@ -702,6 +722,10 @@ stage() { # name prerequisite... -- function
     STATUS[$name]=PASS
   else
     STATUS[$name]="FAIL(exit $rc)"
+    # Later probes start new server incarnations and truncate node_log. Preserve
+    # the first failed incarnation now so cleanup uploads the log that explains
+    # the qualification failure rather than a subsequent successful shutdown.
+    [[ -f "$failed_node_log" || ! -f "$node_log" ]] || cp "$node_log" "$failed_node_log"
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
     report_character_authority_failures "$name"
     echo "--- session close events"
@@ -879,7 +903,7 @@ PY
 
 character_bootstrap() { # §4.5 Characters from real Platform intents
   local index=0 account operation name failed=0
-  for account in "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID"; do
+  for account in "${BOOTSTRAP_ACCOUNTS[@]}"; do
     operation="${INTENT_OPERATIONS[$index]}"
     name="${INTENT_NAMES[$index]}"
     index=$((index + 1))
@@ -893,7 +917,7 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
   done
   [[ $failed == 0 ]]
-  evidence "characters=2 source=platform_intents path=control_socket retry=idempotent"
+  evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"
 }
 
 seam_stages() { # §4.6 every #823 stage against the node's own port
@@ -907,6 +931,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
+    test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID")
   fi
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"

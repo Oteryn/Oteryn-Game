@@ -782,8 +782,10 @@ jobs:
           set -euo pipefail
           bash -n tools/qualification/node_boot/run.sh
           python3 tools/qualification/node_boot/test_diagnostics.py
-          evidence="$RUNNER_TEMP/node-boot-evidence.txt"
-          bash tools/qualification/node_boot/run.sh | tee "$evidence"
+          logs="$RUNNER_TEMP/node-boot-failure-logs"
+          mkdir -p "$logs"
+          evidence="$logs/qualification-client.log"
+          NODE_BOOT_FAILURE_LOG_DIR="$logs" bash tools/qualification/node_boot/run.sh | tee "$evidence"
           grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
 
   # A non-heavy event may race with heavy-tests being added: check live labels.

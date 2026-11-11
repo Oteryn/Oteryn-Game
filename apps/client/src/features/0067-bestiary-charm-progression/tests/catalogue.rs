@@ -129,24 +129,70 @@ fn t080_bestiary_catalogue_caller_keeps_confirmed_art_combat_and_loot()
 #[test]
 fn t185_echo_warden_progress_survives_real_play_queue() -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut receiver, outbox) = play_channel();
-    crate::play::mailbox::lock(&link.mailbox).properties.charm_progression.selected = true;
+    crate::play::mailbox::lock(&link.mailbox)
+        .properties
+        .charm_progression
+        .selected = true;
     link.charm_progression_edit(1, "7".into());
-    for (completed, expected) in [(0, "Echo Warden: incomplete"), (1, "Echo Warden: complete")] {
+    for (completed, expected) in [
+        (Some(0), "Echo Warden: 0/1 first defeat (incomplete)"),
+        (Some(1), "Echo Warden: 1/1 first defeat (complete)"),
+        (None, ""),
+    ] {
         link.bestiary_catalogue_request(2);
-        let PlayCommand::Feature(command) = receiver.try_recv()? else { return Err("missing detail request".into()); };
+        let PlayCommand::Feature(command) = receiver.try_recv()? else {
+            return Err("missing detail request".into());
+        };
         assert_eq!(command.payload.len(), 8);
         assert_eq!(command.payload[7], 1);
         // A server creature card with the explicit optional boolean at field 7.
-        let row = [8, 7, 18, 3, b'R', b'a', b't', 26, 1, b'F', 34, 0, 56, completed];
+        let mut row = vec![8, 7, 18, 3, b'R', b'a', b't', 26, 1, b'F', 34, 0];
+        if let Some(completed) = completed {
+            row.extend([56, completed]);
+        }
         let mut payload = vec![18, u8::try_from(row.len())?];
         payload.extend(row);
         payload.extend([26, 1, b'F']);
-        outbox.properties_result(&command, &GatedCommandResult {
-            command_id: 1, server_sequence: 1, status: CommandStatus::Accepted, payload,
-        });
-        assert!(link.charm_progression_panel().catalogue.detail.contains(expected));
+        outbox.properties_result(
+            &command,
+            &GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload,
+            },
+        );
+        let panel = link.charm_progression_panel();
+        let text = oteryn_client_ui::charm_progression::bestiary_text(&panel);
+        assert_eq!(
+            panel.catalogue.echo_warden_progress("7"),
+            completed.map(|n| (n, 1))
+        );
+        assert_eq!(panel.catalogue.echo_warden_progress("9"), None);
+        if completed.is_some() {
+            assert!(text.contains(expected));
+        } else {
+            assert!(
+                !text.contains("Echo Warden:"),
+                "missing server data is not zero progress"
+            );
+        }
+        link.charm_progression_edit(1, "9".into());
+        let text =
+            oteryn_client_ui::charm_progression::bestiary_text(&link.charm_progression_panel());
+        assert!(
+            !text.contains("Echo Warden:"),
+            "another creature must not inherit progress"
+        );
+        link.charm_progression_edit(1, "7".into());
     }
     outbox.logged_out();
     assert!(link.charm_progression_panel().catalogue.detail.is_empty());
+    assert_eq!(
+        link.charm_progression_panel()
+            .catalogue
+            .echo_warden_progress("7"),
+        None
+    );
     Ok(())
 }
