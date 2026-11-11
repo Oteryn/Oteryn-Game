@@ -107,13 +107,41 @@ async fn grant_balance(
         Some(row) => (row.try_get("balance")?, Some(row.try_get("last_claim_id")?)),
         None => (0, None),
     };
+    let credited = if kind == "BOUNTY_REROLL" {
+        capped_reroll_credit(before, quantity)
+    } else {
+        i64::from(quantity)
+    };
     let after = before
-        .checked_add(i64::from(quantity))
+        .checked_add(credited)
         .ok_or(DurabilityError::InvalidStoredState)?;
     sqlx::query(sqlx::AssertSqlSafe(format!("INSERT INTO public.{entries_table}(claim_id,character_id,world_id,previous_claim_id,amount,balance_before,balance_after) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::uuid,$5,$6,$7)")))
         .bind(request.transaction_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice())
-        .bind(last).bind(i16::from(quantity)).bind(before).bind(after).execute(&mut **tx).await?;
+        .bind(last).bind(i16::try_from(credited).map_err(|_| DurabilityError::InvalidStoredState)?).bind(before).bind(after).execute(&mut **tx).await?;
     sqlx::query(sqlx::AssertSqlSafe(format!("INSERT INTO public.{balance_table}(character_id,world_id,balance,last_claim_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid) ON CONFLICT(character_id,world_id) DO UPDATE SET balance=EXCLUDED.balance,last_claim_id=EXCLUDED.last_claim_id")))
         .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(after).bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
     Ok(())
+}
+
+/// Winter Update 2026: at most 10 stored Bounty Reroll Tokens. A daily credit adds
+/// `min(requested, 10 - balance)`; a balance already above 10 is kept and gets 0.
+fn capped_reroll_credit(before: i64, requested: u8) -> i64 {
+    let cap = i64::try_from(oteryn_gameplay_quests::quest::task_board::full::MAX_REROLL_TOKENS)
+        .unwrap_or(i64::MAX);
+    i64::from(requested).min(cap.saturating_sub(before).max(0))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::capped_reroll_credit;
+
+    #[test]
+    fn bounty_reroll_tokens_never_exceed_ten_on_daily_claim() {
+        for (before, requested, credited) in
+            [(0, 1, 1), (9, 1, 1), (9, 3, 1), (10, 1, 0), (25, 1, 0)]
+        {
+            assert_eq!(capped_reroll_credit(before, requested), credited);
+            assert!(before + credited <= before.max(10));
+        }
+    }
 }
