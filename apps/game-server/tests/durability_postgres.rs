@@ -5855,8 +5855,25 @@ fn assert_exhausted_budget_refused<
     Ok(())
 }
 
+// The reconnect scenario polls deep durability and Foundation call chains; run it on
+// a 64 MiB thread like the other PostgreSQL scenarios, since the default test-thread
+// stack overflows on some runners.
 #[test]
 fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
+-> Result<(), Box<dyn std::error::Error>> {
+    std::thread::Builder::new()
+        .name("complete_reconnect_resumes_an_owning_loss_session_exactly_once".into())
+        .stack_size(64 << 20)
+        .spawn(|| {
+            complete_reconnect_resumes_an_owning_loss_session_exactly_once_scenario()
+                .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "complete_reconnect scenario thread panicked")??;
+    Ok(())
+}
+
+fn complete_reconnect_resumes_an_owning_loss_session_exactly_once_scenario()
 -> Result<(), Box<dyn std::error::Error>> {
     use base64::Engine;
     use durability::admission_authority_guards::AdmissionGuardStore;
