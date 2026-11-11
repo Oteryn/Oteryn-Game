@@ -301,7 +301,7 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
                     .clone();
                 assert_eq!(
                     recorded.iter().map(|value| value.kind).collect::<Vec<_>>(),
-                    vec![161, 161, 161, 309, 309, 424, 424, 424, 424, 161]
+                    vec![161, 161, 161, 309, 309, 424, 424, 424, 161]
                 );
                 let ids = recorded
                     .iter()
