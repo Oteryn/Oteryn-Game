@@ -4,10 +4,15 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import quest_state_lowering as lowering
 
 ROOT = Path(__file__).resolve().parents[3]
 INPUT = 'content/quests/missions/quest-state-completion-candidate.json'
 OUTPUT = 'content/quests/native-death-bindings/'
+HERALD_INPUT = 'content/quests/definitions/quests-00200-00299.json'
+HERALD_OUTPUT = 'qmech-m24-targuna-herald.json'
+HERALD_QUEST = 'oteryn:quest.targuna_quest'
+HERALD_PREFIX = 'oteryn:quest-transition/crystalserver/targuna/herald-death/'
 TARGETS = {
     'oteryn:quest.a_piece_of_cake': ('qmech-m24-a_piece_of_cake.json', {'s2': 'cake_golem'}),
     'oteryn:quest.the_ancient_tombs_quest': ('qmech-m24-ancient_tombs.json', {
@@ -60,7 +65,54 @@ def generate(root: Path):
             'inputs': [{'path': INPUT, 'sha256': hashlib.sha256(raw).hexdigest()}],
             'tracks': [{field: tracks[name][field] for field in ('key', 'initial', 'min', 'max')} for name in sorted(used)],
             'rules': rules}
+    outputs[HERALD_OUTPUT] = herald_binding(root)
     return outputs
+
+
+def herald_binding(root: Path):
+    # Reuse the closed source witness qualification; do not duplicate or relax it.
+    records = [row['definition'] for row in lowering.read(root, HERALD_INPUT)['records']
+               if row['definition']['identity']['key'] == HERALD_QUEST]
+    lowering.require(len(records) == 1, 'Herald source definition missing or duplicated')
+    quests = [lowering.lower_quest(records[0], lowering.owners(records),
+                                  lowering.mission_values(records))]
+    lowering.append_source_herald_grouped_transitions(quests, records)
+    lowering.validate(quests)
+    quest = quests[0]
+    transitions = [t for t in quest['transitions'] if t['key'].startswith(HERALD_PREFIX)]
+    committed = [t for q in lowering.read(root, lowering.OUTPUT)['quests']
+                 if q['quest'] == HERALD_QUEST for t in q['transitions']
+                 if t['key'].startswith(HERALD_PREFIX)]
+    lowering.require(transitions == committed, 'Herald grouped runtime payload drift')
+    tracks = {track['key']: track for track in quest['tracks']}
+    sources = [witness for progress in records[0]['source_data']['progress']
+               for transition in progress['transitions']
+               if transition['script'] == transitions[0]['source']['script']
+               for witness in transition['source_occurrences']]
+    used = set()
+    rules = []
+    for transition in transitions:
+        effects = []
+        for effect in transition['effects']:
+            track = effect['track']
+            used.add(track)
+            effects.append({'track': track, 'default': tracks[track]['initial'],
+                            'from': {'kind': effect['from']['op'].lower(),
+                                     'value': effect['from']['value']},
+                            effect['effect']['kind'].lower(): effect['effect']['value']})
+        rules.append({'creature': 'oteryn:creature.herald_of_fire',
+                      'transition': transition['key'], 'define_transition': False,
+                      'room': None, 'top_damage_only': True, 'effects': effects,
+                      'sources': sources})
+    return {'schema': 1, 'runtime_enabled': True, 'quest': HERALD_QUEST,
+            'scope': {'basis': 'QUALIFIED_SOURCE_ONDEATH',
+                      'native_consumer': 'quest_batch3_c::capture -> quest_kills::settle',
+                      'note': 'Project-qualified present top-damage character only; not donor party credit. Exact grouped writes and source witnesses come from quest_state_lowering.'},
+            'inputs': [{'path': path, 'sha256': lowering.digest(root, path)}
+                       for path in (HERALD_INPUT, lowering.TOOL, lowering.OUTPUT)],
+            'tracks': [{field: tracks[name][field] for field in ('key', 'initial', 'min', 'max')}
+                       for name in sorted(used)],
+            'rules': rules}
 
 
 def main():
@@ -75,7 +127,7 @@ def main():
                 raise ValueError('Stale M24 death bindings: ' + name)
         else:
             target.write_bytes(expected)
-    print('PASS M24: exact 20-Cake-Golem stage and seven pharaoh kill stages')
+    print('PASS M24: exact 20-Cake-Golem stage, seven pharaoh kill stages and qualified Herald death')
 
 if __name__ == '__main__':
     main()
