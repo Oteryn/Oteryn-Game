@@ -72,3 +72,14 @@ pub(in crate::play) fn enqueue(
         }
     }
 }
+
+/// The native composer uses the same destination precedence as `enqueue`.
+#[cfg(any(windows, test))]
+pub(in crate::play) fn composer_enabled(
+    panel: &oteryn_client_ui::chat::ChatPanel,
+    mode: Mode,
+) -> bool {
+    panel.console.current.is_some()
+        || mode != Mode::Guild
+        || oteryn_client_ui::chat_guild_room::available(panel)
+}

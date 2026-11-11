@@ -503,3 +503,47 @@ fn native_chat_keys_dispatch_saved_editing_and_keypad_bindings()
     }
     Ok(())
 }
+
+#[test]
+fn usable_channel_tabs_enable_composer_after_unavailable_guild()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::{ConsoleTab, Mode};
+    use oteryn_session::{ChatIntent, ChatRoom};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    for conversation in [false, true] {
+        link.chat_console_tab(ConsoleTab::Guild);
+        assert!(!crate::play::feature_0007_chat::input::composer_enabled(
+            &link.chat_panel(),
+            Mode::Guild
+        ));
+        if conversation {
+            assert!(link.chat_open_conversation("Alice"));
+        } else {
+            let mut rooms = ChatRoomSet::default();
+            rooms.insert(ChatRoom::Help);
+            outbox.chat_public_state(rooms, vec![]);
+            link.chat_open_help();
+        }
+        assert!(crate::play::feature_0007_chat::input::composer_enabled(
+            &link.chat_panel(),
+            Mode::Guild
+        ));
+        link.chat_text("hello".into());
+        link.chat_request(Mode::Guild, "");
+        let crate::combat_input::PlayCommand::ChatPublic(intent) = commands.try_recv()? else {
+            return Err("chat send command".into());
+        };
+        if conversation {
+            assert!(
+                matches!(intent, ChatIntent::Private { recipient_name, text } if recipient_name == "Alice" && text == "hello")
+            );
+        } else {
+            assert!(
+                matches!(intent, ChatIntent::Room { room: ChatRoom::Help, text } if text == "hello")
+            );
+        }
+        crate::play::mailbox::lock(&link.mailbox).chat.pending = false;
+    }
+    Ok(())
+}

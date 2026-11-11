@@ -221,12 +221,25 @@ fn t175_t176_confirmed_conditions_reach_independent_hud_and_status_displays()
 #[test]
 fn t011_server_resources_reach_configurable_hud_without_opening_windows()
 -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    server_resources_reach_hud(false)
+}
+
+#[test]
+fn stamina_hud_with_vocation_extension_reaches_tick()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    server_resources_reach_hud(true)
+}
+
+fn server_resources_reach_hud(
+    vocation: bool,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    type Error = Box<dyn std::error::Error + Send + Sync>;
     use crate::play::{Stepper, run_session};
     use oteryn_session::{GatedCommandResult, SessionError};
-    struct Resources;
+    struct Resources(bool);
     impl Stepper for Resources {
         fn feature_selected(&self, capability: u32) -> bool {
-            matches!(capability, 199 | 276 | 277)
+            matches!(capability, 199 | 276 | 277) || (capability == 487 && self.0)
         }
         async fn feature(
             &mut self,
@@ -239,7 +252,10 @@ fn t011_server_resources_reach_configurable_hud_without_opening_windows()
                         ..Default::default()
                     },
                 )
-                .encode()
+                .encode_extended(&oteryn_session::cyclopedia_character::TabExtension {
+                    vocation_id: self.0.then_some(3),
+                    deaths: None,
+                })
                 .map_err(|_| SessionError::SessionUnusable)?,
                 276 => oteryn_session::condition_status::ConditionStatus {
                     conditions: vec![oteryn_session::condition_status::ActiveCondition {
@@ -295,10 +311,10 @@ fn t011_server_resources_reach_configurable_hud_without_opening_windows()
     }
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        .spawn(move || -> Result<(), Error> {
             oteryn_client_runtime::ClientRuntime::new()?.block_on(async {
                 let (link, commands, outbox) = crate::play::play_channel();
-                let task = tokio::spawn(run_session(Resources, commands, outbox));
+                let task = tokio::spawn(run_session(Resources(vocation), commands, outbox));
                 let mut play = view()?;
                 play.enable_resource_hud(true);
                 // The HUD feed is driven by the real tick caller: it queries the conditions,

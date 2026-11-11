@@ -215,8 +215,10 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 mailbox.chat.guild_open = false;
             }
             let guild_mode = SendMessageW(rooms, LB_GETCURSEL, 0, 0) == 4;
-            let enabled =
-                !guild_mode || oteryn_client_ui::chat_guild_room::available(&mailbox.chat);
+            let enabled = super::super::input::composer_enabled(
+                &mailbox.chat,
+                if guild_mode { Mode::Guild } else { Mode::Say },
+            );
             EnableWindow(message, i32::from(enabled));
             EnableWindow(GetDlgItem(hwnd, SEND as i32), i32::from(enabled));
             for action in std::mem::take(&mut actions.pending) {
