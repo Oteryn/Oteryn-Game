@@ -2,10 +2,13 @@
 //! burnt by the item-use writer (cause 481, shape burn) with one `game_temple_scroll_uses` row
 //! in the same fenced transaction. The row's database stamp reads the scroll's seven-day
 //! deadline from its daily delivery line and the daily effect clock, and records whether this
-//! burn is a use (the caller then moves the holder to the home temple) or the scroll's
-//! `Expire {Deadline}` (nothing else happens). Migration 2762 pairs the burn and the row.
+//! burn is a use or the scroll's `Expire {Deadline}` (nothing else happens). A use moves the
+//! holder through the caller's [`TempleLanding`] before COMMIT: no landing rolls the burn back,
+//! so the scroll is never consumed without the move. Migration 2762 pairs the burn and the row.
 //! English TibiaWiki "Temple Teleport Scroll"; Winter Update 2026 thread 565.
 use super::*;
+use std::future::Future;
+use std::pin::Pin;
 
 /// Item 25718, the only definition this cause burns.
 pub const TEMPLE_SCROLL_KEY: &str = "oteryn:item.tibia.i25718";
@@ -14,11 +17,21 @@ pub const TEMPLE_SCROLL_CAUSE: u32 = 481;
 /// The deadline after delivery: 168 hours, the `remaining_ms` ceiling of the TIMED rows.
 pub const TEMPLE_SCROLL_LIFETIME_MS: i64 = 7 * 24 * 60 * 60 * 1_000;
 
+/// The Channel owner's move of the holder to its temple landing, run inside the burn's
+/// transaction after the use row is stamped unexpired and before COMMIT.
+pub trait TempleLanding: Send + Sync {
+    /// Move the holder to the free landing closest to its temple; `false` when none exists,
+    /// which rolls the burn back.
+    fn land(&self) -> Pin<Box<dyn Future<Output = bool> + Send + '_>>;
+}
+
 /// The result of one scroll command.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TempleScrollOutcome {
-    /// This command burnt the scroll as a use: the caller moves the holder home.
+    /// This command burnt the scroll as a use and moved the holder to its temple landing.
     Used,
+    /// No temple landing existed at commit: the burn rolled back and nothing was written.
+    NoLanding,
     /// This command burnt the scroll at or after its deadline: nothing else happens.
     Expired,
     /// The command committed earlier: its effect, if any, was applied then.
@@ -34,6 +47,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         request: ItemUseRequest,
+        landing: &dyn TempleLanding,
     ) -> Result<TempleScrollOutcome> {
         if request.kind != ItemUseKind::TempleScroll
             || request.source_definition.production_key != TEMPLE_SCROLL_KEY
@@ -47,8 +61,9 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| ItemUseError::AuthorityRejected)?;
         let node = node.clone();
+        let mut context = landing;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, landing| {
                 Box::pin(async move {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -90,6 +105,11 @@ impl DurabilityRoot {
                         Err(ItemUseError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     };
+                    // Dropping the transaction rolls the burn and its row back.
+                    if !expired && !landing.land().await {
+                        drop(tx);
+                        return Ok(Ok(TempleScrollOutcome::NoLanding));
+                    }
                     tx.commit(deadline).await?;
                     Ok(Ok(if expired {
                         TempleScrollOutcome::Expired

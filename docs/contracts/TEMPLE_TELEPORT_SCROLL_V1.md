@@ -30,8 +30,8 @@ Each refusal burns nothing, moves nothing and writes nothing:
    locks are refreshed: `NOT_POSSIBLE`. An unreadable lock row refuses (`REJECTED`).
 3. A protection-zone block (the live PvP lock blocks protection-zone entry):
    `PZ_BLOCKED`.
-4. No home temple resolves for the Character, or the temple landing is not possible
-   now (unwalkable, closed door, occupied, or closed by the PvP block): `NOT_POSSIBLE`.
+4. No home temple resolves for the Character, or no temple landing (below) admits the
+   actor now: `NOT_POSSIBLE`.
 5. An Instance runtime scope, a dead actor, a pending or reserving spell, the shared
    item-use gate (one use in flight, `ITEMUSE0-RL-01`) or a reserved source: the
    existing native USE refusals.
@@ -43,7 +43,8 @@ The scroll has no cooldown of its own.
 The native item-use writer burns exactly one scroll as `ItemUseCause` 481
 `TempleScroll`, shape 1 (burn), with its one Type 2 `item_use` event, and inserts one
 immutable `game_temple_scroll_uses` row in the same transaction under the holder's
-current item fence. The CharacterRevision does not advance. One record per CommandRef
+current item fence, and moves the actor (below) before that transaction commits. The
+CharacterRevision does not advance. One record per CommandRef
 is kept forever: an exact replay answers from the record and its row, burns nothing and
 teleports nothing; the same CommandRef with another request conflicts. Migration 2762
 admits cause 481 only as a burn and only together with its row, and the row only with
@@ -51,14 +52,25 @@ its burn of a carried scroll of the same Character in the same transaction.
 
 ## Move to the temple
 
-Only a known commit whose row says `expired = false` moves the actor. The Channel owner
-then teleports the actor to the home temple (`home_temple`, the citizenship temple of the
-World's hometown catalogue; the fixture start on a World without one) through the same
-callback teleport proof the citizenship and quest teleports use, under the runtime and
-spell-state guards in their established order. The position then persists through the
-ordinary position saves. A landing that becomes impossible between PREPARE and the commit
-(another creature stepped onto the temple cell) leaves the scroll consumed and the actor
-in place; PREPARE's landing check makes that window one lock round trip.
+The landing is resolved as Crystal resolves a temple teleport: the home temple cell
+(`home_temple`, the citizenship temple of the World's hometown catalogue; the fixture start
+on a World without one) and, when it is taken, the closest free cell around it, in
+Crystal's placement order (`Map::placeCreature`'s normal relative list, the
+closest-free-tile search): north-west, north, north-east, west, east, south-west, south,
+south-east, on the temple's floor. A landing admits the actor when the callback teleport
+proof the citizenship and quest teleports use accepts it: walkable, no closed door, not
+occupied, not closed by the PvP block.
+
+The move is part of the consume. After the use row is stamped unexpired and before COMMIT,
+the writer calls the Channel owner, which takes the runtime and spell-state guards in their
+established order and teleports the actor to the first admitting landing. When no landing
+admits the actor at that moment (every candidate was taken since PREPARE), the transaction
+rolls back: the scroll is not consumed, no record or row exists and the result is
+`NOT_POSSIBLE`. A scroll is therefore never consumed without the move. The position then
+persists through the ordinary position saves. The move precedes COMMIT, so a COMMIT that
+fails or whose outcome is unknown can leave the actor at the temple with the scroll kept;
+an unknown outcome reserves the scroll as unspendable until reconciliation, as every native
+use does.
 
 ## Seven-day deadline
 
@@ -106,8 +118,11 @@ and keeps every record as evidence of a consumed scroll.
 
 ## Tests
 
-Unit: the refusal order and dispositions, the cause and lifetime constants. PostgreSQL
+Unit: the refusal order and dispositions, the landing order, the cause and lifetime
+constants. PostgreSQL
 (route-less: returns `Ok(())` without `OTERYN_TEST_POSTGRES_ADMIN_URL`), in
 `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/temple_scroll.rs`:
-`temple_scroll_teleports_home_and_is_consumed`, `temple_scroll_refused_with_logout_block`
-and `temple_scroll_expires_after_seven_days`.
+`temple_scroll_teleports_home_and_is_consumed`, `temple_scroll_refused_with_logout_block`,
+`temple_scroll_kept_when_the_temple_landing_is_taken_at_commit` (the writer with every
+landing occupied at commit: nothing is burnt or written) and
+`temple_scroll_expires_after_seven_days`.

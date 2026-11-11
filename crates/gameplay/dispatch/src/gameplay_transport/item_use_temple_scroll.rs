@@ -1,15 +1,35 @@
 //! WU26-06 Temple Teleport Scroll (`docs/contracts/TEMPLE_TELEPORT_SCROLL_V1.md`): the Channel
 //! owner's use of item 25718 from the carried tree. PREPARE refuses a NOLOGOUT cell, a logout
 //! block and a protection-zone block, resolves the home temple and checks its landing; the
-//! native item-use writer burns the scroll with its use row, and only a known commit whose row
-//! is not expired moves the actor to the temple. English TibiaWiki "Temple Teleport Scroll";
-//! Winter Update 2026 thread 565.
+//! native item-use writer burns the scroll with its use row and, before COMMIT, moves the actor
+//! to the free landing closest to the temple. No landing rolls the burn back, so the scroll is
+//! never consumed without the move. English TibiaWiki "Temple Teleport Scroll"; Winter Update
+//! 2026 thread 565.
 use super::*;
-use crate::durability::item_use::temple_scroll::TempleScrollOutcome;
+use crate::content::NativeEntryMovementCells;
+use crate::durability::item_use::temple_scroll::{TempleLanding, TempleScrollOutcome};
 use crate::foundation::MovementLocalPosition;
+use crate::map::floor::CellBlocker;
+use oteryn_simulation_determinism::SemanticTimeMicros;
+use std::future::Future;
+use std::pin::Pin;
 
 /// The status text of a scroll burnt at or after its seven-day deadline.
 pub(super) const EXPIRED_TEXT: &str = "Your temple teleport scroll has expired.";
+
+/// The landing order around the temple, after the temple cell itself: Crystal's placement
+/// ring (`Map::placeCreature`'s normal relative list, the closest-free-tile search a temple
+/// teleport uses), row by row from the north-west.
+pub(super) const LANDING_RING: [(i32, i32); 8] = [
+    (-1, -1),
+    (0, -1),
+    (1, -1),
+    (-1, 0),
+    (1, 0),
+    (-1, 1),
+    (0, 1),
+    (1, 1),
+];
 
 /// A PREPARE refusal of the scroll; each burns, moves and writes nothing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,7 +114,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(UseDisposition::NotPossible)?;
         // The closed doors are read before the runtime guard, as the paced movement owner does.
         let (bundle_doors, legacy);
-        let closed: &dyn crate::map::floor::CellBlocker = if let Some(map) = self.bundle_map() {
+        let closed: &dyn CellBlocker = if let Some(map) = self.bundle_map() {
             bundle_doors = crate::map::floor::BundleDoors(&map.facts);
             &bundle_doors
         } else {
@@ -129,7 +149,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if states.is_dead(actor) || !states.spell_idle(&runtime, actor, session) {
                 return Err(UseDisposition::Rejected);
             }
-            if !self.temple_landing(&mut runtime, &states, actor, session, temple, closed, false) {
+            if !temple_landing(
+                &mut runtime,
+                &states,
+                self.movement_cells(),
+                actor,
+                session,
+                temple,
+                closed,
+                self.owner_now(),
+                false,
+            ) {
                 return Err(UseDisposition::NotPossible);
             }
             let gate = states
@@ -141,11 +171,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             gate.start(ItemUseKind::TempleScroll, self.owner_ms())?;
         }
-        let commit =
-            self.root
-                .commit_temple_scroll_use(self.character, self.holder, fence, request);
+        // The move runs inside the burn's transaction, before COMMIT (the writer calls it).
+        let landing = ScrollLanding {
+            runtime: &*self.runtime,
+            spell_states: &self.states.spell_states,
+            cells: self.movement_cells(),
+            actor,
+            session,
+            temple,
+            closed,
+            now: self.owner_now(),
+        };
+        let commit = self.root.commit_temple_scroll_use(
+            self.character,
+            self.holder,
+            fence,
+            request,
+            &landing,
+        );
         let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
         let (disposition, outcome, ambiguous) = match tokio::time::timeout(bound, commit).await {
+            // Every landing was taken at commit: the burn rolled back and the scroll is kept.
+            Ok(Ok(TempleScrollOutcome::NoLanding)) => (UseDisposition::NotPossible, None, false),
             Ok(Ok(outcome)) => (UseDisposition::Committed, Some(outcome), false),
             Ok(Err(ItemUseError::StaleState)) => (UseDisposition::StaleState, None, false),
             Ok(Err(ItemUseError::Unavailable(_))) | Err(_) => {
@@ -153,19 +200,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Ok(Err(_)) => (UseDisposition::Rejected, None, false),
         };
-        let mut runtime = self.runtime.lock().await;
-        let mut states = self.states.spell_states.lock().await;
-        match outcome {
-            // A landing taken since PREPARE leaves the scroll consumed and the actor in place.
-            Some(TempleScrollOutcome::Used) => {
-                self.temple_landing(&mut runtime, &states, actor, session, temple, closed, true);
-            }
-            Some(TempleScrollOutcome::Expired) => {
-                self.states.chat.push_quest_feedback(session, EXPIRED_TEXT);
-            }
-            // A replay committed earlier; its effect, if any, was applied then.
-            Some(TempleScrollOutcome::AlreadyCommitted { .. }) | None => {}
+        if outcome == Some(TempleScrollOutcome::Expired) {
+            self.states.chat.push_quest_feedback(session, EXPIRED_TEXT);
         }
+        // A use moved the actor before its COMMIT; a replay applied its effect then.
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let reserved = [source];
         let unspendable: &[[u8; 16]] = if ambiguous { &reserved } else { &[] };
         if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
@@ -173,42 +213,82 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         Ok(disposition)
     }
+}
 
-    /// The callback teleport proof to the home temple from the actor's current position, the
-    /// same proof the citizenship and quest teleports use; `commit` applies it.
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "binds the exact actor, session, landing, closed doors and the commit step"
-    )]
-    fn temple_landing(
-        &self,
-        runtime: &mut ChannelRuntimeV1,
-        states: &ChannelSpellStates,
-        actor: ExactActorRef,
-        session: GameSessionId,
-        temple: MovementLocalPosition,
-        closed: &dyn crate::map::floor::CellBlocker,
-        commit: bool,
-    ) -> bool {
-        let Ok(entered) = runtime.read_actor_position(actor) else {
-            return false;
-        };
-        let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
-            runtime,
-            self.movement_cells(),
-            actor,
-            session,
-            entered,
-            temple,
-            blocked,
-            closed,
-            None,
-        ) else {
-            return false;
-        };
-        !commit || runtime.commit_source_step(proof).is_ok()
+/// The burn's move to the temple: under the runtime and spell-state guards, in their
+/// established order, the first free landing of the temple and its ring.
+struct ScrollLanding<'s> {
+    runtime: &'s tokio::sync::Mutex<ChannelRuntimeV1>,
+    spell_states: &'s tokio::sync::Mutex<ChannelSpellStates>,
+    cells: &'s NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    temple: MovementLocalPosition,
+    closed: &'s dyn CellBlocker,
+    now: SemanticTimeMicros,
+}
+
+impl TempleLanding for ScrollLanding<'_> {
+    fn land(&self) -> Pin<Box<dyn Future<Output = bool> + Send + '_>> {
+        Box::pin(async move {
+            let mut runtime = self.runtime.lock().await;
+            let states = self.spell_states.lock().await;
+            !states.is_dead(self.actor)
+                && temple_landing(
+                    &mut runtime,
+                    &states,
+                    self.cells,
+                    self.actor,
+                    self.session,
+                    self.temple,
+                    self.closed,
+                    self.now,
+                    true,
+                )
+        })
     }
+}
+
+/// The landings in order: the temple cell, then [`LANDING_RING`] on the temple's floor.
+pub(super) fn landing_candidates(temple: MovementLocalPosition) -> [MovementLocalPosition; 9] {
+    let mut candidates = [temple; 9];
+    for (candidate, (dx, dy)) in candidates.iter_mut().skip(1).zip(LANDING_RING) {
+        candidate.x = temple.x.saturating_add(dx);
+        candidate.y = temple.y.saturating_add(dy);
+    }
+    candidates
+}
+
+/// The callback teleport proof, the one the citizenship and quest teleports use, from the
+/// actor's current position to the first landing that admits it (walkable, open, unoccupied,
+/// not closed by the PvP block); `commit` applies it. `false` when no landing admits one.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "binds the exact actor, session, landing, closed doors, clock and the commit step"
+)]
+fn temple_landing(
+    runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    cells: &NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    temple: MovementLocalPosition,
+    closed: &dyn CellBlocker,
+    now: SemanticTimeMicros,
+    commit: bool,
+) -> bool {
+    let Ok(entered) = runtime.read_actor_position(actor) else {
+        return false;
+    };
+    let blocked = super::super::pvp_live::pz_blocked(states, actor, session, now);
+    for landing in landing_candidates(temple) {
+        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
+            runtime, cells, actor, session, entered, landing, blocked, closed, None,
+        ) {
+            return !commit || runtime.commit_source_step(proof).is_ok();
+        }
+    }
+    false
 }
 
 #[cfg(test)]
@@ -233,6 +313,42 @@ mod tests {
         assert_eq!(
             temple_scroll_refusal(Some(false), false, true),
             Some(TempleScrollRefusal::PzBlocked)
+        );
+    }
+
+    #[test]
+    fn temple_landings_start_at_the_temple_then_its_ring() {
+        let temple = MovementLocalPosition {
+            x: 10,
+            y: 20,
+            floor: 7,
+        };
+        let candidates = landing_candidates(temple);
+        assert_eq!(candidates[0], temple);
+        assert_eq!(
+            candidates[1],
+            MovementLocalPosition {
+                x: 9,
+                y: 19,
+                floor: 7
+            }
+        );
+        assert_eq!(
+            candidates[8],
+            MovementLocalPosition {
+                x: 11,
+                y: 21,
+                floor: 7
+            }
+        );
+        let mut seen = candidates.to_vec();
+        seen.sort_by_key(|p| (p.x, p.y));
+        seen.dedup();
+        assert_eq!(seen.len(), 9);
+        assert!(
+            candidates.iter().all(|p| p.floor == 7
+                && (p.x - temple.x).abs() <= 1
+                && (p.y - temple.y).abs() <= 1)
         );
     }
 

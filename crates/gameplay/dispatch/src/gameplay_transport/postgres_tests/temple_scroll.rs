@@ -1,7 +1,8 @@
 //! WU26-06 Temple Teleport Scroll through the production USE owner
 //! (`docs/contracts/TEMPLE_TELEPORT_SCROLL_V1.md`): a use burns the scroll with its use row and
 //! moves the actor to the home temple, a logout block refuses with nothing written, and a
-//! scroll used after its seven-day delivery deadline burns as expired without moving anyone.
+//! scroll used after its seven-day delivery deadline burns as expired without moving anyone. A
+//! temple landing taken at commit rolls the burn back: the scroll is kept.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
@@ -26,6 +27,16 @@ enum Case {
     Teleport,
     LogoutBlock,
     Expired,
+    NoLanding,
+}
+
+/// The Channel owner's landing with every temple cell and its ring occupied at commit.
+struct Occupied;
+
+impl crate::durability::item_use::temple_scroll::TempleLanding for Occupied {
+    fn land(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool> + Send + '_>> {
+        Box::pin(async { false })
+    }
 }
 
 #[test]
@@ -36,6 +47,11 @@ fn temple_scroll_teleports_home_and_is_consumed() -> TestResult {
 #[test]
 fn temple_scroll_refused_with_logout_block() -> TestResult {
     on_big_stack("temple_scroll_logout_block", Case::LogoutBlock)
+}
+
+#[test]
+fn temple_scroll_kept_when_the_temple_landing_is_taken_at_commit() -> TestResult {
+    on_big_stack("temple_scroll_no_landing", Case::NoLanding)
 }
 
 #[test]
@@ -173,6 +189,64 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
                 assert_eq!(item(FRESH).await?, (1, 1));
                 assert_eq!(uses().await?, (0, 0, 0));
                 assert_eq!(position().await?, START);
+            }
+            Case::NoLanding => {
+                // PREPARE found a landing; the commit's move finds none. The burn and its row
+                // roll back with the transaction: the scroll is not consumed.
+                let inventory = owner
+                    .root
+                    .read_item_use_inventory(owner.character, owner.holder, fence)
+                    .await
+                    .map_err(debug)?;
+                let occurred_at_unix_ms = i64::try_from(
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)?
+                        .as_millis(),
+                )?;
+                let request = crate::durability::item_use::ItemUseRequest {
+                    kind: crate::durability::item_use::ItemUseKind::TempleScroll,
+                    command_id: 1,
+                    content_revision: inventory.content_revision.clone(),
+                    ruleset_revision: inventory.ruleset_revision.clone(),
+                    sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION
+                        .to_owned(),
+                    transaction_id: crate::operator_files::uuid_v7()?,
+                    event_id: crate::operator_files::uuid_v7()?,
+                    occurred_at_unix_ms,
+                    server_build_id: crate::durability::character_authority::SERVER_BUILD_ID
+                        .to_owned(),
+                    source_item_instance_id: id(FRESH),
+                    source_definition: crate::durability::item_mint::TypedDefinitionRef {
+                        family: "Item".to_owned(),
+                        production_key: SCROLL.to_owned(),
+                        revision_ref: "definition-r1".to_owned(),
+                    },
+                    source_quantity_before: 1,
+                    flask: crate::durability::item_use::ItemUseFlaskPlan::None,
+                };
+                let outcome = owner
+                    .root
+                    .commit_temple_scroll_use(
+                        owner.character,
+                        owner.holder,
+                        fence,
+                        request,
+                        &Occupied,
+                    )
+                    .await
+                    .map_err(debug)?;
+                assert_eq!(
+                    outcome,
+                    crate::durability::item_use::temple_scroll::TempleScrollOutcome::NoLanding
+                );
+                assert_eq!(item(FRESH).await?, (1, 1));
+                assert_eq!(uses().await?, (0, 0, 0));
+                assert_eq!(position().await?, START);
+                // The kept scroll is used normally once its landing is free.
+                assert_eq!(use_scroll(2, FRESH).await, UseDisposition::Committed);
+                assert_eq!(item(FRESH).await?, (0, 2));
+                assert_eq!(uses().await?, (1, 1, 0));
+                assert_eq!(position().await?, temple);
             }
             Case::Expired => {
                 // Delivered eight days ago: the burn's row records the expiry, the scroll is
