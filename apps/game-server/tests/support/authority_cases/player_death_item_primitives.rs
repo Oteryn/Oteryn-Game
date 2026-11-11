@@ -1369,7 +1369,10 @@ async fn nested_reset_terminal_snapshot(h: &Harness) -> TestResult<Vec<(String, 
     )
     .fetch_all(&h.pool)
     .await?;
-    assert!(rows.len() < 128, "capture the complete small-tree footprint");
+    assert!(
+        rows.len() < 128,
+        "capture the complete small-tree footprint"
+    );
     Ok(rows)
 }
 
@@ -1443,7 +1446,9 @@ async fn run_nested_reset_root_bounds_refusal(admin: String) -> TestResult {
         .await?;
     assert!(matches!(
         rejected,
-        Err(DecayRetireError::Unavailable(DurabilityError::CommitRejected))
+        Err(DecayRetireError::Unavailable(
+            DurabilityError::CommitRejected
+        ))
     ));
     let reached: (i64, bool) =
         sqlx::query_as("SELECT last_value,is_called FROM test_nested_root_bounds_reached_seq")
@@ -1484,8 +1489,14 @@ async fn run_nested_reset_root_bounds_refusal(admin: String) -> TestResult {
         .bind(selected.as_slice()).fetch_one(&h.pool).await?;
     assert_eq!((transactions, audited), (1, expected));
     assert_eq!(h.count("game_item_decay_retire_receipts").await?, expected);
-    assert_eq!(h.count("game_player_death_retirement_edges").await?, expected - 1);
-    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + expected);
+    assert_eq!(
+        h.count("game_player_death_retirement_edges").await?,
+        expected - 1
+    );
+    assert_eq!(
+        h.count("game_item_audit_outbox").await?,
+        audits_before + expected
+    );
     let edges: Vec<_> = items.windows(2).map(|pair| (pair[1], pair[0])).collect();
     assert_nested_retirement_audits(&h, selected, &edges).await?;
     for item in &items {
@@ -2022,6 +2033,107 @@ async fn maximum_carried_death_tree(
     Ok(tree)
 }
 
+type MaximumRetirementFunctionCosts = Vec<(i64, String, i64, i64, i64)>;
+
+async fn maximum_retirement_function_checkpoint(h: &Harness, enable: bool) -> TestResult<i32> {
+    h.root
+        .try_issue_semantic_pass()
+        .map_err(debug)?
+        .run(move |holder, _deadline| {
+            Box::pin(async move {
+                if enable {
+                    sqlx::query("SET track_functions = 'all'")
+                        .execute(&mut **holder)
+                        .await?;
+                }
+                let row = sqlx::query("SELECT pg_backend_pid() AS pid, pg_stat_force_next_flush()")
+                    .fetch_one(&mut **holder)
+                    .await?;
+                Ok(row.try_get::<i32, _>("pid")?)
+            })
+        })
+        .await
+        .map_err(|error| debug(error).into())
+}
+
+async fn maximum_retirement_function_costs(
+    h: &Harness,
+) -> TestResult<MaximumRetirementFunctionCosts> {
+    let costs: MaximumRetirementFunctionCosts = tokio::time::timeout(
+        std::time::Duration::from_secs(1),
+        sqlx::query_as(
+            "SELECT funcid::bigint,funcid::regprocedure::text,calls,ceil(total_time*1000)::bigint,ceil(self_time*1000)::bigint FROM pg_stat_user_functions WHERE schemaname='public' AND starts_with(funcname,'game_') ORDER BY funcid LIMIT 4097",
+        )
+        .fetch_all(&h.pool),
+    )
+    .await??;
+    if costs.len() > 4096 {
+        return Err("MAX501 function profile exceeds its bounded result set".into());
+    }
+    Ok(costs)
+}
+
+async fn report_maximum_retirement_function_costs(
+    h: &Harness,
+    pid: i32,
+    before: MaximumRetirementFunctionCosts,
+    committed: bool,
+) -> TestResult {
+    if committed {
+        if maximum_retirement_function_checkpoint(h, false).await? != pid {
+            return Err("MAX501 function profile backend changed".into());
+        }
+    } else {
+        // PostgreSQL flushes completed function counters before removing a
+        // normally exiting backend from pg_stat_activity, including 25P04.
+        // Interrupted calls have no final timing and are deliberately absent.
+        tokio::time::timeout(std::time::Duration::from_secs(1), async {
+            loop {
+                let alive: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND pid=$1)",
+                )
+                .bind(pid)
+                .fetch_one(&h.pool)
+                .await?;
+                if !alive {
+                    return Ok::<(), sqlx::Error>(());
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            }
+        })
+        .await??;
+    }
+    let before: std::collections::BTreeMap<_, _> = before
+        .into_iter()
+        .map(|(id, _, calls, total, own)| (id, (calls, total, own)))
+        .collect();
+    let mut delta = Vec::new();
+    for (id, name, calls, total, own) in maximum_retirement_function_costs(h).await? {
+        let previous = before.get(&id).copied().unwrap_or_default();
+        if calls < previous.0 || total < previous.1 || own < previous.2 {
+            return Err("MAX501 function counters moved backwards".into());
+        }
+        if calls > previous.0 {
+            delta.push((
+                name,
+                calls - previous.0,
+                total - previous.1,
+                own - previous.2,
+            ));
+        }
+    }
+    delta.sort_unstable_by_key(|(_, _, _, own)| std::cmp::Reverse(*own));
+    eprintln!(
+        "[DBG-audit-765f34] MAX501 completed function calls; committed={committed}; interrupted calls omitted"
+    );
+    for (name, calls, total, own) in delta.into_iter().take(20) {
+        eprintln!(
+            "[DBG-audit-765f34] MAX501 function={name} calls={calls} total_us={total} self_us={own}"
+        );
+    }
+    Ok(())
+}
+
 async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     use crate::item_transfer_postgres_cases::uuid_text;
 
@@ -2045,6 +2157,14 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     assert_eq!(h.count("game_item_nested_entries").await?, 500);
     let reset = prepare_nested_reset(&h, &h.root).await?;
     let audits_before = h.count("game_item_audit_outbox").await?;
+    // Enable optional diagnostics on this private fixture's existing runtime
+    // connection, after setup and outside the measured production operation.
+    let function_profile = async {
+        let pid = maximum_retirement_function_checkpoint(&h, true).await?;
+        let before = maximum_retirement_function_costs(&h).await?;
+        Ok::<_, Box<dyn std::error::Error>>((pid, before))
+    }
+    .await;
     // The production owner retains its existing two-second semantic-pass
     // deadline and retry ceiling. A timeout is a test failure, never a skip or
     // permission to widen those limits for the largest source-legal graph.
@@ -2056,14 +2176,32 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
                 .retire_world_reset_ground(&authority, &h.node, &reset),
         )
         .await;
+    let retirement_elapsed = started.elapsed();
     match profile {
         Some(profile) => eprintln!("[DBG-audit-765f34] MAX501 {profile}"),
         None => eprintln!("[DBG-audit-765f34] MAX501 profile=missing"),
     }
+    match function_profile {
+        Ok((pid, before)) => {
+            if let Err(error) = report_maximum_retirement_function_costs(
+                &h,
+                pid,
+                before,
+                matches!(&retired, Ok(true)),
+            )
+            .await
+            {
+                eprintln!("[DBG-audit-765f34] MAX501 function profile unavailable: {error}");
+            }
+        }
+        Err(error) => {
+            eprintln!("[DBG-audit-765f34] MAX501 function profile unavailable: {error}");
+        }
+    }
     assert!(retired.map_err(debug)?);
     eprintln!(
         "DUR-003-MAX-RESET: 501 items completed in {:?}",
-        started.elapsed()
+        retirement_elapsed
     );
     // These immutable receipts are inserted by separate commands after each
     // item's mutation. Within one physical transaction, cmin orders those
@@ -2075,10 +2213,15 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     .fetch_all(&h.pool)
     .await?;
     assert_eq!(order.len(), 501);
-    let physical_transactions: std::collections::BTreeSet<_> =
-        order.iter().map(|(_, _, transaction)| transaction).collect();
+    let physical_transactions: std::collections::BTreeSet<_> = order
+        .iter()
+        .map(|(_, _, transaction)| transaction)
+        .collect();
     assert_eq!(physical_transactions.len(), 1);
-    assert_eq!(order.last().map(|(item, _, _)| item), Some(&uuid_text(selected)));
+    assert_eq!(
+        order.last().map(|(item, _, _)| item),
+        Some(&uuid_text(selected))
+    );
     let commands: std::collections::BTreeMap<_, _> = order
         .iter()
         .map(|(item, command, _)| (item.clone(), *command))
@@ -2153,6 +2296,78 @@ fn player_death_nested_maximum_501_item_reset_makes_bounded_atomic_progress() ->
         })?
         .join()
         .map_err(|_| "maximum nested death reset thread panicked")?
+        .map_err(Into::into)
+}
+
+async fn run_terminal_item_location_guard_refusal(admin: String) -> TestResult {
+    let h = Harness::create(admin, "terminal_item_location_guard").await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let item = h
+        .mint(&authority, crate::item_transfer_postgres_cases::STONE, 1)
+        .await?;
+    let snapshot = "SELECT row_to_json(i)::text,row_to_json(g)::text FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid";
+    let before: (String, String) = sqlx::query_as(snapshot)
+        .bind(item.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+    let footprint = h.footprint().await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    let changed = sqlx::query("UPDATE game_item_instances SET quantity=0,lifecycle=2,last_transaction_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(item.as_slice())
+        .bind(id(240).as_slice())
+        .execute(&mut *tx)
+        .await?;
+    assert_eq!(changed.rows_affected(), 1);
+    // Run the actual changed callback before the other deferred proofs. A
+    // terminal Item must still reject its surviving Ground custody; no trigger
+    // is disabled or replaced, and the rejected transaction is rolled back.
+    match sqlx::query("SET CONSTRAINTS game_item_instance_location_exclusive IMMEDIATE")
+        .execute(&mut *tx)
+        .await
+    {
+        Err(sqlx::Error::Database(error)) => {
+            assert_eq!(error.code().as_deref(), Some("23514"));
+            assert!(error.message().contains("exactly one location"));
+        }
+        other => {
+            return Err(format!("expected terminal Item location refusal, got {other:?}").into());
+        }
+    }
+    tx.rollback().await?;
+    let after: (String, String) = sqlx::query_as(snapshot)
+        .bind(item.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(after, before);
+    assert_eq!(h.footprint().await?, footprint);
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}
+
+#[test]
+fn player_death_terminal_item_update_still_rejects_surviving_custody() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_terminal_item_location_guard_refusal(admin))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "terminal Item location guard test thread panicked")?
         .map_err(Into::into)
 }
 
@@ -2520,7 +2735,10 @@ async fn run_nested_death_pickup(
     );
     // Ordinary loop moves preserve the Type2 outbox and write their own receipt/line.
     assert_eq!(h.count("game_item_audit_outbox").await?, audits_before);
-    assert_eq!(h.count("game_item_loop_move_lines").await?, lines_before + 1);
+    assert_eq!(
+        h.count("game_item_loop_move_lines").await?,
+        lines_before + 1
+    );
     let pickup_rows: Vec<(String, String)> = sqlx::query_as("SELECT to_jsonb(r)::text,to_jsonb(l)::text FROM game_item_loop_move_receipts r JOIN game_item_loop_move_lines l USING(transaction_id) WHERE r.transaction_id=encode($1,'hex')::uuid AND r.event_id=encode($2,'hex')::uuid AND r.character_id=encode($3,'hex')::uuid AND r.operation=5 AND r.line_count=1 AND l.line_ordinal=1 AND l.item_instance_id=encode($4,'hex')::uuid AND l.from_kind=3 AND l.to_kind=1 AND l.to_parent_item_instance_id=encode($5,'hex')::uuid AND l.quantity_before=1 AND l.quantity_after=1 AND l.created_xact_id=r.created_xact_id")
         .bind(pickup.transaction_id.as_slice())
         .bind(pickup.event_id.as_slice())
@@ -2597,7 +2815,10 @@ async fn run_nested_death_pickup(
         receipts_before + 1
     );
     assert_eq!(h.count("game_item_audit_outbox").await?, audits_before);
-    assert_eq!(h.count("game_item_loop_move_lines").await?, lines_before + 1);
+    assert_eq!(
+        h.count("game_item_loop_move_lines").await?,
+        lines_before + 1
+    );
     let replay_rows: Vec<(String, String)> = sqlx::query_as("SELECT to_jsonb(r)::text,to_jsonb(l)::text FROM game_item_loop_move_receipts r JOIN game_item_loop_move_lines l USING(transaction_id) WHERE r.transaction_id=encode($1,'hex')::uuid ORDER BY l.line_ordinal")
         .bind(pickup.transaction_id.as_slice()).fetch_all(&h.pool).await?;
     assert_eq!(replay_rows, pickup_rows);
