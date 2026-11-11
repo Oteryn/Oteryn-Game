@@ -2062,7 +2062,7 @@ async fn maximum_retirement_function_costs(
     let costs: MaximumRetirementFunctionCosts = tokio::time::timeout(
         std::time::Duration::from_secs(1),
         sqlx::query_as(
-            "SELECT funcid::bigint,funcid::regprocedure::text,calls,ceil(total_time*1000)::bigint,ceil(self_time*1000)::bigint FROM pg_stat_user_functions WHERE schemaname='public' AND starts_with(funcname,'game_') ORDER BY funcid LIMIT 4097",
+            "SELECT f.funcid::bigint AS function_oid,f.funcid::regprocedure::text AS function_signature,f.calls,ceil(f.total_time*1000)::bigint,ceil(f.self_time*1000)::bigint FROM pg_stat_user_functions f WHERE f.schemaname='public' AND starts_with(f.funcname,'game_') ORDER BY f.funcid LIMIT 4097",
         )
         .fetch_all(&h.pool),
     )
