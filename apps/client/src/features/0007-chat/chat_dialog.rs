@@ -221,7 +221,6 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 if private.action(action, &mut mailbox, &commands) {
                     continue;
                 }
-                use oteryn_client_ui::chat::ConsoleTab;
                 match action {
                     IGNORE | ALLOW | BLOCK | CLEAR_LISTS => {
                         use oteryn_client_ui::chat::CommunicationList;
@@ -255,14 +254,8 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                         continue;
                     }
                     TAB => {
-                        console::select(
-                            &mut mailbox,
-                            match SendMessageW(tabs, LB_GETCURSEL, 0, 0) {
-                                1 => ConsoleTab::Local,
-                                2 => ConsoleTab::Private,
-                                3 => ConsoleTab::Guild,
-                                _ => ConsoleTab::All,
-                            },
+                        mailbox.chat.console.select_index(
+                            usize::try_from(SendMessageW(tabs, LB_GETCURSEL, 0, 0)).unwrap_or(0),
                         );
                         continue;
                     }
@@ -297,6 +290,15 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     SetWindowTextW(message, wide("").as_ptr());
                 }
             }
+            // Opened channel tabs follow the console state after the fixed tabs.
+            let labels = mailbox.chat.console.tab_labels();
+            if SendMessageW(tabs, LB_GETCOUNT, 0, 0) as usize != labels.len() {
+                SendMessageW(tabs, LB_RESETCONTENT, 0, 0);
+                for label in &labels {
+                    SendMessageW(tabs, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
+                }
+            }
+            SendMessageW(tabs, LB_SETCURSEL, mailbox.chat.console.tab_index(), 0);
             console.tick(&mut mailbox, &commands, transcript);
             font.update(transcript, mailbox.chat.console.display.font_px);
             private.render(&mailbox.chat_private);

@@ -13,6 +13,8 @@ impl Outbox {
             list,
             lines,
         );
+        let list = mailbox.chat_private.list.clone();
+        mailbox.chat.console.sync_private(list.as_ref());
     }
     pub(in crate::play) fn chat_private_result(
         &self,
@@ -22,10 +24,17 @@ impl Outbox {
         if !matches!(intent, ChatIntent::PrivateChannel(_)) {
             return false;
         }
-        oteryn_client_ui::chat_private_channel::apply_result(
-            &mut lock(&self.0).chat_private,
-            outcome,
+        let mut mailbox = lock(&self.0);
+        let (pending, channel) = (
+            mailbox.chat_private.pending_intent,
+            mailbox.chat_private.channel,
         );
+        oteryn_client_ui::chat_private_channel::apply_result(&mut mailbox.chat_private, outcome);
+        oteryn_client_ui::chat::private_result(&mut mailbox.chat, pending, channel, outcome);
+        // A line sent from a private-channel tab of the console ends its pending state too.
+        if mailbox.chat.pending {
+            oteryn_client_ui::chat::apply_result(&mut mailbox.chat, outcome);
+        }
         true
     }
 }

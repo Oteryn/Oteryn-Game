@@ -126,3 +126,35 @@ fn n022_utilities_are_unbound_choices_and_survive_json() -> Result<(), Box<dyn s
     );
     Ok(())
 }
+
+#[test]
+fn chat_channels_utilities_drive_the_console_tabs() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::UtilityAction;
+    let (link, mut commands, outbox) = play_channel();
+    let mut settings = bare();
+    outbox.chat_initialize(true);
+    outbox.chat_public_initialize(true, Some((oteryn_session::ChatRoomSet::default(), Vec::new())));
+    assert!(settings.run_utility(&link, UtilityAction::OpenHelpChannel));
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::ChatPublic(oteryn_session::ChatIntent::OpenRoom(
+            oteryn_session::ChatRoom::Help
+        ))
+    ));
+    assert!(link.chat_open_conversation("Bryn"));
+    assert!(settings.run_utility(&link, UtilityAction::PreviousChannel));
+    assert_eq!(lock(&link.mailbox).chat.console.current, None);
+    assert!(settings.run_utility(&link, UtilityAction::NextChannel));
+    assert!(lock(&link.mailbox).chat.console.current.is_some());
+    assert!(settings.run_utility(&link, UtilityAction::CloseCurrentChannel));
+    assert!(lock(&link.mailbox).chat.console.channels.is_empty());
+    assert!(settings.run_utility(&link, UtilityAction::OpenChannelList));
+    assert!(
+        lock(&link.mailbox)
+            .chat
+            .feedback
+            .as_deref()
+            .is_some_and(|text| text.starts_with("Channel list"))
+    );
+    Ok(())
+}

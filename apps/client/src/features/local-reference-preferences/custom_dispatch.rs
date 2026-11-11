@@ -107,6 +107,25 @@ impl PlayLink {
             UtilityAction::QuickLootArea => {
                 self.quick_loot_action(oteryn_client_ui::quick_loot::Action::LootAll)
             }
+            UtilityAction::CloseCurrentChannel => {
+                self.chat_close_current();
+                true
+            }
+            UtilityAction::NextChannel | UtilityAction::PreviousChannel => {
+                self.chat_channel_cycle(action == UtilityAction::NextChannel);
+                true
+            }
+            UtilityAction::OpenChannelList => {
+                let list = self.chat_channel_list_text();
+                lock(&self.mailbox).chat.feedback = Some(list);
+                self.open_chat();
+                true
+            }
+            UtilityAction::OpenHelpChannel => {
+                self.chat_open_help();
+                self.open_chat();
+                true
+            }
             UtilityAction::ToggleCreatureHuds
             | UtilityAction::ToggleFpsLagIndicator
             | UtilityAction::NextHotkeyPreset => false,

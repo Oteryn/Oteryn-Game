@@ -1,11 +1,76 @@
+use crate::combat_input::PlayCommand;
 use crate::play::{
     PlayLink,
     mailbox::{Mailbox, SharedMailbox, lock},
 };
-use oteryn_client_ui::chat::{CommunicationList, ComposerMode, ConsoleTab};
+use oteryn_client_ui::chat::{ChannelEntry, CommunicationList, ComposerMode, ConsoleTab};
 use std::path::Path;
 
 impl PlayLink {
+    /// PreviousChannel / NextChannel: cycle the console tabs.
+    pub fn chat_channel_cycle(&self, forward: bool) {
+        lock(&self.mailbox).chat.console.cycle(forward);
+    }
+    /// The rows of the channel list (Ctrl+O) the server currently offers.
+    pub fn chat_channel_entries(&self) -> Vec<ChannelEntry> {
+        let mailbox = lock(&self.mailbox);
+        oteryn_client_ui::chat::channel_entries(
+            mailbox.chat_private.list.as_ref(),
+            mailbox.chat_public.rooms,
+        )
+    }
+    /// The channel list as text, one row per channel.
+    pub fn chat_channel_list_text(&self) -> String {
+        let entries = self.chat_channel_entries();
+        oteryn_client_ui::chat::channel_list_text(&entries, &lock(&self.mailbox).chat.console)
+    }
+    /// OpenHelpChannel.
+    pub fn chat_open_help(&self) {
+        self.chat_channel_command(|mailbox| {
+            oteryn_client_ui::chat::open_help(&mut mailbox.chat, &mut mailbox.chat_public)
+        });
+    }
+    /// CloseCurrentChannel: private-message tabs close locally, rooms and private channels
+    /// are left on the server.
+    pub fn chat_close_current(&self) {
+        self.chat_channel_command(|mailbox| {
+            oteryn_client_ui::chat::close_current(
+                &mut mailbox.chat,
+                &mut mailbox.chat_public,
+                &mut mailbox.chat_private,
+            )
+        });
+    }
+    /// Open the channel a channel-list row names.
+    pub fn chat_open_entry(&self, entry: &ChannelEntry) {
+        self.chat_channel_command(|mailbox| {
+            oteryn_client_ui::chat::open_entry(
+                &mut mailbox.chat,
+                &mut mailbox.chat_public,
+                &mut mailbox.chat_private,
+                entry,
+            )
+        });
+    }
+    /// Open a private-message tab for a player name.
+    pub fn chat_open_conversation(&self, name: &str) -> bool {
+        oteryn_client_ui::chat::open_conversation(&mut lock(&self.mailbox).chat, name)
+    }
+    fn chat_channel_command(
+        &self,
+        command: impl FnOnce(&mut Mailbox) -> Option<oteryn_session::ChatIntent>,
+    ) {
+        let mut mailbox = lock(&self.mailbox);
+        if let Some(intent) = command(&mut mailbox)
+            && self.commands.send(PlayCommand::ChatPublic(intent)).is_err()
+        {
+            mailbox.chat_public.pending = false;
+            mailbox.chat_private.pending = false;
+            mailbox.chat_private.pending_intent = None;
+            mailbox.chat.console.focus = None;
+            mailbox.chat.feedback = Some(tr!("The session has ended").into());
+        }
+    }
     pub fn chat_console_tab(&self, tab: ConsoleTab) {
         select(&mut lock(&self.mailbox), tab);
     }

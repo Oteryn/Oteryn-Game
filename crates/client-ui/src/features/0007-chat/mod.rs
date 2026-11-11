@@ -14,11 +14,17 @@ mod state;
 mod view;
 pub use crate::chat_public_channels::apply_result;
 pub use input::{default_channel_key, open_key, temporary_mode_key};
-pub use protocol::{console_request, request};
-pub use state::{
-    ChatPanel, CommunicationList, CommunicationLists, ComposerMode, Console, ConsoleTab, Mode,
+pub use protocol::{
+    channel_request, close_current, console_request, open_conversation, open_entry, open_help,
+    private_result, request,
 };
-pub use view::{mirror_text, panel_text, write_log};
+pub use state::{
+    ChannelTab, ChatPanel, CommunicationList, CommunicationLists, ComposerMode, Console,
+    ConsoleTab, Mode, PendingFocus,
+};
+pub use view::{
+    ChannelEntry, channel_entries, channel_list_text, mirror_text, panel_text, write_log,
+};
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;

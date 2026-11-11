@@ -56,7 +56,13 @@ pub(in crate::play) fn enqueue(
     mode: Mode,
     recipient: &str,
 ) {
-    if let Some(intent) = request(&mut mailbox.chat, mode, recipient) {
+    // A selected channel tab receives the composer text; the fixed tabs use the speech modes.
+    let intent = if mailbox.chat.console.current.is_some() {
+        oteryn_client_ui::chat::channel_request(&mut mailbox.chat)
+    } else {
+        request(&mut mailbox.chat, mode, recipient)
+    };
+    if let Some(intent) = intent {
         super::super::feature_0233_player_typing::input::composer(mailbox, commands, false);
         if commands.send(PlayCommand::ChatPublic(intent)).is_err() {
             mailbox.chat.pending = false;

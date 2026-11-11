@@ -15,10 +15,15 @@ pub enum UtilityAction {
     ChangeCharacter,
     BugReport,
     QuickLootArea,
+    CloseCurrentChannel,
+    NextChannel,
+    OpenChannelList,
+    OpenHelpChannel,
+    PreviousChannel,
 }
 
 impl UtilityAction {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 14] = [
         Self::ToggleCreatureHuds,
         Self::ToggleFpsLagIndicator,
         Self::NextHotkeyPreset,
@@ -28,6 +33,11 @@ impl UtilityAction {
         Self::ChangeCharacter,
         Self::BugReport,
         Self::QuickLootArea,
+        Self::CloseCurrentChannel,
+        Self::NextChannel,
+        Self::OpenChannelList,
+        Self::OpenHelpChannel,
+        Self::PreviousChannel,
     ];
 
     pub fn label(self) -> &'static str {
@@ -41,6 +51,11 @@ impl UtilityAction {
             Self::ChangeCharacter => "Utility: log out to change character",
             Self::BugReport => "Utility: open the bug report",
             Self::QuickLootArea => "Utility: quick loot around the player",
+            Self::CloseCurrentChannel => "Utility: close the current chat channel",
+            Self::NextChannel => "Utility: next chat channel",
+            Self::OpenChannelList => "Utility: show the chat channel list",
+            Self::OpenHelpChannel => "Utility: open the Help channel",
+            Self::PreviousChannel => "Utility: previous chat channel",
         }
     }
 }
