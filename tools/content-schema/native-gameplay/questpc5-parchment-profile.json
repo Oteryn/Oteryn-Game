@@ -145,15 +145,15 @@
       "attributes": {
         "always_on_top": false,
         "always_on_top_order": 0,
-        "spell_augments": [],
         "blocks_movement": false,
         "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
         "field_condition": null,
+        "field_replaceable": null,
+        "has_height": false,
+        "immovable_block_solid": false,
         "rune_consumption": null,
-        "speed_bonus": 0
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -322,8 +322,8 @@
         "has_height": false,
         "immovable_block_solid": false,
         "rune_consumption": null,
-        "spell_augments": [],
-        "speed_bonus": 0
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,
@@ -490,8 +490,8 @@
         "has_height": false,
         "immovable_block_solid": false,
         "rune_consumption": null,
-        "spell_augments": [],
-        "speed_bonus": 0
+        "speed_bonus": 0,
+        "spell_augments": []
       },
       "admission": {
         "materializable": true,

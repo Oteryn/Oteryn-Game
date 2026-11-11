@@ -48,7 +48,7 @@
     },
     "Item": {
       "index": "content/items/index.json",
-      "records": 34111
+      "records": 34122
     },
     "Loot": {
       "index": "content/loot/index.json",
@@ -610,7 +610,7 @@
       "path": "content/items/definitions/items-33500-33999.json"
     },
     {
-      "path": "content/items/definitions/items-34000-34110.json"
+      "path": "content/items/definitions/items-34000-34121.json"
     },
     {
       "path": "content/items/definitions/spell-native-profiles.json"
@@ -978,7 +978,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "a341022bce97ec9335a08ca27b93ff015b7c523cee0b0cab4b96d0e690841aa6"
+          "sha256": "f6b2bec6e73f735c0aa55186f3cbc37d6204cd5432682ebc88d98d36b1ba285e"
         },
         {
           "creates_canonical_identities": false,
@@ -1057,7 +1057,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "bef3d507a5d2d79f5396b2c136813232f5493cb6e25fde04c8ca5ad66ec33cd6"
+          "sha256": "97a49ef85cf8b5796c45fdfa0bcf701814ee04b9c379d1e77851557e98b71b00"
         },
         {
           "creates_canonical_identities": false,

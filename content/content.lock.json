@@ -25,7 +25,7 @@
     "Encounter": 108,
     "Encounter.Raid": 240,
     "Formula": 6129,
-    "Item": 34111,
+    "Item": 34122,
     "Loot": 1292,
     "Mount": 252,
     "NPC": 1282,
@@ -44,14 +44,14 @@
   "item_authoring_counts": {
     "authoring": 700,
     "relation_sources": 880,
-    "taxonomy": 12252
+    "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "af108f1f2be144b720e666a2874ffbc9aa014b78",
+    "declarations": "1ece240aac647f149c1755b206b88444d2bad224",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "4343a6bbc61e5039d7daeb0fa4fd5eac10472e96",
-    "reference": "101b7ad24490bef29d31f83764ea0de36855e7cb",
-    "sources": "ce3224ad3dba10a9c00b1091c9eb6304552d878d"
+    "imports": "a38ff435e6bc02c124589ef7a217546b3691d63f",
+    "reference": "88a663439b6cc89039e8672b2692e48c1ef9947b",
+    "sources": "2cf0e78314dfab9278d37c5bb45e73d155c09eec"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
@@ -71,7 +71,7 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "1130ea3edb07a264149a5b48f529c738c0fe2c3a0ea1773828ffe348979804d0"
+        "sha256": "eac8720c32e7e664ba1b30ca89a70155f940ed9fc3b5e2eed3c3f2f8ca24d04d"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
@@ -79,7 +79,7 @@
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "e7ae8ab87c87dd02616a7cc54e8d543b1b98f2791617225400928c423b666f5d"
+        "sha256": "be13946170983a80bc6b1d0097913e56d8b9a9e98416b55d445a6b43bb664b8a"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "a341022bce97ec9335a08ca27b93ff015b7c523cee0b0cab4b96d0e690841aa6"
+          "sha256": "f6b2bec6e73f735c0aa55186f3cbc37d6204cd5432682ebc88d98d36b1ba285e"
         },
         {
           "creates_canonical_identities": false,
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "bef3d507a5d2d79f5396b2c136813232f5493cb6e25fde04c8ca5ad66ec33cd6"
+          "sha256": "97a49ef85cf8b5796c45fdfa0bcf701814ee04b9c379d1e77851557e98b71b00"
         },
         {
           "creates_canonical_identities": false,

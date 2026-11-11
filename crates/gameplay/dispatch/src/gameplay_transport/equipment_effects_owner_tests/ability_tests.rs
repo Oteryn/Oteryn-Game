@@ -370,7 +370,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M19: four exact Items in qready1-quest-item-profiles.json.
     ("QREADY1-CLOCKS", 4),
     // M20: two exact Items in qready1-craft-item-profiles.json.
-    ("QREADY1-CRAFT", 4),
+    ("QREADY1-CRAFT", 3),
     // M20: four Wiki/official Items in qready1-cradle-item-profiles.json.
     ("QREADY1-CRADLE", 4),
     // BEGIN GENERATED NPCFIX2 M22 PROFILE ADDITIONS
@@ -737,11 +737,39 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .filter(|(name, _)| {
             matches!(
                 *name,
-                "QENGINE-REWARDS"
+                "ENGCLAIM-M34"
+                    | "ENGNPC-M04"
+                    | "ENGNPC-M05"
+                    | "ENGNPC2-SLUG-CORPSES"
+                    | "M01C-KEY-DOORS"
+                    | "M07-CARROT"
+                    | "M07-FIRE-BUG"
+                    | "M07-LION-TRIALS"
+                    | "M18-FIRST-DRAGON"
+                    | "M22-TAINTED-TALISMAN"
+                    | "M23-LAST-CREEP"
+                    | "M26-ENDGAME"
+                    | "M30A-HIT-SOURCE"
+                    | "M35-CLAIM-SETS"
+                    | "M35-FANFARE-KEY"
+                    | "M35-GOBLIN-TEMPLE"
+                    | "M41"
+                    | "M42-HOT-CUISINE"
+                    | "M44-LIONS-AMPHORA"
+                    | "NPCFIX2-M22"
+                    | "QENGINE-REWARDS"
+                    | "QM49-ELEMENTAL-SPHERES"
+                    | "QM50-ELEVATOR"
+                    | "QMECH-M49"
+                    | "QMECH-M50"
                     | "QREADY1"
+                    | "QREADY1-CLOCKS"
+                    | "QREADY1-CRADLE"
+                    | "QREADY1-CRAFT"
                     | "QREADY2"
                     | "QUESTPC2-SOURCE-CLOSURE"
                     | "QUESTPC4-STAG-ITEMS"
+                    | "QUESTPC4-TREASURE-REWARDS"
                     | "QUESTPC7-HOT-CORPSES"
                     | "QUESTPC7-HOT-FISHBURGER"
                     | "QUESTPC7-MARSH-CORPSES"
@@ -752,17 +780,19 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                     | "QUESTPC8-MERGED"
                     | "SEASON-W05D"
                     | "SEASON-W18-HOUSE"
+                    | "SRV7-M14"
                     | "SRV9-MARRIAGE"
                     | "SRVENC-W02"
+                    | "SRVGAP-QUEST-DISGUISE"
                     | "W10-PRIMAL"
                     | "WORLDCHG"
             )
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 2442);
+    assert_eq!(later_main_profiles, 2589);
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 75);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 103);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES
@@ -1051,7 +1081,12 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         // MAIL-E09: the parcels and the stamped letter carry no speed attribute.
         .chain([3503, 3504, 3506].map(|id| format!("oteryn:item.tibia.i{id}")))
         // BEGIN GENERATED KNOWN SPEED EXCLUSIONS
-        .filter(|key| !["oteryn:item.tibia.i2833", "oteryn:item.tibia.i5805", "oteryn:item.tibia.i5806"].contains(&key.as_str()))
+        .filter(|key| ![
+            "oteryn:item.tibia.i2833",
+            "oteryn:item.tibia.i5805",
+            "oteryn:item.tibia.i5806"
+        ]
+        .contains(&key.as_str()))
         // END GENERATED KNOWN SPEED EXCLUSIONS
         .collect()
     );

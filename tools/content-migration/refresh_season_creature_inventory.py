@@ -109,8 +109,9 @@ def generated(root):
             f'assert_eq!(creatures.len(), {len(rows)}, "complete canonical Creature corpus");')
     replace('crates/gameplay/monster-ai/src/ai_think/native_profile_tests.rs',
             r'\([0-9_]+, [0-9_]+, 15, 8\)', f'({len(native)}, {schedules}, 15, 8)')
-    # The two source-qualified authored Elementals each reuse one CreateItem
-    # schedule. Keep the source-census assertion exact for those occurrences.
+    # Greater Fire adds two CreateItem occurrences; Greater Energy adds none.
+    # Their exact, source-qualified two-profile cohort adds two occurrences.
+    # Keep the source-census assertion exact for that complete cohort.
     replace('crates/gameplay/content/src/content/native_gameplay.rs',
             r'assert_eq!\(\(create, remove\), \([0-9_]+, [0-9_]+\)\);',
             f'assert_eq!((create, remove), ({62 + elemental_native}, 20));')
