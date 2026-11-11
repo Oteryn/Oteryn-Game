@@ -120,7 +120,7 @@ fn appearance_projection_skips_a_peer_whose_respawn_is_pending_postgres() -> Tes
 fn peer_scenario() -> TestResult {
     use super::appearance_change_postgres::observer_visibility_tests;
     run(async |admin| {
-        let mut harness = Harness::create_appearance(admin, "appearance_peer_respawn").await?;
+        let harness = Harness::create_appearance(admin, "appearance_peer_respawn").await?;
         prepare_current_session(&harness).await?;
         harness.seed_appearance_observer().await?;
         observer_visibility_tests::admit(&harness).await?;
