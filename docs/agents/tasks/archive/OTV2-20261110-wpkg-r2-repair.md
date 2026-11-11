@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: PR3106 repair lead; sole publisher and review dispatcher in comment 6786929490
 created_at: 2026-11-10T15:59:04Z
-updated_at: 2026-11-11T12:35:35Z
+updated_at: 2026-11-11T13:19:01Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20261110-wpkg-r2-repair.md
@@ -160,6 +160,55 @@ the prior revisions of this record. Their results qualify their own SHAs only.
 This authoring evidence does not qualify the committed successor. Final-head
 fast, ContentTree, WorldProject, actual PostgreSQL/Node, applicable Codex review,
 normal squash and full post-merge acceptance remain pending in live control.
+
+## Quest evidence closure after native index regeneration
+
+- PROVEN on `72cb2fcbb2723c3eb36a22358f7110d6e87c2722`: FAST run
+  43021886412 completed all 15 jobs and 11,025 distinct actual nextest PASS cases
+  (3,660 / 3,715 / 3,650), with no duplicate or failed case. All five selected
+  logout TLS, three selected clock, seven native and five buffered-STEP regressions
+  executed once; all ten clock tests passed. Strict Clippy actually ran 67 packages.
+  Separate 7 / 8 / 6 support-package ledger reuses are excluded from that test count.
+- PROVEN on the same head: ContentTree 43021886442 passed 420 unittest executions,
+  15 regenerator checks and the actual StarterKit seal. WorldProject 43021886269
+  passed 48 focused integration tests, seven native CLI Rust tests, seven Python
+  wrapper tests, two reproductions, idempotence, exact eleven-document comparison,
+  native pins, Clippy and fmt. PIN_DRIFT was false; the pin report independently
+  confirmed the unchanged `9b65cddb...` inputs and `8f578285...` bundle.
+- PROVEN: Quest Authoring Schema 43021886321 found stale downstream evidence.
+  Its checks part stopped at `quest_binding_authoring.py --check` on
+  `npc/quest-npc-dialogue-links.json`; 120 unit-module summaries reported 1,192
+  test executions with one talk-NPC packet equality failure. The donor part passed.
+  Commands after the failed binding check were not yet qualified.
+- PROVEN: the native regeneration changed the NPC and Dialogue index metadata
+  hashes. The NPC binding packet retains both input hashes; its index retains the
+  resulting output hash; the talk candidate packet retains the NPC input hash.
+  Their underlying shards, candidate records and admission facts did not change.
+  The normal content generator's documented scope leaves other authoring evidence
+  to its corresponding producers, so this repair does not broaden that scope.
+- PROVEN: in an isolated exact-source copy, the existing binding and talk generators
+  reproduced both failures before writing. After regeneration both standard
+  `--check` commands and all six binding controls plus eight talk tests passed.
+  Exactly three generated JSON files changed, with four SHA-256 leaf replacements
+  and identical byte lengths; the other 4,181 copied files remained byte-identical.
+  No test, predicate, schema, source hold, selected branch or runtime admission was
+  changed. Both prior failing cases are now positive in this authoring proof.
+- PROVEN after canonical adoption: both standard producer checks, all six binding
+  controls and eight talk tests, governance validation (22 policy documents and
+  nine lanes), all 129 governance tests and complete-diff whitespace passed.
+  Independent byte review reconstructed all three outputs using exactly four
+  hash substitutions; eight other registered binding payloads remain identical.
+  Final archive governance and whitespace are repeated before publication.
+- PROVEN: main advanced to bdb4e0a64b77fe308caa45f8380af57f7b4b551b through
+  the externally merged PR #3113, changing only the accepted delegation guidance.
+  The prospective squash must retain that guidance and the protected main audit;
+  the existing four-path repair allocation does not modify either file.
+
+The three reviewed generator outputs and this archived record form one bounded
+successor. Hosted Quest checks must execute the previously unreached commands,
+and all required checks must bind the newly frozen source. Final Codex review,
+actual PostgreSQL/Node, normal squash and full new-main acceptance remain pending
+in live control; the preceding head's green results do not qualify the successor.
 
 ## High-risk authority/recovery qualification
 
