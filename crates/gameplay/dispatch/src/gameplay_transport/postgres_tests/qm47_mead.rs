@@ -10,7 +10,10 @@ use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::AdmittedSession;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
-use oteryn_gameplay_quests::quest::{QuestTransition, QuestEffect, QuestComparison, QuestEffectKind, QuestStateCatalogue, barbarian_mead as mead, world_callbacks};
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
+    barbarian_mead as mead, world_callbacks,
+};
 use std::sync::Arc;
 
 #[test]
@@ -136,6 +139,7 @@ pub(super) async fn exercise(
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .revision(),
+            party: Vec::new(),
         };
         drop(runtime);
         (context, owner.spell_lane_permit().await.ok_or("permit")?)

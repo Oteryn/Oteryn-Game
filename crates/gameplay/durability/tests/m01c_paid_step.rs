@@ -182,6 +182,7 @@ async fn paid_step(h: &f::Harness) -> f::TestResult {
         reset_epoch: 0,
         actor_placement: f::id(17),
         movement_revision: 1,
+        party: Vec::new(),
     };
     let request = |number| -> f::TestResult<QuestTransitionRequest> {
         Ok(QuestTransitionRequest {

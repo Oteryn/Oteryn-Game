@@ -483,5 +483,6 @@ async fn context(
             .read_actor_position(actor)
             .map_err(debug)?
             .revision(),
+        party: Vec::new(),
     })
 }

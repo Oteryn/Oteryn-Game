@@ -167,6 +167,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         reset_epoch: 0,
         actor_placement: fixture::id(17),
         movement_revision: 1,
+        party: Vec::new(),
     };
     let seal = h.recovery.seal_current().map_err(fixture::debug)?;
     let authority = h

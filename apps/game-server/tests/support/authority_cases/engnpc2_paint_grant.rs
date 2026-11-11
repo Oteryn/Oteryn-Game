@@ -209,6 +209,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         reset_epoch: 0,
         actor_placement: f::id(7),
         movement_revision: 1,
+        party: Vec::new(),
     };
     for (index, callback) in callbacks.iter().enumerate() {
         let request = QuestTransitionRequest {

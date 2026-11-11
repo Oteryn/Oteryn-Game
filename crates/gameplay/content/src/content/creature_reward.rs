@@ -530,8 +530,10 @@ impl CreatureRewardTable {
                             &tables,
                             &items,
                             race,
-                            30,
-                            verified_source_corpses,
+                            CorpseAdmission {
+                                maximum_corpse_capacity: 30,
+                                verified_source_corpses,
+                            },
                         )
                         .map(|mut row| {
                             row.boss = boss_metadata(profile, &target.key);
@@ -768,6 +770,11 @@ fn source_bestiary_stars(profile: &ProjectV2CreatureAuthoring) -> Option<u8> {
     oteryn_gameplay_domain::domain::soulpit::source_monster(name).map(|monster| monster.stars)
 }
 
+struct CorpseAdmission<'a> {
+    maximum_corpse_capacity: u32,
+    verified_source_corpses: &'a HashSet<String>,
+}
+
 fn row(
     creature: &str,
     profile: &ProjectV2CreatureAuthoring,
@@ -775,9 +782,12 @@ fn row(
     tables: &HashMap<&SectionRef, &SectionLootTable>,
     items: &HashMap<&SectionRef, &SectionItemFacts>,
     race: Option<BestiaryRace>,
-    maximum_corpse_capacity: u32,
-    verified_source_corpses: &HashSet<String>,
+    corpse_admission: CorpseAdmission<'_>,
 ) -> Result<CreatureRewardRow, NoSettlementReason> {
+    let CorpseAdmission {
+        maximum_corpse_capacity,
+        verified_source_corpses,
+    } = corpse_admission;
     let xp_amount = i64::try_from(profile.experience.unwrap_or(0))
         .map(ExactI64::new)
         .map_err(|_| NoSettlementReason::XpOutOfRange)?;
@@ -982,8 +992,10 @@ mod private_loot_capacity_tests {
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
                 None,
-                30,
-                &HashSet::new(),
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
             )
             .is_ok()
         );
@@ -1001,8 +1013,10 @@ mod private_loot_capacity_tests {
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
                 None,
-                30,
-                &HashSet::new(),
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
         );
@@ -1022,8 +1036,10 @@ mod private_loot_capacity_tests {
                     &HashMap::new(),
                     &HashMap::from([(&corpse, &facts)]),
                     None,
-                    30,
-                    &HashSet::new(),
+                    CorpseAdmission {
+                        maximum_corpse_capacity: 30,
+                        verified_source_corpses: &HashSet::new(),
+                    },
                 ),
                 Err(NoSettlementReason::CorpseItemInadmissible)
             );
@@ -1038,8 +1054,10 @@ mod private_loot_capacity_tests {
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
                 None,
-                30,
-                &HashSet::new(),
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
         );
@@ -1085,8 +1103,10 @@ mod private_loot_tests {
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
                 None,
-                30,
-                &HashSet::new(),
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
             )
             .is_ok()
         );
@@ -1104,8 +1124,10 @@ mod private_loot_tests {
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
                 None,
-                30,
-                &HashSet::new(),
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
         );
@@ -1125,8 +1147,10 @@ mod private_loot_tests {
                     &HashMap::new(),
                     &HashMap::from([(&corpse, &facts)]),
                     None,
-                    30,
-                    &HashSet::new(),
+                    CorpseAdmission {
+                        maximum_corpse_capacity: 30,
+                        verified_source_corpses: &HashSet::new(),
+                    },
                 ),
                 Err(NoSettlementReason::CorpseItemInadmissible)
             );
@@ -1141,8 +1165,10 @@ mod private_loot_tests {
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
                 None,
-                30,
-                &HashSet::new(),
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
         );

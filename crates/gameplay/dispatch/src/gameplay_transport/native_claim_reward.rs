@@ -133,6 +133,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 reset_epoch: self.reset_epoch,
                 actor_placement: actor.placement_identity(),
                 movement_revision: snapshot.revision(),
+                party: Vec::new(),
             }
         };
         let Ok(command_id) = CommandId::new(command.command_id) else {

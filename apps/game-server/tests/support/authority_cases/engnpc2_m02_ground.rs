@@ -148,6 +148,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         reset_epoch: 0,
         actor_placement: f::id(7),
         movement_revision: 1,
+        party: Vec::new(),
     };
     let request = |id| -> f::TestResult<QuestTransitionRequest> {
         Ok(QuestTransitionRequest {

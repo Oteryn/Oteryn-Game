@@ -3750,7 +3750,14 @@ mod tests {
         );
         assert_eq!(rewards.row(creature).err(), Some(private_refusal));
         let corpse = rewards.reward_boss_corpse(creature).unwrap();
-        assert_eq!(corpse.corpse_item.production_key, item);
+        assert_eq!(
+            corpse
+                .corpse_item
+                .as_ref()
+                .expect("source Bakragore corpse")
+                .production_key,
+            item
+        );
         assert!(corpse.loot_table.entries.is_empty());
         assert!(rewards.reward_boss_corpse("oteryn:creature.rat").is_none());
         assert!(rewards.reward_boss_corpse("fixture:unknown").is_none());
@@ -3758,7 +3765,14 @@ mod tests {
         // Main separates a reward boss's physical body from its private loot
         // budget. The branch's exact native-goal loot closure now qualifies Spite.
         let spite = rewards.row("oteryn:creature.goshnar_s_spite").unwrap();
-        assert_eq!(spite.corpse_item.production_key, "oteryn:item.tibia.i33867");
+        assert_eq!(
+            spite
+                .corpse_item
+                .as_ref()
+                .expect("source Spite corpse")
+                .production_key,
+            "oteryn:item.tibia.i33867"
+        );
         assert!(!spite.loot_table.entries.is_empty());
         let supplied = NativeGameplayInput::from_manifest(
             &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))

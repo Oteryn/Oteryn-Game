@@ -118,6 +118,7 @@ async fn exercise(f: &h::Harness) -> h::TestResult {
         reset_epoch: 0,
         actor_placement: h::id(17),
         movement_revision: 1,
+        party: Vec::new(),
     };
     let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()?;
     let callback = callbacks

@@ -47,6 +47,8 @@ pub(super) async fn exercise(
         quests: vec![BoundQuest {
             quest: QUEST.into(),
             recipe_sha256: "1".repeat(64),
+            occurrence: None,
+            admission: None,
             tracks: vec![Track {
                 key: TRACK.into(),
                 initial: 0,
@@ -59,6 +61,7 @@ pub(super) async fn exercise(
                     completes: false,
                     trigger: Trigger::NpcDialogue {
                         callback: Box::new(talk.clone()),
+                        alternatives: Vec::new(),
                     },
                 },
                 Stage {
