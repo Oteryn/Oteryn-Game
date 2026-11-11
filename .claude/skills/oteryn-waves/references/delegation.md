@@ -49,9 +49,12 @@ what any competent engineer would choose the same way. Point at repository
 files (`AGENTS.md`, task card, README of a directory) instead of pasting them.
 State what to do rather than what to avoid; a prohibition belongs only in the
 limits below. Send Codex work to Codex Cloud with model
-`gpt-6.1-sol` at reasoning effort `high` (owner decision 2026-11-05) and
-start each packet with "Reasoning effort: high."; repository subagents use
-the model and effort set in their own `.claude/agents/*.md` definition.
+`gpt-6.1-sol` at reasoning effort `medium` and start each packet with
+"Reasoning effort: medium."; a Codex lane on the PC that writes code uses the
+same setting. Codex review runs `gpt-6.1-sol` at reasoning effort `high`
+(`oteryn-review`). Owner decision 2026-11-11, replacing the 2026-11-05
+`high` for code-writing Codex. Repository subagents use the model and effort
+set in their own `.claude/agents/*.md` definition.
 
 ## Limits to paste into every packet
 
