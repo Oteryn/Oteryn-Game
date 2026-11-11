@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: PR3106 repair lead; sole publisher and review dispatcher in comment 6786929490
 created_at: 2026-11-10T15:59:04Z
-updated_at: 2026-11-11T10:14:39Z
+updated_at: 2026-11-11T12:35:35Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20261110-wpkg-r2-repair.md
@@ -97,6 +97,70 @@ the prior revisions of this record. Their results qualify their own SHAs only.
   comparisons; its oversized focused log was unavailable. Final committed-source
   qualification remains pending and must pass every required check.
 
+## Complete dependent native closure
+
+- PROVEN on predecessor `93684c40a787d6e1a79aa49dfc77cd6d41cfcbbd`:
+  FAST run 43002115193 passed 11,025 distinct actually executed tests, excluding
+  success-ledger reuse, plus actual Clippy and native bundle pin-check. Native
+  WorldProject run 43002115364 reproduced the eleven documents but passed only
+  47 of 48 focused tests; Thaian's separate Wiki binding was missing from the
+  fixture census. ContentTree run 43002115033 separately rejected stale Prey inputs.
+- PROVEN: native World serialization omits Thaian's empty immunity list and null
+  reference-level field. The existing raw definition digest therefore changed;
+  the native provider, Prey fingerprint, indexes and manifests required normal
+  regeneration. The seasonal validator now accepts only the pinned packet's
+  equivalent omitted-empty-immunity projection; source facts, required reference
+  level and negative refusals remain strict. Eight regression tests cover that
+  boundary, including the observed failing case before the fix.
+- PROVEN: the World fixture independently verifies Thaian's exact Wiki source,
+  revision, import batch and eight-field binding, requires one Thaian and one
+  D44 binding, and retains all other identity and non-Wiki count assertions.
+- PROVEN: isolated authoring checkpoint `f68a65d1`, run 43007567729, performed
+  the actual 15-case / 777-creature native Prey simulation, then stopped because
+  its shallow checkout could not resolve the existing StarterKit seal base.
+  Its 27-file partial artifact was not accepted as completed generation.
+- PROVEN: checkpoint `f1530f6208cd8467b600ed3457ccf3abea844bb1`, run
+  43012720721 / job 130496071582, supplied bounded real history and passed the
+  existing seal resolver: main `4e29529a`, base `f01f1858`, the original 239-byte
+  ledger, one sealed label and no history errors. The complete existing generator
+  succeeded without a provenance bypass, manual model repin or simulation change.
+- PROVEN on that authoring workspace: all eight step outcomes passed; eight
+  seasonal tests ran before generation and eight after it; Prey checked four
+  outputs; registration checked 53 files; all five World repository tests passed
+  with zero ignored tests. Native pin-refresh and pin-check agreed on bundle
+  `8f578285e03020023b59ca54e3752830f1975b6a660e934ad57e9369572ddbc5`,
+  inputs `9b65cddb29ecba139707a4b9c1c42a3fdfbd4973eedf48256ec9dc45695f9b81`
+  and 33,657,032 bytes. The eleven World documents and entry_start were unchanged.
+- PROVEN: completed artifact 13853567128 has 41 members and 29 changed generated
+  paths; ZIP length 1,427,815 bytes and SHA-256
+  `6c9502d44c9a602ac0503ca9932872554cffe7f41352cb38956515d6f4b2245a`.
+  Each output's bytes, SHA-256 and Git blob were checked and independently reviewed.
+  All 27 partial outputs repeat exactly; only the two native bundle pin files
+  are additional. The provider blob is
+  `3d2c1c301caceefda8cd29e2e3d4cf2562fa5cb8`, already stored by immutable
+  transport run 43013807852 and exactly matched to completed generation.
+- PROVEN: semantic review found only the native empty-default projection and
+  source/hash propagation; all balance and simulation values remain unchanged.
+  Pin and topology changes contain only the generated bundle digest update.
+  The final successor contains these 29 outputs, the three reviewed source fixes
+  and this archived record. Both temporary helper workflows are excluded.
+- PROVEN: the managed workspace became unavailable before adoption. Root recovered
+  an isolated checkout and the exact artifact on an explicitly authorized remote
+  device for light checks; no production or live-account files were touched.
+  Publication continues through the already selected GitHub control-plane route.
+- PROVEN on the complete 33-path successor composition: governance validated 22
+  required documents and nine lanes; all 129 governance tests passed; repository
+  policy validated 23 files and 70 workflows; all eight seasonal tests passed;
+  the two Python files compiled; Rust 1.99.1 formatting and complete-diff whitespace
+  checks passed. Initial governance attempts identified missing sparse-checkout
+  dependencies; exact unchanged baseline files were materialized before the
+  successful checks. No source assertion was changed to satisfy setup. Final
+  archive governance and whitespace checks are repeated before publication.
+
+This authoring evidence does not qualify the committed successor. Final-head
+fast, ContentTree, WorldProject, actual PostgreSQL/Node, applicable Codex review,
+normal squash and full post-merge acceptance remain pending in live control.
+
 ## High-risk authority/recovery qualification
 
 Current node, session-generation, binding, lease and durable-root fences remain
@@ -140,10 +204,11 @@ No new mechanic, reference value or public protocol change is asserted.
 
 ## Validation
 
-Local checks below passed on this authoring composition; governance checks are
-repeated after the archive move before publication. Hosted results remain pending
-on the final SHA. The user requested light local checks and hosted heavy/database
-validation. Previous-head passes remain historical evidence, not final acceptance.
+Retained local checks below passed before predecessor `93684c40` was published.
+They do not establish final successor qualification. The subsequent native-closure
+repair has its separate evidence below; applicable light checks are repeated on
+its complete composition before publication. The user requested light local
+checks and hosted heavy/database validation.
 
 - `python tools/agents/validate_governance.py` — PASS; 22 required policy documents and 9 lanes.
 - `python -m unittest discover -s tools/agents/tests` — OK; 129 tests.
