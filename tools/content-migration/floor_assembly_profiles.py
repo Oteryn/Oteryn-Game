@@ -4,12 +4,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-
-from native_profile_composition import encode_native_profile
 import re
 from pathlib import Path
 
 import grizzly_shop_profiles as source
+from native_profile_composition import encode_native_profile
 
 ROOT = Path(__file__).resolve().parents[2]
 PATH = 'tools/content-schema/native-gameplay/floor-assembly-item-profiles.json'
