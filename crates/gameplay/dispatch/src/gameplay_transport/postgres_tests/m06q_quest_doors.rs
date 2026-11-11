@@ -638,20 +638,19 @@ fn scenario(
                         selection,
                     )
                     .map_err(debug)?;
-                    assert_eq!(
-                        owner
-                            .move_loop_item(
-                                deps.actor,
-                                command(101),
-                                LoopMove {
-                                    item,
-                                    count: None,
-                                    target: LoopTarget::Ground(cell(6)),
-                                }
-                            )
-                            .await,
-                        LoopMoveResult::Committed
-                    );
+                    assert!(matches!(
+                        item_move(
+                            &owner,
+                            deps.actor,
+                            command(101),
+                            &payload,
+                            selection,
+                            false,
+                            &mut items,
+                        )
+                        .await,
+                        ItemMoveStep::Result(ItemMoveOutcome::Moved, _)
+                    ));
                     let ItemKey::MapBase { placement_key, .. } = item else {
                         return Err("authored source identity".into());
                     };
