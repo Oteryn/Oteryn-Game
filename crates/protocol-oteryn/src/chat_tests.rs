@@ -441,7 +441,9 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                 u64::from(DELTA_TYPE_CHAT_LINE_V1),
                 "CHAT_LINE_DELTA_V1".to_owned(),
                 schema("ChatLineV1"),
-                MAX_CHAT_LINE_BYTES as u64
+                // WU26 capabilities 493, 495 and 496 extend the line; without them it keeps
+                // `MAX_CHAT_LINE_BYTES`.
+                line_extended::MAX_CHAT_LINE_EXTENDED_BYTES as u64
             ),
             (
                 u64::from(DELTA_TYPE_CHAT_ROOMS_V1),
@@ -453,7 +455,9 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                 u64::from(private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1),
                 "CHAT_CHANNEL_LIST_DELTA_V1".to_owned(),
                 schema("ChatChannelListV1"),
-                private_channel::MAX_CHAT_CHANNEL_LIST_BYTES as u64
+                // WU26 capabilities 494 and 495 extend the list; without them it keeps
+                // `MAX_CHAT_CHANNEL_LIST_BYTES`.
+                private_channel_extended::MAX_CHAT_CHANNEL_LIST_EXTENDED_BYTES as u64
             ),
             // S19 adds negotiated typing updates to the existing CHAT revision stream.
             (
@@ -513,6 +517,8 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
         MAX_CHAT_ROOMS_BYTES,
         MAX_CHAT_LINE_BYTES,
         private_channel::MAX_CHAT_CHANNEL_LIST_BYTES,
+        line_extended::MAX_CHAT_LINE_EXTENDED_BYTES,
+        private_channel_extended::MAX_CHAT_CHANNEL_LIST_EXTENDED_BYTES,
     ] {
         assert!(
             SCHEMA.contains(&format!("At most {bound} bytes")),

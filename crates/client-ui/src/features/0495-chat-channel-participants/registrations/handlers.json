@@ -1,0 +1,15 @@
+{
+  "mechanic": "0495-chat-channel-participants",
+  "kind": "handlers",
+  "id": "0495-chat-channel-participants-chat-extension",
+  "status": "unsupported",
+  "reason": "WU26 chat server side only: the participant list and the channel notices land in the client lane.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The participants come from the server list on each change; the client keeps no new durable state.",
+    "protocol": "The shared chat codec in oteryn-protocol-oteryn encodes list field 5 and line kind 8.",
+    "view": "The participant list and the join, leave and exclusion lines land with client support.",
+    "input": "No new input; the existing private channel intents carry it.",
+    "settings": "No client setting controls the participants or the notices."
+  }
+}
