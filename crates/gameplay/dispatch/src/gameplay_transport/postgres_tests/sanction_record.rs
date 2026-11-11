@@ -81,7 +81,8 @@ fn sanction_record_postgres_projection_is_idempotent_and_the_read_is_own_and_fen
         let kind = COMMAND_TYPE_SANCTION_RECORD_QUERY;
         // No selected capability: real dispatch refuses.
         assert_eq!(exchange(&owner, &mut admitted, 1, kind, &[]).await?.0, CommandStatus::Rejected);
-        admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[CAPABILITY_SANCTION_RECORD_V1]).ok_or("selection")?;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES, &[CAPABILITY_SANCTION_RECORD_V1]).ok_or("selection")?;
+        assert!(admitted.continuity.selected_capabilities.contains(CAPABILITY_SANCTION_RECORD_V1));
         let (status, empty) = exchange(&owner, &mut admitted, 2, kind, &[]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(decode_reply(&empty), Some(SanctionRecord { more: false, entries: Vec::new() }));

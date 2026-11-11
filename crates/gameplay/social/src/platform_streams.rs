@@ -176,7 +176,10 @@ fn sanction(item: SanctionItemJson) -> Option<SanctionDecision> {
         ends_at_ms: item.ends_at_ms,
         reason: item.reason_text,
     };
-    let character_id = item.character_id.as_deref().map(uuid).transpose()?;
+    let character_id = match item.character_id.as_deref() {
+        Some(text) => Some(uuid(text)?),
+        None => None,
+    };
     wire::encode_reply(&wire::SanctionRecord {
         more: false,
         entries: vec![entry.clone()],
