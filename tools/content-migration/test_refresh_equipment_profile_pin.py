@@ -437,19 +437,40 @@ class NpcHouseProjectionTests(unittest.TestCase):
         cls.engine = json.loads((refresh.ROOT / 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json').read_bytes())
         cls.npc = json.loads((refresh.ROOT / 'tools/content-schema/native-gameplay/qnpcfx-item-profiles.json').read_bytes())
         cls.house = refresh.importlib.import_module('house_decoration_actions')
+        cls.quick = refresh.importlib.import_module('quick_loot_item_profiles')
         cls.raw_jar = copy.deepcopy(cls.row(cls.npc))
-        if any(name in cls.raw_jar['attributes'] for name in cls.TOP):
+        if (any(name in cls.raw_jar['attributes'] for name in cls.TOP)
+                or 'taxonomy' in cls.raw_jar['authoring']):
             raise AssertionError('the retained NPC source must keep its raw Jar observation')
         cls.house_jar = refresh.registered_source_document(
             refresh.ROOT, {'records': [cls.raw_jar]})['records'][0]
+        cls.taxonomy_jar = refresh.registered_jar_taxonomy_document(
+            refresh.ROOT, {'records': [cls.raw_jar]})['records'][0]
+        cls.complete_jar = refresh.registered_source_document(
+            refresh.ROOT, {'records': [cls.taxonomy_jar]})['records'][0]
+        taxonomy = json.loads((refresh.ROOT / 'content/items/taxonomy/items.json').read_bytes())
+        entries = [row for row in taxonomy['records'] if row['target']['key'] == cls.JAR]
+        if (len(entries) != 1 or entries[0]['target'] !=
+                {'family': 'Item', 'key': cls.JAR, 'revision': 'definition-r1'}):
+            raise AssertionError('canonical Jar taxonomy must have one exact identity')
+        cls.taxonomy = entries[0]['source_taxonomy']
+        cls.qualified_states = (cls.raw_jar, cls.house_jar, cls.taxonomy_jar, cls.complete_jar)
+        # Authenticate the actual packet before constructing a first-pass fixture.
+        # Never hide an unproved difference by stripping fields from that packet.
+        refresh.keys(cls.engine)
+        if json.dumps(cls.row(cls.engine), sort_keys=True) not in {
+                json.dumps(row, sort_keys=True) for row in cls.qualified_states}:
+            raise AssertionError('actual QENGINE Jar is not a qualified registration state')
         cls.raw_engine = copy.deepcopy(cls.engine)
-        # The actual packet may be from either registration pass. Model the
-        # first pass by removing only House's two separately qualified fields.
-        for name in cls.TOP:
-            cls.row(cls.raw_engine)['attributes'].pop(name, None)
+        index = next(i for i, row in enumerate(cls.raw_engine['records'])
+                     if row['production_definition']['production_key'] == cls.JAR)
+        cls.raw_engine['records'][index] = copy.deepcopy(cls.raw_jar)
         cls.registered_engine = copy.deepcopy(cls.raw_engine)
-        cls.row(cls.registered_engine)['attributes'].update(
-            always_on_top=False, always_on_top_order=0)
+        cls.registered_engine['records'][index] = copy.deepcopy(cls.house_jar)
+        cls.taxonomy_engine = copy.deepcopy(cls.raw_engine)
+        cls.taxonomy_engine['records'][index] = copy.deepcopy(cls.taxonomy_jar)
+        cls.complete_engine = copy.deepcopy(cls.raw_engine)
+        cls.complete_engine['records'][index] = copy.deepcopy(cls.complete_jar)
 
     @classmethod
     def row(cls, packet):
@@ -459,7 +480,11 @@ class NpcHouseProjectionTests(unittest.TestCase):
     def compose(self, engine, npc, root=None):
         before = copy.deepcopy((engine, npc))
         try:
-            return refresh.registered_npc_source_document(root or refresh.ROOT, engine, npc)
+            retained_engine, projected_npc = refresh.registered_engine_npc_documents(
+                root or refresh.ROOT, engine, npc)
+            self.assertEqual(retained_engine, engine)
+            self.assertIsNot(retained_engine, engine)
+            return projected_npc
         finally:
             self.assertEqual((engine, npc), before, 'qualification must not rewrite either source packet')
 
@@ -479,8 +504,14 @@ class NpcHouseProjectionTests(unittest.TestCase):
         self.assertEqual(self.house_jar, expected)
         self.assertIs(self.house_jar['attributes']['always_on_top'], False)
         self.assertIs(type(self.house_jar['attributes']['always_on_top_order']), int)
+        expected_taxonomy = copy.deepcopy(self.raw_jar)
+        expected_taxonomy['authoring']['taxonomy'] = copy.deepcopy(self.taxonomy)
+        self.assertEqual(self.taxonomy_jar, expected_taxonomy)
+        expected['authoring']['taxonomy'] = copy.deepcopy(self.taxonomy)
+        self.assertEqual(self.complete_jar, expected)
         self.assertEqual(self.row(self.raw_engine), self.raw_jar)
-        self.assertIn(self.row(self.engine), (self.raw_jar, self.house_jar))
+        self.assertIn(json.dumps(self.row(self.engine), sort_keys=True),
+                      [json.dumps(row, sort_keys=True) for row in self.qualified_states])
         self.assertEqual(len(self.npc['records']), 8)
 
     def test_raw_equal_pair_keeps_the_first_registration_pass(self):
@@ -596,6 +627,299 @@ class NpcHouseProjectionTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, 'NPC_HOUSE_'):
                         self.compose(self.registered_engine, self.npc)
 
+
+
+
+    def test_real_quickloot_projection_changes_only_canonical_jar_taxonomy(self):
+        result = self.compose(self.taxonomy_engine, self.npc)
+        expected = copy.deepcopy(self.npc)
+        self.row(expected)['authoring']['taxonomy'] = copy.deepcopy(self.taxonomy)
+        self.assertEqual(result, expected, 'all metadata and seven other rows stay exact')
+        self.assertEqual(self.row(result), self.taxonomy_jar)
+        self.assertEqual(self.qualify(self.taxonomy_engine, result),
+                         self.qualify(self.raw_engine, self.npc))
+
+    def test_quickloot_and_house_successor_is_exact_and_replays(self):
+        result = self.compose(self.complete_engine, self.npc)
+        expected = copy.deepcopy(self.npc)
+        self.row(expected)['authoring']['taxonomy'] = copy.deepcopy(self.taxonomy)
+        self.row(expected)['attributes'].update(always_on_top=False, always_on_top_order=0)
+        self.assertEqual(result, expected)
+        self.assertEqual(self.row(result), self.complete_jar)
+        self.assertEqual(self.compose(self.complete_engine, result), result)
+        self.assertEqual(self.compose(self.complete_engine, self.npc), result)
+        self.assertEqual(self.qualify(self.complete_engine, result),
+                         self.qualify(self.raw_engine, self.npc))
+
+    def test_actual_engine_packet_qualifies_without_replacing_its_row(self):
+        result = self.compose(self.engine, self.npc)
+        self.assertEqual(self.row(result), self.row(self.engine))
+        self.assertEqual(self.qualify(self.engine, result),
+                         self.qualify(self.raw_engine, self.npc))
+
+    def test_partial_wrong_or_noncanonical_taxonomy_refuses_before_quickloot(self):
+        invalid = (None, False, {}, 'Valuables', ['Valuables'],
+                   {'primary': None}, {'primary': True}, {'primary': 'Tools'},
+                   {'secondary': 'Valuables'}, {'primary': 'Valuables', 'unreviewed': True})
+        for owner in ('engine', 'npc'):
+            for taxonomy in invalid:
+                with self.subTest(owner=owner, taxonomy=taxonomy):
+                    engine, npc = copy.deepcopy((self.complete_engine, self.npc))
+                    self.row(engine if owner == 'engine' else npc)['authoring']['taxonomy'] = taxonomy
+                    with patch.object(refresh, 'registered_jar_taxonomy_document',
+                                      side_effect=AssertionError('invalid predecessor must not reach QuickLoot')):
+                        with self.assertRaisesRegex(ValueError, 'NPC_JAR_TAXONOMY_PREDECESSOR'):
+                            self.compose(engine, npc)
+
+    def test_raw_or_house_engine_cannot_downgrade_canonical_taxonomy(self):
+        for engine in (self.raw_engine, self.registered_engine):
+            for row in (self.taxonomy_jar, self.complete_jar):
+                with self.subTest(engine=self.row(engine), npc=row):
+                    npc = copy.deepcopy(self.npc)
+                    index = next(i for i, item in enumerate(npc['records'])
+                                 if item['production_definition']['production_key'] == self.JAR)
+                    npc['records'][index] = copy.deepcopy(row)
+                    result = self.compose(engine, npc)
+                    self.assertEqual(self.row(result)['authoring']['taxonomy'], self.taxonomy)
+                    with self.assertRaisesRegex(ValueError, 'QENGINE/NPC shared source identity or facts differ'):
+                        self.qualify(engine, result)
+
+    def test_taxonomy_projection_cannot_change_other_fields_or_source_value(self):
+        for mode in ('body', 'identity', 'missing', 'partial', 'wrong_type', 'foreign'):
+            with self.subTest(mode=mode):
+                projected = {'records': [copy.deepcopy(self.taxonomy_jar)]}
+                row = projected['records'][0]
+                if mode == 'body':
+                    row['admission']['unreviewed'] = True
+                elif mode == 'identity':
+                    row['production_definition']['production_key'] = 'oteryn:item.tibia.i1'
+                elif mode == 'missing':
+                    del row['authoring']['taxonomy']
+                elif mode == 'partial':
+                    row['authoring']['taxonomy'] = {}
+                elif mode == 'wrong_type':
+                    row['authoring']['taxonomy'] = 'Valuables'
+                else:
+                    row['authoring']['taxonomy'] = {'primary': 'Tools'}
+                with patch.object(refresh, 'registered_jar_taxonomy_document', return_value=projected):
+                    with self.assertRaisesRegex(ValueError, 'NPC_JAR_TAXONOMY_REGISTRATION_DELTA'):
+                        self.compose(self.taxonomy_engine, self.npc)
+
+    def test_real_quickloot_source_digest_is_required(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            taxonomy = root / 'content/items/taxonomy/items.json'
+            taxonomy.parent.mkdir(parents=True)
+            taxonomy.write_bytes((refresh.ROOT / 'content/items/taxonomy/items.json').read_bytes())
+            source = root / self.quick.SOURCE
+            source.parent.mkdir(parents=True)
+            source.write_bytes(b'not the pinned Canary source')
+            with self.assertRaisesRegex(ValueError, 'QUICKLOOT_SOURCE_DIGEST'):
+                self.compose(self.taxonomy_engine, self.npc, root)
+
+    def test_taxonomy_source_requires_one_exact_canonical_identity(self):
+        original = json.loads((refresh.ROOT / 'content/items/taxonomy/items.json').read_bytes())
+        row = next(row for row in original['records'] if row['target']['key'] == self.JAR)
+        for mode in ('missing', 'duplicate', 'revision', 'family', 'shape'):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                document = {'records': [copy.deepcopy(row)]}
+                if mode == 'missing':
+                    document['records'].clear()
+                elif mode == 'duplicate':
+                    document['records'].append(copy.deepcopy(row))
+                elif mode in ('revision', 'family'):
+                    document['records'][0]['target'][mode] = 'unreviewed'
+                else:
+                    document['records'][0]['source_taxonomy'] = {'primary': None}
+                target = root / 'content/items/taxonomy/items.json'
+                target.parent.mkdir(parents=True)
+                target.write_text(json.dumps(document))
+                with self.assertRaisesRegex(ValueError, 'NPC_JAR_TAXONOMY_SOURCE_'):
+                    self.compose(self.taxonomy_engine, self.npc, root)
+
+
+class SharedSourceDiagnosticTests(unittest.TestCase):
+    PREFIX = "QENGINE/NPC shared source identity or facts differ"
+
+    def refused(self, qengine, npc, expected_shared):
+        source = EquipmentPinTests.SOURCE.replace(
+            '("QNPCFX", 1)', f'("QNPCFX", {len(npc["records"])})')
+        packets = (document(0, 1, 2, 3), document(4), qengine, npc)
+        before = json.dumps(packets, sort_keys=True)
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "ability_tests.rs"
+            target.write_text(source, encoding="utf-8")
+            source_bytes = target.read_bytes()
+            with patch.object(refresh, "TEST", target):
+                with self.assertRaisesRegex(ValueError, self.PREFIX) as caught:
+                    regenerate(target.read_text(encoding="utf-8"), *packets,
+                               engine_npc_shared=expected_shared)
+            self.assertEqual(target.read_bytes(), source_bytes)
+            self.assertEqual(list(Path(directory).iterdir()), [target])
+        self.assertEqual(json.dumps(packets, sort_keys=True), before)
+        message = str(caught.exception)
+        self.assertTrue(message.startswith(self.PREFIX + ": "), message)
+        payload = json.loads(message[len(self.PREFIX) + 2:])
+        self.assertEqual(message, self.PREFIX + ": " + json.dumps(payload, sort_keys=True))
+        return payload
+
+    def test_mismatching_complete_records_preserve_missing_null_bool_and_integer(self):
+        jar = "oteryn:item.tibia.i27654"
+        equal = "oteryn:item.tibia.i999"
+        qengine = document(equal, jar)
+        npc = document(jar, equal)
+        engine_row = qengine["records"][1]
+        npc_row = npc["records"][0]
+        engine_row["attributes"] = {
+            "speed_bonus": None, "always_on_top": False, "always_on_top_order": 0}
+        npc_row["attributes"] = {
+            "always_on_top": 0, "always_on_top_order": False}
+        engine_row["authoring"] = {"source": "engine", "nested": {"retained": True}}
+        npc_row["authoring"] = {"source": "npc", "nested": {"retained": True}}
+        payload = self.refused(qengine, npc, (equal, jar))
+        expected = {
+            "expected_shared": sorted((equal, jar)),
+            "actual_shared": sorted((equal, jar)),
+            "mismatching_records": {jar: {"qengine": engine_row, "npc": npc_row}},
+        }
+        self.assertEqual(json.dumps(payload, sort_keys=True), json.dumps(expected, sort_keys=True))
+        self.assertEqual(set(payload["mismatching_records"]), {jar})
+        pair = payload["mismatching_records"][jar]
+        self.assertIsNone(pair["qengine"]["attributes"]["speed_bonus"])
+        self.assertNotIn("speed_bonus", pair["npc"]["attributes"])
+        self.assertIs(pair["qengine"]["attributes"]["always_on_top"], False)
+        self.assertIs(type(pair["qengine"]["attributes"]["always_on_top_order"]), int)
+        self.assertIs(type(pair["npc"]["attributes"]["always_on_top"]), int)
+        self.assertIs(pair["npc"]["attributes"]["always_on_top_order"], False)
+
+    def test_identity_set_mismatch_reports_sorted_keys_without_equal_records(self):
+        qengine = document("z-shared", "b-shared", "a-engine-only")
+        npc = document("b-shared", "z-shared")
+        payload = self.refused(qengine, npc, ("z-expected", "a-expected"))
+        self.assertEqual(payload, {
+            "expected_shared": ["a-expected", "z-expected"],
+            "actual_shared": ["b-shared", "z-shared"],
+            "mismatching_records": {},
+        })
+
+
+class RegisteredEngineNpcSourceTests(unittest.TestCase):
+    KEY = "oteryn:item.tibia.i27654"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.engine = json.loads((refresh.ROOT /
+            "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes())
+        cls.npc = json.loads((refresh.ROOT /
+            "tools/content-schema/native-gameplay/qnpcfx-item-profiles.json").read_bytes())
+
+    def shared(self, value):
+        return next(row for row in value["records"]
+                    if row["production_definition"]["production_key"] == self.KEY)
+
+    def qualified(self, engine, npc):
+        before = copy.deepcopy((engine, npc))
+        try:
+            return refresh.registered_engine_npc_documents(refresh.ROOT, engine, npc)
+        finally:
+            self.assertEqual((engine, npc), before)
+
+    def generate_shared(self, engine, npc, source=None):
+        base = document(0, 1, 2)
+        base["records"].append(copy.deepcopy(self.shared(engine)))
+        return regenerate(source or EquipmentPinTests.SOURCE, base, document(),
+                          {"records": [self.shared(engine)]},
+                          {"records": [self.shared(npc)]},
+                          engine_npc_shared=(self.KEY,))
+
+    def test_real_house_stage_difference_is_qualified_without_changing_other_rows(self):
+        self.assertEqual(refresh.keys(self.engine) & refresh.keys(self.npc), {self.KEY})
+        engine = copy.deepcopy(self.engine)
+        index = next(i for i, row in enumerate(engine["records"])
+                     if row["production_definition"]["production_key"] == self.KEY)
+        engine["records"][index] = refresh.registered_source_document(
+            refresh.ROOT, {"records": [self.shared(engine)]})["records"][0]
+        with self.assertRaisesRegex(ValueError, "QENGINE/NPC shared source"):
+            self.generate_shared(engine, self.npc)
+        qualified = self.qualified(engine, self.npc)
+        self.assertEqual(self.shared(qualified[0]), self.shared(qualified[1]))
+        self.assertIs(self.shared(qualified[0])["attributes"]["always_on_top"], False)
+        self.assertEqual(self.shared(qualified[0])["attributes"]["always_on_top_order"], 0)
+        expected_taxonomy = None
+        if "taxonomy" in self.shared(engine)["authoring"]:
+            independent = refresh.registered_jar_taxonomy_document(
+                refresh.ROOT, {"records": [copy.deepcopy(self.shared(self.npc))]})
+            expected_taxonomy = independent["records"][0]["authoring"]["taxonomy"]
+        for before, after in zip((engine, self.npc), qualified):
+            expected = copy.deepcopy(before)
+            self.shared(expected)["attributes"].update(
+                always_on_top=False, always_on_top_order=0)
+            if expected_taxonomy is not None:
+                self.shared(expected)["authoring"]["taxonomy"] = copy.deepcopy(expected_taxonomy)
+            self.assertEqual(after, expected)
+            self.assertEqual(refresh.keys(after), refresh.keys(before))
+        fixed, count = self.generate_shared(*qualified)
+        self.assertEqual(count, 4)
+        self.assertEqual(self.generate_shared(*qualified, source=fixed), (fixed, count))
+        self.assertEqual(self.qualified(*qualified), qualified)
+
+    def test_existing_house_values_require_exact_types_complete_pair_and_source_value(self):
+        values = [
+            {"always_on_top": True, "always_on_top_order": 0},
+            {"always_on_top": False, "always_on_top_order": 1},
+            {"always_on_top": 0, "always_on_top_order": 0},
+            {"always_on_top": False, "always_on_top_order": False},
+            {"always_on_top": False, "always_on_top_order": 0.0},
+            {"always_on_top": None, "always_on_top_order": 0},
+            {"always_on_top": False, "always_on_top_order": None},
+            {"always_on_top": False},
+            {"always_on_top_order": 0},
+        ]
+        for attributes in values:
+            with self.subTest(attributes=attributes):
+                engine = copy.deepcopy(self.engine)
+                actual = self.shared(engine)["attributes"]
+                actual.pop("always_on_top", None)
+                actual.pop("always_on_top_order", None)
+                actual.update(attributes)
+                with self.assertRaisesRegex(ValueError, "shared House facts differ"):
+                    self.qualified(engine, self.npc)
+
+    def test_binding_known_facts_and_extra_authoring_still_refuse(self):
+        for field in ("binding", "physical", "authoring"):
+            with self.subTest(field=field):
+                engine = copy.deepcopy(self.engine)
+                row = self.shared(engine)
+                if field == "binding":
+                    row["production_binding"]["target"]["revision"] = "unqualified"
+                elif field == "physical":
+                    row["semantics"]["physical"]["value"]["weight"]["value"] += 1
+                else:
+                    row["authoring"]["unqualified_extra"] = True
+                qualified = self.qualified(engine, self.npc)
+                with self.assertRaisesRegex(ValueError, "QENGINE/NPC shared source"):
+                    self.generate_shared(*qualified)
+
+    def test_missing_foreign_and_duplicate_shared_identities_refuse(self):
+        for case in ("missing", "changed_identity", "foreign_shared", "duplicate_engine",
+                     "duplicate_npc"):
+            with self.subTest(case=case):
+                engine, npc = copy.deepcopy((self.engine, self.npc))
+                if case == "missing":
+                    npc["records"].remove(self.shared(npc))
+                elif case == "changed_identity":
+                    self.shared(engine)["production_definition"]["production_key"] += "-unqualified"
+                elif case == "foreign_shared":
+                    extra = next(row for row in engine["records"]
+                                 if row["production_definition"]["production_key"] != self.KEY)
+                    npc["records"].append(copy.deepcopy(extra))
+                elif case == "duplicate_engine":
+                    engine["records"].append(copy.deepcopy(self.shared(engine)))
+                else:
+                    npc["records"].append(copy.deepcopy(self.shared(npc)))
+                with self.assertRaisesRegex(ValueError, "shared source|duplicate production key"):
+                    self.qualified(engine, npc)
 
 if __name__ == "__main__":
     unittest.main()

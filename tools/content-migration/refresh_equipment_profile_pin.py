@@ -63,13 +63,62 @@ def registered_source_document(root, document):
     return result
 
 
-def registered_npc_source_document(root, qengine, npc):
-    """Compose only the shared Jar's later House rendering facts for this pin."""
+def _jar_source_taxonomy(root):
+    jar = 'oteryn:item.tibia.i27654'
+    rows = [row for row in json.loads(
+        (root / 'content/items/taxonomy/items.json').read_bytes())['records']
+        if row.get('target', {}).get('key') == jar]
+    identity = {'family': 'Item', 'key': jar, 'revision': 'definition-r1'}
+    if len(rows) != 1 or rows[0].get('target') != identity:
+        raise ValueError('NPC_JAR_TAXONOMY_SOURCE_IDENTITY')
+    taxonomy = rows[0].get('source_taxonomy')
+    if (type(taxonomy) is not dict or type(taxonomy.get('primary')) is not str
+            or not taxonomy['primary']):
+        raise ValueError('NPC_JAR_TAXONOMY_SOURCE_SHAPE')
+    return copy.deepcopy(taxonomy)
+
+
+def _jar_taxonomy_present(row, taxonomy):
+    authoring = row.get('authoring')
+    if not isinstance(authoring, dict):
+        raise ValueError('NPC_JAR_TAXONOMY_PREDECESSOR')
+    if 'taxonomy' not in authoring:
+        return False
+    if type(authoring['taxonomy']) is not dict or authoring['taxonomy'] != taxonomy:
+        raise ValueError('NPC_JAR_TAXONOMY_PREDECESSOR')
+    return True
+
+
+def registered_jar_taxonomy_document(root, document):
+    """Replay Quick Loot's guarded canonical taxonomy contribution to the Jar."""
+    jar = 'oteryn:item.tibia.i27654'
+    if keys(document) != {jar}:
+        raise ValueError('NPC_JAR_TAXONOMY_IDENTITY_SET')
+    taxonomy = _jar_source_taxonomy(root)
+    _jar_taxonomy_present(document['records'][0], taxonomy)
+    expected = copy.deepcopy(document['records'][0])
+    expected['authoring']['taxonomy'] = copy.deepcopy(taxonomy)
+    generated = {'profiles': json.dumps(document).encode(),
+                 'manifest': b'{"item_profiles":{}}'}
+    owner = importlib.import_module('quick_loot_item_profiles')
+    owner.admit(root, generated, 'profiles', 'manifest',
+                lambda row: row['production_definition']['production_key'],
+                lambda value: json.dumps(value, sort_keys=True).encode())
+    projected = {'records': [row for row in json.loads(generated['profiles'])['records']
+                             if row['production_definition']['production_key'] == jar]}
+    if (projected != {'records': [expected]}
+            or not _jar_taxonomy_present(projected['records'][0], taxonomy)):
+        raise ValueError('NPC_JAR_TAXONOMY_REGISTRATION_DELTA')
+    return projected
+
+
+def registered_engine_npc_documents(root, qengine, npc):
+    """Compose only the shared Jar's qualified registration successors."""
     from qnpcfx_item_profiles import KEYS
     jar = 'oteryn:item.tibia.i27654'
     npc_keys = keys(npc)
     if npc_keys != KEYS or keys(qengine) & npc_keys != {jar}:
-        raise ValueError('NPC_HOUSE_SHARED_IDENTITY_SET')
+        raise ValueError('QENGINE/NPC shared source identity or facts differ: NPC_HOUSE_SHARED_IDENTITY_SET')
     engine_row = next(row for row in qengine['records']
                       if row['production_definition']['production_key'] == jar)
     index = next(i for i, row in enumerate(npc['records'])
@@ -79,31 +128,45 @@ def registered_npc_source_document(root, qengine, npc):
     def registered_flags(row):
         attributes = row.get('attributes')
         if not isinstance(attributes, dict):
-            raise ValueError('NPC_HOUSE_TOP_ORDER_PREDECESSOR')
+            raise ValueError('QENGINE/NPC shared House facts differ: NPC_HOUSE_TOP_ORDER_PREDECESSOR')
         present = ('always_on_top' in attributes, 'always_on_top_order' in attributes)
         if present == (False, False):
             return False
         if (present != (True, True) or attributes['always_on_top'] is not False
                 or type(attributes['always_on_top_order']) is not int
                 or attributes['always_on_top_order'] != 0):
-            raise ValueError('NPC_HOUSE_TOP_ORDER_PREDECESSOR')
+            raise ValueError('QENGINE/NPC shared House facts differ: NPC_HOUSE_TOP_ORDER_PREDECESSOR')
         return True
 
     engine_registered = registered_flags(engine_row)
     registered_flags(npc_row)
     result = copy.deepcopy(npc)
+    if any(not isinstance(row.get('authoring'), dict) for row in (engine_row, npc_row)):
+        raise ValueError('NPC_JAR_TAXONOMY_PREDECESSOR')
+    if any('taxonomy' in row.get('authoring', {}) for row in (engine_row, npc_row)):
+        taxonomy = _jar_source_taxonomy(root)
+        engine_taxonomy = _jar_taxonomy_present(engine_row, taxonomy)
+        _jar_taxonomy_present(npc_row, taxonomy)
+        if engine_taxonomy:
+            expected = copy.deepcopy(npc_row)
+            expected['authoring']['taxonomy'] = copy.deepcopy(taxonomy)
+            projected = registered_jar_taxonomy_document(root, {'records': [npc_row]})
+            if (projected != {'records': [expected]}
+                    or not _jar_taxonomy_present(projected['records'][0], taxonomy)):
+                raise ValueError('NPC_JAR_TAXONOMY_REGISTRATION_DELTA')
+            result['records'][index] = projected['records'][0]
     # The first registration may capture the raw/raw pair. Never introduce a
     # successor or erase a known field merely to make that pair compare equal.
     if not engine_registered:
-        return result
-    expected = copy.deepcopy(npc_row)
+        return copy.deepcopy(qengine), result
+    expected = copy.deepcopy(result['records'][index])
     expected['attributes'].update(always_on_top=False, always_on_top_order=0)
-    projected = registered_source_document(root, {'records': [npc_row]})
+    projected = registered_source_document(root, {'records': [result['records'][index]]})
     if (projected != {'records': [expected]}
             or not registered_flags(projected['records'][0])):
-        raise ValueError('NPC_HOUSE_REGISTRATION_DELTA')
+        raise ValueError('QENGINE/NPC shared House changed other facts: NPC_HOUSE_REGISTRATION_DELTA')
     result['records'][index] = projected['records'][0]
-    return result
+    return copy.deepcopy(qengine), result
 
 
 def source_cohorts(root):
@@ -336,7 +399,18 @@ def regenerate(source, base, updates, qengine, npc, starting=None, srx3=(), coow
     engine_rows = {r['production_definition']['production_key']: r for r in qengine['records']}
     npc_rows = {r['production_definition']['production_key']: r for r in npc['records']}
     if shared != set(engine_npc_shared) or any(engine_rows[k] != npc_rows[k] for k in shared):
-        raise ValueError("QENGINE/NPC shared source identity or facts differ")
+        diagnostic = {
+            "expected_shared": sorted(set(engine_npc_shared)),
+            "actual_shared": sorted(shared),
+            "mismatching_records": {
+                key: {"qengine": engine_rows[key], "npc": npc_rows[key]}
+                for key in sorted(shared) if engine_rows[key] != npc_rows[key]
+            },
+        }
+        raise ValueError(
+            "QENGINE/NPC shared source identity or facts differ: "
+            + json.dumps(diagnostic, sort_keys=True)
+        )
     legacy_sum = custody is None and frozen is None
     registered_engine = counts.get("QENGINE-REWARDS", 0)
     if frozen is not None and custody is None:
@@ -584,7 +658,8 @@ def main():
         baseline_qengine = subprocess.check_output(['git', 'show', custody['base'] + ':tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'], cwd=ROOT)
         baseline_qengine_count = len(keys(json.loads(baseline_qengine)))
     documents = [json.loads((ROOT / p).read_text()) for p in paths]
-    documents[3] = registered_npc_source_document(ROOT, documents[2], documents[3])
+    documents[2], documents[3] = registered_engine_npc_documents(
+        ROOT, documents[2], documents[3])
     generated, count = regenerate(
         register(source), *documents, srx3=srx3,
         coowners=source_coowners(ROOT), engine_npc_shared=("oteryn:item.tibia.i27654",),

@@ -3,7 +3,7 @@
   "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
   "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
   "parents": {
-    "previous_published_head": "e453951e826922b7467a89a390dc335f1ce72458",
+    "previous_published_head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
     "integrated_main": "4e29529abacfcbff821bfb7560424c6684b936d7"
   },
   "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
@@ -15,8 +15,8 @@
   },
   "pending": [
     "Complete exact-head canonical generation on GitHub; inspect bound artifact base/archive/patch/paths before applying generated content and final World pins.",
-    "Run the full migration parent after early validation gates, including the whole known-speed module, EquipmentOverlap8, Boss12/NPC2/Yield10/Rotten2, M04_10, WorldChange15, NativeOverlay14 and Lion14. Bounded local tests are not this full parent result.",
-    "Observe complete native registration output keyset and residual after the explicit proof/merged union. Final standalone registration68 printed56; keyset and residual UNKNOWN. Do not guess or blindly change43.",
+    "Run the full migration parent after early validation gates: all11 full-module routes, including EquipmentPin36, KnownSpeed8, EquipmentOverlap8, Boss12, authoredNPC2, Yield10, Rotten2, M04_10, WorldChange15, NativeOverlay14 and Lion14. Bounded local tests are not this full parent result.",
+    "Observe complete native registration output keyset and residual after the explicit proof/merged union. Final standalone registration69 printed56; keyset and residual UNKNOWN. Do not guess or blindly change43.",
     "After data materialization, qualify Rust/runtime failures, the actual boss inventory marker and private-drop behavior; retain actual execution versus cache/compile distinctions.",
     "Verify final generated43501..43504 native0/canonical150 and complete the whole Rotten2 module on a runner. The final new test ended locally inside source.capture with SIGKILL of unknown cause; the existing outside-record digests are unchanged and require exact qualification, not blind replacement.",
     "Once code/data confidence is established, run the complete final PostgreSQL/Node qualification on GitHub. Current wrappers skipped DB; previous c74 evidence is historical.",
@@ -71,136 +71,136 @@
     }
   ],
   "last_checkpoint_execution": {
-    "head": "e453951e826922b7467a89a390dc335f1ce72458",
-    "merge_run": 43009695759,
-    "monitor_state": "ALL_MONITORED_RUNS_TERMINAL_AUTHORING_REPAIR_REQUIRED",
+    "head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
+    "merge_run": 43017482118,
+    "monitor_state": "ALL17_RUNS_TERMINAL_AUTHORING_REPAIR_REQUIRED",
     "open_runs": [],
     "terminal_monitor_receipt": {
-      "path": "batch68-ci-monitor.json",
-      "sha256": "d5cde34b86b23c0b4af6ea0cea379597be8b7eaa2d521d2dc13d1eb2c9b62ea1"
+      "path": "batch69-retained-merge-monitor-closed.json",
+      "sha256": "7cad00a4c915cf9fdd9173010d476e362e7625f2593b96dff35fc6795930e271"
     },
     "final_run_summaries": {
-      "path": "batch68-final-run-summaries.json",
-      "sha256": "41e0b685a6d7c85007d0ffe973096093449f1ee7fcaad2c44cfedbf62edaf370"
+      "path": "batch69-final-run-summaries.json",
+      "sha256": "884e718d54eb067cc16a5b9b269080186db8dcd364d82ef01f636496f0c67b09"
     },
     "terminal_run_conclusions": {
       "Merge authority audit": {
-        "id": 43009689567,
+        "id": 43017476402,
         "run_attempt": 1,
         "status": "completed",
         "conclusion": "success"
-      },
-      "RewardClaim Authoring": {
-        "id": 43009695534,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "failure"
       },
       "G4 Item Crystal Identity Bindings": {
-        "id": 43009695548,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Architecture semantic audit • pull_request • 3056": {
-        "id": 43009695564,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Area Authoring Schema": {
-        "id": 43009695565,
+        "id": 43017482698,
         "run_attempt": 1,
         "status": "completed",
         "conclusion": "success"
       },
       "World Metadata Authoring": {
-        "id": 43009695600,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "failure"
-      },
-      "Agent governance • pull_request • 3056": {
-        "id": 43009695622,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "PR PostgreSQL harness": {
-        "id": 43009695734,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Merge gate • pull_request • 3056": {
-        "id": 43009695759,
+        "id": 43017482596,
         "run_attempt": 1,
         "status": "completed",
         "conclusion": "failure"
       },
       "Wheel Authoring Schema": {
-        "id": 43009695778,
+        "id": 43017482722,
         "run_attempt": 1,
         "status": "completed",
         "conclusion": "success"
       },
-      "Store Authoring Schema": {
-        "id": 43009695825,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Content Tree Migration Equivalence": {
-        "id": 43009695836,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "failure"
-      },
-      "Quest Authoring Schema": {
-        "id": 43009695840,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "failure"
-      },
-      "Craft Authoring": {
-        "id": 43009695846,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "failure"
-      },
-      "Item Authoring Schema": {
-        "id": 43009695875,
+      "Agent governance • pull_request • 3056": {
+        "id": 43017482332,
         "run_attempt": 1,
         "status": "completed",
         "conclusion": "success"
       },
       "Proficiency Authoring Schema": {
-        "id": 43009695930,
+        "id": 43017482584,
         "run_attempt": 1,
         "status": "completed",
         "conclusion": "success"
       },
+      "Architecture semantic audit • pull_request • 3056": {
+        "id": 43017482172,
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      "Quest Authoring Schema": {
+        "id": 43017482301,
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "failure"
+      },
+      "Item Authoring Schema": {
+        "id": 43017482565,
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      "Store Authoring Schema": {
+        "id": 43017482810,
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      "Area Authoring Schema": {
+        "id": 43017482991,
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      "Content Tree Migration Equivalence": {
+        "id": 43017482254,
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "failure"
+      },
+      "Craft Authoring": {
+        "id": 43017482300,
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "failure"
+      },
+      "RewardClaim Authoring": {
+        "id": 43017482417,
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "failure"
+      },
       "Native entry room qualification": {
-        "id": 43009695989,
+        "id": 43017482188,
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      "Merge gate • pull_request • 3056": {
+        "id": 43017482118,
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "failure"
+      },
+      "PR PostgreSQL harness": {
+        "id": 43017482374,
         "run_attempt": 1,
         "status": "completed",
         "conclusion": "success"
       }
     },
-    "generator_run": 43009695836,
-    "generator_job": 130485895361,
-    "generator_result": "Actual generation completed converter, PREY15/777 and final standalone registration56. Craft overlap refresh returned by sequential-call inference. Known-speed source guard refused next; full Equipment, seasonal/metadata tail, World pin refresh and export/upload were not reached. Artifacts empty. Production return is not a unit-suite PASS.",
-    "generator_log_sha256": "77caecf3acc3153433ae3c9f4868bbf4dde46cbaf18eba8cac0c954691214ac6",
+    "generator_run": 43017482254,
+    "generator_job": 130512045592,
+    "generator_result": "Actual converter completed, final standalone registration printed56 and custody additions2791 completed. Known-speed capture and strict refresh returned by exact traceback plus sequential source order; this is not a full8 test-suite PASS. Equipment regenerate then refused QENGINE/NPC shared source identity or facts differ. The actual failed runner row pair was not captured. Final Equipment fixture write, seasonal/metadata tail, World pins and export/upload were not reached; artifacts empty.",
+    "generator_log_sha256": "15932413b2e1fa2107d2927b9ba0b5fad42afd4e1bffd6b387f77a40bcf6a792",
     "generator_receipt": {
-      "path": "batch68-step-generator-terminal-receipt.json",
-      "sha256": "183b2ffc9784566b6a9e256a011a6c8dddb2e23c729a02ce7811b67fd2209c1f"
+      "path": "batch69-step-generator-terminal-receipt.json",
+      "sha256": "1ed915cf275e1b4ebaf98fc69df158d980d0bcbaff5a5e6f5f1eba1057a7508f"
     },
     "registered_output_count": 56,
-    "registered_output_count_basis": "Actual final standalone registration marker at raw1069. Full keyset and residual UNKNOWN.",
-    "rust_policy_result": "Result reuse only, same key as actual66 policy PASS. Current metadata/fmt/architecture/JSON/closure checks skipped.",
+    "registered_output_count_basis": "Actual final standalone registration marker at raw1148; full keyset and residual UNKNOWN.",
+    "rust_policy_result": "RESULT REUSE ONLY. Current metadata/fmt/architecture/JSON/closure checks and record/save steps skipped. Advertised cache SHA bd290b395ffc85a215804caa3983c46c903d849a is kept separate from the historical actual66 checkout.",
     "rust_policy_receipt": {
-      "path": "batch68-retained-policy-terminal-proof.json",
-      "sha256": "dafbb361c7e9f00d4a9ae135242e63cfe2544d1b046a9c90715008184ad83689"
+      "path": "batch69-retained-control-results-recovery.json",
+      "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
     },
     "rust_policy_last_actual_checks": {
       "head": "183c6551efa22860c204513111318b442aa047d9",
@@ -211,422 +211,162 @@
         "sha256": "9560b6ffaf181b790b91ba43b403c648496b89eeb03c9977445d6dfb1cca4cbc"
       }
     },
-    "clippy_result": "Actual strict Clippy passed all67 selected packages; zero result reuse; compilation5m47s.",
-    "clippy_job": 130486625763,
+    "clippy_result": "Actual strict Clippy passed all67 selected packages; zero result reuse; compilation4m18s.",
+    "clippy_job": 130512748790,
     "clippy_receipt": {
-      "path": "batch68-rotten-clippy-terminal-proof.json",
-      "sha256": "3e4881e5ae77ae19dae3e4baffdbf6ffcd24b921b0175faf0f74034497c7b065"
+      "path": "batch69-rotten-clippy-terminal-proof.json",
+      "sha256": "0080290849b95712194aaea8f3e8cd1bbf13edc6d1df50b11337f6c00a40a1c8"
     },
-    "rust_unit_result": "Actual12509 disjoint cases:11880 PASS/629 FAIL. Every executed identity/status and all629 normalized failure blocks match67. Thirty-nine source65 PASS cases not executed, covered by literal package reuse; not new PASS.",
+    "rust_unit_result": "Actual12509 disjoint cases:11880 PASS/629 FAIL. All executed identities/statuses and all629 normalized full failure blocks match68. Cached package notices are not new test execution.",
     "rust_unit_jobs": [
       {
         "shard": 1,
-        "job_id": 130486625670,
-        "raw_log": "merge43009695759-job130486625670-unit1-terminal.log",
-        "log_sha256": "70a739f3c3f73894bee6b5292308062622c3fb2705ee587877e4a2afc5905a76",
+        "job_id": 130512748869,
+        "raw_log": "merge43017482118-job130512748869-unit1-terminal.log",
+        "log_sha256": "330ebe8a372727e353d66f8c15d1172d2ede15c7d7b9c213139da6c5a5d9508b",
         "actual_executed": 4174,
         "actual_counts": {
-          "FAIL": 223,
-          "PASS": 3951
+          "PASS": 3951,
+          "FAIL": 223
         },
         "individual_counts_match_summary": true,
-        "packages_to_run": [
-          {
-            "packages": 59,
-            "line": 362
-          }
-        ],
-        "literal_result_cache_notices": [
-          "2026-11-11T11:13:19.8011868Z ##[notice]oteryn-client-domain passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:19.8025302Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:19.8029693Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:19.8033750Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:19.8037721Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:19.8042047Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:19.8046099Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:19.8050388Z ##[notice]oteryn-synthetic-assets passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-        ],
-        "cache_reuse_packages": 8,
-        "structured_result_cache_notices": [
-          {
-            "package": "oteryn-client-domain",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:19.8011868Z ##[notice]oteryn-client-domain passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-diagnostics",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:19.8025302Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-foundation",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:19.8029693Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-identity",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:19.8033750Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-input-actions",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:19.8037721Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-ntp-clock",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:19.8042047Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-simulation-determinism",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:19.8046099Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-synthetic-assets",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:19.8050388Z ##[notice]oteryn-synthetic-assets passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          }
-        ]
+        "cache_reuse_packages": 8
       },
       {
         "shard": 2,
-        "job_id": 130486625694,
-        "raw_log": "merge43009695759-job130486625694-unit2-terminal.log",
-        "log_sha256": "8452802f8303836e5f8e23cfbcc099445e43bae42651aaba48a6aa183a8e1437",
+        "job_id": 130512748855,
+        "raw_log": "merge43017482118-job130512748855-unit2-terminal.log",
+        "log_sha256": "80cfa27182960deff60159f67080e73f8faaf1929859ee95cc66160b31e8432f",
         "actual_executed": 4224,
         "actual_counts": {
-          "FAIL": 199,
-          "PASS": 4025
+          "PASS": 4025,
+          "FAIL": 199
         },
         "individual_counts_match_summary": true,
-        "packages_to_run": [
-          {
-            "packages": 59,
-            "line": 357
-          }
-        ],
-        "literal_result_cache_notices": [
-          "2026-11-11T11:13:21.4894391Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.4909861Z ##[notice]oteryn-gameplay-admission-evidence passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.4914675Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.4919010Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.4923389Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.4927465Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.4931709Z ##[notice]oteryn-platform-contracts passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.4935979Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-        ],
-        "cache_reuse_packages": 8,
-        "structured_result_cache_notices": [
-          {
-            "package": "oteryn-foundation",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.4894391Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-gameplay-admission-evidence",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.4909861Z ##[notice]oteryn-gameplay-admission-evidence passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-gameplay-source-critical-baseline",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.4914675Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-identity",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.4919010Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-input-actions",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.4923389Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-ntp-clock",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.4927465Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-platform-contracts",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.4931709Z ##[notice]oteryn-platform-contracts passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-simulation-determinism",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.4935979Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          }
-        ]
+        "cache_reuse_packages": 8
       },
       {
         "shard": 3,
-        "job_id": 130486625815,
-        "raw_log": "merge43009695759-job130486625815-unit3-terminal.log",
-        "log_sha256": "5e80fdda06441a02a972f2035d1984b053f3781dd7118de7da5312cb7e782c72",
+        "job_id": 130512748907,
+        "raw_log": "merge43017482118-job130512748907-unit3-terminal.log",
+        "log_sha256": "c41ffe6f31a9f5c35963f51b2275b6c9078f352014c5e8a44a29adfcc561828a",
         "actual_executed": 4111,
         "actual_counts": {
-          "FAIL": 207,
-          "PASS": 3904
+          "PASS": 3904,
+          "FAIL": 207
         },
         "individual_counts_match_summary": true,
-        "packages_to_run": [
-          {
-            "packages": 61,
-            "line": 346
-          }
-        ],
-        "literal_result_cache_notices": [
-          "2026-11-11T11:13:21.1355895Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.1365394Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.1368024Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.1370300Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.1373544Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
-          "2026-11-11T11:13:21.1375923Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-        ],
-        "cache_reuse_packages": 6,
-        "structured_result_cache_notices": [
-          {
-            "package": "oteryn-diagnostics",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.1355895Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-gameplay-source-critical-baseline",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.1365394Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-identity",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.1368024Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-input-actions",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.1370300Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-ntp-clock",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.1373544Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          },
-          {
-            "package": "oteryn-simulation-determinism",
-            "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
-            "run_id": 42987261419,
-            "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
-            "literal_notice": "2026-11-11T11:13:21.1375923Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
-          }
-        ]
+        "cache_reuse_packages": 6
       }
     ],
     "unit_failure_groups": {
       "Item_updates_base_pin": 316,
-      "Other": 26,
-      "Feaster_callback_unmaterialized": 287
+      "Feaster_callback_unmaterialized": 287,
+      "Other": 26
     },
     "unit_comparison": {
       "case_reconciliation": {
-        "path": "batch68-root-unit-all-reconciliation.json",
-        "sha256": "ff0e8a4e439f2b28f4d4f5a1b5eb19b3257b9f07b84edab63c0d63e83225d515"
+        "path": "batch69-root-unit-all-reconciliation.json",
+        "sha256": "c549fcd9e6e8e7bd431e0af13faa51a765ca6edb81a551c42fb3b0756da3068c"
       },
-      "semantic_failure_closure": {
-        "path": "batch68-root-unit-failure-comparison-closure.json",
-        "sha256": "4cbc5aa35c6da88fb6184dc02b4e33820a3dd888a48fa2d7ce23b42a37990a5b"
+      "shards12_full_failure_comparison": {
+        "path": "batch69-retained-unit12-comparison.json",
+        "sha256": "2e05138405be1bcd3755fb81272ff9a488c78189576738429a7a0ac281c9cfc2"
       },
-      "exact_libtest_progress_distinction": {
-        "path": "batch68-retained-libtest-progress-distinction.json",
-        "sha256": "c385f7c9c1f2d107ce5c11664d7708627335ec343526fc91b63b024ef8192a53"
+      "shard3_full_failure_comparison": {
+        "path": "batch69-rotten-unit3-versus68.json",
+        "sha256": "663211955a499e8d464bc89b502c878377e29a8ba4e0eaa4ba94c1711a593e61"
       },
-      "source65_missing_cached_cases": 39,
+      "identity_status_sha256": "f8031ea99206afff53b8e594a6cde6c860c43e470f9c3cdb881d2cbcafd792ac",
       "literal_cache_producer_run": 42987261419,
       "literal_cache_advertised_sha": "8b90875542899f065186385ce59db57bcb969e39",
-      "actual_source65_checkout": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec"
+      "actual_source65_checkout": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
+      "limit": "Historical source65 successes and advertised cache markers are not executed69 cases. All raw logs retained byte-exact; unit1/2 baseline68 each required one additional recovery fetch after workspace loss."
     },
     "focused_source_regressions": {
-      "npc_only_track_owners_keep_exact_existing_quest_predecessors": [
-        {
-          "status": "PASS",
-          "duration": "0.890s",
-          "ordinal": 3333,
-          "total": 4224,
-          "binary": "oteryn-gameplay-quests",
-          "test": "quest::npc_rules::tests::npc_only_track_owners_keep_exact_existing_quest_predecessors",
-          "archive": null,
-          "line": 6441,
-          "shard": 2,
-          "job_id": 130486625694
-        }
-      ],
-      "published_ungated_quest_hash_baseline": [
-        {
-          "status": "FAIL",
-          "duration": "0.523s",
-          "ordinal": 3349,
-          "total": 4111,
-          "binary": "oteryn-gameplay-quests",
-          "test": "quest::reward_callbacks::tests::published_ungated_quest_hash_baseline",
-          "archive": null,
-          "line": 6943,
-          "repeated_summary_lines": [
-            8389
-          ],
-          "evidence": [
-            {
-              "line": 6957,
-              "text": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\""
-            }
-          ],
-          "root_cause_group": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\"",
-          "shard": 3,
-          "job_id": 130486625815
-        }
-      ],
-      "qn5_structured_premium_world_entry_requires_personal_world_fences": [
-        {
-          "status": "PASS",
-          "duration": "0.012s",
-          "ordinal": 3402,
-          "total": 4224,
-          "binary": "oteryn-gameplay-quests",
-          "test": "quest::world_callbacks::admission_tests::qn5_structured_premium_world_entry_requires_personal_world_fences",
-          "archive": null,
-          "line": 6873,
-          "shard": 2,
-          "job_id": 130486625694
-        }
-      ],
-      "core_extension_requires_exact_contract_command_binding_and_test": [
-        {
-          "status": "PASS",
-          "duration": "0.034s",
-          "ordinal": 19,
-          "total": 4111,
-          "binary": "oteryn-architecture-check",
-          "test": "client_structure::tests::core_extension_requires_exact_contract_command_binding_and_test",
-          "archive": null,
-          "line": 875,
-          "shard": 3,
-          "job_id": 130486625815
-        }
-      ]
+      "basis": "The complete69 case census and full failure-block comparisons preserve the four prior focused outcomes. Prior line numbers/durations remain only in archived68; no new per-case timing is asserted.",
+      "outcomes": {
+        "npc_only_track_owners_keep_exact_existing_quest_predecessors": "PASS",
+        "published_ungated_quest_hash_baseline": "FAIL; invalid callback oteryn:quest-callback/questpc7-feaster-entry",
+        "qn5_structured_premium_world_entry_requires_personal_world_fences": "PASS",
+        "core_extension_requires_exact_contract_command_binding_and_test": "PASS"
+      },
+      "receipt": {
+        "path": "batch69-root-unit-all-reconciliation.json",
+        "sha256": "c549fcd9e6e8e7bd431e0af13faa51a765ca6edb81a551c42fb3b0756da3068c"
+      }
     },
     "native_entry": {
-      "run_id": 43009695989,
-      "job_id": 130485894960,
+      "run_id": 43017482188,
+      "job_id": 130512044461,
       "actual_passed": 3,
       "actual_failed": 0,
       "platform_pin": "eb65ce453949a352fdc0e3ed0132d2cde0084fb7",
       "receipt": {
-        "path": "batch68-rotten-native-terminal-proof.json",
-        "sha256": "72ca3c37e57382e385ca6a0623f54c1c1e783d2f2f0d1ef096270513d24092fc"
+        "path": "batch69-rotten-native-terminal-proof.json",
+        "sha256": "2d806759cbb91c5ad7bc3b60510648b558a3656d2701fb7a938937ea980270e1"
       },
-      "qualification": "Only three native entry cases and actual disposable World/Channel issuer evidence; not full native or PG qualification."
+      "qualification": "Only three actual native entry cases and the disposable World/Channel issuer evidence; not full native or PostgreSQL qualification."
     },
     "boss_inventory": "No NATIVE_REWARD_BOSS_QUALIFICATION marker. Private-drop still failed the global Item update guard before behavior assertions; boss census UNKNOWN.",
-    "postgres": "Run43009695734 wrapper success; all three heavy legs skipped, heavy-tests absent. No database execution on this head.",
+    "postgres": "Run43017482374 wrapper success; all three heavy legs skipped, heavy-tests absent. No database, Node boot or harness-build execution on this head.",
     "postgres_receipt": {
-      "path": "batch68-root-pg-wrapper.json",
-      "sha256": "e4caaa614f83d27aca5af3408baf3c769757d0b7b44b8b6300a8e93ab9f045ac"
+      "path": "batch69-retained-control-results-recovery.json",
+      "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
     },
     "quest_authoring": {
-      "run_id": 43009695840,
-      "unit_job_id": 130485894782,
+      "run_id": 43017482301,
+      "unit_job_id": 130512044976,
       "counts": {
         "total_modules": 182,
-        "passed_modules": 173,
-        "failed_modules": 9,
-        "individual_failure_cases": 8,
+        "passed_modules": 172,
+        "failed_modules": 10,
+        "individual_failure_cases": 9,
         "individual_error_cases": 1
       },
-      "comparison": "All182 module identities/statuses and nine full normalized failure/error blocks match67. Variant and npc.json.gz captures remain stale.",
+      "comparison": "Same182 module identities as68. One new failure: ExistingNativeProvider.test_compatible_provider_record_is_preserved_exactly first observes i5805 gaining source-qualified speed_bonus0 versus the old committed row lacking it. Existing nine failure/error identities remain; eight normalized blocks unchanged and QENGINE rewards first stale path moved from its profile packet to content/spells.manifest.json. Full all-row compatibility after canonical generation remains UNKNOWN.",
       "receipt": {
-        "path": "batch68-root-quest-terminal-proof.json",
-        "sha256": "8f8101b984cbb20434c5a9f43d312d025628cdb90cb78c9f3f44a16d3bace5e1"
+        "path": "batch69-root-quest-terminal-proof.json",
+        "sha256": "1539d4f78bd30056ea4fd30e7fbdaabcd3e1fe8c3b26abf557656d4c123415e9"
       }
     },
-    "migration_parent": "Validate130485894868 failed Imbuement at step7; parent14 skipped. All nine existing full-module routes unexecuted in CI68. The known-speed whole-module route is new in source69.",
+    "migration_parent": "Validate130512045353 failed Imbuement at step7; parent14 skipped. All ten whole-module routes were unexecuted in CI69, including all8 known-speed cases. The whole36 Equipment pin module is new in source70.",
     "migration_parent_receipt": {
-      "path": "batch68-step-validate-terminal-receipt.json",
-      "sha256": "092a96760a788eb35db9e0dfe600f54c0c3d6973f3ee8eb96e832bb008038c9b"
+      "path": "batch69-step-validate-terminal-receipt.json",
+      "sha256": "992733731f73251f1e9deec41e41f318f604b9c6091ce43712bc765317231a83"
     },
     "protected_authority": {
-      "run_id": 43009689567,
-      "job_id": 130485882030,
-      "result": "Actual exact-head authority PASS; not fresh Codex/runtime/PG approval.",
+      "run_id": 43017476402,
+      "job_id": 130512031846,
+      "result": "Actual exact-head authority PASS; approved merge-gate blob f574c67416ff8323327cfc6ac0e5829a1c9cba92 and merge-group blob7b7f36b197a72a4317d6318b1cc4ec4ab9b602f6. Not fresh Codex/runtime/PG approval.",
       "receipt": {
-        "path": "batch68-root-authority-terminal.json",
-        "sha256": "f511f1b0e9ff1ce525b1f2ed4beec9dc8d6b2d883a7c66e20ff95865362b1923"
+        "path": "batch69-retained-control-results-recovery.json",
+        "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
       }
     },
     "world_bundle": {
-      "job_id": 130486625667,
-      "result": "Actual pin-check failed with same three digests as67; no final refresh/artifact qualification.",
+      "job_id": 130512748769,
+      "result": "Actual release compilation33.68s and pin-check failed. Committed46277d7a versus tree f9d3b06e, inputs ef7da8c6; same digests as68. Double build not completed; upload skipped.",
       "receipt": {
-        "path": "batch68-root-world-terminal-proof.json",
-        "sha256": "4384fa940728950ae24192f9ebd0800310536c9ad88afd1839dff6d3d0eaf213"
+        "path": "batch69-retained-control-results-recovery.json",
+        "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
       }
     },
     "g4_identity_bindings": {
-      "run_id": 43009695548,
-      "result": "API all steps success; no raw or test-count claim.",
+      "run_id": 43017482698,
+      "result": "API all11 listed steps success; no raw or test-count claim.",
       "receipt": {
-        "path": "batch68-root-g4-api-status.json",
-        "sha256": "2a762d6efb18dfe766f3984623e0442d35a34b79aef5c0da2b85fa7ba2f0025d"
+        "path": "batch69-retained-control-results-recovery.json",
+        "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
       }
     },
     "additional_authoring": {
-      "path": "batch68-root-extra-authoring-terminal.json",
-      "sha256": "02b2020e8c663d5d94e582df4579fa349feb100e5a172d2f90bfa250240ad3d4"
+      "path": "batch69-retained-control-results-recovery.json",
+      "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
     },
     "additional_api_successes": {
-      "path": "batch68-root-additional-api-successes.json",
-      "sha256": "869e88c5cf85abb6620147313b873fb3fc02f7acaafe20ebff984fe1abeb7aac"
+      "path": "batch69-root-additional-seven-final-api.json",
+      "sha256": "a52f367b8a178a57ec61ffcc6174d46d01d451f8341099693b632e3ab05265ad"
     },
     "other_26_failure_disposition": {
       "receipt": {
@@ -822,74 +562,74 @@
     "qualification": "Independent bounded source peer passed. Actual canonical110+2 generation and Rust execution remain pending; no generated JSON was hand-edited."
   },
   "source_review_at_checkpoint": {
-    "base_head": "e453951e826922b7467a89a390dc335f1ce72458",
+    "base_head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
     "source_files": 3,
-    "scope": "Restore the accepted pinned source speed0 of only parchment2833 and arena trophies5805/5806 through capture and native admission. Retain the general physical-custody UNKNOWN boundary and strict Equipment source guard. Route the whole old-and-new speed module through migration validation.",
+    "scope": "Compose the exact shared QENGINE/NPC jar i27654 through the unchanged qualified House owner in both source documents before strict full-row Equipment comparison; preserve all other facts and source rows. Route all36 Equipment pin tests through the existing migration parent.",
     "groups": [
       {
-        "name": "closed_three_source_speed_admission",
+        "name": "shared_engine_npc_house_composition",
         "source_count": 2,
         "source_files": [
           {
-            "path": "tools/content-migration/qengine_reward_item_profiles.py",
-            "base_sha256": "275d32bab306b648935777c5c7f135226fdc7f478c52317be798ca095ab685e7",
-            "sha256": "cd7382df0d95ed98a454b54642ea641fc2081151c402ec653e77a4535e85ce52",
-            "bytes": 20195
+            "path": "tools/content-migration/refresh_equipment_profile_pin.py",
+            "base_sha256": "0e4a6f391ddfe1d27d83d667babf2d21f8d54e195ec8e361754b44d10d4e8a35",
+            "sha256": "0c5c8a2fa52d33a0494d4bc75c2719e7c8e504f539cd3303c3b89641c1532439",
+            "bytes": 32054
           },
           {
-            "path": "tools/content-migration/test_equipment_known_speed_pin.py",
-            "base_sha256": "0276191bc299e97c93f998aac3f01bf3e49280826e0b2ae3d275d3f4da4f02db",
-            "sha256": "e84d789ce26d7fbeeaeef76d91bca4e33eab06ce88accdb5b5a54c12dbc694e2",
-            "bytes": 11182
+            "path": "tools/content-migration/test_refresh_equipment_profile_pin.py",
+            "base_sha256": "f96b25d70823f6bcccc50a6acb64050b9118152fa82d1feb72e033375ae5057b",
+            "sha256": "e8379990359b85810b03deec6257f69fdaffe354a3dceee7fbe1c74f526eab81",
+            "bytes": 30129
           }
         ],
         "author_manifest": {
-          "path": "batch69-step-known-speed2-frozen.json",
-          "sha256": "f0e9052d81e29c4ee196a57e0ad71413c0b85d8290aae9b7205f11a92f3ed307"
+          "path": "batch70-step-equipment-coowner2-frozen.json",
+          "sha256": "3b0e1e70944b7f170d22f299d2bcbceef5a945e61357c3fe13916271828a6df6"
         },
         "proof": {
-          "path": "batch69-step-known-speed2-proof.json",
-          "sha256": "6344fc036b9929af32ef411ff0e352f348c96dad8c75739c61787ed869afcc24"
+          "path": "batch70-step-equipment-coowner2-proof.json",
+          "sha256": "81e5666e803eb739b8062cdc4c1b718e174b1a7dcfd89e1b80d606a646952d72"
         },
         "independent_peer": {
-          "path": "batch69-rotten-peer-known-speed2-route1.json",
-          "sha256": "d87d30e834230f759a3f77c25889fb92d7f7a2e8edca785b9b98cdc7333b0999"
+          "path": "batch70-rotten-peer-equipment-coowner2-route1.json",
+          "sha256": "41dd804eeaff8b81e4a95197ee19b97b8ef169c3f7b416b0e2e4569cf31b541b"
         }
       },
       {
-        "name": "whole_known_speed_module_route",
+        "name": "whole_equipment_pin_module_route",
         "source_count": 1,
         "source_files": [
           {
             "path": "tools/content-migration/test_world_project_v2_to_tree.py",
-            "base_sha256": "508324274f773a3c56e027ae3440751fd33e635c433ccca7c222a76fda0f69c9",
-            "sha256": "e10808015081295e44b18011836a12e65b879b4655647fc559dcb0aecae95de1",
-            "bytes": 26681
+            "base_sha256": "e10808015081295e44b18011836a12e65b879b4655647fc559dcb0aecae95de1",
+            "sha256": "efa4452b495989c479d4a2982b2d6c44c1ef5e3a2d8daa9bfd219ca2feaddec1",
+            "bytes": 26722
           }
         ],
         "author_manifest": {
-          "path": "batch69-root-speed-route1-frozen.json",
-          "sha256": "6216851fb3a30162df248a6c5ab76dff663385a469fe1f890569c8d70a55a9e4"
+          "path": "batch70-root-equipment-route1-frozen.json",
+          "sha256": "416fe8b7c0ca1eeb6f988e062cfdb8f624ce1d0bb41b16de1558d648300e6f93"
         },
         "independent_peer": {
-          "path": "batch69-rotten-peer-speed-route1.json",
-          "sha256": "949c69f7994c160013c172a9e275fdbbe52217f97618af36c1a23111794333b6"
+          "path": "batch70-rotten-peer-equipment-coowner2-route1.json",
+          "sha256": "41dd804eeaff8b81e4a95197ee19b97b8ef169c3f7b416b0e2e4569cf31b541b"
         }
       }
     ],
     "authorized_control_changes": "One module argument in the existing awaited parent check. No workflow, label, runner, gate, source pin, generated data or Rust assertion edits.",
     "root_final_source_checks": {
-      "path": "batch69-root-source3-final-checks.json",
-      "sha256": "2adfae51269c0fa0480a62f49191071eaa9b8d918e008eeb2fe5ab7af2b3ca11"
+      "path": "batch70-root-source3-final-checks.json",
+      "sha256": "c5d88185e988630259ce63f5c3ff9d5d80e44c7b129e3c7cb98e615614c28d92"
     }
   },
   "prior_source_checkpoint": {
-    "head": "e453951e826922b7467a89a390dc335f1ce72458",
-    "parent": "562522e7e666e66bc2076a8a92792cf8248025fc",
+    "head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
+    "parent": "e453951e826922b7467a89a390dc335f1ce72458",
     "main_ancestor": "4e29529abacfcbff821bfb7560424c6684b936d7",
     "source_groups": 2,
     "source_files": 3,
-    "source_review_matrix": "Exact source68 review and its prior execution are retained in superseded_checkpoint_records."
+    "source_review_matrix": "Exact source69 review and its prior execution are retained in superseded_checkpoint_records."
   },
   "grizzly_retained_pin_repair": {
     "cause": "The complete retained shop packet matched integrated main f01f1858. Its items-11000-11499 descriptor still referenced that main blob, while the merged HEAD shard includes a previously approved non-shop Item22008 materialization/stack change.",
@@ -1449,13 +1189,17 @@
     },
     "qualification": "Head66 registration failed at Yield573 before returning a complete keyset, and validation parent step14 was skipped. Actual full keyset/count and residual43 remain UNKNOWN; no assertion changed.",
     "latest_actual_count_observation": {
-      "head": "e453951e826922b7467a89a390dc335f1ce72458",
+      "head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
       "count": 56,
-      "marker_line": 1069,
+      "marker_line": 1148,
       "keyset": null,
       "residual": null,
       "existing_residual_assertion": 43,
-      "claim": "Standalone count only. Do not change43 using count alone."
+      "receipt": {
+        "path": "batch69-step-generator-terminal-receipt.json",
+        "sha256": "1ed915cf275e1b4ebaf98fc69df158d980d0bcbaff5a5e6f5f1eba1057a7508f"
+      },
+      "claim": "Actual standalone count only. Do not change43 using count alone."
     }
   },
   "migration_ci_regression_route": {
@@ -1470,7 +1214,26 @@
       "path": "batch66-root-peer-boss-npc-route1.json",
       "sha256": "f366d5f572ffa9c8cec1a2da45c15026cb66c10dcc58786914dcccd32d6a77ca"
     },
-    "qualification": "Head66 full migration parent step14 was skipped; Boss12/NPC2 did not execute. The successor parent imports whole Yield10 and Rotten2 as recorded separately; source routing is not execution."
+    "qualification": "Head66 full migration parent step14 was skipped; Boss12/NPC2 did not execute. The successor parent imports whole Yield10 and Rotten2 as recorded separately; source routing is not execution.",
+    "equipment_pin_complete_module_successor": {
+      "base_head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
+      "module": "test_refresh_equipment_profile_pin",
+      "whole_module_tests": 36,
+      "original_tests": 32,
+      "new_tests": 4,
+      "parent_sha256": "efa4452b495989c479d4a2982b2d6c44c1ef5e3a2d8daa9bfd219ca2feaddec1",
+      "manifest": {
+        "path": "batch70-root-equipment-route1-frozen.json",
+        "sha256": "416fe8b7c0ca1eeb6f988e062cfdb8f624ce1d0bb41b16de1558d648300e6f93"
+      },
+      "independent_peer": {
+        "path": "batch70-rotten-peer-equipment-coowner2-route1.json",
+        "sha256": "41dd804eeaff8b81e4a95197ee19b97b8ef169c3f7b416b0e2e4569cf31b541b"
+      },
+      "preserved": "Existing five arguments, cwd tools/content-migration, check=True, max_workers2 and all awaited future.result propagation.",
+      "current_full_module_routes": 11,
+      "qualification": "Source route only. New4 local PASS; full36 and full parent NOT_RUN after this change."
+    }
   },
   "bounded_registration_prefix_review": {
     "scope": "Existing calls556–566 after the reproduced blocker; no full generator or Creature reconstruction.",
@@ -2949,6 +2712,647 @@
         "source_files": 4,
         "source_review_matrix": "The exact four-file source67 review and prior execution are preserved in superseded_checkpoint_records."
       }
+    },
+    {
+      "checkpoint_source_head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
+      "checkpoint_file_sha256": "008058a98a59501a1b22bb356b7937cc2990046652b428efd7d096641492140f",
+      "last_checkpoint_execution": {
+        "head": "e453951e826922b7467a89a390dc335f1ce72458",
+        "merge_run": 43009695759,
+        "monitor_state": "ALL_MONITORED_RUNS_TERMINAL_AUTHORING_REPAIR_REQUIRED",
+        "open_runs": [],
+        "terminal_monitor_receipt": {
+          "path": "batch68-ci-monitor.json",
+          "sha256": "d5cde34b86b23c0b4af6ea0cea379597be8b7eaa2d521d2dc13d1eb2c9b62ea1"
+        },
+        "final_run_summaries": {
+          "path": "batch68-final-run-summaries.json",
+          "sha256": "41e0b685a6d7c85007d0ffe973096093449f1ee7fcaad2c44cfedbf62edaf370"
+        },
+        "terminal_run_conclusions": {
+          "Merge authority audit": {
+            "id": 43009689567,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "RewardClaim Authoring": {
+            "id": 43009695534,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "G4 Item Crystal Identity Bindings": {
+            "id": 43009695548,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Architecture semantic audit • pull_request • 3056": {
+            "id": 43009695564,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Area Authoring Schema": {
+            "id": 43009695565,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "World Metadata Authoring": {
+            "id": 43009695600,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "Agent governance • pull_request • 3056": {
+            "id": 43009695622,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "PR PostgreSQL harness": {
+            "id": 43009695734,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Merge gate • pull_request • 3056": {
+            "id": 43009695759,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "Wheel Authoring Schema": {
+            "id": 43009695778,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Store Authoring Schema": {
+            "id": 43009695825,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Content Tree Migration Equivalence": {
+            "id": 43009695836,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "Quest Authoring Schema": {
+            "id": 43009695840,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "Craft Authoring": {
+            "id": 43009695846,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "Item Authoring Schema": {
+            "id": 43009695875,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Proficiency Authoring Schema": {
+            "id": 43009695930,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Native entry room qualification": {
+            "id": 43009695989,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          }
+        },
+        "generator_run": 43009695836,
+        "generator_job": 130485895361,
+        "generator_result": "Actual generation completed converter, PREY15/777 and final standalone registration56. Craft overlap refresh returned by sequential-call inference. Known-speed source guard refused next; full Equipment, seasonal/metadata tail, World pin refresh and export/upload were not reached. Artifacts empty. Production return is not a unit-suite PASS.",
+        "generator_log_sha256": "77caecf3acc3153433ae3c9f4868bbf4dde46cbaf18eba8cac0c954691214ac6",
+        "generator_receipt": {
+          "path": "batch68-step-generator-terminal-receipt.json",
+          "sha256": "183b2ffc9784566b6a9e256a011a6c8dddb2e23c729a02ce7811b67fd2209c1f"
+        },
+        "registered_output_count": 56,
+        "registered_output_count_basis": "Actual final standalone registration marker at raw1069. Full keyset and residual UNKNOWN.",
+        "rust_policy_result": "Result reuse only, same key as actual66 policy PASS. Current metadata/fmt/architecture/JSON/closure checks skipped.",
+        "rust_policy_receipt": {
+          "path": "batch68-retained-policy-terminal-proof.json",
+          "sha256": "dafbb361c7e9f00d4a9ae135242e63cfe2544d1b046a9c90715008184ad83689"
+        },
+        "rust_policy_last_actual_checks": {
+          "head": "183c6551efa22860c204513111318b442aa047d9",
+          "run_id": 42995700580,
+          "job_id": 130440077999,
+          "receipt": {
+            "path": "batch66-retained-policy-terminal-proof.json",
+            "sha256": "9560b6ffaf181b790b91ba43b403c648496b89eeb03c9977445d6dfb1cca4cbc"
+          }
+        },
+        "clippy_result": "Actual strict Clippy passed all67 selected packages; zero result reuse; compilation5m47s.",
+        "clippy_job": 130486625763,
+        "clippy_receipt": {
+          "path": "batch68-rotten-clippy-terminal-proof.json",
+          "sha256": "3e4881e5ae77ae19dae3e4baffdbf6ffcd24b921b0175faf0f74034497c7b065"
+        },
+        "rust_unit_result": "Actual12509 disjoint cases:11880 PASS/629 FAIL. Every executed identity/status and all629 normalized failure blocks match67. Thirty-nine source65 PASS cases not executed, covered by literal package reuse; not new PASS.",
+        "rust_unit_jobs": [
+          {
+            "shard": 1,
+            "job_id": 130486625670,
+            "raw_log": "merge43009695759-job130486625670-unit1-terminal.log",
+            "log_sha256": "70a739f3c3f73894bee6b5292308062622c3fb2705ee587877e4a2afc5905a76",
+            "actual_executed": 4174,
+            "actual_counts": {
+              "FAIL": 223,
+              "PASS": 3951
+            },
+            "individual_counts_match_summary": true,
+            "packages_to_run": [
+              {
+                "packages": 59,
+                "line": 362
+              }
+            ],
+            "literal_result_cache_notices": [
+              "2026-11-11T11:13:19.8011868Z ##[notice]oteryn-client-domain passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:19.8025302Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:19.8029693Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:19.8033750Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:19.8037721Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:19.8042047Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:19.8046099Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:19.8050388Z ##[notice]oteryn-synthetic-assets passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+            ],
+            "cache_reuse_packages": 8,
+            "structured_result_cache_notices": [
+              {
+                "package": "oteryn-client-domain",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:19.8011868Z ##[notice]oteryn-client-domain passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-diagnostics",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:19.8025302Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-foundation",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:19.8029693Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-identity",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:19.8033750Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-input-actions",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:19.8037721Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-ntp-clock",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:19.8042047Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-simulation-determinism",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:19.8046099Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-synthetic-assets",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:19.8050388Z ##[notice]oteryn-synthetic-assets passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              }
+            ]
+          },
+          {
+            "shard": 2,
+            "job_id": 130486625694,
+            "raw_log": "merge43009695759-job130486625694-unit2-terminal.log",
+            "log_sha256": "8452802f8303836e5f8e23cfbcc099445e43bae42651aaba48a6aa183a8e1437",
+            "actual_executed": 4224,
+            "actual_counts": {
+              "FAIL": 199,
+              "PASS": 4025
+            },
+            "individual_counts_match_summary": true,
+            "packages_to_run": [
+              {
+                "packages": 59,
+                "line": 357
+              }
+            ],
+            "literal_result_cache_notices": [
+              "2026-11-11T11:13:21.4894391Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.4909861Z ##[notice]oteryn-gameplay-admission-evidence passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.4914675Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.4919010Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.4923389Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.4927465Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.4931709Z ##[notice]oteryn-platform-contracts passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.4935979Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+            ],
+            "cache_reuse_packages": 8,
+            "structured_result_cache_notices": [
+              {
+                "package": "oteryn-foundation",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.4894391Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-gameplay-admission-evidence",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.4909861Z ##[notice]oteryn-gameplay-admission-evidence passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-gameplay-source-critical-baseline",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.4914675Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-identity",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.4919010Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-input-actions",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.4923389Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-ntp-clock",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.4927465Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-platform-contracts",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.4931709Z ##[notice]oteryn-platform-contracts passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-simulation-determinism",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.4935979Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              }
+            ]
+          },
+          {
+            "shard": 3,
+            "job_id": 130486625815,
+            "raw_log": "merge43009695759-job130486625815-unit3-terminal.log",
+            "log_sha256": "5e80fdda06441a02a972f2035d1984b053f3781dd7118de7da5312cb7e782c72",
+            "actual_executed": 4111,
+            "actual_counts": {
+              "FAIL": 207,
+              "PASS": 3904
+            },
+            "individual_counts_match_summary": true,
+            "packages_to_run": [
+              {
+                "packages": 61,
+                "line": 346
+              }
+            ],
+            "literal_result_cache_notices": [
+              "2026-11-11T11:13:21.1355895Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.1365394Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.1368024Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.1370300Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.1373544Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped",
+              "2026-11-11T11:13:21.1375923Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+            ],
+            "cache_reuse_packages": 6,
+            "structured_result_cache_notices": [
+              {
+                "package": "oteryn-diagnostics",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.1355895Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-gameplay-source-critical-baseline",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.1365394Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-identity",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.1368024Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-input-actions",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.1370300Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-ntp-clock",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.1373544Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              },
+              {
+                "package": "oteryn-simulation-determinism",
+                "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+                "run_id": 42987261419,
+                "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+                "literal_notice": "2026-11-11T11:13:21.1375923Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+              }
+            ]
+          }
+        ],
+        "unit_failure_groups": {
+          "Item_updates_base_pin": 316,
+          "Other": 26,
+          "Feaster_callback_unmaterialized": 287
+        },
+        "unit_comparison": {
+          "case_reconciliation": {
+            "path": "batch68-root-unit-all-reconciliation.json",
+            "sha256": "ff0e8a4e439f2b28f4d4f5a1b5eb19b3257b9f07b84edab63c0d63e83225d515"
+          },
+          "semantic_failure_closure": {
+            "path": "batch68-root-unit-failure-comparison-closure.json",
+            "sha256": "4cbc5aa35c6da88fb6184dc02b4e33820a3dd888a48fa2d7ce23b42a37990a5b"
+          },
+          "exact_libtest_progress_distinction": {
+            "path": "batch68-retained-libtest-progress-distinction.json",
+            "sha256": "c385f7c9c1f2d107ce5c11664d7708627335ec343526fc91b63b024ef8192a53"
+          },
+          "source65_missing_cached_cases": 39,
+          "literal_cache_producer_run": 42987261419,
+          "literal_cache_advertised_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "actual_source65_checkout": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec"
+        },
+        "focused_source_regressions": {
+          "npc_only_track_owners_keep_exact_existing_quest_predecessors": [
+            {
+              "status": "PASS",
+              "duration": "0.890s",
+              "ordinal": 3333,
+              "total": 4224,
+              "binary": "oteryn-gameplay-quests",
+              "test": "quest::npc_rules::tests::npc_only_track_owners_keep_exact_existing_quest_predecessors",
+              "archive": null,
+              "line": 6441,
+              "shard": 2,
+              "job_id": 130486625694
+            }
+          ],
+          "published_ungated_quest_hash_baseline": [
+            {
+              "status": "FAIL",
+              "duration": "0.523s",
+              "ordinal": 3349,
+              "total": 4111,
+              "binary": "oteryn-gameplay-quests",
+              "test": "quest::reward_callbacks::tests::published_ungated_quest_hash_baseline",
+              "archive": null,
+              "line": 6943,
+              "repeated_summary_lines": [
+                8389
+              ],
+              "evidence": [
+                {
+                  "line": 6957,
+                  "text": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\""
+                }
+              ],
+              "root_cause_group": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\"",
+              "shard": 3,
+              "job_id": 130486625815
+            }
+          ],
+          "qn5_structured_premium_world_entry_requires_personal_world_fences": [
+            {
+              "status": "PASS",
+              "duration": "0.012s",
+              "ordinal": 3402,
+              "total": 4224,
+              "binary": "oteryn-gameplay-quests",
+              "test": "quest::world_callbacks::admission_tests::qn5_structured_premium_world_entry_requires_personal_world_fences",
+              "archive": null,
+              "line": 6873,
+              "shard": 2,
+              "job_id": 130486625694
+            }
+          ],
+          "core_extension_requires_exact_contract_command_binding_and_test": [
+            {
+              "status": "PASS",
+              "duration": "0.034s",
+              "ordinal": 19,
+              "total": 4111,
+              "binary": "oteryn-architecture-check",
+              "test": "client_structure::tests::core_extension_requires_exact_contract_command_binding_and_test",
+              "archive": null,
+              "line": 875,
+              "shard": 3,
+              "job_id": 130486625815
+            }
+          ]
+        },
+        "native_entry": {
+          "run_id": 43009695989,
+          "job_id": 130485894960,
+          "actual_passed": 3,
+          "actual_failed": 0,
+          "platform_pin": "eb65ce453949a352fdc0e3ed0132d2cde0084fb7",
+          "receipt": {
+            "path": "batch68-rotten-native-terminal-proof.json",
+            "sha256": "72ca3c37e57382e385ca6a0623f54c1c1e783d2f2f0d1ef096270513d24092fc"
+          },
+          "qualification": "Only three native entry cases and actual disposable World/Channel issuer evidence; not full native or PG qualification."
+        },
+        "boss_inventory": "No NATIVE_REWARD_BOSS_QUALIFICATION marker. Private-drop still failed the global Item update guard before behavior assertions; boss census UNKNOWN.",
+        "postgres": "Run43009695734 wrapper success; all three heavy legs skipped, heavy-tests absent. No database execution on this head.",
+        "postgres_receipt": {
+          "path": "batch68-root-pg-wrapper.json",
+          "sha256": "e4caaa614f83d27aca5af3408baf3c769757d0b7b44b8b6300a8e93ab9f045ac"
+        },
+        "quest_authoring": {
+          "run_id": 43009695840,
+          "unit_job_id": 130485894782,
+          "counts": {
+            "total_modules": 182,
+            "passed_modules": 173,
+            "failed_modules": 9,
+            "individual_failure_cases": 8,
+            "individual_error_cases": 1
+          },
+          "comparison": "All182 module identities/statuses and nine full normalized failure/error blocks match67. Variant and npc.json.gz captures remain stale.",
+          "receipt": {
+            "path": "batch68-root-quest-terminal-proof.json",
+            "sha256": "8f8101b984cbb20434c5a9f43d312d025628cdb90cb78c9f3f44a16d3bace5e1"
+          }
+        },
+        "migration_parent": "Validate130485894868 failed Imbuement at step7; parent14 skipped. All nine existing full-module routes unexecuted in CI68. The known-speed whole-module route is new in source69.",
+        "migration_parent_receipt": {
+          "path": "batch68-step-validate-terminal-receipt.json",
+          "sha256": "092a96760a788eb35db9e0dfe600f54c0c3d6973f3ee8eb96e832bb008038c9b"
+        },
+        "protected_authority": {
+          "run_id": 43009689567,
+          "job_id": 130485882030,
+          "result": "Actual exact-head authority PASS; not fresh Codex/runtime/PG approval.",
+          "receipt": {
+            "path": "batch68-root-authority-terminal.json",
+            "sha256": "f511f1b0e9ff1ce525b1f2ed4beec9dc8d6b2d883a7c66e20ff95865362b1923"
+          }
+        },
+        "world_bundle": {
+          "job_id": 130486625667,
+          "result": "Actual pin-check failed with same three digests as67; no final refresh/artifact qualification.",
+          "receipt": {
+            "path": "batch68-root-world-terminal-proof.json",
+            "sha256": "4384fa940728950ae24192f9ebd0800310536c9ad88afd1839dff6d3d0eaf213"
+          }
+        },
+        "g4_identity_bindings": {
+          "run_id": 43009695548,
+          "result": "API all steps success; no raw or test-count claim.",
+          "receipt": {
+            "path": "batch68-root-g4-api-status.json",
+            "sha256": "2a762d6efb18dfe766f3984623e0442d35a34b79aef5c0da2b85fa7ba2f0025d"
+          }
+        },
+        "additional_authoring": {
+          "path": "batch68-root-extra-authoring-terminal.json",
+          "sha256": "02b2020e8c663d5d94e582df4579fa349feb100e5a172d2f90bfa250240ad3d4"
+        },
+        "additional_api_successes": {
+          "path": "batch68-root-additional-api-successes.json",
+          "sha256": "869e88c5cf85abb6620147313b873fb3fc02f7acaafe20ebff984fe1abeb7aac"
+        },
+        "other_26_failure_disposition": {
+          "receipt": {
+            "path": "batch66-rotten-prior65-other26-disposition.json",
+            "sha256": "590ea02ce65cba41a8bb1c5c2202f3a7ac95d52e6208bfbf6e29ae42679b00f1"
+          },
+          "limit": "Seven boot failures retain UNKNOWN first refusal; none is silently assigned to a proven generator-dependent cause."
+        },
+        "qualification": "NOT_QUALIFIED. Canonical artifact, full migration/native/runtime and final PostgreSQL checks remain pending."
+      },
+      "source_review_at_checkpoint": {
+        "base_head": "e453951e826922b7467a89a390dc335f1ce72458",
+        "source_files": 3,
+        "scope": "Restore the accepted pinned source speed0 of only parchment2833 and arena trophies5805/5806 through capture and native admission. Retain the general physical-custody UNKNOWN boundary and strict Equipment source guard. Route the whole old-and-new speed module through migration validation.",
+        "groups": [
+          {
+            "name": "closed_three_source_speed_admission",
+            "source_count": 2,
+            "source_files": [
+              {
+                "path": "tools/content-migration/qengine_reward_item_profiles.py",
+                "base_sha256": "275d32bab306b648935777c5c7f135226fdc7f478c52317be798ca095ab685e7",
+                "sha256": "cd7382df0d95ed98a454b54642ea641fc2081151c402ec653e77a4535e85ce52",
+                "bytes": 20195
+              },
+              {
+                "path": "tools/content-migration/test_equipment_known_speed_pin.py",
+                "base_sha256": "0276191bc299e97c93f998aac3f01bf3e49280826e0b2ae3d275d3f4da4f02db",
+                "sha256": "e84d789ce26d7fbeeaeef76d91bca4e33eab06ce88accdb5b5a54c12dbc694e2",
+                "bytes": 11182
+              }
+            ],
+            "author_manifest": {
+              "path": "batch69-step-known-speed2-frozen.json",
+              "sha256": "f0e9052d81e29c4ee196a57e0ad71413c0b85d8290aae9b7205f11a92f3ed307"
+            },
+            "proof": {
+              "path": "batch69-step-known-speed2-proof.json",
+              "sha256": "6344fc036b9929af32ef411ff0e352f348c96dad8c75739c61787ed869afcc24"
+            },
+            "independent_peer": {
+              "path": "batch69-rotten-peer-known-speed2-route1.json",
+              "sha256": "d87d30e834230f759a3f77c25889fb92d7f7a2e8edca785b9b98cdc7333b0999"
+            }
+          },
+          {
+            "name": "whole_known_speed_module_route",
+            "source_count": 1,
+            "source_files": [
+              {
+                "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+                "base_sha256": "508324274f773a3c56e027ae3440751fd33e635c433ccca7c222a76fda0f69c9",
+                "sha256": "e10808015081295e44b18011836a12e65b879b4655647fc559dcb0aecae95de1",
+                "bytes": 26681
+              }
+            ],
+            "author_manifest": {
+              "path": "batch69-root-speed-route1-frozen.json",
+              "sha256": "6216851fb3a30162df248a6c5ab76dff663385a469fe1f890569c8d70a55a9e4"
+            },
+            "independent_peer": {
+              "path": "batch69-rotten-peer-speed-route1.json",
+              "sha256": "949c69f7994c160013c172a9e275fdbbe52217f97618af36c1a23111794333b6"
+            }
+          }
+        ],
+        "authorized_control_changes": "One module argument in the existing awaited parent check. No workflow, label, runner, gate, source pin, generated data or Rust assertion edits.",
+        "root_final_source_checks": {
+          "path": "batch69-root-source3-final-checks.json",
+          "sha256": "2adfae51269c0fa0480a62f49191071eaa9b8d918e008eeb2fe5ab7af2b3ca11"
+        }
+      },
+      "prior_source_checkpoint": {
+        "head": "e453951e826922b7467a89a390dc335f1ce72458",
+        "parent": "562522e7e666e66bc2076a8a92792cf8248025fc",
+        "main_ancestor": "4e29529abacfcbff821bfb7560424c6684b936d7",
+        "source_groups": 2,
+        "source_files": 3,
+        "source_review_matrix": "Exact source68 review and its prior execution are retained in superseded_checkpoint_records."
+      }
     }
   ],
   "boss_reward_yield_trader_custody_repair": {
@@ -3283,6 +3687,70 @@
       "path": "batch69-retained-equipment-season-world-tail.json",
       "sha256": "60ca3c48429eedc7ce7ba35034a79791fa10f7048514b0ac22337a984cd002bc"
     },
-    "qualification": "Full selected capture, complete generator, generated native3 and runtime Equipment assertions await exact-head runner execution. Local bounded tests do not establish those results."
+    "qualification": "Full selected capture, complete generator, generated native3 and runtime Equipment assertions await exact-head runner execution. Local bounded tests do not establish those results.",
+    "successor_ci69_observation": {
+      "head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
+      "receipt": {
+        "path": "batch69-step-generator-terminal-receipt.json",
+        "sha256": "1ed915cf275e1b4ebaf98fc69df158d980d0bcbaff5a5e6f5f1eba1057a7508f"
+      },
+      "actual_production": "Known-speed capture and strict refresh returned before Equipment QENGINE/NPC full-row refusal, by exact traceback and source-order evidence.",
+      "whole_eight_tests": "NOT_EXECUTED; migration parent14 skipped",
+      "final_native_three_rows": "UNKNOWN; no completed canonical artifact or final full-row readback",
+      "limit": "Historical local and interrupted-capture records above remain unchanged. Production return is not full-suite or runtime qualification."
+    }
+  },
+  "equipment_engine_npc_house_composition_repair": {
+    "actual_failure": {
+      "head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
+      "run_id": 43017482254,
+      "job_id": 130512045592,
+      "message": "QENGINE/NPC shared source identity or facts differ",
+      "source": "refresh_equipment_profile_pin.py:296 via main543",
+      "receipt": {
+        "path": "batch69-step-generator-terminal-receipt.json",
+        "sha256": "1ed915cf275e1b4ebaf98fc69df158d980d0bcbaff5a5e6f5f1eba1057a7508f"
+      },
+      "limit": "The actual failed runner full row pair and failing disjunct were not captured."
+    },
+    "source_basis": "Committed QENGINE156 and NPC8 packets share exactly i27654. Both source rows and the committed native row have speed0 and lack the House pair. The qualified House overlay adds always_on_top false and always_on_top_order0. Sequential generation rewrites the native file after House, then recaptures QENGINE from that file while NPC uses its unchanged proof. This establishes the concrete stage-composition mechanism, separately from the failed CI row contents.",
+    "source_contract": {
+      "path": "batch70-retained-coowner-source-contract.json",
+      "sha256": "a8c323170d1fce65fd6518fd64c8cb6afcd75528e3ea4a55fcaf9aad0db8f2a8"
+    },
+    "source_order": {
+      "path": "batch70-rotten-qengine-npc-order-proof.json",
+      "sha256": "70d5a6e2581cdad1ed64548a4c40c146ee4db9cb1cc1a4893e8170fdce147cf0"
+    },
+    "actual_bounded_probe": {
+      "path": "batch70-step-qengine-npc-house-probe.json",
+      "sha256": "0f1a8e07aff1c7395c84d2048b3e14674a49e2cfec479f705178d3f2a3e33e65"
+    },
+    "change": "Require exact shared key set {i27654}. Independently project only that row through the existing House owner. Permit both top fields absent or both present with exact bool/int types and source-matching values; reject partial pairs, explicit None, bool-as-int, float or contradictory values. Require the complete projected row to differ only by the two permitted fields. Preserve document metadata and all162 nonshared rows. Retain the unchanged pure regenerate full-row check.",
+    "independent_peer": {
+      "path": "batch70-rotten-peer-equipment-coowner2-route1.json",
+      "sha256": "41dd804eeaff8b81e4a95197ee19b97b8ef169c3f7b416b0e2e4569cf31b541b"
+    },
+    "local_verification": {
+      "actual_new_tests": 4,
+      "passed": 4,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "unittest_seconds": 8.767,
+      "wrapper_seconds": 8.870663900000043,
+      "original32": "NOT_RUN; all32 bodies byte-identical",
+      "whole36": "NOT_RUN; full module now routed to CI",
+      "raw": {
+        "path": "batch70-step-equipment-coowner2-tests.log",
+        "sha256": "b359b1179ef1cc88f09b6506234aea218e6f56dc6320e2c8ce4240d05e220e39"
+      },
+      "execution": {
+        "path": "batch70-step-equipment-coowner2-tests-execution.json",
+        "sha256": "aae3919292c5404294f00a949717dcd35987df3c958f59fe61644910d9c7dc84"
+      },
+      "static": "AST compile, exact full-file inverse3, original32 test bodies and11 existing production functions unchanged, seven source/data controls unchanged, git diff --check."
+    },
+    "qualification": "Bounded source repair only. Full generator, materialized shared native row, complete36 module and migration parent/runtime/PG remain pending."
   }
 }

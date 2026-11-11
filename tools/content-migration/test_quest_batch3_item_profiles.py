@@ -148,6 +148,25 @@ class RetainedQn3CensusTests(unittest.TestCase):
         self.assertIs(house_rows[0]['attributes']['always_on_top'], False)
         self.assertIs(type(house_rows[0]['attributes']['always_on_top_order']), int)
         self.assertEqual(house_rows, expected_house)
+        self.assertNotIn('taxonomy', rows[0]['authoring'])
+        from refresh_equipment_profile_pin import registered_jar_taxonomy_document
+        taxonomy = json.loads((profiles.ROOT / 'content/items/taxonomy/items.json').read_bytes())
+        entries = [row for row in taxonomy['records'] if row['target']['key'] == self.KEY]
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]['target'],
+                         {'family': 'Item', 'key': self.KEY, 'revision': 'definition-r1'})
+        expected_taxonomy = copy.deepcopy(rows)
+        expected_taxonomy[0]['authoring']['taxonomy'] = copy.deepcopy(entries[0]['source_taxonomy'])
+        taxonomy_rows = registered_jar_taxonomy_document(
+            profiles.ROOT, {'records': copy.deepcopy(rows)})['records']
+        self.assertEqual(taxonomy_rows, expected_taxonomy)
+        complete_rows = registered_source_document(
+            profiles.ROOT, {'records': copy.deepcopy(taxonomy_rows)})['records']
+        expected_complete = copy.deepcopy(expected_taxonomy)
+        expected_complete[0]['attributes'].update(always_on_top=False, always_on_top_order=0)
+        self.assertIs(complete_rows[0]['attributes']['always_on_top'], False)
+        self.assertIs(type(complete_rows[0]['attributes']['always_on_top_order']), int)
+        self.assertEqual(complete_rows, expected_complete)
         for path in (
             profiles.NATIVE,
             'tools/content-schema/native-gameplay/engnpc-m05-item-profiles.json',
@@ -161,6 +180,11 @@ class RetainedQn3CensusTests(unittest.TestCase):
                 if path == 'tools/content-schema/native-gameplay/engnpc-m05-item-profiles.json':
                     self.assertEqual(owner_rows, rows)
                     continue
+                has_taxonomy = 'taxonomy' in owner_rows[0]['authoring']
+                if has_taxonomy:
+                    self.assertIs(type(owner_rows[0]['authoring']['taxonomy']), dict)
+                    self.assertEqual(owner_rows[0]['authoring']['taxonomy'],
+                                     entries[0]['source_taxonomy'])
                 attributes = owner_rows[0]['attributes']
                 present = ('always_on_top' in attributes, 'always_on_top_order' in attributes)
                 self.assertIn(present, ((False, False), (True, True)))
@@ -168,9 +192,9 @@ class RetainedQn3CensusTests(unittest.TestCase):
                     self.assertIs(attributes['always_on_top'], False)
                     self.assertIs(type(attributes['always_on_top_order']), int)
                     self.assertEqual(attributes['always_on_top_order'], 0)
-                    expected_rows = house_rows
+                    expected_rows = complete_rows if has_taxonomy else house_rows
                 else:
-                    expected_rows = rows
+                    expected_rows = taxonomy_rows if has_taxonomy else rows
                 self.assertEqual(owner_rows, expected_rows)
         self.assertEqual(packet, before)
         self.assertFalse(packet['runtime_enabled'])
