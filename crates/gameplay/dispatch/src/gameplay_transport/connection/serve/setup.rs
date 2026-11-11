@@ -10,10 +10,12 @@ struct LiveSetup {
     world: snapshot::WorldSnapshot,
 }
 
-/// Why the join did not complete: before or after its snapshot reached the transport.
+/// Why the join did not complete: before its snapshot reached the transport, while writing it,
+/// or after the client already holds it.
 enum JoinFailure {
     Unprepared(ServeEnd),
     Transport,
+    Delivered(ServeEnd),
 }
 
 impl From<ServeEnd> for JoinFailure {
@@ -23,7 +25,8 @@ impl From<ServeEnd> for JoinFailure {
 }
 
 /// A join that could not be prepared reports `SESSION_JOIN_UNAVAILABLE` before the same end;
-/// a failed snapshot write has no transport left to report on.
+/// a failed snapshot write has no transport left to report on, and a session that already
+/// joined ends as before (FND-02 §13.3: unresolved pending work only disconnects).
 pub(super) async fn prepare<S, A>(
     stream: &mut S,
     admitted: &mut AdmittedSession,
@@ -49,6 +52,7 @@ where
             Err(end)
         }
         Err(JoinFailure::Transport) => Err(ServeEnd::Disconnected),
+        Err(JoinFailure::Delivered(end)) => Err(end),
     }
 }
 
@@ -225,7 +229,7 @@ where
     if let Some((revision, state)) = &sessions.combat_sent {
         admitted.continuity.combat.snapshot_sent(*revision, *state);
     }
-    Ok(live(
+    live(
         authority,
         admitted,
         policy,
@@ -240,7 +244,8 @@ where
             world,
         },
     )
-    .await?)
+    .await
+    .map_err(JoinFailure::Delivered)
 }
 
 /// Logs the failed join phase with the code the client is sent.
