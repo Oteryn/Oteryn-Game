@@ -100,7 +100,7 @@ impl DurabilityRoot {
             let lane_day = if receipt.is_none() {
                 oteryn_gameplay_progression::daily_reward::advance_daily_reward(state, epoch, jokers)
                     .map_err(|_| DurabilityError::InvalidStoredState)?.claimed_lane_day
-            } else { state.lane_day };
+            } else { oteryn_gameplay_progression::daily_reward::cycle_day(state.lane_day) };
             let history=super::daily_reward::history::load(&mut tx,fence.character_id.as_bytes(),fence.runtime_scope.world_id().as_bytes(),epoch).await?;
             Ok(Ok(DailyRewardView { epoch, lane_day, streak: state.streak, jokers, receipt, settled, history }))
         })).await?

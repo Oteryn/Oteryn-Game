@@ -6,8 +6,14 @@ choices, epochs, amounts or tier. V1 is never offered by the v2 owner.
 
 ## claim
 
-Empty payload. The server resolves the committed reset, 30-day lane and current
+Empty payload. The server resolves the committed reset, seven-day lane and current
 Premium tier inside the fenced transaction. A replay returns the retained result.
+
+Winter Update 2026 (WU26-07, owner decision 2026-11-11) replaces the DAILY30 30-day lane
+with a seven-day cycle of fixed rewards (`content/interactions/daily-rewards.json`, seven
+days). Consecutive claims walk days 1..7 and wrap to day 1; a gap the jokers cannot cover
+restarts the streak and the cycle at day 1. A lane stored before the rework on day 8..30
+resumes on the same weekday, `1 + ((lane_day - 1) % 7)`.
 
 ## query
 
@@ -15,17 +21,17 @@ Empty payload; read-only, requires no shrine to view.
 
 ## wall
 
-Protobuf varints: 1 lane_day (1..30), 2 streak (0..100000), 3 jokers
+Protobuf varints: 1 lane_day (1..7), 2 streak (0..100000), 3 jokers
 (0..3), 4 claimed (boolean), 5 claim_enabled (boolean). The former field 6
 seven-day choice plan is absent. Maximum 128 bytes.
 
 The client presents the weapon proficiency XP bonus from this server-confirmed
-streak: streak 0 has 0% chance, 1–7 has 1% per day, 8–13 has 7%, 14–20 has
-8%, 21–27 has 9%, and 28 onward has 10%. Each eligible proficiency XP award
+streak: streak 0 has 0% chance, each streak day adds 1%, capped at 7% from streak
+7 onward (WU26-07), for Free and Premium alike. Each eligible proficiency XP award
 can be doubled; this is a chance to double an award, not a guaranteed XP rate
 increase. This mirrors `gameplay/progression/src/daily_reward.rs`; Game rolls
 and awards the bonus in `gameplay_transport/kill_reward.rs`. The panel explains
-the milestones and asks the player to refresh after claiming, since a claim
+the 7% cap and asks the player to refresh after claiming, since a claim
 result contains no updated streak. No client-supplied chance enters a command.
 
 ## result
@@ -44,7 +50,8 @@ node, character, scope, session and connection-generation fences apply to the re
 
 Bounded binary `DRD1`: four magic bytes; current reset epoch u64 LE; thirty days,
 each Free then Premium tier (six u8 values: cosmetic tokens, prey wildcards,
-temple scrolls, XP percent, XP minutes, bounty tokens); history count u8 (0..30);
+temple scrolls, XP percent, XP minutes, bounty tokens; since WU26-07 only days 1..7
+carry the cycle and days 8..30 are all zero); history count u8 (0..30);
 then each receipt: epoch u64 LE, reset day i64 LE, lane day u8, streak u32 LE,
 jokers spent u8, own-character boolean u8. Records are newest first. No trailing
 bytes. Maximum 1104 bytes. The claim remains empty and server-owned.

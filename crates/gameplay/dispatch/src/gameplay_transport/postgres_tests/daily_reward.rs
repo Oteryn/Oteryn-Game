@@ -473,7 +473,9 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
         }
         let lines:Vec<(i16,String,i32,String,Option<i32>)>=sqlx::query_as("SELECT c.lane_day,l.kind,l.quantity,l.status,l.charges FROM game_character_daily_reward_lines l JOIN game_character_daily_reward_claims c ON c.transaction_id=l.claim_id ORDER BY c.reset_epoch,l.line").fetch_all(&harness.pool).await?;
         let mut expected = Vec::new();
-        for day in 1..=30 {
+        // WU26-07: thirty consecutive claims walk the seven-day cycle four times and two days.
+        for claim in 1..=30 {
+            let day = oteryn_gameplay_progression::daily_reward::cycle_day(claim);
             let reward = oteryn_gameplay_progression::daily_reward::reward_for_day(day, premium)
                 .ok_or("day")?;
             for (kind, amount) in [
@@ -521,9 +523,10 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
             "every scroll has a native mint receipt and audit"
         );
         let balance: (i16,i64) = sqlx::query_as("SELECT balance,(SELECT count(*) FROM game_account_prey_wildcard_entries) FROM game_account_prey_wildcards").fetch_one(&harness.pool).await?;
-        assert_eq!(balance, (if premium { 19 } else { 10 }, 10));
+        assert_eq!(balance, (if premium { 18 } else { 9 }, 9));
         let tokens: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT balance FROM game_character_cosmetic_tokens),(SELECT balance FROM game_character_bounty_reroll_tokens),(SELECT count(*) FROM game_character_bounty_reroll_token_entries)").fetch_one(&harness.pool).await?;
         let total = (1..=30)
+            .map(oteryn_gameplay_progression::daily_reward::cycle_day)
             .filter_map(|d| oteryn_gameplay_progression::daily_reward::reward_for_day(d, premium))
             .map(|r| i64::from(r.cosmetic_tokens))
             .sum::<i64>();
@@ -538,7 +541,7 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
         .await?;
         assert_eq!(flags, 30);
         let minutes: i32 = sqlx::query_scalar("SELECT max(extract(epoch FROM (effect_expires_at-effect_started_at))/60)::integer FROM game_character_daily_reward_lines WHERE kind='XP_BOOST'").fetch_one(&harness.pool).await?;
-        assert_eq!(minutes, 60);
+        assert_eq!(minutes, 30);
         // Winter Update 2026: each daily boost starts at its claim, while the Store boost
         // is still running, and the Store timer is untouched.
         let beside: (bool, i64) = sqlx::query_as("SELECT bool_and(l.effect_started_at=s.starts_at AND l.effect_started_at<s.expires_at),(SELECT count(*) FROM game_character_store_xp_boosts) FROM game_character_daily_reward_lines l,game_character_store_xp_boosts s WHERE l.kind='XP_BOOST'")
@@ -554,7 +557,7 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
             sqlx::query_as("SELECT lane_day,streak FROM game_character_daily_rewards")
                 .fetch_one(&harness.pool)
                 .await?;
-        assert_eq!(state, (1, 30));
+        assert_eq!(state, (3, 30), "claim 30 is cycle day 2");
         // Rebuild the composed owner and replay an OLD command after later epochs.
         let mut rebuilt = dependencies.owner(&harness, &authority);
         rebuilt.active_generation = generation.active();
@@ -590,13 +593,14 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
         // Crystal 201189f8 data/modules/scripts/daily_reward/daily_reward.lua:499-513
         // delivers items into the Inbox. The completed cycle's scroll bindings and
         // locations must survive this later rollback; the old zero counts predated P09.
+        // WU26-07: the joker-covered claim 31 is cycle day 3, which delivers one more scroll.
         assert_eq!(
             rollback,
             (
                 31,
                 i64::try_from(expected.len())? + 2,
-                scroll_count,
-                scroll_count
+                scroll_count + 1,
+                scroll_count + 1
             )
         );
         assert_eq!(ledger_snapshot(&harness).await?, before_balances);
@@ -697,7 +701,8 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
         assert_eq!(values[1].2.get(1), Some(&1));
         assert_eq!(values[2].2, [8, 2]);
         let latest: (i16, bool) = sqlx::query_as("SELECT p.balance,(SELECT premium FROM game_character_daily_reward_claims ORDER BY reset_epoch DESC LIMIT 1) FROM game_account_prey_wildcards p").fetch_one(&harness.pool).await?;
-        assert_eq!(latest, (if premium { 21 } else { 11 }, false));
+        // WU26-07: the later claims are cycle days 3, 4 and 5, none with Prey Wildcards.
+        assert_eq!(latest, (if premium { 18 } else { 9 }, false));
         // An uncovered gap must preview the actual fallback claim, not the saved lane.
         epoch(&harness, 37).await?;
         let (_, output) = serve(
@@ -737,6 +742,12 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
         assert!(details.history.iter().flatten().all(|r| r.own_character));
         assert_eq!(details.days[0].free.cosmetic_tokens, 2);
         assert_eq!(details.days[0].premium.cosmetic_tokens, 4);
+        // WU26-07: the seven-day cycle fills days 1..7; the remaining DRD1 slots stay zero.
+        assert!(
+            details.days[7..]
+                .iter()
+                .all(|day| *day == wire::details::Day::default())
+        );
         let (_, output) = serve(
             &restarted,
             &mut resumed,
