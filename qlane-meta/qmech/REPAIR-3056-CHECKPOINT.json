@@ -3,7 +3,7 @@
   "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
   "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
   "parents": {
-    "previous_published_head": "c8a3b3ca5326d808bf2e12df8956de395b2e4a3e",
+    "previous_published_head": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
     "integrated_main": "f01f18582443f482b7adcfaf32cae3f9d3616876"
   },
   "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
@@ -66,5 +66,26 @@
     "world_result": "Compiler build passed; pin-check rejected the stale tracked pin. No manual repin performed.",
     "repair_scope": "Resolve the observed merged export, missing QuestWorldContext.party and optional reward-reference classes; retain cardinal-only Turn and unique numpad aliases; group existing corpse-admission arguments without changing qualification rules; pass an explicit absent Tutorial Corruptor claim in the ordinary nested-loot fixture. Complete the generic authored-binding fixture with its explicit absent occurrence/admission and empty dialogue alternatives.",
     "qualification": "Pending on the successor head; source checks and formatting are not runtime or PostgreSQL evidence."
+  },
+  "followup_source_repair": {
+    "parent": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
+    "path": "crates/gameplay/content/src/content/creature_reward_empty_corpse.rs",
+    "finding": "The private row helper argument grouping missed its path-mounted empty-corpse child caller. The prior nine-call proof covered only the parent source file.",
+    "repair": "Wrap the same u32::from(u16::MAX) capacity and exact borrowed verified-source corpse set in CorpseAdmission; preserve the independent ordinary-row capacity of 30.",
+    "verification": "Exact parent/child source closure and light scoped checks; compilation and full generation remain pending on the successor.",
+    "actual_ci_evidence": {
+      "head": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
+      "run_id": 42944381067,
+      "job_id": 130273525253,
+      "diagnostic": "E0061 in creature_reward_empty_corpse.rs:25; eight arguments supplied to the seven-argument private row helper",
+      "log_sha256": "cd904cb68a5f110cf0a8844f4a9e2854388160b5d954e787d617e05643df389c"
+    }
+  },
+  "generation_prerequisite_repair": {
+    "parent": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
+    "imbuement": "Run the canonical offline candidate builder before the World-to-tree converter first validates the candidate. Current in-memory source replay changes only the reviewed Item-binding evidence digest, not any of the 24 type definitions.",
+    "reward_claim_variants": "Run the canonical variant migration producer after final Claim, Item, Achievement and metadata generation; its existing independent CI --check rejected the stale packet.",
+    "checks": "Two new prerequisite/order regressions failed on the prior script; all 17 lightweight dispatcher/merge checks passed after the two producer calls. No full provider generation or Rust/PG execution is claimed.",
+    "remaining_guard": "Post-conversion Item binding/eligibility references remain subject to their existing strict source checks; no automatic evidence-pin bypass was added."
   }
 }

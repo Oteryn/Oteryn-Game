@@ -733,6 +733,8 @@ def main() -> int:
     refresh_source_cohort_extent()
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
+    # The tree converter validates this source candidate before importing it.
+    run(["python3", "tools/content-schema/imbuement-authoring/imbuement_authoring.py", "build"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
     # Native policies seal the complete regenerated creature root. Keep their
     # bounded, independently reviewed source witnesses in the same generation.
@@ -762,6 +764,8 @@ def main() -> int:
     run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
     refresh_world_metadata()
+    # Variant evidence pins the final Claim, Item and Achievement inventories.
+    run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():

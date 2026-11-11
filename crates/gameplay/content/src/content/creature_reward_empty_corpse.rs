@@ -29,7 +29,9 @@ pub(super) fn reward_boss_row(
         tables,
         items,
         race,
-        u32::from(u16::MAX),
-        verified_source_corpses,
+        super::CorpseAdmission {
+            maximum_corpse_capacity: u32::from(u16::MAX),
+            verified_source_corpses,
+        },
     )
 }

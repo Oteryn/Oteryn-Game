@@ -431,8 +431,87 @@ def test_source_cohort_includes_installed_successors() -> None:
             raise AssertionError("the complete World cohort must be measured")
 
 
+def full_generation_trace(events, inspect_command) -> int:
+    """Exercise the actual dispatcher without running any producer or Git write."""
+    def record(command):
+        command = tuple(command)
+        events.append(command)
+        inspect_command(command, events)
+
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        for tool in rc.AUTHORING_TOOLS:
+            write(root, tool, "")
+        with patch.object(rc, "ROOT", root), \
+                patch.object(sys, "argv", ["regenerate_content.py", "--no-stage", "--skip-checks"]), \
+                patch.dict(os.environ, {"OTERYN_SPELL_SOURCE_ROOT": ""}), \
+                patch.object(rc, "run", side_effect=record), \
+                patch.object(rc, "unresolved_worktree_paths", return_value=[]) as unresolved, \
+                patch.object(rc, "refresh_quest_callback_proof"), \
+                patch.object(rc, "materialize_world"), \
+                patch("questpc7_thaian_authoring.install"), \
+                patch.object(rc, "refresh_source_cohort_extent"), \
+                patch.object(rc, "repin_rust_inventory"), \
+                patch.object(rc, "refresh_world_metadata", side_effect=lambda: events.append(("world-metadata",))), \
+                patch.object(subprocess, "run", side_effect=AssertionError("unexpected subprocess")):
+            result = rc.main()
+            unresolved.assert_called_once_with()
+        assert not any(command[0] in {"git", "cargo"} for command in events)
+        assert not any("--check" in command for command in events)
+        return result
+
+
+def test_imbuement_candidate_precedes_content_consumers_and_refusal_stops_them() -> None:
+    candidate = ("python3", "tools/content-schema/imbuement-authoring/imbuement_authoring.py", "build")
+    tree = ("python3", "tools/content-migration/world_project_v2_to_tree.py")
+
+    def require_candidate(command, events):
+        if command == tree:
+            assert candidate in events[:-1], "content consumer requires the fresh candidate"
+
+    events = []
+    assert full_generation_trace(events, require_candidate) == 0
+    assert events.count(candidate) == 1
+
+    def refuse_candidate(command, _events):
+        if command == candidate:
+            raise subprocess.CalledProcessError(1, list(command))
+
+    refused = []
+    try:
+        full_generation_trace(refused, refuse_candidate)
+    except subprocess.CalledProcessError as error:
+        assert error.cmd == list(candidate)
+    else:
+        raise AssertionError("a failed candidate producer must stop regeneration")
+    assert tree not in refused, "a refused prerequisite cannot reach its consumer"
+
+
+def test_reward_variant_packet_follows_final_claim_item_and_metadata_inputs() -> None:
+    variant = ("python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py")
+    inputs = (
+        ("python3", "tools/content-migration/world_project_v2_to_tree.py"),
+        ("python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"),
+        ("python3", "tools/content-migration/register_spell_families.py"),
+        ("world-metadata",),
+    )
+
+    def require_final_inputs(command, events):
+        if command == variant:
+            assert all(source in events[:-1] for source in inputs), "variant packet requires final inputs"
+
+    events = []
+    assert full_generation_trace(events, require_final_inputs) == 0
+    assert events.count(variant) == 1, "the variant packet must actually be regenerated"
+    variant_index = events.index(variant)
+    for source in inputs:
+        assert max(index for index, command in enumerate(events) if command == source) < variant_index
+
+
 def main() -> None:
     tests = [
+        test_imbuement_candidate_precedes_content_consumers_and_refusal_stops_them,
+        test_reward_variant_packet_follows_final_claim_item_and_metadata_inputs,
         test_source_cohort_includes_installed_successors,
         test_normal_repin_updates_raw_extent_without_rewriting_history_checks,
         test_source_cohort_extent_separates_npc_profiles_and_tracks_successors,
