@@ -274,6 +274,10 @@ impl DurabilityRoot {
                 sqlx::query("INSERT INTO game_character_atelier_state(character_id,atelier_revision,gold,fragments_basic,fragments_supreme,state_json) VALUES(encode($1,'hex')::uuid,$2,0,0,0,$3) ON CONFLICT(character_id) DO UPDATE SET atelier_revision=excluded.atelier_revision,state_json=excluded.state_json")
                     .bind(fence.character_id.as_bytes().as_slice()).bind(i64::try_from(state.revision).map_err(|_| DurabilityError::InvalidStoredState)?).bind(json).execute(&mut **tx).await?;
                 let revision = CharacterRevision::new(next).map_err(|_| DurabilityError::InvalidStoredState)?;
+                // Stored JSON is vessel-free; both the first reply and replay expose the
+                // same current placement owned by the Wheel in this transaction.
+                let vessels = super::character_wheel::read_vessels(&mut tx, fence.character_id).await?;
+                oteryn_gameplay_progression::atelier::vessels::project(&mut state, &vessels);
                 tx.commit(deadline).await?;
                 Ok(Ok(AtelierOutcome::Committed { revision, state }))
             })

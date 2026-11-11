@@ -328,7 +328,7 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
                 owner.drain_source_item_deadlines().await;
                 let due: Vec<u8> = DUE.into_iter().chain(WORLD_DUE).chain(DEEP_DUE).collect();
                 for seed in due.iter().copied() {
-                    assert_eq!(item(seed).await?, (0, 2));
+                    assert_eq!(item(seed).await?, (0, 2), "offline scroll seed {seed}");
                 }
                 for seed in [FRESH, PARCEL, MID_BAG, DEEP_BAG, CORPSE, INNER_CORPSE] {
                     assert_eq!(item(seed).await?, (1, 1));

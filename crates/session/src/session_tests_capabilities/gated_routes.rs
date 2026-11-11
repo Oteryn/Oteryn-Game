@@ -9,6 +9,7 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (3, &[7, 8], &[7, 8]),
         (7, &[13, 6117], &[12]),
         (17, &[11, 12, 740], &[10]),
+        // WU26 retires picker commands 6122/6123; their numbers remain reserved.
         (182, &[354, 355, 738, 6124, 6125], &[]),
         (49, &[56, 57, 6129], &[]),
         (51, &[60, 61], &[]),

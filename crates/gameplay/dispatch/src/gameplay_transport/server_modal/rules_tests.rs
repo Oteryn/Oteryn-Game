@@ -313,7 +313,7 @@ fn server_modal_input_value_reaches_the_owner_only_when_checked() -> Result<(), 
     let answer = Answer {
         dialog_id: dialog.id,
         button_id: 1,
-        choice_id: None,
+        choice_id: Some(4),
     };
     let entered = |value: Option<InputValue>, dont_show_again: bool| InputAnswer {
         answer,

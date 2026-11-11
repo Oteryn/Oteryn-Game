@@ -863,9 +863,19 @@ fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> Test
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
+        // Loyalty is ranked for Game clients but withheld from the public export.
         assert_eq!(
             h.count("game_public_highscore_outbox").await?,
-            SNAPSHOTS_PER_CUT
+            SNAPSHOTS_PER_CUT - 1
+        );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_public_highscore_outbox WHERE category=13"
+            )
+            .fetch_one(&h.pool)
+            .await?,
+            0,
+            "Loyalty remains private to Game clients"
         );
         h.pool.execute("CREATE FUNCTION highscore_test_fail_category() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.category=2 THEN RAISE EXCEPTION 'fixture publication failure'; END IF; RETURN NEW; END;$$; CREATE TRIGGER highscore_test_fail_category BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION highscore_test_fail_category();").await?;
         assert!(
@@ -877,7 +887,7 @@ fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> Test
         );
         assert_eq!(
             h.count("game_public_highscore_outbox").await?,
-            SNAPSHOTS_PER_CUT
+            SNAPSHOTS_PER_CUT - 1
         );
         assert_eq!(
             h.count("game_world_highscore_snapshots").await?,
