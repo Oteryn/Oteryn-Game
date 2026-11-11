@@ -93,7 +93,11 @@ pub(super) fn meaningful(
             command.payload,
         )
         .is_ok(),
-        3 => super::decode_spell_cast_intent(command.payload).is_ok(),
+        3 => oteryn_protocol_oteryn::actor_spell::decode_spell_cast_intent_selected(
+            selected,
+            command.payload,
+        )
+        .is_ok(),
         7 => oteryn_protocol_oteryn::npc_service::decode_npc_talk_intent(command.payload).is_ok(),
         8 => oteryn_protocol_oteryn::npc_service::decode_npc_trade_intent(command.payload).is_ok(),
         13 => chat::decode_chat_intent(command.payload).is_ok_and(|intent| {

@@ -1,0 +1,17 @@
+[
+  {
+    "mechanic": "0480-spell-aim-mode",
+    "kind": "handlers",
+    "id": "0480-spell-aim-mode-core-cast-extension",
+    "status": "unsupported",
+    "reason": "WU26-14 server side only: the native client action-bar target option lands in the client lane.",
+    "commands": [],
+    "not_applicable": {
+      "state": "The cast intent is stateless per cast.",
+      "protocol": "The shared command3 codec in oteryn-protocol-oteryn carries field 5 aim_mode.",
+      "view": "The action bar target option view lands with client support.",
+      "input": "The action bar target option input lands with client support.",
+      "settings": "The per-button target option setting lands with client support."
+    }
+  }
+]
