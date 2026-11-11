@@ -3,7 +3,7 @@
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::wheel_allocation::{
-    Intent, WheelPanel, gem_label, modifier_label, panel_text, slot_label, vessel_name,
+    Intent, WheelPanel, gem_label, modifier_label, panel_text, slot_label,
 };
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};

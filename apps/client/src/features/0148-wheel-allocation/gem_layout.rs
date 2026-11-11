@@ -15,7 +15,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         control(
             hwnd,
             "STATIC",
-            "Selected | Gem Vessels 1-12 (Replace Vessel with 483; otherwise the first four are draft vessels)",
+            "Selected | Gem Vessels",
             2,
             [12, 80, 500, 24],
             0,
@@ -67,14 +67,6 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         );
         for value in ["Lesser", "Regular", "Greater"] {
             SendMessageW(quality, CB_ADDSTRING, 0, wide(value).as_ptr() as isize);
-        }
-        for d in 0..12 {
-            SendMessageW(
-                vessel,
-                CB_ADDSTRING,
-                0,
-                wide(&vessel_name(d)).as_ptr() as isize,
-            );
         }
         let buttons = [
             ("Reveal", 100),

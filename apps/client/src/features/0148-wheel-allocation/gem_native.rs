@@ -10,7 +10,7 @@ use crate::{
         mailbox::{SharedMailbox, lock},
     },
 };
-use oteryn_client_ui::wheel_allocation::{Intent, WheelPanel, gem_label, gems, vessel_name};
+use oteryn_client_ui::wheel_allocation::{Intent, WheelPanel, gem_label, gems};
 use oteryn_foundation::ProcessGeneration;
 use oteryn_renderer::WindowsRenderer;
 use std::{
@@ -231,6 +231,10 @@ fn run(
                         0,
                     );
                     SendMessageW(quality, CB_SETCURSEL, usize::from(panel.quality), 0);
+                    SendMessageW(vessel, CB_RESETCONTENT, 0, 0);
+                    for name in super::vessel_choices(&panel) {
+                        SendMessageW(vessel, CB_ADDSTRING, 0, wide(&name).as_ptr() as isize);
+                    }
                     SendMessageW(vessel, CB_SETCURSEL, usize::from(panel.vessel_slot), 0);
                     let mut detail = gems::view::details(&panel);
                     if renderer.is_none() {

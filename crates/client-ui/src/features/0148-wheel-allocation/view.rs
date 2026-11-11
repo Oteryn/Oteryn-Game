@@ -64,7 +64,7 @@ impl ReshapeBlock {
 
 /// Why Mod Reshaping is disabled for the selected gem, or `None` when it may be requested.
 pub fn reshape_block(panel: &WheelPanel, gem: &atelier::GemView) -> Option<ReshapeBlock> {
-    if gem.modifiers.is_empty() {
+    if gem.locked || gem.modifiers.is_empty() {
         return Some(ReshapeBlock::NotUnlocked);
     }
     let position = reshape_position(panel, gem);

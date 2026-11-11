@@ -173,3 +173,25 @@ fn reshape_intent_encodes_6214_and_applies_the_live_result() -> Result<(), Error
     assert!(request(&mut panel, Intent::Reshape, occurrence(9)).is_none());
     Ok(())
 }
+
+#[test]
+fn locked_revealed_gem_cannot_stage_or_confirm_reshape() -> Result<(), Error> {
+    let mut panel = synced(true, true)?;
+    panel.modifier = Some((0, 31));
+    assert!(panel.can_reshape());
+    assert!(gems::stage(&mut panel, Intent::Reshape, occurrence(10)));
+    assert_eq!(
+        gems::confirm(&mut panel).ok_or("unlocked reshape")?.kind,
+        6214
+    );
+    panel.pending = None;
+    panel.retry = None;
+    panel.confirmed_atelier.as_mut().ok_or("atelier")?.gems[0].locked = true;
+    assert!(!gems::stage(&mut panel, Intent::Reshape, occurrence(11)));
+    assert!(!panel.can_reshape());
+    assert!(panel.gems.review.is_none());
+    assert!(gems::confirm(&mut panel).is_none());
+    assert!(request(&mut panel, Intent::Reshape, occurrence(12)).is_none());
+    assert_eq!(panel.feedback, Some("The gem must be unlocked first"));
+    Ok(())
+}

@@ -53,6 +53,10 @@ impl layout::Controls {
                 }
             }
             SendMessageW(quality, CB_SETCURSEL, usize::from(panel.quality), 0);
+            SendMessageW(vessel, CB_RESETCONTENT, 0, 0);
+            for name in super::super::vessel_choices(panel) {
+                SendMessageW(vessel, CB_ADDSTRING, 0, wide(&name).as_ptr() as isize);
+            }
             SendMessageW(vessel, CB_SETCURSEL, usize::from(panel.vessel_slot), 0);
             SetWindowTextW(
                 lock_button,
