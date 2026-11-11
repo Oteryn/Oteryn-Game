@@ -126,6 +126,8 @@ pub(super) async fn bigint_boundary(
     harness: &Harness,
     admitted: &mut AdmittedSession,
 ) -> TestResult {
+    // A historical balance above the Winter Update 2026 cap of 10 is kept, and a
+    // claim pays XP and points but credits no token.
     let task = completed_fixture(harness, Some(i64::MAX - 1)).await?;
     let before = full_board(owner, admitted, 4, 0, "").await?;
     assert_eq!(before.bounty.rerolls, u64::try_from(i64::MAX - 1)?);
@@ -139,7 +141,7 @@ pub(super) async fn bigint_boundary(
             claimed.bounty.state,
             claimed.bounty.rerolls
         ),
-        (0, 1, i64::MAX.unsigned_abs())
+        (0, 1, u64::try_from(i64::MAX - 1)?)
     );
     assert_eq!(
         claimed.bounty_points,
@@ -153,9 +155,7 @@ pub(super) async fn bigint_boundary(
         experience(harness).await?,
         before_xp + i64::try_from(task.experience)?
     );
-    let balance:i64=sqlx::query_scalar("SELECT balance FROM game_character_bounty_reroll_tokens WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
-        .bind(id(41).as_slice()).bind(id(42).as_slice()).fetch_one(&harness.pool).await?;
-    assert_eq!(balance, i64::MAX);
+    assert_eq!(token_balance(harness).await?, i64::MAX - 1);
     let committed = value_snapshot(harness).await?;
     let replay = serve_from(owner, admitted, command, &[full_request(9, 0, "")]).await?;
     assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
@@ -165,7 +165,8 @@ pub(super) async fn bigint_boundary(
     );
     assert_eq!(value_snapshot(harness).await?, committed);
 
-    completed_fixture(harness, None).await?;
+    // The BIGINT owner boundary still refuses before consuming the completed bounty.
+    completed_fixture(harness, Some(i64::MAX)).await?;
     let before = full_board(owner, admitted, 4, 0, "").await?;
     assert_eq!(
         (before.bounty.state, before.bounty.rerolls),
@@ -178,5 +179,41 @@ pub(super) async fn bigint_boundary(
     println!(
         "<TASK_BOARD> POSTGRES_CASE_COMPLETED: bounty_token_bigint_boundary_and_overflow_refusal_replay"
     );
+
+    // WU26-02: at ten stored tokens the claim credits zero; its receipt records the
+    // zero grant and no ledger entry is written. Nine stored still reaches ten.
+    for (stored, granted) in [(10_i64, 0_i64), (9, 1)] {
+        completed_fixture(harness, Some(stored)).await?;
+        let entries = token_entries(harness).await?;
+        let command = admitted.continuity.next_command_id;
+        let claimed = full_board(owner, admitted, 9, 0, "").await?;
+        assert_eq!(
+            (claimed.refusal, claimed.bounty.state, claimed.bounty.rerolls),
+            (0, 1, 10)
+        );
+        assert_eq!(token_balance(harness).await?, 10);
+        assert_eq!(token_entries(harness).await?, entries + granted);
+        let effects: serde_json::Value = sqlx::query_scalar("SELECT effects FROM game_task_board_receipts WHERE character_id=encode($1,'hex')::uuid AND cause_id=encode($2,'hex')::uuid AND cause_ordinal=$3::text::numeric AND cause_kind='command' AND committed_character_revision IS NOT NULL")
+            .bind(id(41).as_slice()).bind(admitted.game_session_id.as_bytes().as_slice()).bind(command.to_string())
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(effects["reroll_tokens_granted"], serde_json::json!(granted));
+    }
+    println!(
+        "<TASK_BOARD> POSTGRES_CASE_COMPLETED: bounty_claim_at_ten_tokens_credits_zero_and_records_the_receipt"
+    );
     Ok(())
+}
+
+async fn token_balance(harness: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT balance FROM game_character_bounty_reroll_tokens WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+        .bind(id(41).as_slice()).bind(id(42).as_slice()).fetch_one(&harness.pool).await?)
+}
+
+async fn token_entries(harness: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_bounty_reroll_token_entries WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&harness.pool)
+    .await?)
 }

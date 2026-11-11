@@ -83,7 +83,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .resting_areas
             .streak(admitted.game_session_id, actor)?;
         let premium = state.hunting_premium_current(now);
-        let effective_streak = if premium { streak } else { streak.min(3) };
+        // Winter Update 2026: the area's tier no longer depends on the streak.
+        let tier = super::resting_area::RESTING_TIER;
+        let effective_streak = if premium { tier } else { tier.min(3) };
         let active = inside && state.vitals().health != 0;
         let food_remaining_ms = match state
             .owned_conditions()
@@ -114,8 +116,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 1
             },
-            stamina: active && premium && streak >= 4,
-            soul: active && premium && streak >= 7,
+            stamina: active && premium,
+            soul: active && premium,
         }
         .encode()
     }
