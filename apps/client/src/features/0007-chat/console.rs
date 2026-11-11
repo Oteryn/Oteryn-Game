@@ -174,7 +174,6 @@ pub(in crate::play) fn save_log(
     });
     result
 }
-use crate::combat_input::PlayCommand;
 use crate::play::Outbox;
 use oteryn_client_ui::chat::{ConsoleDisplay, console_request};
 use tokio::sync::mpsc::UnboundedSender;
