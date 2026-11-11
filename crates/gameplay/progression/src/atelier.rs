@@ -11,6 +11,8 @@ use crate::wheel_gem_data::WheelGemData;
 #[cfg(test)]
 #[path = "atelier/parity_tests.rs"]
 mod parity_tests;
+#[path = "atelier/reshape.rs"]
+pub mod reshape;
 #[path = "atelier/vessels.rs"]
 pub mod vessels;
 
@@ -110,6 +112,13 @@ pub enum AtelierAction {
     },
     GradeUp {
         kind: FragmentKind,
+        mod_id: u16,
+    },
+    /// Mod Reshaping: `mod_id` replaces the modifier at `position` (1-3), drawn by the
+    /// caller from `reshape::choices`.
+    Reshape {
+        id: u128,
+        position: u8,
         mod_id: u16,
     },
 }
@@ -297,6 +306,36 @@ impl AtelierState {
                     .ok_or(AtelierRefusal::InsufficientFragments)?;
                 next.grades.insert((kind, mod_id), grade + 1);
                 next.grade_ruleset_revision = Some(current.to_owned());
+            }
+            AtelierAction::Reshape {
+                id,
+                position,
+                mod_id,
+            } => {
+                let (gold, kind, fragments) =
+                    reshape::cost(position).ok_or(AtelierRefusal::InvalidDraw)?;
+                let gem = current_gem(&mut next, id, current)?;
+                if gem.locked {
+                    return Err(AtelierRefusal::Locked);
+                }
+                let allowed = reshape::choices(family, &gem.mods, position)
+                    .ok_or(AtelierRefusal::InvalidDraw)?;
+                if !allowed.contains(&mod_id) {
+                    return Err(AtelierRefusal::InvalidDraw);
+                }
+                let slot = gem
+                    .mods
+                    .get_mut(usize::from(position.saturating_sub(1)))
+                    .ok_or(AtelierRefusal::InvalidDraw)?;
+                *slot = mod_id;
+                next.gold = next
+                    .gold
+                    .checked_sub(gold)
+                    .ok_or(AtelierRefusal::InsufficientGold)?;
+                let held = next.fragments.entry(kind).or_default();
+                *held = held
+                    .checked_sub(fragments)
+                    .ok_or(AtelierRefusal::InsufficientFragments)?;
             }
         }
         next.revision = next

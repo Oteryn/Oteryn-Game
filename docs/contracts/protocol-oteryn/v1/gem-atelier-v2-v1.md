@@ -18,7 +18,7 @@ bytes; replies at most 16,384 bytes.
 - Query: an empty payload.
 - Set lock: the v1 lock request bytes.
 - Mutate: the v1 mutate bytes for actions 0 (reveal), 1 (dismantle) and 3 (grade up).
-  Action 2 (switch domain) is malformed. Action 4 is reserved for Mod Reshaping.
+  Action 2 (switch domain) is malformed.
 - Replace Vessel:
 
 | Field | Wire tag | Value |
@@ -36,6 +36,22 @@ no gem fills two slots. A refusal returns `refused=true` with nothing written. T
 occurrence and intent returns its recorded result.
 
 Lock and paid requests run through the v1 Atelier writer unchanged.
+
+Command 6214 (`ATELIER_V2_RESHAPE`, Mod Reshaping) is claimed but not yet registered or
+served: its fee and fragment burns need a new audited fee cause. Its request is fixed by the
+codec:
+
+| Field | Wire tag | Value |
+| --- | --- | --- |
+| occurrence | 1, bytes | Exactly 16 bytes; UUIDv7 Atelier receipt identity |
+| expected_revision | 2, varint | Expected Atelier revision |
+| gem | 3, bytes | Exactly 16 bytes |
+| position | 4, varint | Modifier position, 1 through 3 |
+
+Reshaping requires the temple and Premium, an unlocked gem and the position's price: 125,000
+gold and one lesser fragment, 1,000,000 gold and two lesser fragments, or 5,000,000 gold and
+three greater fragments. The new modifier is drawn from the position's reveal pool; the two
+basic positions never hold the same modifier. The gem keeps its identity, quality and slot.
 
 ## Reply
 

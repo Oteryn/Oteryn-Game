@@ -14,6 +14,9 @@ pub const COMMAND_TYPE_ATELIER_V2_QUERY: u32 = 6210;
 pub const COMMAND_TYPE_ATELIER_V2_SET_LOCK: u32 = 6211;
 pub const COMMAND_TYPE_ATELIER_V2_MUTATE: u32 = 6212;
 pub const COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL: u32 = 6213;
+/// Mod Reshaping. Claimed for WU26-10; not registered or served until its custody slice
+/// (fee and fragment burn) lands.
+pub const COMMAND_TYPE_ATELIER_V2_RESHAPE: u32 = 6214;
 pub const MAX_REQUEST_BYTES: usize = super::MAX_REQUEST_BYTES;
 pub const MAX_REPLY_BYTES: usize = 16_384;
 pub const GEM_VESSEL_SLOTS: usize = 12;
@@ -42,6 +45,15 @@ pub struct ReplaceVesselRequest {
     pub expected_wheel_revision: u64,
     pub slot: u8,
     pub gem: Option<[u8; 16]>,
+}
+
+/// Mod Reshaping: redraws the modifier at `position` (1-3) of `gem` from that position's pool.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReshapeRequest {
+    pub occurrence: [u8; 16],
+    pub expected_revision: u64,
+    pub gem: [u8; 16],
+    pub position: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -157,6 +169,50 @@ pub fn encode_replace_vessel(value: &ReplaceVesselRequest) -> Result<Vec<u8>, Er
     } else {
         Ok(out)
     }
+}
+
+pub fn encode_reshape(value: &ReshapeRequest) -> Result<Vec<u8>, Error> {
+    if !(1..=3).contains(&value.position) {
+        return Err(Error::Malformed);
+    }
+    let mut out = Vec::new();
+    push_message_field(&mut out, 1, &value.occurrence);
+    push_varint_field(&mut out, 2, value.expected_revision);
+    push_message_field(&mut out, 3, &value.gem);
+    push_varint_field(&mut out, 4, u64::from(value.position));
+    if out.len() > MAX_REQUEST_BYTES {
+        Err(Error::LimitExceeded)
+    } else {
+        Ok(out)
+    }
+}
+
+pub fn decode_reshape(bytes: &[u8]) -> Result<ReshapeRequest, Error> {
+    if bytes.len() > MAX_REQUEST_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    let (mut occurrence, mut revision, mut gem, mut position) = (None, None, None, None);
+    let mut at = 0;
+    while at < bytes.len() {
+        match read_varint(bytes, &mut at)? {
+            10 => read_id(bytes, &mut at, &mut occurrence)?,
+            16 => set_once(&mut revision, read_varint(bytes, &mut at)?)?,
+            26 => read_id(bytes, &mut at, &mut gem)?,
+            32 => set_once(
+                &mut position,
+                u8::try_from(read_varint(bytes, &mut at)?).map_err(|_| Error::Malformed)?,
+            )?,
+            _ => return Err(Error::Malformed),
+        }
+    }
+    let value = ReshapeRequest {
+        occurrence: occurrence.ok_or(Error::Malformed)?,
+        expected_revision: revision.ok_or(Error::Malformed)?,
+        gem: gem.ok_or(Error::Malformed)?,
+        position: position.ok_or(Error::Malformed)?,
+    };
+    encode_reshape(&value)?;
+    Ok(value)
 }
 
 pub fn decode_replace_vessel(bytes: &[u8]) -> Result<ReplaceVesselRequest, Error> {
@@ -605,6 +661,37 @@ mod tests {
             "slot 12 does not exist"
         );
         assert!(decode_query(&[]).is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn atelier_v2_reshape_request_round_trips_positions_one_to_three() -> Result<(), Error> {
+        for position in 1..=3 {
+            let request = ReshapeRequest {
+                occurrence: [1; 16],
+                expected_revision: 9,
+                gem: [4; 16],
+                position,
+            };
+            let bytes = encode_reshape(&request)?;
+            assert_eq!(decode_reshape(&bytes)?, request);
+            let mut repeated = bytes.clone();
+            repeated.extend_from_slice(&[32, 1]);
+            assert!(decode_reshape(&repeated).is_err());
+        }
+        for position in [0, 4] {
+            let request = ReshapeRequest {
+                occurrence: [1; 16],
+                expected_revision: 9,
+                gem: [4; 16],
+                position,
+            };
+            assert_eq!(encode_reshape(&request), Err(Error::Malformed));
+        }
+        let mut missing_gem = vec![10, 16];
+        missing_gem.extend([1; 16]);
+        missing_gem.extend([16, 9, 32, 1]);
+        assert_eq!(decode_reshape(&missing_gem), Err(Error::Malformed));
         Ok(())
     }
 }
