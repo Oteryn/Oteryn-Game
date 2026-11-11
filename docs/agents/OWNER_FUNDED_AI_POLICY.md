@@ -72,6 +72,16 @@ that only answers this review's findings is reviewed again only when it meets th
 second-review rule above. This authorization covers the review alone, not
 implementation, repair or any other Codex use.
 
+Owner decision 2026-11-11 (fix of confirmed findings): the review run itself stays
+read-only and never edits code. Findings the coordinator has verified against the
+code may then be handed, as one list, to a single code-writing Codex run at
+reasoning effort `medium` (on the PC: `codex-review.sh <worktree> <tag>
+--fix-confirmed <file>`). That run writes a red test per finding before any fix,
+reports a finding it cannot reproduce without changing code, changes no existing
+assertion, timeout or budget and nothing outside the list, and commits nothing;
+the coordinator reviews its diff before committing. This is ordinary code-writing
+Codex use under the 2026-11-11 effort decision, not a further review.
+
 The owner may revoke or narrow this standing authorization at any time by a later
 explicit instruction. A later protected policy may narrow execution further but
 cannot broaden this permission.

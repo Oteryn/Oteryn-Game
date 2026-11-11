@@ -52,7 +52,8 @@ limits below. Send Codex work to Codex Cloud with model
 `gpt-6.1-sol` at reasoning effort `medium` and start each packet with
 "Reasoning effort: medium."; a Codex lane on the PC that writes code uses the
 same setting. Codex review runs `gpt-6.1-sol` at reasoning effort `high`
-(`oteryn-review`). Owner decision 2026-11-11, replacing the 2026-11-05
+(`oteryn-review`); its verified findings are fixed by a separate `medium`
+run (`codex-review.sh ... --fix-confirmed`, `oteryn-review` §5). Owner decision 2026-11-11, replacing the 2026-11-05
 `high` for code-writing Codex. Repository subagents use the model and effort
 set in their own `.claude/agents/*.md` definition.
 
