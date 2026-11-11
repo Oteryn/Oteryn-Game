@@ -110,12 +110,13 @@ fn scenario(
                 deps.admitted.world_id,
                 &cells,
             )?;
+            let bundle_frame = room.frame_binding().digest();
             let pin = ChannelContentPin::from_activation(
                 deps.admitted.world_id,
                 1,
                 generation.identity().server_artifact_digest(),
                 generation.identity().client_artifact_digest(),
-                room.frame_binding().digest(),
+                bundle_frame,
                 room.map_revision_digest(),
                 (origin.x, origin.y, origin.floor),
             );
@@ -205,7 +206,7 @@ fn scenario(
             .bind(id(42).as_slice()).bind(id(43).as_slice())
             .bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice())
-            .bind(activated.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            .bind(bundle_frame.as_slice()).execute(&h.pool).await?;
             let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
             h.root
                 .initialize_admission_equipment(

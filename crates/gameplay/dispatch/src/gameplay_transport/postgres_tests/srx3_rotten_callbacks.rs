@@ -765,9 +765,11 @@ fn srx3_soul_war_actual_plain_child_corpse_materialization_postgres() -> TestRes
     run_rotten_native_lethal_cases(&[
         (65004, "oteryn:creature.weeping_soul", 0, 1),
         (65005, "oteryn:creature.poor_soul", 0, 2),
-        (65006, "oteryn:creature.aspect_of_power", 0, 3),
         (65007, "oteryn:creature.necromantic_focus", 0, 4),
-    ])
+    ])?;
+    // An unmastered Aspect death owns a Megalomania phase callback. Use the
+    // actual entry-created child and phase owner, not the generic Murcion scope.
+    super::srx3_megalomania_callbacks::actual_plain_aspect_corpse()
 }
 
 #[test]

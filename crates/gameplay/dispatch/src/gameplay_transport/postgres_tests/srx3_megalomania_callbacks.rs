@@ -9,17 +9,27 @@ use crate::gameplay_transport::capabilities::{
 };
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+#[path = "srx3_megalomania_callbacks/plain_corpse.rs"]
+mod plain_corpse;
 #[path = "srx3_megalomania_callbacks/splinter.rs"]
 mod splinter;
 
 #[test]
 fn srx3_megalomania_actual_source_entry_and_initial_aspect_postgres() -> TestResult {
+    actual_source_entry(false)
+}
+
+pub(super) fn actual_plain_aspect_corpse() -> TestResult {
+    actual_source_entry(true)
+}
+
+fn actual_source_entry(check_plain_corpse: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-megalomania-native", || {
-        run(async |admin| {
+    super::kill_reward_e2e::scenario_thread::run("srx3-megalomania-native", move || {
+        run(async move |admin| {
             reset();
             // Crystal201189f lib/quests/soul_war.lua:450-478: literal first
             // waiting tile and its real source map; no seeded catalogue recipe.
@@ -84,7 +94,7 @@ fn srx3_megalomania_actual_source_entry_and_initial_aspect_postgres() -> TestRes
             let (_, reply, barrier) = super::boss_activity::exchange_capture(
                 &owner,
                 &mut admitted,
-                "oteryn:creature.goshnar_s_megalomania",
+                "oteryn:boss.goshnar_s_megalomania",
                 true,
                 &mut frames,
             )
@@ -120,7 +130,11 @@ fn srx3_megalomania_actual_source_entry_and_initial_aspect_postgres() -> TestRes
                 );
             }
             drop(runtime);
-            splinter::actual_xml_growth(&view).await?;
+            if check_plain_corpse {
+                plain_corpse::actual_entry_corpse(&h, &view, &admitted).await?;
+            } else {
+                splinter::actual_xml_growth(&view).await?;
+            }
             drop(view);
             drop(owner);
             drop(authority);
