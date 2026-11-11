@@ -26,6 +26,9 @@ impl PlayLink {
     ) -> bool {
         edit_lists(&mut lock(&self.mailbox), list, name, add)
     }
+    pub fn chat_show_lists(&self) {
+        show_lists(&mut lock(&self.mailbox));
+    }
     pub fn chat_save_log(&self, path: &Path, append: bool) -> std::io::Result<()> {
         save_log(&self.mailbox, path, append)
     }
@@ -75,13 +78,17 @@ pub(in crate::play) fn edit_lists(
     }
     mailbox.chat_private.communication = mailbox.chat.console.communication.clone();
     mailbox.chat_party_room.communication = mailbox.chat.console.communication.clone();
+    show_lists(mailbox);
+    true
+}
+/// Report the three communication lists in the chat feedback line.
+pub(in crate::play) fn show_lists(mailbox: &mut Mailbox) {
     mailbox.chat.feedback = Some(lfmt!(
         "Ignore: {:?}; whitelist: {:?}; blacklist: {:?}",
         mailbox.chat.console.communication.ignored,
         mailbox.chat.console.communication.whitelist,
         mailbox.chat.console.communication.blacklist
     ));
-    true
 }
 pub(in crate::play) fn save_log(
     shared: &SharedMailbox,

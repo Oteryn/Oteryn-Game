@@ -333,3 +333,68 @@ fn o014_battle_list_filters_by_type_and_sorts_by_each_choice() {
         vec![creature, player]
     );
 }
+
+#[test]
+fn n004_alt_click_attacks_a_creature_then_stops_when_it_is_the_target()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::PlayView;
+    use oteryn_renderer::TileCoord;
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+    };
+    let (link, mut commands, _) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[])?;
+    let creature = EntityRef {
+        identity: [7; 16],
+        generation: 1,
+    };
+    view.entities = vec![WorldSpatialEntity {
+        display_name: None,
+        kind: EntityKind::Creature,
+        entity: creature,
+        position: ActorPosition {
+            x: 2,
+            y: 1,
+            floor: 0,
+        },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    }];
+    let tile = TileCoord::new(2, 1);
+    let target = crate::input::Targetable {
+        tile,
+        kind: crate::input::TargetKind::Entity,
+        glyph: true,
+        entity: Some(creature),
+        item: None,
+    };
+    view.scene = crate::scene::Scene::centered_with(
+        std::sync::Arc::new(crate::map::World::builtin()?),
+        None,
+        TileCoord::new(1, 1),
+        crate::input::StepDir::South,
+        &[],
+        &[target],
+    )?;
+    assert!(!view.attack_toggle_click(TileCoord::new(0, 0), &link));
+    assert!(view.attack_toggle_click(tile, &link));
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Combat(CombatCommand::Attack(attacked))
+            if attacked == creature
+    ));
+    lock(&link.mailbox).battle.combat = Some(ActorCombatState {
+        target: Some(creature),
+        modes: FightModes::DEFAULT,
+        in_fight: true,
+    });
+    assert!(view.attack_toggle_click(tile, &link));
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Combat(CombatCommand::Stop)
+    ));
+    Ok(())
+}

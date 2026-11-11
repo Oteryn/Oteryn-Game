@@ -108,8 +108,8 @@ pub use feature_local_reference_preferences::settings::{
     HoverTooltip, MiscellaneousPreferences, MousePreset, MovementKeys, ObjectTarget,
     PerformancePacer, PerformanceSettings, PreferenceBinding, PreferenceInput, PreferenceStore,
     ReferencePreferences, RotationModifier, SHORTCUTS, ScreenshotPreferences, SettingsPage,
-    SettingsState, ShortcutEdit, TooltipTarget, WINDOW_ACTIONS, fit_ui_scale, help, help_text,
-    preference_bindings, rescale_ui_rect, scale_ui_rect, screenshot,
+    SettingsState, ShortcutEdit, TooltipTarget, UtilityAction, WINDOW_ACTIONS, fit_ui_scale, help,
+    help_text, preference_bindings, rescale_ui_rect, scale_ui_rect, screenshot,
 };
 
 pub use feature_0004_item_view_move::state::GroundItem;

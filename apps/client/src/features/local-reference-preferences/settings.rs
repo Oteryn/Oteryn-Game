@@ -55,7 +55,10 @@ mod profile_contexts;
 mod custom_actions;
 #[path = "custom_dispatch.rs"]
 mod custom_dispatch;
+#[path = "utility_actions.rs"]
+mod utility_actions;
 pub use custom_actions::{CustomAction, ObjectTarget};
+pub use utility_actions::UtilityAction;
 #[path = "profiles.rs"]
 mod profiles;
 #[path = "shortcuts.rs"]

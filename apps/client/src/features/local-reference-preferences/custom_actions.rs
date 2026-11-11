@@ -34,11 +34,14 @@ pub enum CustomAction {
     Passive {
         cast_index: u32,
     },
+    Utility {
+        action: super::UtilityAction,
+    },
 }
 impl CustomAction {
     pub(super) fn valid(&self) -> bool {
         match self {
-            Self::PassiveStatus { .. } => true,
+            Self::PassiveStatus { .. } | Self::Utility { .. } => true,
             Self::ActionBar { slot } => usize::try_from(*slot).is_ok_and(|slot| {
                 (1..=oteryn_client_runtime::spell::ACTION_BAR_SLOTS).contains(&slot)
             }),
