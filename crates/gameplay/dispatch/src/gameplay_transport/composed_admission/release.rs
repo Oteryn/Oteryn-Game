@@ -336,7 +336,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return GraceExpiryResult::NotApplicable;
         };
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let current = match store.current_session(admitted.game_session_id).await {
+        // Grace expiry polls this before every release attempt: a busy holder is waited
+        // for in turn, or the poll loses it to steady holder use and the release never runs.
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        let current = match retry
+            .retry_durability("staff_release_session", || {
+                store.current_session(admitted.game_session_id)
+            })
+            .await
+        {
             Ok(current) => current,
             Err(_) => return GraceExpiryResult::Unknown,
         };
@@ -360,9 +368,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     return GraceExpiryResult::NotApplicable;
                 };
-                match self
-                    .root
-                    .staff_lost_session_kicked(self.character, self.holder, fence, account, epoch)
+                match retry
+                    .retry_durability("staff_release_lost_kick", || {
+                        self.root.staff_lost_session_kicked(
+                            self.character,
+                            self.holder,
+                            fence,
+                            account,
+                            epoch,
+                        )
+                    })
                     .await
                 {
                     Ok(true) => TerminalRelease::StaffKickLost(epoch),
@@ -372,9 +387,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => return GraceExpiryResult::NotApplicable,
         };
-        match self
-            .root
-            .staff_live_status(self.character, self.holder, fence)
+        match retry
+            .retry_durability("staff_release_live_status", || {
+                self.root
+                    .staff_live_status(self.character, self.holder, fence)
+            })
             .await
         {
             Ok(status) if status.banned || status.kicked => {}
