@@ -7,8 +7,8 @@ use crate::durability::pvp_death_consequences::{PvpContributorKind, PvpDeathCont
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::cyclopedia_character::{
-    CAPABILITY_CYCLOPEDIA_CHARACTER_V1, COMMAND_TYPE_CYCLOPEDIA_BADGES,
-    COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+    CAPABILITY_CYCLOPEDIA_CHARACTER_V1, CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
+    CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1, COMMAND_TYPE_CYCLOPEDIA_BADGES, COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, vocation_id,
 };
 
 #[test]
@@ -315,6 +315,71 @@ fn tabs_scenario() -> TestResult {
         let (status, kills) = exchange(&owner, &mut admitted, 9, tab, &killer).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(history(&kills, true)?, [(1, format!("Killed {victim}."))]);
+        // Capability 487 appends the build owner's vocation id in the spellbook details order.
+        let offers = [
+            OfferedCapability {
+                id: CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+                requires: &[],
+            },
+            OfferedCapability {
+                id: CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
+                requires: &[CAPABILITY_CYCLOPEDIA_CHARACTER_V1],
+            },
+        ];
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            &offers,
+            &[
+                CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+                CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
+            ],
+        )
+        .ok_or("cyclopedia vocation capability")?;
+        let (status, extended) = exchange(&owner, &mut admitted, 10, tab, &[1, 0, 0, 1]).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(extended[..stats.len()], stats[..], "the V1 body is unchanged");
+        assert_eq!(extended[stats.len()..], [vocation_id("knight").ok_or("knight")?]);
+        // Capability 488: the public final-blow killer and the unjustified flag follow the cause.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_public_death_killers(death_occurrence_id,ordinal,kind,character_id,name) SELECT death_occurrence_id,0,'player',encode($2,'hex')::uuid,'Pvpci' FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid \
+            ON CONFLICT(death_occurrence_id,ordinal) DO UPDATE SET kind='player',character_id=EXCLUDED.character_id,creature_key=NULL,name='Pvpci'")
+            .bind(id(41).as_slice()).bind(id(60).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_public_death_classifications(death_occurrence_id,pvp,publishable,killer_key) SELECT death_occurrence_id,true,true,'player' FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid \
+            ON CONFLICT(death_occurrence_id) DO UPDATE SET killer_key='player'")
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let unjustified: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_unjustified_points u JOIN game_character_death_receipts d ON d.death_occurrence_id=u.death_occurrence_id WHERE d.character_id=encode($1,'hex')::uuid)")
+            .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+        let offers = [
+            OfferedCapability {
+                id: CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+                requires: &[],
+            },
+            OfferedCapability {
+                id: CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1,
+                requires: &[CAPABILITY_CYCLOPEDIA_CHARACTER_V1],
+            },
+        ];
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            &offers,
+            &[
+                CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+                CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1,
+            ],
+        )
+        .ok_or("cyclopedia death details capability")?;
+        let (status, detailed) = exchange(&owner, &mut admitted, 11, tab, &[2, 0, 0, 50]).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        let mut expected = deaths.clone();
+        expected.extend_from_slice(&u32::try_from(level)?.to_le_bytes());
+        expected.push(5);
+        expected.extend_from_slice(b"Pvpci");
+        expected.push(0);
+        expected.push(u8::from(unjustified));
+        assert_eq!(
+            detailed, expected,
+            "one row: the V1 row, then level, killer, unknown most-damage killer and the flag"
+        );
         drop(owner);
         drop(authority);
         drop(seal);

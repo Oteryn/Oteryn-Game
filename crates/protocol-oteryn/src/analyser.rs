@@ -19,6 +19,7 @@ use crate::charm_wire::{
     read_uint32_fields, read_varint, set_once,
 };
 use crate::damage_element::DamageElement;
+use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 
 /// Registered capability `ANALYSER_V1`: state domain 15 and optional item metadata query.
 pub const CAPABILITY_ANALYSER_V1: u32 = 10;
@@ -346,6 +347,145 @@ pub fn decode_analyser_facts(payload: &[u8]) -> WireResult<Vec<AnalyserFact>> {
         .ok_or(AnalyserWireError::Malformed)
 }
 
+/// Capability 486 `ANALYSER_HIT_ATTRIBUTION_V1`: a `damage_input` fact may carry field 5
+/// `attacker` (`EntityRefV1`: identity bytes 1, generation 2), the spatial entity of the creature
+/// or player whose hit the own character took. Without selection field 5 is never emitted.
+pub const CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1: u32 = 486;
+
+/// One fact with the optional attacker of capability 486. Only `DamageInput` from a creature or
+/// player source may carry an attacker, and its generation is nonzero.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AttributedFact {
+    pub fact: AnalyserFact,
+    pub attacker: Option<EntityRef>,
+}
+
+fn attacker_allowed(fact: &AnalyserFact, attacker: &EntityRef) -> bool {
+    attacker.generation != 0
+        && matches!(
+            fact,
+            AnalyserFact::DamageInput {
+                source: AnalyserDamageSource::Creature(_) | AnalyserDamageSource::Player,
+                ..
+            }
+        )
+}
+
+/// Encodes one `AnalyserFactV1`; with an attacker, the `damage_input` message gains field 5.
+pub fn encode_attributed_analyser_fact(
+    fact: &AnalyserFact,
+    attacker: Option<&EntityRef>,
+) -> WireResult<Vec<u8>> {
+    let Some(attacker) = attacker else {
+        return encode_analyser_fact(fact);
+    };
+    if !attacker_allowed(fact, attacker) {
+        return Err(AnalyserWireError::Malformed);
+    }
+    let encoded = encode_analyser_fact(fact)?;
+    // The plain encoding is the field 5 tag, a length and the inner message.
+    let mut cursor = 0;
+    read_varint(&encoded, &mut cursor)?;
+    let mut inner = read_bytes(&encoded, &mut cursor)?.to_vec();
+    let mut reference = Vec::with_capacity(ENTITY_IDENTITY_BYTES + 13);
+    push_message_field(&mut reference, 1, &attacker.identity);
+    push_varint_field(&mut reference, 2, attacker.generation);
+    push_message_field(&mut inner, 5, &reference);
+    let mut output = Vec::with_capacity(inner.len() + 3);
+    push_message_field(&mut output, 5, &inner);
+    if output.len() > MAX_ANALYSER_FACT_BYTES {
+        return Err(AnalyserWireError::LimitExceeded);
+    }
+    Ok(output)
+}
+
+fn decode_attacker(input: &[u8]) -> WireResult<EntityRef> {
+    let (mut identity, mut generation) = (None, None);
+    let mut cursor = 0;
+    while cursor < input.len() {
+        match read_varint(input, &mut cursor)? {
+            0x0a => {
+                let bytes: [u8; ENTITY_IDENTITY_BYTES] = read_bytes(input, &mut cursor)?
+                    .try_into()
+                    .map_err(|_| AnalyserWireError::Malformed)?;
+                set_once(&mut identity, bytes)?;
+            }
+            0x10 => set_once(&mut generation, read_varint(input, &mut cursor)?)?,
+            _ => return Err(AnalyserWireError::Malformed),
+        }
+    }
+    Ok(EntityRef {
+        identity: identity.ok_or(AnalyserWireError::Malformed)?,
+        generation: generation
+            .filter(|generation| *generation != 0)
+            .ok_or(AnalyserWireError::Malformed)?,
+    })
+}
+
+/// Decodes one `AnalyserFactV1` of a session with capability 486.
+pub fn decode_attributed_analyser_fact(payload: &[u8]) -> WireResult<AttributedFact> {
+    if payload.len() > MAX_ANALYSER_FACT_BYTES {
+        return Err(AnalyserWireError::LimitExceeded);
+    }
+    let mut cursor = 0;
+    if read_varint(payload, &mut cursor)? != 0x2a {
+        return decode_analyser_fact(payload).map(|fact| AttributedFact {
+            fact,
+            attacker: None,
+        });
+    }
+    let inner = read_bytes(payload, &mut cursor)?;
+    if cursor != payload.len() {
+        return Err(AnalyserWireError::Malformed);
+    }
+    let (mut plain, mut attacker) = (Vec::with_capacity(inner.len()), None);
+    let mut at = 0;
+    while at < inner.len() {
+        let start = at;
+        let key = read_varint(inner, &mut at)?;
+        if key == 0x2a {
+            set_once(&mut attacker, decode_attacker(read_bytes(inner, &mut at)?)?)?;
+        } else if key & 0x07 == 0 {
+            read_varint(inner, &mut at)?;
+            plain.extend_from_slice(&inner[start..at]);
+        } else {
+            return Err(AnalyserWireError::Malformed);
+        }
+    }
+    let fact = decode_variant(5, &plain)?;
+    if attacker
+        .as_ref()
+        .is_some_and(|attacker| !attacker_allowed(&fact, attacker))
+    {
+        return Err(AnalyserWireError::Malformed);
+    }
+    Ok(AttributedFact { fact, attacker })
+}
+
+/// Decodes a delta type 1 batch of a session with capability 486.
+pub fn decode_attributed_analyser_facts(payload: &[u8]) -> WireResult<Vec<AttributedFact>> {
+    if payload.len() > MAX_ANALYSER_BATCH_BYTES {
+        return Err(AnalyserWireError::LimitExceeded);
+    }
+    let mut facts = Vec::new();
+    let mut cursor = 0;
+    while cursor < payload.len() {
+        if read_varint(payload, &mut cursor)? != 0x0a {
+            return Err(AnalyserWireError::Malformed);
+        }
+        if facts.len() == MAX_ANALYSER_BATCH_FACTS {
+            return Err(AnalyserWireError::LimitExceeded);
+        }
+        facts.push(decode_attributed_analyser_fact(read_bytes(
+            payload,
+            &mut cursor,
+        )?)?);
+    }
+    (!facts.is_empty())
+        .then_some(facts)
+        .ok_or(AnalyserWireError::Malformed)
+}
+
 /// The snapshot payload is empty; anything else fails closed.
 pub fn decode_analyser_snapshot(payload: &[u8]) -> WireResult<()> {
     payload
@@ -374,7 +514,16 @@ impl AnalyserPendingQueue {
 
     /// Queues one fact; a fact outside the bounds is refused and nothing changes.
     pub fn push(&mut self, fact: &AnalyserFact) -> WireResult<()> {
-        let encoded = encode_analyser_fact(fact)?;
+        self.push_attributed(fact, None)
+    }
+
+    /// Queues one fact with the optional capability 486 attacker; refused facts change nothing.
+    pub fn push_attributed(
+        &mut self,
+        fact: &AnalyserFact,
+        attacker: Option<&EntityRef>,
+    ) -> WireResult<()> {
+        let encoded = encode_attributed_analyser_fact(fact, attacker)?;
         if self.facts.len() == MAX_ANALYSER_PENDING_FACTS {
             self.facts.pop_front();
             self.dropped = self.dropped.saturating_add(1);

@@ -302,3 +302,33 @@ Effects 1–6 are base damage, base healing, critical chance, critical extra dam
 Production samples read native item declarations, the actual selected weapon-proficiency cast rewards, and the current Wheel projection/stages. Named facts and scalar combat facts are committed together after the existing current session/node/recovery, content and exact-equipment checks; named facts participate in the replay fingerprint. Legacy writers leave the optional column NULL. Reads preserve the existing accepted VIP consent and current viewer fence, including for offline targets. The read model grants no combat, item or cast authority.
 
 Stored modifiers also carry their sample revision. Reads accept them only when that revision matches the scalar sample, so older writers that leave optional columns untouched make prior modifiers unavailable instead of attaching them to a newer observation.
+
+## Vocation in General Stats (capability 487)
+
+Capability 487 `CYCLOPEDIA_CHARACTER_VOCATION_V1` requires 199. When a session
+selected it, a General Stats reply (tab 1) appends `vocation_id:u8` after the
+unchanged V1 body. Ids follow the spellbook details vocation order: `none`=1,
+`druid`=2, `elder_druid`=3, `sorcerer`=4, `master_sorcerer`=5, `knight`=6,
+`elite_knight`=7, `paladin`=8, `royal_paladin`=9, `monk`=10, `exalted_monk`=11.
+The value is the target's stored build-state vocation, read in the same fenced
+transaction as the rest of the tab. Other tabs never carry it, and a session
+without 487 receives byte-identical replies. Any reply with an extension is
+bounded by `MAX_EXTENDED_TAB_RESULT_BYTES` (32768), within the registry bound
+of command 388.
+
+## Structured Recent Deaths rows (capability 488)
+
+Capability 488 `CYCLOPEDIA_DEATH_DETAILS_V1` requires 199. When a session
+selected it, each Recent Deaths row (tab 2) is
+`at:i64le, cause_len:u8, cause:utf8, level:u32le, killer_len:u8, killer:utf8,
+most_damage_len:u8, most_damage:utf8, unjustified:u8`; the count and the first
+two fields are unchanged. `level` is the character level at death. `killer` is
+the public final-blow killer recorded at death (the ordinal 0 public killer
+whose kind matches the death classification), empty when the final blow is
+unknown. `unjustified` is 1 when the death awarded unjustified points to any
+killer. Killer names hold at most 64 bytes (`MAX_DEATH_NAME_BYTES`); the reader
+cuts a longer stored name at a character boundary.
+
+Current difference (pending owner decision): no owner records per-killer damage amounts, so
+`most_damage` is currently always empty (unknown) and the client must not
+substitute another name. A session without 488 receives byte-identical rows.

@@ -1,0 +1,17 @@
+[
+  {
+    "mechanic": "0490-server-modal-input",
+    "kind": "handlers",
+    "id": "0490-server-modal-input-commands736-737-extension",
+    "status": "unsupported",
+    "reason": "WU26 package 2 server side only: the native client modal input field and don't-show-again choice land in the client lane.",
+    "commands": [],
+    "not_applicable": {
+      "state": "The existing 0450 server modal state holds the dialog.",
+      "protocol": "The shared server modal codec in oteryn-protocol-oteryn encodes the input block and answer value.",
+      "view": "The modal input field lands with client support.",
+      "input": "The existing command 737 answer carries the value.",
+      "settings": "The don't-show-again choice is per answer, not a client setting."
+    }
+  }
+]

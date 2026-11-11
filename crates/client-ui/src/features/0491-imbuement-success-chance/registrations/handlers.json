@@ -1,0 +1,15 @@
+{
+  "mechanic": "0491-imbuement-success-chance",
+  "kind": "handlers",
+  "id": "0491-imbuement-success-chance-command85-extension",
+  "status": "unsupported",
+  "reason": "WU26 package 2 server side only: the native client success chance display lands in the client lane.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The window is stateless; the percentage is derived from the tier rules on each query.",
+    "protocol": "The shared imbuement codec in oteryn-protocol-oteryn encodes offer field 5.",
+    "view": "The success chance display lands with client support.",
+    "input": "No new input; the existing command 85 query carries it.",
+    "settings": "No client setting controls the success chance."
+  }
+}

@@ -5,6 +5,6 @@
   "capability": 450,
   "payload_schema": "docs/contracts/protocol-oteryn/v1/server-modal-v1.md#request",
   "result_schema": "docs/contracts/protocol-oteryn/v1/server-modal-v1.md#reply",
-  "max_payload_bytes": 7,
+  "max_payload_bytes": 1035,
   "max_result_payload_bytes": 65536
 }

@@ -276,3 +276,91 @@ fn server_modal_proved_bed_refusal_allows_cancel_without_abandoning_uncertain_an
     assert!(hub.finish_rule(root, cancel).is_some());
     Ok(())
 }
+
+#[test]
+fn server_modal_input_value_reaches_the_owner_only_when_checked() -> Result<(), String> {
+    use oteryn_protocol_oteryn::server_modal::input::{
+        DialogInput, InputAnswer, InputKind, InputValue, decode_reply_with_input,
+    };
+    let hub = ModalHub::default();
+    let root = root()?;
+    hub.execute(
+        root,
+        COMMAND_TYPE_SERVER_MODAL_QUERY,
+        oteryn_protocol_oteryn::server_modal::QUERY_WITH_TERMINAL_REPLY,
+        None,
+    )
+    .ok_or("terminal opt-in")?;
+    let input = DialogInput {
+        kind: InputKind::Amount,
+        minimum: 1,
+        maximum: 10,
+        initial: Some(InputValue::Amount(1)),
+    };
+    assert!(
+        hub.offer_rule_with_input(root, bed_dialog(), Some(input.clone()), bed(1)?)
+            .is_none(),
+        "a connection without 490 is never offered an input dialog"
+    );
+    hub.select_input(root).ok_or("select input")?;
+    let bytes = hub
+        .offer_rule_with_input(root, bed_dialog(), Some(input.clone()), bed(1)?)
+        .ok_or("offer refused")?;
+    let (Reply::Dialog(dialog), Some(shown)) = decode_reply_with_input(&bytes)? else {
+        return Err("missing input dialog".into());
+    };
+    assert_eq!(shown, input);
+    let answer = Answer {
+        dialog_id: dialog.id,
+        button_id: 1,
+        choice_id: None,
+    };
+    let entered = |value: Option<InputValue>, dont_show_again: bool| InputAnswer {
+        answer,
+        value,
+        dont_show_again,
+    };
+    for refused in [
+        entered(None, false),
+        entered(Some(InputValue::Amount(11)), false),
+        entered(Some(InputValue::Text("5".into())), false),
+        InputAnswer {
+            answer: Answer {
+                dialog_id: dialog.id + 1,
+                ..answer
+            },
+            ..entered(Some(InputValue::Amount(5)), false)
+        },
+    ] {
+        assert!(hub.check_answer_input(root, &refused).is_none());
+    }
+    assert!(
+        hub.rule_selection(root, answer).is_none(),
+        "an unchecked answer never reaches the owner"
+    );
+    hub.check_answer_input(root, &entered(Some(InputValue::Amount(5)), true))
+        .ok_or("checked value")?;
+    let (_, value, dont_show_again) = hub.rule_selection(root, answer).ok_or("selection")?;
+    assert_eq!(
+        (value, dont_show_again),
+        (Some(InputValue::Amount(5)), true)
+    );
+    assert!(
+        hub.check_answer_input(root, &entered(Some(InputValue::Amount(6)), true))
+            .is_none(),
+        "a submitted answer keeps its value"
+    );
+    let cancel = InputAnswer {
+        answer: Answer {
+            button_id: 2,
+            ..answer
+        },
+        value: Some(InputValue::Amount(5)),
+        dont_show_again: false,
+    };
+    assert!(
+        hub.check_answer_input(root, &cancel).is_none(),
+        "cancel carries no value"
+    );
+    Ok(())
+}

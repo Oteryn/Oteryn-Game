@@ -128,6 +128,8 @@ impl Reply {
 }
 #[path = "server_modal/codec.rs"]
 mod codec;
+#[path = "server_modal/input.rs"]
+pub mod input;
 
 #[cfg(test)]
 mod tests {

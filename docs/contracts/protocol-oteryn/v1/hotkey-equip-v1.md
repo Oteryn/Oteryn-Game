@@ -93,3 +93,25 @@ Canary `52550d5e3c0ffe565f4bd1014f4e5575abf1059b` follows the same
 backpack-then-pouch search (`src/game/game.cpp:4203-4207`) and depth-first
 iterator (`src/items/containers/container.cpp:1250-1295`). These donor references
 are `OTS_HYPOTHESIS_ONLY`; owner D1 and D2 govern the copy-selection differences.
+
+## Upgrade tier (capability 485)
+
+`HOTKEY_EQUIP_UPGRADE_TIER_V1` (485) requires `HOTKEY_EQUIP_V1` and
+`HOTKEY_EQUIP_CARRIED_V1` and is offered by Bundle World only. With it selected,
+the command 348 payload is the four definition bytes followed by one byte
+`upgrade_tier` in `0..=10`; a missing byte or a value above 10 is invalid.
+Without selection the payload stays exactly four bytes and a fifth byte is
+invalid, so older clients decode unchanged.
+
+The equipment owner matches both the definition and the stored classification
+tier (`game_item_tiers`; no row is tier 0) inside the same fenced equipment
+transaction, for the worn toggle, the carried depth-first search, the Store
+Inbox loot pouch and started-copy preference. A worn copy of another tier is not
+toggled off; the requested tier is equipped in its place. When no worn or
+carried copy of that tier exists the command refuses and changes no custody.
+Ammunition carries no tier: a nonzero tier on ammunition refuses as `Stale`.
+The tier is part of the bound command intent, so a replay with another tier is a
+conflicting command.
+
+Evidence: the current Tibia action bar binds an equip action to an object type
+together with its upgrade tier; the native client wire need is client PR #3098.
