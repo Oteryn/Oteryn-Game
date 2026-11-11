@@ -38,9 +38,23 @@ Write it as one self-contained file. Include, in this order:
    only when the packet gives a database route (a PC lane's own database);
    otherwise a non-PostgreSQL test, with the PostgreSQL case run by the
    coordinator.
-7. **Report:** at most 15 lines: result, head SHA or diff name, commands run
+7. **Review:** for a Claude lane or child session that owns its branch,
+   "you run the Codex review of your head and fix confirmed findings
+   (`oteryn-review` §5)"; for a Codex lane, "no review, the coordinator
+   reviews".
+8. **Report:** at most 15 lines: result, head SHA or diff name, commands run
    with pass/fail counts, open questions with options and a recommendation,
-   what is still PARTIAL.
+   what is still PARTIAL, and the line `Codex review <head SHA>: ...`.
+   A Codex Cloud task's final message cannot be read back, so its packet
+   also says: "As the last step, write `.codex-status` at the repository
+   root: line 1 is the `OTERYN_SETUP` line from
+   `/workspace/oteryn-env/logs/setup-status` (or `OTERYN_SETUP MISSING`), line 2 is
+   `RESULT DONE|PARTIAL|BLOCKED <one-line reason>`, line 3 the success
+   check with pass/fail counts." The PC collector `cxstat.sh` reads that
+   file from the diff into `codex-status.txt`; the coordinator deletes it
+   before committing. A task with status `error` and no diff died before
+   any work (setup, network or capacity) and is relaunched from the same
+   packet.
 
 Keep the packet short and decided: write it for an engineer who has never
 seen the repository, so it names the files, the function and type names, the
@@ -52,7 +66,8 @@ limits below. Send Codex work to Codex Cloud with model
 `gpt-6.1-sol` at reasoning effort `medium` and start each packet with
 "Reasoning effort: medium."; a Codex lane on the PC that writes code uses the
 same setting. Codex review runs `gpt-6.1-sol` at reasoning effort `high`
-(`oteryn-review`). Owner decision 2026-11-11, replacing the 2026-11-05
+(`oteryn-review`); its verified findings are fixed by a separate `medium`
+run (`codex-review.sh ... --fix-confirmed`, `oteryn-review` §5). Owner decision 2026-11-11, replacing the 2026-11-05
 `high` for code-writing Codex. Repository subagents use the model and effort
 set in their own `.claude/agents/*.md` definition.
 
