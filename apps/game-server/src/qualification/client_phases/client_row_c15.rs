@@ -1,6 +1,10 @@
 //! Client replay capture for C15 — hunting stamina drain, recovery, and XP.
 
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{attack::AttackIntentDisposition, cyclopedia_character as character};
 
@@ -126,10 +130,10 @@ async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult 
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(920);
     loop {
-        let reply = client.session_mut().logout().await?;
+        let reply = client.row_logout().await?;
         match reply.result {
             Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
                 if reply.status == CommandStatus::Accepted =>
@@ -148,6 +152,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(1_800);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -159,7 +164,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xc7).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let (before, before_payload) = progress(&mut client).await?;
         capture("c15-before.bin", &before_payload)?;
 
@@ -189,7 +194,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         logout(&mut client).await?;
         row_needs_logout_0 = false;
         if row_needs_logout_0 {
-            row_logout(&mut client).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
             row_needs_logout_0 = false;
         }
 
@@ -231,15 +236,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .await
         .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut fresh).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??;
         }
         row_result
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

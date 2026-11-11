@@ -62,10 +62,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if first != UseDisposition::OfflineTraining {
         return Err(format!("step-2:sleep-observed-{first:?}-need-OfflineTraining").into());
     }
-    let release = sleeper.service_liveness(Duration::from_secs(2)).await;
-    if release.is_ok() {
+    let release = sleeper.session_mut().service_liveness(Duration::from_secs(2)).await;
+    if !matches!(&release, Err(error)
+        if error.to_string().starts_with("transport I/O failed: "))
+    {
         return Err(
-            "step-2:sleep-release-observed-session-live-after-OfflineTraining-need-closed".into(),
+            format!("step-2:sleep-release-observed-{release:?}-need-transport-close").into(),
         );
     }
 
@@ -107,8 +109,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if again != UseDisposition::OfflineTraining {
         return Err(format!("step-4:wake-release-observed-{again:?}-need-OfflineTraining").into());
     }
-    if woke.service_liveness(Duration::from_secs(2)).await.is_ok() {
-        return Err("step-4:sleep-session-still-live".into());
+    let release = woke.session_mut().service_liveness(Duration::from_secs(2)).await;
+    if !matches!(&release, Err(error)
+        if error.to_string().starts_with("transport I/O failed: "))
+    {
+        return Err(format!("step-4:sleep-release-observed-{release:?}-need-transport-close").into());
     }
     woke.ended = true;
     Ok(())

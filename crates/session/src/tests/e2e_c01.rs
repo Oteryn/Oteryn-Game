@@ -99,7 +99,11 @@ fn e2e_c01_replays_server_combat_state_and_rejects_invalid_delta() -> Result<(),
             attack::DELTA_TYPE_ACTOR_COMBAT_STATE_V1,
             &[0xff],
         )?;
-        assert!(session.apply_state_delta(42, &malformed).is_err());
+        assert!(matches!(
+            session.apply_state_delta(42, decode_wire_envelope(&malformed)?.payload()),
+            Err(SessionError::Attack(_))
+        ));
+        assert_eq!(session.combat_revision, 2);
         assert_eq!(session.combat_state(), Some(&applied));
         Ok(())
     })?

@@ -116,10 +116,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         let minutes = u64::from(delta.value.minutes_remaining);
         let earliest = Duration::from_secs((minutes - 1) * 60).saturating_sub(Duration::from_secs(5));
         let latest = Duration::from_secs(minutes * 60 + 30);
-        let close = client.service_liveness(latest).await;
+        let close = client.session_mut().service_liveness(latest).await;
         let elapsed = noticed.elapsed();
-        if close.is_ok() {
-            return Err(format!("step=reset-close observed=session-still-live-{}s-after-{minutes}-minute-notice", latest.as_secs()).into());
+        if !matches!(&close, Err(error)
+            if error.to_string().starts_with("transport I/O failed: "))
+        {
+            return Err(format!("step=reset-close observed={close:?}-after-{}s-for-{minutes}-minute-notice", elapsed.as_secs()).into());
         }
         if elapsed < earliest {
             return Err(format!("step=reset-close observed=closed-after-{}s-before-the-{minutes}-minute-window error={close:?}", elapsed.as_secs()).into());

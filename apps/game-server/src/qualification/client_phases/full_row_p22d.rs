@@ -151,7 +151,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
             break;
         }
     }
-    drop(client);
+    if push_error.as_deref().is_some_and(is_domain_gap) {
+        // A poisoned session cannot send logout. Close its socket now so admission
+        // can observe terminal release instead of deferring it to row cleanup.
+        drop(client.into_inner()?);
+    } else {
+        logout(&mut client).await?;
+        drop(client);
+    }
 
     let mut fresh = row_connect_world(clients, 0xd7).await?;
     let list = read(&mut fresh, best).await?;

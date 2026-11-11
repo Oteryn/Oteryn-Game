@@ -152,6 +152,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xca).await?;
+    let mut session_ended = false;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let spell = soul_spell(&mut client).await?;
     let before = client.actor_vitals().copied().ok_or("step soul debit: vitals absent")?;
@@ -206,6 +207,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     for handle in handles {
         let reply = bed_command(&mut client, handle).await?;
         if reply == UseDisposition::OfflineTraining {
+            let release = client.session_mut().service_liveness(Duration::from_secs(2)).await;
+            if !matches!(&release, Err(error)
+                if error.to_string().starts_with("transport I/O failed: "))
+            {
+                return Err(format!("terminal-session observed={release:?} need=transport-close").into());
+            }
+            session_ended = true;
             row.pass("bed-sleep", (handle, reply));
             return fresh_admission(row, clients, client.join_snapshot().game_session_id, regenerated, vitals).await;
         }
@@ -213,8 +221,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     Err("step bed sleep: all actual visible item handles returned non-bed refusal; server needs a reachable ACL-authorized bed in node-boot content".into())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    if !session_ended {
+        row_logout(&mut client).await?;
+    }
     row_result
 }
 

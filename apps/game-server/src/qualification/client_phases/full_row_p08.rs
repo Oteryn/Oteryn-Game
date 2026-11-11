@@ -15,6 +15,10 @@
 //!    and observed typed reply, but only after all mechanic commands have actually been sent.
 
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::weapon_proficiency as wire;
 use std::num::NonZeroU32;
@@ -114,6 +118,7 @@ async fn modify(
 }
 
 async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -126,7 +131,7 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
     )?;
     let mut client = connect_world(clients, 0xa2).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let initial_session = client.join_snapshot().game_session_id;
     let catalogue = catalogue(&mut client).await?;
     let before = browse(&mut client).await?;
@@ -305,13 +310,13 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
         &stable,
     );
 
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step-logout:refused".into());
     }
     row_needs_logout_0 = false;
-    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
+    if row_needs_logout_0 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xa3).await?;
     let mut row_needs_logout_1 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
@@ -330,18 +335,22 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
         false,
         "fresh browse matches XP/selections, but exposes neither shaped slots nor catalyst inventory consumption",
     );
-    row_logout(&mut fresh).await?; row_needs_logout_1 = false;
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??; row_needs_logout_1 = false;
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??; }
     row_result
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

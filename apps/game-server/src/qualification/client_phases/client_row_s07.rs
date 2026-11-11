@@ -4,6 +4,10 @@
 //! written byte for byte to `s07-sleep.bin` / `s07-occupied.bin`; `s07-expected.txt` records the
 //! server-observed dispositions. Character one is re-admitted at the end to wake it.
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::target_move::{WalkDisposition, send};
 use oteryn_protocol_oteryn::bed::COMMAND_TYPE_BED_SLEEP_INTENT;
@@ -104,23 +108,25 @@ async fn sleep(client: &mut DevClientSession) -> TestResult<(Vec<u8>, UseDisposi
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let mut sleeper = connect_character(clients, 0x60, 1).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         travel(&mut sleeper).await?;
         let (sleep_payload, slept) = sleep(&mut sleeper).await?;
         if slept != UseDisposition::OfflineTraining {
             return Err(format!("step=sleep observed {slept:?}, expected OfflineTraining").into());
         }
         // OfflineTraining is a terminal server-owned session transition.
+        sleeper.ended = true;
         row_needs_logout_0 = false;
         let mut peer = connect_character(clients, 0x61, 0).await?;
         let mut row_needs_logout_1 = true;
-        let row_result: TestResult<_> = async {
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
             travel(&mut peer).await?;
             let (occupied_payload, occupied) = sleep(&mut peer).await?;
-            row_logout(&mut peer).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut peer)).await??;
             row_needs_logout_1 = false;
             if occupied != UseDisposition::BedOccupied {
                 return Err(
@@ -131,7 +137,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             let mut woke = connect_character(clients, 0x62, 1).await?;
             let mut row_needs_logout_2 = true;
             let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
-                row_logout(&mut woke).await?;
+                tokio::time::timeout(Duration::from_secs(10), row_logout(&mut woke)).await??;
                 row_needs_logout_2 = false;
                 capture("s07-sleep.bin", &sleep_payload)?;
                 capture("s07-occupied.bin", &occupied_payload)?;
@@ -144,21 +150,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             .await
             .unwrap_or_else(|error| Err(error.into()));
             if row_needs_logout_2 {
-                row_logout(&mut woke).await?;
+                tokio::time::timeout(Duration::from_secs(10), row_logout(&mut woke)).await??;
             }
             row_result
-        }
-        .await;
+        })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut peer).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut peer)).await??;
         }
         row_result
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut sleeper).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut sleeper)).await??;
     }
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

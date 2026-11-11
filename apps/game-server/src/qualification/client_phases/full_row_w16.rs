@@ -19,6 +19,10 @@
 //!    not get source-only or synthetic PASS evidence here.
 
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 
 const NPCS: [&str; 2] = ["oteryn:npc.mayor_pocaro", "oteryn:npc.wayland_smythers"];
@@ -44,12 +48,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let mut client = connect_world(clients, 0xb6).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         // The first mechanic command is deliberately local and must produce the same real delta as
         // every other player walk.  It prevents a missing remote route from becoming a probe-only row.
         let before = client.world_spatial().actor_position;
@@ -108,14 +113,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         if client.world_spatial().actor_position != saved {
             return Err("step=invalid-floor-refusal observed=position-changed".into());
         }
-        if client.session_mut().logout().await?.result
+        if client.row_logout().await?.result
             != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
         {
             return Err("step=logout observed=refused".into());
         }
         row_needs_logout_0 = false;
         if row_needs_logout_0 {
-            row_logout(&mut client).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
             row_needs_logout_0 = false;
         }
         let mut fresh = connect_world(clients, 0xb7).await?;
@@ -133,15 +138,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .await
         .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut fresh).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??;
         }
         row_result
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 async fn wait_for_destination(

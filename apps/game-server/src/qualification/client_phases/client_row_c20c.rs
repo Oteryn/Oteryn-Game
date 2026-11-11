@@ -1,6 +1,10 @@
 //! C20c client replay capture: query the immutable receipt left by the real blessing-death row.
 
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_protocol_oteryn::death_protection::{
     CAPABILITY_DEATH_PROTECTION_V1, COMMAND_TYPE_DEATH_PROTECTION_QUERY, DeathProtectionReply,
 };
@@ -17,9 +21,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult<String> {
+    row_complete(async {
     // full_e2ef6 leaves Character 1's latest receipt at the Twist-only PvP death.
     let mut client = connect_character(clients, 0xc2, 1).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let result = client
             .session_mut()
             .gated_command(
@@ -53,9 +59,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult<String> {
             }
         }
         Ok(visible)
-    }
-    .await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }

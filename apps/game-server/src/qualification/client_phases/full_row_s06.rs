@@ -18,6 +18,10 @@
 //! This row deliberately cannot turn absent acquisition content into a source-derived verdict: the
 //! native taming command is sent before a runtime FAIL is emitted, with its status/disposition.
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{appearance, world_object};
 
@@ -229,10 +233,11 @@ async fn taming_attempt(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0xb6).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if !client
         .selected_capabilities()
         .contains(&appearance::CAPABILITY_APPEARANCE_V1)
@@ -284,7 +289,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "mount-select",
         format!("committed_revision={committed} selected_revision={selected_revision} sequence={sequence}"),
     );
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=fresh-admission observed=logout-refused".into());
@@ -311,14 +316,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??; }
     row_result
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 #[cfg(test)]

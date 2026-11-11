@@ -1,6 +1,10 @@
 //! Client replay capture for SCENARIO_MATRIX C04.
 
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::presentation::{ActorCooldownKind, encode_actor_cooldowns};
@@ -43,6 +47,7 @@ fn capture(path: &Path, name: &str, bytes: &[u8]) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    row_complete(async {
     let capture_dir = std::env::var_os("E2E_ALL_CAPTURE_DIR")
         .ok_or("C04 client capture directory absent")?;
     let capture_dir = Path::new(&capture_dir);
@@ -74,7 +79,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
         .collect::<Result<Vec<_>, _>>()?;
     let mut client = connect_world(clients, 0xc6).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let snapshot = client
         .session_mut()
         .gated_snapshot(20)
@@ -148,10 +154,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "e2e_all scenario=C04.client status=PASS evidence=cooldown-payload;spell={ordinary};remaining_ms={remaining}"
     ))
 
-    }.await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

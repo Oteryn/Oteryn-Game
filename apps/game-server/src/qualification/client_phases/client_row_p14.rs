@@ -125,6 +125,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let positions = statue_positions(&bytes, &references)?;
     let mut client = connect_world(clients, 0x40).await?;
+    let mut session_ended = false;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let (refused_bytes, refused) = offline(&mut client, NonZeroU64::MAX).await?;
     if refused != TrainingResult::REFUSED {
@@ -143,6 +144,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if selected.disposition != 3 || selected.revision == 0 || selected.pool_seconds == 0 {
         return Err(format!("statue reply={selected:?}").into());
     }
+    let release = client.session_mut().service_liveness(Duration::from_secs(2)).await;
+    if !matches!(&release, Err(error)
+        if error.to_string().starts_with("transport I/O failed: "))
+    {
+        return Err(format!("terminal-session observed={release:?} need=transport-close").into());
+    }
+    session_ended = true;
     capture("p14-selected.bin", &selected_bytes)?;
     let expected = format!(
         "refused_disposition={}\nselected_disposition={}\nselected_pool_seconds={}\nselected_charges={}\n",
@@ -152,8 +160,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     Ok(expected.replace('\n', ";"))
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    if !session_ended {
+        row_logout(&mut client).await?;
+    }
     row_result
 }
 

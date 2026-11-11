@@ -5,6 +5,10 @@
 //! `crates/session/src/session_access.rs` (and `DevClientSession::world_entities` in
 //! `tools/dev-client/src/lib.rs`).
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{EntityDetail, EntityKind, SessionEvent, WorldSpatialEntitiesDelta};
 use oteryn_protocol_oteryn::world_spatial_entities::encode_world_spatial_entities_delta;
 
@@ -28,8 +32,10 @@ fn identity_text(identity: &[u8; 16]) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    row_complete(async {
     let mut client = connect_world(clients, 0xc6).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -126,10 +132,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     );
     Ok(verdict)
 
-    }.await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

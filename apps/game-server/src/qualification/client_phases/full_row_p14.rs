@@ -11,7 +11,7 @@
 //!    and the durable offline-training pool (with the first ten minutes excluded from accrual) to
 //!    remain present, then perform an ordinary accepted logout.
 use super::*;
-use oteryn_dev_client::{DevClientError, DevClientSession};
+use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
 use oteryn_protocol_oteryn::loop_training::{
     CAPABILITY_TRAINING_V1, COMMAND_TYPE_OFFLINE_TRAINING, TrainingResult,
@@ -104,8 +104,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let ended = match client.service_liveness(Duration::from_secs(5)).await {
-        Err(DevClientError::Session(error)) => {
+    let ended = match client.session_mut().service_liveness(Duration::from_secs(5)).await {
+        Err(error) => {
             let observed = error.to_string();
             if !observed.starts_with("transport I/O failed: ") {
                 return Err(format!(
@@ -122,6 +122,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
     };
+    client.ended = true;
     evidence(&format!(
         "P14_CHECK step=3 status=PASS observed=walked,statue-handle-{},disposition-3,revision-{},pool-seconds-{},server-ended-session-{ended}",
         statue.get(),

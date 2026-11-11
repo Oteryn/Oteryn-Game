@@ -137,7 +137,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if landed == rope {
         return Err(format!("landing-denied:step-2 accepted reply status={:?} disposition={:?}, position unchanged={landed:?}, mana={before_mana}->{after_mana}", cast.status, cast.disposition).into());
     }
-    if landed.floor != rope.floor + 1
+    if rope.floor.checked_sub(1) != Some(landed.floor)
         || landed.x.abs_diff(rope.x).max(landed.y.abs_diff(rope.y)) != 1
         || before_mana.checked_sub(MANA) != Some(after_mana)
     {

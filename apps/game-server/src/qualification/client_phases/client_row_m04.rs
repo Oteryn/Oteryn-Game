@@ -69,7 +69,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut pusher = connect_character(clients, 0x94, 0).await?;
     let row_needs_logout_0 = true;
     let row_result: TestResult<_> = async {
-        let mut target = connect_character(clients, 0x95, 0).await?;
+        let mut target = connect_character(clients, 0x95, 1).await?;
         let row_needs_logout_1 = true;
         let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
             let pusher_at = tile(pusher.world_spatial().actor_position)?;

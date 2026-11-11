@@ -1,6 +1,10 @@
 //! M02 client capture: a far door use makes the server autowalk and retry the use.
 
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 #[derive(Clone, Copy)]
@@ -62,6 +66,7 @@ fn capture(payload: &[u8], expected: ActorPosition) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    row_complete(async {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -71,7 +76,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xa2).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let from = tile(client.world_spatial().actor_position)?;
         let (door, path) = plain_doors(&bytes, world)?
             .into_iter()
@@ -100,11 +106,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         let verdict =
             format!("SEAM_EVIDENCE e2e_all scenario=M02.client status=PASS position={expected:?}");
         Ok(verdict)
-    }
-    .await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

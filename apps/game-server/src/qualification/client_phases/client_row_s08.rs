@@ -6,6 +6,10 @@
 //! (`s08-skull.bin`); `s08-expected.txt` holds the attacker's entity (identity hex and generation)
 //! and the skull value. The attacker's pz lock is waited out before logout.
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{
     attack as attacks, party_skull, pvp_expert, world_spatial_entities as spatial,
@@ -46,6 +50,7 @@ async fn observe(clients: &SeamClients<'_>) -> Result<(Vec<u8>, String), String>
 }
 
 async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
+    row_complete(async {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -56,10 +61,11 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
     )?;
     let mut victim = connect_character(clients, 0x67, 0).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let mut attacker = connect_character(clients, 0x68, 1).await?;
         let mut row_needs_logout_1 = true;
-        let row_result: TestResult<_> = async {
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
             let open = |at: TilePos| {
                 world
                     .base()
@@ -186,7 +192,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
             let release = tokio::time::Instant::now() + Duration::from_secs(70);
             while tokio::time::Instant::now() < release {
                 poll(&mut attacker, &mut victim).await?;
-                if let Ok(outcome) = attacker.session_mut().logout().await
+                if let Ok(outcome) = attacker.row_logout().await
                     && outcome.result
                         == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
                 {
@@ -194,21 +200,25 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
                     break;
                 }
             }
-            row_logout(&mut victim).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut victim)).await??;
             row_needs_logout_0 = false;
             Ok((reply.payload, expected))
-        }
-        .await;
+        })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut attacker).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut attacker)).await??;
         }
         row_result
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut victim).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut victim)).await??;
     }
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

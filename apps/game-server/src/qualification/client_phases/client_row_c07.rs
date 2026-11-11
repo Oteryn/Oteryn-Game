@@ -19,6 +19,10 @@
 //!    durable payment/custody state; the expired field must not reappear.
 
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use std::collections::BTreeSet;
@@ -51,6 +55,7 @@ pub(super) async fn run_client_packet(clients: &SeamClients<'_>) {
 }
 
 async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -63,7 +68,7 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xc7).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let reference = provisioning::item_reference(&provisioning::item_index()?, RUNE_ID)?;
     let field = provisioning::item_reference(&provisioning::item_index()?, FIELD_ID)?;
     let purchase_sequence = acquire(&mut client, world, &metadata.npcs, reference).await?;
@@ -131,7 +136,7 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
     let old_session = client.join_snapshot().game_session_id;
     let retained_position = client.world_spatial().actor_position;
     logout(&mut client).await?; row_needs_logout_0 = false;
-    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
+    if row_needs_logout_0 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xc8).await?;
     let mut row_needs_logout_1 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
@@ -158,14 +163,18 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??; }
     row_result
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 fn adjacent(world: &BundleWorld, at: TilePos) -> Option<(StepDirection, TilePos)> {
@@ -446,10 +455,10 @@ async fn field_frame(
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
     loop {
-        let reply = client.session_mut().logout().await?;
+        let reply = client.row_logout().await?;
         if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Ok(());
         } else if tokio::time::Instant::now() >= deadline {

@@ -2,6 +2,10 @@
 //! augments are server-owned cast inputs and intentionally add no client protocol fields.
 
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastDisposition, SpellTarget};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -16,9 +20,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult<String> {
+    row_complete(async {
     use oteryn_protocol_oteryn::actor_spell_catalog as catalog;
     let mut client = connect_world(clients, 0xc2).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let snapshot = client
         .session_mut()
         .gated_snapshot(catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
@@ -68,10 +74,13 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult<String> {
     );
     Ok(verdict)
 
-    }.await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }
 
 fn write_capture(name: &str, bytes: &[u8]) -> TestResult {

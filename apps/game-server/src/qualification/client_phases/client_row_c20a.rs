@@ -109,24 +109,15 @@ async fn capture_journey(
 }
 
 fn write_capture(before: &[u8], after: &[u8], old: (u64, u32), new: (u64, u32)) -> TestResult {
-    let result: TestResult = (|| {
-        let directory =
-            std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("E2E_ALL_CAPTURE_DIR disappeared")?;
-        let directory = Path::new(&directory);
-        std::fs::write(directory.join("c20a-before.bin"), before)?;
-        std::fs::write(directory.join("c20a-after.bin"), after)?;
-        std::fs::write(
-            directory.join("c20a-expected.txt"),
-            format!("{} {}\n{} {}\n", old.0, old.1, new.0, new.1),
-        )?;
-        Ok(())
-    })();
-    if let Err(error) = result {
-        evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C20a.client status=CAPTURE-WRITE-FAIL evidence={error}"
-        ));
-    }
-
+    let directory =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("E2E_ALL_CAPTURE_DIR disappeared")?;
+    let directory = Path::new(&directory);
+    std::fs::write(directory.join("c20a-before.bin"), before)?;
+    std::fs::write(directory.join("c20a-after.bin"), after)?;
+    std::fs::write(
+        directory.join("c20a-expected.txt"),
+        format!("{} {}\n{} {}\n", old.0, old.1, new.0, new.1),
+    )?;
     Ok(())
 }
 

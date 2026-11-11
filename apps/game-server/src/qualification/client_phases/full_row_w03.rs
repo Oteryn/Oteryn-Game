@@ -233,12 +233,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
     }
 
+    let inventory_before_logout = inventory_quantities(&client)?;
     let logout = client.row_logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={logout:?}").into());
     }
     let mut fresh = row_connect_character(clients, 0xf9, 1).await?;
     let after = open(&mut fresh).await?;
+    if inventory_quantities(&fresh)? != inventory_before_logout {
+        return Err("step=fresh-admission observed=inventory-rewards-not-retained".into());
+    }
     if collected && !after.entries.is_empty() {
         return Err("step=fresh-admission observed=collected-reward-group-still-present".into());
     }

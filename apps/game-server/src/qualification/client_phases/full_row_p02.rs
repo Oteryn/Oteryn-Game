@@ -6,6 +6,10 @@
 //! 5. ATTACK the daily boosted boss and require its three-kill delta and slot refusal.
 //! 6. LOGOUT, freshly admit, query both commands, and re-check all durable state.
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::client_runtime::boss_encounter;
 use oteryn_dev_client::{DevClientSession, EntityKind};
 use oteryn_protocol_oteryn::bosstiary_slots::{
@@ -170,6 +174,7 @@ async fn kill(
     }
 }
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(600);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -182,7 +187,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut c = connect_world(clients, 0xb2).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let mut before = snapshot(&mut c).await?;
         let initial_slot = slot(&mut c, BossSlotRequest::Query).await?;
         row.pass(
@@ -276,14 +281,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             return Err(format!("step boosted-kill: slot accepted reply={br:?}").into());
         }
         row.pass("boosted-kill", (&boosted_key, &boosted_state.progress, &br));
-        if c.session_mut().logout().await?.result
+        if c.row_logout().await?.result
             != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
         {
             return Err("step fresh-admission: logout refused".into());
         }
         row_needs_logout_0 = false;
         if row_needs_logout_0 {
-            row_logout(&mut c).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut c)).await??;
             row_needs_logout_0 = false;
         }
         let mut c = connect_world(clients, 0xb3).await?;
@@ -305,15 +310,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .await
         .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut c).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut c)).await??;
         }
         row_result
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut c).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut c)).await??;
     }
     row_result
+
+    }).await?
 }
 #[cfg(test)]
 mod tests {

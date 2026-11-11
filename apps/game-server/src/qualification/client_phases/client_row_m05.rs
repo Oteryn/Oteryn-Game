@@ -1,6 +1,10 @@
 //! Captures M05's real `WORLD_OBJECT_OVERLAY` payloads for the session replay test.
 
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, WorldObjectOverlayEntry, encode_world_object_overlay_delta,
@@ -99,6 +103,7 @@ fn capture(entries: &[(&str, &WorldObjectOverlayEntry)]) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -109,7 +114,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let doors = doors(&bytes, world)?;
     let mut client = connect_world(clients, 0xc5).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let mut captured = Vec::new();
         for (appearance, family) in [(1638, "basic"), (1629, "key")] {
             let door = doors
@@ -144,11 +150,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .collect::<Vec<_>>();
         capture(&entries)?;
         Ok(())
-    }
-    .await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

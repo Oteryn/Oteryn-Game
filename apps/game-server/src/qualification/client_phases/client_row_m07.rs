@@ -1,5 +1,9 @@
 //! Captures M07's real WORLD_SPATIAL_ENTITIES payload for the session replay test.
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::world_object::*;
 
@@ -16,6 +20,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let bundle = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -60,7 +65,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         Ok(())
     })?;
     let mut client = connect_world(clients, 0xa7).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let from = tile(client.world_spatial().actor_position)?;
     let (spot, ordinal, path) = spots
         .into_iter()
@@ -152,8 +158,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     std::fs::write(path.join("m07-expected.txt"), expected)?;
     Ok(())
 
-    }.await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }

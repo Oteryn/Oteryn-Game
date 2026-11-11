@@ -224,6 +224,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == original_session {
         return Err("fresh-admission-reused-session".into());
     }
+    let restored_balance = catalogue(&mut fresh).await?;
+    if restored_balance.total_coins != balance_after_purchase.total_coins {
+        return Err(format!(
+            "relog-balance-expected-{}-observed-{}",
+            balance_after_purchase.total_coins, restored_balance.total_coins
+        )
+        .into());
+    }
     row.at("relog-history");
     let restored = history(&mut fresh).await?;
     assert_history(

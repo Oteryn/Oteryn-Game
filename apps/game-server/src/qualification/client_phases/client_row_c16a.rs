@@ -1,5 +1,9 @@
 //! C16a client capture: real rune USE replies publish raw domain-17 map payloads.
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use std::collections::BTreeSet;
 
@@ -294,10 +298,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
         return;
     };
-    let result: TestResult = async {
+    let result: TestResult = row_complete(async {
         let path = Path::new(&directory);
         let mut client = connect_world(clients, 0xc1).await?;
-        let row_result: TestResult<_> = async {
+        let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
             let snapshot = client
                 .session_mut()
                 .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
@@ -379,12 +384,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
             }
             capture_write(path, "c16a-expected.txt", expected)?;
             Ok(())
-        }
-        .await;
-        row_logout(&mut client).await?;
+        })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
         row_result
-    }
-    .await;
+    }).await.and_then(|result| result);
     match result {
         Ok(()) => evidence(
             "e2e_all scenario=C16a.client status=PASS evidence=raw-domain-17-placement-and-expiry",

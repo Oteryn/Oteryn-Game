@@ -4,6 +4,10 @@
 //! (`s09-expected.txt`) and the replay (`crates/session/src/tests/e2e_s09.rs`) encodes that
 //! outcome with the production logout encoder; no `.bin` file is written or claimed as raw.
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_protocol_oteryn::logout::LogoutResult;
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
@@ -16,13 +20,14 @@ fn capture(name: &str, bytes: &[u8]) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_character(clients, 0x43, 0).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let position = client.world_spatial().actor_position;
         let session = client.join_snapshot().game_session_id;
-        let outcome = client.session_mut().logout().await?;
+        let outcome = client.row_logout().await?;
         if outcome.status != CommandStatus::Accepted
             || outcome.result != Some(LogoutResult::Accepted)
         {
@@ -34,7 +39,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
             let retained = fresh.world_spatial().actor_position == position
                 && fresh.join_snapshot().game_session_id != session;
-            row_logout(&mut fresh).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??;
             row_needs_logout_1 = false;
             if !retained {
                 return Err(format!(
@@ -56,15 +61,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .await
         .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut fresh).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??;
         }
         row_result
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

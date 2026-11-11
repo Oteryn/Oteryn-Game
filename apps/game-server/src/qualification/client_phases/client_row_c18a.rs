@@ -3,6 +3,10 @@
 //! `crates/client-runtime/src/features/local-spell-action-bar/protocol.rs::run_cast`.
 
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_protocol_oteryn::{actor_spell, attack};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -14,6 +18,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -24,7 +29,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let mut client = connect_character(clients, 0xca, 1).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         let target = client
             .world_entities()
@@ -70,9 +76,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         };
         write()?;
         Ok(())
-    }
-    .await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }

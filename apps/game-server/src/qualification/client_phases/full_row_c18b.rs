@@ -12,6 +12,10 @@
 //!    last server-acknowledged vitals.  Spell aiming itself creates no additional durable state.
 
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{CastOutcome, DevClientSession};
 use oteryn_protocol_oteryn::actor_spell::{
     ActorVitals, SpellCastDisposition, SpellTarget, SpellTargetPosition,
@@ -145,6 +149,7 @@ fn cast_payment(outcome: &CastOutcome, before: ActorVitals, mana: u32, soul: u32
 }
 
 async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -157,7 +162,7 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
     let book = spell_book()?;
     let mut client = connect_character(clients, 0xc8, 1).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         attempt.observed(client.join_snapshot().game_session_id);
 
         attempt.at("walk-out-of-pz");
@@ -267,14 +272,14 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
             .copied()
             .ok_or("actor-vitals-absent")?;
         let old_session = client.join_snapshot().game_session_id;
-        if client.session_mut().logout().await?.result
+        if client.row_logout().await?.result
             != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
         {
             return Err("logout-refused".into());
         }
         row_needs_logout_0 = false;
         if row_needs_logout_0 {
-            row_logout(&mut client).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
             row_needs_logout_0 = false;
         }
         let mut client = connect_character(clients, 0xc9, 1).await?;
@@ -292,15 +297,18 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
         .await
         .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut client).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
         }
         row_result
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 #[cfg(test)]

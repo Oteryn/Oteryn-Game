@@ -16,6 +16,10 @@
 //! 6. Log out, obtain a fresh admission for the same character, query again, and
 //!    expect exactly the completed durable projection observed before logout.
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::raid_schedule::{
     CAPABILITY_RAID_SCHEDULE_V1, COMMAND_TYPE_RAID_SCHEDULE_QUERY, RaidScheduleState,
@@ -127,10 +131,11 @@ fn take_raid_notice(client: &mut DevClientSession) -> Option<ServerMessage> {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(190);
     let mut client = connect_world(clients, 0xb4).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if !client
         .selected_capabilities()
         .contains(&CAPABILITY_RAID_SCHEDULE_V1)
@@ -226,13 +231,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_secs(1)).await?;
     };
 
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=fresh-admission observed=logout-refused".into());
     }
     row_needs_logout_0 = false;
-    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
+    if row_needs_logout_0 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xb5).await?;
     let row_needs_logout_1 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
@@ -250,12 +255,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??; }
     row_result
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }

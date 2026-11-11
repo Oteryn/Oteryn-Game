@@ -3,12 +3,14 @@
 //! `crates/session/src/container_tree.rs`; the latter stores updates in `Session::container_views`.
 
 use super::*;
+use crate::tests::{BoxError, admission_with, block_on, join_peer_with};
+use oteryn_protocol_oteryn::world_spatial_entities::{
+    SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, WorldSpatialEntitiesSnapshot,
+    encode_world_spatial_entities_snapshot_with_item_handles,
+};
+use oteryn_protocol_oteryn::{decode_wire_envelope, encode_state_delta};
 
-fn entry(
-    handle: u64,
-    definition: u32,
-    count: u32,
-) -> Result<ItemEntry, Box<dyn std::error::Error>> {
+fn entry(handle: u64, definition: u32, count: u32) -> Result<ItemEntry, BoxError> {
     Ok(ItemEntry {
         handle: ItemHandle::new(handle).ok_or("zero fixture handle")?,
         item_definition_ref: definition.try_into()?,
@@ -38,8 +40,7 @@ fn visible(views: &ContainerViews) -> String {
 }
 
 #[test]
-fn e2e_i01_replays_container_capacity_and_stack_quantities()
--> Result<(), Box<dyn std::error::Error>> {
+fn e2e_i01_replays_container_capacity_and_stack_quantities() -> Result<(), BoxError> {
     let (snapshot_payload, update_payload, revisions, expected) =
         if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
             let directory = std::path::Path::new(&directory);
@@ -78,7 +79,7 @@ fn e2e_i01_replays_container_capacity_and_stack_quantities()
         snapshot_revision,
         base_revision,
         new_revision,
-        _server_sequence,
+        server_sequence,
     ] = numbers.as_slice()
     else {
         return Err("invalid I01 capture revision metadata".into());
@@ -86,26 +87,135 @@ fn e2e_i01_replays_container_capacity_and_stack_quantities()
     if snapshot_revision != base_revision || new_revision <= base_revision {
         return Err("inconsistent I01 capture revisions".into());
     }
-    let selected = [CAPABILITY_CONTAINER_TREE_V1];
-    let mut snapshots = vec![GatedSnapshot {
-        domain_id: STATE_DOMAIN_CONTAINER_VIEWS,
-        snapshot_type: SNAPSHOT_TYPE_CONTAINER_VIEWS_V1,
-        revision: *snapshot_revision,
-        payload: snapshot_payload,
-    }];
-    let mut state = initial(&selected, &snapshots)?.ok_or("I01 snapshot state absent")?;
-    assert_eq!(
-        state,
-        decode_container_views(&snapshots[0].payload).map_err(|error| format!("{error:?}"))?
+    let (snapshot_revision, base_revision, new_revision, server_sequence) = (
+        *snapshot_revision,
+        *base_revision,
+        *new_revision,
+        *server_sequence,
     );
-    snapshots[0].revision = *new_revision;
-    snapshots[0].payload = update_payload;
-    state = initial(&selected, &snapshots)?.ok_or("I01 update state absent")?;
-    assert_eq!(visible(&state), expected);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            block_on(async move {
+                const SELECTED: &[u32] = &[4, 6, 12, CAPABILITY_CONTAINER_TREE_V1];
+                let initial_views = decode_container_views(&snapshot_payload)
+                    .map_err(|error| format!("{error:?}"))?;
+                let (client, mut server) = tokio::io::duplex(256 * 1024);
+                let peer = tokio::spawn(async move {
+                    let position = ActorPosition {
+                        x: 0,
+                        y: 0,
+                        floor: 0,
+                    };
+                    let own_identity = [0xa0; 16];
+                    let entities = encode_world_spatial_entities_snapshot_with_item_handles(
+                        &WorldSpatialEntitiesSnapshot {
+                            content_generation: [0x11; 32],
+                            actor_position: position,
+                            own_identity,
+                            entities: vec![WorldSpatialEntity {
+                                display_name: None,
+                                kind: EntityKind::Player,
+                                entity: EntityRef {
+                                    identity: own_identity,
+                                    generation: 1,
+                                },
+                                position,
+                                detail: EntityDetail::Actor {
+                                    direction: StepDirection::South,
+                                    appearance_ref: 1,
+                                    health_percent: 100,
+                                },
+                            }],
+                        },
+                    )
+                    .map_err(|error| format!("I01 spatial fixture: {error:?}"))?;
+                    join_peer_with(
+                        &mut server,
+                        SELECTED,
+                        SELECTED,
+                        &[],
+                        (SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, entities),
+                        &[(
+                            STATE_DOMAIN_CONTAINER_VIEWS,
+                            snapshot_revision,
+                            SNAPSHOT_TYPE_CONTAINER_VIEWS_V1,
+                            snapshot_payload,
+                        )],
+                    )
+                    .await?;
+                    Ok::<_, BoxError>(server)
+                });
+                let admitted = Session::admit(client, admission_with(SELECTED)?).await;
+                let _server = peer.await??;
+                let mut session = admitted?;
+                assert_eq!(session.container_views(), Some(&initial_views));
 
-    let retained = state.clone();
-    snapshots[0].payload = vec![0xff];
-    assert!(initial(&selected, &snapshots).is_err());
-    assert_eq!(state, retained);
-    Ok(())
+                let frame = |base, new, payload: &[u8]| {
+                    encode_state_delta(
+                        1,
+                        server_sequence,
+                        STATE_DOMAIN_CONTAINER_VIEWS,
+                        base,
+                        new,
+                        DELTA_TYPE_CONTAINER_VIEWS_V1,
+                        payload,
+                    )
+                };
+                let delta = frame(base_revision, new_revision, &update_payload)?;
+                let event = session
+                    .apply_state_delta(server_sequence, decode_wire_envelope(&delta)?.payload())?;
+                let SessionEvent::ContainerViews(applied) = event else {
+                    return Err("I01 update did not produce container views event".into());
+                };
+                assert_eq!(applied.server_sequence, server_sequence);
+                assert_eq!(applied.base_revision, base_revision);
+                assert_eq!(applied.new_revision, new_revision);
+                let state = session.container_views().ok_or("I01 update state absent")?;
+                assert_eq!(visible(state), expected);
+                assert_eq!(&applied.value, state);
+                let retained = state.clone();
+                let snapshot = session
+                    .gated_snapshot(STATE_DOMAIN_CONTAINER_VIEWS)
+                    .ok_or("I01 retained snapshot absent")?
+                    .clone();
+                assert_eq!(snapshot.revision, new_revision);
+                assert_eq!(snapshot.payload, update_payload);
+                let revisions = session.gated_revisions.clone();
+                assert!(revisions.contains(&(STATE_DOMAIN_CONTAINER_VIEWS, new_revision)));
+
+                // Replaying the old base must fail, even with a valid payload.
+                assert!(matches!(
+                    session.apply_state_delta(
+                        server_sequence + 1,
+                        decode_wire_envelope(&delta)?.payload(),
+                    ),
+                    Err(SessionError::StateRevisionMismatch { .. })
+                ));
+                assert_eq!(session.container_views(), Some(&retained));
+                assert_eq!(session.gated_revisions, revisions);
+                assert_eq!(
+                    session.gated_snapshot(STATE_DOMAIN_CONTAINER_VIEWS),
+                    Some(&snapshot)
+                );
+
+                let malformed = frame(new_revision, new_revision + 1, &[0xff])?;
+                assert!(matches!(
+                    session.apply_state_delta(
+                        server_sequence + 1,
+                        decode_wire_envelope(&malformed)?.payload(),
+                    ),
+                    Err(SessionError::ItemView(_))
+                ));
+                assert_eq!(session.container_views(), Some(&retained));
+                assert_eq!(session.gated_revisions, revisions);
+                assert_eq!(
+                    session.gated_snapshot(STATE_DOMAIN_CONTAINER_VIEWS),
+                    Some(&snapshot)
+                );
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "I01 replay thread panicked")?
 }

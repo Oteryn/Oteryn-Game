@@ -18,6 +18,10 @@
 //!    with a different game session, and re-check the earned XP and exact loot
 //!    inventory as durable state.
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
 use std::collections::BTreeSet;
@@ -308,6 +312,7 @@ fn inventory_signature(client: &DevClientSession) -> TestResult<Vec<(u32, u32)>>
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(900);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -320,7 +325,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xc1).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     use oteryn_protocol_oteryn::item_view::EquipmentSlot;
     let equipment = &client
         .inventory()
@@ -387,11 +392,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("monster-target-follow-disengage", "target-selected-chase-exercised-and-cleared");
     let old_session = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    if client.row_logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("step=relog observed=logout-refused".into());
     }
     row_needs_logout_0 = false;
-    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
+    if row_needs_logout_0 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xc2).await?;
     let mut row_needs_logout_1 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
@@ -401,18 +406,22 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=relog observed=session/xp/loot-mismatch xp={after_xp:?}->{durable_xp:?} need=durable-state").into());
     }
     row.pass("relog-xp-loot", "fresh-session-identical-xp-and-loot");
-    row_logout(&mut fresh).await?; row_needs_logout_1 = false;
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??; row_needs_logout_1 = false;
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??; }
     row_result
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 #[cfg(test)]

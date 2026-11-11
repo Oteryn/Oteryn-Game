@@ -12,6 +12,10 @@
 //! when no dough can be acquired, records the observed server refusal, and reports the missing
 //! ordinary acquisition surface rather than manufacturing a PASS.
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_protocol_oteryn::world_object::{
     CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, MapUseTarget, UseDisposition, UseIntent,
     UseTarget, WorldObjectTarget, decode_use_result, encode_item_use_intent,
@@ -41,6 +45,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -73,7 +78,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let (oven, ordinal) = oven.ok_or("step-1_observed=no-compiled-world-oven")?;
     let mut client = connect_character(clients, 0xb8, 0).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let here = tile(client.world_spatial().actor_position)?;
     let path = route(world, here, |at| {
         at.floor == oven.floor && at.x.abs_diff(oven.x).max(at.y.abs_diff(oven.y)) <= 1
@@ -137,14 +142,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         logout(&mut client).await?; row_needs_logout_0 = false;
         let mut reloaded = connect_character(clients, 0xb9, 0).await?;
     let row_needs_logout_1 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         if quantity(&reloaded, dough)? != 0 || quantity(&reloaded, bread)? != before_bread {
             return Err("step-4_observed=refused-use-changed-durable-quantities".into());
         }
         Err("needed:dough;step-2_observed=NothingToUse".into())
 
-    }.await;
-    if row_needs_logout_1 { row_logout(&mut reloaded).await?; }
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut reloaded)).await??; }
     return row_result;
 }
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
@@ -217,14 +224,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_2 { row_logout(&mut reloaded).await?; }
+    if row_needs_logout_2 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut reloaded)).await??; }
     row_result
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 fn quantity(
@@ -269,8 +280,8 @@ async fn wait_quantities(
     }
 }
 
-async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step-4_observed=logout-refused".into());

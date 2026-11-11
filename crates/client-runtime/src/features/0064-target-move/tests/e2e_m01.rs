@@ -18,14 +18,19 @@ fn replays_m01_target_move_receipts() -> Result<(), Box<dyn std::error::Error>> 
         )
     } else {
         (
-            vec![vec![8, 1]; 4],
-            "autowalk=accepted\nstop=accepted\nturn=accepted\nfollow=accepted\n".into(),
+            vec![vec![8, 2], vec![8, 1], vec![8, 1], vec![8, 2]],
+            "autowalk=path-unavailable\nstop=accepted\nturn=accepted\nfollow=path-unavailable\n"
+                .into(),
         )
     };
+    let expected_rows = expected.lines().collect::<Vec<_>>();
+    assert_eq!(expected_rows.len(), 4);
+    assert_eq!(payloads.len(), 4);
     let mut visible = String::new();
-    for (name, payload) in ["autowalk", "stop", "turn", "follow"]
+    for ((name, payload), expected_row) in ["autowalk", "stop", "turn", "follow"]
         .into_iter()
         .zip(payloads)
+        .zip(expected_rows)
     {
         let response = project(&GatedCommandResult {
             command_id: 1,
@@ -33,14 +38,27 @@ fn replays_m01_target_move_receipts() -> Result<(), Box<dyn std::error::Error>> 
             server_sequence: 1,
             payload,
         })?;
+        let expected_value = expected_row
+            .strip_prefix(&format!("{name}="))
+            .ok_or("M01 golden row name mismatch")?;
+        let expected_disposition = match expected_value {
+            "accepted" => WalkDisposition::Accepted,
+            "path-unavailable" => WalkDisposition::NoPath,
+            _ => return Err("M01 invalid golden disposition".into()),
+        };
         assert_eq!(
             response,
             WalkResponse {
                 status: CommandStatus::Accepted,
-                disposition: Some(WalkDisposition::Accepted)
+                disposition: Some(expected_disposition)
             }
         );
-        visible.push_str(&format!("{name}=accepted\n"));
+        let observed = match response.disposition {
+            Some(WalkDisposition::Accepted) => "accepted",
+            Some(WalkDisposition::NoPath) => "path-unavailable",
+            _ => return Err("M01 unexpected decoded disposition".into()),
+        };
+        visible.push_str(&format!("{name}={observed}\n"));
     }
     assert_eq!(visible, expected);
 

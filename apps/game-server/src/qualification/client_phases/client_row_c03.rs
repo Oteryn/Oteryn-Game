@@ -2,6 +2,10 @@
 //! preserve the command-result payloads consumed by the Cyclopedia character panel.
 
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::client_runtime::raw_feature::GatedCommandResult;
 use oteryn_dev_client::client_ui::cyclopedia_character::{
     CyclopediaCharacterPanel, Intent, apply_result, panel_text, request,
@@ -86,9 +90,10 @@ fn capture(name: &str, bytes: &[u8]) -> TestResult {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result: TestResult = async {
+    let result: TestResult = row_complete(async {
         let mut client = connect_world(clients, 0xc3).await?;
-        let row_result: TestResult<_> = async {
+        let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
             let (offence, offence_stats) =
                 combat_page(&mut client, wire::CharacterTab::Offence).await?;
             let (defence, defence_stats) =
@@ -116,12 +121,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 .as_bytes(),
             )?;
             Ok(())
-        }
-        .await;
-        row_logout(&mut client).await?;
+        })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
         row_result
-    }
-    .await;
+    }).await.and_then(|result| result);
     if result.is_ok() {
         evidence("e2e_all scenario=C03.client status=PASS payload=cyclopedia-combat-pages");
     }

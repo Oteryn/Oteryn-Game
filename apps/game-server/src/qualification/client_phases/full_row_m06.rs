@@ -17,6 +17,10 @@
 //! the final verdict is FAIL and the observed refusal identifies the missing server/content path.
 
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
@@ -135,6 +139,7 @@ fn overlay_revision(client: &DevClientSession, placement: &[u8]) -> u64 {
 }
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -> TestResult {
+    row_complete(async {
     let authored = doors(bytes, world)?;
     let level = authored
         .iter()
@@ -153,7 +158,8 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
         .ok_or("step-4 observed=no-authored-quest-predicate-candidate")?;
     let mut client = connect_world(clients, 0xb6).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
 
     approach(&mut client, world, key).await?;
     let before = client.world_spatial().actor_position;
@@ -183,16 +189,16 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
         quest.action
     ));
 
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step-5 observed=logout-refused".into());
     }
     row_needs_logout_0 = false;
-    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
+    if row_needs_logout_0 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xb7).await?;
     let mut row_needs_logout_1 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     approach(&mut fresh, world, level).await?;
     let replay = use_door(&mut fresh, world, level).await?;
     evidence(&format!(
@@ -203,7 +209,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
     evidence(&format!(
         "M06_CHECK step=5 action=fresh-admission-quest-USE observed={quest_replay:?}"
     ));
-    row_logout(&mut fresh).await?; row_needs_logout_1 = false;
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??; row_needs_logout_1 = false;
 
     if !direct_ok {
         return Err(format!("step-1 observed={direct:?}; expected Locked without movement").into());
@@ -228,15 +234,21 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
     )
     .into())
 
-    }.await;
-    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??; }
     row_result
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

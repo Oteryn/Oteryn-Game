@@ -16,6 +16,10 @@
 //! vendor content, reachable authored terrain, or a server frame is reported
 //! only after the preceding real player actions have been attempted.
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::npc_service as npc;
 use oteryn_protocol_oteryn::world_map::{MapOrigin, MapTile};
@@ -387,6 +391,7 @@ async fn use_tool(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -400,7 +405,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let objects = objects(&bytes)?;
     let mut client = connect_world(clients, 0xd8).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let mut completed = BTreeSet::new();
     let mut pick = None;
     for (name, id, before, after) in CASES {
@@ -462,13 +467,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!(
         "M08_CHECK stale-refusal PASS reply={refusal:?} object_delta=false appearance=7236"
     ));
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused need=accepted".into());
     }
     row_needs_logout_0 = false;
-    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
+    if row_needs_logout_0 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xd9).await?;
     let row_needs_logout_1 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
@@ -490,14 +495,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??; }
     row_result
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 #[cfg(test)]

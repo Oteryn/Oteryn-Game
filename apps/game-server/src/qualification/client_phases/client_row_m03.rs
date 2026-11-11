@@ -3,6 +3,10 @@
 //! `Session::cast_spell`/`exchange_cast` in `crates/session/src/session_commands.rs`; their
 //! domain application is `Session::apply_delta` in `crates/session/src/domain_dispatch.rs`.
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::world_spatial::{encode_step_result, encode_world_spatial};
 
@@ -20,6 +24,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -29,7 +34,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x93, 1).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let from = tile(client.world_spatial().actor_position)?;
         let path = route(world, from, |at| at.floor != from.floor)
             .ok_or("M03 client capture has no reachable automatic floor transition")?;
@@ -114,9 +120,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             std::fs::write(directory.join("m03-expected.txt"), expected)?;
         }
         Ok(())
-    }
-    .await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }

@@ -1,5 +1,9 @@
 //! Client replay capture for SCENARIO_MATRIX C17b.
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::SpellTarget;
 use oteryn_protocol_oteryn::world_spatial_entities::{
@@ -71,6 +75,7 @@ fn write_capture(name: &str, bytes: &[u8]) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    row_complete(async {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -82,10 +87,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     let mut caster = connect_character(clients, 0xc1, 1).await?;
     let row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let mut observer = connect_character(clients, 0xc2, 0).await?;
         let row_needs_logout_1 = true;
-        let row_result: TestResult<_> = async {
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let caster_position = tile(caster.world_spatial().actor_position)?;
     let path = route(
@@ -169,17 +175,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         cast.result_server_sequence, removed.server_sequence
     ))
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut observer).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut observer)).await??;
         }
         row_result
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut caster).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut caster)).await??;
     }
     row_result
+
+    }).await?
 }
 
 #[cfg(test)]

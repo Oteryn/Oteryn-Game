@@ -2,6 +2,10 @@
 //! driven combat experience, skill progression, a level-up, and automatic spell learning.
 
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_protocol_oteryn::{actor_spell_catalog, skill_display};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -17,6 +21,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
+    row_complete(async {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
         .canonicalize()?;
@@ -26,7 +31,8 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
     }
 
     let mut client = connect_character(clients, 0xc1, 0).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let reply = client
             .session_mut()
             .gated_command(
@@ -58,11 +64,13 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
             expected(&display, &catalog.entries),
         )?;
         Ok(())
-    }
-    .await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }
 
 fn expected(

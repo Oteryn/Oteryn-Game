@@ -3,6 +3,10 @@
 //! under a fresh admission. Scheduled expiry stays a server gap (settlement.rs). Client owner: the Market panel in
 //! `crates/client-ui/src/features/0063-market`.
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::market::{self as wire, MarketReply, MarketRequest};
 
@@ -62,6 +66,7 @@ async fn at_market(client: &mut DevClientSession, world: &BundleWorld) -> TestRe
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -73,7 +78,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     let mut client = connect_character(clients, 0x37, 1).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         at_market(&mut client, world).await?;
         let (wares, wares_bytes) = command(&mut client, request(1, 0, [0; 16])).await?;
         let ware = wares
@@ -113,7 +118,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         if cancelled.code != 1 {
             return Err(format!("cancel code {}", cancelled.code).into());
         }
-        if client.session_mut().logout().await?.result
+        if client.row_logout().await?.result
             != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
         {
             return Err("logout refused".into());
@@ -147,7 +152,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             capture("e06-own.bin", &own_bytes)?;
             capture("e06-history.bin", &history_bytes)?;
             capture("e06-expected.txt", expected.as_bytes())?;
-            row_logout(&mut client).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
             row_needs_logout_1 = false;
             Ok(format!(
                 "definition={} refusal=14 history_state={} expiry=MISSING-SERVER",
@@ -157,15 +162,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .await
         .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut client).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
         }
         row_result
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

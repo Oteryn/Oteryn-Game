@@ -14,6 +14,10 @@
 //! 5. LOGOUT and freshly admit the character; expect a new session and the exact
 //!    post-use inventory quantities, proving the consumed source and reward durable.
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::{npc_service as npc, world_object as use_wire};
 use std::collections::{BTreeMap, BTreeSet};
@@ -248,6 +252,7 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -261,7 +266,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xa9).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     earn_price(&mut client, world, &metadata.spawns).await?;
     let purchase_sequence = acquire(&mut client, world).await?;
     let before_refusal = quantities(&client)?;
@@ -306,7 +311,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         })
         .collect::<TestResult<_>>()?;
     client.take_events();
-    let committed = client.use_item(bag_handle(&client)?).await?;
+    let handle = bag_handle(&client)?;
+    let committed = client.use_item(handle).await?;
     if committed.status != CommandStatus::Accepted
         || committed.disposition != use_wire::UseDisposition::Committed
     {
@@ -338,13 +344,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
     };
     let old_session = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step 5: LOGOUT refused".into());
     }
     row_needs_logout_0 = false;
-    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
+    if row_needs_logout_0 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??; row_needs_logout_0 = false; }
     let mut client = connect_world(clients, 0xaa).await?;
     let row_needs_logout_1 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
@@ -362,14 +368,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_1 { row_logout(&mut client).await?; }
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??; }
     row_result
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

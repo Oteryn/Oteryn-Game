@@ -21,6 +21,10 @@
 //! verdict and the later dependent steps are reported as unproven rather than
 //! fabricated.
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
@@ -108,10 +112,11 @@ async fn cooldowns(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let mut client = connect_world(clients, 0xb2).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let before = cooldowns(&mut client).await?;
     if contains_key(&before, BOSS) {
         return Err(
@@ -152,7 +157,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         wire::BossActivityReply::Refused(reason) => {
             // This is a real server decision after the native command, not a
             // source-derived verdict. Preserve the exact typed refusal in evidence.
-            row_logout(&mut client).await?; row_needs_logout_0 = false;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??; row_needs_logout_0 = false;
             return Err(format!(
                 "step-2-lever-entry:observed-status={:?},refusal={reason:?};need=reachable-authored-lever-and-legitimate-level-250-party",
                 lever.status
@@ -306,7 +311,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     );
 
     let old_session = client.join_snapshot().game_session_id;
-    let logout = client.session_mut().logout().await?;
+    let logout = client.row_logout().await?;
     if logout.status != CommandStatus::Accepted {
         return Err(format!("step-6-logout:observed={logout:?};need=accepted-logout").into());
     }
@@ -331,14 +336,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??; }
     row_result
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 fn contains_key(payload: &[u8], key: &str) -> bool {

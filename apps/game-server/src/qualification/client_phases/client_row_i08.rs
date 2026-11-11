@@ -1,5 +1,9 @@
 //! Capture the real inventory payload applied by the native client for SCENARIO_MATRIX I08.
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::item_view;
 
@@ -18,8 +22,10 @@ fn capture(path: &Path, name: &str, bytes: &[u8]) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>, path: &Path) -> TestResult {
+    row_complete(async {
     let mut client = connect_character(clients, 0xc8, 0).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let bags = oteryn_gameplay_items::reward_bag::reward_bags().ok_or("reward pool absent")?;
         let bag = bags
             .iter()
@@ -92,11 +98,13 @@ async fn journey(clients: &SeamClients<'_>, path: &Path) -> TestResult {
         capture(path, "i08-after.bin", &after_payload)?;
         capture(path, "i08-expected.txt", visible(&after).as_bytes())?;
         Ok(())
-    }
-    .await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }
 
 async fn wait_inventory(

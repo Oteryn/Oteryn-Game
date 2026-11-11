@@ -6,6 +6,10 @@
 //! through `crates/session/src/session_access.rs::Session::inventory` (and thus
 //! `tools/dev-client/src/lib.rs::DevClientSession::inventory`).
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 use oteryn_protocol_oteryn::item_view as items;
 
 const ACTIVE_ENERGY_RING: u32 = 3088;
@@ -23,9 +27,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let mut client = connect_world(clients, 0xb2).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let active =
             provisioning::item_reference(&provisioning::item_index()?, ACTIVE_ENERGY_RING)?;
         let handle = client
@@ -86,18 +92,21 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
                 delta.server_sequence
             ),
         )?;
-        let logout = client.session_mut().logout().await?;
+        let logout = client.row_logout().await?;
         if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err("i05-client-capture-logout-refused".into());
         }
         row_needs_logout_0 = false;
         Ok(())
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 fn write_capture(name: &str, payload: &[u8], expected: &str) -> TestResult {

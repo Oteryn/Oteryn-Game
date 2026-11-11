@@ -1,6 +1,10 @@
 //! Client replay capture for SCENARIO_MATRIX C11.
 
 use super::*;
+use super::{
+    row_connect_world as connect_world,
+    row_finish as row_logout,
+};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if let Err(error) = capture(clients).await.inspect(|line| evidence(line)) {
@@ -11,10 +15,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult<String> {
+    row_complete(async {
     use oteryn_protocol_oteryn::battle_instinct_status as wire;
 
     let mut client = connect_world(clients, 0xcd).await?;
-    let row_result: TestResult<_> = async {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let reply = client
         .session_mut()
         .gated_command(
@@ -50,8 +56,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult<String> {
     );
     Ok(verdict)
 
-    }.await;
-    let logout_result = row_logout(&mut client).await;
-    logout_result?;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     row_result
+
+    }).await?
 }

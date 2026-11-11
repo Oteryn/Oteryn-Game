@@ -1,8 +1,6 @@
-// One node-boot job cannot run every row journey inside its timeout (each row
-// needs about 80 s), so CI runs one batch per head. `OTERYN_E2E_ROW_BATCH` is
-// `start:len` over the row indices passed to `e2e_row_selected` in `journeys`;
-// `all` runs every row.
-const E2E_ROW_BATCH_DEFAULT: (usize, usize) = (0, 15);
+// Ordinary node-boot jobs must select every row by default. Explicit ranges remain
+// available to the all-batches runner for bounded local qualification.
+const E2E_ROW_BATCH_DEFAULT: (usize, usize) = (0, usize::MAX);
 
 fn e2e_row_batch(value: Option<&str>) -> Option<(usize, usize)> {
     match value {
@@ -50,12 +48,17 @@ mod e2e_row_batch_tests {
     use super::*;
 
     #[test]
-    fn e2e_row_batch_parses_default_all_and_ranges() {
-        assert_eq!(e2e_row_batch(None), Some(E2E_ROW_BATCH_DEFAULT));
+    fn full_row_batch_parses_default_all_and_ranges() -> TestResult {
+        assert_eq!(e2e_row_batch(None), Some((0, usize::MAX)));
+        let (start, len) = e2e_row_batch(None).ok_or("missing default batch")?;
+        for index in 0..308 {
+            assert!(e2e_row_in_batch(index, start, len), "row {index}");
+        }
         assert_eq!(e2e_row_batch(Some("all")), Some((0, usize::MAX)));
         assert_eq!(e2e_row_batch(Some("20:20")), Some((20, 20)));
         assert_eq!(e2e_row_batch(Some("20")), None);
         assert_eq!(e2e_row_batch(Some("x:1")), None);
+        Ok(())
     }
 
     #[test]

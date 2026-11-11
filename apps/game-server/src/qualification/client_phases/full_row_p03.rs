@@ -172,7 +172,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         if receipt.status != 0
             || receipt.wildcard_balance.checked_add(1) != Some(active.wildcard_balance)
             || rerolled.selected != selected.selected
-            || rerolled.selection_epoch != selected.selection_epoch
+            || Some(rerolled.selection_epoch) != selected.selection_epoch.checked_add(1)
             || (rerolled.bonus, rerolled.grade, rerolled.percent)
                 == (selected.bonus, selected.grade, selected.percent)
         {

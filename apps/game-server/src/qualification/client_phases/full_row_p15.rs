@@ -12,6 +12,10 @@
 //!    START then STOP; expect the persisted reduced charge count rather than the full definition
 //!    count, proving both durable charge recovery and that the old exercise run did not resume.
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{item_view::ItemHandle, loop_training as wire};
 
@@ -236,10 +240,11 @@ fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePo
 }
 
 async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_character(clients, 0xb5, 0).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let initial = command(&mut client, wire::ExerciseIntent::Status).await?;
         if initial.disposition != 2 || initial.revision == 0 {
             return Err(format!("STATUS reply={initial:?}; need=stopped durable state").into());
@@ -309,14 +314,14 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
             .into());
         }
         verdict.pass(5, stopped);
-        if client.session_mut().logout().await?.result
+        if client.row_logout().await?.result
             != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
         {
             return Err("logout reply refused; need=accepted durable save".into());
         }
         row_needs_logout_0 = false;
         if row_needs_logout_0 {
-            row_logout(&mut client).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
             row_needs_logout_0 = false;
         }
         let mut client = connect_character(clients, 0xb6, 0).await?;
@@ -344,22 +349,25 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
                 .into());
             }
             verdict.pass(6, restored);
-            row_logout(&mut client).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
             row_needs_logout_1 = false;
             Ok(())
         })
         .await
         .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut client).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
         }
         row_result
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 #[cfg(test)]

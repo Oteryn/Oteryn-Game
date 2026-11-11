@@ -23,6 +23,10 @@
 //! refused. A row PASS is possible only when every positive and negative assertion
 //! above was observed; failures retain the exact step and native reply as evidence.
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::{CommandStatus, house, house_transfer, raw_feature};
 
@@ -224,6 +228,7 @@ async fn attempt_transfer(
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -232,7 +237,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world_bytes = *world_id.as_bytes();
     let mut client = connect_character(clients, 0xb5, 1).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let initial = query(&mut client, world_bytes).await?;
         let Some(private) = select(&initial, 1) else {
             row.fail("catalogue-rent", "accepted-query-missing-private-house");
@@ -433,13 +438,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             );
         }
 
-        let logout = client.session_mut().logout().await?;
+        let logout = client.row_logout().await?;
         if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             row.fail("fresh-admission-state", format!("logout={logout:?}"));
             return Ok(());
         }
         if row_needs_logout_0 {
-            row_logout(&mut client).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
             row_needs_logout_0 = false;
         }
         let mut fresh = connect_character(clients, 0xb6, 1).await?;
@@ -463,22 +468,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                     format!("before={cancelled_row:?},after={persisted:?}"),
                 );
             }
-            row_logout(&mut fresh).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??;
             row_needs_logout_1 = false;
             Ok(())
         })
         .await
         .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut fresh).await?;
+            tokio::time::timeout(Duration::from_secs(10), row_logout(&mut fresh)).await??;
         }
         row_result
-    }
-    .await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
+
+    }).await?
 }
 
 #[cfg(test)]

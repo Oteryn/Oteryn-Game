@@ -13,6 +13,10 @@
 //! 5. Log the target out, freshly admit it with a different game session, list the
 //!    durable setting, and re-cast to prove denial and no-cost refusal survived.
 use super::*;
+use super::{
+    row_connect_character as connect_character,
+    row_finish as row_logout,
+};
 use oteryn_dev_client::{
     ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode, DevClientSession, SessionEvent,
 };
@@ -108,13 +112,14 @@ async fn cast(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut caster = connect_character(clients, 0xc5, 0).await?;
     let mut row_needs_logout_0 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let mut target = connect_character(clients, 0xc6, 1).await?;
     let mut row_needs_logout_1 = true;
-    let row_result: TestResult<_> = async {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let target_name = own_name(&target)?;
     if setting(&mut target, &[0, 1]).await? != [1] { return Err("allow step missing committed [1] reply".into()); }
     let list = exiva::PlayerList::decode(&setting(&mut target, &[5]).await?).ok_or("allow step invalid settings list")?;
@@ -142,9 +147,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!("C05_CHECK {} PASS protected-no-cost", ACTIONS[3]));
 
     let old_session = target.join_snapshot().game_session_id;
-    if target.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Err("fresh-admission step logout refused".into()); }
+    if target.row_logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Err("fresh-admission step logout refused".into()); }
     row_needs_logout_1 = false;
-    if row_needs_logout_1 { row_logout(&mut target).await?; row_needs_logout_1 = false; }
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut target)).await??; row_needs_logout_1 = false; }
     let mut target = connect_character(clients, 0xc7, 1).await?;
     let mut row_needs_logout_2 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
@@ -157,23 +162,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("fresh-admission refusal observed disposition={:?} replies={messages:?}", refused.disposition).into());
     }
     evidence(&format!("C05_CHECK {} PASS durable-denial", ACTIONS[4]));
-    row_logout(&mut caster).await?; row_needs_logout_0 = false;
-    row_logout(&mut target).await?; row_needs_logout_2 = false;
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut caster)).await??; row_needs_logout_0 = false;
+    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut target)).await??; row_needs_logout_2 = false;
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_2 { row_logout(&mut target).await?; }
+    if row_needs_logout_2 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut target)).await??; }
     row_result
 
-    }.await;
-    if row_needs_logout_1 { row_logout(&mut target).await?; }
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { tokio::time::timeout(Duration::from_secs(10), row_logout(&mut target)).await??; }
     row_result
 
-    }.await;
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_0 {
-        row_logout(&mut caster).await?;
+        tokio::time::timeout(Duration::from_secs(10), row_logout(&mut caster)).await??;
     }
     row_result
+
+    }).await?
 }
 
 #[cfg(test)]

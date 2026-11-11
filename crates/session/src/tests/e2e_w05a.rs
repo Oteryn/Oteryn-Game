@@ -25,16 +25,10 @@ fn load() -> Result<Captured, BoxError> {
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let root = std::path::Path::new(&root);
         let expected = std::fs::read_to_string(root.join("w05a-expected.txt"))?;
-        let countdown = if value(&expected, "countdown")? == "present" {
-            std::fs::read(root.join("w05a-countdown.bin"))?
-        } else {
-            // The planned reset was outside its five-minute window during the poll.
-            encode_server_save_countdown(ServerSaveCountdown {
-                ending_epoch: 20_388,
-                minutes_remaining: 5,
-            })
-            .map_err(|error| format!("{error:?}"))?
-        };
+        if value(&expected, "countdown")? != "present" {
+            return Err("positive countdown replay requires a captured countdown push".into());
+        }
+        let countdown = std::fs::read(root.join("w05a-countdown.bin"))?;
         return Ok(Captured {
             snapshot: std::fs::read(root.join("w05a-snapshot.bin"))?,
             countdown,
