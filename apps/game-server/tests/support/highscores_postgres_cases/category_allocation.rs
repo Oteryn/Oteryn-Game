@@ -171,10 +171,14 @@ fn tibiadrome_category_migration_retires_old_tokens_and_preserves_revision_floor
         h.pool.execute(bounds).await?;
         let loyalty = include_str!("../../../migrations/2801_loyalty_highscore_category.sql");
         let bounds = loyalty
-            .split_once("-- Loyalty category admission for the Game snapshot store.")
+            .split_once("\nALTER TABLE game_world_highscore_snapshots\n")
             .ok_or("2801 category bounds")?
             .1;
-        h.pool.execute(bounds).await?;
+        h.pool
+            .execute(sqlx::AssertSqlSafe(format!(
+                "ALTER TABLE game_world_highscore_snapshots\n{bounds}"
+            )))
+            .await?;
         assert!(matches!(
             h.root
                 .read_highscore_page(world(), 14, None, 1, u64::try_from(tokens[3])?, asking())

@@ -51,6 +51,13 @@ fn scenario() -> TestResult {
         ))
         .execute(&h.pool)
         .await?;
+        // Reapplying 0547 also replaces the projection guard. Restore its current
+        // seven-day wrap before claiming day 7 through the real dispatch.
+        sqlx::raw_sql(include_str!(
+            "../../../../../../apps/game-server/migrations/2763_daily_reward_seven_day_cycle.sql"
+        ))
+        .execute(&h.pool)
+        .await?;
         prepare_current_session(&h).await?;
         super::daily_reward::epoch(&h, 1).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;

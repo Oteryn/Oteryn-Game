@@ -78,7 +78,7 @@ fn nx8_potion_durations_postgres_online_offline_xp_sources_and_expiry() -> TestR
             ] {
                 sqlx::query("INSERT INTO game_character_daily_reward_claims(character_id,world_id,reset_epoch,reset_day,transaction_id,request_binding,lane_day,streak_before,streak_after,jokers_spent,premium) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$5,$5-122,encode($3,'hex')::uuid,$4,$6,$6-1,$6,0,false)")
                 .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(claim).as_slice()).bind([claim;32].as_slice()).bind(epoch).bind(lane_day).execute(&mut *tx).await?;
-                sqlx::query("INSERT INTO game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) VALUES(encode($1,'hex')::uuid,0,'XP_BOOST',30,'DELIVERED',encode($1,'hex')::uuid,game_daily_effect_now()+make_interval(mins=>$2),game_daily_effect_now()+make_interval(mins=>$3),$4)")
+                sqlx::query("INSERT INTO game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) VALUES(encode($1,'hex')::uuid,0,'XP_BOOST',$3-$2,'DELIVERED',encode($1,'hex')::uuid,game_daily_effect_now()+make_interval(mins=>$2),game_daily_effect_now()+make_interval(mins=>$3),$4)")
                 .bind(id(claim).as_slice()).bind(start).bind(end).bind(percent).execute(&mut *tx).await?;
             }
             tx.commit().await?;
