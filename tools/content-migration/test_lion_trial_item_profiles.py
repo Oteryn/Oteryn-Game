@@ -35,6 +35,8 @@ class LionTrialItemProfiles(unittest.TestCase):
         cls.definitions.update({r['definition']['identity']['key']:r['definition']
                                 for r in json.loads((ROOT / 'content/items/definitions/'
                                                      'items-21500-21999.json').read_bytes())['records']})
+        cls.taxonomy = {row['target']['key']: row['source_taxonomy'] for row in
+                        json.loads((ROOT / 'content/items/taxonomy/items.json').read_bytes())['records']}
 
     def values(self, item_id):
         return copy.deepcopy([item_id, self.nodes[item_id], self.appearances[item_id],
@@ -79,32 +81,43 @@ class LionTrialItemProfiles(unittest.TestCase):
         records = profiles.records(ROOT, self.xml, self.definitions)
         self.assertEqual(set(records), {f'oteryn:item.tibia.i{i}' for i in profiles.SOURCE_RECORDS})
         for item_id in profiles.SOURCE_RECORDS:
-            self.assertEqual(records[f'oteryn:item.tibia.i{item_id}'],
-                             profiles.qualify(*self.values(item_id)))
+            key = f'oteryn:item.tibia.i{item_id}'
+            expected = profiles.qualify(*self.values(item_id))
+            expected['authoring']['taxonomy'] = self.taxonomy[key]
+            self.assertEqual(records[key], expected)
 
-    def test_native_provider_contains_exact_records_once_and_is_repeatable(self):
+    def test_native_provider_preserves_quick_loot_taxonomy_once_and_is_repeatable(self):
+        import authored_static_item_constructors as authored
         import quest_callback_profiles as provider
+        import quests_2_emperor_item_profiles as emperor
+        import quick_loot_item_profiles as quick_loot
 
         profile = 'content/items/definitions/spell-native-profiles.json'
         manifest = 'content/items/native-manifest.json'
         original = json.loads((ROOT / profile).read_bytes())
+        rebuilt = {f'oteryn:item.tibia.i{i}' for i in
+                   profiles.SOURCE_RECORDS.keys() | quick_loot.IDS | provider.CHEST_IDS | set(emperor.IDS)}
         original['records'] = [row for row in original['records']
-                               if row['production_definition']['production_key']
-                               not in {f'oteryn:item.tibia.i{i}' for i in profiles.SOURCE_RECORDS}]
-        # Match the immediately preceding producer stage in register_spell_families.
-        # The final published provider also carries later, unrelated overlays.
-        import quests_2_emperor_item_profiles as emperor
-        packet = json.loads((ROOT / emperor.PATH).read_bytes())
-        before = {row['production_definition']['production_key']: row
-                  for row in packet['records']}
-        original['records'] = [before.get(row['production_definition']['production_key'], row)
-                               for row in original['records']]
+                               if row['production_definition']['production_key'] not in rebuilt]
         generated = {profile: json.dumps(original).encode(),
-                     manifest: b'{"item_profiles":{"sha256":"pending"}}'}
+                      manifest: b'{"item_profiles":{"sha256":"pending"}}',
+                      authored.ADMISSIONS: (ROOT / authored.ADMISSIONS).read_bytes()}
+        order = lambda row: row['production_definition']['production_key']
+        encode = lambda value: (json.dumps(value, sort_keys=True) + '\n').encode()
+        # Execute the real preceding owners: QENGINE creates these three profiles,
+        # then Quick Loot attaches the canonical taxonomy to every present profile.
+        packet = shared.capture(ROOT, item_ids={5467, 21389, 21466})
+        shared.admit_records(ROOT, generated, profile, manifest, order, encode, packet['records'])
+        quick_loot.admit(ROOT, generated, profile, manifest, order, encode)
+        emperor.admit(ROOT, generated, profile, manifest, order, encode)
+        preceding = {row['production_definition']['production_key']: row
+                     for row in json.loads(generated[profile])['records']}
+        self.assertNotIn('oteryn:item.tibia.i3595', preceding)
+        for item_id in (5467, 21389, 21466):
+            key = f'oteryn:item.tibia.i{item_id}'
+            self.assertEqual(preceding[key]['authoring']['taxonomy'], self.taxonomy[key])
         def admit():
-            provider.admit(ROOT, generated, profile, manifest,
-                           lambda row: row['production_definition']['production_key'],
-                           lambda value: (json.dumps(value, sort_keys=True) + '\n').encode())
+            provider.admit(ROOT, generated, profile, manifest, order, encode)
         admit()
         first = generated[profile]
         document = json.loads(first)
@@ -112,17 +125,27 @@ class LionTrialItemProfiles(unittest.TestCase):
             key = f'oteryn:item.tibia.i{item_id}'
             rows = [row for row in document['records']
                     if row['production_definition']['production_key'] == key]
-            self.assertEqual(rows, [profiles.qualify(*self.values(item_id))])
+            expected = profiles.qualify(*self.values(item_id))
+            expected['authoring']['taxonomy'] = self.taxonomy[key]
+            self.assertEqual(rows, [expected])
         self.assertEqual(json.loads(generated[manifest])['item_profiles']['sha256'],
                          owner.hashlib.sha256(first).hexdigest())
         admit()
         self.assertEqual(generated[profile], first)
-        flower = next(row for row in document['records']
-                      if row['production_definition']['production_key'] == 'oteryn:item.tibia.i21389')
-        flower['semantics']['physical']['value']['weight']['value'] += 1
-        generated[profile] = json.dumps(document).encode()
-        with self.assertRaisesRegex(ValueError, 'LION_TRIAL_NATIVE_PROFILE_DRIFT'):
-            admit()
+        for change in ('taxonomy', 'weight', 'unexpected_authoring'):
+            with self.subTest(change=change):
+                changed = copy.deepcopy(document)
+                flower = next(row for row in changed['records']
+                              if row['production_definition']['production_key'] == 'oteryn:item.tibia.i21389')
+                if change == 'taxonomy':
+                    flower['authoring']['taxonomy'] = {'primary': 'Tools'}
+                elif change == 'weight':
+                    flower['semantics']['physical']['value']['weight']['value'] += 1
+                else:
+                    flower['authoring']['unqualified'] = True
+                generated[profile] = json.dumps(changed).encode()
+                with self.assertRaisesRegex(ValueError, 'LION_TRIAL_NATIVE_PROFILE_DRIFT'):
+                    admit()
 
     def test_source_duration_and_custom_action_changes_are_refused(self):
         for item_id in profiles.SOURCE_RECORDS:
