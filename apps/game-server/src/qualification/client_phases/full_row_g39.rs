@@ -1,3 +1,8 @@
+//! G39: native modal, discovery, bed, use-at, House and bounty journeys.
+//! Owners: dispatch connection/routing/{server_modal,use_item}.rs, cyclopedia.rs,
+//! bed_sleep_production.rs, connection/serve/{house_hireling,house_transfer},
+//! task_board_projection.rs. Each leg uses real replies plus independent state;
+//! missing player prerequisites are failures, never missing-route verdicts.
 use super::*;
 use oteryn_dev_client::{DevClientSession, client_runtime};
 use oteryn_protocol_oteryn::{
@@ -21,11 +26,25 @@ fn token(text: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(600), journey(clients)).await;
+    // Keep ownership outside the cancelled future so timeout/error paths still log out.
+    let mut active = None;
+    let result =
+        tokio::time::timeout(Duration::from_secs(600), journey(clients, &mut active)).await;
+    let cleanup = match active.as_mut() {
+        Some(client) => logout(client).await,
+        None => Ok(()),
+    };
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "all-seven-legs-with-state-and-relog".into()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
         Err(_) => ("FAIL", "needed:journey-completes-within-600s".into()),
+    };
+    let (status, detail) = match cleanup {
+        Ok(()) => (status, detail),
+        Err(error) => (
+            "FAIL",
+            format!("{detail};logout:{}", token(&error.to_string())),
+        ),
     };
     evidence(&format!(
         "e2e_all scenario=G39.full status={status} seconds={:.3} evidence={detail}",
@@ -50,7 +69,10 @@ async fn command(
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+    if tokio::time::timeout(Duration::from_secs(10), client.session_mut().logout())
+        .await
+        .map_err(|_| "needed:logout-completes-within-10s")??
+        .result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("needed:accepted-final-logout".into());
@@ -86,6 +108,7 @@ async fn discovery(
         .min_by_key(Vec::len)
         .ok_or("needed:visible-player-reachable-poi")?;
     walk(client, world, &path).await?;
+    let _ = map_command(client, 3).await?;
     let after = map_command(client, 0).await?;
     if after.found <= started.found || after.revision <= before.revision {
         return Err(format!(
@@ -167,6 +190,8 @@ async fn reroll(
     let after = board(client, 4).await?;
     if before.bounty.rerolls.checked_sub(1) != Some(after.bounty.rerolls)
         || after.bounty.daily_reroll_at != 0
+        || after.bounty.offers.is_empty()
+        || changed.bounty != after.bounty
     {
         return Err("needed:one-token-debit-and-new-offers-without-free-reroll".into());
     }
@@ -250,7 +275,7 @@ async fn hireling(client: &mut DevClientSession, clients: &SeamClients<'_>) -> T
     let response = runtime::send(
         client.session_mut(),
         &runtime::HirelingCommand(wire::Request::Summon {
-            x: at.x.saturating_add(1),
+            x: at.x,
             y: at.y,
             floor: at.floor,
         }),
@@ -399,11 +424,13 @@ async fn acknowledge(client: &mut DevClientSession, dialog: &modal::Dialog) -> T
     Ok(())
 }
 
-async fn modal_notice(client: &mut DevClientSession) -> TestResult {
-    let modal::Reply::Dialog(dialog) = modal_query(client).await? else {
-        return Err("needed:server-notice-or-player-triggered-dialog".into());
-    };
-    acknowledge(client, &dialog).await
+async fn modal_notice(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    if let modal::Reply::Dialog(dialog) = modal_query(client).await? {
+        return acknowledge(client, &dialog).await;
+    }
+    // The bed is a player-triggered modal producer even without an operator notice.
+    bed_modal(client, clients, false, &mut false).await?;
+    Ok(())
 }
 
 async fn bed_modal(
@@ -500,7 +527,8 @@ async fn use_at(client: &mut DevClientSession) -> TestResult {
         })
         .copied()
         .ok_or("needed:player-acquired-great-fireball-rune:3191")?;
-    let before = client.inventory().cloned();
+    let before = client.inventory().cloned().ok_or("needed:rune-inventory")?;
+    client.take_events();
     let at = client.world_spatial().actor_position;
     let payload = object::encode_item_use_intent(&object::UseIntent {
         target: object::UseTarget::Item(rune.handle),
@@ -525,15 +553,51 @@ async fn use_at(client: &mut DevClientSession) -> TestResult {
         return Err(format!("needed:eligible-rune-target-and-skill;observed:{used:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
-    while client.inventory() == before.as_ref() {
+    let mut effect = false;
+    loop {
+        effect |= client
+            .take_events()
+            .iter()
+            .any(|event| rune_effect(event, at));
+        let remaining = client
+            .inventory()
+            .and_then(|inventory| {
+                inventory
+                    .entries
+                    .iter()
+                    .find(|item| item.handle == rune.handle)
+            })
+            .map_or(0, |item| item.count.get());
+        if effect && rune.count.get().checked_sub(1) == Some(remaining) {
+            break;
+        }
         if tokio::time::Instant::now() >= deadline {
-            return Err("needed:server-rune-consumption-delta".into());
+            return Err("needed:rune-debit-and-own-effect-at-requested-tile".into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
     }
-    // Damage/effect on the named tile must be distinguishable from ordinary play.
-    Err("needed:server-frame-proving-rune-effect-at-requested-tile".into())
+    if client.inventory() == Some(&before) {
+        return Err("needed:server-rune-consumption-delta".into());
+    }
+    Ok(())
+}
+
+fn rune_effect(event: &oteryn_dev_client::SessionEvent, target: ActorPosition) -> bool {
+    use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationSource};
+    let oteryn_dev_client::SessionEvent::Presentation(delta) = event else {
+        return false;
+    };
+    delta.value.iter().any(|effect| {
+        matches!(effect.kind,
+        PresentationEventKind::MagicEffect { position, source: PresentationSource::Own, .. }
+            if position == target)
+            && delta.value.iter().any(|missile| {
+                missile.decision_ordinal == effect.decision_ordinal
+                    && matches!(missile.kind, PresentationEventKind::Missile {
+                to, source: PresentationSource::Own, ..
+            } if to == target)
+            })
+    })
 }
 
 async fn sleep_receipt(clients: &SeamClients<'_>, session: [u8; 16]) -> TestResult {
@@ -546,7 +610,7 @@ async fn sleep_receipt(clients: &SeamClients<'_>, session: [u8; 16]) -> TestResu
     Ok(())
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
+async fn journey(clients: &SeamClients<'_>, active: &mut Option<DevClientSession>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -557,40 +621,48 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut failures = Vec::new();
     for &leg in LEGS {
-        let mut client = connect_world(clients, 0xf5).await?;
+        let client = active.insert(connect_world(clients, 0xf5).await?);
         let mut terminal = false;
         let mut map_after = None;
         let mut board_after = None;
         let mut slept = None;
         let mut transfer_after = None;
+        let mut rune_after = None;
         let result: TestResult = match tokio::time::timeout(Duration::from_secs(70), async {
             match leg {
                 "modal" => {
-                    modal_notice(&mut client).await?;
+                    modal_notice(client, clients).await?;
                 }
                 "discovery-poi" => {
-                    map_after = Some(discovery(&mut client, world).await?);
+                    map_after = Some(discovery(client, world).await?);
                 }
                 "bed-sleep" => {
-                    slept = bed_modal(&mut client, clients, true, &mut terminal).await?;
+                    slept = bed_modal(client, clients, true, &mut terminal).await?;
                 }
                 "use-at" => {
-                    use_at(&mut client).await?;
+                    use_at(client).await?;
+                    rune_after = client.inventory().map(|inventory| {
+                        inventory
+                            .entries
+                            .iter()
+                            .map(|item| (item.item_definition_ref, item.count, item.sub_type))
+                            .collect::<Vec<_>>()
+                    });
                 }
                 "house-hireling" => {
-                    hireling(&mut client, clients).await?;
+                    hireling(client, clients).await?;
                 }
                 "house-transfer" => {
                     let house = owned_house(clients).await?;
-                    let entered = transfer(&mut client, &house, false).await?;
-                    let exited = transfer(&mut client, &house, true).await?;
+                    let entered = transfer(client, &house, false).await?;
+                    let exited = transfer(client, &house, true).await?;
                     transfer_after = Some(exited.clone());
                     if exited.scope_generation <= entered.scope_generation {
                         return Err("needed:advanced-house-scope-generation".into());
                     }
                 }
                 "task-reroll" => {
-                    board_after = Some(reroll(&mut client, world).await?);
+                    board_after = Some(reroll(client, world).await?);
                 }
                 _ => return Err("unknown-leg".into()),
             }
@@ -604,25 +676,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         let ended = if terminal {
             Ok(())
         } else {
-            logout(&mut client).await
+            logout(client).await
         };
-        drop(client);
+        active.take();
         let result: TestResult = async {
             ended?;
             result?;
             if let Some(session) = slept {
                 sleep_receipt(clients, session).await?;
             }
-            let mut fresh = connect_world(clients, 0xf6).await?;
+            let fresh = active.insert(connect_world(clients, 0xf6).await?);
             let checked: TestResult = async {
+                if leg == "modal" && modal_query(fresh).await? != modal::Reply::None {
+                    return Err("needed:relog-answered-modal-remains-closed".into());
+                }
+                if let Some(before) = rune_after {
+                    let after = fresh.inventory().ok_or("needed:relog-rune-inventory")?;
+                    let entries: Vec<_> = after
+                        .entries
+                        .iter()
+                        .map(|item| (item.item_definition_ref, item.count, item.sub_type))
+                        .collect();
+                    if entries != before {
+                        return Err("needed:relog-rune-consumption".into());
+                    }
+                }
                 if let Some(before) = map_after {
-                    let after = map_command(&mut fresh, 0).await?;
+                    let after = map_command(fresh, 0).await?;
                     if after.found != before.found || after.revision < before.revision {
                         return Err("needed:relog-poi-discovery-state".into());
                     }
                 }
                 if let Some(before) = board_after {
-                    let after = board(&mut fresh, 4).await?;
+                    let after = board(fresh, 4).await?;
                     if before.bounty.rerolls != after.bounty.rerolls
                         || before.bounty.offers != after.bounty.offers
                     {
@@ -641,7 +727,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 if leg == "house-hireling" {
                     use client_runtime::hireling as runtime;
                     let house = owned_house(clients).await?;
-                    transfer(&mut fresh, &house, false).await?;
+                    transfer(fresh, &house, false).await?;
                     let reply = runtime::send(
                         fresh.session_mut(),
                         &runtime::HirelingCommand(runtime::hireling::Request::Query),
@@ -650,12 +736,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                     if reply.status != CommandStatus::Accepted || reply.active != Some(false) {
                         return Err("needed:relog-dismissed-hireling-state".into());
                     }
-                    transfer(&mut fresh, &house, true).await?;
+                    transfer(fresh, &house, true).await?;
                 }
                 Ok(())
             }
             .await;
-            logout(&mut fresh).await?;
+            logout(fresh).await?;
+            active.take();
             checked
         }
         .await;
@@ -689,5 +776,59 @@ mod tests {
             "needed:house-entry-refused"
         );
         assert_eq!(LEGS.len(), 7);
+    }
+    #[test]
+    fn rune_effect_requires_own_missile_and_effect_in_the_same_decision() {
+        use oteryn_dev_client::{AppliedDelta, SessionEvent};
+        use oteryn_protocol_oteryn::presentation::{
+            PresentationEvent, PresentationEventKind, PresentationSource,
+        };
+        let at = ActorPosition {
+            x: 100,
+            y: 101,
+            floor: 7,
+        };
+        let missile = PresentationEvent {
+            decision_ordinal: 1,
+            emission_ordinal: 1,
+            kind: PresentationEventKind::Missile {
+                from: at,
+                to: at,
+                missile_id: 1,
+                source: PresentationSource::Own,
+            },
+        };
+        let effect = PresentationEvent {
+            decision_ordinal: 1,
+            emission_ordinal: 2,
+            kind: PresentationEventKind::MagicEffect {
+                position: at,
+                effect_id: 1,
+                source: PresentationSource::Own,
+            },
+        };
+        let mut event = SessionEvent::Presentation(AppliedDelta {
+            server_sequence: 1,
+            base_revision: 1,
+            new_revision: 2,
+            value: vec![missile, effect],
+        });
+        assert!(rune_effect(&event, at));
+        assert!(!rune_effect(&event, ActorPosition { x: 102, ..at }));
+        if let SessionEvent::Presentation(delta) = &mut event {
+            delta.value[1].decision_ordinal = 2;
+        }
+        assert!(!rune_effect(&event, at));
+        if let SessionEvent::Presentation(delta) = &mut event {
+            delta.value[1] = PresentationEvent {
+                kind: PresentationEventKind::MagicEffect {
+                    position: at,
+                    effect_id: 1,
+                    source: PresentationSource::Others,
+                },
+                ..effect
+            };
+        }
+        assert!(!rune_effect(&event, at));
     }
 }
