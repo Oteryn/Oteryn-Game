@@ -45,6 +45,8 @@ const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level
 const DEATHS_SQL: &str = "SELECT d.committed_at,d.level_before, \
  COALESCE((SELECT k.name FROM game_public_death_killers k JOIN game_public_death_classifications c ON c.death_occurrence_id=k.death_occurrence_id \
    WHERE k.death_occurrence_id=d.death_occurrence_id AND k.ordinal=0 AND ((k.kind='creature' AND c.killer_key=k.creature_key) OR (k.kind='player' AND c.killer_key='player'))),'') AS killer, \
+ COALESCE((SELECT k.name FROM game_public_death_killers k JOIN game_public_death_classifications c ON c.death_occurrence_id=k.death_occurrence_id AND c.most_damage_ordinal=k.ordinal \
+   WHERE k.death_occurrence_id=d.death_occurrence_id),'') AS most_damage, \
  EXISTS(SELECT 1 FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id) AS unjustified, \
  ARRAY(SELECT r.name FROM (SELECT u.character_id AS killer FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id \
    UNION SELECT f.killer_character_id FROM game_guild_war_frags f WHERE f.death_occurrence_id=d.death_occurrence_id) k JOIN game_character_roots r ON r.character_id=k.killer ORDER BY r.name) AS killers \
@@ -175,12 +177,12 @@ impl DurabilityRoot {
                         let killers: Vec<String> = row.try_get("killers")?;
                         entries.push((row.try_get("committed_at")?, death_cause(narrow(level)?, &killers)));
                         let killer: String = row.try_get("killer")?;
-                        // No owner records per-killer damage amounts, so the most-damage
-                        // killer stays unknown (empty).
+                        // The death owner's captured most-damage row; empty when unknown.
+                        let most_damage: String = row.try_get("most_damage")?;
                         details.push(DeathDetails {
                             level: narrow(level)?,
                             killer: bounded_death_name(&killer),
-                            most_damage: String::new(),
+                            most_damage: bounded_death_name(&most_damage),
                             unjustified: row.try_get("unjustified")?,
                         });
                     }

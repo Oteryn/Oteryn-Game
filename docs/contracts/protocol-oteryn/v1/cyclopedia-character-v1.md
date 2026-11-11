@@ -329,6 +329,18 @@ unknown. `unjustified` is 1 when the death awarded unjustified points to any
 killer. Killer names hold at most 64 bytes (`MAX_DEATH_NAME_BYTES`); the reader
 cuts a longer stored name at a character boundary.
 
-Current difference (pending owner decision): no owner records per-killer damage amounts, so
-`most_damage` is currently always empty (unknown) and the client must not
-substitute another name. A session without 488 receives byte-identical rows.
+`most_damage` is the most-damage dealer the fenced death transaction captured
+(migration 2780, `game_public_death_classifications.most_damage_ordinal`, a
+reference to one of the death's own historical killer rows, so the name is the
+one frozen at death). It is the killer cohort player with the largest recorded
+damage total in the PvP harm receipts of the last five minutes (a tie keeps the
+earlier capture position); without player damage evidence it is the captured
+final blow (a creature, or the final player in the cohort). It is empty when
+neither is known, and for every death captured before migration 2780; the
+client must not substitute another name. A session without 488 receives
+byte-identical rows.
+
+Current difference: Crystal `Player::death` compares the damage of every
+attacker, creatures included. Only player damage has durable amounts here, so
+a player who dealt any recorded damage is reported over a creature that may have
+dealt more.
