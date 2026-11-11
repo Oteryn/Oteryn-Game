@@ -123,6 +123,33 @@ mod tests {
     }
 
     #[test]
+    fn command_348_registry_bound_is_the_tiered_request_length() -> Result<(), &'static str> {
+        let protocol: serde_json::Value =
+            serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)
+                .map_err(|_| "registry")?;
+        let command = protocol["command_types"]
+            .as_array()
+            .ok_or("command_types")?
+            .iter()
+            .find(|command| command["id"] == COMMAND_TYPE_HOTKEY_EQUIP)
+            .ok_or("command 348")?;
+        // The longest request is the capability-485 form: four definition bytes and the tier.
+        let tiered = TieredRequest {
+            request: Request {
+                definition: NonZeroU32::MAX,
+            },
+            upgrade_tier: Some(MAX_UPGRADE_TIER),
+        }
+        .encode()
+        .ok_or("tier")?;
+        assert_eq!(
+            command["max_payload_bytes"].as_u64(),
+            u64::try_from(tiered.len()).ok()
+        );
+        Ok(())
+    }
+
+    #[test]
     fn hotkey_equip_canonical_definition_reference() -> Result<(), &'static str> {
         assert_eq!(
             Request {

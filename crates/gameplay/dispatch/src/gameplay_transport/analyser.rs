@@ -61,6 +61,7 @@ struct Stream {
 pub struct AnalyserStreams(Mutex<HashMap<GameSessionId, Stream>>);
 
 impl AnalyserStreams {
+    #[cfg(test)]
     pub(super) fn snapshot(
         &self,
         actor: ExactActorRef,
