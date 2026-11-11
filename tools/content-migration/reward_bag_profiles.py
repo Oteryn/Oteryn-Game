@@ -9,12 +9,12 @@ the alicorn quiver is minted empty through the same receipt owner.
 import argparse
 import hashlib
 import json
-
-from native_profile_composition import encode_native_profile
 import re
 import sys
 from decimal import Decimal
 from pathlib import Path
+
+from native_profile_composition import encode_native_profile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))

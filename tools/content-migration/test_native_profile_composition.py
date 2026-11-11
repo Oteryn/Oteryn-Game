@@ -81,11 +81,13 @@ class NativeProfileEncoding(unittest.TestCase):
         self.assertEqual(encode_native_profile(self.document), self.pretty)
 
     def test_exception_restores_encoding_and_unrelated_context_is_isolated(self):
-        with self.assertRaisesRegex(ValueError, 'admission rejected'):
-            with compact_native_profile_scope():
-                self.assertNotEqual(encode_native_profile(self.document), self.pretty)
-                self.assertEqual(Context().run(encode_native_profile, self.document), self.pretty)
-                raise ValueError('admission rejected')
+        with (
+            self.assertRaisesRegex(ValueError, 'admission rejected'),
+            compact_native_profile_scope(),
+        ):
+            self.assertNotEqual(encode_native_profile(self.document), self.pretty)
+            self.assertEqual(Context().run(encode_native_profile, self.document), self.pretty)
+            raise ValueError('admission rejected')
         self.assertEqual(encode_native_profile(self.document), self.pretty)
 
 

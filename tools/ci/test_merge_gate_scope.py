@@ -55,10 +55,12 @@ class MergeGateScope(unittest.TestCase):
         self.assertEqual(result['complete'], 'true')
         self.assertEqual(len(json.loads(result['file_records'])), 2)
 
-    def test_count_race_is_rejected_by_the_protected_base_contract(self):
-        with self.assertRaises(SystemExit) as stopped:
-            self.evaluate(lambda after: after.update(changed_files=3))
-        self.assertEqual(stopped.exception.code, 1)
+    def test_count_race_discards_file_evidence_for_trusted_base_fallback(self):
+        result = self.evaluate(lambda after: after.update(changed_files=3))
+        self.assertEqual(result['target_sha'], HEAD)
+        self.assertEqual(result['base_sha'], BASE)
+        self.assertEqual(result['complete'], 'false')
+        self.assertEqual(json.loads(result['file_records']), [])
 
     def test_count_race_cannot_hide_head_base_repository_or_state_movement(self):
         for field in ('head', 'base', 'repository', 'state', 'base_ref'):

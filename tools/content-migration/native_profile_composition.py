@@ -4,7 +4,6 @@ import json
 from contextlib import contextmanager
 from contextvars import ContextVar
 
-
 _compact_native_profiles = ContextVar('compact_native_profiles', default=False)
 
 
