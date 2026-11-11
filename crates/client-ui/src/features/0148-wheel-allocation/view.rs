@@ -84,7 +84,7 @@ pub fn reshape_block(panel: &WheelPanel, gem: &atelier::GemView) -> Option<Resha
     } else {
         resources.supreme_fragments
     };
-    (u64::from(owned) < u64::from(fragments)).then_some(ReshapeBlock::Fragments)
+    (owned < u64::from(fragments)).then_some(ReshapeBlock::Fragments)
 }
 
 /// Fragment Workshop totals: +5 Health, Mana and Capacity per unlocked mod grade, one
