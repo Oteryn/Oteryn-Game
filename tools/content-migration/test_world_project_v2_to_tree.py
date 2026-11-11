@@ -484,7 +484,7 @@ schedule_check(
     check=True,
 )
 
-# Import both modules so every Boss corpse and authored NPC custody case runs.
+# Import the complete corpse, reward yield and authored NPC custody test modules.
 schedule_check(
     [
         sys.executable,
@@ -493,8 +493,23 @@ schedule_check(
         "-v",
         "test_boss_corpse_profiles",
         "test_authored_npc_item_profiles",
+        "test_quest_corpse_profiles",
+        "test_boss_reward_yield_profiles",
     ],
     cwd=ROOT / "tools/content-migration",
+    check=True,
+)
+
+# Verify the fixed Boss corpse source cohort on the native gameplay test path.
+schedule_check(
+    [
+        sys.executable,
+        "-m",
+        "unittest",
+        "-v",
+        "test_full_spell_artifact.CorpseSourceCohortTests",
+    ],
+    cwd=ROOT / "tools/content-schema/native-gameplay",
     check=True,
 )
 

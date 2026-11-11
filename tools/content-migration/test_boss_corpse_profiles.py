@@ -381,9 +381,6 @@ class AcceptedTerminalCorpseTests(unittest.TestCase):
         self.assertEqual(row, before)
 
 
-if __name__=='__main__':unittest.main()
-
-
 class ActualOutburstCorpseTests(unittest.TestCase):
     def test_actual_native_outburst_has_literal_three_stage_physical_corpse(self):
         native=json.loads((corpses.ROOT/'content/items/definitions/spell-native-profiles.json').read_bytes())
@@ -398,3 +395,6 @@ class ActualOutburstCorpseTests(unittest.TestCase):
             else:
                 self.assertEqual(row['semantics']['container']['value']['capacity'],{'state':'KNOWN','value':capacity})
             self.assertEqual(row['semantics']['temporal']['value']['duration'],{'state':'KNOWN','value':duration})
+
+
+if __name__=='__main__':unittest.main()

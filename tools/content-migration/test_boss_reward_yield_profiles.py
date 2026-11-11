@@ -260,9 +260,6 @@ class SharedCrimsonSwordCustodyTests(unittest.TestCase):
             self.refuse(self.before, 'BOSS_REWARD_YIELD_CAPTURE_DRIFT')
 
 
-if __name__=='__main__':unittest.main()
-
-
 class ActualOutburstRewardYieldTests(unittest.TestCase):
     def test_actual_outburst_personal_reward_has_complete_carried_yields(self):
         native=json.loads((yields.ROOT/'content/items/definitions/spell-native-profiles.json').read_bytes())
@@ -272,3 +269,6 @@ class ActualOutburstRewardYieldTests(unittest.TestCase):
             self.assertTrue(key in actual,'actual rewardBoss Outburst Item policy missing: '+key)
             self.assertTrue(actual[key]['admission']['materializable'])
             self.assertIn('CharacterInventory',actual[key]['admission']['legal_destinations'])
+
+
+if __name__=='__main__':unittest.main()
