@@ -1,8 +1,28 @@
 //! Qualification of one empty, flat, unbound native map amphora for a Ground push.
-use super::{BundleFacts, Family, MapFacts, TilePos, pickup, placement_key};
+use super::{BundleFacts, Family, MapDefinition, MapFacts, TilePos, pickup, placement_key};
 use oteryn_gameplay_items::map_pickup::{PickupFacts, empty_amphora_push_quantity};
+use std::num::NonZeroU32;
 
 impl BundleFacts {
+    /// Map projection reuses the move owner's exact immutable source qualification.
+    pub(super) fn empty_amphora_pushable(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        id: u32,
+        depths: &[u8],
+        definition: NonZeroU32,
+    ) -> bool {
+        self.empty_amphora_push_entry(pos, ordinal, id, depths, "oteryn:item.tibia.i2904")
+            .is_ok_and(|entry| {
+                self.palette
+                    .get(entry.palette as usize)
+                    .is_some_and(|palette| {
+                        palette.facts.definition == MapDefinition::Item(definition)
+                    })
+            })
+    }
+
     /// The dispatcher supplies the current B3 tile depths and resolved native item key.
     /// Inventory pickup continues to use `pickup_entry`, which refuses this source.
     pub fn empty_amphora_push_entry(
