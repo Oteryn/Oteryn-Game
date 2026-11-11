@@ -40,7 +40,7 @@ impl Browser {
                         mailbox,
                         commands,
                     };
-                    super::sanctions::open_window(&link);
+                    super::super::sanctions::open_window(&link);
                 }
                 #[cfg(not(windows))]
                 let _ = (weak, commands);

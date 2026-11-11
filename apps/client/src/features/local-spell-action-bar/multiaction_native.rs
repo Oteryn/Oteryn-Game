@@ -255,7 +255,6 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
             DestroyWindow(hwnd);
             return;
         }
-        let mut only_known = false;
         let mut shown: Vec<usize> = (0..choices.len()).collect();
         for (label, _) in &choices {
             SendMessageW(list, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
@@ -330,7 +329,7 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
                     }
                     120..=122 => assigned[id - 120] = None,
                     140 => {
-                        only_known = SendMessageW(known_only, BM_GETCHECK, 0, 0) == 1;
+                        let only_known = SendMessageW(known_only, BM_GETCHECK, 0, 0) == 1;
                         shown = (0..choices.len())
                             .filter(|&i| !only_known || known[i])
                             .collect();

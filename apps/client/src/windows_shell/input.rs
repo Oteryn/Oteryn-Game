@@ -51,7 +51,7 @@ impl Application {
             for action in custom_actions {
                 if let oteryn_client::play::CustomAction::Utility { action } = action {
                     if self.settings.run_utility(&play.link, action) {
-                        let _ = self.settings.capture(&mut play.view);
+                        self.settings.capture(&mut play.view);
                     }
                 } else {
                     play.link.custom_hotkey_action(&play.view, &action);

@@ -215,7 +215,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 mailbox.chat.guild_open = false;
             }
             let guild_mode = SendMessageW(rooms, LB_GETCURSEL, 0, 0) == 4;
-            let enabled = super::super::input::composer_enabled(
+            let enabled = crate::play::feature_0007_chat::input::composer_enabled(
                 &mailbox.chat,
                 if guild_mode { Mode::Guild } else { Mode::Say },
             );
