@@ -408,6 +408,13 @@ pub enum FamiliarStateOutcome {
     Committed(CommittedCharacterFamiliar),
     AlreadyCommitted(CommittedCharacterFamiliar),
 }
+/// The exact retained clean end, observed after the writer's occurrence lock.
+/// Neither outcome grants current session or runtime authority to its reader.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FamiliarCleanEndResolution {
+    Committed(CharacterRevision),
+    Absent,
+}
 #[derive(Debug)]
 pub enum PendingFamiliarStateOutcome {
     Prepared(PendingCharacterFamiliar),
@@ -620,6 +627,62 @@ impl DurabilityRoot {
                         .transpose()?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(receipt))
+                })
+            })
+            .await?
+    }
+
+    /// Resolve an original clean end without submitting it again. Absence is
+    /// proven only after the original writer has finished and its row is still
+    /// unchanged; an unavailable read or a conflicting successor proves neither.
+    pub async fn reconcile_familiar_clean_end(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterGameplayFence,
+        request: FamiliarStateRequest,
+    ) -> Result<FamiliarCleanEndResolution> {
+        request.validate()?;
+        let binding = command_binding(&fence, &request)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-familiar:' || encode($1,'hex'),0))")
+                        .bind(request.occurrence.0.as_slice()).execute(&mut *tx).await?;
+                    let receipt = load_receipt(&mut tx, request.occurrence)
+                        .await?
+                        .as_ref()
+                        .map(decode_receipt)
+                        .transpose()?;
+                    let row = sqlx::query("SELECT s.state::text,s.committed_character_revision::text,(SELECT r.committed_at FROM game_character_familiar_receipts r WHERE r.familiar_occurrence_id=s.last_familiar_occurrence_id AND r.character_id=s.character_id AND r.committed_character_revision=s.committed_character_revision) AS checkpoint_committed_at_ms FROM game_character_familiar_state s WHERE s.character_id=encode($1,'hex')::uuid FOR UPDATE OF s")
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .fetch_optional(&mut *tx).await?;
+                    let projection = row.as_ref().map(decode_projection).transpose()?.unwrap_or_default();
+                    let resolution = if let Some(receipt) = receipt {
+                        if receipt.binding != binding || !receipt.matches_request(&fence, &request) {
+                            return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
+                        }
+                        if projection.state != receipt.after
+                            || projection.committed_character_revision != Some(receipt.committed_character_revision)
+                        {
+                            return Ok(Err(CharacterProgressionError::FamiliarStateMismatch));
+                        }
+                        FamiliarCleanEndResolution::Committed(receipt.committed_character_revision)
+                    } else {
+                        if projection.state != request.before
+                            || projection.committed_character_revision.is_some_and(|revision| revision.get() > fence.expected_character_revision.get())
+                        {
+                            return Ok(Err(CharacterProgressionError::FamiliarStateMismatch));
+                        }
+                        FamiliarCleanEndResolution::Absent
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(resolution))
                 })
             })
             .await?

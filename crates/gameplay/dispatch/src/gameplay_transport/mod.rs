@@ -1387,6 +1387,12 @@ struct AdmissionRetryBudget<'r> {
     /// The root whose holder a retry waits for (NODEBOOT-1); without one a retry sleeps the
     /// whole backoff.
     root: Option<&'r DurabilityRoot>,
+    // Opt-in foreground owners retain preference across every read and wait of
+    // this fixed budget, including cancellation of the enclosing future.
+    _foreground: Option<crate::durability::ForegroundDemand>,
+    /// This owner's place in the holder queue from its first retried refusal on: a returned
+    /// holder goes to it before owners refused later.
+    waiter: std::sync::OnceLock<Option<crate::durability::HolderWaiter>>,
 }
 
 /// The earliest retry after a step that found the holder busy, measured from the failure
@@ -1405,6 +1411,8 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: fresh_admission_backoff(game_session_id),
             stale_rounds: 1,
             root: None,
+            _foreground: None,
+            waiter: std::sync::OnceLock::new(),
         }
     }
 
@@ -1417,6 +1425,8 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
+            _foreground: None,
+            waiter: std::sync::OnceLock::new(),
         }
     }
 
@@ -1429,24 +1439,54 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    /// The existing command read budget, with preference retained until every
+    /// read completes or its owner is cancelled. Later reads never renew it.
+    fn for_foreground_command(
+        root: &'r DurabilityRoot,
+    ) -> Result<Self, crate::durability::DurabilityError> {
+        let budget = Self::for_command(root);
+        Ok(Self {
+            _foreground: Some(root.foreground_demand()?),
+            ..budget
+        })
+    }
+
+    /// The existing root recovery budget for one foreground lifecycle operation.
+    fn for_foreground_root(
+        game_session_id: &GameSessionId,
+        root: &'r DurabilityRoot,
+    ) -> Result<Self, crate::durability::DurabilityError> {
+        let budget = Self::for_root(game_session_id, root);
+        Ok(Self {
+            _foreground: Some(root.foreground_demand()?),
+            ..budget
+        })
+    }
+
     /// Whether a step that ended on `refusal` is retried. Only an unavailable outcome (such
     /// as a busy durability holder) is transient: it waits at most one backoff, unless the
-    /// retry would start past the window, which fails closed at once. With a root, the retry
-    /// starts as soon as the busy holder is returned (not before [`HOLDER_RETRY_FLOOR`]), so
-    /// the attempt takes the holder ahead of the background passes that poll it on their own
-    /// cadence; a sleeping attempt lost it to them at node start (NODEBOOT-1).
+    /// retry would start past the window, which fails closed at once. With a root, the attempt
+    /// queues for the holder from its first retry on: a returned holder is its turn once every
+    /// owner refused before it is served, and it then retries at once, ahead of later owners and
+    /// of the background passes that poll the holder on their own cadence. A retrier woken
+    /// with the others at each return lost it to faster ones until its window ran out
+    /// (NODEBOOT-1). Any other retry after a return starts no earlier than
+    /// [`HOLDER_RETRY_FLOOR`].
     async fn retries_unavailable(&self, refusal: AdmissionRefusal) -> bool {
         let now = tokio::time::Instant::now();
         if refusal != AdmissionRefusal::Unavailable || now + self.backoff >= self.deadline {
+            // A given-up owner holds no later owner back.
+            if let Some(Some(waiter)) = self.waiter.get() {
+                waiter.stop_waiting();
+            }
             return false;
         }
         match self.root {
             Some(root) => {
+                let _ = self.waiter.get_or_init(|| root.holder_waiter());
                 let earliest = now + HOLDER_RETRY_FLOOR;
                 let latest = now + self.backoff;
-                if root.is_ready() {
-                    root.wait_holder_retry(earliest, latest).await;
-                } else {
+                if !root.wait_holder_turn(earliest, latest).await {
                     // A retired holder cannot emit a return notification. Service
                     // real readiness within this same retry window, then retry on
                     // its observed return; neither deadline nor refusal changes.

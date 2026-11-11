@@ -777,6 +777,8 @@ pub(super) async fn account_security(
 
 // UNION ALL arm order is irrelevant: the query checks only for the existence of an
 // invalid row; chain continuity and latest state are joined by Character revision.
+// Keep the additive view aligned with game_character_progression_consistency_guard.
+// It includes premium and prey receipts, so neither may be repeated as another arm.
 // Each arm names the first violating row it finds (LOGDBG-C): the receipt family, a closed
 // violation kind and two revision numbers as text, never an identity.
 const RECEIPT_CHAIN_TABLES: &[&str] = &[
@@ -786,9 +788,8 @@ const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_character_charm_receipts",
     "game_character_death_receipts",
     "game_character_familiar_receipts",
+    "game_character_hazard_revision_chain_rotten_blood_arena",
     "game_character_monk_state_receipts",
-    "game_character_premium_revision_chain",
-    "game_character_prey_receipts",
     "game_character_proficiency_receipts",
     "game_character_quest_receipts",
     "game_character_stance_receipts",
@@ -796,6 +797,8 @@ const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_character_xp_receipts",
 ];
 
+// Migration 0539 changes only declaration metadata and preserves immutable receipts.
+// Both receipt comparisons retain its exact legacy-to-current exception.
 static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
     let chain = RECEIPT_CHAIN_TABLES
         .iter()
@@ -848,7 +851,9 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
              OR x.content_revision <> s.content_revision \
              OR x.simulation_revision <> s.simulation_revision \
              OR x.evidence_revision <> s.evidence_revision \
-             OR x.declaration_revision <> s.declaration_revision \
+             OR NOT (x.declaration_revision = s.declaration_revision \
+                     OR (x.declaration_revision = 'character-progression-differences-v1-c6d0829911772c01b4a229a5bb0aa8f9' \
+                         AND s.declaration_revision = 'character-progression-differences-v1-aa9d260834741d235ba9bd77e14888bf')) \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision) \
          UNION ALL \
@@ -861,7 +866,9 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
              OR x.content_revision <> s.content_revision \
              OR x.simulation_revision <> s.simulation_revision \
              OR x.evidence_revision <> s.evidence_revision \
-             OR x.declaration_revision <> s.declaration_revision \
+             OR NOT (x.declaration_revision = s.declaration_revision \
+                     OR (x.declaration_revision = 'character-progression-differences-v1-c6d0829911772c01b4a229a5bb0aa8f9' \
+                         AND s.declaration_revision = 'character-progression-differences-v1-aa9d260834741d235ba9bd77e14888bf')) \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision \
          LIMIT 1"

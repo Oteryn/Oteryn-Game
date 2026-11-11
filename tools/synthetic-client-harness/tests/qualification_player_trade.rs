@@ -38,6 +38,17 @@ mod client_world {
             .take()
             .ok_or_else(|| "partner already connected".into())
     }
+    /// Mirrors `client_phases::world::logout_retrying_busy`; the scripted peer never answers Busy.
+    pub(super) async fn logout_retrying_busy(
+        client: &mut DevClientSession,
+    ) -> TestResult<(Option<logout::LogoutResult>, String, usize, bool)> {
+        let outcome = client
+            .session_mut()
+            .logout()
+            .await
+            .map_err(|error| format!("logout attempt 1 failed: {error}"))?;
+        Ok((outcome.result, format!("{outcome:?}"), 1, false))
+    }
 }
 #[path = "../../../apps/game-server/src/qualification/client_phases/player_trade.rs"]
 mod phase;

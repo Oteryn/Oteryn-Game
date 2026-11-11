@@ -2,6 +2,12 @@
 
 use super::*;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static FRESH_SPELL_ADMISSION_BARRIER:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 mod achievements;
 mod admission;
 mod combat;

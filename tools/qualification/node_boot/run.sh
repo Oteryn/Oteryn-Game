@@ -15,13 +15,15 @@ readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 readonly TOPOLOGY_REVISION=wp5-node-boot-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
+readonly PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000003
+readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
 readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404)
 # CHAR-NAME-1: bootstrap intent contract version 2 names each Character (naming policy revision 1).
-readonly INTENT_NAMES=("Qualification One" "Qualification Two")
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
@@ -80,6 +82,12 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_B
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
+BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  # Packet journeys may move, loot or kill their Characters before the required core runs.
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID")
+fi
+readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
 NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
 NODE_GAMEPLAY_ENV=()
@@ -331,7 +339,10 @@ compose up --detach --wait db platform nginx
 # Platform output is kept: a failing operator command must be diagnosable.
 php_exec() { compose exec --no-TTY --user www-data platform php -r "$1"; }
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","nb-one@example.invalid"],["'"$SECOND_ACCOUNT_ID"'","nb-two@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",hex2bin("'"$FRESH_PUBLIC_HEX"'")); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey("urn:oteryn:platform:game-recovery","oteryn-reauth-recovery-v1","existing_actor_recovery","'"$RECOVERY_KEY_ID"'",hex2bin("'"$RECOVERY_PUBLIC_HEX"'"));'
-evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_only client_identities=1"
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$PACKET_ACCOUNT_ID"'","nb-three@example.invalid"],["'"$SECOND_PACKET_ACCOUNT_ID"'","nb-four@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); }'
+fi
+evidence "platform_seed=synthetic_accounts=${#BOOTSTRAP_ACCOUNTS[@]} fresh_trust=published_public_key_only client_identities=1"
 
 # The accelerated build is disposable: production binaries omit its file input.
 # Real-clock qualification deliberately builds the ordinary shipping binary.
@@ -588,6 +599,46 @@ durability_report_lines() {
     -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=holder_usage /DURABILITY_HOLDER_USAGE /' \
     -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=pass_dropped /DURABILITY_PASS_DROPPED /'
 }
+report_character_authority_failures() {
+  # Startup runs outside the seam monitor. Export only the closed check names
+  # from the current log snapshot, never identifiers, SQL, or stored payloads.
+  python3 - "$node_log" "$1" "$NODE_BOOT_WORLD" <<'PY_CHARACTER_AUTHORITY'
+import os, re, sys
+
+path, stage, world = sys.argv[1:]
+checks = {'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
+          'bazaar', 'revision_chain', 'appearance', 'build_chain',
+          'proficiency_history', 'familiar_chain', 'spell_familiar_group',
+          'spell_item_chain', 'audit_payload'}
+reported = set()
+try:
+    with open(path, 'rb') as stream:
+        remaining = os.fstat(stream.fileno()).st_size
+        oversized = False
+        while remaining > 0 and len(reported) < len(checks):
+            piece = stream.readline(min(4097, remaining))
+            if not piece:
+                break
+            remaining -= len(piece)
+            complete = piece.endswith(b'\n')
+            if oversized or len(piece) > 4096 or not complete:
+                oversized = not complete
+                continue
+            line = piece.decode('utf-8', errors='replace')
+            if not line.startswith('oteryn-game-server '):
+                continue
+            fields = dict(re.findall(r'\b([a-z_]+)=([^\s]+)', line))
+            check = fields.get('stage')
+            if (fields.get('module') == 'durability'
+                    and fields.get('event') == 'character_authority_check_failed'
+                    and check in checks and check not in reported):
+                print(f'NODE_BOOT_CHARACTER_AUTHORITY_CHECK stage={stage} '
+                      f'world_bundle={world} check={check}')
+                reported.add(check)
+except FileNotFoundError:
+    pass
+PY_CHARACTER_AUTHORITY
+}
 start_runtime_diagnostics() {
   # Read the regular file independently: neither a slow log consumer nor a stalled
   # qualification pipeline can hold up the server's stderr. No raw error text is copied.
@@ -605,10 +656,49 @@ signal.signal(signal.SIGINT, stop)
 signal.signal(signal.SIGTERM, stop)
 events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'join_prepare_failed', 'listener_poll_slow', 'listener_connection_poll_slow',
-          'pass_dropped', 'character_authority_check_failed'}
+          'pass_dropped', 'step_rejected_dawnport', 'step_rejected_source_map',
+          'step_rejected_dead', 'step_rejected_lane', 'step_rejected_pvp_locks',
+          'step_rejected_stale_position', 'step_rejected_pending_spell',
+          'step_rejected_drome', 'step_rejected_movement', 'step_rejected_holder_busy',
+          'session_durability_failed', 'logout_unknown', 'logout_busy',
+          'control_loss_reconcile_pending', 'control_loss_result',
+          'control_loss_publication', 'control_loss_grace', 'character_authority_check_failed',
+          'appearance_initial_failed', 'appearance_observation_failed'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
+    'kind': {'Actor', 'SnapshotMismatch', 'ContextMismatch', 'ScopeMismatch',
+             'CoordinateOverflow', 'Cell', 'Blocked', 'CapacityExceeded', 'NotQualified',
+             'holder_busy', 'storage', 'deadline', 'commit_unknown', 'authority',
+             'invalid_state', 'unavailable', 'unknown', 'recorded', 'resumed_history',
+             'terminal', 'not_applicable', 'refused', 'pending'},
+    'class': {'observation', 'mappings', 'attach', 'encode', 'content', 'fence',
+              'revision', 'state', 'visibility', 'conditions'},
+    'failure_stage': {'account_closure', 'activity_destination', 'activity_loss_session',
+                      'activity_publish', 'activity_return', 'activity_scope',
+                      'activity_successor', 'activity_view', 'actor_unreserved',
+                      'admitted_binding', 'appearance_observation', 'familiar_cast',
+                      'combat_hold', 'condition_save', 'death_save', 'entry', 'familiar_save',
+                      'foreground_demand', 'gourmet_checkpoint', 'hunting_stamina_readback',
+                      'item_effects', 'kill_rewards', 'logout_settle', 'loss_activity_origin',
+                      'loss_readback', 'monk_save', 'native_publication',
+                      'loss_resumed_history', 'loss_session', 'loss_session_time',
+                      'loss_transferred_history', 'native_cast', 'newhaven_travel',
+                      'parameters', 'pending_spell_commit', 'prey_checkpoint_fence',
+                      'prey_checkpoint_session', 'proficiency_character', 'proficiency_fence',
+                      'proficiency_readback', 'proficiency_snapshot', 'pvp_refresh',
+                      'release_attempt', 'release_commit', 'release_fence',
+                      'release_not_applicable', 'release_not_expired', 'release_retry_lifted',
+                      'release_settle',
+                      'resting_stamina_readback', 'retire', 'retire_session',
+                      'spell_reconcile', 'staff_release', 'stamina_character', 'stamina_session',
+                      'terminal_session', 'training_character', 'training_readback',
+                      'training_save', 'training_session', 'wheel_gift', 'world_items',
+                      'zones_after_reconcile', 'zones_before_reconcile',
+                      'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
+                      'bazaar', 'revision_chain', 'appearance', 'build_chain',
+                      'proficiency_history', 'familiar_chain', 'spell_familiar_group',
+                      'spell_item_chain', 'audit_payload'},
     'reason': {'transferred', 'disconnected', 'control_lost', 'logged_out',
                'protocol_error', 'commit_outcome_unknown', 'closed', 'no_evidence'},
     'path': {'server_message_timeout', 'liveness_missed', 'probe_write_timeout',
@@ -636,6 +726,8 @@ started = time.monotonic()
 def report(line):
     global emitted
     fields = dict(re.findall(r'\b([a-z_]+)=([^\s]+)', line))
+    # Keep the qualification stage and the session failure stage distinct.
+    fields['failure_stage'] = fields.get('stage', '')
     event = fields.get('event') if line.startswith('oteryn-game-server ') else None
     marker = line.split(' ', 1)[0]
     if marker in legacy:
@@ -663,7 +755,10 @@ def report(line):
     if counts[identity] >= 2:
         return
     # Reserve room for terminal failures even if many different slow callers recur.
-    limit = {'serve_end': 32, 'durability_pass_slow': 16}.get(event, 8)
+    limit = {'serve_end': 32, 'durability_pass_slow': 16,
+             'logout_busy': 16, 'control_loss_reconcile_pending': 16,
+             'control_loss_grace': 16,
+             'character_authority_check_failed': 16}.get(event, 8)
     if event_counts[event] >= limit or emitted >= 128:
         if event not in limited:
             print(f'NODE_BOOT_RUNTIME_LIMIT stage={stage} world_bundle={world} '
@@ -755,6 +850,7 @@ stage() { # name prerequisite... -- function
     # the qualification failure rather than a subsequent successful shutdown.
     [[ -f "$failed_node_log" || ! -f "$node_log" ]] || cp "$node_log" "$failed_node_log"
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
+    report_character_authority_failures "$name"
     echo "--- session close events"
     grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed)( |$)' "$node_log" 2>/dev/null | tail -n 40 || true
     echo "--- last node events"; durability_report_lines < "$node_log" 2>/dev/null | grep -v 'DURABILITY_' | tail -n 40 || true
@@ -930,7 +1026,7 @@ PY
 
 character_bootstrap() { # §4.5 Characters from real Platform intents
   local index=0 account operation name failed=0
-  for account in "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID"; do
+  for account in "${BOOTSTRAP_ACCOUNTS[@]}"; do
     operation="${INTENT_OPERATIONS[$index]}"
     name="${INTENT_NAMES[$index]}"
     index=$((index + 1))
@@ -944,7 +1040,7 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
   done
   [[ $failed == 0 ]]
-  evidence "characters=2 source=platform_intents path=control_socket retry=idempotent"
+  evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"
 }
 
 seam_stages() { # §4.6 every #823 stage against the node's own port
@@ -958,6 +1054,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
+    test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID")
   fi
   # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
   local knob

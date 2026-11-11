@@ -373,11 +373,49 @@ fn retained_config_is_reserved_against_same_root_i_for_its_full_lifetime()
 
     let root = DurabilityRoot::new(config)?;
     let other_owner = root.clone();
+    let foreground = root.foreground_demand()?;
     assert_eq!(ledger.used(), required);
     drop(root);
     assert_eq!(ledger.used(), required);
     drop(other_owner);
+    // A cancelled or retained foreground owner may outlive every ordinary root clone.
+    // Its arbitration allocation remains charged until that guard is released too.
+    assert_eq!(ledger.used(), required);
+    drop(foreground);
     assert_eq!(ledger.used(), 0);
+    Ok(())
+}
+
+#[test]
+fn foreground_preference_is_shared_only_by_clones_without_requesting_maintenance()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = DurabilityRoot::new(config()?)?;
+    let clone = root.clone();
+    let other = DurabilityRoot::new(config()?)?;
+    root.ready_demand.store(false, Ordering::Release);
+    let demand = root.foreground_demand()?;
+    let now = Instant::now();
+    assert_eq!(
+        clone.holder_priority.background(now, ROOT_RECOVERY_WINDOW, || Some(())),
+        None
+    );
+    assert_eq!(
+        other.holder_priority.background(now, ROOT_RECOVERY_WINDOW, || Some(())),
+        Some(())
+    );
+    assert!(matches!(
+        clone.try_issue_background_semantic_pass(),
+        Err(DurabilityError::RootUnavailable)
+    ));
+    assert!(!root.has_ready_demand());
+    assert_eq!(root.pool.size(), 0);
+    drop(demand);
+    assert!(matches!(
+        clone.try_issue_background_semantic_pass(),
+        Err(DurabilityError::RootUnavailable)
+    ));
+    assert!(root.has_ready_demand(), "a real ready miss must request recovery");
+    assert_eq!(root.pool.size(), 0, "neither admission creates a connection");
     Ok(())
 }
 
