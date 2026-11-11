@@ -1018,7 +1018,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if selected.len() > 1
             && selected.iter().all(|callback| {
                 !callback.requires_live_premium()
-                    && callback.item_reward().is_none_or(|reward| !reward.premium)
+                    && callback
+                        .item_reward()
+                        .as_ref()
+                        .is_none_or(|reward| !reward.premium)
                     && callback.world_requirements.iter().any(|requirement| {
                         requirement.ground.is_some() || requirement.ground_stack.is_some()
                     })
