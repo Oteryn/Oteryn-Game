@@ -1,0 +1,311 @@
+name: Native closure immutable blob transport
+
+on:
+  push:
+    branches: [codex/pr3042-native-closure-blob-f68a]
+
+permissions: {}
+
+concurrency:
+  group: native-closure-blob-f68a
+  cancel-in-progress: false
+
+# Temporary transport of one independently reviewed blob from a failed generation.
+# No checkout, artifact program execution, source adoption, or qualification occurs.
+jobs:
+  export_blob:
+    if: github.repository == 'Oteryn/Oteryn-Game' && github.ref == 'refs/heads/codex/pr3042-native-closure-blob-f68a'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      pull-requests: read
+      contents: write
+    steps:
+      - name: Verify the exporter, frozen source, and exact partial artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/native-closure-blob-export.py" <<'PY'
+          import base64, hashlib, json, os, pathlib, re, sys, urllib.request
+
+          REPOSITORY = "Oteryn/Oteryn-Game"
+          REPOSITORY_ID = 1338291140
+          API = "https://api.github.com/repos/" + REPOSITORY + "/"
+          EXPORT_BRANCH = "codex/pr3042-native-closure-blob-f68a"
+          EXPORT_WORKFLOW = ".github/workflows/pr3042-native-closure-blob-export.yml"
+          SOURCE_BRANCH = "codex/pr3042-native-closure-93684"
+          SOURCE_WORKFLOW = ".github/workflows/pr3042-native-closure-authoring.yml"
+          SOURCE_SHA = "f68a65d1c6a55d70abcb9047d2889738b0629b22"
+          CANONICAL_SHA = "93684c40a787d6e1a79aa49dfc77cd6d41cfcbbd"
+          WORLD_SHA256 = "74ff1708c9f85dbe20997265430fff5e5b157fa7c47dbfc4e28cff209bfe8b13"
+          RUN_ID = 43007567729
+          ARTIFACT_ID = 13850622127
+          ARTIFACT_NAME = "native-closure-93684-43007567729-1"
+          ZIP_BYTES = 1420895
+          ZIP_SHA256 = "ee4afe2f407fcd087d6966d673dc962bb0392a097d870262db1986909f0f6929"
+          PROVIDER = "content/creatures/definitions/spell-native-profiles.json"
+          PROVIDER_BYTES = 25799542
+          PROVIDER_SHA256 = "94945d906401cffc0b72bc006c13ec63f84cf5e1419ad709abe659ac156e72e8"
+          PROVIDER_BLOB = "3d2c1c301caceefda8cd29e2e3d4cf2562fa5cb8"
+          EVIDENCE = {
+              "baseline.json": (16531, "946cd0fdfec858c62136e1011cf8a2e9b5ab361deca6f71ac58fea75b8500a4a"),
+              "generated-state.json": (7646, "34beacbdd806f665b5007ccc75a84da530364ca1ca1d11bac13bad5e80adfaca"),
+              "generation.log": (14363, "8d43a71c2b6cfc357819b50352072d405ef4955d78ccada231324bf32bae12d5"),
+              "manifest.json": (9398, "1051645071221844d566895784a5cd61d18526f197d0e9309b5db99d632a43cd"),
+              "manifest.json.sha256": (80, "58c913d1dbd4afada3d359b6f5208f014511e2b4422f9baa97a283c145e04a41"),
+              "source-fixture.log": (1298, "d5fae8a553969f69c989a931576aff978aef96931c0c144cf56ca282f6856961"),
+          }
+          OUTCOMES = {
+              "FIXTURE": "success", "GENERATION": "failure", "GUARD": "success",
+              "PINS": "skipped", "PREY": "skipped", "REGISTRATION": "skipped",
+              "WORLD_FIXTURE": "skipped",
+          }
+          INPUT = pathlib.Path(os.environ["RUNNER_TEMP"]) / "native-closure-blob-input"
+          RECEIPT = pathlib.Path(os.environ["RUNNER_TEMP"]) / "native-closure-blob-receipt"
+
+          def require(condition, message):
+              if not condition:
+                  raise SystemExit(message)
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, request, response, code, message, headers, new_url):
+                  return None
+
+          def api(path, body=None):
+              # All reads stay on the GitHub API; the sole allowed write is immutable blob storage.
+              require(body is None or path == "git/blobs", "unexpected mutation endpoint")
+              request = urllib.request.Request(
+                  API + path,
+                  data=None if body is None else json.dumps(body).encode(),
+                  headers={
+                      "Authorization": "Bearer " + os.environ["GH_TOKEN"],
+                      "Accept": "application/vnd.github+json",
+                      "Content-Type": "application/json",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              with urllib.request.build_opener(NoRedirect()).open(request, timeout=60) as response:
+                  require('rel="next"' not in response.headers.get("Link", ""),
+                          "paginated identity or delta response is incomplete")
+                  return json.load(response)
+
+          def live_guards():
+              sha = os.environ["GITHUB_SHA"]
+              require(re.fullmatch("[0-9a-f]{40}", sha) is not None, "invalid exporter SHA")
+              require(os.environ["GITHUB_REPOSITORY"] == REPOSITORY
+                      and os.environ["GITHUB_EVENT_NAME"] == "push"
+                      and os.environ["GITHUB_REF"] == "refs/heads/" + EXPORT_BRANCH
+                      and os.environ["GITHUB_WORKFLOW_SHA"] == sha
+                      and os.environ["GITHUB_WORKFLOW_REF"] ==
+                          REPOSITORY + "/" + EXPORT_WORKFLOW + "@refs/heads/" + EXPORT_BRANCH,
+                      "unexpected exporter workflow identity")
+              exporter = api("git/ref/heads/" + EXPORT_BRANCH)
+              source = api("git/ref/heads/" + SOURCE_BRANCH)
+              require(exporter["ref"] == "refs/heads/" + EXPORT_BRANCH
+                      and exporter["object"]["type"] == "commit"
+                      and exporter["object"]["sha"] == sha,
+                      "exporter branch no longer names this exact checkpoint")
+              require(source["ref"] == "refs/heads/" + SOURCE_BRANCH
+                      and source["object"]["type"] == "commit"
+                      and source["object"]["sha"] == SOURCE_SHA,
+                      "original generation checkpoint changed")
+              commit = api("commits/" + sha + "?per_page=100")
+              require(commit["sha"] == sha
+                      and [parent["sha"] for parent in commit["parents"]] == [SOURCE_SHA],
+                      "exporter must have the sole reviewed generation parent")
+              files = commit["files"]
+              require(len(files) == 1
+                      and files[0]["filename"] == EXPORT_WORKFLOW
+                      and files[0]["status"] == "added"
+                      and "previous_filename" not in files[0],
+                      "exporter delta must be only the new helper workflow")
+              pr = api("pulls/3106")
+              require(pr["number"] == 3106 and pr["state"] == "open" and pr["draft"] is True
+                      and pr["head"]["sha"] == CANONICAL_SHA
+                      and pr["head"]["ref"] == "codex/pr3076-complete-e48f"
+                      and pr["head"]["repo"]["full_name"] == REPOSITORY
+                      and pr["base"]["repo"]["full_name"] == REPOSITORY
+                      and pr["base"]["ref"] == "main",
+                      "canonical Draft PR3106 identity or frozen head changed")
+
+          def artifact_metadata():
+              run = api("actions/runs/" + str(RUN_ID))
+              require(run["id"] == RUN_ID and run["run_attempt"] == 1
+                      and run["event"] == "push" and run["status"] == "completed"
+                      and run["conclusion"] == "failure"
+                      and run["head_sha"] == SOURCE_SHA and run["head_branch"] == SOURCE_BRANCH
+                      and run["path"] == SOURCE_WORKFLOW
+                      and run["repository"]["full_name"] == REPOSITORY
+                      and run["head_repository"]["full_name"] == REPOSITORY,
+                      "generation run is not the exact reviewed failed attempt")
+              artifact = api("actions/artifacts/" + str(ARTIFACT_ID))
+              require(artifact["id"] == ARTIFACT_ID and artifact["name"] == ARTIFACT_NAME
+                      and artifact["expired"] is False and artifact["size_in_bytes"] == ZIP_BYTES
+                      and artifact["digest"] == "sha256:" + ZIP_SHA256
+                      and artifact["url"] == API + "actions/artifacts/" + str(ARTIFACT_ID)
+                      and artifact["archive_download_url"] ==
+                          API + "actions/artifacts/" + str(ARTIFACT_ID) + "/zip",
+                      "artifact identity, archive size or archive digest differs")
+              source = artifact["workflow_run"]
+              require(source["id"] == RUN_ID and source["head_sha"] == SOURCE_SHA
+                      and source["head_branch"] == SOURCE_BRANCH
+                      and source["repository_id"] == REPOSITORY_ID
+                      and source["head_repository_id"] == REPOSITORY_ID,
+                      "artifact does not belong to the exact source run")
+
+          def member(name):
+              relative = pathlib.PurePosixPath(name)
+              require(not relative.is_absolute() and bool(relative.parts)
+                      and ".." not in relative.parts and relative.as_posix() == name,
+                      "invalid artifact member path")
+              path = INPUT
+              for part in relative.parts:
+                  path = path / part
+                  require(not path.is_symlink(), "artifact member traverses a symlink")
+              require(path.is_file(), "artifact member is not a regular file")
+              return path
+
+          def checked_bytes(name, length, sha256, blob=None):
+              with member(name).open("rb") as source:
+                  raw = source.read(length + 1)
+              require(len(raw) == length and hashlib.sha256(raw).hexdigest() == sha256,
+                      "artifact member length or SHA256 differs: " + name)
+              if blob is not None:
+                  actual = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+                  require(actual == blob, "artifact Git blob differs: " + name)
+              return raw
+
+          def verified_provider():
+              require(INPUT.is_dir() and not INPUT.is_symlink(), "missing real artifact directory")
+              entries = list(INPUT.rglob("*"))
+              require(not any(path.is_symlink() for path in entries),
+                      "artifact contains a symlink")
+              require(all(path.is_file() or path.is_dir() for path in entries),
+                      "artifact contains a non-regular entry")
+              evidence = {name: checked_bytes(name, *pins) for name, pins in EVIDENCE.items()}
+              manifest = json.loads(evidence["manifest.json"])
+              baseline = json.loads(evidence["baseline.json"])
+              state = json.loads(evidence["generated-state.json"])
+              require(evidence["manifest.json.sha256"] ==
+                      (EVIDENCE["manifest.json"][1] + "  manifest.json\n").encode(),
+                      "manifest checksum receipt differs")
+              for document in (manifest, baseline):
+                  require(document["source_sha"] == SOURCE_SHA
+                          and document["canonical_sha"] == CANONICAL_SHA
+                          and document["world_tree_sha256"] == WORLD_SHA256
+                          and document["qualification"] is False,
+                          "artifact source or unqualified status differs")
+              require(baseline["workflow_commit"] == SOURCE_SHA
+                      and baseline["workflow_run"] == str(RUN_ID)
+                      and baseline["workflow_attempt"] == "1"
+                      and len(baseline["world_document_sha256"]) == 11
+                      and set(baseline["checkpoint_source_sha256"]) == {
+                          SOURCE_WORKFLOW,
+                          "tools/content-migration/refresh_season_creature_inventory.py",
+                          "tools/content-migration/test_refresh_season_creature_inventory.py",
+                          "apps/game-server/tests/content_world_project_repository.rs",
+                      }, "generation baseline identity or frozen inventories differ")
+              require(manifest["generation_success"] is False
+                      and manifest["source_accepted"] is False
+                      and manifest["eligible_for_owner_review"] is False
+                      and manifest["step_outcomes"] == OUTCOMES
+                      and manifest["issues"] == [] and state["issues"] == [],
+                      "partial generation or guard outcomes differ")
+              rows = manifest["changes"]
+              require(len(rows) == 27 and len({row["path"] for row in rows}) == 27,
+                      "generated inventory is not the exact 27-file set")
+              require(state["changes"] == [
+                  {key: value for key, value in row.items() if key != "declared_generated_output"}
+                  for row in rows
+              ], "generated-state and manifest inventories differ")
+              names = set(EVIDENCE) | {"files/" + row["path"] for row in rows}
+              require(len(names) == 33
+                      and {path.relative_to(INPUT).as_posix() for path in entries if path.is_file()} == names,
+                      "artifact does not contain exactly the reviewed 33 files")
+              provider = None
+              for row in rows:
+                  require(row["declared_generated_output"] is True and row["deleted"] is False
+                          and row["mode"] == "100644"
+                          and row["path"] in baseline["allowed_generated_paths"],
+                          "generated-output declaration differs")
+                  raw = checked_bytes("files/" + row["path"], row["bytes"], row["sha256"], row["git_blob"])
+                  if row["path"] == PROVIDER:
+                      require((row["bytes"], row["sha256"], row["git_blob"]) ==
+                              (PROVIDER_BYTES, PROVIDER_SHA256, PROVIDER_BLOB),
+                              "selected provider is not the independently reviewed blob")
+                      provider = raw
+              require(provider is not None, "reviewed provider is absent")
+              return provider
+
+          mode = sys.argv[1]
+          if mode == "preflight":
+              live_guards()
+              artifact_metadata()
+              print("Exact failed generation artifact metadata and live source identities verified.")
+          elif mode == "store":
+              raw = verified_provider()
+              artifact_metadata()
+              # Fresh live guards precede the only POST. No ref, tree or commit is written.
+              live_guards()
+              result = api("git/blobs", {"encoding": "base64", "content": base64.b64encode(raw).decode("ascii")})
+              require(result.get("sha") == PROVIDER_BLOB, "GitHub returned an unexpected blob SHA")
+              RECEIPT.mkdir()
+              receipt = {
+                  "repository": REPOSITORY,
+                  "exporter_sha": os.environ["GITHUB_SHA"],
+                  "exporter_run": os.environ["GITHUB_RUN_ID"],
+                  "source_sha": SOURCE_SHA,
+                  "canonical_sha": CANONICAL_SHA,
+                  "generation_run": RUN_ID,
+                  "generation_conclusion": "failure",
+                  "generation_success": False,
+                  "artifact_id": ARTIFACT_ID,
+                  "artifact_archive_bytes": ZIP_BYTES,
+                  "artifact_archive_sha256": ZIP_SHA256,
+                  "manifest_sha256": EVIDENCE["manifest.json"][1],
+                  "baseline_sha256": EVIDENCE["baseline.json"][1],
+                  "verified_artifact_files": 33,
+                  "verified_generated_files": 27,
+                  "path": PROVIDER,
+                  "bytes": len(raw),
+                  "sha256": PROVIDER_SHA256,
+                  "git_blob": result["sha"],
+                  "transport": "immutable_git_blob_only",
+                  "source_accepted": False,
+                  "qualification": False,
+                  "source_adoption_requires_completed_full_artifact_match": True,
+              }
+              (RECEIPT / "receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+              print(json.dumps({"git_blob": result["sha"], "bytes": len(raw),
+                                "source_accepted": False, "qualification": False}))
+          else:
+              raise SystemExit("unknown transport mode")
+          PY
+          python3 "$RUNNER_TEMP/native-closure-blob-export.py" preflight
+
+      - name: Download only the reviewed partial artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          github-token: ${{ github.token }}
+          repository: Oteryn/Oteryn-Game
+          run-id: '43007567729'
+          artifact-ids: '13850622127'
+          merge-multiple: true
+          path: ${{ runner.temp }}/native-closure-blob-input
+
+      - name: Store only the independently pinned immutable provider blob
+        id: store
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 "$RUNNER_TEMP/native-closure-blob-export.py" store
+
+      - name: Upload the transport receipt without claiming source acceptance
+        if: ${{ steps.store.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-closure-blob-f68a-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/native-closure-blob-receipt
+          if-no-files-found: error
+          retention-days: 7
