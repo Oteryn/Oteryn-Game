@@ -18,7 +18,7 @@ use sha2::{Digest, Sha256};
 
 mod native;
 mod reward;
-mod storage;
+pub(in crate::durability) mod storage;
 mod terminal;
 pub(crate) use terminal::apply_soul_war_failed_final_in_transaction;
 pub use native::{apply_soul_war_kill_in_transaction, soul_war_experience_in_transaction};

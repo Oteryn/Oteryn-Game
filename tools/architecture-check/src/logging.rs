@@ -1,4 +1,4 @@
-//! Event-registry coverage and the server console-output ratchet.
+//! Event-registry coverage and the server console-output and raw-spawn ratchets.
 
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
@@ -47,7 +47,24 @@ pub fn validate(root: &Path, update_baseline: bool) -> Result<(), String> {
             }
         }
     }
-    validate_console_ratchet(root, update_baseline, &mut errors)?;
+    validate_ratchet(
+        root,
+        update_baseline,
+        &mut errors,
+        "logging-eprintln-baseline.json",
+        scan_console_calls(root)?,
+        "direct console output",
+        "Use Line/Span instead",
+    )?;
+    validate_ratchet(
+        root,
+        update_baseline,
+        &mut errors,
+        "logging-raw-spawn-baseline.json",
+        scan_raw_spawns(root)?,
+        "raw task spawns",
+        "Use oteryn-task-supervisor instead",
+    )?;
     if errors.is_empty() {
         Ok(())
     } else {
@@ -344,13 +361,65 @@ fn scan_console_calls(root: &Path) -> Result<Vec<ConsoleCall>, String> {
     Ok(calls)
 }
 
-fn validate_console_ratchet(
+/// Raw task and thread spawn forms that must go through `crates/task-supervisor`.
+const RAW_SPAWNS: [&str; 6] = [
+    "tokio::spawn(",
+    "tokio::task::spawn(",
+    "tokio::task::spawn_blocking(",
+    "std::thread::spawn(",
+    "thread::spawn(",
+    "thread::Builder::new(",
+];
+
+fn scan_raw_spawns(root: &Path) -> Result<Vec<ConsoleCall>, String> {
+    let mut calls = Vec::new();
+    for path in rust_sources(root)? {
+        let file = relative(root, &path);
+        if !ratchet_path(&file)
+            || file.starts_with("crates/task-supervisor/")
+            || file.ends_with("/build.rs")
+            || test_only_path(&file)
+        {
+            continue;
+        }
+        let owner = owner_for_path(&file);
+        let source = fs::read_to_string(&path).map_err(|error| error.to_string())?;
+        let source = source.split("#[cfg(test)]").next().unwrap_or(&source);
+        for (line, text) in source.lines().enumerate() {
+            let code = text.split("//").next().unwrap_or(text);
+            if RAW_SPAWNS.iter().any(|needle| code.contains(needle)) {
+                calls.push(ConsoleCall {
+                    owner: owner.clone(),
+                    site: format!("{file}:{}", line + 1),
+                });
+            }
+        }
+    }
+    calls.sort();
+    Ok(calls)
+}
+
+/// A test file or fixture that the shared source walk cannot recognise by its exact name.
+fn test_only_path(path: &str) -> bool {
+    let mut components = path.rsplit('/');
+    let stem = components
+        .next()
+        .and_then(|file| file.strip_suffix(".rs"))
+        .unwrap_or_default();
+    stem.split('_').any(|part| matches!(part, "test" | "tests"))
+        || components.any(|directory| directory.split('_').any(|part| part == "fixture"))
+}
+
+fn validate_ratchet(
     root: &Path,
     update: bool,
     errors: &mut Vec<String>,
+    baseline_file: &str,
+    calls: Vec<ConsoleCall>,
+    what: &str,
+    remedy: &str,
 ) -> Result<(), String> {
-    let path = root.join("tools/architecture-check/logging-eprintln-baseline.json");
-    let calls = scan_console_calls(root)?;
+    let path = root.join("tools/architecture-check").join(baseline_file);
     let mut actual: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for call in calls {
         actual.entry(call.owner).or_default().push(call.site);
@@ -359,7 +428,7 @@ fn validate_console_ratchet(
         &fs::read_to_string(&path)
             .map_err(|error| format!("cannot read {}: {error}", path.display()))?,
     )
-    .map_err(|error| format!("invalid baseline: {error}"))?;
+    .map_err(|error| format!("invalid baseline {baseline_file}: {error}"))?;
     for (owner, sites) in &actual {
         let old = baseline.get(owner).map(Vec::as_slice).unwrap_or_default();
         if sites.len() > old.len() {
@@ -368,10 +437,15 @@ fn validate_console_ratchet(
                 .filter(|site| !old.contains(site))
                 .cloned()
                 .collect::<Vec<_>>();
-            errors.push(format!("direct console output rose for {owner}: {} > {}; additions: {}. Use Line/Span instead", sites.len(), old.len(), additions.join(", ")));
+            errors.push(format!(
+                "{what} rose for {owner}: {} > {}; additions: {}. {remedy}",
+                sites.len(),
+                old.len(),
+                additions.join(", ")
+            ));
         } else if sites.len() < old.len() && !update {
             eprintln!(
-                "warning: direct console output fell for {owner}: {} < {}; rerun logging-events with --update-baseline",
+                "warning: {what} fell for {owner}: {} < {}; rerun logging-events with --update-baseline",
                 sites.len(),
                 old.len()
             );
@@ -485,6 +559,11 @@ mod tests {
             "{\"crates/example\": [\"crates/example/src/lib.rs:1\"]}\n",
         )
         .unwrap();
+        fs::write(
+            root.join("tools/architecture-check/logging-raw-spawn-baseline.json"),
+            "{}\n",
+        )
+        .unwrap();
         root
     }
 
@@ -587,5 +666,91 @@ mod tests {
         .unwrap();
         assert!(baseline.contains("lib.rs:1"));
         assert!(!baseline.contains("old:2"));
+    }
+
+    #[test]
+    fn new_raw_spawn_fails_with_site() {
+        let root = fixture("raw-spawn");
+        fragment(
+            &root,
+            r#"{"event":"ready","level":"info","span":false,"fields":[],"codes":[],"note":"fixture"}"#,
+        );
+        fs::write(
+            root.join("crates/example/src/worker.rs"),
+            "fn run() {\n    tokio::spawn(async {});\n    std::thread::Builder::new()\n        .spawn(|| ());\n}\n",
+        )
+        .unwrap();
+        let error = validate(&root, false).unwrap_err();
+        assert!(error.contains("raw task spawns rose for crates/example: 2 > 0"));
+        assert!(error.contains("worker.rs:2, crates/example/src/worker.rs:3."));
+        assert!(error.contains("Use oteryn-task-supervisor instead"));
+    }
+
+    #[test]
+    fn raw_spawns_in_tests_build_scripts_and_supervisor_are_exempt() {
+        let root = fixture("raw-spawn-exempt");
+        fragment(
+            &root,
+            r#"{"event":"ready","level":"info","span":false,"fields":[],"codes":[],"note":"fixture"}"#,
+        );
+        for (file, text) in [
+            (
+                "crates/example/src/worker.rs",
+                "// tokio::spawn( in a comment\n#[cfg(test)]\nmod tests { fn t() { tokio::spawn(async {}); } }\n",
+            ),
+            (
+                "crates/example/build.rs",
+                "fn main() { std::thread::spawn(|| ()); }\n",
+            ),
+            (
+                "crates/example/src/worker_tests.rs",
+                "fn t() { tokio::task::spawn_blocking(|| ()); }\n",
+            ),
+            (
+                "crates/example/tests/case.rs",
+                "fn t() { tokio::spawn(async {}); }\n",
+            ),
+            (
+                "crates/task-supervisor/src/lib.rs",
+                "fn s() { tokio::spawn(async {}); }\n",
+            ),
+            (
+                "crates/example/src/session_tests_push.rs",
+                "fn t() { tokio::spawn(async {}); }\n",
+            ),
+            (
+                "crates/example/src/test_producer.rs",
+                "fn t() { tokio::spawn(async {}); }\n",
+            ),
+            (
+                "crates/example/src/case_fixture/thread.rs",
+                "fn t() { std::thread::Builder::new(); }\n",
+            ),
+        ] {
+            let path = root.join(file);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(path, text).unwrap();
+        }
+        assert_eq!(validate(&root, false), Ok(()));
+    }
+
+    #[test]
+    fn lower_raw_spawn_ratchet_can_be_accepted() {
+        let root = fixture("raw-spawn-lower");
+        fragment(
+            &root,
+            r#"{"event":"ready","level":"info","span":false,"fields":[],"codes":[],"note":"fixture"}"#,
+        );
+        fs::write(
+            root.join("tools/architecture-check/logging-raw-spawn-baseline.json"),
+            "{\"crates/example\":[\"old:1\"]}\n",
+        )
+        .unwrap();
+        validate(&root, true).unwrap();
+        let baseline = fs::read_to_string(
+            root.join("tools/architecture-check/logging-raw-spawn-baseline.json"),
+        )
+        .unwrap();
+        assert_eq!(baseline, "{}\n");
     }
 }

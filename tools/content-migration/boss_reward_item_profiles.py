@@ -17,6 +17,8 @@ import copy
 import hashlib
 import importlib.util
 import json
+
+from native_profile_composition import encode_native_profile
 import re
 import sys
 from pathlib import Path
@@ -136,7 +138,7 @@ def admit(root,generated,profile_path,manifest_path,order,encode):
    current['semantics']=accepted_first(current['semantics'],row['semantics'])
   else: document['records'].append(row)
  document['records'].sort(key=order)
- data=(json.dumps(document,indent=2,ensure_ascii=False)+'\n').encode();generated[profile_path]=data
+ data=encode_native_profile(document);generated[profile_path]=data
  manifest=json.loads(generated[manifest_path]);manifest['item_profiles']['sha256']=hashlib.sha256(data).hexdigest();generated[manifest_path]=encode(manifest)
 
 

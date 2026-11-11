@@ -30,6 +30,7 @@ use super::{LoadError, palette_appearance};
 use oteryn_protocol_oteryn::world_map::{MAX_BASE_ORDINAL, MapDefinition};
 use oteryn_world_bundle::bundle::{Family, Manifest, PaletteEntry, Sector, TerrainKind};
 use oteryn_world_bundle::sector::Attrs;
+mod source_bindings;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
@@ -37,7 +38,7 @@ use std::sync::{Arc, Mutex};
 mod quest_callbacks;
 mod world_change_phases;
 use quest_callbacks::CallbackStates;
-pub use quest_callbacks::QuestCallbackProjection;
+pub use quest_callbacks::{QuestCallbackProjection, QuestSceneMutation};
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
@@ -280,7 +281,7 @@ impl BundleFacts {
         }
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
         let movement_definitions = [
-            1025, 1949, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074,
+            435, 1025, 1949, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074,
             14076, 14077, 14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
         ]
         .into_iter()
@@ -364,6 +365,22 @@ impl BundleFacts {
             let top = tile.items.iter().filter(|item| item.depth == 0);
             let mut blocks = false;
             for (ordinal, item) in top.enumerate() {
+                let mut item = item.clone();
+                if let Some(entry) = self.palette.get(item.palette as usize)
+                    && tile
+                        .items
+                        .iter()
+                        .filter(|other| other.depth == 0 && other.palette == item.palette)
+                        .count()
+                        == 1
+                {
+                    source_bindings::apply(
+                        pos,
+                        entry.facts.appearance_id,
+                        tile.house,
+                        &mut item.attrs,
+                    );
+                }
                 let door = self
                     .palette
                     .get(item.palette as usize)
@@ -478,7 +495,16 @@ impl BundleFacts {
                             .is_some_and(|p| p.facts.pickupable),
                         &manifest.dropped_teleports,
                     )
-                    .map(|entry| entry.quantity),
+                    .map(|entry| entry.quantity)
+                    .and_then(|quantity| {
+                        if item.attrs.unique.is_some() {
+                            Err(pickup::Ineligible::Unique)
+                        } else if item.attrs.action.is_some() {
+                            Err(pickup::Ineligible::Action)
+                        } else {
+                            Ok(quantity)
+                        }
+                    }),
                 };
                 let plain = Placement {
                     palette: item.palette,
@@ -1374,6 +1400,52 @@ mod tests {
         assert!(facts.movement_effects_since(0).is_empty());
         assert!(!facts.create_world_change_item(pos, 1));
         assert_eq!(MapFacts::movement_items(&facts, pos).len(), 1);
+    }
+
+    #[test]
+    fn movement_item_removal_keeps_other_items_and_pinned_views() {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("source bundle");
+        let items = |key: &str| {
+            if key == "oteryn:item.tibia.i435" || key == "oteryn:item.tibia.i13842" {
+                fixture::items("item:coin")
+            } else {
+                fixture::items(key)
+            }
+        };
+        let facts = BundleFacts::palette(&bundle.manifest, items).expect("palette");
+        let pos = TilePos {
+            x: 32482,
+            y: 32170,
+            floor: -14,
+        };
+        assert!(facts.create_movement_item(pos, 435, 0, || true));
+        assert!(facts.create_movement_item(pos, 435, 0, || true));
+        assert!(facts.create_movement_item(pos, 13842, 0, || true));
+        let pinned = facts.pinned();
+        let first = MapFacts::movement_items(&facts, pos)[0].source;
+        let first_id = match first {
+            view::EntrySource::Added(id) => Some(id),
+            _ => None,
+        }
+        .expect("volatile sewer");
+        assert!(!facts.remove_movement_item(pos, first_id.get(), 1));
+        assert!(facts.remove_movement_item(pos, first_id.get(), 435));
+        let remaining = MapFacts::movement_items(&facts, pos);
+        assert_eq!(remaining.len(), 2);
+        assert_ne!(remaining[0].source, first);
+        assert_eq!(remaining[0].facts.appearance_id, 435);
+        assert_eq!(remaining[1].facts.appearance_id, 13842);
+        let second_id = match remaining[0].source {
+            view::EntrySource::Added(id) => Some(id),
+            _ => None,
+        }
+        .expect("volatile sewer");
+        assert!(facts.remove_movement_item(pos, second_id.get(), 435));
+        assert!(!facts.remove_movement_item(pos, second_id.get(), 435));
+        assert_eq!(MapFacts::movement_items(&facts, pos).len(), 1);
+        assert_eq!(MapFacts::movement_items(&pinned, pos).len(), 3);
+        assert!(facts.movement_effects_since(0).is_empty());
     }
 
     #[test]

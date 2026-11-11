@@ -1,0 +1,172 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.kv.orcfortress1",
+      "position": [
+        32980,
+        31727,
+        9
+      ],
+      "appearance": 2469,
+      "unique": 6020,
+      "source_line": 726
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.orcfortress2",
+      "position": [
+        32981,
+        31727,
+        9
+      ],
+      "appearance": 2469,
+      "unique": 6021,
+      "source_line": 733
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.orcfortress3",
+      "position": [
+        32985,
+        31727,
+        9
+      ],
+      "appearance": 2469,
+      "unique": 6022,
+      "source_line": 740
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.orcshaman",
+      "position": [
+        33089,
+        32030,
+        9
+      ],
+      "appearance": 2469,
+      "unique": 6150,
+      "source_line": 1745
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.panpipe",
+      "position": [
+        32644,
+        32131,
+        8
+      ],
+      "appearance": 2472,
+      "unique": 6065,
+      "source_line": 1061
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.platearmor",
+      "position": [
+        33327,
+        32182,
+        7
+      ],
+      "appearance": 2474,
+      "unique": 6173,
+      "source_line": 1941
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.poisondaggers",
+      "position": [
+        33155,
+        31880,
+        11
+      ],
+      "appearance": 2473,
+      "unique": 6068,
+      "source_line": 1089
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.powerbolt1",
+      "position": [
+        32816,
+        32279,
+        8
+      ],
+      "appearance": 4240,
+      "unique": 6170,
+      "source_line": 1915
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.powerbolt2",
+      "position": [
+        32814,
+        32281,
+        8
+      ],
+      "appearance": 4240,
+      "unique": 6112,
+      "source_line": 1440
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.purpletome1",
+      "position": [
+        32424,
+        31591,
+        15
+      ],
+      "appearance": 2436,
+      "unique": 6128,
+      "source_line": 1571
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.purpletome2",
+      "position": [
+        32427,
+        31591,
+        15
+      ],
+      "appearance": 2436,
+      "unique": 6129,
+      "source_line": 1578
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.purpletome3",
+      "position": [
+        32421,
+        31594,
+        15
+      ],
+      "appearance": 2438,
+      "unique": 6130,
+      "source_line": 1585
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_2.parchment_room.bag",
+      "position": [
+        33063,
+        31624,
+        15
+      ],
+      "appearance": 2474,
+      "unique": 6076,
+      "source_line": 1161
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": [
+    {
+      "position": [
+        32981,
+        31760,
+        9
+      ],
+      "appearance": 6264,
+      "action": 1040,
+      "source_line": 76,
+      "claims": [
+        "oteryn:reward-claim.kv.orcfortress1",
+        "oteryn:reward-claim.kv.orcfortress2",
+        "oteryn:reward-claim.kv.orcfortress3"
+      ]
+    }
+  ]
+}

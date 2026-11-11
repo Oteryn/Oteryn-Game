@@ -810,6 +810,10 @@ mod e2ef1 {
                     StepDirection::East => (1, 0),
                     StepDirection::South => (0, 1),
                     StepDirection::West => (-1, 0),
+                    StepDirection::NorthEast => (1, -1),
+                    StepDirection::SouthEast => (1, 1),
+                    StepDirection::SouthWest => (-1, 1),
+                    StepDirection::NorthWest => (-1, -1),
                 };
                 at.x.checked_add_signed(dx) == Some(object.at.x)
                     && at.y.checked_add_signed(dy) == Some(object.at.y)
@@ -842,6 +846,10 @@ mod e2ef1 {
             StepDirection::East => StepDirection::West,
             StepDirection::South => StepDirection::North,
             StepDirection::West => StepDirection::East,
+            StepDirection::NorthEast => StepDirection::SouthWest,
+            StepDirection::SouthEast => StepDirection::NorthWest,
+            StepDirection::SouthWest => StepDirection::NorthEast,
+            StepDirection::NorthWest => StepDirection::SouthEast,
         };
         if client.step_retrying(reverse).await?.disposition != StepDisposition::Moved
             || client.world_spatial().actor_position != before

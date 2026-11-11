@@ -14,7 +14,12 @@ use super::{
 use crate::domain::premium::{PreDelivery, PremiumGate, PremiumStatus};
 mod promotion_gate;
 
+pub(super) struct QuestPremium<'a>(pub(super) Option<&'a SpellPremiumCoordinator>);
+
 pub(super) struct DailyRewardPremium<'a>(pub(super) Option<&'a SpellPremiumCoordinator>);
+
+/// An absent native Premium authority cannot authorize a premium quest reward.
+pub(super) struct QuestRewardPremium<'a>(pub(super) Option<&'a SpellPremiumCoordinator>);
 use crate::durability::premium_activation_latch::{
     EmptyLatchHeld, PreDeliveryBypass, PremiumActivationLatch, PremiumActivationRead, PremiumGateTx,
 };

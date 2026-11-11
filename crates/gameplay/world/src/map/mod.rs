@@ -155,6 +155,8 @@ pub struct WorldBase {
     tiles: Vec<BaseTile>,
     ids: Vec<u32>,
     depths: Vec<u8>,
+    /// Compact ids can alias across palette families. Ambiguous appearances stay unbound.
+    appearances: std::collections::BTreeMap<u32, Option<u16>>,
     /// `(global entry index, unique, appearance)` of every top-level entry with a `unique`, in
     /// ascending entry index.
     uniques: Vec<(u32, u16, Option<u16>)>,
@@ -240,6 +242,18 @@ impl<'a> TileView<'a> {
             .ok()?;
         let (_, unique, appearance) = self.base.uniques[found];
         Some(UniqueEntry { unique, appearance })
+    }
+
+    /// Palette appearance at the exact top-level ordinal, without requiring a UID.
+    pub fn appearance(&self, ordinal: u8) -> Option<u16> {
+        let id = self
+            .ids()
+            .iter()
+            .zip(self.depths())
+            .filter(|(_, depth)| **depth == 0)
+            .nth(usize::from(ordinal))?
+            .0;
+        self.base.appearances.get(id).copied().flatten()
     }
 
     /// Whether the ground item is walkable; `false` without one.
@@ -358,6 +372,7 @@ impl WorldBase {
             tiles,
             ids,
             depths,
+            appearances: self.appearances.clone(),
             uniques,
         })
     }
@@ -400,6 +415,20 @@ impl WorldBase {
             tiles: builder.tiles,
             ids: builder.ids,
             depths: builder.depths,
+            appearances: {
+                let mut appearances = std::collections::BTreeMap::new();
+                for entry in builder.palette.into_iter().flatten() {
+                    appearances
+                        .entry(entry.id)
+                        .and_modify(|appearance| {
+                            if *appearance != entry.appearance {
+                                *appearance = None;
+                            }
+                        })
+                        .or_insert(entry.appearance);
+                }
+                appearances
+            },
             uniques: builder.uniques,
         })
     }
@@ -618,6 +647,20 @@ fn load_daily_spawns(
             tiles: builder.tiles,
             ids: builder.ids,
             depths: builder.depths,
+            appearances: {
+                let mut appearances = std::collections::BTreeMap::new();
+                for entry in builder.palette.into_iter().flatten() {
+                    appearances
+                        .entry(entry.id)
+                        .and_modify(|appearance| {
+                            if *appearance != entry.appearance {
+                                *appearance = None;
+                            }
+                        })
+                        .or_insert(entry.appearance);
+                }
+                appearances
+            },
             uniques: builder.uniques,
         },
         spawns,
@@ -775,5 +818,9 @@ impl crate::content::world_reward_claims::RewardClaimTile for TileView<'_> {
 
     fn unique(&self, ordinal: u8) -> Option<UniqueEntry> {
         self.unique(ordinal)
+    }
+
+    fn appearance(&self, ordinal: u8) -> Option<u16> {
+        self.appearance(ordinal)
     }
 }

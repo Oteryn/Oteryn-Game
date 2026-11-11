@@ -1,0 +1,40 @@
+{
+  "batch": "soul-loot-admissions-2026-11-07",
+  "base_sha": "c8b42aba3cd95ecb5d2997f95ec047bc76fcdcf0",
+  "checkpoint_sha": "c65d715e9acd7f39a319d5929ff99b14a7df9cfa",
+  "state": "GREEN_READY_TO_PUBLISH",
+  "scope": "Source-bound Soul War Item admission subset, not whole quest qualification.",
+  "source_loot_items": 44,
+  "admission_scope": 43,
+  "new_canonical_admissions": 31,
+  "already_qualified_canonical_records_frozen": 13,
+  "already_qualified_native_physical_records_frozen": 44,
+  "protected_source_items": [
+    49271
+  ],
+  "implementation": "Small source-cohort adapter reuses existing native-goal/source import machinery; existing creature selector remains the default. No new runtime quest engine.",
+  "source_guards": "All pinned XML/client/binding, exact charges/timers and selected-record equality guards retained. Shared proof shards refresh only against committed HEAD with exact previous digest and unchanged selected records.",
+  "test_ownership_corrections": [
+    "Native physical values have an existing qualified owner: preserve all44 original physical records instead of replacing them with documentary canonical values. This preserves weights33921=229,33952=101,34109=1500.",
+    "Green gem3038 was runtime-qualified but its canonical admission was false; it is a new canonical admission, not a previously admitted canonical record.",
+    "Canonical13 record fingerprint includes protected potion49271; all existing/frozen records remain byte-identical.",
+    "No pre-existing tests edited, deleted, ignored or skipped. New source regression checks complete43-item scope, partition of all44 source items, fresh item core consistency, frozen13 canonical records and frozen44 native physical records."
+  ],
+  "validation": {
+    "source_test": "GREEN1case0.481s; /tmp/questpc2-soul-loot-final-source-test.log",
+    "source_ownership_regression": "GREEN1case0.464s; /tmp/questpc2-soul-loot-ownership-green.log",
+    "prey_generated_model": "PREY_DIFF_SIMULATION_COMPLETED cases=15 creatures=776",
+    "registered_generation": "SOUL_LOOT_NATIVE_GENERATION_COMPLETED; /tmp/questpc2-soul-loot-native-generation.log",
+    "fmt": "PASS /tmp/questpc2-soul-loot-final-fmt.log",
+    "workspace_all_targets": "PASS exit0,2m36s; /tmp/questpc2-soul-loot-final-check.log",
+    "policy": "Owner hard speed rule: compile+fmt, push immediately; CI full suites. No local full suites.",
+    "postgres": "No Rust/runtime mechanic changed in this slice. Existing physical source-corpse PG cases were green in c0f2c94f7; full CI covers the broader content consumers.",
+    "pin_refresh": "PASS repository release compiler; /tmp/questpc2-soul-loot-pin-refresh.log"
+  },
+  "remaining_engine_requests": [
+    "Qualified activity templates for registered source boss hooks/summons/reward closures.",
+    "Private reward-boss loot independent of physical corpse slot count.",
+    "Loot admission from already-qualified native items without changing frozen canonical SOURCE receipts (49271)."
+  ],
+  "whole_quest_qualifications": 0
+}

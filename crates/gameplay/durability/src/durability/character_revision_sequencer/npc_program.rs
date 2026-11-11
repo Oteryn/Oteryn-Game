@@ -6,7 +6,10 @@ impl RevisionSlot {
         clippy::too_many_arguments,
         reason = "the sequencer passes authority, fence, catalogue and the item owner independently"
     )]
-    pub async fn commit_npc_program<C: super::super::item_loop_move::ItemLoopContent>(
+    pub async fn commit_npc_program<
+        C: super::super::item_loop_move::ItemLoopContent,
+        G: super::super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
         &mut self,
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -16,6 +19,7 @@ impl RevisionSlot {
         request: NpcProgramRequest,
         catalogue: Arc<QuestStateCatalogue>,
         items: &C,
+        premium: &G,
     ) -> Result<NpcProgramCommit, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
@@ -30,6 +34,7 @@ impl RevisionSlot {
                     request.clone(),
                     Arc::clone(&catalogue),
                     items,
+                    premium,
                 )
             },
         )

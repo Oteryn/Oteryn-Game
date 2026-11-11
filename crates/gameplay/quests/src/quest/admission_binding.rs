@@ -93,6 +93,7 @@ pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(),
             QuestEffectKind::SetWithBinding { .. }
                 | QuestEffectKind::AddWithBinding { .. }
                 | QuestEffectKind::RaiseToWithBinding { .. }
+                | QuestEffectKind::SetNowWithBinding { .. }
         ) || registry.protected_tracks.contains(&effect.track)
     }) {
         return Err("unregistered write to bound track".into());
@@ -100,9 +101,85 @@ pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(),
     Ok(())
 }
 
+/// Catalogue-scoped authored world owners remain immutable and cannot seize a
+/// global owner's tracks or downgrade a registered native operation.
+pub fn validate_for_catalogue(
+    catalogue: &super::QuestStateCatalogue,
+    transition: &QuestTransition,
+    world_context: bool,
+) -> Result<(), String> {
+    let global = registry()?;
+    if global.owners.contains_key(&transition.key)
+        || transition
+            .effects
+            .iter()
+            .any(|effect| global.protected_tracks.contains(&effect.track))
+    {
+        return validate(transition, world_context);
+    }
+    let mut protected = BTreeSet::new();
+    if let Some(bindings) = &catalogue.authored_bindings {
+        for quest in &bindings.source.quests {
+            for stage in &quest.stages {
+                let callback = match &stage.trigger {
+                    super::authored_bindings::Trigger::MapUse { callback }
+                    | super::authored_bindings::Trigger::StepIn { callback } => callback,
+                    _ => continue,
+                };
+                let mut expected = world_callbacks::primary_transition(callback)?;
+                expected.completes = stage.completes;
+                if expected.key == transition.key {
+                    return if world_context && transition == &expected {
+                        Ok(())
+                    } else {
+                        Err("authored world operation or physical context mismatch".into())
+                    };
+                }
+                if world_callbacks::gated_binding(callback)?.is_some() {
+                    protected.extend(
+                        expected
+                            .effects
+                            .iter()
+                            .filter(|effect| changes(effect.effect))
+                            .map(|effect| effect.track.clone()),
+                    );
+                }
+            }
+        }
+    }
+    if transition
+        .effects
+        .iter()
+        .any(|effect| protected.contains(effect.track.as_str()))
+    {
+        return Err("unregistered write to authored bound track".into());
+    }
+    validate(transition, world_context)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn embedded_reward_operations_match_their_registered_owners() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("owner-consistency")
+            .map_err(|error| format!("{error:?}"))?;
+        for callback in reward_callbacks::load()? {
+            let transition = lowered
+                .catalogue()
+                .transition(&callback.key)
+                .ok_or_else(|| format!("missing reward {}", callback.key))?;
+            assert_eq!(
+                *transition,
+                reward_callbacks::primary_transition(&callback)?,
+                "{}",
+                callback.key
+            );
+            validate(transition, false)?;
+        }
+        Ok(())
+    }
 
     #[test]
     fn specialized_altar_owner_preserves_the_registered_increment() -> Result<(), String> {

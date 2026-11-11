@@ -348,17 +348,17 @@ fn scenario() -> TestResult {
         // A creature without a loot row is an empty table within the PREY-0 R4 budget and
         // selectable. Oversized tables stay explicit content refusals, never skipped bonus
         // rolls; no preyable creature on this world has one (draw.rs unit tests cover it).
-        assert!(native.reward_table().row("oteryn:creature.dragon").is_err());
+        assert!(native.reward_table().row("oteryn:creature.hydra").is_err());
         let any = wire::encode_request(&wire::Request::SelectAny {
             slot: 1,
-            creature: "oteryn:creature.dragon".into(),
+            creature: "oteryn:creature.hydra".into(),
         })
         .map_err(debug)?;
         let command = admitted.continuity.next_command_id;
         let values = exchange(&owner, &mut admitted, &[(command, &any)]).await?;
         assert_eq!(values[0].0, CommandStatus::Accepted);
         let chosen = wire::decode_reply(&values[0].1).map_err(debug)?;
-        assert_eq!(chosen.slots[0].selected, "oteryn:creature.dragon");
+        assert_eq!(chosen.slots[0].selected, "oteryn:creature.hydra");
         assert_eq!(chosen.wildcard_balance, 7);
         // Each expiry checkpoints the selected race's real activity, then debits atomically.
         let mut hunt_now = 121 * 60_000_000;
@@ -375,7 +375,7 @@ fn scenario() -> TestResult {
                 CommandStatus::Accepted
             );
             consume_120_minutes(&owner, deps.actor, admitted.game_session_id,
-                "oteryn:creature.dragon", &mut hunt_now).await;
+                "oteryn:creature.hydra", &mut hunt_now).await;
             let before: i16 = sqlx::query_scalar("SELECT balance FROM game_account_prey_wildcards")
                 .fetch_one(&h.pool)
                 .await?;
@@ -433,7 +433,7 @@ fn scenario() -> TestResult {
         );
         // The retained AUTO_REROLL now has no cards: expiry clears it and draws a list.
         consume_120_minutes(&owner, deps.actor, admitted.game_session_id,
-            "oteryn:creature.dragon", &mut hunt_now).await;
+            "oteryn:creature.hydra", &mut hunt_now).await;
         assert!(owner.flush_prey(admitted.game_session_id).await);
         let command = admitted.continuity.next_command_id;
         let values = exchange(&owner, &mut admitted, &[(command, &query)]).await?;

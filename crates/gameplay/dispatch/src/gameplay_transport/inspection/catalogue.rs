@@ -59,14 +59,18 @@ fn records<'a>(
     records.sort_by_key(|(reference, _)| *reference);
     records
 }
-fn template(record: &ItemProfileRecord, reference: u32) -> Option<InspectedItem> {
+fn browse_category<'a>(record: &'a ItemProfileRecord, categories: &[&str]) -> &'a str {
+    let category = native_category(record);
+    if categories.binary_search(&category).is_ok() { category } else { "Other" }
+}
+fn template(record: &ItemProfileRecord, reference: u32, category: &str) -> Option<InspectedItem> {
     Some(InspectedItem {
         slot: 0,
         definition_ref: reference,
         count: 1,
         tier: 0,
         name: name(record)?.into(),
-        attributes: vec![("Category".into(), native_category(record).into())],
+        attributes: vec![("Category".into(), category.into())],
     })
 }
 fn project(
@@ -82,16 +86,23 @@ fn project(
             category: selected,
             ..
         } => {
-            let categories: Vec<_> = records
+            let mut categories: Vec<_> = records
                 .iter()
                 .map(|(_, r)| native_category(r))
                 .collect::<BTreeSet<_>>()
                 .into_iter()
                 .collect();
+            if categories.iter().any(|name| name.contains('|')) { return None; }
+            if categories.len() > wire::MAX_CATEGORIES {
+                // The legacy numeric filter has 64 choices. Keep every item
+                // browsable by folding excess taxonomy classes into Other.
+                categories.retain(|name| *name != "Other");
+                categories.truncate(wire::MAX_CATEGORIES - 1);
+                categories.push("Other");
+                categories.sort_unstable();
+            }
             let category_text = categories.join("|");
-            if categories.len() > 64
-                || category_text.len() > 1024
-                || categories.iter().any(|name| name.contains('|'))
+            if category_text.len() > 1024
                 || usize::from(selected) > categories.len()
             {
                 return None;
@@ -104,7 +115,7 @@ fn project(
                 .iter()
                 .filter(|(reference, record)| {
                     *reference > after
-                        && selected.is_none_or(|selected| *selected == native_category(record))
+                        && selected.is_none_or(|selected| *selected == browse_category(record, &categories))
                         && name(record).is_some_and(|name| name.to_lowercase().contains(&search))
                 })
                 .take(oteryn_protocol_oteryn::inspection::MAX_ITEMS + 1)
@@ -115,7 +126,7 @@ fn project(
                 .then(|| matches.last().map(|(reference, _)| *reference))
                 .flatten();
             for (reference, record) in matches {
-                items.push(template(record, *reference)?);
+                items.push(template(record, *reference, browse_category(record, &categories))?);
             }
             if let Some(first) = items.first_mut() {
                 first
@@ -130,7 +141,7 @@ fn project(
         }
         Query::Drops { reference, after } => {
             let (_, record) = records.iter().find(|(id, _)| *id == reference)?;
-            let mut item = template(record, reference)?;
+            let mut item = template(record, reference, native_category(record))?;
             let races = super::super::charm_progression::canonical_races()?;
             let mut sources = Vec::new();
             for (ordinal, race) in races.iter().enumerate().skip(usize::from(after)) {
@@ -222,6 +233,21 @@ mod tests {
                 .ok_or("item page")?;
                 assert!(!page.items.is_empty());
                 let first = &page.items[0];
+                let categories: Vec<_> = first.attributes.iter()
+                    .find(|(key, _)| key == "Catalogue categories")
+                    .ok_or("categories")?.1.split('|').collect();
+                assert_eq!(categories.len(), wire::MAX_CATEGORIES);
+                let (overflow_ref, _) = records(native, index).into_iter()
+                    .find(|(_, record)| !categories.contains(&native_category(record)))
+                    .ok_or("fixture must exercise category overflow")?;
+                let other = u8::try_from(categories.iter().position(|name| *name == "Other")
+                    .ok_or("Other category")? + 1)?;
+                let overflow = project(native, index,
+                    wire::items(overflow_ref - 1, other, "").map_err(|e| format!("{e:?}"))?)
+                    .ok_or("overflow category page")?;
+                assert_eq!(overflow.items.first().ok_or("overflow item")?.definition_ref, overflow_ref);
+                assert!(overflow.items.iter().all(|item| item.attributes.iter()
+                    .any(|(key, value)| key == "Category" && value == "Other")));
                 let searched = project(
                     native,
                     index,

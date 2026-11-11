@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 import item_bounded7_navigation as nav
+from qualification_inputs import _AppearanceView
 from source_relocations import read_text as relocated_text
 
 
@@ -28,11 +29,19 @@ class BoundedSevenTests(unittest.TestCase):
 
     def args(self, iid=43778):
         e = self.entries[iid]
+        inputs = (
+            copy.deepcopy(self.inputs[0]),
+            {
+                label: _AppearanceView(rows.copy())
+                for label, rows in self.inputs[1].items()
+            },
+            *(_AppearanceView(rows.copy()) for rows in self.inputs[2:]),
+        )
         return [
             copy.deepcopy(e),
             copy.deepcopy(self.definitions[e["target"]["key"]]),
             copy.deepcopy(self.client[iid]),
-            copy.deepcopy(self.inputs),
+            inputs,
             1,
             set(),
         ]

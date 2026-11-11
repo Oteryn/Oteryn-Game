@@ -23,7 +23,6 @@
 mod appearance_revision;
 mod arena_match;
 mod atelier;
-mod npc_program;
 
 use std::collections::HashMap;
 use std::future::Future;
@@ -35,6 +34,7 @@ mod death_promotion;
 mod grizzly;
 mod native_kills;
 mod npc_marriage;
+mod npc_program;
 mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;
@@ -590,12 +590,64 @@ impl RevisionSlot {
         context: super::quest_world_callback::QuestWorldContext,
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.commit_world_callback_with_native(
+            root, authority, node, fence, request, catalogue, permit, context, native,
+        )
+        .await
+    }
+
+    /// World callback storage and altar inputs share one revision slot and transaction.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_world_callback_with_native(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        context: super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.commit_world_callback_with_native_and_gate(
+            root,
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            permit,
+            context,
+            native,
+            &super::quest_state::grizzly::NoGrizzlyPremium,
+        )
+        .await
+    }
+
+    /// World callback storage and altar inputs share one revision slot and transaction.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_world_callback_with_native_and_gate<
+        G: super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        context: super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
             fence,
             Expect::Cursor(OnMismatch::RetryOnce),
             |fence| {
-                root.commit_character_world_callback(
+                root.commit_character_world_callback_with_native_and_gate(
                     authority,
                     node,
                     fence,
@@ -604,6 +656,44 @@ impl RevisionSlot {
                     permit,
                     context.clone(),
                     native,
+                    gate,
+                )
+            },
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_world_callback_with_reward_and_gate<
+        G: super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        context: super::quest_world_callback::QuestWorldContext,
+        admission: super::reward_claim_mint::QuestRewardAdmission<'_>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_world_callback_with_reward_and_gate(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    permit,
+                    context.clone(),
+                    admission,
+                    gate,
                 )
             },
         )
@@ -640,6 +730,45 @@ impl RevisionSlot {
                     context.clone(),
                     native,
                     admission,
+                )
+            },
+        )
+        .await
+    }
+
+    /// World rewards share the same revision slot, item owner and Premium fence.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "forwards the complete existing world and reward participants"
+    )]
+    pub async fn commit_world_reward<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        context: super::quest_world_callback::QuestWorldContext,
+        admission: super::reward_claim_mint::QuestRewardAdmission<'_>,
+        premium: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_world_reward(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    permit,
+                    context.clone(),
+                    admission,
+                    premium,
                 )
             },
         )

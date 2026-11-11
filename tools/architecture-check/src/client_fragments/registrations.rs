@@ -64,31 +64,38 @@ pub(super) fn validate(
             return Err("one handler fragment per command".into());
         }
         if status == "supported" && commands.is_empty() {
-            let pushes = entry["push_messages"]
-                .as_array()
-                .ok_or("commandless supported handler needs pushed messages")?;
-            if pushes.is_empty() {
-                return Err("commandless supported handler needs pushed messages".into());
-            }
-            symbol(
-                feature,
-                entry["reducer"].as_str().ok_or("push handler reducer")?,
-            )?;
-            symbol(feature, entry["test"].as_str().ok_or("push handler test")?)?;
-            for command in entry["shared_commands"].as_array().into_iter().flatten() {
-                let id = command.as_u64().ok_or("shared command id")?;
-                let dir = root.join("docs/contracts/protocol-oteryn/v1/registry/command_types");
-                let mut owner = None;
-                for path in super::listing(&dir)? {
-                    if path.extension().is_some_and(|e| e == "json") {
-                        let descriptor = read(&path)?;
-                        if descriptor["id"] == *command {
-                            owner = descriptor["capability"].as_u64();
+            if entry["direction"] == "client_to_server" {
+                validate_core_extension(root, feature, entry, fact)?;
+            } else {
+                if entry["direction"] != "server_to_client" {
+                    return Err("invalid commandless handler direction".into());
+                }
+                let pushes = entry["push_messages"]
+                    .as_array()
+                    .ok_or("commandless supported handler needs pushed messages")?;
+                if pushes.is_empty() {
+                    return Err("commandless supported handler needs pushed messages".into());
+                }
+                symbol(
+                    feature,
+                    entry["reducer"].as_str().ok_or("push handler reducer")?,
+                )?;
+                symbol(feature, entry["test"].as_str().ok_or("push handler test")?)?;
+                for command in entry["shared_commands"].as_array().into_iter().flatten() {
+                    let id = command.as_u64().ok_or("shared command id")?;
+                    let dir = root.join("docs/contracts/protocol-oteryn/v1/registry/command_types");
+                    let mut owner = None;
+                    for path in super::listing(&dir)? {
+                        if path.extension().is_some_and(|e| e == "json") {
+                            let descriptor = read(&path)?;
+                            if descriptor["id"] == *command {
+                                owner = descriptor["capability"].as_u64();
+                            }
                         }
                     }
-                }
-                if owner.is_none() || owner == fact["id"].as_u64() {
-                    return Err(format!("shared command {id} has no other capability owner"));
+                    if owner.is_none() || owner == fact["id"].as_u64() {
+                        return Err(format!("shared command {id} has no other capability owner"));
+                    }
                 }
             }
         }
@@ -282,5 +289,71 @@ pub(super) fn parents(entries: &[Value]) -> Result<(), String> {
             current = parent;
         }
     }
+    Ok(())
+}
+
+/// A negotiated grammar extension does not acquire ownership of the core
+/// command. Its contract must explicitly name every extended core command.
+fn validate_core_extension(
+    root: &Path,
+    feature: &Path,
+    entry: &Value,
+    fact: &Value,
+) -> Result<(), String> {
+    if entry["capability"] != fact["id"] {
+        return Err("core extension capability mismatch".into());
+    }
+    let commands = entry["shared_commands"]
+        .as_array()
+        .filter(|v| !v.is_empty())
+        .ok_or("core extension needs commands")?;
+    let contracts = root.join("docs/contracts/protocol-oteryn/v1/registry/capabilities");
+    let mut contract = None;
+    for path in super::listing(&contracts)? {
+        if path.extension().is_some_and(|e| e == "json") {
+            let candidate = read(&path)?;
+            if candidate["id"] == fact["id"] {
+                if contract.is_some() {
+                    return Err("duplicate core extension contract".into());
+                }
+                contract = Some(candidate);
+            }
+        }
+    }
+    let contract = contract.ok_or("core extension contract missing")?;
+    if contract["extends_core_commands"].as_array() != Some(commands)
+        || commands
+            .windows(2)
+            .any(|p| p[0].as_u64().is_none() || p[0].as_u64() >= p[1].as_u64())
+    {
+        return Err("core extension differs from contract".into());
+    }
+    for command in commands {
+        let id = command
+            .as_u64()
+            .filter(|id| *id != 0)
+            .ok_or("core extension command id")?;
+        let mut found = false;
+        for path in
+            super::listing(&root.join("docs/contracts/protocol-oteryn/v1/registry/command_types"))?
+        {
+            if path.extension().is_some_and(|e| e == "json") {
+                let descriptor = read(&path)?;
+                if descriptor["id"] == id {
+                    if !descriptor["capability"].is_null() {
+                        return Err("extension target is not a core command".into());
+                    }
+                    found = true;
+                }
+            }
+        }
+        if !found {
+            return Err("core extension command missing".into());
+        }
+    }
+    symbol(
+        feature,
+        entry["test"].as_str().ok_or("core extension test")?,
+    )?;
     Ok(())
 }

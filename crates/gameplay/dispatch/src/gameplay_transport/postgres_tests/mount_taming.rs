@@ -240,7 +240,18 @@ enum Cases {
 
 #[test]
 fn mount_taming_postgres_construction_hotkeys_use_production_catalogue() -> TestResult {
-    run_pairs(Cases::Construction)
+    assert_eq!(
+        crate::content::native_gameplay::mount_taming::rules()
+            .iter()
+            .filter(|rule| rule.target_item_key.is_some())
+            .count(),
+        4
+    );
+    run_pairs(Cases::Construction)?;
+    // The fourth construction row is a seven-piece recipe, owned by ordinary
+    // item actions. Exercise its complete atomic success, replay and refusal.
+    super::item_cosmetics::run_stock_glider(false, false)?;
+    super::item_cosmetics::run_stock_glider(false, true)
 }
 
 #[test]

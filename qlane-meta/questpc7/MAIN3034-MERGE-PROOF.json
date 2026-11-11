@@ -1,0 +1,75 @@
+{
+  "at": "2026-11-08T13:05:45.563675+00:00",
+  "main": "c68395ccc",
+  "state": "COMPILING_WIP_FOCUSED_PG_REQUALIFICATION_RUNNING",
+  "resolved_conflicts": 18,
+  "repairs": [
+    "Retain main instance corpse custody with mutable Corruptor loot plan",
+    "Retain Formal display ground semantics and new blocks_projectile field",
+    "Compose lane Thaian producer with main boss/Primal producers",
+    "Compare full typed runtime scope for Corruptor custody",
+    "Separate counter occurrence claim identity from existing paid-exchange hash"
+  ],
+  "previous_pg_run": {
+    "postgres": "18.6",
+    "passed": 4,
+    "failed": 1,
+    "seconds": 530.746,
+    "hidden_seconds": 42.384151957,
+    "tokens_seconds": 75.767001549,
+    "fluid_container_seconds": 93.030637369,
+    "fluid_catalogue_seconds": 185.451,
+    "friends_red_seconds": 133.792521729,
+    "friends_red_sql_error": "quest reward lacks exact native backpack MINT"
+  },
+  "invalidated_runs": [
+    "Authoring units read temporary conflict markers during aborted merge; all106 modules must rerun on stable tree",
+    "First clippy read mixed merge APIs; second clippy hit disk full; neither is proof",
+    "Broad durability/dispatch units reached unrelated PG fixtures and hit disk full; stopped after collecting failures; not a green suite"
+  ],
+  "node_boot_full_manifest": {
+    "native_content_test": "PASS150.98s",
+    "whole_script": "FAIL",
+    "error": "failed to fetch anonymous token: Get https://auth.docker.io/token: dial tcp 172.64.144.78:443: connect: connection refused",
+    "cleanup": "complete"
+  },
+  "authoring_units": {
+    "modules": 106,
+    "reported_cases": 1152,
+    "preexisting_skips": 8,
+    "failed_modules": []
+  },
+  "workspace_all_targets": {
+    "result": "PASS",
+    "seconds": 297
+  },
+  "clippy": {
+    "result": "PASS",
+    "crates": 6,
+    "seconds": 582
+  },
+  "content_tree": {
+    "result": "PASS",
+    "items": 34111,
+    "mounts": 252,
+    "creature_bindings": 1864
+  },
+  "world_pin": "5e23e39d9479b37a4c0b66a17ecf6bdbc4e8158bc5417e150c5b81ca1c01e79d",
+  "native_profiles": 3947,
+  "remaining": [
+    "Five-case PG requalification building; no current-main whole-route GREEN claimed",
+    "Remaining Rust unit suites pending PREPUSH-2 budget",
+    "Optional content_world_project_repository test build interrupted to prioritize workspace check and own PG",
+    "Whole node matrix retry after Rust validation and cache cleanup"
+  ],
+  "authoring_repairs": [
+    "Shared source-list rebinding validates each list exactly once; regression RED then GREEN with stale-hash negative retained",
+    "Normal regeneration now runs qengine producer after world tree and before room provenance",
+    "Main two-creature Sugar Daddy/Primal custody fixture preserved exactly"
+  ],
+  "node_proxy_retry": {
+    "registry_proxy": "WORKED; reached PHP/Composer image pull",
+    "result": "stopped after disk exhaustion; no GREEN claimed",
+    "next": "serialize node build after focused Rust validation; clear this lane completed caches"
+  }
+}

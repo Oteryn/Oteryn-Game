@@ -24,14 +24,23 @@ async fn viewer(
 ) -> TestResult<(Viewer, tokio::task::JoinHandle<Result<(), Error>>)> {
     let (client, mut server) = tokio::io::duplex(65536);
     let ticket = format!("ocv1.{marker:02x}{}{nonce:02x}", "ab".repeat(30));
-    let task = tokio::task::spawn_local(async move {
+    let mut task = tokio::task::spawn_local(async move {
         let first = read_frame(&mut server)
             .await
             .map_err(|_| Error::Unavailable)?;
         let stop = crate::gameplay_transport::CancellationToken::new();
         crate::gameplay_transport::cast_observer::serve(server, &first, node, &stop).await
     });
-    let viewer = Viewer::join(client, ticket.as_bytes(), Duration::from_secs(5)).await?;
+    let viewer = match Viewer::join(client, ticket.as_bytes(), Duration::from_secs(5)).await {
+        Ok(viewer) => viewer,
+        Err(error) => {
+            let server = tokio::time::timeout(Duration::from_secs(5), &mut task).await;
+            if server.is_err() {
+                task.abort();
+            }
+            return Err(format!("CLCAST observer join: {error}; server result: {server:?}").into());
+        }
+    };
     Ok((viewer, task))
 }
 async fn moderate(peer: &mut Peer, subject: [u8; 16], action: u8) -> TestResult {

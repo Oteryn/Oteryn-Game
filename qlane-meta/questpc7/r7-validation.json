@@ -1,0 +1,107 @@
+{
+  "basis": "uncommitted HEAD1fa04bbb + task writes, no candidate/CI qualification",
+  "checks": {
+    "r7-quest-generation-source-stable": {
+      "command": "python3 .questpc/regenerate_stable.py",
+      "exit": 0,
+      "duration_seconds": 987.801
+    },
+    "r7-authoring-checks-verified": {
+      "command": "python3 tools/content-schema/quest-authoring/run_checks.py --part checks",
+      "exit": 0,
+      "duration_seconds": 202.971
+    },
+    "r7-donor-check-final": {
+      "command": "/home/mole/oteryn-cache/venv-ci312/bin/python tools/content-schema/quest-authoring/quest_donor_source_authoring.py --check",
+      "exit": 0,
+      "duration_seconds": 449.361
+    },
+    "r7-authoring-units-green": {
+      "command": "python3 tools/content-schema/quest-authoring/run_checks.py --part unit-tests --jobs 4",
+      "exit": 0,
+      "duration_seconds": 215.957
+    },
+    "r7-map-decoder-installed-sdk": {
+      "command": "python3 -m unittest discover -s tools/content-schema/quest-authoring -p test_donor_source_maps.py",
+      "exit": 0,
+      "duration_seconds": 0.806
+    },
+    "r7-native-content-check-final": {
+      "command": "python3 tools/content-migration/register_spell_families.py --check",
+      "exit": 0,
+      "duration_seconds": 39.134
+    },
+    "r7-clippy-final-clean": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-content -p oteryn-gameplay-durability -p oteryn-gameplay-quests -p oteryn-gameplay-social -p oteryn-gameplay-dispatch -p oteryn-gameplay-combat -p oteryn-gameplay-encounters -p oteryn-gameplay-npc -p oteryn-game-server -p oteryn-client --all-targets --all-features --quiet -- -D warnings",
+      "exit": 0,
+      "duration_seconds": 116.295
+    },
+    "r7-fmt-checkpoint": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all",
+      "exit": 0,
+      "duration_seconds": 10.035
+    },
+    "r7-content-world-rewards-final": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-content --lib world_reward_claims -- --nocapture",
+      "exit": 0,
+      "duration_seconds": 1.502
+    },
+    "r7-durable-reward-unit-final": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-durability --lib reward_claim_mint::tests -- --nocapture",
+      "exit": 0,
+      "duration_seconds": 93.935
+    },
+    "r7-quests-unit-final": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-quests --lib --quiet",
+      "exit": 0,
+      "duration_seconds": 12.617
+    },
+    "r7-server-reward-binding-green": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --test integration_rest world_reward_claims_the_embedded_shards_decode -- --nocapture",
+      "exit": 0,
+      "duration_seconds": 44.733
+    },
+    "r7-boot-verified": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --lib quest_catalogue_boot_tests -- --nocapture",
+      "exit": 0,
+      "duration_seconds": 30.407
+    },
+    "r7-client-tracker-integration": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-client --test play_features quest_log_recorded_domain_16_frames_reach_the_play_panel -- --nocapture",
+      "exit": 0,
+      "duration_seconds": 5.994
+    },
+    "r7-root-fluid-owner-pg": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --test character_authority_postgres filled_fluid_claims_commit_root_and_children_and_replay_without_refilling -- --nocapture",
+      "exit": 0,
+      "duration_seconds": 73.651
+    },
+    "r7-root-newhaven-unit": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_cached_plan_reserves_only_shortfall_and_releases_it newhaven_corruptor_guarantee_survives_low_factor_and_keeps_independent_ordinary_drop --nocapture",
+      "exit": 0,
+      "duration_seconds": 89.046
+    },
+    "r7-root-combined-pg": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- quest_catalogue_chests_medusa_exact_crystal_reward_use_and_replay quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes falcon_chests_postgres_real_use_frozen_draw_refusal_restart_and_fences catalogue_npc_source_acceptance_is_atomic_and_replay_bound soul_war_postgres_ endgame_entry_postgres_real_dispatch_cannot_allocate_or_reset_without_w02 --test-threads=2 --nocapture",
+      "exit": 101,
+      "duration_seconds": 743.603
+    },
+    "r7-root-stag-guard-alone": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes -- --test-threads=1 --nocapture",
+      "exit": 0,
+      "duration_seconds": 345.692
+    },
+    "r7-fmt-verified": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all -- --check",
+      "exit": 0,
+      "duration_seconds": 11.638
+    }
+  },
+  "pending_owner_question": "Approve explicit native Game30 Corruptor projection preserving source48, or retain inactive path; unanswered",
+  "unfinished": [
+    "Newhaven actual source corpse/lifecycle/ordinaryloot/Viola owner",
+    "twelve legacy NPC durable-definition migration and Father atomic11 operation under cap8",
+    "Soul War W02 native room/activity owner",
+    "combined fresh-session fixture concurrency: exact isolated Stagcase passed, CI-only follow-up"
+  ]
+}

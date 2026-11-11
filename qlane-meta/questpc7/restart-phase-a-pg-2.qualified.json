@@ -1,0 +1,1259 @@
+{
+  "log": ".questpc/restart-phase-a-pg-2.log",
+  "test_source_sha256": "452142fb5123b3c4aead60590de93a4abfa6ab6a304cb8459bb01a5d4a48371a",
+  "manifest_sha256": "31f0a97659e81a3594b2321c5eeb903741ac09de5f5bde737eddff5ee87bd386",
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--all-features",
+    "--lib",
+    "quest_catalogue_chests_phase_a_",
+    "--",
+    "--test-threads=2",
+    "--nocapture"
+  ],
+  "qualified": {
+    "quest_catalogue_chests_phase_a_02_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/behemoth_quest",
+        "canary:quest/berserker_treasure_quest",
+        "canary:quest/black_knight_quest",
+        "canary:quest/blood_herb_quest",
+        "canary:quest/captain_iglues_treasure_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.kv.behemothquest1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.behemothquest1 (33294, 31658, -13) native_source=true duration=5.599474055s",
+            "duration": "5.599474055s",
+            "position": [
+              33294,
+              31658,
+              13
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.behemothquest2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.behemothquest2 (33295, 31658, -13) native_source=true duration=5.335603901s",
+            "duration": "5.335603901s",
+            "position": [
+              33295,
+              31658,
+              13
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.behemothquest3": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.behemothquest3 (33297, 31658, -13) native_source=true duration=5.814005859s",
+            "duration": "5.814005859s",
+            "position": [
+              33297,
+              31658,
+              13
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.behemothquest4": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.behemothquest4 (33298, 31658, -13) native_source=true duration=5.305262555s",
+            "duration": "5.305262555s",
+            "position": [
+              33298,
+              31658,
+              13
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls (33199, 31923, -11) native_source=true duration=5.644183853s",
+            "duration": "5.644183853s",
+            "position": [
+              33199,
+              31923,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.blackknight1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.blackknight1 (32868, 31955, -11) native_source=true duration=5.87351754s",
+            "duration": "5.87351754s",
+            "position": [
+              32868,
+              31955,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.blackknight2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.blackknight2 (32880, 31955, -11) native_source=true duration=5.231065849s",
+            "duration": "5.231065849s",
+            "position": [
+              32880,
+              31955,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id5010": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id5010 (32800, 31959, -7) native_source=true duration=5.660814371s",
+            "duration": "5.660814371s",
+            "position": [
+              32800,
+              31959,
+              7
+            ]
+          },
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id5010 (32813, 31964, -7) native_source=true duration=5.172239565s",
+            "duration": "5.172239565s",
+            "position": [
+              32813,
+              31964,
+              7
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.bloodherb": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.bloodherb (32769, 31968, -7) native_source=true duration=5.139687402s",
+            "duration": "5.139687402s",
+            "position": [
+              32769,
+              31968,
+              7
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.captain_iglues": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.captain_iglues (32039, 32121, -13) native_source=true duration=5.158577349s",
+            "duration": "5.158577349s",
+            "position": [
+              32039,
+              32121,
+              13
+            ]
+          }
+        ]
+      }
+    },
+    "quest_catalogue_chests_phase_a_01_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/adorned_uh_rune_quest",
+        "canary:quest/alawar_s_vault_quest",
+        "canary:quest/barbarian_axe_quest",
+        "canary:quest/battle_axe_quest",
+        "canary:quest/bear_room_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.kv.adoreduh": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.adoreduh (33136, 31601, -15) native_source=true duration=5.229527441s",
+            "duration": "5.229527441s",
+            "position": [
+              33136,
+              31601,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.alawars_vault1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.alawars_vault1 (32105, 31567, -9) native_source=true duration=5.780197785s",
+            "duration": "5.780197785s",
+            "position": [
+              32105,
+              31567,
+              9
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.alawars_vault2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.alawars_vault2 (32109, 31567, -9) native_source=true duration=5.332525108s",
+            "duration": "5.332525108s",
+            "position": [
+              32109,
+              31567,
+              9
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id4502": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id4502 (32201, 31571, -10) native_source=true duration=5.157659106s",
+            "duration": "5.157659106s",
+            "position": [
+              32201,
+              31571,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.barbarianaxe1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.barbarianaxe1 (33184, 31945, -11) native_source=true duration=5.733159112s",
+            "duration": "5.733159112s",
+            "position": [
+              33184,
+              31945,
+              11
+            ]
+          },
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.barbarianaxe1 (33185, 31945, -11) native_source=true duration=5.235168702s",
+            "duration": "5.235168702s",
+            "position": [
+              33185,
+              31945,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.battleaxe": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.battleaxe (32305, 32254, -9) native_source=true duration=5.111554086s",
+            "duration": "5.111554086s",
+            "position": [
+              32305,
+              32254,
+              9
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.bear_chest1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.bear_chest1 (32146, 32097, -11) native_source=true duration=5.679262224s",
+            "duration": "5.679262224s",
+            "position": [
+              32146,
+              32097,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.bear_chest2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.bear_chest2 (32144, 32096, -11) native_source=true duration=5.13471564s",
+            "duration": "5.13471564s",
+            "position": [
+              32144,
+              32096,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.bear_chest3": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.bear_chest3 (32141, 32097, -11) native_source=true duration=5.451962929s",
+            "duration": "5.451962929s",
+            "position": [
+              32141,
+              32097,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id4601": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id4601 (32150, 32112, -12) native_source=true duration=5.850229369s",
+            "duration": "5.850229369s",
+            "position": [
+              32150,
+              32112,
+              12
+            ]
+          }
+        ]
+      }
+    },
+    "quest_catalogue_chests_phase_a_03_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/circle_room_quest",
+        "canary:quest/combat_knife_quest",
+        "canary:quest/crusader_helmet_quest",
+        "canary:quest/crystal_wand_quest",
+        "canary:quest/darashia_dragon_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.kv.circleroom1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.circleroom1 (32495, 31992, -14) native_source=true duration=6.342526994s",
+            "duration": "6.342526994s",
+            "position": [
+              32495,
+              31992,
+              14
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.circleroom2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.circleroom2 (32497, 31992, -14) native_source=true duration=6.026677998s",
+            "duration": "6.026677998s",
+            "position": [
+              32497,
+              31992,
+              14
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.combatknife": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.combatknife (32102, 32235, -8) native_source=true duration=6.369084569s",
+            "duration": "6.369084569s",
+            "position": [
+              32102,
+              32235,
+              8
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.crusaderhelmet": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.crusaderhelmet (32427, 31943, -14) native_source=true duration=5.541228271s",
+            "duration": "5.541228271s",
+            "position": [
+              32427,
+              31943,
+              14
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.crystalwand1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.crystalwand1 (32479, 31611, -15) native_source=true duration=6.075695099s",
+            "duration": "6.075695099s",
+            "position": [
+              32479,
+              31611,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.crystalwand2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.crystalwand2 (32481, 31611, -15) native_source=true duration=6.349147641s",
+            "duration": "6.349147641s",
+            "position": [
+              32481,
+              31611,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_5.darashia_dragon": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_5.darashia_dragon (33233, 32280, -12) native_source=true duration=6.365772291s",
+            "duration": "6.365772291s",
+            "position": [
+              33233,
+              32280,
+              12
+            ]
+          }
+        ]
+      }
+    },
+    "quest_catalogue_chests_phase_a_04_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/dark_armor_quest",
+        "canary:quest/dead_archer_quest",
+        "canary:quest/deeper_fibula_quest",
+        "canary:quest/demon_helmet_quest",
+        "canary:quest/demona_ring_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.kv.darkarmor": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.darkarmor (33178, 31870, -12) native_source=true duration=6.114598345s",
+            "duration": "6.114598345s",
+            "position": [
+              33178,
+              31870,
+              12
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.deadarcher": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deadarcher (32514, 32303, -10) native_source=true duration=5.966200069s",
+            "duration": "5.966200069s",
+            "position": [
+              32514,
+              32303,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.deeperfibula1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula1 (32239, 32471, -10) native_source=true duration=6.944473597s",
+            "duration": "6.944473597s",
+            "position": [
+              32239,
+              32471,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.deeperfibula2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula2 (32239, 32478, -10) native_source=true duration=7.035204391s",
+            "duration": "7.035204391s",
+            "position": [
+              32239,
+              32478,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.deeperfibula3": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula3 (32233, 32491, -10) native_source=true duration=5.832414246s",
+            "duration": "5.832414246s",
+            "position": [
+              32233,
+              32491,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.deeperfibula4": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula4 (32245, 32492, -10) native_source=true duration=6.129997217s",
+            "duration": "6.129997217s",
+            "position": [
+              32245,
+              32492,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.deeperfibula5": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula5 (32256, 32500, -10) native_source=true duration=5.902479287s",
+            "duration": "5.902479287s",
+            "position": [
+              32256,
+              32500,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id3980": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3980 (32219, 32401, -10) native_source=true duration=6.398477599s",
+            "duration": "6.398477599s",
+            "position": [
+              32219,
+              32401,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet (33313, 31575, -15) native_source=true duration=7.119916497s",
+            "duration": "7.119916497s",
+            "position": [
+              33313,
+              31575,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield (33313, 31576, -15) native_source=true duration=6.063694363s",
+            "duration": "6.063694363s",
+            "position": [
+              33313,
+              31576,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots (33313, 31574, -15) native_source=true duration=5.556689097s",
+            "duration": "5.556689097s",
+            "position": [
+              33313,
+              31574,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.demonaring1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.demonaring1 (32504, 31596, -14) native_source=true duration=6.536066313s",
+            "duration": "6.536066313s",
+            "position": [
+              32504,
+              31596,
+              14
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.demonaring2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.demonaring2 (32515, 31596, -14) native_source=true duration=6.319267002s",
+            "duration": "6.319267002s",
+            "position": [
+              32515,
+              31596,
+              14
+            ]
+          }
+        ]
+      }
+    },
+    "quest_catalogue_chests_phase_a_06_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/dragon_corpse_quest",
+        "canary:quest/dragon_tower_quest",
+        "canary:quest/edron_goblin_quest",
+        "canary:quest/elephant_tusk_quest",
+        "canary:quest/explorer_brooch_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.kv.dragoncorpse": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.dragoncorpse (32179, 32224, -9) native_source=true duration=6.701999362s",
+            "duration": "6.701999362s",
+            "position": [
+              32179,
+              32224,
+              9
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1 (33072, 32169, -2) native_source=true duration=6.124515976s",
+            "duration": "6.124515976s",
+            "position": [
+              33072,
+              32169,
+              2
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2 (33078, 32169, -2) native_source=true duration=6.546595103s",
+            "duration": "6.546595103s",
+            "position": [
+              33078,
+              32169,
+              2
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.edrongoblin1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.edrongoblin1 (33095, 31800, -10) native_source=true duration=5.782856995s",
+            "duration": "5.782856995s",
+            "position": [
+              33095,
+              31800,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.edrongoblin2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.edrongoblin2 (33095, 31801, -10) native_source=true duration=6.571287132s",
+            "duration": "6.571287132s",
+            "position": [
+              33095,
+              31801,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u7_5.elephant_tusk": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_5.elephant_tusk (32922, 32755, -7) native_source=true duration=6.250700842s",
+            "duration": "6.250700842s",
+            "position": [
+              32922,
+              32755,
+              7
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.explorerbrooch": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.explorerbrooch (32636, 31873, -10) native_source=true duration=6.419897464s",
+            "duration": "6.419897464s",
+            "position": [
+              32636,
+              31873,
+              10
+            ]
+          }
+        ]
+      }
+    },
+    "quest_catalogue_chests_phase_a_05_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/desert_dungeon_quest",
+        "canary:quest/devil_helmet_quest",
+        "canary:quest/double_hero_quest",
+        "canary:quest/doublet_quest",
+        "canary:quest/draconia_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.kv.desert1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.desert1 (32668, 32069, -8) native_source=true duration=6.202522984s",
+            "duration": "6.202522984s",
+            "position": [
+              32668,
+              32069,
+              8
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.desert2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.desert2 (32675, 32069, -8) native_source=true duration=6.702224553s",
+            "duration": "6.702224553s",
+            "position": [
+              32675,
+              32069,
+              8
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.devilhemet1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.devilhemet1 (32459, 32144, -15) native_source=true duration=6.186385516s",
+            "duration": "6.186385516s",
+            "position": [
+              32459,
+              32144,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.devilhemet2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.devilhemet2 (32465, 32148, -15) native_source=true duration=5.377341324s",
+            "duration": "5.377341324s",
+            "position": [
+              32465,
+              32148,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.devilhemet3": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.devilhemet3 (32466, 32148, -15) native_source=true duration=6.312224194s",
+            "duration": "6.312224194s",
+            "position": [
+              32466,
+              32148,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id3610": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3610 (32589, 32100, -14) native_source=true duration=6.785404258s",
+            "duration": "6.785404258s",
+            "position": [
+              32589,
+              32100,
+              14
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id3667": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3667 (32576, 32216, -15) native_source=true duration=7.082307069s",
+            "duration": "7.082307069s",
+            "position": [
+              32576,
+              32216,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.doublehero1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.doublehero1 (33109, 31679, -13) native_source=true duration=6.197611601s",
+            "duration": "6.197611601s",
+            "position": [
+              33109,
+              31679,
+              13
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.doublehero2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.doublehero2 (33110, 31679, -13) native_source=true duration=5.503727053s",
+            "duration": "5.503727053s",
+            "position": [
+              33110,
+              31679,
+              13
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.doublet": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.doublet (32084, 32181, -8) native_source=true duration=5.557267111s",
+            "duration": "5.557267111s",
+            "position": [
+              32084,
+              32181,
+              8
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.draconia1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.draconia1 (32803, 31582, -2) native_source=true duration=6.540011492s",
+            "duration": "6.540011492s",
+            "position": [
+              32803,
+              31582,
+              2
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.draconia2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.draconia2 (32804, 31582, -2) native_source=true duration=7.205554247s",
+            "duration": "7.205554247s",
+            "position": [
+              32804,
+              31582,
+              2
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id3002": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3002 (32802, 31576, -7) native_source=true duration=6.339128669s",
+            "duration": "6.339128669s",
+            "position": [
+              32802,
+              31576,
+              7
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id3008": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3008 (32800, 31582, -2) native_source=true duration=5.486535136s",
+            "duration": "5.486535136s",
+            "position": [
+              32800,
+              31582,
+              2
+            ]
+          }
+        ]
+      }
+    },
+    "quest_catalogue_chests_phase_a_08_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/goblin_temple_quest",
+        "canary:quest/griffin_shield_quest",
+        "canary:quest/heaven_blossom_quest",
+        "canary:quest/inukaya_quest",
+        "canary:quest/iron_hammer_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.kv.goblintemple": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.goblintemple (31973, 32209, -12) native_source=true duration=6.438191314s",
+            "duration": "6.438191314s",
+            "position": [
+              31973,
+              32209,
+              12
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.goblintemple2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.goblintemple2 (31977, 32209, -12) native_source=true duration=6.188842547s",
+            "duration": "6.188842547s",
+            "position": [
+              31977,
+              32209,
+              12
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.griffinshield1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.griffinshield1 (32498, 31721, -15) native_source=true duration=5.924731629s",
+            "duration": "5.924731629s",
+            "position": [
+              32498,
+              31721,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.griffinshield2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.griffinshield2 (32500, 31721, -15) native_source=true duration=6.388034372s",
+            "duration": "6.388034372s",
+            "position": [
+              32500,
+              31721,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.griffinshield3": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.griffinshield3 (32503, 31724, -15) native_source=true duration=6.479861735s",
+            "duration": "6.479861735s",
+            "position": [
+              32503,
+              31724,
+              15
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.heavenblossom": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.heavenblossom (33104, 32154, -8) native_source=true duration=6.709017055s",
+            "duration": "6.709017055s",
+            "position": [
+              33104,
+              32154,
+              8
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya (32483, 31110, -8) native_source=true duration=6.032892645s",
+            "duration": "6.032892645s",
+            "position": [
+              32483,
+              31110,
+              8
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.ironhamer": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ironhamer (32434, 31938, -8) native_source=true duration=7.233485349s",
+            "duration": "7.233485349s",
+            "position": [
+              32434,
+              31938,
+              8
+            ]
+          }
+        ]
+      }
+    },
+    "quest_catalogue_chests_phase_a_07_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/fanfare_quest",
+        "canary:quest/fire_axe_quest",
+        "canary:quest/fishing_box_quest",
+        "canary:quest/geomancer_quest",
+        "canary:quest/ghoul_room_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.kv.fanfare": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.fanfare (32390, 31769, -9) native_source=true duration=5.698148299s",
+            "duration": "5.698148299s",
+            "position": [
+              32390,
+              31769,
+              9
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id3520": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3520 (32376, 31802, -7) native_source=true duration=6.012994372s",
+            "duration": "6.012994372s",
+            "position": [
+              32376,
+              31802,
+              7
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.fireaxe1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.fireaxe1 (33078, 31656, -11) native_source=true duration=6.720864567s",
+            "duration": "6.720864567s",
+            "position": [
+              33078,
+              31656,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.fireaxe2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.fireaxe2 (33084, 31650, -12) native_source=true duration=5.931585731s",
+            "duration": "5.931585731s",
+            "position": [
+              33084,
+              31650,
+              12
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.fishing_box": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.fishing_box (32015, 31409, -7) native_source=true duration=6.073326969s",
+            "duration": "6.073326969s",
+            "position": [
+              32015,
+              31409,
+              7
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.geomancer": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.geomancer (32456, 32008, -13) native_source=true duration=7.317808125s",
+            "duration": "7.317808125s",
+            "position": [
+              32456,
+              32008,
+              13
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.ghoulroom1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ghoulroom1 (32500, 32175, -14) native_source=true duration=6.37141911s",
+            "duration": "6.37141911s",
+            "position": [
+              32500,
+              32175,
+              14
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.ghoulroom2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ghoulroom2 (32500, 32177, -14) native_source=true duration=5.774253018s",
+            "duration": "5.774253018s",
+            "position": [
+              32500,
+              32177,
+              14
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id3600": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3600 (32509, 32181, -13) native_source=true duration=5.929695349s",
+            "duration": "5.929695349s",
+            "position": [
+              32509,
+              32181,
+              13
+            ]
+          }
+        ]
+      }
+    },
+    "quest_catalogue_chests_phase_a_09_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/iron_helmet_quest",
+        "canary:quest/iron_ore_quest",
+        "canary:quest/isle_of_the_mists_quest",
+        "canary:quest/katana_quest",
+        "canary:quest/lion_trophy_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.kv.ironhelmet": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ironhelmet (32769, 32225, -7) native_source=true duration=5.465519588s",
+            "duration": "5.465519588s",
+            "position": [
+              32769,
+              32225,
+              7
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.ironore": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.ironore (32532, 31873, -8) native_source=true duration=5.948269949s",
+            "duration": "5.948269949s",
+            "position": [
+              32532,
+              31873,
+              8
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.isleofthemists": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.isleofthemists (32852, 32332, -7) native_source=true duration=5.9791066s",
+            "duration": "5.9791066s",
+            "position": [
+              32852,
+              32332,
+              7
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.katanacorpse1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.katanacorpse1 (32175, 32145, -11) native_source=true duration=7.149989024s",
+            "duration": "7.149989024s",
+            "position": [
+              32175,
+              32145,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.katanacorpse2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.katanacorpse2 (32174, 32149, -11) native_source=true duration=6.102147913s",
+            "duration": "6.102147913s",
+            "position": [
+              32174,
+              32149,
+              11
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.key.id4603": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id4603 (32176, 32132, -9) native_source=true duration=5.527568528s",
+            "duration": "5.527568528s",
+            "position": [
+              32176,
+              32132,
+              9
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines (32154, 31116, -9) native_source=true duration=5.687258318s",
+            "duration": "5.687258318s",
+            "position": [
+              32154,
+              31116,
+              9
+            ]
+          }
+        ]
+      }
+    },
+    "quest_catalogue_chests_phase_a_10_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/lone_medusa_quest",
+        "canary:quest/longsword_quest",
+        "canary:quest/mad_mage_room_quest",
+        "canary:quest/medusa_shield_quest",
+        "canary:quest/minotaur_hell_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.quest.u8_5.lone_medusa": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_5.lone_medusa (32406, 32764, -1) native_source=true duration=5.633759518s",
+            "duration": "5.633759518s",
+            "position": [
+              32406,
+              32764,
+              1
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.longsword1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.longsword1 (32649, 31969, -9) native_source=true duration=5.787892526s",
+            "duration": "5.787892526s",
+            "position": [
+              32649,
+              31969,
+              9
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.longsword2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.longsword2 (32650, 31969, -9) native_source=true duration=5.587284049s",
+            "duration": "5.587284049s",
+            "position": [
+              32650,
+              31969,
+              9
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.longsword3": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.longsword3 (32651, 31969, -9) native_source=true duration=5.763457718s",
+            "duration": "5.763457718s",
+            "position": [
+              32651,
+              31969,
+              9
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.madmageroom1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.madmageroom1 (32578, 32195, -14) native_source=true duration=6.947656126s",
+            "duration": "6.947656126s",
+            "position": [
+              32578,
+              32195,
+              14
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.madmageroom2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.madmageroom2 (32575, 32195, -14) native_source=true duration=5.91855409s",
+            "duration": "5.91855409s",
+            "position": [
+              32575,
+              32195,
+              14
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.madmageroom3": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.madmageroom3 (32572, 32195, -14) native_source=true duration=5.292973688s",
+            "duration": "5.292973688s",
+            "position": [
+              32572,
+              32195,
+              14
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u7_3.the_medusa_quest": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u7_3.the_medusa_quest (33049, 32399, -10) native_source=true duration=7.238010509s",
+            "duration": "7.238010509s",
+            "position": [
+              33049,
+              32399,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.minohell1": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.minohell1 (32130, 32066, -12) native_source=true duration=5.53366988s",
+            "duration": "5.53366988s",
+            "position": [
+              32130,
+              32066,
+              12
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.minohell2": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.minohell2 (32127, 32065, -12) native_source=true duration=6.188668073s",
+            "duration": "6.188668073s",
+            "position": [
+              32127,
+              32065,
+              12
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.minohell3": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.minohell3 (32124, 32064, -12) native_source=true duration=5.555852997s",
+            "duration": "5.555852997s",
+            "position": [
+              32124,
+              32064,
+              12
+            ]
+          }
+        ]
+      }
+    },
+    "quest_catalogue_chests_phase_a_11_use_replay_and_refusal": {
+      "quests": [
+        "canary:quest/minotaur_leather_quest",
+        "canary:quest/mintwallin_cyclops_quest",
+        "crystalserver:quest/berserk_potion_quest",
+        "crystalserver:quest/frost_dragon_quest"
+      ],
+      "claims": {
+        "oteryn:reward-claim.kv.minotaurleatherquest": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.minotaurleatherquest (32302, 32415, -7) native_source=true duration=7.688441264s",
+            "duration": "7.688441264s",
+            "position": [
+              32302,
+              32415,
+              7
+            ]
+          }
+        ],
+        "oteryn:reward-claim.kv.mintwallincyclops": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.mintwallincyclops (32591, 32097, -14) native_source=true duration=6.896141822s",
+            "duration": "6.896141822s",
+            "position": [
+              32591,
+              32097,
+              14
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim (32490, 31192, -10) native_source=true duration=7.816478106s",
+            "duration": "7.816478106s",
+            "position": [
+              32490,
+              31192,
+              10
+            ]
+          }
+        ],
+        "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir": [
+          {
+            "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir (32146, 31430, -8) native_source=true duration=8.075536734s",
+            "duration": "8.075536734s",
+            "position": [
+              32146,
+              31430,
+              8
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -41,6 +41,13 @@ impl<S: SessionStream> Session<S> {
     /// decodes its `CommandResult` and, when it `Moved`, the one `WORLD_SPATIAL` delta.
     pub async fn step(&mut self, direction: StepDirection) -> Result<StepOutcome, SessionError> {
         self.ensure_usable()?;
+        if direction.is_diagonal()
+            && !self.is_selected(world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1)
+        {
+            return Err(SessionError::CapabilityNotSelected {
+                capability: world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+            });
+        }
         let payload = world_spatial::encode_step_intent(direction);
         let outcome = self.exchange_step(&payload).await;
         self.poison_on_error(outcome)

@@ -1,0 +1,27 @@
+apps/game-server/src/node/serve/bundle_npcs.rs:354:            talk: Arc::new(NpcTalkBook::from_model_with_native_quests(
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:603:            assert_eq!(legacy_defaults(&active, quest, hash), Some(defaults));
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:604:            assert!(legacy_defaults(&active, quest, &[0; 32]).is_none());
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:608:                legacy_defaults(
+crates/gameplay/npc/src/npc_talk.rs:135:        Self::from_model_with_native_quests(model, &[])
+crates/gameplay/npc/src/npc_talk.rs:140:    pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
+crates/gameplay/npc/src/npc_talk.rs:552:        let book = NpcTalkBook::from_model_with_native_quests(&model, &keys);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs:70:        NpcTalkBook::from_model_with_native_quests(&model, &native_npcs),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:401:        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model_with_native_quests(
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:5:    pub async fn commit_npc_program(
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:19:                root.commit_character_npc_program(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:126:        .reconcile_npc_program(authority, fence.character_id, request.clone())
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:147:    assert!(matches!(owner.root.reconcile_npc_program(authority,fence.character_id,changed).await,Err(crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence)));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:157:        slot.commit_npc_program(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:310:            oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:399:        .reconcile_npc_program(authority, fence.character_id, request.clone())
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:468:    assert!(matches!(owner.root.reconcile_npc_program(authority, fence.character_id, changed).await,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:72:            if let Some(defaults) = oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:132:    let plan = match npc_program::preview(&request, &tracks, catalogue, now) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:286:        .commit_npc_program(
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:359:            .reconcile_npc_program(admission.character, character, request)
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:120:    pub async fn reconcile_npc_program(
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:144:    pub async fn commit_character_npc_program(
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:207:                if let Some(defaults)=oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue,&quest,&stored) {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:223:                        && oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue,quest,&stored).is_none()
+crates/gameplay/durability/src/durability/quest_state/writer.rs:397:                                    && oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue, quest, &hash).is_none();
+crates/gameplay/durability/src/durability/quest_state/writer.rs:517:                    if let Some(defaults) = oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue, quest, &hash) {
