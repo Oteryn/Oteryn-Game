@@ -119,6 +119,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         reset_epoch: 0,
         actor_placement: f::id(17),
         movement_revision: 1,
+        party: Vec::new(),
     };
     let seal = h.recovery.seal_current().map_err(f::debug)?;
     let authority = h
@@ -530,6 +531,7 @@ mod native_binding {
             reset_epoch: 0,
             actor_placement: f::id(17),
             movement_revision: 1,
+            party: Vec::new(),
         };
         let seal = h.recovery.seal_current().map_err(f::debug)?;
         let authority = h
@@ -778,6 +780,9 @@ mod native_binding {
         callback.offerings.clear();
         callback.item_on_target = None;
         callback.storage = vec![Storage {
+            add: None,
+            read_only: false,
+            set_if: None,
             track: "oteryn:quest-progress/qm03-admission/stage".into(),
             minimum: 0,
             maximum: 0,

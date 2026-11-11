@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal -- --nocapture",
+  "exit": 101,
+  "duration_seconds": 137.347
+}

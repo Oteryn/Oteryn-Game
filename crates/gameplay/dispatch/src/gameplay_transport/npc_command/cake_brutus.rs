@@ -134,6 +134,9 @@ pub(super) async fn apply(
     };
     let name = if category == 1 { "item" } else { "cupcake" };
     let request = RewardClaimMintRequest {
+        backpack_outputs: false,
+        root_charges_remaining: None,
+        root_fluid_subtype: None,
         command: CommandRef::new(command.game_session_id, command_id),
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),

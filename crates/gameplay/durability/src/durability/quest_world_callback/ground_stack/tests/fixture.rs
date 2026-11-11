@@ -9,6 +9,7 @@ pub(super) fn context() -> QuestWorldContext {
         reset_epoch: 0,
         actor_placement: h::id(7),
         movement_revision: 1,
+        party: Vec::new(),
     }
 }
 

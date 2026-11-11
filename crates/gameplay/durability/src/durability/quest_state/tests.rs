@@ -207,6 +207,65 @@ fn monk_copy_derives_count_once_and_reserves_projection_capacity_atomically() {
 }
 
 #[test]
+fn declared_initials_guide_callbacks_without_opening_unearned_storage_doors() {
+    use oteryn_gameplay_quests::quest::QuestTrack;
+    let key = "oteryn:quest-progress/storage/4500";
+    let catalogue = QuestStateCatalogue::new("content-1", vec![QuestTrack {
+        key: key.into(), quest: "oteryn:quest/initials".into(), initial: 0, min: -1, max: 1,
+    }], vec![]).expect("catalogue");
+    let mut copy = QuestStateCopy::default();
+    assert!(copy.project_declared_initials(&catalogue));
+    assert_eq!(copy.tracks().get(key), Some(&0));
+    assert!(!copy.meets_door_storage(4500), "virtual progress is not earned storage");
+    assert!(copy.project_declared_initials(&catalogue));
+    let committed = CommittedQuestTransition {
+        character_id: CharacterId::from_bytes(id(1)).expect("character"),
+        cause: QuestCause::Command(command(5, 1)),
+        transition_key: "oteryn:t/initials".into(), quest_key: "oteryn:quest/initials".into(),
+        original_character_revision: CharacterRevision::new(1).expect("revision"),
+        committed_character_revision: CharacterRevision::new(2).expect("revision"),
+        pinned_content_revision: "content-1".into(), definition_hash: [7; 32], completes: false,
+        changes: vec![QuestTrackChange { track: key.into(), before: 0, after: 0 }], experience: None,
+    };
+    assert!(copy.apply(&committed));
+    assert!(copy.meets_door_storage(4500), "a committed zero row has source door semantics");
+}
+
+#[test]
+fn admission_defaults_preserve_stored_progress_and_refuse_overflow_atomically() {
+    use oteryn_gameplay_quests::quest::QuestTrack;
+    let key = "oteryn:quest-progress/storage/4500";
+    let catalogue = QuestStateCatalogue::new("content-1", vec![QuestTrack {
+        key: key.into(), quest: "oteryn:quest/initials".into(), initial: 0, min: -1, max: 1,
+    }], vec![]).expect("catalogue");
+    let mut copy = QuestStateCopy::default();
+    copy.tracks.insert(key.into(), 1);
+    assert!(copy.project_declared_initials(&catalogue));
+    assert_eq!(copy.tracks().get(key), Some(&1));
+    assert!(copy.meets_door_storage(4500));
+    let mut full = QuestStateCopy::default();
+    full.tracks.extend((0..QUESTSTATE0_RL_08_TRACKS).map(|i| (format!("oteryn:stored/{i}"), 1)));
+    let before = full.clone();
+    assert!(!full.project_declared_initials(&catalogue));
+    assert_eq!(full, before);
+}
+
+#[test]
+fn evaluation_defaults_do_not_seed_unrelated_live_progress() {
+    use oteryn_gameplay_quests::quest::QuestTrack;
+    let key = "oteryn:quest-progress/storage/4500";
+    let catalogue = QuestStateCatalogue::new("content-1", vec![QuestTrack {
+        key: key.into(), quest: "oteryn:quest/initials".into(), initial: 0, min: -1, max: 1,
+    }], vec![]).expect("catalogue");
+    let copy = QuestStateCopy::default();
+    let before = copy.clone();
+    assert_eq!(copy.read_tracks(&catalogue).expect("bounded defaults").get(key), Some(&0));
+    assert_eq!(copy, before);
+    assert!(copy.tracks().is_empty());
+    assert!(!copy.meets_door_storage(4500));
+}
+
+#[test]
 fn srx3_rotten_area_source_think_cause_has_its_own_occurrence_namespace() {
     let cause = QuestCause::stored("source_think", id(24), 0)
         .expect("server-owned source think must decode its own immutable occurrence namespace");

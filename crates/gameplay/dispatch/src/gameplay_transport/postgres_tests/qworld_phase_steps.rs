@@ -214,7 +214,7 @@ pub(super) async fn exercise(
         .ok_or("selected phase")?;
     assert!(
         !callback.requires_premium,
-        "both qualified phases use structured admission"
+        "both source phases use the structured admission path"
     );
     assert!(
         callback

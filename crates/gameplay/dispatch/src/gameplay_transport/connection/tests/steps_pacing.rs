@@ -155,6 +155,23 @@ fn paced_session(capabilities: &[u32]) -> Result<AdmittedSession, Box<dyn Error>
     Ok(admitted)
 }
 
+/// Eight-way movement is offered only by a bundle World.
+fn diagonal_paced_session(capabilities: &[u32]) -> Result<AdmittedSession, Box<dyn Error>> {
+    use crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
+    use oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1;
+    let mut admitted = positioned()?;
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, capabilities)
+            .ok_or("bounded bundle selection")?;
+    assert!(
+        admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_DIAGONAL_MOVEMENT_V1)
+    );
+    Ok(admitted)
+}
+
 /// Serve `admitted`, write `client_frames` at once, and close the client side only after
 /// the server has written `wanted` frames past the snapshot: a buffered step needs the
 /// connection to stay open until it is due.
@@ -451,10 +468,29 @@ impl FreshAdmissionAuthority for RetainedPacedAuthority {
 #[test]
 fn buffered_step_disconnect_retains_rejection_and_resumes_without_reexecuting()
 -> Result<(), Box<dyn Error>> {
+    buffered_step_eof_recovery(StepDirection::East, paced_session(&[13])?)
+}
+
+#[test]
+fn buffered_diagonal_step_disconnect_retains_rejection_and_resumes_without_reexecuting()
+-> Result<(), Box<dyn Error>> {
+    buffered_step_eof_recovery(
+        StepDirection::NorthEast,
+        diagonal_paced_session(&[
+            13,
+            oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+        ])?,
+    )
+}
+
+fn buffered_step_eof_recovery(
+    buffered_direction: StepDirection,
+    admitted: AdmittedSession,
+) -> Result<(), Box<dyn Error>> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| -> Result<(), String> {
-            run(async {
+        .spawn(move || -> Result<(), String> {
+            run(async move {
                 tokio::time::pause();
                 let authority = RetainedPacedAuthority {
                     movement: PacedAuthority {
@@ -468,10 +504,10 @@ fn buffered_step_disconnect_retains_rejection_and_resumes_without_reexecuting()
                 let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
                 let (end, frames) = drive_session(
                     &authority,
-                    paced_session(&[13])?,
+                    admitted,
                     &[
                         command(1, 1, step, StepDirection::East),
-                        command(1, 2, step, StepDirection::East),
+                        command(1, 2, step, buffered_direction),
                     ],
                 )
                 .await?;
@@ -542,18 +578,11 @@ fn buffered_step_disconnect_retains_rejection_and_resumes_without_reexecuting()
 }
 
 #[test]
-fn house_buffered_step_eof_retains_original_rejection_across_socket_replacement()
--> Result<(), Box<dyn Error>> {
+fn diagonal_step_without_negotiation_is_rejected_before_pacing() -> Result<(), Box<dyn Error>> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| -> Result<(), String> {
             run(async {
-                use crate::foundation::{
-                    ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration,
-                };
-                use oteryn_protocol_oteryn::house_transfer::{
-                    CAPABILITY_HOUSE_TRANSFER_V1, STATE_DOMAIN_HOUSE_SCOPE,
-                };
                 tokio::time::pause();
                 let authority = RetainedPacedAuthority {
                     movement: PacedAuthority {
@@ -563,7 +592,94 @@ fn house_buffered_step_eof_retains_original_rejection_across_socket_replacement(
                     },
                     commands: Default::default(),
                 };
-                let mut admitted = paced_session(&[13, CAPABILITY_HOUSE_TRANSFER_V1])?;
+                let start = tokio::time::Instant::now();
+                let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+                let (end, frames) = drive_open(
+                    &authority,
+                    paced_session(&[13])?,
+                    &[
+                        command(1, 1, step, StepDirection::East),
+                        command(1, 2, step, StepDirection::NorthEast),
+                    ],
+                    3,
+                )
+                .await?;
+                let refusal = decode_wire_envelope(
+                    frames.get(baseline().len() + 2).ok_or("diagonal refusal")?,
+                )?;
+                let result = oteryn_protocol_oteryn::decode_command_result(refusal.payload())?;
+                assert_eq!(refusal.connection_generation(), 1);
+                assert_eq!(refusal.server_sequence(), 3);
+                assert_eq!(result.command_id, 2);
+                assert_eq!(result.status, CommandStatus::Rejected);
+                assert_eq!(
+                    result.payload,
+                    encode_step_result(StepDisposition::Rejected)
+                );
+                assert!(tokio::time::Instant::now() < start + PACE);
+                assert_eq!(authority.movement.steps.borrow().len(), 1);
+                assert_eq!(authority.movement.steps.borrow()[0].0, StepDirection::East);
+                let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                    return Err(format!("unexpected refused diagonal end {end:?}").into());
+                };
+                assert_eq!(ended.continuity.next_command_id, 3);
+                assert_eq!(ended.continuity.server_sequence, 3);
+                assert!(authority.commands.resumable(&ended));
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "unnegotiated diagonal test thread")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn house_buffered_step_eof_retains_original_rejection_across_socket_replacement()
+-> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1;
+    house_buffered_step_eof_recovery(
+        StepDirection::East,
+        paced_session(&[13, CAPABILITY_HOUSE_TRANSFER_V1])?,
+    )
+}
+
+#[test]
+fn house_buffered_diagonal_step_eof_retains_original_rejection_across_socket_replacement()
+-> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1;
+    use oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1;
+    house_buffered_step_eof_recovery(
+        StepDirection::SouthWest,
+        diagonal_paced_session(&[
+            13,
+            CAPABILITY_HOUSE_TRANSFER_V1,
+            CAPABILITY_DIAGONAL_MOVEMENT_V1,
+        ])?,
+    )
+}
+
+fn house_buffered_step_eof_recovery(
+    buffered_direction: StepDirection,
+    mut admitted: AdmittedSession,
+) -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            run(async move {
+                use crate::foundation::{
+                    ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+                };
+                use oteryn_protocol_oteryn::house_transfer::STATE_DOMAIN_HOUSE_SCOPE;
+                tokio::time::pause();
+                let authority = RetainedPacedAuthority {
+                    movement: PacedAuthority {
+                        steps: RefCell::new(Vec::new()),
+                        turn: std::time::Duration::ZERO,
+                        receipts: true,
+                    },
+                    commands: Default::default(),
+                };
                 // A House retains its Channel actor while the item fence names the
                 // Instance. This is the public serve_admitted House routing condition.
                 admitted.item_fence = Some(CurrentCharacterItemFence {
@@ -585,7 +701,7 @@ fn house_buffered_step_eof_retains_original_rejection_across_socket_replacement(
                     admitted,
                     &[
                         command(1, 1, step, StepDirection::East),
-                        command(1, 2, step, StepDirection::East),
+                        command(1, 2, step, buffered_direction),
                     ],
                 )
                 .await?;

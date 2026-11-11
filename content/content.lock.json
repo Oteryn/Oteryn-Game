@@ -2,13 +2,13 @@
   "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
   "authoring_profile_counts": {
     "Ability": 7396,
-    "Behavior": 3146,
-    "Creature": 1864,
+    "Behavior": 3147,
+    "Creature": 1865,
     "Effect": 5800,
     "Encounter": 108,
     "Formula": 6129,
     "Loot": 40,
-    "Presentation": 3146
+    "Presentation": 3147
   },
   "editor_entry_counts": {
     "Item": 165,
@@ -16,20 +16,20 @@
   },
   "family_counts": {
     "Ability": 7396,
-    "Behavior": 3146,
+    "Behavior": 3147,
     "Charm": 25,
-    "Creature": 1864,
+    "Creature": 1865,
     "Dialogue": 836,
     "Document": 1609,
     "Effect": 5800,
     "Encounter": 108,
     "Encounter.Raid": 240,
     "Formula": 6129,
-    "Item": 34122,
+    "Item": 34111,
     "Loot": 1292,
     "Mount": 252,
     "NPC": 1282,
-    "Presentation": 3146,
+    "Presentation": 3147,
     "Proficiency": 443,
     "Quest": 352,
     "RewardClaim": 345,
@@ -39,19 +39,19 @@
     "Service.Trade": 324,
     "Service.Travel": 56,
     "StarterKit": 1,
-    "item_conversion": 130
+    "item_conversion": 129
   },
   "item_authoring_counts": {
     "authoring": 700,
     "relation_sources": 880,
-    "taxonomy": 12251
+    "taxonomy": 12252
   },
   "legacy_blobs": {
-    "declarations": "3e8752c1a5c578e3d74b93e92c4839f2c35603cc",
+    "declarations": "af108f1f2be144b720e666a2874ffbc9aa014b78",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "b01ad7b57a018540ef6766f1544eb4a83a95a606",
-    "reference": "5ea6d7f635a63d18d48f368c70e252e39910bc76",
-    "sources": "4f6b825b939e0b74d049f6be23306972299ecf28"
+    "imports": "4343a6bbc61e5039d7daeb0fa4fd5eac10472e96",
+    "reference": "101b7ad24490bef29d31f83764ea0de36855e7cb",
+    "sources": "ce3224ad3dba10a9c00b1091c9eb6304552d878d"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
@@ -71,15 +71,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "096f2d8b18dba8adeeeebb84cfc8d6caf2843114b3745edf84005c70908594f8"
+        "sha256": "1130ea3edb07a264149a5b48f529c738c0fe2c3a0ea1773828ffe348979804d0"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "a9a9f7ea4be54f5bfaccb72799322fb509f6dc8ac03c2caafa2f7c4d927d8d96"
+        "sha256": "df7375f0713d44279d13781558d216dc554deb4c185f8a128ed724e3ca8b9df0"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "cead4da90b7920754734861ee528db29085da9279282274949e6372ca378cdce"
+        "sha256": "e7ae8ab87c87dd02616a7cc54e8d543b1b98f2791617225400928c423b666f5d"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",
@@ -89,7 +89,7 @@
   },
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
   "source_binding_counts": {
-    "Creature": 1864,
+    "Creature": 1865,
     "Encounter": 108,
     "Item": 476,
     "Mount": 252,
@@ -155,7 +155,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/spell-native-profiles.json",
-          "record_count": 1874,
+          "record_count": 1872,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "f2d1b91a93d92e8262d4c7258661fe1614d8f7a44f32909d9573c371930cfd25"
+          "sha256": "427a1327e0e24b3f07490f087e11c5f15c8c649ce2da76b4a52164b6e3dacc87"
         },
         {
           "creates_canonical_identities": false,
@@ -193,7 +193,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/creature-races.json",
-          "record_count": 1864,
+          "record_count": 1865,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_CREATURE_RACES/v1",
@@ -201,7 +201,7 @@
             "kind": "source_validator",
             "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py"
           },
-          "sha256": "ec187d6bd72d054750be4f30262c0a961726d7bdca7851024731ce85efe850d1"
+          "sha256": "56408cc9603e754fb97f48d5b324bd88d7ba18a94197caeb8533a464a2d8112d"
         }
       ],
       "Effect": [
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6218,
+          "record_count": 6077,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,12 +242,12 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "5d1feb33c7e4dcf0fb75f011116b4269ae33ef5b40c0bf6fa136f1bafa3f641b"
+          "sha256": "6bbd223173fde1229dfa367ff11d254d1382dd5b124c8307bb131f17ef8d1553"
         },
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/starting-loadout-profiles.json",
-          "record_count": 13,
+          "record_count": 10,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -255,7 +255,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "08c7126b73447929016e33fac7140a7027e7f16152fcfb2d8b28e326329e714c"
+          "sha256": "4d2bf471ff0992dcc19ffd11e6ad42f691421a4521158dd9f7897473c39f566a"
         }
       ],
       "Presentation": [
@@ -270,12 +270,12 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#PresentationProfilesDocument"
           },
-          "sha256": "4876bc43e9ccfea6f6d3bfa82f007d4b1ebd67bcfb2e1630fa7e1ded93f37a06"
+          "sha256": "89516375edddb0ddd9d3792f5b8fa151f9dd358bed38e2ec6ea80c5a57371d0f"
         },
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/bindings/spell-appearances.json",
-          "record_count": 336,
+          "record_count": 334,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_SPELL_APPEARANCES/v1",
@@ -283,7 +283,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_spell_appearances.rs#SpellAppearancesDocument"
           },
-          "sha256": "bf34f281dd2c7a26acc5b262d3123a22a4fcdb5716ad37da696d67d9dc239b52"
+          "sha256": "f423284c3a8e771c4c1888d8aa3985ade150855632300d19c7c77cf2915d56d4"
         },
         {
           "creates_canonical_identities": false,

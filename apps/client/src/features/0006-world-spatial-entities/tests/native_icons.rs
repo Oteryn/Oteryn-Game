@@ -49,7 +49,7 @@ fn srx3_native_creature_icons_decode_into_native_labels_and_clear_on_removal()
             .map_err(|error| format!("{error:?}"))?,
         },
     };
-    let fields = wire::EntityFields::selected(&[6, 371]);
+    let fields = wire::EntityFields::selected(&[6, wire::CAPABILITY_NATIVE_CREATURE_ICONS_V1]);
     for visible in [true, false] {
         if !visible {
             entity.detail = wire::EntityDetail::Actor {

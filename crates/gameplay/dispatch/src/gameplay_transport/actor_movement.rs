@@ -566,10 +566,39 @@ mod tests {
         oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };
     #[test]
+    fn diagonal_player_duration_uses_three_rounded_source_steps() {
+        let onto = MovementLocalPosition {
+            x: 32673,
+            y: 32085,
+            floor: 8,
+        };
+        let cardinal = duration_onto(
+            &EngineeringGroundSpeed,
+            onto,
+            Some(220),
+            CardinalStep::North,
+        )
+        .expect("source speed table");
+        let diagonal = duration_onto(
+            &EngineeringGroundSpeed,
+            onto,
+            Some(220),
+            CardinalStep::NorthEast,
+        )
+        .expect("source diagonal speed");
+        assert_eq!(Some(diagonal), cardinal.checked_mul(3));
+        assert_eq!(diagonal.as_millis() % 150, 0);
+        assert!(
+            duration_onto(&EngineeringGroundSpeed, onto, None, CardinalStep::NorthEast).is_err()
+        );
+    }
+
+    #[test]
     fn qn6_diagonal_duration_is_tripled_and_fits_the_wire_ceiling() -> Result<(), String> {
         use oteryn_protocol_oteryn::world_spatial::{
-            MAX_STEP_WAIT_MS, StepDisposition, StepResult, decode_step_result_receipt,
-            encode_step_result_paced,
+            MAX_DIAGONAL_STEP_WAIT_MS, MAX_PACED_STEP_RESULT_BYTES, MAX_STEP_WAIT_MS,
+            StepDisposition, StepResult, decode_step_result_profile, decode_step_result_receipt,
+            encode_step_result_paced, encode_step_result_profile,
         };
         struct SlowestGround;
         impl GroundSpeedSource for SlowestGround {
@@ -584,6 +613,7 @@ mod tests {
         };
         let cardinal = duration_onto(&SlowestGround, at, Some(10), CardinalStep::East)
             .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(cardinal.as_millis(), u128::from(MAX_STEP_WAIT_MS));
         for direction in [
             CardinalStep::NorthEast,
             CardinalStep::SouthEast,
@@ -600,10 +630,15 @@ mod tests {
                 disposition: StepDisposition::Moved,
                 step_wait_ms: u32::try_from(diagonal.as_millis()).map_err(|e| e.to_string())?,
             };
-            assert_eq!(receipt.step_wait_ms, MAX_STEP_WAIT_MS);
-            let bytes = encode_step_result_paced(receipt, true).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(receipt.step_wait_ms, MAX_DIAGONAL_STEP_WAIT_MS);
+            assert!(encode_step_result_paced(receipt, true).is_err());
+            assert!(encode_step_result_profile(receipt, false, true).is_err());
+            let bytes =
+                encode_step_result_profile(receipt, true, true).map_err(|e| format!("{e:?}"))?;
+            assert!(bytes.len() <= MAX_PACED_STEP_RESULT_BYTES);
+            assert!(decode_step_result_receipt(&bytes, true).is_err());
             assert_eq!(
-                decode_step_result_receipt(&bytes, true).map_err(|e| format!("{e:?}"))?,
+                decode_step_result_profile(&bytes, true, true).map_err(|e| format!("{e:?}"))?,
                 receipt
             );
         }

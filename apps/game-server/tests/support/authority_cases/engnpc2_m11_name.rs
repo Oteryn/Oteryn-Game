@@ -153,6 +153,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 bad,
                 catalog.clone(),
                 &Content,
+                &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
             )
             .await
             .map_err(fixture::debug)?;
@@ -177,7 +178,8 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 stale,
                 request(9604, "Fixture Hero", topic)?,
                 catalog.clone(),
-                &Content
+                &Content,
+                &crate::durability::quest_state::grizzly::NoGrizzlyPremium
             )
             .await
             .is_err()
@@ -193,6 +195,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             good.clone(),
             catalog.clone(),
             &Content,
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await
         .map_err(fixture::debug)?;
@@ -213,6 +216,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             good.clone(),
             catalog,
             &Content,
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await
         .map_err(fixture::debug)?;

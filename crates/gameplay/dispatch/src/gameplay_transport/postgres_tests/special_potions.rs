@@ -17,7 +17,7 @@ use std::num::{NonZeroU32, NonZeroU64};
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: super::AdmittedSession,
     command_id: u64,
@@ -257,13 +257,21 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
             },
         )
         .map_err(debug)?;
-        let room = activation.qualified_room().clone();
+        let cells = map
+            .movement_cells(activation.qualified_room().movement_cells())
+            .map_err(debug)?;
+        let room = super::rust_lottery::bundle_action_room(
+            activation.qualified_room(),
+            &map,
+            world,
+            &cells,
+        )?;
         let pin = ChannelContentPin::from_activation(
             world,
             activation.activation_sequence(),
             activation.identity().server_artifact_digest(),
             activation.identity().client_artifact_digest(),
-            activation.frame_binding().digest(),
+            room.frame_binding().digest(),
             room.map_revision_digest(),
             (6, 0, 7),
         );
@@ -272,16 +280,13 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
             room,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;
-        let cells = map
-            .movement_cells(deps.room.movement_cells())
-            .map_err(debug)?;
         sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice())
             .bind(pin.server_artifact_digest().as_slice())
             .bind(pin.client_artifact_digest().as_slice())
-            .bind(pin.frame_binding_digest().as_slice()).execute(&h.pool).await?;
+            .bind(activation.frame_binding().digest().as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
             .bind(id(41).as_slice()).execute(&h.pool).await?;
         let current =
@@ -438,7 +443,15 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
         let applied: u64 = applied.parse()?;
         let expires: u64 = expires.parse()?;
         assert_eq!(expires - applied, if item == 7644 { 0 } else { 60_000_000 });
-        super::cl6_status::check_timer(&owner, deps.actor, admitted.game_session_id, &key, item == 35563, 60_000).await?;
+        super::cl6_status::check_timer(
+            &owner,
+            deps.actor,
+            admitted.game_session_id,
+            &key,
+            item == 35563,
+            60_000,
+        )
+        .await?;
         let after_conditions = {
             let runtime = deps.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
@@ -557,7 +570,15 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
                 "expiry cannot consume another potion"
             );
         }
-        super::cl6_status::check_timer(&owner, deps.actor, admitted.game_session_id, &key, false, 60_000).await?;
+        super::cl6_status::check_timer(
+            &owner,
+            deps.actor,
+            admitted.game_session_id,
+            &key,
+            false,
+            60_000,
+        )
+        .await?;
         eprintln!("PG_MARKER i14-special-potion-effect-burn-flask-replay-cooldown {item}");
         drop(owner);
         drop(authority);

@@ -1,4 +1,4 @@
-//! Source unique-id chests on the bundle World's real USE route. Content owns the
+//! Source and authored chests on the bundle World's real USE route. Content owns the
 //! binding; DUR-03 owns the claim, reservation, replay and atomic backpack MINT.
 
 use super::ComposedFreshAdmission;
@@ -33,8 +33,8 @@ pub(super) fn item_ref(item: &crate::content::TypedDefinitionRef) -> TypedDefini
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// `None` leaves an unbound object to the existing door owner. A source chest
-    /// must bind by position, unique id and appearance, never by client-supplied ids.
+    /// `None` leaves an unbound object to the existing door owner. Content binds
+    /// the exact position and appearance with a source UID or authored ordinal.
     pub(super) async fn use_bundle_chest(
         &self,
         actor: ExactActorRef,
@@ -42,6 +42,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &crate::map::boot::BundleMap,
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
+        if let Some(result) = self.use_viola_book(actor, command, map, target).await {
+            return Some(result);
+        }
+        if let Some(result) = self.use_falcon_chest(actor, command, map, target).await {
+            return Some(result);
+        }
+        // A supplied item fence must remain current even when an unbound
+        // source falls through without reserving or minting a reward.
+        if let Some(expected) = command.item_fence
+            && !matches!(
+                tokio::time::timeout(
+                    std::time::Duration::from_secs(10),
+                    self.current_quest_fence(command.game_session_id),
+                )
+                .await,
+                Ok(Ok(Some(current))) if current.item_fence() == expected
+            )
+        {
+            return Some(outcome(UseDisposition::Rejected));
+        }
+        #[cfg(test)]
+        if let Some(shards) = self.states.quest_callbacks.reward_claims_fixture.get() {
+            return self
+                .use_bundle_chest_from_shards(
+                    actor,
+                    command,
+                    map,
+                    target,
+                    &shards.iter().map(String::as_str).collect::<Vec<_>>(),
+                )
+                .await;
+        }
         self.use_bundle_chest_from_shards(actor, command, map, target, &REWARD_CLAIM_SHARDS)
             .await
     }
@@ -59,7 +91,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self.active_generation?.native_gameplay()?;
         // This is a bounded, immutable Content pass over the embedded claim catalogue.
         // Unsupported shapes and unadmitted rewards remain closed in the existing binder.
-        let report = bind_reward_claims(map.overlay.base().as_ref(), shards, &|item| {
+        let admitted = |item: &crate::content::TypedDefinitionRef| {
             generation_item_facts(native, &item_ref(item)).is_ok_and(|facts| {
                 facts.container_capacity.is_none_or(|capacity| capacity > 0)
                     && !matches!(
@@ -67,8 +99,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         crate::durability::item_transfer::ItemStackClass::Unknown
                     )
             })
-        })
-        .ok()?;
+        };
+        let report = bind_reward_claims(map.overlay.base().as_ref(), shards, &admitted).ok()?;
         let source = MapViewSource {
             overlay: &map.overlay,
             facts: &map.facts,
@@ -126,7 +158,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 {
                     let mut runtime = self.runtime.lock().await;
-                    let states = self.states.spell_states.lock().await;
+                    let Ok(states) = self.states.spell_states.try_lock() else {
+                        return outcome(UseDisposition::Rejected);
+                    };
                     if !runtime
                         .player_control_facts(actor, command.game_session_id)
                         .is_ok_and(|facts| facts.control_loss.is_none())
@@ -210,11 +244,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map(|child| {
                         generation_item_facts(native, &item_ref(&child.item)).map(|item| {
                             RewardClaimMintContent {
-                                fluid_subtype: child.fluid_subtype,
                                 item,
                                 quantity: child.count,
                                 key_number: child.key_number,
                                 text: child.text.clone(),
+                                fluid_subtype: child.fluid_subtype,
+                                charges_remaining: child.charges_remaining,
                             }
                         })
                     })
@@ -232,6 +267,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 quantity: reward.count,
                                 key_number: None,
                                 text: None,
+                                charges_remaining: None,
                             }
                         })
                     })
@@ -240,6 +276,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return outcome(UseDisposition::Rejected);
                 };
                 let request = RewardClaimMintRequest {
+                    backpack_outputs: false,
                     additional_items,
                     command: CommandRef::new(command.game_session_id, command_id),
                     claim: TypedDefinitionRef {
@@ -252,6 +289,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     quantity: reward.count,
                     contents,
                     root_text: bound.root_text.clone(),
+                    root_fluid_subtype: bound.root_fluid_subtype,
+                    root_charges_remaining: bound.root_charges_remaining,
                     backpack,
                     content_revision: format!(
                         "sha256:{}",

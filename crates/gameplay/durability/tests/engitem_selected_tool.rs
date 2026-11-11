@@ -15,6 +15,7 @@ fn selected_tool_envelope_preserves_legacy_context_and_rejects_wrong_ingress()
         reset_epoch: 0,
         actor_placement: [2; 16],
         movement_revision: 1,
+        party: Vec::new(),
     };
     assert_eq!(
         serde_json::to_value(&context)?,

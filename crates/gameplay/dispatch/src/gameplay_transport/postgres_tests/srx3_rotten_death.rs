@@ -214,7 +214,7 @@ pub(super) async fn exercise(
         let damage = crate::foundation::OwnerDamageCommand {
             target: key.as_bytes(),
             occurrence: b"srx3:rotten:copied-death",
-            binding: b"srx3:rotten:copied-death:current-native-owner",
+            binding: b"srx3:rotten:copied-death\0current-native-owner",
             damage: health,
         };
         let hit = if credited {

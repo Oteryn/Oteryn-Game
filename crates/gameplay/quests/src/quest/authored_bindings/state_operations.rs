@@ -21,7 +21,7 @@ pub(super) fn valid(quest: &BoundQuest, operation: &StateOperation) -> bool {
             Some((minimum, maximum))
         }
         StateCondition::Any => None,
-        StateCondition::ElapsedAtLeast { .. } => {
+        StateCondition::ElapsedAtLeast { .. } | StateCondition::ElapsedLessThan { .. } => {
             if track.minimum < 0 {
                 return false;
             }

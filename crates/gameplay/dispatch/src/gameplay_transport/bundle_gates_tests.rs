@@ -172,7 +172,7 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/primal_callbacks/normal.rs", 1),
             ("gameplay_transport/kill_reward.rs", 1),
             ("gameplay_transport/raid_live_world/feroxa_map.rs", 1),
-            ("gameplay_transport/primal_callbacks.rs", 2),
+            ("gameplay_transport/primal_callbacks.rs", 3),
             ("gameplay_transport/soul_war_cloak_blood.rs", 1),
             ("gameplay_transport/monster_ai_cycle.rs", 2),
             // S10: source NPC wandering uses the same live-world movement gate.
@@ -204,13 +204,34 @@ const INVENTORY: &[Entry] = &[
                 1,
             ),
             ("gameplay_transport/native_activity.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/srx3_greed_retention.rs",
+                1,
+            ),
+            (
+                "gameplay_transport/postgres_tests/srx3_megalomania_step.rs",
+                2,
+            ),
             ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
             ("gameplay_transport/postgres_tests/srx3_rotten_portal.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/srx3_soul_war_attacks.rs",
+                2,
+            ),
             ("gameplay_transport/soul_war_callbacks/entry.rs", 1),
+            (
+                "gameplay_transport/soul_war_callbacks/megalomania/phases/death.rs",
+                1,
+            ),
+            (
+                "gameplay_transport/soul_war_callbacks/megalomania/phases/timer.rs",
+                1,
+            ),
             ("gameplay_transport/soul_war_callbacks/taint_five.rs", 1),
             ("gameplay_transport/soul_war_world.rs", 1),
             ("gameplay_transport/soul_war_world_raid.rs", 1),
             ("gameplay_transport/source_death.rs", 1),
+            ("gameplay_transport/source_death/heart.rs", 1),
             ("gameplay_transport/spite_global.rs", 1),
         ],
     },
@@ -299,12 +320,18 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/boss_activity/source_extra.rs", 1),
             ("gameplay_transport/outburst_entry.rs", 1),
             (
+                "gameplay_transport/postgres_tests/srx3_megalomania_step.rs",
+                2,
+            ),
+            (
                 "gameplay_transport/postgres_tests/srx3_rotten_callbacks.rs",
                 1,
             ),
             ("gameplay_transport/primal_entry.rs", 1),
             ("gameplay_transport/rotten_blood_entry.rs", 1),
             ("gameplay_transport/soul_war_entry.rs", 1),
+            ("gameplay_transport/spite_step.rs", 3),
+            ("gameplay_transport/spite_step/megalomania.rs", 1),
         ],
     },
     Entry {
@@ -999,6 +1026,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
     ("gameplay_transport/postgres_tests/item_cosmetics.rs", 1),
+    ("gameplay_transport/postgres_tests/newhaven_corruptor.rs", 1),
     // The carried-fluid fixture supplies an action room and no qualified room.
     (
         "gameplay_transport/postgres_tests/item_craft_carried_fluid.rs",
@@ -1011,6 +1039,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         2,
     ),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
+    ("gameplay_transport/postgres_tests/newhaven_corruptor.rs", 1),
     (
         "gameplay_transport/postgres_tests/novelty_items/scenario.rs",
         1,
@@ -1077,6 +1106,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ),
     (
         "gameplay_transport/postgres_tests/srx3_claustrophobic.rs",
+        1,
+    ),
+    // The published BundleWorld corpse fixture supplies only its original combat room.
+    (
+        "gameplay_transport/postgres_tests/srx3_poor_soul_world_corpse.rs",
         1,
     ),
     (
@@ -1322,6 +1356,29 @@ fn cake_bundle_fixture_keeps_its_qualified_room_closed() {
     constructions.visit_file(&fixture);
     assert!(matches!(constructions.0.as_slice(), [call]
         if matches!(call.args.first(), Some(syn::Expr::Path(path)) if path.path.is_ident("None"))));
+}
+
+#[test]
+fn poor_soul_bundle_fixture_keeps_only_its_original_combat_room() {
+    let fixture =
+        parse_source("src/gameplay_transport/postgres_tests/srx3_poor_soul_world_corpse.rs");
+    let mut constructions = Constructions::default();
+    constructions.visit_file(&fixture);
+    assert!(matches!(constructions.0.as_slice(), [call]
+        if matches!(&*call.func, syn::Expr::Path(path)
+            if path_name(&path.path).ends_with("SeamRooms::new"))
+        && call.args.len() == 2
+        && matches!(call.args.first(), Some(syn::Expr::Path(path))
+            if path.path.is_ident("None"))
+        && matches!(call.args.iter().nth(1), Some(syn::Expr::Call(some))
+            if matches!(&*some.func, syn::Expr::Path(path) if path.path.is_ident("Some"))
+            && some.args.len() == 1
+            && matches!(some.args.first(), Some(syn::Expr::Reference(reference))
+                if reference.mutability.is_none()
+                && matches!(&*reference.expr, syn::Expr::Field(field)
+                    if matches!(&field.member, syn::Member::Named(name) if name == "room")
+                    && matches!(&*field.base, syn::Expr::Path(path)
+                        if path.path.is_ident("scene")))))));
 }
 
 #[test]

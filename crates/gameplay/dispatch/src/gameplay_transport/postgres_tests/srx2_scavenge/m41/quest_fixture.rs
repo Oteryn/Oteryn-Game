@@ -126,6 +126,7 @@ pub(super) async fn npc(
             },
             catalogue,
             &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+            &owner.premium_coordinator,
         )
         .await
         .map_err(debug)

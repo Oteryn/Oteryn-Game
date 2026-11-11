@@ -1,0 +1,28 @@
+crates/gameplay/spell/src/creature_damage_spell/composed.rs:23:pub struct Callback {
+crates/gameplay/spell/src/creature_damage_spell/composed.rs:155:            callbacks.push(Callback {
+crates/gameplay/spell/src/creature_damage_spell/composed.rs:967:impl Callback {
+crates/gameplay/entities/src/carrier/native_summon.rs:632:    SourceCallback {
+crates/gameplay/entities/src/carrier/native_summon.rs:643:            Self::SourceCallback {
+crates/gameplay/entities/src/carrier/native_summon.rs:647:            } => Ok(Self::SourceCallback {
+crates/gameplay/entities/src/carrier/native_summon.rs:673:        spec.origin = NativeSummonOrigin::SourceCallback {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs:239:        .chain(callback.remote_teleport.iter().flat_map(|remote| [remote.position, remote.destination]))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs:255:    if let Some(remote) = &callback.remote_teleport {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:369:        let world = super::quest_world_callbacks::world(&Callback {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:372:            lever: None, reversible: false, passages: vec![], teleport: None, remote_teleport: None, storage: vec![],
+crates/gameplay/quests/src/quest/world_callbacks/native.rs:85:impl Callback {
+crates/gameplay/quests/src/quest/rotten_blood.rs:31:pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
+crates/gameplay/quests/src/quest/rotten_blood.rs:33:    Callback {
+crates/gameplay/quests/src/quest/rotten_blood.rs:37:        lever: None, reversible: false, passages: Vec::new(), teleport: None, remote_teleport: None,
+crates/gameplay/quests/src/quest/world_callbacks.rs:105:pub struct RemoteTeleport {
+crates/gameplay/quests/src/quest/world_callbacks.rs:113:pub struct Callback {
+crates/gameplay/quests/src/quest/world_callbacks.rs:124:    pub remote_teleport: Option<RemoteTeleport>,
+crates/gameplay/quests/src/quest/world_callbacks.rs:145:impl Callback {
+crates/gameplay/quests/src/quest/world_callbacks.rs:191:            || callback.remote_teleport.as_ref().is_some_and(|remote| {
+crates/gameplay/quests/src/quest/world_callbacks.rs:462:        row["remote_teleport"] = serde_json::json!({
+crates/gameplay/quests/src/quest/world_callbacks.rs:471:                0 => bad["remote_teleport"]["appearance"] = 0.into(),
+crates/gameplay/quests/src/quest/world_callbacks.rs:472:                1 => bad["remote_teleport"]["position"]["floor"] = 1.into(),
+crates/gameplay/quests/src/quest/world_callbacks.rs:473:                2 => bad["remote_teleport"]["destination"]["floor"] = 1.into(),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/underwater_drowning.rs:418:            let fixture = Callback {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/underwater_drowning.rs:432:                remote_teleport: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_hoist.rs:160:            if let Some(remote) = &callback.remote_teleport {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_hoist.rs:227:                    .remote_teleport

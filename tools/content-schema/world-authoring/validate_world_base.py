@@ -184,8 +184,42 @@ def check_region(row: dict) -> dict:
 def check_index(
     index: dict, summary: dict, errors: list[str], root: Path | None = None
 ) -> None:
-    if set(index) != INDEX_KEYS:
-        errors.append(f"{INDEX}: keys must be exactly {sorted(INDEX_KEYS)}")
+    if set(index) not in (INDEX_KEYS, INDEX_KEYS | {"authored_props"}):
+        errors.append(
+            f"{INDEX}: keys must be exactly {sorted(INDEX_KEYS)} with optional authored_props"
+        )
+    if "authored_props" in index:
+        props = index["authored_props"]
+        seen = set()
+        if not isinstance(props, list) or not 1 <= len(props) <= 64:
+            errors.append(f"{INDEX}: invalid authored_props bound")
+        else:
+            for pin in props:
+                path = pin.get("path", "") if isinstance(pin, dict) else ""
+                if (
+                    not isinstance(pin, dict)
+                    or set(pin) != {"path", "sha256"}
+                    or not isinstance(path, str)
+                    or not path.startswith(DIRECTORY + "/")
+                    or "/" in path[len(DIRECTORY) + 1 :]
+                    or not path.endswith(".json")
+                    or path == INDEX
+                    or path in seen
+                    or not SHA256.fullmatch(str(pin.get("sha256")))
+                ):
+                    errors.append(f"{INDEX}: invalid authored_prop descriptor")
+                    continue
+                seen.add(path)
+                if root is not None:
+                    target = root / path
+                    if (
+                        not target.is_file()
+                        or target.is_symlink()
+                        or target.stat().st_size > 262144
+                        or hashlib.sha256(target.read_bytes()).hexdigest()
+                        != pin["sha256"]
+                    ):
+                        errors.append(f"{INDEX}: authored_prop source differs: {path}")
     expected = {
         "codec": codec.CODEC,
         "family": "WorldPlacement.Base",
@@ -835,8 +869,9 @@ def validate(
         return errors
     directory = root / DIRECTORY
     actual = sorted(str(p.relative_to(root)) for p in directory.iterdir())
-    if actual != sorted([INDEX, *paths]):
-        stray = sorted(set(actual) ^ {INDEX, *paths})
+    authored_paths = [pin["path"] for pin in index.get("authored_props", [])]
+    if actual != sorted([INDEX, *paths, *authored_paths]):
+        stray = sorted(set(actual) ^ {INDEX, *paths, *authored_paths})
         errors.append(
             f"{DIRECTORY}: files other than the index and its shards: {stray}"
         )

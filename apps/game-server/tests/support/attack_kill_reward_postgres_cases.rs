@@ -573,6 +573,7 @@ fn input(
     character_revision: u64,
 ) -> TestResult<CreatureDeathRewardInput<2>> {
     Ok(CreatureDeathRewardInput {
+        tutorial_corruptor: None,
         corpse_item: Some(corpse_item_ref()),
         loot_table_ref: Some(rat_loot_table_ref()),
         loot_table,

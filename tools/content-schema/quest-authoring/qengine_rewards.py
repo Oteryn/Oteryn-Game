@@ -13,6 +13,7 @@ from pathlib import Path
 import sys
 import tarfile
 import xml.etree.ElementTree as ET
+import questl2_ready
 import taming_cosmetics
 import wizard_cosmetics
 import engoutfit_m36
@@ -34,18 +35,31 @@ def sha(value):
 
 
 def donor_inputs():
-    paths = ['data/XML/mounts.xml', 'data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'rock_steady', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander')]
-    paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
+    paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
+        'morgan', 'navigator', 'rock_steady', *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
+    paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
-              'data-global/startup/tables/item.lua']
+              'data-global/startup/tables/item.lua',
+              'data-global/scripts/actions/other/others/quest_system2.lua',
+              'data-global/scripts/quests/the_djinn_war_quest/action_water_fountain.lua']
+    paths += [f'data-global/npc/{name}.lua' for name in (
+        'dermot', 'marina', 'gamon', 'quentin', 'tibra', 'maealil', 'yberius',
+        'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias', 'rafzan',
+        'jorge', 'the_forgemaster', 'henricus', 'yana', 'ivalisse', 'a_strange_chalice')]
+    paths += ['data/XML/imbuements.xml',
+              'data-global/scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua']
     paths += qmech_m39.source_paths()
     paths = sorted(set(paths))
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
+        summer_path = 'data-global/npc/wayland_smythers.lua'
+        summer_row = next(r for r in manifest['files'] if r['source'] == 'crystal-summer' and r['revision'] == '00ce02a57ca5a12e48f32a3476e37471167e4c3f' and r['path'] == summer_path)
+        summer_raw = corpus.extractfile(summer_row.get('blob_path', summer_row.get('cache_path'))).read()
+        if sha(summer_raw) != summer_row['sha256']: raise ValueError('Wayland retained source changed')
+        result[summer_path] = summer_raw
         for path in paths:
             row = next(r for r in manifest['files'] if r['source'] == 'crystalserver' and r['revision'] == PIN and r['path'] == path)
             raw = corpus.extractfile(row.get('blob_path', row.get('cache_path'))).read()
@@ -70,12 +84,12 @@ def build():
               'sha256': sha(inputs['data/XML/outfits.xml'])}
     xml = ET.fromstring(inputs['data/XML/outfits.xml'])
     # Explicit identities for the two sex-specific donor display names.
-    aliases = {'Noblewoman': 'Nobleman', 'Norsewoman': 'Norseman'}
+    aliases = {'Noblewoman': 'Nobleman', 'Norsewoman': 'Norseman', 'Retro Noblewoman': 'Retro Nobleman'}
     groups = {}
     for row in xml:
         name = aliases.get(row.get('name'), row.get('name'))
-        # Explicit owner-selected quest rewards may use admitted looks labelled store by the donor.
-        if row.get('enabled') == 'yes' and (row.get('from') != 'store' or name in ('Royal Costume', 'Dragon Slayer')):
+        # S06 admits source definitions; ownership still requires an acquisition receipt.
+        if row.get('enabled') == 'yes':
             groups.setdefault(name, {})[row.get('type')] = row.attrib
     appearance = ROOT / 'imports/cipsoft-appearances/outfits'
     manifest_raw = (appearance / 'manifest.json').read_bytes()
@@ -107,17 +121,33 @@ def build():
             'starter_male': male['unlocked'] == 'yes', 'starter_addons_female': 0,
             'starter_addons_male': 0, 'premium': female['premium'] == 'yes',
             'unlock_sources': [source], 'source': source})
-        for addon in range(addons + 1):
-            target = {'kind': 'Outfit', 'outfit_key': key} if addon == 0 else {
-                'kind': 'Addon', 'outfit_key': key, 'addon': addon}
-            mappings.append({'grant_key': f'{key}/quest-grant/{addon}', 'target': target,
-                             'compatible_provenance': [PROVENANCE]})
-    # Reuse the existing source item-action owner. Matching both source look
-    # identities is required; a source label alone never admits a grant.
-    item_packet=json.loads((ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
-    scoped={'oteryn:outfit.afflicted','oteryn:outfit.soil_guardian','oteryn:outfit.crystal_warlord'}
+    item_capture_raw=(ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
+    item_admission=load_module('qengine_item_admission','tools/content-schema/quest-authoring/qengine_item_acquisitions.py')
+    table_parser=load_module('qengine_cosmetic_source_tables','tools/content-migration/event_item_actions.py')
+    acquisition_path='data-crystal/scripts/special/addon_doll.lua'
+    acquisition_source={'reference':'crystal:'+acquisition_path,'revision':PIN,'sha256':sha(inputs[acquisition_path])}
+    source_rows,_=table_parser.table(inputs[acquisition_path].decode(),'outfits')
+    item_admission.extend_catalogue(outfits,source_rows,looks,addon_patterns,acquisition_source)
+    item_packet=item_admission.build(json.loads(item_capture_raw),outfits,source,sha(item_capture_raw))
+    construction=load_module('qengine_item_construction','tools/content-schema/quest-authoring/qengine_item_construction.py')
+    construction_path='data-global/scripts/actions/mounts/mounts.lua'
+    construction.append_glider(item_packet, inputs[construction_path].decode(), inputs['data/XML/mounts.xml'],
+        table_parser, json.loads((ROOT/'content/presentations/bindings/client-ids.json').read_bytes()),
+        {'reference':'crystal:'+construction_path,'revision':PIN,'sha256':sha(inputs[construction_path])})
+    # Retain every source row, but bind construction costs to the existing atomic
+    # pieces owner. The ordinary one-item taming path cannot execute these rows.
+    native_taming=json.loads((ROOT/'content/cosmetics/taming.json').read_bytes())
+    recipes={f"oteryn:item.tibia.i{r['item_id']}":r for r in item_packet['rules'] if r['mode']=='pieces'}
+    for rule in native_taming:
+        if recipe:=recipes.get(rule['item_key']):
+            rule['required_items']=[f'oteryn:item.tibia.i{item}' for item in recipe['required_items']]
     for outfit in outfits:
-        if outfit['key'] not in scoped:continue
+        key=outfit['key']
+        for addon in range(outfit['addon_count']+1):
+            target={'kind':'Outfit','outfit_key':key} if addon==0 else {'kind':'Addon','outfit_key':key,'addon':addon}
+            mappings.append({'grant_key':f'{key}/quest-grant/{addon}','target':target,'compatible_provenance':[PROVENANCE]})
+    # Every native source grant must match the complete admitted sex pair.
+    for outfit in outfits:
         outfit_looks=sorted([outfit['female']['id'],outfit['male']['id']])
         for grant in item_packet['grants']:
             if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=outfit_looks:continue
@@ -139,6 +169,13 @@ def build():
                 mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
                         'target':{'kind':'Outfit','outfit_key':row['key']} if addon==0 else {'kind':'Addon','outfit_key':row['key'],'addon':addon},
                         'sex':sex,'compatible_provenance':[PROVENANCE]})
+    mount_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
+                    'sha256': sha(inputs['data/XML/mounts.xml'])}
+    mount_population = load_module('qengine_mount_population', 'tools/content-schema/quest-authoring/qengine_mounts.py')
+    mounts, mount_mappings = mount_population.populate(ROOT, inputs, looks, mount_source, item_packet)
+    mappings.extend(mount_mappings)
+    lane_programmes=load_module('questpc7_costume_sources','tools/content-schema/quest-authoring/questpc7_outfit_programmes.py')
+    lane_programmes.consumptive_mappings(ROOT,outfits,mappings)
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
     palette_path = 'tools/game-atlas-appearances/export.py'
     palette_source = {'reference': palette_path + '#outfit_color', 'revision': 'rounded-hsi-133-v1',
@@ -149,7 +186,12 @@ def build():
         'source_appearances_sha256': manifest['inputs']['appearances']['sha256'],
         'palette': {'key': 'oteryn:palette.outfit', 'revision': 'rounded-hsi-133-v1',
                     'colours': [list(atlas.outfit_color(i)) for i in range(133)], 'source': palette_source},
-        'outfits': outfits, 'mounts': [], 'grant_mappings': mappings,
+        'outfits': outfits, 'mounts': mounts, 'grant_mappings': mappings,
+        'item_acquisitions': [{'item_key':f"oteryn:item.tibia.i{r['item_id']}",
+            'donor':r['donor'],'catalogue_sha256':sha(encoded(item_packet)),
+            'decision':'owner:S06:source-bound-native-item-acquisitions:2026-11-07',
+            'source':acquisition_source} for r in item_packet['rules']
+            if r['mode']=='random_outfit' and r['donor'].startswith(acquisition_path+':')],
         'fallbacks': {sex: {'outfit_key': 'oteryn:outfit.citizen', 'colours': [0, 0, 0, 0]}
                       for sex in ('female', 'male')}}
     cosmetics = load_module('qengine_cosmetics_authoring', 'tools/content-schema/cosmetics-authoring/cosmetics_authoring.py')
@@ -161,6 +203,9 @@ def build():
     cosmetics.validate(nx5)
     nx5_doc = nx5['document']
     doc['outfits'].extend(nx5_doc['outfits'])
+    # Retain main's existing mount identities and source promotions.
+    nx5_mounts = {row['key']: row for row in nx5_doc['mounts']}
+    doc['mounts'] = [nx5_mounts.get(row['key'], row) for row in mounts]
     # Reliable Ram uses the named look, not a mutable donor mount ordinal.
     # Crystal 201189f actions_reliable_ram.lua still says 250, but its mounts.xml
     # assigns Reliable Ram/look1934 to 252 (250 is Jaracal/look1962). The retained
@@ -172,9 +217,11 @@ def build():
     ram_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
                   'sha256': sha(inputs['data/XML/mounts.xml'])}
     ram_key = 'oteryn:content.mount.reliable_ram'
-    doc['mounts'] = [*nx5_doc['mounts'], {'key': ram_key, 'revision': 'srv7-reliable-ram-r1',
-        'look': {'id':1934,'source_record_sha256':ram_look_hash},
-        'speed_bonus':10,'premium':False,'source':ram_source}]
+    admitted_ram = [row for row in doc['mounts'] if row['key'] == ram_key]
+    if (len(admitted_ram) != 1
+            or admitted_ram[0]['look'] != {'id': 1934, 'source_record_sha256': ram_look_hash}
+            or admitted_ram[0]['speed_bonus'] != 10 or admitted_ram[0]['premium'] is not False):
+        raise ValueError('Reliable Ram native catalogue identity drift')
     mappings.append({'grant_key':ram_key+'/quest-grant',
                      'target':{'kind':'Mount','mount_key':ram_key},
                      'compatible_provenance':[PROVENANCE]})
@@ -187,26 +234,39 @@ def build():
             if existing['target'] != row['target']:
                 existing['outfit_aliases'] = [row['target']['outfit_key']]
     # Taming uses the same production cosmetics owner as quest/item grants.
-    taming_source = taming_cosmetics.append(ROOT, doc, looks)
+    taming_cosmetics.append(ROOT, doc, looks)
     nx5_promotions = {row['path']: row for row in nx5['promotions']}
     quest_outfits = len(outfits) - len(nx5_doc['outfits'])
     for path in sorted(cosmetics.promotion_paths(doc)):
         parts = path.split('/')
-        nx5_path = path if parts[1] == 'mounts' and int(parts[2]) < len(nx5_doc['mounts']) else None
+        nx5_path = None
+        if parts[1] == 'mounts':
+            mount_key = doc['mounts'][int(parts[2])]['key']
+            for index, row in enumerate(nx5_doc['mounts']):
+                if row['key'] == mount_key:
+                    nx5_path = '/mounts/' + str(index) + '/' + parts[3]
+                    break
         if parts[1] == 'outfits' and int(parts[2]) >= quest_outfits:
             nx5_path = '/outfits/' + str(int(parts[2]) - quest_outfits) + '/' + parts[3]
         if nx5_path is not None:
             author['promotions'].append({**nx5_promotions[nx5_path], 'path': path})
             continue
-        citation=palette_source if path == '/palette' else source
-        if parts[1] == 'mounts':
-            citation = ram_source if doc['mounts'][int(parts[2])]['key'] == ram_key else taming_source
+        citation=palette_source if path == '/palette' else doc['mounts'][int(parts[2])]['source'] if path.startswith('/mounts/') else source
+        source_kind='OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA'
+        if path=='/item_acquisitions':
+            citation=acquisition_source
+            source_kind='OWNER_DECISION'
+        if path.startswith('/outfits/'):
+            row=outfits[int(path.split('/')[2])]
+            citation=row['source']
+            if citation==acquisition_source and (path.rsplit('/',1)[-1]=='premium' or path.rsplit('/',1)[-1].startswith('starter_')):
+                source_kind='OWNER_DECISION'
         if path in ('/source_manifest_sha256','/source_appearances_sha256'):
             citation={'reference': 'imports/cipsoft-appearances/outfits/manifest.json',
                       'revision':manifest['client_version'],'sha256':sha(manifest_raw)}
         author['promotions'].append({'path': path, 'value': cosmetics.pointer(doc, path),
             'state': 'PROMOTED', 'decision': DECISION,
-            'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA',
+            'source_kind': source_kind,
             'source': citation})
     callbacks = []
     def storage(track, before, after, maximum=None, preserve=False):
@@ -929,20 +989,69 @@ def build():
     m39_tracks = [track for track in declarations if track['key'].endswith('/corruption_hole')]
     declarations = [track for track in declarations if track not in m39_tracks]
     validate_callbacks({'schema':1,'tracks':m39_tracks,'callbacks':m39_callbacks})
+    # L13: original native parent bases remain with their existing reward owners.
+    for family,npc,items,bits,achievement in [
+            ('revenant','flickering_soul',[34075,34076],[2,1],'unleash_the_beast'),
+            ('decaying_defender','bloodshade_rotten',[43899,43900],[1,2],'fully_decayed')]:
+        for index,(item,bit) in enumerate(zip(items,bits)):
+            add('l13-'+family+'-'+('first' if index==0 else 'second'),family+'_outfits_quest',npc,['accessory'],[],
+                take=[(item,1)],outfit=(family,bit),achievement='oteryn:achievement/'+achievement if index==1 else None)
+            callbacks[-1].update(carried_item=f'oteryn:item.tibia.i{item}',minimum_level=250,requires_premium=True,
+                requires_outfits=['oteryn:outfit.'+family],forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
+            if index==1:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':bits[0]}]
+            path='data/scripts/actions/items/usable_outfit_items.lua'
+            callbacks[-1]['sources'].append(f'crystal:{PIN}:{path}:26-31:sha256:{sha(inputs[path])}')
+    add('l13-rift-base','rift_warrior_outfits_quest','cledwyn',['rift warrior outfit'],[],outfit=('rift_warrior',0))
+    callbacks[-1].update(requires_premium=True,forbids_outfits=['oteryn:outfit.rift_warrior'],
+        requires_completed_quests=['oteryn:quest.ferumbras_ascension_quest'])
+    callbacks[-1]['sources'].append('owner:chosen-Cledwyn-completed-Ferumbras-base-attestation:read-only-parent')
+    for bit,stage in [(1,'first'),(2,'second')]:
+        add('l13-rift-'+stage,'rift_warrior_outfits_quest','cledwyn',[stage],[],take=[(22516,100)],outfit=('rift_warrior',bit),
+            topic=3,achievement='oteryn:achievement/rift_warrior' if bit==2 else None)
+        callbacks[-1].update(requires_premium=True,requires_outfits=['oteryn:outfit.rift_warrior'],
+            forbids_addons=[{'outfit':'oteryn:outfit.rift_warrior','addons':bit}])
+        if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.rift_warrior','addons':1}]
+    source_offer('cledwyn',['addon'],0,3,[])
+    questl2_ready.append(add, storage, callbacks, offers, inputs, PIN)
+    ready_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith(
+        ('l2-white-raven-', 'l2-efreet-', 'l2-marid-'))]
+    callbacks = [c for c in callbacks if c not in ready_callbacks]
+    ready_callbacks.sort(key=lambda c:c['key'])
+    lane=load_module('questpc7_integration','tools/content-schema/quest-authoring/questpc7_integration.py')
+    lane_data=lane.extend(ROOT,callbacks,offers,inputs,PIN,load_module)
+    fibula_callbacks = []
+    load_module('fibula_reward_authoring', 'tools/content-schema/quest-authoring/fibula_rewards.py').append(fibula_callbacks, offers, inputs)
+    # Keep every registered document within the runtime's 256-record bound.
+    l13_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith('l13-')]
+    callbacks = [c for c in callbacks if c not in l13_callbacks]
+    programme_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith('questpc7-')]
+    callbacks = [c for c in callbacks if c not in programme_callbacks]
+    l13_callbacks.sort(key=lambda c:c['key'])
+    programme_callbacks.sort(key=lambda c:c['key'])
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})
+    validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
+    validate_callbacks({'schema':1,'callbacks':l13_callbacks})
+    validate_callbacks({'schema':1,'callbacks':programme_callbacks})
     native_cosmetics = cosmetics.provisioning_input(
         ROOT / cosmetics.AUTHORING, appearance / 'manifest.json', ROOT / cosmetics.OUTPUT,
         authoring_bytes=encoded(author))
     gameplay['schema']='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6'
     gameplay['cosmetics']={'path':'cosmetics/outfits/native-cosmetics.json','sha256':sha(native_cosmetics)}
-    generated = {'content/cosmetics/outfits/authoring.json': encoded(author),
+    generated = {'content/cosmetics/taming-native.json':encoded(native_taming),
+            'tools/content-schema/native-gameplay/item-cosmetic-actions-native.json':encoded(item_packet),
+            'content/cosmetics/outfits/authoring.json': encoded(author),
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises}),
+            'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
+            'content/quests/npc-callbacks/l13-outfits.json': encoded({'schema':1,'callbacks':l13_callbacks}),
+            'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'callbacks':programme_callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
+    generated['content/quests/npc-callbacks/l2-ready-stories.json'] = encoded({
+        'schema':1,'tracks':[],'callbacks':ready_callbacks})
     generated[qmech_m39.SHARD] = encoded({'schema':1,'tracks':m39_tracks,'callbacks':sorted(m39_callbacks,key=lambda callback:callback['key'])})
     generated[qmech_m39.WORLD_SHARD] = encoded(qmech_m39.worlds(inputs))
     # Preserve the source's complete contiguous 1..10001 supply-package table.
@@ -963,12 +1072,12 @@ def build():
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
     greetings=[]
-    for npc in sorted({c['npc'] for c in callbacks + m39_callbacks}):
+    for npc in sorted({c['npc'] for c in callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks} | {'oteryn:npc.'+npc for npc in ('alesar','yaman','haroun','nah_bob')}):
         path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
         messages={}
         citations=[]
         for field,constant in [('greet','GREET'),('farewell','FAREWELL'),('walkaway','WALKAWAY')]:
-            matches=list(re.finditer(r'npcHandler:setMessage\(MESSAGE_'+constant+r',\s*"([^"\n]*)"\)',inputs[path].decode()))
+            matches=list(re.finditer(r'npcHandler:setMessage\(MESSAGE_'+constant+r',\s*"([^"\n]*)"\)',inputs.get(path,inputs['data/npclib/npc_system/npc_handler.lua']).decode()))
             origin=path
             # Conditional NPC messages belong to their functional selectors.
             # Use the source handler's neutral default when no unique static message exists.
@@ -981,6 +1090,8 @@ def build():
             citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
         greetings.append({'npc':npc,**messages,'sources':citations})
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
+    generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
+    generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))
     access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')
     worlds=[]
     for name,quest,path,at,appearance,states,outfit in [
@@ -1008,6 +1119,16 @@ def build():
     import register_spell_families as native
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
     reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,cosmetics.canonical)
+    generated.update(lane.outputs(ROOT,inputs,PIN,load_module,lane_data))
+    # The selected smith port owns these keys and the explicit cache placement.
+    # Retain all other authored programmes; do not mount the older native-cache
+    # variant beside its replacement.
+    authored_path = 'content/quests/authored-world-callbacks.json'
+    authored = json.loads((ROOT / authored_path).read_bytes())
+    smith_keys = {'oteryn:quest-callback/authored-smith-cache',
+                  'oteryn:quest-callback/authored-smith-cache-reward'}
+    authored['callbacks'] = [c for c in authored['callbacks'] if c['key'] not in smith_keys]
+    generated[authored_path] = encoded(authored)
     return generated
 
 
@@ -1038,6 +1159,8 @@ def validate_callbacks(document):
         reward=callback.get('give')
         if reward and reward.get('text') is not None and len(reward['text'].encode('utf-8'))>7996:
             raise ValueError('literal reward text exceeds UTF-8 byte bound')
+        if callback['quest'] in callback.get('requires_completed_quests',[]):
+            raise ValueError('self-dependent reward completion '+callback['key'])
         storage=callback['storage']
         source, target = callback.get('carried_item'), callback.get('carried_target')
         if target is not None:
@@ -1065,7 +1188,12 @@ def validate_callbacks(document):
         participant_ops=[s for p in participants for s in p.get('state_ops',[])]
         operations=callback.get('state_ops',[])
         all_keys=[s['track'] for s in storage+operations+participant_storage+participant_ops]
-        if (len(all_keys)>16 or len(all_keys)!=len(set(all_keys))
+        counter=callback.get('counter')
+        if counter is not None and (not 1<=counter['maximum']<=1_000_000_000_000
+                or callback.get('completes',False) or counter['track'] in all_keys
+                or counter['track'] in {r['track'] for r in callback.get('requires',[])}):
+            raise ValueError('invalid owned reward counter '+callback['key'])
+        if (len(all_keys)+int(counter is not None)>16 or len(all_keys)!=len(set(all_keys))
             or any(len(p['storage'])+len(p.get('state_ops',[]))>8 for p in participants)
             or len({p['quest'] for p in participants})!=len(participants)
             or any(p['quest']==callback['quest'] for p in participants)
@@ -1084,7 +1212,16 @@ def validate_callbacks(document):
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
-            or (not value_guard and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
+            or (not value_guard and not callback.get('repeatable',False) and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
+            or (callback.get('repeatable',False) and (
+                not ((callback.get('fee') and callback.get('give'))
+                     or (bool(callback['take']) and (callback.get('give')
+                         or 1 <= callback.get('experience', 0) <= 100000000)))
+                or callback.get('outfit') or callback.get('outfits')
+                or callback.get('achievement') or callback.get('completes',False)
+                or any(not s.get('preserve',False) for s in storage)))
+            or ((callback.get('give') or {}).get('key_number') is not None
+                and (callback['give']['count']!=1 or callback['give'].get('contents')))
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback['reply'])
             or any(len(source.encode('utf-8'))>1024 for source in callback['sources'])):

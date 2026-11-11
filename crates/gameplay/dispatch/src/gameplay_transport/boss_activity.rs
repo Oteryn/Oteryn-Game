@@ -61,7 +61,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let Ok(mut intent) = wire::decode_boss_key(payload) else {
             return malformed();
         };
-        if let Some(canonical) = super::endgame_entry::canonical_boss_key(&intent.boss_key) {
+        if super::soul_war_entry::is_soul_war(&intent.boss_key).is_none()
+            && let Some(canonical) = super::endgame_entry::canonical_boss_key(&intent.boss_key)
+        {
             intent.boss_key = canonical;
         }
         let outburst = super::outburst_entry::is_outburst(&intent.boss_key);

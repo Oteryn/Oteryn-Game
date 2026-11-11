@@ -495,6 +495,16 @@ def test_committed_content_is_valid() -> None:
     assert any(c["server"] == "canary" and c["unique_id"] == 6117 for c in collisions)
 
 
+def test_poison_daggers_target_correction_bounds() -> None:
+    import unittest
+    from test_poison_daggers import PoisonDaggersTargetTests
+
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(PoisonDaggersTargetTests)
+    result = unittest.TestResult()
+    suite.run(result)
+    assert result.wasSuccessful(), result.errors + result.failures
+
+
 if __name__ == "__main__":
     for name, test in sorted(globals().items()):
         if name.startswith("test_") and callable(test):

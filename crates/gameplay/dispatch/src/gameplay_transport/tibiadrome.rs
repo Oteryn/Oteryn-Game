@@ -208,12 +208,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if after.progress.rotation == before.progress.rotation
                         && battle.clears > after.completed
                     {
-                        // Use the same level/lifetime owner as one native clear,
-                        // then account for every previously unobserved clear once.
+                        // Manual combat.md:264: each missed clear adds one
+                        // starting level; the latest wave level is a single floor.
+                        // Match the durable server-cadence settlement calculation.
                         let count = battle.clears - after.completed;
-                        let waves = after.progress.waves;
-                        after.progress.wave(battle.completed);
-                        after.progress.waves = waves.saturating_add(count);
+                        let level = battle.completed.saturating_add(1);
+                        after.progress.reached_level(level);
+                        after.progress.start =
+                            after.progress.start.saturating_add(count).max(level);
+                        after.progress.waves = after.progress.waves.saturating_add(count);
                         after.completed = battle.clears;
                     }
                     after.wave = battle.wave;
@@ -810,6 +813,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .collect::<String>()
         );
         Some(RewardClaimMintRequest {
+            backpack_outputs: false,
+            root_charges_remaining: None,
+            root_fluid_subtype: None,
             additional_items: Vec::new(),
             command,
             claim: TypedDefinitionRef {
@@ -835,6 +841,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn drome_sync(&self, session: GameSessionId, ending: bool) -> bool {
+        let _gate = self.states.tibiadrome.command.lock().await;
         let snapshot = {
             let mut runtime = self.runtime.lock().await;
             tick(self, &mut runtime);

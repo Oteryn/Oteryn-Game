@@ -66,6 +66,8 @@ def document():
                                        for x,y in [(33219,31657),(33221,31657),(33223,31659),
                                                    (33224,31659),(33220,31661),(33222,31661)]],
                              room_min=position(33217,31655,13), room_max=position(33225,31663,13))))
+    import questpc2_access
+    questpc2_access.extend(rows, callback, position)
     for row in rows:
         encounter = row['effects']['encounter']
         if encounter:

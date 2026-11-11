@@ -279,9 +279,7 @@ pub async fn apply_rotten_blood_kill_in_transaction(
     }
     let mut locked = Vec::with_capacity(participants.len());
     for &(fence, damage) in participants {
-        if super::super::party_kill_xp::decoded_death_scope(death_key)
-            != Some((fence.runtime_scope, fence.scope_ownership_generation.get()))
-        {
+        if !super::super::party_kill_xp::death_matches_fence(death_key, &fence) {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
         let root = assert_item_only_fence(tx, &fence.item_fence(), node).await??;

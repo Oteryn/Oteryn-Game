@@ -327,12 +327,27 @@ fn scenario(target_move: bool) -> TestResult {
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
+        let frame = world.frame_binding_digest(deps.admitted.world_id);
+        deps.combat_room = Some(
+            deps.room
+                .bundle_view(
+                    cells.clone(),
+                    frame,
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: 1,
+                        y: 1,
+                        floor: 7,
+                    },
+                )
+                .ok_or("bundle combat view")?,
+        );
         let channel_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
             active.identity().server_artifact_digest(),
             active.identity().client_artifact_digest(),
-            pin.frame_binding().digest(),
+            frame,
             world.map_revision_digest(),
             (1, 1, 7),
         );
@@ -369,7 +384,7 @@ fn scenario(target_move: bool) -> TestResult {
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(active.identity().server_artifact_digest().as_slice())
-            .bind(active.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            .bind(active.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
         // Seed a real carried backpack; the map coin is minted only by command 9 below.
         seed_backpack(&h, &owner, fence).await?;
         let mut admitted = deps.admitted;
@@ -657,32 +672,9 @@ fn next(
     mut at: MovementLocalPosition,
     step: oteryn_protocol_oteryn::world_spatial::StepDirection,
 ) -> MovementLocalPosition {
-    let (dx,dy)=step.delta();
-    at.x+=dx;
-    at.y+=dy;
-    use oteryn_protocol_oteryn::world_spatial::StepDirection as D;
-    match step {
-        D::North => at.y -= 1,
-        D::East => at.x += 1,
-        D::South => at.y += 1,
-        D::West => at.x -= 1,
-        D::NorthEast => {
-            at.x += 1;
-            at.y -= 1;
-        }
-        D::SouthEast => {
-            at.x += 1;
-            at.y += 1;
-        }
-        D::SouthWest => {
-            at.x -= 1;
-            at.y += 1;
-        }
-        D::NorthWest => {
-            at.x -= 1;
-            at.y -= 1;
-        }
-    }
+    let (dx, dy) = step.delta();
+    at.x += dx;
+    at.y += dy;
     at
 }
 
@@ -1045,12 +1037,14 @@ async fn pick_origin(
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
     };
+    // The independent pickup shares the non-blocking durability holder with
+    // served movement. Serialize its reservation preflight under the same lane.
+    let permit = owner.spell_lane_permit().await.ok_or("lane")?;
     let mut candidate = owner
         .root
         .freeze_map_item_mint(owner.character, owner.holder, fence, request)
         .await
-        .map_err(debug)?;
-    let permit = owner.spell_lane_permit().await.ok_or("lane")?;
+        .map_err(|error| format!("independent pickup freeze: {error:?}"))?;
     assert!(matches!(
         owner
             .root
@@ -1062,7 +1056,7 @@ async fn pick_origin(
                 &mut candidate
             )
             .await
-            .map_err(debug)?,
+            .map_err(|error| format!("independent pickup commit: {error:?}"))?,
         MapItemMintOutcome::Committed(_)
     ));
     owner.states.loop_ground.invalidate();
@@ -1083,11 +1077,19 @@ async fn result_at_rest(
                 // The relocation's revision update is legitimate even after returning to the
                 // same tile. Every observed position must stay at that tile after cancellation.
                 let value = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(delta.payload).map_err(debug)?;
+                assert!(
+                    (-15..=0).contains(&value.actor_position.floor),
+                    "Bundle observation uses the native wire floor"
+                );
                 assert_eq!(
                     (
                         value.actor_position.x,
                         value.actor_position.y,
-                        value.actor_position.floor
+                        value
+                            .actor_position
+                            .floor
+                            .checked_neg()
+                            .ok_or("native wire floor")?
                     ),
                     (at.x, at.y, at.floor)
                 );

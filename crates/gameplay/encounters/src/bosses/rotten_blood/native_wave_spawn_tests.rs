@@ -2,8 +2,9 @@
 use super::super::RoomPosition;
 use super::*;
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
-use oteryn_gameplay_entities::{CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags};
+use oteryn_gameplay_entities::CompiledCreaturePolicies;
 use oteryn_gameplay_foundation::foundation::{ChannelId, NodeId, WorldId, crystal_timer_fixture};
+use std::{path::Path, sync::OnceLock};
 
 fn uuid(n: u8) -> [u8; 16] {
     [n, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, n]
@@ -18,6 +19,29 @@ fn setup(
     RuntimeWorkStamp,
 ) {
     let world = WorldId::decode(&uuid(1)).expect("world");
+    static POLICIES: OnceLock<CompiledCreaturePolicies> = OnceLock::new();
+    let policies = POLICIES
+        .get_or_init(|| {
+            let path =
+                Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json");
+            oteryn_gameplay_content::content::native_gameplay::retained_callback_native_fixture_at(
+                world, &path,
+            )
+            .policies()
+            .clone()
+        })
+        .clone();
+    let fixture_pin = ChannelContentPin::test(world);
+    let entry_start = fixture_pin.entry_start();
+    let pin = ChannelContentPin::from_activation(
+        world,
+        fixture_pin.activation_sequence(),
+        policies.source_digest(),
+        fixture_pin.client_artifact_digest(),
+        fixture_pin.frame_binding_digest(),
+        fixture_pin.map_revision_digest(),
+        (entry_start.x, entry_start.y, entry_start.floor),
+    );
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,
         ChannelId::decode(&uuid(2)).expect("channel"),
@@ -27,55 +51,16 @@ fn setup(
         11,
         "runtime-scope-assignment:11",
         32,
-        ChannelContentPin::test(world),
+        pin,
     )
     .expect("runtime");
-    let policies = [
-        key,
-        "oteryn:creature.mushroom",
-        "oteryn:creature.elder_bloodjaw",
-        "oteryn:creature.pillar_of_dark_energy",
-    ]
-    .into_iter()
-    .map(|key| CompiledCreaturePolicy {
-        definition_key: key.into(),
-        definition_revision: "definition-r1".into(),
-        display_name: key.into(),
-        maximum_health: 20,
-        forge_difficulty: None,
-        base_speed: 220,
-        outfit_look_type: 21,
-        object_look_type: None,
-        summonable: false,
-        convinceable: false,
-        mana_cost: None,
-        is_familiar: false,
-        condition_immunities: Vec::new(),
-        preferred_distance: Some(1),
-        reward_boss: Some(false),
-        blocked_by_nearby_players: false,
-        defense: Some(1),
-        armor: Some(0),
-        mitigation: None,
-        resistances: Vec::new(),
-        damage_immunities: Vec::new(),
-        healing_from_damage: Vec::new(),
-        flags: CreatureFlags {
-            attackable: true,
-            illusionable: false,
-            health_hidden: false,
-        },
-    })
-    .collect();
     runtime
-        .install_companion_policies(
-            CompiledCreaturePolicies::from_active_artifact(
-                runtime.content_pin().server_artifact_digest(),
-                policies,
-            )
-            .expect("fixture policy table"),
-        )
+        .install_companion_policies(policies)
         .expect("install policies");
+    let maximum_health = runtime
+        .companion_policy(key)
+        .expect("canonical boss policy")
+        .maximum_health;
     let boss = runtime
         .admit_pinned_monster_lab_creature(
             MovementLocalPosition {
@@ -84,7 +69,7 @@ fn setup(
                 floor: 7,
             },
             key,
-            20,
+            maximum_health,
         )
         .expect("boss");
     runtime
@@ -152,6 +137,9 @@ fn source_wave_uses_real_native_policy_and_replays_without_another_child() {
         ("oteryn:creature.murcion", 1),
     ] {
         let (mut runtime, boss, fence, stamp) = setup(key);
+        let mushroom_policy = runtime
+            .companion_policy("oteryn:creature.mushroom")
+            .expect("canonical Mushroom policy before spawn");
         let mut owner = NativeWaveSpawnOwner::for_boss(&runtime, boss).expect("source owner");
         let mut map = map();
         let receipt = owner
@@ -170,7 +158,10 @@ fn source_wave_uses_real_native_policy_and_replays_without_another_child() {
             child.state.policy.definition_key,
             "oteryn:creature.mushroom"
         );
-        assert_eq!(child.state.policy.maximum_health, 20);
+        assert_eq!(
+            child.state.policy.maximum_health,
+            mushroom_policy.maximum_health
+        );
         assert!(
             runtime.native_summon_master(receipt.child).is_none(),
             "source createMonster is masterless"
@@ -425,6 +416,10 @@ fn bloodjaw_and_mushroom_use_their_distinct_current_boss_presence_lists() {
             (101, "oteryn:creature.mushroom"),
             (102, "oteryn:creature.elder_bloodjaw"),
         ] {
+            let maximum_health = runtime
+                .companion_policy(key)
+                .expect("canonical child policy")
+                .maximum_health;
             let child = runtime
                 .admit_pinned_monster_lab_creature(
                     MovementLocalPosition {
@@ -433,7 +428,7 @@ fn bloodjaw_and_mushroom_use_their_distinct_current_boss_presence_lists() {
                         floor: 7,
                     },
                     key,
-                    20,
+                    maximum_health,
                 )
                 .expect("current native fixture child");
             runtime
@@ -473,6 +468,10 @@ fn orphan_cleanup_withholds_removal_when_a_nearby_creature_policy_is_unavailable
     runtime
         .remove_test_actor(boss)
         .expect("original boss leaves");
+    let maximum_health = runtime
+        .companion_policy("oteryn:creature.ichgahal")
+        .expect("canonical unresolved boss policy")
+        .maximum_health;
     let unresolved = runtime
         .admit_pinned_monster_lab_creature(
             MovementLocalPosition {
@@ -481,7 +480,7 @@ fn orphan_cleanup_withholds_removal_when_a_nearby_creature_policy_is_unavailable
                 floor: 7,
             },
             "oteryn:creature.ichgahal",
-            20,
+            maximum_health,
         )
         .expect("identity admitted before policy installation");
     assert!(runtime.companion_snapshot(unresolved).is_err());

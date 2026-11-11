@@ -4680,13 +4680,13 @@ fn monster_windup_cutoff_retains_original_due_and_uses_actual_condition_time() {
         &runtime,
         proposal.target,
         session,
-        SemanticTimeMicros::from_micros(12_999_999),
+        oteryn_simulation_determinism::SemanticTimeMicros::from_micros(12_999_999),
     ));
     assert!(vitals.native_condition_movement_allowed(
         &runtime,
         proposal.target,
         session,
-        SemanticTimeMicros::from_micros(13_000_000),
+        oteryn_simulation_determinism::SemanticTimeMicros::from_micros(13_000_000),
     ));
     assert!(owner.pending_windups().is_empty());
     runtime.retire_owner_cycle();

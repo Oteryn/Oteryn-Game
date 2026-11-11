@@ -246,6 +246,7 @@ async fn deliver(h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_>) 
         .map_err(debug)?
         .ok_or("pending icon")?;
     let request = RewardClaimMintRequest {
+        backpack_outputs: false,
             additional_items: Vec::new(),
         command: CommandRef::new(
             fence(1)?.game_session_id,
@@ -261,6 +262,8 @@ async fn deliver(h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_>) 
         quantity: 1,
         contents: Vec::new(),
         root_text: None,
+        root_fluid_subtype: None,
+        root_charges_remaining: None,
         backpack,
         content_revision: format!(
             "sha256:{}",

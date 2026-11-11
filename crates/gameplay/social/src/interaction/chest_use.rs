@@ -313,6 +313,7 @@ pub async fn prepare_chest_use(
         .iter()
         .map(|(definition, quantity)| {
             resolve_item_definition_facts(content, definition).map(|item| RewardClaimMintContent {
+                charges_remaining: None,
                 fluid_subtype: None,
                 item,
                 quantity: *quantity,
@@ -333,6 +334,7 @@ pub async fn prepare_chest_use(
     let backpack = resolve_item_definition_facts(content, &current.backpack.definition)
         .map_err(ChestUseError::Content)?;
     let mint_request = RewardClaimMintRequest {
+        backpack_outputs: false,
         additional_items,
         command: request.command,
         claim: chest.claim,
@@ -341,6 +343,8 @@ pub async fn prepare_chest_use(
         quantity: chest.quantity,
         contents: Vec::new(),
         root_text: None,
+        root_fluid_subtype: None,
+        root_charges_remaining: None,
         backpack,
         content_revision: request.content_revision,
         ruleset_revision: request.ruleset_revision,

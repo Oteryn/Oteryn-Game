@@ -12,6 +12,7 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -61,6 +62,17 @@ def historical_binding_bytes(data: bytes, expected_sha: str) -> bytes:
 
 
 def binding_index(data: bytes, expected_sha: str = BINDINGS_SHA) -> dict:
+    # Re-authenticate every supplied pin, even when identical validated bytes
+    # already belong to the current qualification scope.
+    historical_binding_bytes(data, expected_sha)
+    engine = sys.modules.get("qualification_inputs")
+    scoped = getattr(engine, "qualified_input_view", None)
+    if scoped is not None:
+        return scoped(('bindings', expected_sha), data, lambda: _binding_index(data, expected_sha))
+    return _binding_index(data, expected_sha)
+
+
+def _binding_index(data: bytes, expected_sha: str) -> dict:
     historical_binding_bytes(data, expected_sha)
     document = json.loads(data)
     if set(document) != {"schema", "family", "bindings"} or document["schema"] != "OTERYN_SOURCE_IDENTITY_BINDINGS/v1" or document["family"] != "Item":
@@ -78,7 +90,7 @@ def binding_index(data: bytes, expected_sha: str = BINDINGS_SHA) -> dict:
                 or target != {"family": "Item", "key": f"oteryn:item.tibia.i{external}", "revision": "definition-r1"}
                 or external in index or target["key"] in targets):
             raise ValueError("Invalid or ambiguous exact Item binding")
-        index[external] = copy.deepcopy(row)
+        index[external] = row
         targets.add(target["key"])
     if not index:
         raise ValueError("Empty Item binding table")
@@ -128,7 +140,8 @@ def bind_profiles(document: dict, bindings: dict, source_ids: set[int], candidat
     if document.get("schema") != "OTERYN_NATIVE_ITEM_PROFILES/v1" or not isinstance(document.get("records"), list):
         raise ValueError("Invalid native Item profile document")
     result = copy.deepcopy(document)
-    bindings = copy.deepcopy(bindings)
+    # Selected bindings are copied into the returned records below. A source
+    # index stays borrowed unless this call explicitly inserts a candidate.
     independent_ids = set()
     admitted_bindings = {}
     if independent_crystal_source is not None:
@@ -137,6 +150,7 @@ def bind_profiles(document: dict, bindings: dict, source_ids: set[int], candidat
         # identity: the exact previously admitted row must still match.
         admitted_bindings = binding_index(BINDINGS.read_bytes())
     if candidate is not None:
+        bindings = dict(bindings)
         from canary_generic_item_identity import PACKET
         if candidate != json.loads(PACKET.read_bytes()):
             raise ValueError("Unqualified generic Item candidate packet")

@@ -2,7 +2,8 @@
 use super::*;
 use oteryn_protocol_oteryn::refusal_detail::{RefusalDetail, append_refusal_detail};
 use oteryn_protocol_oteryn::world_spatial::{
-    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDisposition, decode_step_intent, encode_step_outcome,
+    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDisposition, decode_step_intent_selected,
+    encode_step_outcome,
 };
 
 impl SessionCommandStream {
@@ -12,7 +13,7 @@ impl SessionCommandStream {
         command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     ) -> Option<()> {
         if command.command_type != COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
-            || decode_step_intent(command.payload).is_err()
+            || decode_step_intent_selected(self.selected.as_slice(), command.payload).is_err()
         {
             return None;
         }
@@ -25,6 +26,7 @@ impl SessionCommandStream {
         if !state.active
             || state.ingress.outstanding() != 1
             || pending.command != command.command_id
+            || pending.selected != self.selected
             || pending.proven_native.is_some()
             || !matches!(
                 state.ingress.classify_duplicate(id, &semantic(id)?),

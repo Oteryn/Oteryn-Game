@@ -221,7 +221,7 @@ pub(super) async fn exercise(
             let closed = crate::map::floor::BundleDoors(map.facts.doors());
             let proof = crate::map::floor::prepare_bundle_step(
                 &runtime,
-                &owner.movement_cells,
+                owner.movement_cells(),
                 partner,
                 session,
                 expected,
@@ -322,7 +322,7 @@ pub(super) async fn exercise(
             let map = owner.bundle_map().ok_or("map")?;
             assert!(
                 crate::map::floor::is_teleport(
-                    &owner.movement_cells,
+                    owner.movement_cells(),
                     crate::content::LogicalCell {
                         x: i32::from(portal.position.x),
                         y: i32::from(portal.position.y),
@@ -656,7 +656,7 @@ async fn relocate(
     let expected = runtime.read_actor_position(actor).map_err(debug)?;
     let proof = crate::map::floor::prepare_quest_callback_teleport(
         &runtime,
-        &owner.movement_cells,
+        owner.movement_cells(),
         actor,
         session,
         expected,
@@ -809,10 +809,20 @@ async fn wardrobe(
         .clone()
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
+        repeatable: false,
+        required_claims: Vec::new(),
+        counter: None,
+        requirements: None,
+        completes: false,
+        required_receipts: vec![],
+        experience: None,
+        per_occurrence_mint: false,
         map_mark: None,
         world_claim: None,
         magic_effects: vec![],
         carried_item: None,
+        carried_exchange: false,
+        requires_completed_quests: vec![],
         carried_target: None,
         peer_requires: None,
         corpse_target: None,
@@ -829,7 +839,6 @@ async fn wardrobe(
         keywords: vec!["fixture".into()],
         topic: 0,
         next_topic: 0,
-        completes: false,
         storage: callback.storage.clone(),
         requires: vec![],
         participants: vec![],
@@ -851,8 +860,8 @@ async fn wardrobe(
         achievement_progress: vec![],
         reply: vec![],
         failure_reply: vec![],
-        experience: None,
-        repeatable: false,
+
+
         sources: vec![],
     };
     super::qengine_rewards::seed(owner, admitted, &seed, 9000).await?;
@@ -894,6 +903,7 @@ async fn wardrobe(
             ),
             placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
             reset_epoch: owner.reset_epoch,
+            party: Vec::new(),
             actor_placement: actor.placement_identity(),
             movement_revision: runtime
                 .read_actor_position(actor)

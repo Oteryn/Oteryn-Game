@@ -1,6 +1,6 @@
 use super::*;
 
-/// MAP-ITEM-REF-1 Part B: the durable corpse Item a projected death materialized as. The Channel
+/// MAP-ITEM-REF-1 Part B: the durable corpse Item a projected death materialized as. The runtime
 /// owner binds it once the corpse's MINT has committed: KILL-REWARD part B calls
 /// [`ChannelRuntimeV1::bind_corpse_item`] with the item instance id `commit_corpse_mint` returned
 /// and the corpse's typed definition. Not durable, like the projection it belongs to: an unbound
@@ -248,8 +248,7 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
-    /// Whether `actor`'s corpse projection is pinned against eviction.
-    #[cfg(any(test, feature = "test-support"))]
+    /// Whether `actor`'s corpse projection is pinned against production guardian eviction.
     pub fn corpse_projection_pinned(&self, actor: ExactActorRef) -> bool {
         self.carrier.corpse_projection_pins.contains(&actor)
             || self

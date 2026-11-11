@@ -664,22 +664,27 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                     assert_eq!((at.x, at.y, at.floor), crate::durability::arena_match::donor::KICK);
                     assert!(runtime.companion_snapshot_including_dead(target).is_err());
                 }
-                assert!(!crate::gameplay_transport::arena_match::pit_exit_open(&owner, admitted.game_session_id));
+                assert!(
+                    crate::gameplay_transport::arena_match::pit_exit_open(&owner, admitted.game_session_id),
+                    "the credited phase remains owned until the durable timeout is acknowledged"
+                );
+                let retained: (i32, i32, i32, bool) = sqlx::query_as(
+                    "SELECT (body->>'rank')::int,(body->>'pit')::int,(body->>'phase')::int, \
+                     (body->>'deadline_ms')::bigint > floor(extract(epoch FROM clock_timestamp())*1000)::bigint \
+                     FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid",
+                )
+                .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(
+                    retained,
+                    (i32::from(rank), i32::from(pit), 2, true),
+                    "local physical expiry cannot forge the database-owned timeout"
+                );
                 projected.clear();
                 crate::map::view::compose_into(map.overlay.base(), map.overlay.tile(pos), &map.facts, pos, &mut projected).map_err(debug)?;
                 assert!(projected.iter().any(|entry| entry.facts.appearance_id == 1841));
                 assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 5022));
                 return Ok(());
             }
-            let start = {
-                let mut runtime = deps.runtime.lock().await;
-                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
-                runtime.relocate_arena_player(deps.actor, admitted.game_session_id, before,
-                    crate::foundation::MovementLocalPosition { x: x - 5, y, floor: 7 }).map_err(debug)?;
-                runtime.read_actor_position(deps.actor).map_err(debug)?
-            };
-            let _ = owner.ordinary_paced_step(deps.actor, admitted.game_session_id,
-                oteryn_protocol_oteryn::world_spatial::StepDirection::West, Some(start), None).await;
             let advanced = if native_portals {
                 owner.drain_monster_melee().await;
                 let stored: (i32, i32) = sqlx::query_as(
@@ -742,6 +747,15 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 );
                 command(&owner, &mut admitted, A::Status).await?
             } else {
+                let start = {
+                    let mut runtime = deps.runtime.lock().await;
+                    let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                    runtime.relocate_arena_player(deps.actor, admitted.game_session_id, before,
+                        crate::foundation::MovementLocalPosition { x: x - 5, y, floor: 7 }).map_err(debug)?;
+                    runtime.read_actor_position(deps.actor).map_err(debug)?
+                };
+                let _ = owner.ordinary_paced_step(deps.actor, admitted.game_session_id,
+                    oteryn_protocol_oteryn::world_spatial::StepDirection::West, Some(start), None).await;
                 command(&owner, &mut admitted, A::Status).await?
             };
             assert_eq!(advanced.disposition, D::Applied, "pit {pit}: {advanced:?}");

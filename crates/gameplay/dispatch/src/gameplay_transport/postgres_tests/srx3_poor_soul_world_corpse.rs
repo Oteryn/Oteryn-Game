@@ -124,8 +124,7 @@ fn world_corpse(mismatched_reset_map: bool) -> TestResult {
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             owner.active_generation = Some(active);
-            owner.rooms =
-                crate::gameplay_transport::SeamRooms::new(Some(&scene.room), Some(&scene.room));
+            owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&scene.room));
             issue_world_pins(&h, &entry_pin, &scene.pin, &world, mismatched_reset_map).await?;
             let mut admitted = deps.admitted;
             super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 8)
@@ -147,7 +146,7 @@ fn world_corpse(mismatched_reset_map: bool) -> TestResult {
                         crate::foundation::OwnerDamageCommand {
                             target: POOR_SOUL.as_bytes(),
                             occurrence: b"srx3:poor-soul:world-source-death",
-                            binding: b"srx3:poor-soul:actual-xml-owner",
+                            binding: b"srx3:poor-soul:world-source-death\0srx3:poor-soul:actual-xml-owner",
                             damage: health,
                         },
                     )

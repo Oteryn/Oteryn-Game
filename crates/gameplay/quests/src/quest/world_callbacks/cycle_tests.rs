@@ -16,6 +16,9 @@ fn cycle_reward_requires_a_preserved_nonnegative_local_epoch() -> Result<(), Str
     let epoch = "oteryn:quest-progress/cycle-fixture/epoch";
     callback.effects.item_reward_cycle = Some(epoch.into());
     callback.storage.push(Storage {
+        set_if: None,
+        add: None,
+        read_only: false,
         track: epoch.into(),
         minimum: 0,
         maximum: 99,

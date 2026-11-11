@@ -21,15 +21,23 @@ fn srx3_soulpit_creature_icon_field14_requires_negotiated_native_carrier()
             health_percent: 100,
         },
     };
-    let fields = EntityFields::selected(&[6, 371]);
+    let fields = EntityFields::selected(&[6, CAPABILITY_NATIVE_CREATURE_ICONS_V1]);
     let mut encoded = encode_entity(&entity, fields, None)?;
     // New field14; explicit category1/icon6/count15, from pinned C++ protocol.
     push_message(&mut encoded, 14, &[8, 1, 16, 6, 24, 15]);
     assert!(
         decode_entity(&encoded, fields).is_ok(),
-        "current source badge must decode under selected371"
+        "current source badge must decode under the selected native-icon capability"
     );
     assert!(decode_entity(&encoded, EntityFields::selected(&[6])).is_err());
+    assert!(
+        decode_entity(
+            &encoded,
+            EntityFields::selected(&[6, crate::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1])
+        )
+        .is_err(),
+        "diagonal movement does not select the native-icon carrier"
+    );
     let mut duplicate = encoded.clone();
     push_message(&mut duplicate, 14, &[8, 1, 16, 6, 24, 15]);
     assert!(
@@ -65,7 +73,7 @@ fn srx3_soulpit_creature_icon_refuses_wrong_category_shape_count_and_object()
             health_percent: 100,
         },
     };
-    let fields = EntityFields::selected(&[6, 371]);
+    let fields = EntityFields::selected(&[6, CAPABILITY_NATIVE_CREATURE_ICONS_V1]);
     for bad in [
         &[8, 2, 16, 6, 24, 15][..],
         &[8, 1, 16, 6, 24, 40][..],
@@ -100,7 +108,7 @@ fn srx3_native_creature_icons_preserve_order_duplicate_ids_and_visible_zero()
             health_percent: 100,
         },
     };
-    let fields = EntityFields::selected(&[6, 371]);
+    let fields = EntityFields::selected(&[6, CAPABILITY_NATIVE_CREATURE_ICONS_V1]);
     let mut encoded = encode_entity(&entity, fields, None)?;
     for icon in [
         &[8, 0, 16, 2, 24, 0][..],
@@ -198,7 +206,7 @@ fn srx3_native_creature_icons_general_hazard_preserves_source_u16_points()
             health_percent: 100,
         },
     };
-    let fields = EntityFields::selected(&[6, 371]);
+    let fields = EntityFields::selected(&[6, CAPABILITY_NATIVE_CREATURE_ICONS_V1]);
     for count in [5, 12, u16::MAX] {
         let icon = NativeCreatureIcon {
             category: 0,

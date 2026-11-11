@@ -376,6 +376,7 @@ async fn stampede(h: &f::Harness) -> f::TestResult {
         reset_epoch: 0,
         actor_placement: f::id(17),
         movement_revision: 1,
+        party: Vec::new(),
     };
     let entry = QuestTransitionRequest {
         transition_key: "oteryn:quest-world/m01c-stampede-entry".into(),

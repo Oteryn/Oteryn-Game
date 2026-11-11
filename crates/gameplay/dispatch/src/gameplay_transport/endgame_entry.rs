@@ -12,6 +12,18 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 /// Crystal 201189f the_primal_manace.lua:2-4 binds the lever boss to its
 /// captured creature. Template and creature aliases must share entry policy.
 pub(super) fn canonical_boss_key(key: &str) -> Option<String> {
+    // Soul War's source rooms are declared in soul_war.lua rather than the
+    // literal lever capture. Reuse the same closed phase identity as entry;
+    // the activity owner still requires its independently qualified room.
+    let creature = key
+        .strip_prefix("oteryn:boss.")
+        .map(|suffix| format!("oteryn:creature.{suffix}"));
+    if let Some(encounter) = Encounter::from_boss_key(creature.as_deref().unwrap_or(key)) {
+        return encounter
+            .boss_key()
+            .strip_prefix("oteryn:creature.")
+            .map(|suffix| format!("oteryn:boss.{suffix}"));
+    }
     let candidates = crate::content::bosses::activity_template::captured_boss_levers().ok()?;
     candidates
         .iter()
@@ -23,7 +35,10 @@ pub(super) fn canonical_boss_key(key: &str) -> Option<String> {
 }
 
 pub(super) fn encounter_for_boss_key(key: &str) -> Option<Encounter> {
-    if let Some(encounter) = Encounter::from_boss_key(key) {
+    let creature = key
+        .strip_prefix("oteryn:boss.")
+        .map(|suffix| format!("oteryn:creature.{suffix}"));
+    if let Some(encounter) = Encounter::from_boss_key(creature.as_deref().unwrap_or(key)) {
         return Some(encounter);
     }
     let candidates = crate::content::bosses::activity_template::captured_boss_levers().ok()?;
@@ -111,5 +126,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // This validates quest prerequisites only. The caller must still resolve a
         // qualified content template and perform the shared native scope handoff.
         Ok(endgame_entry::enter(encounter, &[facts], |_| async { Ok(()) }).await)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn canonical_endgame_aliases_retain_their_entry_policy() -> Result<(), String> {
+        for key in [
+            "oteryn:creature.goshnar_s_spite",
+            "oteryn:creature.goshnar_s_megalomania_green",
+            "oteryn:creature.the_primal_menace",
+            "oteryn:creature.bakragore",
+        ] {
+            let canonical = super::canonical_boss_key(key).ok_or("canonical boss")?;
+            assert_eq!(
+                super::encounter_for_boss_key(&canonical),
+                super::Encounter::from_boss_key(key),
+                "canonical aliases must not bypass the prerequisite gate: {key}"
+            );
+        }
+        Ok(())
     }
 }

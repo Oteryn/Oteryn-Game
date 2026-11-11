@@ -83,7 +83,7 @@ fn srx3_megalomania_native_corpses_player_and_creature_steps_postgres() -> TestR
             let (_, reply, barrier) = super::boss_activity::exchange_capture(
                 &owner,
                 &mut admitted,
-                "oteryn:creature.goshnar_s_megalomania",
+                "oteryn:boss.goshnar_s_megalomania",
                 true,
                 &mut Vec::new(),
             )
@@ -605,7 +605,7 @@ async fn original_tile(
             target,
         )
         .await
-        .map_err(|error| debug(error).into())
+        .map_err(debug)
 }
 
 async fn actual_creature_step(

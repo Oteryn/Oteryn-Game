@@ -32,6 +32,18 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
             },
         );
     }
+    for (key, max) in campaign::TRACKS.into_iter().zip([11, 650, 1]) {
+        catalogue.tracks.insert(
+            key.into(),
+            QuestTrack {
+                key: key.into(),
+                quest: QUEST.into(),
+                initial: 0,
+                min: 0,
+                max,
+            },
+        );
+    }
     for transition in catalogue.transitions.values_mut() {
         if transition.quest == QUEST
             && transition

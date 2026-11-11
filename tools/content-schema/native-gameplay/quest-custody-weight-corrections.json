@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "records": [
+    {
+      "item": "oteryn:item.tibia.i30226",
+      "canonical_sha256": "b0b0bea47491521ceddc9afe13116b698bccb85ddc5c0fb8d75b103c24ec8ca2",
+      "source_xml_weight": 100000,
+      "weight": 400,
+      "sources": [
+        "https://www.tibiawiki.com.br/Branch_(The_Percht_Queen)",
+        "content/items/definitions: accepted unchanged physical weight400; pinned XML conflict100000."
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i30192",
+      "canonical_sha256": "18ab7e8c8f83f852bad35a6ce7d17375e94220712a43f8511ab99ad7696a3253",
+      "source_xml_weight": 869,
+      "weight": 870,
+      "sources": [
+        "content/items/definitions: unchanged accepted physical weight",
+        "https://www.tibiawiki.com.br/Percht_Skull",
+        "OTERYN_CONSERVATIVE_RULE: preserve exact accepted weight; raw pinned XML conflict retained."
+      ]
+    }
+  ]
+}

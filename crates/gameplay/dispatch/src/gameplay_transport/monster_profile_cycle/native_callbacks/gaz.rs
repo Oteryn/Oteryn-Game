@@ -207,8 +207,37 @@ impl NativeGaz {
             }
             self.seen.push(*occurrence);
         }
+        self.drive_due_through(runtime, room, native, now, now)
+    }
+
+    pub(super) fn drive_due_through(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        room: &QualifiedNativeEntryRoom,
+        native: &NativeGameplayState,
+        eligible_through_us: u64,
+        now: u64,
+    ) -> Result<(), ()> {
+        if self.work.is_empty() {
+            return Ok(());
+        }
+        let source = self.source.as_ref().ok_or(())?;
+        if source.content() != native.source_digest()
+            || source.content() != runtime.content_pin().server_artifact_digest()
+            || !matches!(
+                room.movement_cells().index(),
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+            )
+        {
+            return Err(());
+        }
+        // The cutoff selects retained deadlines; it never creates another Think.
         let mut preview = self.timers.as_ref().ok_or(())?.clone();
-        for due in preview.drain_due(&Now(now), runtime.owner_fence().map_err(|_| ())?, |_| true) {
+        for due in preview.drain_due(
+            &Now(eligible_through_us.min(now)),
+            runtime.owner_fence().map_err(|_| ())?,
+            |_| true,
+        ) {
             let Some(index) = self.work.iter().position(|work| work.key == due.occurrence) else {
                 continue;
             };

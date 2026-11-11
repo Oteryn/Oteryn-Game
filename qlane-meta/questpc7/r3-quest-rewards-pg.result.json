@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_catalogue_chests_ -- --nocapture --skip every_supported_source_placement",
+  "exit": 101,
+  "duration_seconds": 335.485
+}

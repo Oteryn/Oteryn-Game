@@ -1187,6 +1187,9 @@ def build(
     import qready1_clock_landmarks
 
     qready1_clock_landmarks.overlay_outputs(out)
+    import quest_chest_bindings
+
+    quest_chest_bindings.overlay_outputs(out)
     if quest_access_bindings.CAPTURE not in blobs:
         import engclaim_placements
 
@@ -1289,7 +1292,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
 
 
 def palette_summary(root: Path, crystal_root: Path) -> bytes:
-    """Recount an admitted palette without rewriting any placement or source fact."""
+    """Recount admitted placement metadata without rewriting regions or source facts."""
     import validate_world_base as validate
 
     pin = next(row for row in SOURCE["files"] if row["path"] == ITEMS_XML)
@@ -1304,11 +1307,15 @@ def palette_summary(root: Path, crystal_root: Path) -> bytes:
         str(root), (summary["map"]["width"], summary["map"]["height"]), len(palette)
     )
     used = Counter()
+    attributes = Counter()
+    byte_count = 0
     for region in index["regions"]:
         result = validate.check_region(region)
         if result["errors"]:
             raise ConvertError("palette summary: " + "; ".join(result["errors"]))
         used.update(result["palette"])
+        attributes.update(result["attributes"])
+        byte_count += result["size"]
     families = {
         name: {"entries": 0, "occurrences": 0}
         for name in ("terrain", "world_object", "item")
@@ -1334,6 +1341,9 @@ def palette_summary(root: Path, crystal_root: Path) -> bytes:
     provisional["occurrences"] = sum(
         provisional[k]["occurrences"] for k in ("appearance_only", "in_items_xml")
     )
+    attributes.pop("depth", None)
+    summary["bytes_on_disk"] = byte_count
+    summary["item_attributes"] = dict(sorted(attributes.items()))
     summary["palette"] = {
         "entries": len(palette),
         "families": families,
@@ -1353,7 +1363,7 @@ def main() -> int:
     parser.add_argument(
         "--palette-summary-only",
         action="store_true",
-        help="recount the committed palette against hash-checked regions and pinned items.xml",
+        help="recount placement metadata from hash-checked regions and pinned items.xml",
     )
     parser.add_argument("--check", action="store_true", help="fail instead of writing")
     args = parser.parse_args()

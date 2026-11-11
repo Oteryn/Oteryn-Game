@@ -243,6 +243,7 @@ pub(super) async fn apply(
             contents.push(RewardClaimMintContent {
                 item,
                 fluid_subtype: None,
+                charges_remaining: None,
                 quantity,
                 key_number: None,
                 text: None,
@@ -273,7 +274,10 @@ pub(super) async fn apply(
             quantity: 1,
             contents,
             root_text: None,
+            root_charges_remaining: None,
+            root_fluid_subtype: None,
             backpack,
+            backpack_outputs: false,
             content_revision: revision,
             ruleset_revision: "oteryn:santa-present.v1".into(),
             sim_revision: "oteryn:santa-present.v1".into(),

@@ -41,6 +41,32 @@ class WikiFieldTests(unittest.TestCase):
         p, _, _ = MODULE.patch_actor('example', d, page(hp='250'))
         self.assertNotIn('/creature/stats/initial_health', by_pointer(p))
 
+    def test_grouped_integer_fields_preserve_source_text_and_full_spawn(self):
+        p, _, _ = MODULE.patch_actor('soul_sphere', document(),
+            page(hp='15.000', exp='1.234.567', defense='1.234', speed='12.345', summon='4.000'))
+        pointers = by_pointer(p)
+        for field, value in [('max_health', 15000), ('initial_health', 15000),
+                             ('experience', 1234567), ('armor', 1234), ('speed', 12345)]:
+            self.assertEqual(pointers['/creature/stats/' + field]['value'], value)
+        self.assertEqual(pointers['/creature/summoning/mana_cost']['value'], 4000)
+        self.assertEqual(pointers['/creature/stats/max_health']['source']['fields']['hp']['raw'], '15.000')
+
+    def test_malformed_or_fractional_integer_fields_are_not_promoted(self):
+        for raw in ('15.00', '1.23.000', '1.234,000', '15,000', '15.000 HP', '15.000%', '0.500'):
+            with self.subTest(raw=raw):
+                p, deferred, _ = MODULE.patch_actor('example', document(), page(hp=raw, exp=raw, summon=raw))
+                self.assertEqual(p, [])
+                self.assertTrue(any(row['field'] == 'stats.max_health' for row in deferred))
+
+    def test_decimal_percent_fields_are_not_interpreted_as_grouped_integers(self):
+        p, _, _ = MODULE.patch_actor('example', document(), page(mitigation='3.400', fireDmgMod='99,500%'))
+        pointers = by_pointer(p)
+        self.assertEqual(pointers['/creature/stats/mitigation_percent']['value'],
+                         {'numerator': 17, 'denominator': 5})
+        resistances = {row['damage_type']: row['reduction_percent']
+                       for row in pointers['/creature/resistances']['value']}
+        self.assertEqual(resistances['fire'], {'numerator': 1, 'denominator': 2})
+
     def test_armor_not_shield_and_factor_two_speed_not_guessed(self):
         p, deferred, _ = MODULE.patch_actor('example', document(), page(defense='9', speed='200'))
         pointers = by_pointer(p)

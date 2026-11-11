@@ -129,10 +129,9 @@ pub(super) fn install_route(
                         crate::movement::CardinalStep::East => 1,
                         crate::movement::CardinalStep::South => 2,
                         crate::movement::CardinalStep::West => 3,
-                        crate::movement::CardinalStep::NorthEast
-                        | crate::movement::CardinalStep::SouthEast
-                        | crate::movement::CardinalStep::SouthWest
-                        | crate::movement::CardinalStep::NorthWest => return None,
+                        // This existing AI route vocabulary is cardinal. Player
+                        // diagonal support does not widen its graph or node ids.
+                        _ => return None,
                     };
                     Some(RouteStep::new(node, 1))
                 })

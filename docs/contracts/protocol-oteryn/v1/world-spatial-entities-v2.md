@@ -36,12 +36,12 @@ observable to other players, and is the explicit C17b requirement of SRV6.
 The native client's world-view rendering is owned by C04. The client registration
 for this capability declares that rendering unsupported until C04 implements it.
 
-Capability371 `NATIVE_CREATURE_ICONS_V1` extends the existing entity entry with
+Capability372 `NATIVE_CREATURE_ICONS_V1` extends the existing entity entry with
 repeated field14 native icons. Each nested entry requires category(field1),
 icon ID(field2) and uint16 count(field3), including an explicit zero. The complete
 visible list has at most three entries; order and duplicate icon IDs are
 preserved. A new full entity observation without icons removes the old list.
-There is no new command or domain. Without371, field14 is rejected and encoders
+There is no new command or domain. Without372, field14 is rejected and encoders
 omit it, preserving legacy bytes.
 
 Source-qualified values are Quests category0 on players: RedCross2(count0..111),

@@ -1,0 +1,52 @@
+{
+  "state": "SOURCE_ITEM_POLICIES_PG_QUALIFIED",
+  "whole_quest": "ACTIVE",
+  "scope": "Supporting source Item admission only; ordered odour interactions remain incomplete",
+  "test": "questpc7_goblin_perfume_source_items_admit_without_free_grants",
+  "postgres": "18.6",
+  "red_seconds": 74.325341548,
+  "red_error": "missing source Item policy17672 after real NPC introduction and paid tools",
+  "first_green_seconds": 66.450643884,
+  "final_pin_green_seconds": 86.668771533,
+  "green_marker": "QUESTPC7_GOBLIN_PERFUME_ITEMS POSTGRES_CASE_COMPLETED duration=86.668771533s success=true",
+  "source_items": [
+    17672,
+    17673,
+    17674,
+    17675,
+    17681,
+    3120
+  ],
+  "assertions": [
+    "exact native production identity/revision",
+    "source weights350/350/350/350/0/400",
+    "portable nonstack vials; ground-only gas; portable stackable mouldy cheese",
+    "no extra Item grants or quest receipts",
+    "real intro and exact1125gold toolkit;8875gold retained"
+  ],
+  "sources": [
+    "imports/canary/items-xml/items.xml:35719-35721,7558-7561,35740:sha256:1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+    "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+  ],
+  "checks": {
+    "green2": "PASS",
+    "check-final": "PASS",
+    "clippy": "PASS",
+    "fmt": "PASS",
+    "pins": "PASS",
+    "generated-checks": "PASS"
+  },
+  "content_units": "330passed,0failed,1preexistingignored in363.15s",
+  "dispatch_units": "2774passed,0failed,18preexistingignored in1078.55s; actual PG proofs are separate",
+  "quests_units": "308passed,0failed in20.30s",
+  "world_pin": "56c72f4740ece774e68e3c843fb47db08ad3929e19d10a4d46b641f530a031f0",
+  "pin_policy": "Official repository pin-refresh updated World pin and deployment references; no manual pins",
+  "main_exception": {
+    "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+    "retry_main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+    "conflicts": 68,
+    "exact_error": "CONFLICT (content): Merge conflict in crates/gameplay/quests/src/quest/world_callbacks.rs",
+    "review": "same three shared API blobs, owner abort exception and qengine2 convergence request retained"
+  }
+}

@@ -297,6 +297,7 @@ async fn assert_layers(
             reset_epoch: owner.reset_epoch,
             actor_placement: actor.placement_identity(),
             movement_revision: snapshot.revision(),
+            party: Vec::new(),
         }
     };
     let fence = owner

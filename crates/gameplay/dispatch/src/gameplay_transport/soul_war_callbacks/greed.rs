@@ -120,15 +120,13 @@ pub(in crate::gameplay_transport) fn next_source_due_time(
         original_due,
         ..
     }) = &owner.greed_work.pending
-    {
-        if states
+        && (states
             .native_profile_pass
             .pending()
             .is_none_or(|current| !Arc::ptr_eq(pass, &current))
-            || states.native_profile_pass.next_due(runtime)? != Some(*original_due)
-        {
-            return Err(());
-        }
+            || states.native_profile_pass.next_due(runtime)? != Some(*original_due))
+    {
+        return Err(());
     }
     Ok(Some(due))
 }

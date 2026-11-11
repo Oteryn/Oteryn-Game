@@ -11,26 +11,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 COVERAGE = ROOT / "docs/repository/QUEST_CALLBACK_COVERAGE.json"
 LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
-# W15b supports 308 claims; ITEMHOLD-Q adds the three named admissions below.
-# Eleven have source-selector dispatch PG grant coverage. Every other supported
-# claim keeps its per-World qualification hold.
-# Batch 3 qualified the three independent Demon Helmet claims through the
-# existing USE/MINT/replay owner; this does not qualify its access mechanisms.
-ITEMHOLD_ADMISSIONS = frozenset(
-    {
-        "oteryn:reward-claim.kv.ornamentedshield",
-        "oteryn:reward-claim.kv.powerring2",
-        # M35's source-pinned filled-container projections resolve Item holds;
-        # exact World USE/replay qualification remains blocked for each selector.
-        "oteryn:reward-claim.kv.draconia1",
-        "oteryn:reward-claim.kv.fireaxe1",
-        "oteryn:reward-claim.kv.goblintemple2",
-        "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine",
-    }
-)
-# Triangle now has the canonical source-placement PG reward witness and leaves
-# this pending-route inventory; every remaining Item-admitted route stays blocked.
-EXPECTED_DENOMINATOR = 297 + len(ITEMHOLD_ADMISSIONS)
+# These source-qualified Item admissions now retain their independently named
+# source-selector dispatch PG witnesses. Reward qualification does not certify
+# access puzzles, complete storylines or the current candidate's execution.
+ITEMHOLD_ADMISSIONS = frozenset({
+    "oteryn:reward-claim.kv.ornamentedshield",
+    "oteryn:reward-claim.kv.powerring2",
+    "oteryn:reward-claim.kv.triangletower",
+    "oteryn:reward-claim.kv.draconia1",
+    "oteryn:reward-claim.kv.fireaxe1",
+    "oteryn:reward-claim.kv.goblintemple2",
+    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine",
+})
+# Canonical merged coverage retains 336 source claims: 189 have named PG
+# witnesses, two remain not playable and these 145 retain qualification holds.
+EXPECTED_DENOMINATOR = 145
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",

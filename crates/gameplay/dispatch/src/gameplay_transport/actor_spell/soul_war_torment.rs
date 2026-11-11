@@ -305,7 +305,7 @@ mod tests {
                 room.movement_cells(),
                 player,
                 session,
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(execution_us),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(execution_us),
             );
             let current = states
                 .get(&runtime, player, session)

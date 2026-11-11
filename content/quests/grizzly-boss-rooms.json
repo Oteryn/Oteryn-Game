@@ -66,7 +66,7 @@
         32737,
         8
       ],
-      "connected_tiles": 263,
+      "connected_tiles": 265,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:24"
     },
@@ -264,7 +264,7 @@
         31452,
         8
       ],
-      "connected_tiles": 165,
+      "connected_tiles": 169,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:123"
     },
@@ -286,7 +286,7 @@
         31278,
         11
       ],
-      "connected_tiles": 281,
+      "connected_tiles": 284,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:134"
     },
@@ -666,7 +666,7 @@
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "5d1feb33c7e4dcf0fb75f011116b4269ae33ef5b40c0bf6fa136f1bafa3f641b",
+    "content/items/definitions/spell-native-profiles.json": "6bbd223173fde1229dfa367ff11d254d1382dd5b124c8307bb131f17ef8d1553",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
@@ -697,8 +697,7 @@
     "content/world/objects/objects-12782-12876.json": "a5b1b3f7fb8beb9b82b089f099bd401a62372a9a6602a2c5b4eb5bd6ac9a0a3a",
     "content/world/objects/objects-12877-12916.json": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
     "content/world/objects/objects-12917-12931.json": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
-    "content/world/objects/objects-12932-13108.json": "1e960f7a61eccfddbf2428c40924598e4641bbb9790b0cb35305b65a8c2b4877",
-    "content/world/placements/index.json": "0e77cf09f26326abb89fb362d825b6a0afdb8086c57905e570be59cd238680a7",
+    "content/world/placements/index.json": "482d912870c3bbfadfadd4101b6d220060ddd75abec1f0eded9b6ffd2d12b561",
     "content/world/placements/region-z01-x129-y121.b3": "c11e0e3ea456fbee69b320b8f4e8cacf2240e142045dacec81c91c679560d2be",
     "content/world/placements/region-z02-x125-y121.b3": "5d704484eadabaad8beca02502b161149daee492591a3369b30a0866c311a520",
     "content/world/placements/region-z02-x129-y121.b3": "c280a3777ab40f568fd4cda4883af45ceaea36e0a4bdc15e87b9ab3c237d34c3",
@@ -709,7 +708,7 @@
     "content/world/placements/region-z08-x127-y127.b3": "ef0c6895af31d8814753d4ed3a1c80aff976ef4f3775a3add46b25e895b27e4f",
     "content/world/placements/region-z08-x128-y121.b3": "7b81fad51529c1aa476a8d4b4a686cdcc9ac116138d1535695178be6b2ed9c9c",
     "content/world/placements/region-z08-x128-y122.b3": "4becdd2ee1626518d1e449346c20bbe758f2f43a7cb6282e03a3ff96295b1d5c",
-    "content/world/placements/region-z08-x128-y126.b3": "e29d8f1ed7412c6fa2cc18775519bf5b0c668b644808ae966646b895cb351a48",
+    "content/world/placements/region-z08-x128-y126.b3": "6c2270332869c256c7c6fbc3d3295e43342b2252afdf1af7e1f02b7f44483179",
     "content/world/placements/region-z08-x128-y127.b3": "195ca8316300fd9c390ce15c2d16c1b3faee065b295b26ffa80da3aaa9e46a70",
     "content/world/placements/region-z08-x128-y128.b3": "7a978007d1735d8cf8143f9ade1f641f96d50c78549175f4fc29f84bec6107dc",
     "content/world/placements/region-z08-x129-y121.b3": "824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4",
@@ -727,7 +726,7 @@
     "content/world/placements/region-z13-x125-y128.b3": "e6e84f02f0cdce08ee23bf6ca35250af939580bf1fe6c6c81c8c74dea606dd40",
     "content/world/placements/region-z13-x128-y128.b3": "7650ba15c3448a0959cc5af22d51c9a257666bd05f91c5e072f57b72c1b49647",
     "content/world/placements/region-z15-x125-y127.b3": "7acf15bea934848e198578f1dc2c2b0186cbd9887fc58967da1fcd18328ce79f",
-    "content/world/placements/region-z15-x129-y123.b3": "e6d57673d1b3700753a1846103ec154ed68819965e8414c467f2fa776789b0f1",
+    "content/world/placements/region-z15-x129-y123.b3": "b0db1844f78d0efc039b13c98cab061dd35b447ee5036b7b0f1cd3e8e6ae4039",
     "content/world/terrain/terrain-00000-00499.json": "d54273ee59a6703392a27ecc0ea0778961b66a2abdcba52167beb7548badfd21",
     "content/world/terrain/terrain-00500-00999.json": "21dff9929f9e287eb070ac7b2c6666c4e3fb2002614dee22707daad6d0be033d",
     "content/world/terrain/terrain-01000-01499.json": "f2c02951b6e217960127adac3e99f7a2835d8220cdec5e3149be7f4ec5cb111b",
@@ -739,7 +738,7 @@
     "content/world/terrain/terrain-04000-04499.json": "63c1b34729be8f3e3f5dc74cf22d0ea2299ee86753413d8ecc4681e58e3d8d99",
     "content/world/terrain/terrain-04500-04999.json": "36df80df1261b23cbbfaea69581de80622ef02a0c4cb65ff7333324f7d2b2b11",
     "content/world/terrain/terrain-05000-05499.json": "1087f8892f6cf73ca2a2d22a4a9ed9dae945d2599f3b3de9cd7562e3a03d47cb",
-    "content/world/terrain/terrain-05500-05999.json": "08e0c9e30efbdfb15637e43cda5f5e20b5e862035e459a6f9b25436cdedf142b",
+    "content/world/terrain/terrain-05500-05999.json": "c5081d0589d6e65a40baf89178c4e29f81089147d463d168474ac286d546a66a",
     "content/world/terrain/terrain-06000-06499.json": "a5845d01e5f3599cf11e265af28e3f3c8de5eacde44e408d44a14c69d7cf8d22",
     "content/world/terrain/terrain-06500-06999.json": "cfd84788ad5cc0fa3b870a9b22accca570f4cdf3615f55275452897055734b52",
     "content/world/terrain/terrain-07000-07499.json": "f5ea86d83b0a4b5fc3c33c8f831b1dd308636529f4c5d9c51e7bb2d15ad1342c",
@@ -750,12 +749,7 @@
     "content/world/terrain/terrain-08578-08611.json": "471e062add36ecdf53b6f4d4ab9d22313bab683fce781cb63ffbba8a165f00f4",
     "content/world/terrain/terrain-08612-08612.json": "fc560952a802576672c9473d12d1fab8013eeca07136a79c0b8732b5a2f485cf",
     "content/world/terrain/terrain-08613-08613.json": "aefdac30e8f0a33bbb52acd1d4e160b33c7f40ce9d8d447496ba95d525b182aa",
-    "content/world/terrain/terrain-08614-08668.json": "0c35e7cc19b8d799b9f33cccb0f989986f13e19006f379a28b110df76f50efe5",
-    "content/world/terrain/terrain-08614-08692.json": "aee31f886f134c8dd308e06cccaee0960fd570c4b5bfd2af95327e660ce04562",
-    "content/world/terrain/terrain-08669-08720.json": "7ac60833042bb552d12ca1b75cccd9b18a9161c2ca0de779809e8f4898d3f081",
-    "content/world/terrain/terrain-08693-08693.json": "9a1acf62162cfebf939e5d4146199be0733642279701c94b4b5bb41e4b0b2f00",
-    "content/world/terrain/terrain-08748-08748.json": "34b262af1c1cc7e0379152c1ed2b8110bb5390613930018ebe284f3f086fd4dd",
-    "content/world/terrain/terrain-08749-08749.json": "32cd0b4c3a4195516fecfe567bbd384352973e24c9fdedb63ecd0211b5c08da3",
-    "content/world/terrain/terrain-08750-08750.json": "590d200b3bb126cf08b68b83de6f37f440e904ff8049419c75ce9f48011b2a0c"
+    "content/world/terrain/terrain-08614-08668.json": "dfd54e670a7de3eb8b5a444df9c8efc15faf8ddafadab761347338d80141f820",
+    "content/world/terrain/terrain-08614-08692.json": "aee31f886f134c8dd308e06cccaee0960fd570c4b5bfd2af95327e660ce04562"
   }
 }

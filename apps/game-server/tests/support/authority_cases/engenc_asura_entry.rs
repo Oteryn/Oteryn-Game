@@ -101,6 +101,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         reset_epoch: 0,
         actor_placement: f::id(17),
         movement_revision: 1,
+        party: Vec::new(),
     };
     let seal = h.recovery.seal_current().map_err(f::debug)?;
     let authority = h
@@ -121,18 +122,19 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         )),
     };
     let attempt = |revision| -> f::TestResult<_> {
-        Ok(h.root.commit_character_world_callback_with_items_and_premium(
-            &authority,
-            &h.node,
-            f::fence(revision)?,
-            request.clone(),
-            Arc::clone(&catalogue),
-            &lane,
-            context.clone(),
-            None,
-            None,
-            &gate,
-        ))
+        Ok(h.root
+            .commit_character_world_callback_with_items_and_premium(
+                &authority,
+                &h.node,
+                f::fence(revision)?,
+                request.clone(),
+                Arc::clone(&catalogue),
+                &lane,
+                context.clone(),
+                None,
+                None,
+                &gate,
+            ))
     };
     let before = h.root_revision().await?;
     assert!(matches!(

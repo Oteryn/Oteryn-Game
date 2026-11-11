@@ -406,6 +406,7 @@ impl CreatureMovementCadence {
             z: i32::from(next.floor),
         };
         let duration = creature_step_duration(runtime, self.actor, source, ground, onto, now)
+            .and_then(|duration| duration.checked_mul(direction.pacing_cost()))
             .ok_or(E::MissingSpeed)?;
         if self.pacer.wait_until(now).is_some() {
             return Ok(None);

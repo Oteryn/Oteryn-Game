@@ -1,0 +1,47 @@
+{
+  "batch_id": "local-door-prototype-2026-11-07",
+  "state": "GREEN_CHECKPOINT_SUPERSEDED_BEFORE_PUBLICATION",
+  "scope": "Audited local opening/once-claim read-projection prototype; NOT a whole quest or complete source-door qualification. Reconcile with the subsequently published97c922c33 implementation before pushing.",
+  "whole_quest_qualifications": 0,
+  "red": [
+    {
+      "log": "/tmp/questpc2-annihilator-door-red.log",
+      "postgres_version": 180006,
+      "duration_seconds": 53.05,
+      "failure": "unclaimed source door Locked instead of Committed"
+    },
+    {
+      "log": "/tmp/questpc2-annihilator-door-landing-red.log",
+      "duration_seconds": 53.56,
+      "failure": "NotPossible due to future-open collision"
+    },
+    {
+      "log": "/tmp/questpc2-source-claim-storage-red.log",
+      "postgres_version": 180006,
+      "duration_seconds": 53.94,
+      "failure": "real shared reward claim does not expose source storage in NPC quest copy"
+    }
+  ],
+  "green": {
+    "postgres_cases": 4,
+    "postgres_version": 180006,
+    "actual_claim_seconds": 55.25,
+    "door_seconds": 52.63,
+    "banshee_seconds": 54.14,
+    "party_entry_seconds": 56.33,
+    "unit_cases": 22,
+    "check_seconds": 14.716,
+    "clippy_all_targets_all_features_seconds": 134.506,
+    "fmt_seconds": 14.309,
+    "logs": [
+      "/tmp/questpc2-source-storage-final-validation.json",
+      "/tmp/questpc2-source-door-finish-validation.json",
+      "/tmp/questpc2-source-door-lint-finish-validation.json",
+      "/tmp/questpc2-source-door-validation-validation.json",
+      "/tmp/questpc2-source-door-collision-unit.log"
+    ]
+  },
+  "reuse_decision": "Newer97c922c33 has the source-correct close displacement and an exact current-fenced claim read. Adopt that owner and its actual-claim door proof. Remove the redundant local read projection/door registry/parallel movement API; port useful rollback/retry assertions onto the published method. Local test assumptions about NPC-catalogue storage are superseded by the exact claim authority, not weakened into a whole qualification.",
+  "source_geometry": "Committed region-z13-x129-y123.b3 contains all806cells in33210..33240,31650..31675. Use actual canonical geometry for the continuous path.",
+  "resource_recovery": "Compiler16GB OOM and32GB overlay interruptions recovered by retaining current native checkpoint/compiled libraries/executables and reclaiming only inactive variants, superseded sessions or failed temporary output. Native cache restored byte-for-byte from memory-backed /tmp to disk. No profile/RUSTFLAGS/incremental changes, broad Cargo clean, source/PG removal or weakened checks."
+}

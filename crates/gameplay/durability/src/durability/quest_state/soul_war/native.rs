@@ -1,6 +1,7 @@
 use super::super::super::character_progression::numeric_u64;
 use super::*;
 use crate::domain::CharacterId;
+use crate::durability::party_kill_xp::death_matches_fence;
 use oteryn_gameplay_quests::quest::soul_war::{
     SoulWarBoss, qualifies_for_taint_experience, taint_experience,
 };
@@ -43,19 +44,11 @@ pub async fn apply_soul_war_kill_in_transaction(
     }
     let transition = SoulWarTransition::BossDefeated(boss);
     let binding = storage::binding(transition)?;
-    let (death_scope, death_generation) =
-        crate::durability::party_kill_xp::decoded_death_scope(death_key)
-            .ok_or(CharacterProgressionError::AuthorityRejected)?;
     for (fence, dealt_damage) in participants {
         if !dealt_damage {
             continue;
         }
-        // Tagged Instance53 and legacy Channel52 remain disjoint even when
-        // their UUID bytes coincide. This DATA comparison grants no death:
-        // same-xact native receipt, membership and all Character fences follow.
-        if death_scope != fence.runtime_scope
-            || death_generation != fence.scope_ownership_generation.get()
-        {
+        if !death_matches_fence(death_key, fence) {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
         let source_matches: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_party_kill_xp_receipts d JOIN game_party_kill_xp_members m USING(death_key) WHERE d.death_key=$1 AND d.creature_key=$2 AND m.character_id=encode($3,'hex')::uuid)")

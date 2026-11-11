@@ -871,6 +871,122 @@ mod tests {
             .is_err()
         );
     }
+
+    #[test]
+    fn scripted_scene_group_revalidates_census_and_rolls_back_projection_failure() {
+        use crate::map::floor::{SceneEvacuation, prepare_source_scene};
+        let (mut runtime, room, actor, session) = owner();
+        let safe = |p: MovementLocalPosition| {
+            tile(room.movement_cells(), p)
+                .ok()
+                .flatten()
+                .is_some_and(|t| !t.flags().protection_zone && !t.flags().floor_change)
+        };
+        let directions = [
+            CardinalStep::North,
+            CardinalStep::East,
+            CardinalStep::South,
+            CardinalStep::West,
+        ];
+        let start = runtime.read_actor_position(actor).unwrap().position();
+        let key = |p: MovementLocalPosition| (p.x, p.y, p.floor);
+        let mut seen = std::collections::BTreeSet::from([key(start)]);
+        let mut queue = std::collections::VecDeque::from([(start, Vec::new())]);
+        let mut path = None;
+        while let Some((at, steps)) = queue.pop_front() {
+            if safe(at)
+                && directions.iter().any(|&d| {
+                    destination(room.movement_cells(), at, d)
+                        .is_ok_and(|to| to.floor == at.floor && safe(to))
+                })
+            {
+                path = Some(steps);
+                break;
+            }
+            for direction in directions {
+                if let Ok(to) = destination(room.movement_cells(), at, direction)
+                    && seen.insert(key(to))
+                {
+                    let mut next = steps.clone();
+                    next.push(direction);
+                    queue.push_back((to, next));
+                }
+            }
+        }
+        for direction in path.expect("actual source stairs reach an unprotected street") {
+            let expected = runtime.read_actor_position(actor).unwrap();
+            let proof = prepare_source_step(
+                &runtime,
+                room.movement_cells(),
+                actor,
+                session,
+                expected,
+                direction,
+            )
+            .unwrap();
+            runtime.commit_source_step(proof).unwrap();
+        }
+        let before = runtime.read_actor_position(actor).unwrap();
+        let from = before.position();
+        let to = [
+            CardinalStep::North,
+            CardinalStep::East,
+            CardinalStep::South,
+            CardinalStep::West,
+        ]
+        .into_iter()
+        .filter_map(|dir| destination(room.movement_cells(), from, dir).ok())
+        .find(|to| to.floor == from.floor && safe(*to))
+        .expect("native walkable neighbour");
+        let source = SceneEvacuation {
+            from,
+            players_to: to,
+            creatures_to: to,
+            all: true,
+        };
+        let closed = std::collections::BTreeSet::new();
+        let stale =
+            prepare_source_scene(&runtime, room.movement_cells(), vec![source], &closed).unwrap();
+        let creature = runtime.admit_pinned_test_creature(from).unwrap();
+        assert!(
+            runtime
+                .commit_source_scene_relocations(stale, || panic!("stale census must not publish"))
+                .is_err()
+        );
+        assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
+        let creature_before = runtime.read_actor_position(creature).unwrap();
+        let ambiguous = SceneEvacuation {
+            all: false,
+            ..source
+        };
+        assert!(
+            prepare_source_scene(&runtime, room.movement_cells(), vec![ambiguous], &closed)
+                .is_err()
+        );
+        let proof =
+            prepare_source_scene(&runtime, room.movement_cells(), vec![source], &closed).unwrap();
+        assert_eq!(proof.moves().len(), 2);
+        assert!(
+            runtime
+                .commit_source_scene_relocations(proof, || false)
+                .is_err()
+        );
+        assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
+        assert_eq!(
+            runtime.read_actor_position(creature).unwrap(),
+            creature_before
+        );
+        let proof =
+            prepare_source_scene(&runtime, room.movement_cells(), vec![source], &closed).unwrap();
+        let moved = runtime
+            .commit_source_scene_relocations(proof, || true)
+            .unwrap();
+        assert_eq!(moved.len(), 2);
+        assert!(moved.iter().all(|snapshot| snapshot.position() == to));
+        let empty =
+            prepare_source_scene(&runtime, room.movement_cells(), vec![source], &closed).unwrap();
+        assert!(empty.moves().is_empty());
+    }
 }
 
 /// Prepared reads retain no mutation authority. Binding below rechecks the

@@ -44,6 +44,9 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     callback.key = "oteryn:quest-callback/encx-promotion".into();
     callback.quest = QUEST.into();
     callback.storage = vec![Storage {
+        add: None,
+        read_only: false,
+        set_if: None,
         track: PHASE.into(),
         minimum: 0,
         maximum: 0,
@@ -136,6 +139,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         reset_epoch: 0,
         actor_placement: f::id(17),
         movement_revision: 1,
+        party: Vec::new(),
     };
     let seal = h.recovery.seal_current().map_err(f::debug)?;
     let authority = h

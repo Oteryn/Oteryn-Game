@@ -44,7 +44,7 @@ enum SourcePrefixBoundary {
         due: u64,
     },
     CreatureStep {
-        original: crate::movement::monster_map::PendingSourceCreatureStep,
+        original: Box<crate::movement::monster_map::PendingSourceCreatureStep>,
         due: u64,
     },
 }
@@ -79,7 +79,7 @@ impl SourcePrefix {
                     && states
                         .spite_steps
                         .creatures
-                        .retains_head(runtime, original)
+                        .retains_head(runtime, original.as_ref())
                         .unwrap_or(false)
                     && states.spite_steps.creatures.next_due_us(runtime).ok() == Some(Some(*due))
             }
@@ -116,12 +116,14 @@ fn source_prefix(
             } else if let Some(due) = step {
                 (
                     SourcePrefixBoundary::CreatureStep {
-                        original: states
-                            .spite_steps
-                            .creatures
-                            .front()
-                            .map_err(|_| ())?
-                            .ok_or(())?,
+                        original: Box::new(
+                            states
+                                .spite_steps
+                                .creatures
+                                .front()
+                                .map_err(|_| ())?
+                                .ok_or(())?,
+                        ),
                         due,
                     },
                     due,

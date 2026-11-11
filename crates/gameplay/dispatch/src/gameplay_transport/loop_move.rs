@@ -477,6 +477,15 @@ impl LoopGroundCache {
         }
     }
 
+    /// An unresolved map MINT origin is still part of the scene census even
+    /// while its visual origin is hidden. None means the cache lock failed.
+    pub(super) fn pending_origin(&self, key: u64) -> Option<Option<CommandRef>> {
+        self.state
+            .lock()
+            .ok()
+            .map(|state| state.pending_origins.get(&key).copied())
+    }
+
     /// Read only a non-invalidated projection of this exact live Channel pin.
     pub(super) fn current_for(
         &self,
@@ -1110,11 +1119,44 @@ fn drop_cell(
     Ok(ground_cell(to.x, to.y, to.floor))
 }
 
-/// A door's step-out consequence uses the same item-loop receipt and custody writer as
-/// ground moves. Its Channel lane is already held; reach is the vacated doorway, rather
-/// than the player's new tile (which can be two tiles from the donor's destination).
-#[allow(clippy::too_many_arguments, reason = "one fenced door item relocation")]
-pub(super) async fn relocate_door_item(
+/// Finite source-script relocation may span a small authored room. Both cells
+/// must exist on the same floor; ordinary item drops still use drop_cell.
+fn source_drop_cell(
+    base: &WorldBase,
+    from: (i32, i32, i16),
+    to: WorldTilePosition,
+) -> Result<Vec<u8>, LoopMoveResult> {
+    if from.2 != to.floor || from.0.abs_diff(to.x) > 32 || from.1.abs_diff(to.y) > 32 {
+        return Err(LoopMoveResult::TooFar);
+    }
+    let source = (
+        u16::try_from(from.0),
+        u16::try_from(from.1),
+        i8::try_from(from.2),
+    );
+    if !matches!(source, (Ok(x), Ok(y), Ok(floor)) if base.tile(x,y,floor).is_some()) {
+        return Err(LoopMoveResult::Refused(LoopMoveRefusal::Blocked));
+    }
+    // Validate the actual destination; no fictitious player/source position is used.
+    let destination = (
+        u16::try_from(to.x),
+        u16::try_from(to.y),
+        i8::try_from(to.floor),
+    );
+    if !matches!(destination, (Ok(x), Ok(y), Ok(floor)) if base.tile(x,y,floor).is_some()) {
+        return Err(LoopMoveResult::Refused(LoopMoveRefusal::Blocked));
+    }
+    Ok(ground_cell(to.x, to.y, to.floor))
+}
+
+/// A qualified source script uses the existing item-loop receipt/custody writer.
+/// Its caller holds the lane and proves the authored source/destination pair;
+/// voluntary moves retain their ordinary one-cell reach check.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one fenced source script item relocation"
+)]
+pub(super) async fn relocate_source_item(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     actor: ExactActorRef,
@@ -1170,7 +1212,7 @@ pub(super) async fn relocate_door_item(
         let Some(map) = admission.bundle_map() else {
             return LoopMoveResult::Refused(LoopMoveRefusal::NotSupported);
         };
-        let Some(ground) = drop_cell(
+        let Some(ground) = source_drop_cell(
             map.overlay.base(),
             (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
             destination,
@@ -1440,6 +1482,60 @@ pub(super) async fn observe_container_with_house_capacity(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sewer_ground_projection_retains_callback_identity_and_pinned_removal()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::map::boot::tests as fixture;
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes)?;
+        let facts = crate::map::facts::BundleFacts::palette(&bundle.manifest, |key| {
+            fixture::items(if key == "oteryn:item.tibia.i435" {
+                "item:coin"
+            } else {
+                key
+            })
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let pos = TilePos {
+            x: 7,
+            y: 0,
+            floor: -7,
+        };
+        assert!(facts.create_movement_item(pos, 435, 0, || true));
+        let pinned = facts.pinned();
+        let ground = HashMap::new();
+        let projection = LoopGroundFacts {
+            inner: &pinned,
+            ground: &ground,
+        };
+        let entries = projection.movement_items(pos);
+        assert_eq!(entries, facts.movement_items(pos));
+        let [entry] = entries.as_slice() else {
+            return Err("one sewer".into());
+        };
+        let view::EntrySource::Added(id) = entry.source else {
+            return Err("added sewer".into());
+        };
+        assert_eq!(projection.movement_item(id.get()), Some((pos, id)));
+        assert!(facts.remove_movement_item(pos, id.get(), 435));
+        assert_eq!(
+            projection.movement_items(pos),
+            entries,
+            "pinned map retains the issued handle"
+        );
+        let current = LoopGroundFacts {
+            inner: &facts,
+            ground: &ground,
+        };
+        assert!(current.movement_items(pos).is_empty());
+        assert_eq!(
+            current.movement_item(id.get()),
+            None,
+            "removed handle is stale"
+        );
+        Ok(())
+    }
 
     #[test]
     fn committed_corpse_survives_owner_generation_but_not_foreign_frame_or_scope()

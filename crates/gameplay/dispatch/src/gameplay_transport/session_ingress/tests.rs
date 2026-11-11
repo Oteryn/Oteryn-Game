@@ -245,14 +245,99 @@ fn discarded_step_recovery_fences_generation_and_uses_the_current_egress_cursor(
 }
 
 #[test]
+fn buffered_diagonal_step_requires_negotiation_with_and_without_a_ledger()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
+    use oteryn_protocol_oteryn::world_spatial::{
+        CAPABILITY_DIAGONAL_MOVEMENT_V1, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection,
+        encode_step_intent,
+    };
+    use oteryn_protocol_oteryn::{ClientCommandValue, decode_wire_envelope, encode_client_command};
+    let diagonal = SelectedCapabilities::select(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        &[CAPABILITY_DIAGONAL_MOVEMENT_V1],
+    )
+    .ok_or("offered diagonal capability")?;
+    assert!(diagonal.contains(CAPABILITY_DIAGONAL_MOVEMENT_V1));
+    let frame = encode_client_command(
+        1,
+        &ClientCommandValue {
+            command_id: 1,
+            command_type: COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            payload: &encode_step_intent(StepDirection::NorthEast),
+        },
+    )?;
+    let envelope = decode_wire_envelope(&frame)?;
+    for selected in [SelectedCapabilities::NONE, diagonal] {
+        for retained in [false, true] {
+            let owner = SessionCommands::default();
+            let mut admitted = session()?;
+            admitted.continuity.selected_capabilities = selected;
+            let mut stream = SessionCommandStream::open(retained.then_some(&owner), &admitted)
+                .ok_or("open negotiated stream")?;
+            assert!(matches!(
+                stream.begin(1, 1, 0, false),
+                Ok(CommandAction::Execute)
+            ));
+            assert_eq!(
+                stream.buffer_step(envelope.client_command(1)?).is_some(),
+                selected == diagonal
+            );
+            if retained {
+                let commands = owner.0.lock().map_err(|_| "commands")?;
+                let state = commands
+                    .get(&admitted.game_session_id)
+                    .ok_or("session")?
+                    .lock()
+                    .map_err(|_| "ingress")?;
+                let pending = state.pending_delivery.ok_or("original reservation")?;
+                assert_eq!(pending.selected, selected);
+                assert_eq!(pending.buffered_step, selected == diagonal);
+                assert_eq!(state.ingress.outstanding(), 1);
+                assert!(
+                    state.retained.is_none(),
+                    "buffering is not a terminal result"
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn buffered_step_that_reentered_execution_keeps_an_unknown_outcome_pending()
 -> Result<(), Box<dyn std::error::Error>> {
+    reentered_buffered_step_keeps_an_unknown_outcome_pending(
+        oteryn_protocol_oteryn::world_spatial::StepDirection::East,
+        SelectedCapabilities::NONE,
+    )
+}
+
+#[test]
+fn buffered_diagonal_step_that_reentered_execution_keeps_an_unknown_outcome_pending()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
+    use oteryn_protocol_oteryn::world_spatial::{CAPABILITY_DIAGONAL_MOVEMENT_V1, StepDirection};
+    let selected = SelectedCapabilities::select(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        &[CAPABILITY_DIAGONAL_MOVEMENT_V1],
+    )
+    .ok_or("offered diagonal capability")?;
+    assert!(selected.contains(CAPABILITY_DIAGONAL_MOVEMENT_V1));
+    reentered_buffered_step_keeps_an_unknown_outcome_pending(StepDirection::NorthEast, selected)
+}
+
+fn reentered_buffered_step_keeps_an_unknown_outcome_pending(
+    direction: oteryn_protocol_oteryn::world_spatial::StepDirection,
+    selected: SelectedCapabilities,
+) -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_protocol_oteryn::world_spatial::{
-        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, encode_step_intent,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, encode_step_intent,
     };
     use oteryn_protocol_oteryn::{ClientCommandValue, decode_wire_envelope, encode_client_command};
     let owner = SessionCommands::default();
     let mut admitted = session()?;
+    admitted.continuity.selected_capabilities = selected;
     let mut stream = SessionCommandStream::open(Some(&owner), &admitted).ok_or("open")?;
     assert!(matches!(
         stream.begin(1, 1, 0, false),
@@ -263,7 +348,7 @@ fn buffered_step_that_reentered_execution_keeps_an_unknown_outcome_pending()
         &ClientCommandValue {
             command_id: 1,
             command_type: COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-            payload: &encode_step_intent(StepDirection::East),
+            payload: &encode_step_intent(direction),
         },
     )?;
     let envelope = decode_wire_envelope(&frame)?;

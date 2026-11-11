@@ -45,7 +45,22 @@ def digest(root, relative):
 def claim_catalogue(root):
     index = read(root, CLAIM_INDEX)
     claims = [row['definition'] for shard in index['shards'] for row in read(root, shard)['records']]
+    # completion242 is a pinned SOURCE qualification, not the live MINT
+    # admission. QUEST-FINISH promotes these exact full-charge Item identities
+    # through the existing timed owner; retain their historical SOURCE holds,
+    # as for UID6082 below, without changing the production claim definitions.
+    full_charge_items = {f'oteryn:item.tibia.i{number}'
+                         for number in (2874, 2881, 2882, 3048, 3054, 3056, 3082, 3083, 3084, 3085, 3284)}
+    charge_source = read(root, 'tools/content-schema/reward-claim-authoring/source_charge_evidence.json')
+    charge_leaves = {row['pilot_key'] for row in charge_source['rewards']
+                     if row['source_count_argument'] == row['source_default_charges']}
     for claim in claims:
+        if (claim['provenance']['pilot_key'] in charge_leaves and claim['readiness'] == 'ready'):
+            claim['readiness'] = 'waiting_item_semantics'
+        claim['_source_baseline_item_hold'] = any(
+            binding.get('canonical_item', {}).get('key') in full_charge_items
+            for binding in claim.get('source_variant', {}).get('item_bindings', [])
+            if binding.get('canonical_item'))
         key = claim['identity']['key']
         if key in {
                 'oteryn:reward-claim.kv.madmageroom3',
@@ -146,6 +161,8 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
                 issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
                 categories = {hold['category'] for hold in claim['data_holds']}
                 categories.update(claim.get('_source_hold_categories', []))
+                if claim.get('_source_baseline_item_hold'):
+                    categories.add('item')
                 for category in sorted(categories):
                     code = {'source': 'claim_source_data_missing', 'item': 'claim_item_semantics_missing'}[category]
                     issues.append({'code': code, 'source_key': ref['key']})
@@ -188,7 +205,8 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
 
 def monk_native_lowering(root):
     callbacks = [c for c in read(root, 'content/quests/world-callbacks.json')['callbacks']
-                 if c['quest'] == 'oteryn:quest.the_way_of_the_monk_quest']
+                 if c['quest'] == 'oteryn:quest.the_way_of_the_monk_quest'
+                 and c['key'].startswith('oteryn:quest-callback/monk-')]
     names = ('guidance', 'tranquility', 'respect', 'legacy', 'empathy', 'harmony',
              'power', 'knowledge', 'serenity', 'eternity')
     if {c['key'] for c in callbacks} != {'oteryn:quest-callback/monk-' + n for n in names}:

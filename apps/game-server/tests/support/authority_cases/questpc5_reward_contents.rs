@@ -210,34 +210,36 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         reset_epoch: 0,
         actor_placement: f::id(17),
         movement_revision: 1,
+        party: Vec::new(),
     };
     let lane = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(f::scope()?)
         .await
         .map_err(f::debug)?;
     let apply = |revision, id| -> f::TestResult<_> {
-        Ok(h.root.commit_character_world_callback_with_items_and_premium(
-            &authority,
-            &h.node,
-            f::fence(revision)?,
-            QuestTransitionRequest {
-                transition_key: KEY.into(),
-                cause: QuestCause::Use(command(id)?),
-            },
-            catalogue.clone(),
-            &lane,
-            context.clone(),
-            Some(native),
-            Some(QuestRewardAdmission {
-                native,
-                weights: &premium,
-                fee_payment: None,
-                actor_conditions: None,
-                carried_use: None,
-                creature_use: None,
-                peer_use: None,
-            }),
-            &premium,
-        ))
+        Ok(h.root
+            .commit_character_world_callback_with_items_and_premium(
+                &authority,
+                &h.node,
+                f::fence(revision)?,
+                QuestTransitionRequest {
+                    transition_key: KEY.into(),
+                    cause: QuestCause::Use(command(id)?),
+                },
+                catalogue.clone(),
+                &lane,
+                context.clone(),
+                Some(native),
+                Some(QuestRewardAdmission {
+                    native,
+                    weights: &premium,
+                    fee_payment: None,
+                    actor_conditions: None,
+                    carried_use: None,
+                    creature_use: None,
+                    peer_use: None,
+                }),
+                &premium,
+            ))
     };
     assert!(matches!(
         apply(1, 9450)?

@@ -161,7 +161,8 @@ fn offset(pending: &Pending, native: &NativeGameplayState, ordinal: u8) -> Resul
         for retry in 0..64 {
             let value =
                 deterministic_decision_u64(&root, occurrence, axis, retry).map_err(|_| ())?;
-            if value < u64::MAX - u64::MAX % 3 {
+            // u64::MAX is divisible by 3, so keep this upper bound exclusive.
+            if value < u64::MAX {
                 return Ok((value % 3) as i32 - 1);
             }
         }

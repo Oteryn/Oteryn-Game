@@ -658,6 +658,27 @@ async fn terminal_decision(
 }
 
 fn scenario() -> TestResult {
+    scenario_with_outfit(false)
+}
+
+#[test]
+fn qengine_l13_revenant_parent_and_accessories() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("qengine-l13-revenant", || {
+        scenario_with_outfit(true)
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qengine-l13-revenant duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
     run(async |admin| {
         reset();
         use crate::gameplay_transport::connection::FirstEntryOutcome;
@@ -676,6 +697,14 @@ fn scenario() -> TestResult {
                 required_completed_quests: Vec::new(),
                 admission: None,
                 requires_premium: false,
+                state_ops: Vec::new(),
+                use_range: 1,
+                disguise: None,
+                completes: false,
+                premium_required: false,
+                present: vec![],
+                required_travel: vec![],
+                state_operations: Vec::new(),
                 world_change: None,
                 actor_kind: Default::default(),
                 opening_only: false,
@@ -684,11 +713,13 @@ fn scenario() -> TestResult {
                 quest: "oteryn:quest/soul-war".into(),
                 trigger: Trigger::Use,
                 selector: Selector {
+                    ordinal: None,
                     native: None,
                     position: Some(trigger),
                     unique: None,
                     action: None,
                     appearance: None,
+                    position_aliases: Vec::new(),
                 },
                 lever: None,
                 reversible: false,
@@ -696,7 +727,6 @@ fn scenario() -> TestResult {
                 teleport: None,
                 facing: None,
                 effects: Default::default(),
-                state_ops: Vec::new(),
                 world_requirements: vec![],
                 storage: vec![],
                 minimum_level: None,
@@ -709,11 +739,21 @@ fn scenario() -> TestResult {
                 success_message: None,
                 native_rule: None,
                 sources: vec![],
+                failure_teleport: None,
+                achievements: Vec::new(),
+                activation: None,
+                item_reward: None,
+                remote_teleport: None,
+                requirements: None,
+                reward_bundle: false,
             },
             trigger,
         )?;
-        let h =
-            Harness::create_with_admission_seed(admin, "soul_war_durable", false, false).await?;
+        let h = if qualify_outfit {
+            Harness::create_quest_reward(admin, "soul_war_outfit", true).await?
+        } else {
+            Harness::create_with_admission_seed(admin, "soul_war_durable", false, false).await?
+        };
         prepare_current_session(&h).await?;
         let mut deps = Dependencies::new()?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -732,6 +772,19 @@ fn scenario() -> TestResult {
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
         let frame = world.frame_binding_digest(deps.admitted.world_id);
+        let room = activated
+            .qualified_room()
+            .bundle_view(
+                cells.clone(),
+                frame,
+                world.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: 33619,
+                    y: 31400,
+                    floor: 10,
+                },
+            )
+            .ok_or("Soul War bundle view")?;
         let pin = crate::content::channel_content_pin::ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -768,9 +821,17 @@ fn scenario() -> TestResult {
             )
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        deps.room = room.clone();
+        let premium = if qualify_outfit {
+            Some(super::qengine_endgame_stories::current_premium(&h).await?)
+        } else {
+            None
+        };
         let mut owner = deps.owner(&h, &authority);
+        owner.premium_coordinator = premium.as_ref().map(|premium| premium as _);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
@@ -1215,6 +1276,21 @@ fn scenario() -> TestResult {
             pending.item_source_id,
         )
         .await?;
+        if qualify_outfit {
+            admitted.runtime_actor = Some(deps.actor);
+            super::qengine_endgame_stories::accessories(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                "revenant",
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
 
         kill(
             &owner,
@@ -1365,6 +1441,7 @@ async fn reward_delivery(
     };
     let backpack = generation_item_facts(native, &bag_definition).map_err(debug)?;
     let mut request = RewardClaimMintRequest {
+        backpack_outputs: false,
         additional_items: Vec::new(),
         command: CommandRef::new(session, CommandId::new(601).map_err(debug)?),
         claim: TypedDefinitionRef {
@@ -1378,6 +1455,8 @@ async fn reward_delivery(
         backpack,
         contents: Vec::new(),
         root_text: None,
+        root_fluid_subtype: None,
+        root_charges_remaining: None,
         content_revision: format!(
             "sha256:{}",
             native

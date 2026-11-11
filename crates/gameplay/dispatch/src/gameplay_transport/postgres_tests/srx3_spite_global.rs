@@ -46,7 +46,13 @@ fn srx3_weeping_actual_death_step_outfit_and_later_item_replay_postgres() -> Tes
                 scene.pin.frame_binding_digest(),
                 activation_pin.frame_binding_digest()
             );
-            let deps = scene.dependencies()?;
+            // The scene needs slots for its Player, Spite and three actual Weeping actors.
+            let deps = super::Dependencies::with_content_and_capacity(
+                scene.pin.clone(),
+                scene.room.clone(),
+                crate::spell::cast::v1_spell_book().map_err(debug)?,
+                5,
+            )?;
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::GoshnarsSpite)?;

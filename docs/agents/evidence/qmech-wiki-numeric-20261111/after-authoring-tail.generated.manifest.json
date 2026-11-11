@@ -1,0 +1,1120 @@
+{
+  "schema": "OTERYN_QMECH_GENERATED_CHECKPOINT/v1",
+  "boundary": "after-authoring-tail",
+  "baseline_head": "011cb5696c4635c74f92aa4e10c452b8285cc767",
+  "runtime_publishable": false,
+  "note": "Exact evidence checkpoint after all20 normal authoring tail steps. Authentic World pin-refresh has not completed. One identity file was partially written by the unchanged normal producer before SIGKILL; no partial runtime/pin publication is qualified. A postcomposition source freeze and genuine pin-refresh/pin-check are required.",
+  "known_pc_transfer_and_genuine_producer_sha256": {
+    "content/world/definitions/declarations.json": "6372260f3058ac836446673f43c026ef7596d6d92c38ae8bf5e9f25fdbe14709",
+    "content/world/provenance/imports.json": "16253c6b34cb1754d33a1019b6ffca399e1b39243b82a0d993495bd3160be8f5",
+    "content/world/manifest.json": "ec48e6b4c630b84405a131243af4125c05ee73c7e0038f26f34118d67d10e3dc",
+    "content/world/content.lock.json": "a8dba0aedb4347682036c067730551143804eb48f24be9356e72082ca5972929",
+    "content/creatures/definitions/spell-native-profiles.json": "5c23bcf35e614600b94e99af1e1967d08f3705563843fb46215eb0f4ef42d962",
+    "content/world/project.json": "4e714ad6e54c8d56033b27e1503228978f4f63e23dc1d905cd386bf7eced886a",
+    "tools/content-schema/native-gameplay/prey-model-results.json": "a442842a103b5adbbcdc90e89dfedeef1846fee45f371b8e88709d8e4de43144"
+  },
+  "reviewed_guards": {
+    "count": 52,
+    "unchanged": 51,
+    "changed_key": "oteryn:creature.soul_sphere",
+    "actual": "b63228b0188ff2bfadd3bac08a2fd25d8e85098d7b3f4d54b01ba9b564c5ee8c"
+  },
+  "native_source_root": "9e04cf93580dbeeaa50c0fc38cc98a7929ea4f9ceb4697284c1eb95b219b39a3",
+  "witnesses": [
+    {
+      "path": "crates/gameplay/content/src/content/native_monster_callback_witness.json",
+      "sha256": "caadd3b6e732d986d90bb411ccdc897346c8992e9e3b159b1d1da49db781c623",
+      "bytes": 1589888
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-witness.json",
+      "sha256": "2c825c71d81c2cb6c2292888c5039840007c51bda3d56f6861e9e4865462b952",
+      "bytes": 1670131
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-rotten-blood-witness.json",
+      "sha256": "5788170ae9fde55fd5a084abbf63890baa233f35896884e2ca672d315bb20b4f",
+      "bytes": 961951
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-primal-witness.json",
+      "sha256": "94b3e911515b6d84dd278c69496cbe841149da569d9978c90d0bc4e11c671b48",
+      "bytes": 469445
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-attacks.json",
+      "sha256": "79eb6bf86aef73ccd5ed5d43ece835c359723e5613fa571837444ddc472e2fd9",
+      "bytes": 163448
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-omrafir-attacks.json",
+      "sha256": "0152012c4df7daed5fb23216b865a2934ba5380d4fec48ee29f18d8431821b36",
+      "bytes": 90980
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_soul_war_callbacks/w01_prepare_death_witness.json",
+      "sha256": "6cf3722243d78f8b973d8d19bbaee1acadb4cc73159ef52af325340540eba8c2",
+      "bytes": 131697
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-death-events.json",
+      "sha256": "6a0318df5680fed4150ff532d911d09a3c3c312ce4f9509c822a604805be5503",
+      "bytes": 48543
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-rotten-death-events.json",
+      "sha256": "5e6688a798d4919286311d9679c2e069f473c1bb1dd8cf23d33aa427492f1491",
+      "bytes": 7825
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_w01_death_events_witness.json",
+      "sha256": "e3d3add37f27a220264de0b4461ec87b18d5a765132085a817368f1f3c0bc80f",
+      "bytes": 389718
+    }
+  ],
+  "generated_files": [
+    {
+      "path": "apps/game-server/tests/content_npc_catalogue.rs",
+      "bytes": 5641,
+      "sha256": "8407b0958ec29dbef6a2be076c562783abd3e4b45cf08228ff43bdf162eeb26a",
+      "git_blob": "bef6f1c94e5251d03787ac53cf6d17bf0d79338e",
+      "baseline_git_blob": "c8f15fbde2347a6781dc0467e61101e3a8521ea8",
+      "mode": "100644"
+    },
+    {
+      "path": "apps/game-server/tests/content_world_project_repository.rs",
+      "bytes": 113513,
+      "sha256": "538afeadb7fcf57b222cf5b185975c1a90977b6a67e7216944564ad53c850cba",
+      "git_blob": "2c9370090ab8764f86dbfb702a37140e0b94d4cc",
+      "baseline_git_blob": "f32cc40ef01b26d28f518eade70bdbcd651de872",
+      "mode": "100644"
+    },
+    {
+      "path": "content/content.lock.json",
+      "bytes": 13032,
+      "sha256": "59461aeaec2df3cf32650842c61663bfdeeb3e950a73ae6f0e1fdefdfc29b8f9",
+      "git_blob": "40be4e65bfb41c1591b21f11fc32b94cf4180774",
+      "baseline_git_blob": "1a205e67ec213352c57f9e732f0b7f701d026a29",
+      "mode": "100644"
+    },
+    {
+      "path": "content/cosmetics/mounts/index.json",
+      "bytes": 372,
+      "sha256": "2a16de06863b87bfff0c6a3b8a55ed96c76e3cadd4f8c3253da0034d3126ef27",
+      "git_blob": "bc56ea2440e18bb0a81fcae850c6fdb6b89b5be5",
+      "baseline_git_blob": "842973af8572aa719f4c2eb3a6d4685e4233ea9c",
+      "mode": "100644"
+    },
+    {
+      "path": "content/creatures/definitions/index.json",
+      "bytes": 2278,
+      "sha256": "53a0424a8e7e7b65ae1da3d13ff656da633b33a59fa25f7b91a9c924b3b8ddc3",
+      "git_blob": "73369b786b126bd3a8b1e9b69a4401ea0d6b78e5",
+      "baseline_git_blob": "74d8608a8a1d4acb0c57aa769286370c34641ca1",
+      "mode": "100644"
+    },
+    {
+      "path": "content/creatures/definitions/spell-native-profiles.json",
+      "bytes": 25840401,
+      "sha256": "5c23bcf35e614600b94e99af1e1967d08f3705563843fb46215eb0f4ef42d962",
+      "git_blob": "83c59528c6bbe87a9503e3166f2277a68ef64063",
+      "baseline_git_blob": "73db3efb5b529ac0702248a923c4516afb7c1759",
+      "mode": "100644"
+    },
+    {
+      "path": "content/creatures/prey-slot-values.json",
+      "bytes": 164929,
+      "sha256": "8431439b05ade89decc501a54d6ceda543238cd73f87eda48372290692b8cc16",
+      "git_blob": "afd5987e79785617b63086829639fe2b5bbac7d8",
+      "baseline_git_blob": "dd1a148cf793e9261451e8c3cc1f0e13ade69329",
+      "mode": "100644"
+    },
+    {
+      "path": "content/dialogues/definitions/index.json",
+      "bytes": 398,
+      "sha256": "002d7da08f966d1ceb76e8b068a2e398be1382674e36dc2342ba9f1d564a649b",
+      "git_blob": "2974db9c2ce7bb15480f4e2bb6ac31e29b2c0492",
+      "baseline_git_blob": "75a5c6b99812db79d184bf3eb026fb0575cfbe44",
+      "mode": "100644"
+    },
+    {
+      "path": "content/documents/index.json",
+      "bytes": 469,
+      "sha256": "2c122e01dc01d83d4110ee2b6f15752f17d7c8dd881f3e9c5813df8c512cc0e3",
+      "git_blob": "45de9743dfe0f8231c5db5a7581c2491901c8d7b",
+      "baseline_git_blob": "d0e81e45559618ad0dd5b9dd314e42c9d575e4a1",
+      "mode": "100644"
+    },
+    {
+      "path": "content/encounters/definitions/index.json",
+      "bytes": 407,
+      "sha256": "a93baaa16a1e77fc3ab40a3c2df08bfc9cb2e2afcc8a88c80f4d7e35e304fc5d",
+      "git_blob": "bf575981f56c9570c665a86a93c1bbd8711f97d5",
+      "baseline_git_blob": "7997eefa2158b9ad14e1604f39d64c35200c29d9",
+      "mode": "100644"
+    },
+    {
+      "path": "content/manifest.json",
+      "bytes": 33382,
+      "sha256": "dce3baea7f1c3073c16b217a3a4a86fe766c6eb6110055d0caf9b4fc2efe6923",
+      "git_blob": "180e7047815592ac3f2a3a7a3c53b9078140aafc",
+      "baseline_git_blob": "583da1465bedba82accfbe09afb49ebd27932d43",
+      "mode": "100644"
+    },
+    {
+      "path": "content/npcs/definitions/index.json",
+      "bytes": 455,
+      "sha256": "544c39bfefd62655bf38752e5d364b3daae87b3d8c425c35e08c5e2a11a65107",
+      "git_blob": "3a3ea192c1dea1ccbdd623a7e2ca4bdea5e334fd",
+      "baseline_git_blob": "0c762b568c3cae6e056f8191619e9f392427fe6d",
+      "mode": "100644"
+    },
+    {
+      "path": "content/services/bank/index.json",
+      "bytes": 328,
+      "sha256": "38adf8facab9f3b56a36c9b5f9fa5847c748ebeced55bb53c4711a32f93575c2",
+      "git_blob": "8b5d9f0a5124369421c34c8d9e43dedca1df4823",
+      "baseline_git_blob": "b62cb7c5ce2e053fba4aeec85599f5bd598f83cd",
+      "mode": "100644"
+    },
+    {
+      "path": "content/services/blessings/index.json",
+      "bytes": 342,
+      "sha256": "55e09794623ac534cf0df138e6a43337d539c45077eec493c1b2a5c115096f17",
+      "git_blob": "dde7f8e73f3dfdb9240b2cc6c6866092137eed78",
+      "baseline_git_blob": "8ce2f15bbef72867d5213561b9073a09422acba3",
+      "mode": "100644"
+    },
+    {
+      "path": "content/services/promotion/index.json",
+      "bytes": 343,
+      "sha256": "c43ea7234c55ada04df69e296709e97946d817b704b16a63a642c334eeef2883",
+      "git_blob": "bff9501f3247b7d887ae3e174a49c1f7932739d4",
+      "baseline_git_blob": "5e8d0a4dc43218fcbf5a07230e01a32f81258804",
+      "mode": "100644"
+    },
+    {
+      "path": "content/services/trade/index.json",
+      "bytes": 333,
+      "sha256": "0e0e979a5e4900bbcf15d59cadf92eed5559e9fd45d61efbb0898d7bdb357fc0",
+      "git_blob": "35ee5e8e176ec9620b08efa74657d39db0ed4313",
+      "baseline_git_blob": "6b60d6d9f0b6cc5e1eb1664d88a2dcf5d84a827a",
+      "mode": "100644"
+    },
+    {
+      "path": "content/services/travel/index.json",
+      "bytes": 335,
+      "sha256": "c0c850bfad295f437fc65fef52a4e21c43cf0f44117614dc873b3ff056d33784",
+      "git_blob": "3f59a4e147fbec3166b55149bde868912fa5dd84",
+      "baseline_git_blob": "1452f9ee76c4b066e325e5c3fe0657ea00418532",
+      "mode": "100644"
+    },
+    {
+      "path": "content/spells.manifest.json",
+      "bytes": 2768,
+      "sha256": "8be9dd247e3baabc8224bb6161947fbce2492ef7e22b8434995bc7f1674c518e",
+      "git_blob": "92346af53d1ad978d85877d7a4950fabc02e7d75",
+      "baseline_git_blob": "c038eadeca0a0d2eabe79b8a1913d47d7a2d3e21",
+      "mode": "100644"
+    },
+    {
+      "path": "content/world/content.lock.json",
+      "bytes": 418,
+      "sha256": "a8dba0aedb4347682036c067730551143804eb48f24be9356e72082ca5972929",
+      "git_blob": "867749b2fbf448b9d53831d06fdd7dd14772f8bb",
+      "baseline_git_blob": "34fb377aeebadb46d1192fec44d81ab6634ddca8",
+      "mode": "100644"
+    },
+    {
+      "path": "content/world/definitions/declarations.json",
+      "bytes": 27789754,
+      "sha256": "6372260f3058ac836446673f43c026ef7596d6d92c38ae8bf5e9f25fdbe14709",
+      "git_blob": "d4e2a10ea984963d377c1df88c3c7fa8a093c8fa",
+      "baseline_git_blob": "3e8752c1a5c578e3d74b93e92c4839f2c35603cc",
+      "mode": "100644"
+    },
+    {
+      "path": "content/world/manifest.json",
+      "bytes": 1957,
+      "sha256": "ec48e6b4c630b84405a131243af4125c05ee73c7e0038f26f34118d67d10e3dc",
+      "git_blob": "1ee2f897ac97b4f3c6aaa751c972d5ab171521a3",
+      "baseline_git_blob": "8fc2727e3af97ef4e86d766c131dc69a6f98e82f",
+      "mode": "100644"
+    },
+    {
+      "path": "content/world/pins/oteryn.identity.json",
+      "bytes": 522,
+      "sha256": "98ed340f180c7f826d47610c6b7b8116268d855ae5cde8420bf2595f77952a0e",
+      "git_blob": "1fc1f2cfd2cd2bb8907588ee945bf77db5828e37",
+      "baseline_git_blob": "b814aa7e203f5853d5b0a5a4d8ad14eb638d5896",
+      "mode": "100644"
+    },
+    {
+      "path": "content/world/project.json",
+      "bytes": 408,
+      "sha256": "4e714ad6e54c8d56033b27e1503228978f4f63e23dc1d905cd386bf7eced886a",
+      "git_blob": "f8187f3b42088a5ebf4ba58f2b1dba0f59c853f5",
+      "baseline_git_blob": "95a6355944b2cc4b43583b5d91d6de8d01f14dd7",
+      "mode": "100644"
+    },
+    {
+      "path": "content/world/provenance/imports.json",
+      "bytes": 6773975,
+      "sha256": "16253c6b34cb1754d33a1019b6ffca399e1b39243b82a0d993495bd3160be8f5",
+      "git_blob": "5a98be6ce6cfaf0c86d822e1e9b67b24892f8ce4",
+      "baseline_git_blob": "b01ad7b57a018540ef6766f1544eb4a83a95a606",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_monster_callback_witness.json",
+      "bytes": 1589888,
+      "sha256": "caadd3b6e732d986d90bb411ccdc897346c8992e9e3b159b1d1da49db781c623",
+      "git_blob": "3b56d9343611bbb4a71b3d695e5f17bed905d9e6",
+      "baseline_git_blob": "d60da574d8ec974d57f6af0c4cd0bf907a463553",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_soul_war_callbacks/w01_prepare_death_witness.json",
+      "bytes": 131697,
+      "sha256": "6cf3722243d78f8b973d8d19bbaee1acadb4cc73159ef52af325340540eba8c2",
+      "git_blob": "44d171d0d5a7e07a2546c6c3d5b97fc2e8f186ad",
+      "baseline_git_blob": "e2a3c875337b73539ff2103c2754b04633378338",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_w01_death_events_pin.rs",
+      "bytes": 2966,
+      "sha256": "1ea4e2cfec7999aa183d0463c8e94e1e5ce0c211c015a43e4945ce562662f1ef",
+      "git_blob": "17d0ba4d90fd0c0a644c7d360fd2748c7ca913e3",
+      "baseline_git_blob": "1783918aefd70bc8538f006789e403aa961cbee0",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_w01_death_events_witness.json",
+      "bytes": 389718,
+      "sha256": "e3d3add37f27a220264de0b4461ec87b18d5a765132085a817368f1f3c0bc80f",
+      "git_blob": "8d99fc8770b65e6998c8b4c1ee8e41e6ec9bca2d",
+      "baseline_git_blob": "e13e7b73641171d136794505f522654cbf15e0d5",
+      "mode": "100644"
+    },
+    {
+      "path": "docs/balance/PREY-SLOT-VALUE-2026-11-01.md",
+      "bytes": 81196,
+      "sha256": "d48d23046f094a6a957bfe94b16450ab26bccfa680e32fc23cc3ef3782a9b285",
+      "git_blob": "6db2ea42f03c9cf8db24391433f3b915367b28bd",
+      "baseline_git_blob": "b94d93f09b7d676b3da1e8400756a379c71e9e2a",
+      "mode": "100644"
+    },
+    {
+      "path": "docs/balance/PREY-TIME-SIM-2026-11-01.md",
+      "bytes": 12327,
+      "sha256": "8dacc55058193f7b446a173576ca13711b600e5f253711436cbc34aa3ba66e5d",
+      "git_blob": "e6d08bb1ed8031e487cd447bc24a24140d736493",
+      "baseline_git_blob": "db4af556b4684c0e2d5962502d7c21ebe9cbb3d9",
+      "mode": "100644"
+    },
+    {
+      "path": "imports/tibiawiki/batches.json",
+      "bytes": 7564,
+      "sha256": "a5135733b231007383b9c4244608ec8fd1c9dee651f7becd70e77cd949690497",
+      "git_blob": "e4105fb424953ad49b31814ef2ba60861ebea14a",
+      "baseline_git_blob": "e599c92234c42973f249696a33496a23b2596f0a",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/build_srx3_soul_war_witness.py",
+      "bytes": 22056,
+      "sha256": "673e0ab379a92ac326e4828bbff8ab3ac3d37a7bb2bacefc8b3f327fef122081",
+      "git_blob": "998e5e2a52923edc09853690a1b8a6d09e4fe150",
+      "baseline_git_blob": "e21b573c200eb0a0a08b4967e6e7a4c1d6e33719",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/prey-model-results.json",
+      "bytes": 122667,
+      "sha256": "a442842a103b5adbbcdc90e89dfedeef1846fee45f371b8e88709d8e4de43144",
+      "git_blob": "c7ce224e0439879a7fd503f903138cf3e0491bd3",
+      "baseline_git_blob": "4bec586aa567d336c1ffdb7a4dba66df6907536b",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-omrafir-attacks.json",
+      "bytes": 90980,
+      "sha256": "0152012c4df7daed5fb23216b865a2934ba5380d4fec48ee29f18d8431821b36",
+      "git_blob": "f17afa8e2ccca3695c085ec54198a3f47eee02eb",
+      "baseline_git_blob": "98a9e7df2f8a37055caf7dce48f594ed90f3257d",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-primal-witness.json",
+      "bytes": 469445,
+      "sha256": "94b3e911515b6d84dd278c69496cbe841149da569d9978c90d0bc4e11c671b48",
+      "git_blob": "e7a7d9f213a9f6f70ccb30d63012151f7b734903",
+      "baseline_git_blob": "716ca72e2cc1711ca4bf6990e1e5d129801a0d39",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-rotten-blood-witness.json",
+      "bytes": 961951,
+      "sha256": "5788170ae9fde55fd5a084abbf63890baa233f35896884e2ca672d315bb20b4f",
+      "git_blob": "bf7fadd1a070ba9873bf332bee83a5594f044339",
+      "baseline_git_blob": "ce68fb4e64feb00ecc8c86c3acf0ab408b4553a4",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-rotten-death-events.json",
+      "bytes": 7825,
+      "sha256": "5e6688a798d4919286311d9679c2e069f473c1bb1dd8cf23d33aa427492f1491",
+      "git_blob": "176cfd10b1396488d1c5892b8adaad5ac22eecde",
+      "baseline_git_blob": "bc93382e1f40db97bb178c0cccd85854b91aca2e",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-attacks.json",
+      "bytes": 163448,
+      "sha256": "79eb6bf86aef73ccd5ed5d43ece835c359723e5613fa571837444ddc472e2fd9",
+      "git_blob": "6f91f97a5733a04c3ae639aa4e1fdb7890d7b4d7",
+      "baseline_git_blob": "2e8b3b899b069e40217575a955f64adafe8c641c",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-death-events.json",
+      "bytes": 48543,
+      "sha256": "6a0318df5680fed4150ff532d911d09a3c3c312ce4f9509c822a604805be5503",
+      "git_blob": "6e0fbac2a247533cdc75ec4f754a6cadf1477d1a",
+      "baseline_git_blob": "ab979541a19157107c0007282930c4983b434a49",
+      "mode": "100644"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/srx3-soul-war-witness.json",
+      "bytes": 1670131,
+      "sha256": "2c825c71d81c2cb6c2292888c5039840007c51bda3d56f6861e9e4865462b952",
+      "git_blob": "7f845d32226248f7835d929b7e88529b70827010",
+      "baseline_git_blob": "639e7b01b9cc8477972004f518d0b4d06b6bf4ef",
+      "mode": "100644"
+    }
+  ],
+  "owner_greed_sources": [
+    {
+      "path": "crates/gameplay/content/src/content/bosses/activity_template/soul_war_entry_gate.rs",
+      "bytes": 482,
+      "sha256": "8522ccd0d447daf288bbeb3e859f09067c5f102c04afb50ffced1b9d2a35fb90",
+      "git_blob": "f3de7e0780566bc4f67ed998821bec22a7eba1f1",
+      "baseline_git_blob": "dc9406de1328bb402e6050660246245149bac515",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime/source_bundle.rs",
+      "bytes": 46521,
+      "sha256": "d537b8426324e374f321a9d88f6b7996e74554122283806e42ff526a3a18b2eb",
+      "git_blob": "7a49c5f39938cf59def9a35698d21d80accb14b8",
+      "baseline_git_blob": "142768e386d5980ed0d7aa232c29f22f3c700916",
+      "mode": "100644"
+    },
+    {
+      "path": "crates/gameplay/entities/src/carrier/soul_war.rs",
+      "bytes": 31684,
+      "sha256": "2d6cd7b75641353846cc552f4de15e178246af5b6da0f98c85fc01bd1eef98e9",
+      "git_blob": "c09eff659b171836dd0fb744f2225eb42af00a54",
+      "baseline_git_blob": "6cc2f5729f1ed321d414c1da5826dc48f79c894a",
+      "mode": "100644"
+    }
+  ],
+  "binary_patch": {
+    "path": "after-authoring-tail.generated.binary.patch",
+    "bytes": 30859,
+    "sha256": "480b506b7183a47d5165c63e66ff99046af85561f6b0f4359b8eb6ca66c07a8b"
+  },
+  "status": "frozen_after_authoring_tail_before_composition",
+  "normal_authoring_tail_complete": true,
+  "generation_complete": false,
+  "pin_closure_pending": true,
+  "pin_check_run": false,
+  "completed_authoring_steps": [
+    {
+      "name": "source-cohort-extent",
+      "seconds": 1.598
+    },
+    {
+      "name": "rust-inventory",
+      "seconds": 0.207
+    },
+    {
+      "name": "activity-static",
+      "seconds": 10.205
+    },
+    {
+      "name": "m01c-key-doors",
+      "seconds": 0.45
+    },
+    {
+      "name": "last-creep-arena",
+      "seconds": 0.564
+    },
+    {
+      "name": "qengine_equipment_audit",
+      "seconds": 0.269
+    },
+    {
+      "name": "raid_catalogue",
+      "seconds": 3.7
+    },
+    {
+      "name": "craft_authoring",
+      "seconds": 0.635
+    },
+    {
+      "name": "questpc3_collectors",
+      "seconds": 0.888
+    },
+    {
+      "name": "questpc3_native_entries",
+      "seconds": 3.287
+    },
+    {
+      "name": "imbuement_content",
+      "seconds": 5.912
+    },
+    {
+      "name": "charm_authoring",
+      "seconds": 0.202
+    },
+    {
+      "name": "proficiency_authoring",
+      "seconds": 4.263
+    },
+    {
+      "name": "reward_claim_authoring",
+      "seconds": 7.242
+    },
+    {
+      "name": "first_dragon_activity",
+      "seconds": 2.818
+    },
+    {
+      "name": "starter_kit_authoring",
+      "seconds": 0.478
+    },
+    {
+      "name": "grizzly-rooms",
+      "seconds": 5.289
+    },
+    {
+      "name": "equipment-profile-pin",
+      "seconds": 10.649
+    },
+    {
+      "name": "season-creature-inventory",
+      "seconds": 5.658
+    },
+    {
+      "name": "world-metadata",
+      "seconds": 92.943
+    }
+  ],
+  "execution_receipts": {
+    "typed-world-1": {
+      "command": [
+        "./target/debug/typed_world_wrapper",
+        "/workspace/scratch/9dd395d3452e/oteryn-3056",
+        "7dff7df8ae2b9769c951c4212d77e308ca09a4a8",
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/generated-world-project.json"
+      ],
+      "cwd": "/workspace/scratch/9dd395d3452e/qmech-generator-harness",
+      "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+      "harness_lock_sha256": "a04f5fe98368f56ae2a755a05bf3a98c228e45e76aa79e5f791d5dfdac888c79",
+      "harness_manifest_sha256": "cf8e3025f5971dea7b8a4c582c157109dab5bada9f96c2fcc2edd42f5ae27dce",
+      "original_example_sha256": "9ff847382ccca3e68cbf9af4c81ecaa2284102c86848f60d8e3955de97169be9",
+      "jobs": 1,
+      "debug": 0,
+      "incremental": false,
+      "min_free_disk_bytes": 2491244544,
+      "peak_process_tree_rss_bytes": 660869120,
+      "pid": 15,
+      "exit_code": 0,
+      "elapsed_seconds": 24.038
+    },
+    "prey-simulation-2": {
+      "command": [
+        "./target/debug/prey_time_sim",
+        "--input",
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/prey-input.json",
+        "--output",
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/prey-model-results.json",
+        "--creature-profiles",
+        "/workspace/scratch/9dd395d3452e/oteryn-3056/content/creatures/definitions/spell-native-profiles.json"
+      ],
+      "cwd": "/workspace/scratch/9dd395d3452e/qmech-generator-harness",
+      "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+      "harness_lock_sha256": "a04f5fe98368f56ae2a755a05bf3a98c228e45e76aa79e5f791d5dfdac888c79",
+      "harness_manifest_sha256": "cf8e3025f5971dea7b8a4c582c157109dab5bada9f96c2fcc2edd42f5ae27dce",
+      "original_example_sha256": "9ff847382ccca3e68cbf9af4c81ecaa2284102c86848f60d8e3955de97169be9",
+      "jobs": 1,
+      "debug": 0,
+      "incremental": false,
+      "min_free_disk_bytes": 628006912,
+      "peak_process_tree_rss_bytes": 78069760,
+      "pid": 15,
+      "exit_code": 0,
+      "elapsed_seconds": 38.025
+    },
+    "tree-registration-finish": {
+      "command": [
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/venv/bin/python",
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/finish_tree_registration.py"
+      ],
+      "cwd": "/workspace/scratch/9dd395d3452e/qmech-generator-harness",
+      "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+      "harness_manifest": "/workspace/scratch/9dd395d3452e/qmech-generator-harness/Cargo.toml",
+      "harness_lock_sha256": "a04f5fe98368f56ae2a755a05bf3a98c228e45e76aa79e5f791d5dfdac888c79",
+      "harness_manifest_sha256": "cf8e3025f5971dea7b8a4c582c157109dab5bada9f96c2fcc2edd42f5ae27dce",
+      "original_example_sha256": "9ff847382ccca3e68cbf9af4c81ecaa2284102c86848f60d8e3955de97169be9",
+      "jobs": 1,
+      "debug": 0,
+      "incremental": false,
+      "min_free_disk_bytes": 2766946304,
+      "min_target_free_disk_bytes": 4194791424,
+      "min_available_memory_bytes": 2541228032,
+      "peak_process_tree_rss_bytes": 228089856,
+      "system_oom_kills_before": 24,
+      "pid": 15,
+      "exit_code": 0,
+      "elapsed_seconds": 6.049,
+      "system_oom_kills_after": 24
+    },
+    "authoring-tail-1": {
+      "command": [
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/venv/bin/python",
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/resume_authoring_tail.py"
+      ],
+      "cwd": "/workspace/scratch/9dd395d3452e/qmech-generator-harness",
+      "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+      "harness_manifest": "/workspace/scratch/9dd395d3452e/qmech-generator-harness/Cargo.toml",
+      "harness_lock_sha256": "a04f5fe98368f56ae2a755a05bf3a98c228e45e76aa79e5f791d5dfdac888c79",
+      "harness_manifest_sha256": "cf8e3025f5971dea7b8a4c582c157109dab5bada9f96c2fcc2edd42f5ae27dce",
+      "original_example_sha256": "9ff847382ccca3e68cbf9af4c81ecaa2284102c86848f60d8e3955de97169be9",
+      "jobs": 1,
+      "debug": 0,
+      "incremental": false,
+      "min_free_disk_bytes": 2766159872,
+      "min_target_free_disk_bytes": 4194791424,
+      "min_available_memory_bytes": 2483376128,
+      "peak_process_tree_rss_bytes": 387239936,
+      "system_oom_kills_before": 24,
+      "pid": 17,
+      "exit_code": 1,
+      "elapsed_seconds": 42.948,
+      "system_oom_kills_after": 24
+    },
+    "authoring-tail-2": {
+      "command": [
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/venv/bin/python",
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/resume_authoring_tail.py"
+      ],
+      "cwd": "/workspace/scratch/9dd395d3452e/qmech-generator-harness",
+      "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+      "harness_manifest": "/workspace/scratch/9dd395d3452e/qmech-generator-harness/Cargo.toml",
+      "harness_lock_sha256": "a04f5fe98368f56ae2a755a05bf3a98c228e45e76aa79e5f791d5dfdac888c79",
+      "harness_manifest_sha256": "cf8e3025f5971dea7b8a4c582c157109dab5bada9f96c2fcc2edd42f5ae27dce",
+      "original_example_sha256": "9ff847382ccca3e68cbf9af4c81ecaa2284102c86848f60d8e3955de97169be9",
+      "jobs": 1,
+      "debug": 0,
+      "incremental": false,
+      "min_free_disk_bytes": 2761719808,
+      "min_target_free_disk_bytes": 4194791424,
+      "min_available_memory_bytes": 2415824896,
+      "peak_process_tree_rss_bytes": 633540608,
+      "system_oom_kills_before": 24,
+      "pid": 17,
+      "exit_code": 0,
+      "elapsed_seconds": 115.154,
+      "system_oom_kills_after": 24
+    },
+    "world-compiler-build": {
+      "command": [
+        "/home/agent/.cargo/bin/cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--jobs",
+        "1",
+        "--manifest-path",
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/world-compiler/Cargo.toml",
+        "--bin",
+        "oteryn-world-bundle-compiler"
+      ],
+      "cwd": "/workspace/scratch/9dd395d3452e/qmech-generator-harness",
+      "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+      "harness_manifest": "/workspace/scratch/9dd395d3452e/qmech-generator-harness/world-compiler/Cargo.toml",
+      "harness_lock_sha256": "22bd0bd4127684fa4a073b50e3284d5892ba9692c0c3b8d97715e8a6b205eaa5",
+      "harness_manifest_sha256": "22c2808059d93767ab339ebda8a248b88fabbcc0f4fc8674823922a5f410712a",
+      "original_example_sha256": "9ff847382ccca3e68cbf9af4c81ecaa2284102c86848f60d8e3955de97169be9",
+      "jobs": 1,
+      "debug": 0,
+      "incremental": false,
+      "min_free_disk_bytes": 2761392128,
+      "min_target_free_disk_bytes": 4148174848,
+      "min_available_memory_bytes": 3237859328,
+      "peak_process_tree_rss_bytes": 321884160,
+      "system_oom_kills_before": 24,
+      "pid": 15,
+      "exit_code": 0,
+      "elapsed_seconds": 13.063,
+      "system_oom_kills_after": 24
+    },
+    "world-pin-refresh": {
+      "command": [
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/target/debug/oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "/workspace/scratch/9dd395d3452e/oteryn-3056"
+      ],
+      "cwd": "/workspace/scratch/9dd395d3452e/qmech-generator-harness",
+      "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+      "harness_manifest": "/workspace/scratch/9dd395d3452e/qmech-generator-harness/world-compiler/Cargo.toml",
+      "harness_lock_sha256": "22bd0bd4127684fa4a073b50e3284d5892ba9692c0c3b8d97715e8a6b205eaa5",
+      "harness_manifest_sha256": "22c2808059d93767ab339ebda8a248b88fabbcc0f4fc8674823922a5f410712a",
+      "original_example_sha256": "9ff847382ccca3e68cbf9af4c81ecaa2284102c86848f60d8e3955de97169be9",
+      "jobs": 1,
+      "debug": 0,
+      "incremental": false,
+      "min_free_disk_bytes": 2761195520,
+      "min_target_free_disk_bytes": 4139335680,
+      "min_available_memory_bytes": 2623905792,
+      "peak_process_tree_rss_bytes": 83378176,
+      "system_oom_kills_before": 24,
+      "pid": 15,
+      "exit_code": 1,
+      "elapsed_seconds": 11.19,
+      "system_oom_kills_after": 24
+    },
+    "world-pin-refresh-2": {
+      "command": [
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/target/debug/oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "/workspace/scratch/9dd395d3452e/oteryn-3056"
+      ],
+      "cwd": "/workspace/scratch/9dd395d3452e/qmech-generator-harness",
+      "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+      "harness_manifest": "/workspace/scratch/9dd395d3452e/qmech-generator-harness/world-compiler/Cargo.toml",
+      "harness_lock_sha256": "22bd0bd4127684fa4a073b50e3284d5892ba9692c0c3b8d97715e8a6b205eaa5",
+      "harness_manifest_sha256": "22c2808059d93767ab339ebda8a248b88fabbcc0f4fc8674823922a5f410712a",
+      "original_example_sha256": "9ff847382ccca3e68cbf9af4c81ecaa2284102c86848f60d8e3955de97169be9",
+      "jobs": 1,
+      "debug": 0,
+      "incremental": false,
+      "min_free_disk_bytes": 2757591040,
+      "min_target_free_disk_bytes": 4139335680,
+      "min_available_memory_bytes": 1376358400,
+      "peak_process_tree_rss_bytes": 2158858240,
+      "system_oom_kills_before": 24,
+      "pid": 15,
+      "exit_code": -9,
+      "elapsed_seconds": 31.383,
+      "system_oom_kills_after": 25
+    },
+    "world-pin-refresh-3": {
+      "command": [
+        "/workspace/scratch/9dd395d3452e/qmech-generator-harness/target/debug/oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "/workspace/scratch/9dd395d3452e/oteryn-3056"
+      ],
+      "cwd": "/workspace/scratch/9dd395d3452e/qmech-generator-harness",
+      "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+      "harness_manifest": "/workspace/scratch/9dd395d3452e/qmech-generator-harness/world-compiler/Cargo.toml",
+      "harness_lock_sha256": "22bd0bd4127684fa4a073b50e3284d5892ba9692c0c3b8d97715e8a6b205eaa5",
+      "harness_manifest_sha256": "22c2808059d93767ab339ebda8a248b88fabbcc0f4fc8674823922a5f410712a",
+      "original_example_sha256": "9ff847382ccca3e68cbf9af4c81ecaa2284102c86848f60d8e3955de97169be9",
+      "jobs": 1,
+      "debug": 0,
+      "incremental": false,
+      "min_free_disk_bytes": 2368643072,
+      "min_target_free_disk_bytes": 2368643072,
+      "min_available_memory_bytes": 1493716992,
+      "peak_process_tree_rss_bytes": 2419789824,
+      "system_oom_kills_before": 25,
+      "pid": 15,
+      "exit_code": -9,
+      "elapsed_seconds": 31.53,
+      "system_oom_kills_after": 26
+    }
+  },
+  "partial_pin_outputs": [
+    {
+      "path": "content/world/pins/oteryn.identity.json",
+      "bytes": 522,
+      "sha256": "98ed340f180c7f826d47610c6b7b8116268d855ae5cde8420bf2595f77952a0e",
+      "git_blob": "1fc1f2cfd2cd2bb8907588ee945bf77db5828e37",
+      "baseline_git_blob": "b814aa7e203f5853d5b0a5a4d8ad14eb638d5896",
+      "mode": "100644",
+      "changed_fields": {
+        "content_lock_digest": {
+          "before": "7b4f0c3859cf602c9fb24234899f8854e9582f3a9a419c9b549a4451a730dcce",
+          "after": "a8dba0aedb4347682036c067730551143804eb48f24be9356e72082ca5972929"
+        },
+        "provenance_summary": {
+          "before": "lock:seasonal-cake-creature-20261107-r1/cf3f1f2f23c3f940f5b55b9ce0a63fb07a6a5f8bc511ea31d66836b2ca1ff50c",
+          "after": "lock:seasonal-cake-creature-20261107-r1/383c29713d38fb3f128397427b31bb6fed58ce0d9838e404176f2facbb908e8a"
+        }
+      }
+    }
+  ],
+  "pending_pin_closure_files": [
+    "content/world/pins/oteryn.json",
+    "content/world/pins/oteryn.identity.json",
+    "deploy/synology-game/preprod-topology.toml",
+    "crates/client-assets/src/world.rs"
+  ],
+  "sigkill_interpretation": "UNKNOWN victim/cgroup cause. Both receipts record SIGKILL(-9) and a concurrent increment of global oom_kill; no memory.events or victim attribution is available. Peak before successful completion remains unknown.",
+  "family_registration_preservation": {
+    "head": "011cb5696c4635c74f92aa4e10c452b8285cc767",
+    "project_semantically_unchanged": true,
+    "project_sha256": "2af293bfebf48c9c8c235d26838a932165d93c6fd51b2a54787f2cd8ab5bc398",
+    "managed_path_count": 256,
+    "managed_path_set_unchanged": true,
+    "managed_raid_paths": [
+      "content/encounters/raids/catalogue.json",
+      "content/encounters/raids/evidence-00000-00121.json",
+      "content/encounters/raids/index.json"
+    ]
+  },
+  "starter_kit_seal_base": {
+    "head": "011cb5696c4635c74f92aa4e10c452b8285cc767",
+    "protected_main": "f01f18582443f482b7adcfaf32cae3f9d3616876",
+    "actual_merge_base": "c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f",
+    "ledger_path": "tools/content-schema/starter-kit-authoring/sealed-templates.json",
+    "baseline_ledger_sha256": "11679fefa3239d0790e55f7a13ddffacef1836bf800f21a3469a71f4c94cdbac",
+    "current_ledger_sha256": "11679fefa3239d0790e55f7a13ddffacef1836bf800f21a3469a71f4c94cdbac",
+    "seal_count": 1,
+    "labels": [
+      "oteryn:starter-template.main"
+    ],
+    "contract": "starter_kit_authoring.py resolve_base (249-253), history_errors (375-382), content CLI (473-481); require_history remains true"
+  },
+  "compiler_source_and_binary": {
+    "head": "011cb5696c4635c74f92aa4e10c452b8285cc767",
+    "main_sha256": "20445f2346258016586bf1d643c22f919ad7246f964a0d2e12a964df5ef39ab8",
+    "inputs": [
+      {
+        "path": "crates/world-bundle/Cargo.toml",
+        "sha256": "ae88c93b2919b5f66eed95f18b80001b19c24f1709703b73995c36e97d45786f",
+        "bytes": 588
+      },
+      {
+        "path": "crates/world-bundle/src/bundle.rs",
+        "sha256": "1e795882ab3e7c13e38be824f293564e23add262369d5acc97120462f11cc2f3",
+        "bytes": 29243
+      },
+      {
+        "path": "crates/world-bundle/src/layers.rs",
+        "sha256": "030bacf6ef323e9d83233026b8db13810d43efbb0482b1ffaec18b235289aa48",
+        "bytes": 4511
+      },
+      {
+        "path": "crates/world-bundle/src/lib.rs",
+        "sha256": "ef8150391541ad07a9eaed35f8a602a46a1689240db31097425cd51892418496",
+        "bytes": 1546
+      },
+      {
+        "path": "crates/world-bundle/src/manifest.rs",
+        "sha256": "7fbb0f4821e8792084e6d8c775c18d19fbb3c294725e80a2f7a9cac42b545b71",
+        "bytes": 4781
+      },
+      {
+        "path": "crates/world-bundle/src/npc.rs",
+        "sha256": "024e8d3f77a3e578cbe1be60da5139f1afa3416f91262a69b1eda7923f0c8428",
+        "bytes": 9966
+      },
+      {
+        "path": "crates/world-bundle/src/sector.rs",
+        "sha256": "38efb5359c2b9ee9eaa01954525db79deda8a345dc7cf4e714db059ba8218899",
+        "bytes": 12673
+      },
+      {
+        "path": "crates/world-bundle/src/spawn.rs",
+        "sha256": "bfcc83b2e3dcb6966a6e39a42f0110529d2a7b48e92641392a9266f97d105714",
+        "bytes": 12016
+      },
+      {
+        "path": "crates/world-bundle/src/subarea.rs",
+        "sha256": "89c9f9aedf390d7193362ad10737d295ac40613ac1540b814f8fa1e254a9b773",
+        "bytes": 13184
+      },
+      {
+        "path": "crates/world-bundle/src/writer.rs",
+        "sha256": "280f4e098ba59377c8eda4cbf05cf939de6852b9dfbb64d7625facefda634dd8",
+        "bytes": 6002
+      },
+      {
+        "path": "crates/world-bundle/tests/npc.rs",
+        "sha256": "9036948974a893fa42e1222b3716bd1b9b6d7c0764e4c927582e38aa284518c9",
+        "bytes": 5172
+      },
+      {
+        "path": "tools/world-bundle-compiler/Cargo.toml",
+        "sha256": "9cc89cb3e5292d6722d1e1471881134f95645249749639161e4f649d07131436",
+        "bytes": 573
+      },
+      {
+        "path": "tools/world-bundle-compiler/boss-spawns.json",
+        "sha256": "40cdd87440885bc9cb240d6c96ccb20e2922887b0c927361c6f6f04b6700b629",
+        "bytes": 7277
+      },
+      {
+        "path": "tools/world-bundle-compiler/convert_spawns.py",
+        "sha256": "e88be981895d24aa2e7af97fefd3b738f8e74f16e53cbea52da0ecdf842060ff",
+        "bytes": 12168
+      },
+      {
+        "path": "tools/world-bundle-compiler/held-boss-chances.json",
+        "sha256": "558f0df801e5a7854dbdc3c7bc61bf854b4782d9c7d5dc448189d29c4e1b54e7",
+        "bytes": 5105
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/b3.rs",
+        "sha256": "93e98e65f77e6bd43cc4dd73b257cf058f7dd1e6678963d4afaeb81813b9684d",
+        "bytes": 3845
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/bundle.rs",
+        "sha256": "76b3daaa2fe753187d1de189dd1fa89e47a28a079c104e4dd738ec40f7c511d5",
+        "bytes": 633
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/cargo_inputs.rs",
+        "sha256": "876ec7c7cc980d3385a716c8d8d273cf60d4b54fd31f639b9afb88353c776ad1",
+        "bytes": 16925
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/cargo_inputs_tests.rs",
+        "sha256": "55251f0fd389b956e6e1aa1d19d120a296b85e545ddb11f7db420cf73351ff54",
+        "bytes": 8689
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/compile.rs",
+        "sha256": "11958f788a0148c80a9c30267050f045cc08d6be4bb13ef441d1a0f9bcb84234",
+        "bytes": 58214
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/compile/layers.rs",
+        "sha256": "c375cffc95a5ab3cba4f4c7482d899c6f48d70bed9e2ee6f06560da4ac7d8f2a",
+        "bytes": 9209
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/compile/npc_contact_tests.rs",
+        "sha256": "ee77656dfa48f09fd2939b1b5d38a472ea43b5940f76f5f2901bb9b5fa99d1c5",
+        "bytes": 1860
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/compile/subareas.rs",
+        "sha256": "d013abd3b62772ad3c64f049f2ac9abeeee6086c1d0b00d4a2f64d125a8ff442",
+        "bytes": 25112
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/compile/subareas/source_towns.rs",
+        "sha256": "3af11e5c5fcf7ae8db9fc55ac53ae7c735bc959332c56b528a4ca24f04668f2a",
+        "bytes": 2654
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/entry_start.rs",
+        "sha256": "417d1d5ad0d7c4159fe6f58534a4b17a0ed2b7de5fc56f23e6bd7dac3433f17e",
+        "bytes": 2190
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/entry_start_tests.rs",
+        "sha256": "24f3c98774102bfc5c56ae9407ccd4893fbd865a0081dd7f9e344c4d69ad5162",
+        "bytes": 1482
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/lib.rs",
+        "sha256": "8fe3506cb2571bbc945e8116def9c5fd406cf99d1665ba1c4f25f507443d77cc",
+        "bytes": 404
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/main.rs",
+        "sha256": "20445f2346258016586bf1d643c22f919ad7246f964a0d2e12a964df5ef39ab8",
+        "bytes": 24519
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/pin_refresh.rs",
+        "sha256": "ba75915c382e85214a02ba1d4dfe9e6e07ed4523d16b7ff12a535d453383e53e",
+        "bytes": 7720
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/project.rs",
+        "sha256": "7c30b99054a6d001e1f1c00e34a5d19a4958cef2bf0bc031efcc62c2bdbd7428",
+        "bytes": 21959
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/resolve.rs",
+        "sha256": "87b887538a828335ee32682e6b3866ad79488d82d2d07f91c54fc1e3067dfc57",
+        "bytes": 20738
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/resolve/static_surfaces.rs",
+        "sha256": "9a1804174a35338937395d244b01350999eddcfbefda19b706b34a2ac1d1a41f",
+        "bytes": 3626
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/resolve/static_surfaces_tests.rs",
+        "sha256": "352a6e4d311016ed604b9b76688654702dc8bf184ce0a8e3c53df086d0960ffe",
+        "bytes": 1089
+      },
+      {
+        "path": "tools/world-bundle-compiler/src/source.rs",
+        "sha256": "003e368d958a1ad944e80979b753ac395f01d05448168b1699ff7646723ac13f",
+        "bytes": 9437
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/bundle.rs",
+        "sha256": "dd322e1dbf75954c437a67a0fe245cb9d278da21ff85710753f06a40e35b4aa6",
+        "bytes": 25550
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/families.rs",
+        "sha256": "cb207edbf0195afa181f6ab251cfca802c9e0a09a08b824d68728ad6ec78e527",
+        "bytes": 16156
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/fixtures/codec-region-z07-x000-y000.b3",
+        "sha256": "603b64dab115f575d6e19e2343e7e13387d86f123317bc59cc559446a26bc449",
+        "bytes": 111
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/fixtures/subarea-z07-x126-y121.b3",
+        "sha256": "e8b01d36016d26f2fe8add8089433b31f0dd46fe2d970d32fc338d992928a0bb",
+        "bytes": 62
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/m01c_collector_population.rs",
+        "sha256": "606acd2314a0d74d6d9bd19dc6ab6d100826775204a4eb21b59677d6eef20988",
+        "bytes": 2953
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/npcs.rs",
+        "sha256": "c13dbddc8be8e02f7d9380e713a17680313bec1d8fa732eb31b80c8ab481b1af",
+        "bytes": 21296
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/npcs/m38_minzy.rs",
+        "sha256": "5353d576859db02b99daa0b9055cc5e8ea4ca23ede6c69914d7f159636b6896a",
+        "bytes": 1649
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/npcs/m38_mistrock.rs",
+        "sha256": "5257aea484f3836458f93cbb1e1e173bd3637470eb5037a034587069459d0b80",
+        "bytes": 1675
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/npcs/m38_stationary.rs",
+        "sha256": "3745efe675121473f488ef29f23888d15fe1ad9bc4476479956e1f1414c757c8",
+        "bytes": 1658
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/npcs/m38_zarifan.rs",
+        "sha256": "aed0dd5ae530faf4fabd8f4692b30f5e6c60722a3dcf5a509c056cdb7f5e5d0d",
+        "bytes": 2154
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/pin_check.rs",
+        "sha256": "8b32590a40686385cbbd0906c55aef745dc6f30f1c624bdde87034e142a547ee",
+        "bytes": 22141
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/resolve.rs",
+        "sha256": "9a50efc10aa89a2a814d68d3b81d9e05be44b221c7c40b2e74e48881ca4d720f",
+        "bytes": 9216
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/spawns.rs",
+        "sha256": "d1b06e888245c8020c00b5e8d2b8356405b3d1408c2fe15fab0510c94c4321b4",
+        "bytes": 18921
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/subarea.rs",
+        "sha256": "a31e00f0d45edbe0c7398eb173461754327ef593643719b01cf4853cf5ca75cf",
+        "bytes": 3871
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/summer_population.rs",
+        "sha256": "dda4c0661d613ff8acad5e9f577ee5b6d8920133bc034e72acfec5b55a5598bd",
+        "bytes": 6311
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/terrain.rs",
+        "sha256": "2fe72592c22925430ca8db1bf506739b5b2b75190b1cfd34cbb131a9ef3086d8",
+        "bytes": 23766
+      },
+      {
+        "path": "tools/world-bundle-compiler/tests/test_convert_spawns.py",
+        "sha256": "27e7e75c7ede7ed0c3d8dc43f02796f54d8753504bf28e8c223bb1954391bbf1",
+        "bytes": 4960
+      },
+      {
+        "path": "content/world/source-static-definitions.json",
+        "sha256": "64693831a8f540ac8d3d17cdab0e432128d520f39163dbe5af7032e129513e43",
+        "bytes": 742896
+      },
+      {
+        "path": "Cargo.toml",
+        "sha256": "f7658751e3b7c7b37b9be2cefc2ba81f0a73b2f0141290c0f7ddaec5a6a73eea",
+        "bytes": 5082
+      },
+      {
+        "path": "Cargo.lock",
+        "sha256": "b40a695bba3c99a1194245160226039f9a2085a77b6ced17d3b2fe40cc49d00a",
+        "bytes": 150349
+      }
+    ],
+    "overlay_free": 2761408512,
+    "target_free": 4194791424,
+    "binary": {
+      "path": "/home/agent/oteryn-qmech-generator-target-20261111-9dd395d3452e/debug/oteryn-world-bundle-compiler",
+      "bytes": 11196352,
+      "sha256": "84b7194034bdee91309f97f98b49ed397d0c0d789052defbfdef0458557be928"
+    }
+  },
+  "world_pin_commands": [
+    "<same-source native compiler> pin-refresh <repository-root>",
+    "<same-source native compiler> pin-check <repository-root> <task-owned-output-directory>"
+  ],
+  "owned_target_relocation": {
+    "from": "/home/agent/oteryn-qmech-generator-target-20261111-9dd395d3452e",
+    "to": "/workspace/scratch/9dd395d3452e/qmech-generator-harness/target-overlay",
+    "stable_link": "/workspace/scratch/9dd395d3452e/qmech-generator-harness/target",
+    "file_bytes": 366118870,
+    "entry_count": 1044,
+    "before": {
+      "available_memory": 3605860352,
+      "overlay_free": 2755465216,
+      "tmpfs_free": 4139335680
+    },
+    "after": {
+      "available_memory": 3849240576,
+      "overlay_free": 2385825792,
+      "tmpfs_free": 4419788800
+    },
+    "verification": "Every directory mode, symlink target, file mode, length and SHA256 equal before source deletion; all three retained binaries equal previously observed SHA256.",
+    "receipt_sha256": "2273aad703d5a1288550516ea8a4818319e5e5cbafbddec85d80b4ea82ebb0ac"
+  },
+  "current_verified_compiler": {
+    "path": "/workspace/scratch/9dd395d3452e/qmech-generator-harness/target-overlay/debug/oteryn-world-bundle-compiler",
+    "sha256": "84b7194034bdee91309f97f98b49ed397d0c0d789052defbfdef0458557be928"
+  },
+  "native_producer_run_log": {
+    "sha256": "7e540334d33302bff6b6e292e1359623ba8c88ca9ed4db284936375b5a8d7ef4",
+    "text": "python3 tools/content-schema/native-gameplay/build_native_callback_witness.py\npython3 tools/content-schema/native-gameplay/build_srx3_soul_war_witness.py\npython3 tools/content-schema/native-gameplay/build_srx3_rotten_blood_witness.py\npython3 tools/content-schema/native-gameplay/build_srx3_primal_witness.py\npython3 tools/content-schema/native-gameplay/build_srx3_soul_war_attacks.py\nW11_SOURCE_ATTACK_OVERLAY 163448 79eb6bf86aef73ccd5ed5d43ece835c359723e5613fa571837444ddc472e2fd9\npython3 tools/content-schema/native-gameplay/build_srx3_omrafir_attacks.py\nW01_OMRAFIR_SOURCE_ATTACK_OVERLAY 90980 0152012c4df7daed5fb23216b865a2934ba5380d4fec48ee29f18d8431821b36\npython3 tools/content-schema/native-gameplay/build_srx3_w01_prepare_death.py\nW01_PREPARE_DEATH_WITNESS 131697 6cf3722243d78f8b973d8d19bbaee1acadb4cc73159ef52af325340540eba8c2\npython3 tools/content-schema/native-gameplay/build_srx3_soul_war_death_events.py --refresh-native-pin\n52 source-qualified parents; 22 nonempty death vectors\npython3 tools/content-schema/native-gameplay/build_srx3_rotten_death_events.py --refresh-native-pin\n6 exact source parents, 3 loaded declared handlers, 3 empty declared vectors\npython3 tools/content-schema/native-gameplay/build_native_death_event_witness.py --refresh-native-pin\nordered W01 source parents=71 onDeath=37\n"
+  },
+  "other_changed_paths": [
+    "crates/gameplay/dispatch/src/gameplay_transport/boss_activity.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/engworldchg_guarded_sale.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/engworldchg_journals.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m39_tomes_journey.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m39_tomes_journey/world.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/source_quest_rewards.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_megalomania_callbacks.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_megalomania_step.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_rotten_callbacks.rs",
+    "crates/gameplay/durability/src/durability/quest_state/writer.rs",
+    "crates/gameplay/quests/src/quest/world_callbacks.rs"
+  ]
+}

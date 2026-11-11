@@ -46,16 +46,21 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         callback.key = KEYS[index].into();
         callback.quest = QUEST.into();
         callback.selector = Selector {
+        position_aliases: Vec::new(),
+        ordinal: None,
             native: Some(NativeSelector { position:Position{x,y,floor:-8},ordinal,appearance }),
             position: Some(Position{x,y,floor:-8}), unique:None,action:None,appearance:Some(appearance),
         };
         callback.effects = Default::default();
         callback.native_rule = Some(super::native_rules::NativeRule::LionTrial { trial:index as u8 });
         callback.storage = TRACKS[index].iter().enumerate().map(|(i,track)| Storage {
+        set_if: None,
+        add: None,
+        read_only: false,
             track:(*track).into(),minimum:0,maximum:if i==0 {i64::from(i32::MAX)-1} else {0},
             set:0,preserve:true,increment:false,at_least:false,
         }).collect();
-        callback.passages = vec![Passage {position:Position{x:px,y:py,floor:-8},appearance:2074,replacement:Some(2075),replacement_passable: None,create_on_close:None,if_present:false}];
+        callback.passages = vec![Passage {require_state: false, position:Position{x:px,y:py,floor:-8},appearance:2074,replacement:Some(2075),replacement_passable: None,create_on_close:None,if_present:false}];
         callback.item_on_target = Some(ItemOnTarget { on_step: false,item:format!("oteryn:item.tibia.i{}",ITEMS[index]),alternatives:vec![],count:1,replacement:None,target_replacement:None,target_remove:false,reusable:false,selected_instance:false,ingredients:vec![]});
         callback.success_message = Some(MESSAGES[index].into());
         callback.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:13-79".into()];

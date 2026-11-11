@@ -25,7 +25,7 @@ pub use entry_clock::{
 };
 mod native;
 mod reward;
-mod storage;
+pub(in crate::durability) mod storage;
 mod terminal;
 pub use native::{apply_soul_war_kill_in_transaction, soul_war_experience_in_transaction};
 pub(crate) use reward::confirm_soul_war_reward_in_transaction;

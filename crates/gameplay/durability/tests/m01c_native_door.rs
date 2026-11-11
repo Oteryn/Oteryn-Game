@@ -98,6 +98,9 @@ async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
     let key_number = if production { 3012_u16 } else { 3520 };
     for (ordinal, number) in [(101_u64, 3519_u16), (102, key_number)] {
         let request = RewardClaimMintRequest {
+            backpack_outputs: false,
+            root_charges_remaining: None,
+            root_fluid_subtype: None,
             command: reward_fixture::command(10100 + ordinal)?,
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),

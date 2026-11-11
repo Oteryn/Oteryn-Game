@@ -98,6 +98,7 @@ async fn exercise(h: &f::Harness, with_paint: bool) -> f::TestResult {
         reset_epoch: 0,
         actor_placement: f::id(7),
         movement_revision: 1,
+        party: Vec::new(),
     };
     // Native effects cannot be routed through the weaker generic writer.
     assert!(

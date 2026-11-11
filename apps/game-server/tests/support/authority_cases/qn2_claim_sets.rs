@@ -167,6 +167,9 @@ async fn mint_claim(
         return Err("claim command".into());
     };
     let request = RewardClaimMintRequest {
+        backpack_outputs: false,
+        root_charges_remaining: None,
+        root_fluid_subtype: None,
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),

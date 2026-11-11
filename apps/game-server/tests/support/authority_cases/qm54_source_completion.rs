@@ -160,7 +160,8 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                 stale,
                 request("lubo", 9850)?,
                 catalogue.clone(),
-                &NoItems
+                &NoItems,
+                &crate::durability::quest_state::grizzly::NoGrizzlyPremium
             )
             .await
             .is_err()
@@ -176,6 +177,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             request("lubo", 9851)?,
             catalogue.clone(),
             &NoItems,
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await
         .map_err(f::debug)?;
@@ -193,6 +195,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             request("lubo", 9851)?,
             catalogue.clone(),
             &NoItems,
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await
         .map_err(f::debug)?;
@@ -210,6 +213,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             request("hanna", 9852)?,
             catalogue.clone(),
             &NoItems,
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await
         .map_err(f::debug)?;
@@ -228,6 +232,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             request("amber", 9853)?,
             catalogue,
             &NoItems,
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await
         .map_err(f::debug)?;

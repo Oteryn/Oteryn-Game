@@ -84,6 +84,7 @@ PREPROD_MANIFEST = "deploy/synology-game/preprod-topology.toml"
 SPELLS_MANIFEST = "content/spells.manifest.json"
 
 AUTHORING_TOOLS = (
+    "tools/content-schema/world-authoring/questl2_chest_bindings.py",
     "tools/content-migration/qengine_equipment_audit.py",
     "tools/content-migration/raid_catalogue.py",
     "tools/content-schema/craft-authoring/craft_authoring.py",
@@ -95,12 +96,14 @@ AUTHORING_TOOLS = (
     "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
     "tools/content-schema/quest-authoring/first_dragon_activity.py",
     "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+    "tools/content-migration/qengine_equipment_audit.py",
 )
 
 CHECKS = (
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
     ["python3", "tools/content-migration/refresh_season_creature_inventory.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply", "--check"],
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/arena_completion.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
@@ -116,6 +119,7 @@ CHECKS = (
     ["python3", "tools/content-migration/validate_world_project_v2_to_tree.py"],
     ["python3", "tools/content-migration/test_world_project_v2_to_tree.py"],
     ["python3", "tools/content-schema/validate_materialized_game_tree.py"],
+    ["python3", "tools/content-schema/test_materialized_authored_props.py"],
     ["python3", "tools/content-census/item_key_references.py"],
     *(["python3", tool, "content", "--check"] for tool in AUTHORING_TOOLS),
     ["python3", "tools/content-schema/item-authoring/test_engine_items.py"],
@@ -175,6 +179,44 @@ def refresh_world_metadata() -> None:
              "--crystal-root", str(source)])
     for name in ("convert_islands.py", "convert_world_record.py"):
         run(["python3", "tools/content-schema/world-authoring/" + name])
+
+
+def quest_donor_feedback_inputs() -> dict[str, str]:
+    """Verify the donor evidence already pinned by the current Quest tree."""
+    index = json.loads((ROOT / "content/quests/definitions/index.json").read_bytes())
+    sources = index.get("authoring_sources")
+    if not isinstance(sources, list):
+        raise ValueError("Quest donor feedback source inventory is missing")
+    prefix = "tools/content-schema/quest-authoring/samples/donor-source/"
+    inputs = {}
+    for descriptor in sources:
+        if not isinstance(descriptor, dict) or not isinstance(descriptor.get("path"), str):
+            raise ValueError("Quest donor feedback source descriptor is invalid")
+        relative = descriptor["path"]
+        if not relative.startswith(prefix):
+            continue
+        path = Path(relative)
+        digest = descriptor.get("sha256")
+        if (path.is_absolute() or ".." in path.parts or path.as_posix() != relative
+                or not (ROOT / path).resolve().is_relative_to(ROOT.resolve())
+                or relative in inputs or not isinstance(digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", digest) is None):
+            raise ValueError("Quest donor feedback source is invalid or duplicated: " + relative)
+        if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != digest:
+            raise ValueError("Quest donor feedback digest differs: " + relative)
+        inputs[relative] = digest
+    if not inputs:
+        raise ValueError("Quest donor feedback source inventory is empty")
+    return inputs
+
+
+def refresh_quest_donor_capture() -> None:
+    # Whole-Quest capture pins may advance; evidence consumed by that Quest
+    # tree must remain unchanged. A changed feedback input needs explicit review.
+    before = quest_donor_feedback_inputs()
+    run(["python3", "tools/content-schema/quest-authoring/quest_donor_source_authoring.py"])
+    if quest_donor_feedback_inputs() != before:
+        raise ValueError("Quest donor feedback source inventory changed during capture")
 
 
 def git(*args: str) -> str:
@@ -552,6 +594,17 @@ def repin_rust_inventory() -> None:
         if count != 1:
             raise SystemExit(f"{raw_test.name}: expected one generated source extent")
         raw_test.write_text(raw_text, encoding="utf-8", newline="\n")
+    # Client map loading pins the same index that the canonical World tooling writes.
+    client = ROOT / "crates/client-assets/src/world.rs"
+    placement_digest = hashlib.sha256((WORLD / "placements/index.json").read_bytes()).hexdigest()
+    client_text, count = re.subn(
+        r'(pub const PLACEMENT_INDEX_SHA256: &str =\s*")[0-9a-f]{64}(";)',
+        lambda match: match.group(1) + placement_digest + match.group(2),
+        client.read_text(encoding="utf-8"),
+    )
+    if count != 1:
+        raise SystemExit("client World placement index pin not found")
+    client.write_text(client_text, encoding="utf-8", newline="\n")
 
 
 def source_cohort_extent(world: Path) -> dict[str, int | str]:
@@ -621,7 +674,7 @@ def unresolved_worktree_paths() -> list[str]:
 
 
 def refresh_quest_callback_proof() -> None:
-    """Re-pin the callback inventory witness without changing reviewed core snapshots."""
+    """Re-pin merged compiler/callback inputs without changing reviewed snapshots."""
     directory = ROOT / "tools/content-schema/quest-authoring/samples/completion242"
     approval_path = directory / "source-fix-approval.json"
     receipt_path = directory / "source-fix-receipt.json"
@@ -629,6 +682,15 @@ def refresh_quest_callback_proof() -> None:
         return
     approval = json.loads(approval_path.read_bytes())
     receipt = json.loads(receipt_path.read_bytes())
+    if approval["compiler_inputs"] != receipt["compiler_inputs"]:
+        raise ValueError("source approval/receipt compiler inventory differs")
+    for document in (approval, receipt):
+        for descriptor in document["compiler_inputs"]:
+            relative = Path(descriptor["path"])
+            source = (ROOT / relative).resolve()
+            if relative.is_absolute() or ".." in relative.parts or not source.is_relative_to(ROOT):
+                raise ValueError("source compiler input escapes repository")
+            descriptor["sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
     callback_path = "content/quests/world-callbacks.json"
     digest = hashlib.sha256((ROOT / callback_path).read_bytes()).hexdigest()
     for document in (approval, receipt):
@@ -665,6 +727,8 @@ def main() -> int:
         run(["python3", "tools/content-schema/quest-authoring/questpc3_collectors.py", "content"])
         run(["python3", "tools/content-schema/quest-authoring/questpc3_native_entries.py", "content"])
         run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
+        run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
+        refresh_quest_callback_proof()
         run(["python3", "tools/content-migration/register_spell_families.py"])
         run(["python3", "tools/content-migration/qengine_equipment_audit.py", "content"])
         run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
@@ -672,6 +736,10 @@ def main() -> int:
         run(["python3", "tools/content-schema/quest-authoring/first_dragon_activity.py", "content"])
         run(["python3", "tools/content-migration/raid_catalogue.py", "content"])
         run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
+        for census in ("equipment", "audit_sites", "room_sites"):
+            run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
+        run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
+        run(["python3", "tools/content-migration/qengine_equipment_audit.py", "content"])
         if not args.skip_checks:
             run(["python3", "tools/content-migration/register_spell_families.py", "--check"])
         return 0
@@ -686,6 +754,8 @@ def main() -> int:
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
     run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])
     refresh_quest_callback_proof()
     # Source-backed field regeneration uses the same explicit source root as its tests.
@@ -693,33 +763,59 @@ def main() -> int:
     if sources := os.environ.get("OTERYN_SPELL_SOURCE_ROOT"):
         run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
     run(["python3", "tools/content-schema/quest-authoring/last_creep_native.py"])
+    run(["python3", "tools/content-schema/npc-authoring/convert_placements.py"])
+    run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
+    run(["python3", "tools/content-schema/imbuement-authoring/imbuement_authoring.py", "build"])
+    # The materializer validates ranged facts against the complete Item tree.
+    # Repair that derived prerequisite through its normal owner before reading it.
+    run(["python3", "tools/content-migration/world_project_v2_to_tree.py", "--items-only"])
     materialize_world()
+    import questpc7_thaian_authoring
+    questpc7_thaian_authoring.install(ROOT)
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
     repin_rust_inventory()
-    run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
     # Native policies seal the complete regenerated creature root. Keep their
     # bounded, independently reviewed source witnesses in the same generation.
     native = "tools/content-schema/native-gameplay/"
-    for name in ("build_srx3_soul_war_witness.py", "build_srx3_rotten_blood_witness.py",
+    for name in ("build_native_callback_witness.py",
+                 "build_srx3_soul_war_witness.py", "build_srx3_rotten_blood_witness.py",
                  "build_srx3_primal_witness.py", "build_srx3_soul_war_attacks.py",
                  "build_srx3_omrafir_attacks.py", "build_srx3_w01_prepare_death.py"):
         run(["python3", native + name])
-    for name in ("build_srx3_soul_war_death_events.py", "build_native_death_event_witness.py"):
+    for name in ("build_srx3_soul_war_death_events.py", "build_srx3_rotten_death_events.py",
+                 "build_native_death_event_witness.py"):
         run(["python3", native + name, "--refresh-native-pin"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
+    # Callback witnesses add authored props to the native index; rooms must pin that final index.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
+    # These standalone compilers consume the final Quest and placement inputs;
+    # native qualification and its censuses must see their registered bindings.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_access.py"])
+    run(["python3", "tools/content-schema/quest-authoring/qmech_m24_kill_bindings.py"])
+    # Claims above may add complete native container recipes. Rebuild their
+    # Item closure only after those final claims exist, before census and pins.
+    run(["python3", "tools/content-migration/register_spell_families.py"])
     # Room provenance includes the native Item provider, including NPC inputs.
     # Refresh after all native/map producers, before freshness checks and staging.
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
+    for census in ("equipment", "audit_sites", "room_sites"):
+        run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
     run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
     refresh_world_metadata()
+    # Variant evidence pins the final Claim, Item and Achievement inventories.
+    run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
+    for name in ("quest_explore_area_candidates.py", "quest_talk_npc_candidates.py",
+                 "quest_reward_only_binding_candidates.py"):
+        run(["python3", "tools/content-schema/quest-authoring/" + name])
+    refresh_quest_donor_capture()
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():

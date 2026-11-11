@@ -3,7 +3,9 @@ use super::Callback;
 
 impl Callback {
     pub fn requires_live_premium(&self) -> bool {
-        self.requires_premium || self.admission.as_ref().is_some_and(|guard| guard.premium)
+        self.requires_premium
+            || self.premium_required
+            || self.admission.as_ref().is_some_and(|guard| guard.premium)
     }
 }
 

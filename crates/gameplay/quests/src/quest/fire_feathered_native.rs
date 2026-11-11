@@ -40,11 +40,20 @@ pub const SOURCES: [OrbSource; 3] = [
 ];
 pub const GUARDIAN_NATIVE_POSITION: (u16, u16, i8) = (33553, 31624, -14);
 pub fn callbacks() -> Vec<Callback> {
-    SOURCES.iter().enumerate().map(|(index,(key,pos,appearance,input,consume))|Callback{track_initials: Default::default(),required_completed_quests:Vec::new(),admission: None, requires_premium: false,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
+    SOURCES.iter().enumerate().map(|(index,(key,pos,appearance,input,consume))|Callback{
+        remote_teleport: None,
+        state_operations: Vec::new(),
+        failure_teleport: None,
+        item_reward: None,
+        reward_bundle: false,
+        achievements: Vec::new(),
+        activation: None,
+        requirements: None,track_initials: Default::default(),required_completed_quests:Vec::new(),admission: None, requires_premium: false,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
         key:(*key).into(),quest:QUEST.into(),trigger:Trigger::Use,
-        selector:Selector{native: None,position:Some(Position{x:pos.0,y:pos.1,floor:pos.2}),unique:None,action:None,appearance:Some(*appearance)},
+use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],required_travel:vec![],
+        selector:Selector{ position_aliases: Vec::new(),ordinal:None,native: None,position:Some(Position{x:pos.0,y:pos.1,floor:pos.2}),unique:None,action:None,appearance:Some(*appearance)},
         lever:None,reversible:false,passages:vec![],teleport:None,
-        storage:vec![Storage{increment: false, at_least: false,track:TRACKS[index].into(),minimum:0,maximum:0,set:1,preserve:false}],
+        storage:vec![Storage{add: None, read_only: false, set_if: None, increment: false, at_least: false,track:TRACKS[index].into(),minimum:0,maximum:0,set:1,preserve:false}],
         minimum_level:None, character_requirements: None,experience: None, world_change: None,monk_reward:None,offerings:vec![],
         item_on_target:Some(ItemOnTarget{on_step: false, ingredients: Vec::new(), target_remove: false,selected_instance:false,alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{input}"),count:1,replacement:(!consume).then(||format!("oteryn:item.tibia.i{input}")),target_replacement:None}),
         return_on_failure:false,failure_message:None,success_message:None,native_rule:None,effects:Default::default(),

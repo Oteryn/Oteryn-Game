@@ -1,5 +1,5 @@
-//! Crystal rotten_ichgahal.lua raw exit -> pinned OTBM Teleport34111 attribute8.
-//! The raw tile remains closed; only its genuine, qualified arrival is admitted.
+//! Crystal rotten_ichgahal.lua:18 -> actual pinned OTBM Teleport34111 attribute8.
+//! The raw exit stays blocked; only its proven arrival can compose the return.
 use super::*;
 use std::sync::OnceLock;
 
@@ -14,7 +14,7 @@ const FINAL: LogicalCell = LogicalCell {
     z: 15,
 };
 
-fn capture_matches(capture: &serde_json::Value) -> bool {
+fn matches_capture(capture: &serde_json::Value) -> bool {
     let Some(tiles) = capture["tiles"].as_array() else {
         return false;
     };
@@ -30,17 +30,22 @@ fn capture_matches(capture: &serde_json::Value) -> bool {
     else {
         return false;
     };
-    raw["items"]
+    let teleport = raw["items"]
         == serde_json::json!([
             {"server_item_id": 42852, "depth": 0, "attributes": {}},
             {"server_item_id": 34111, "depth": 0,
              "attributes": {"dest": [FINAL.x, FINAL.y, FINAL.z]}}
-        ])
-        && target["items"]
-            == serde_json::json!([
-                {"server_item_id": 36344, "depth": 0, "attributes": {}},
-                {"server_item_id": 292, "depth": 0, "attributes": {}}
-            ])
+        ]);
+    let stack = target["items"].as_array().is_some_and(|items| {
+        items.len() == 2
+            && items[0]["server_item_id"] == 36344
+            && items[1]["server_item_id"] == 292
+            && items
+                .iter()
+                .all(|item| item["depth"] == 0 && item["attributes"] == serde_json::json!({}))
+    });
+    teleport
+        && stack
         && capture["source_revision"] == CRYSTAL_REVISION
         && capture["source_closure"].as_array().is_some_and(|closure| {
             closure.iter().any(|source| {
@@ -50,11 +55,11 @@ fn capture_matches(capture: &serde_json::Value) -> bool {
         })
 }
 
-fn pinned_capture_matches() -> bool {
+fn capture_matches() -> bool {
     static VERIFIED: OnceLock<bool> = OnceLock::new();
     *VERIFIED.get_or_init(|| {
-        serde_json::from_slice(PinnedActivitySourceRoom::Ichgahal.bytes())
-            .is_ok_and(|capture| capture_matches(&capture))
+        serde_json::from_slice::<serde_json::Value>(PinnedActivitySourceRoom::Ichgahal.bytes())
+            .is_ok_and(|capture| matches_capture(&capture))
     })
 }
 
@@ -64,12 +69,11 @@ pub(super) fn qualify(
     resolved: LogicalCell,
 ) -> Result<LogicalCell, ActivityTemplateRefusal> {
     use ActivityTemplateRefusal as R;
-    if raw != RAW || resolved != FINAL || !pinned_capture_matches() {
+    if raw != RAW || resolved != FINAL || !capture_matches() {
         return Err(R::InvalidSourceCapture);
     }
-    // The sealed room proves the actual source stack and Teleport attribute.
-    // No UNKNOWN cell is opened; the existing Bundle resolver and this current
-    // collision proof must agree on the one actual destination.
+    // The sealed room proves the actual source stack and attributes. Its
+    // separate destination must also be KNOWN walkable in the current Bundle.
     if room
         .movement_cells()
         .index()
@@ -86,41 +90,61 @@ pub(super) fn qualify(
 mod tests {
     use super::*;
 
-    fn tile_mut(
-        capture: &mut serde_json::Value,
-        position: LogicalCell,
-    ) -> Result<&mut serde_json::Value, String> {
-        capture["tiles"]
-            .as_array_mut()
-            .ok_or("source tiles")?
-            .iter_mut()
-            .find(|tile| {
-                tile["source_position"] == serde_json::json!([position.x, position.y, position.z])
-            })
-            .ok_or_else(|| "captured source tile".into())
-    }
-
     #[test]
-    fn exact_ichgahal_teleport_and_arrival_cannot_be_substituted() -> Result<(), String> {
+    fn pinned_ichgahal_arrival_rejects_changed_destination_stack_and_source() -> Result<(), String>
+    {
         let capture: serde_json::Value =
             serde_json::from_slice(PinnedActivitySourceRoom::Ichgahal.bytes())
                 .map_err(|error| error.to_string())?;
-        assert!(capture_matches(&capture));
-        assert!(pinned_capture_matches());
-
+        assert!(matches_capture(&capture));
+        assert!(capture_matches());
         let mut changed = capture.clone();
-        tile_mut(&mut changed, RAW)?["items"][1]["attributes"]["dest"] =
-            serde_json::json!([FINAL.x + 1, FINAL.y, FINAL.z]);
-        assert!(!capture_matches(&changed));
+        let raw = changed["tiles"]
+            .as_array_mut()
+            .and_then(|tiles| {
+                tiles.iter_mut().find(|tile| {
+                    tile["source_position"] == serde_json::json!([RAW.x, RAW.y, RAW.z])
+                })
+            })
+            .ok_or("actual Ichgahal raw tile")?;
+        let teleport = raw["items"]
+            .as_array_mut()
+            .and_then(|items| {
+                items
+                    .iter_mut()
+                    .find(|item| item["server_item_id"] == 34111)
+            })
+            .ok_or("actual Ichgahal Teleport")?;
+        teleport["attributes"]["dest"] = serde_json::json!([FINAL.x + 1, FINAL.y, FINAL.z]);
+        assert!(!matches_capture(&changed));
         let mut changed = capture.clone();
-        tile_mut(&mut changed, FINAL)?["items"][1]["server_item_id"] = serde_json::json!(42671);
-        assert!(!capture_matches(&changed));
+        let target = changed["tiles"]
+            .as_array_mut()
+            .and_then(|tiles| {
+                tiles.iter_mut().find(|tile| {
+                    tile["source_position"] == serde_json::json!([FINAL.x, FINAL.y, FINAL.z])
+                })
+            })
+            .ok_or("actual Ichgahal arrival tile")?;
+        target["items"][1]["server_item_id"] = serde_json::json!(42671);
+        assert!(
+            !matches_capture(&changed),
+            "Vemiath's stack is not Ichgahal's"
+        );
         let mut changed = capture.clone();
-        tile_mut(&mut changed, FINAL)?["items"][0]["attributes"] = serde_json::json!({"15": 2});
-        assert!(!capture_matches(&changed));
+        let target = changed["tiles"]
+            .as_array_mut()
+            .and_then(|tiles| {
+                tiles.iter_mut().find(|tile| {
+                    tile["source_position"] == serde_json::json!([FINAL.x, FINAL.y, FINAL.z])
+                })
+            })
+            .ok_or("actual Ichgahal arrival tile")?;
+        target["items"][0]["attributes"] = serde_json::json!({"15": 2});
+        assert!(!matches_capture(&changed));
         let mut changed = capture;
-        changed["source_revision"] = serde_json::json!("unqualified-revision");
-        assert!(!capture_matches(&changed));
+        changed["source_revision"] = serde_json::json!("unverified");
+        assert!(!matches_capture(&changed));
         Ok(())
     }
 }

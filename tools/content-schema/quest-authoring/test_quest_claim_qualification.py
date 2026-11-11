@@ -29,22 +29,73 @@ class QualificationTests(unittest.TestCase):
     def test_checked_in_ledger_is_valid(self):
         errors, counts = qualification.validate()
         self.assertEqual(errors, [])
-        # Three Demon Helmet selectors now have real USE/PostgreSQL receipt
-        # coverage. The exact remaining denominator still rejects drift.
-        # ITEMHOLD-Q expands the inventory, without qualifying these World routes.
-        self.assertEqual(sum(counts.values()) - len(qualification.ITEMHOLD_ADMISSIONS), 297)
+        # Keep the exact outstanding denominator; qualified and not-playable
+        # source claims remain in their separate coverage categories.
+        self.assertEqual(sum(counts.values()), 145)
+
+        # 189 source claims have focused dispatch PG proof; only the
+        # two Dawnport claims are excluded. Keep exact denominator detection.
+        self.assertEqual(sum(counts.values()), qualification.EXPECTED_DENOMINATOR)
+        coverage = qualification.read_json(qualification.COVERAGE)
+        self.assertEqual(coverage['counts'], {
+            'dispatch_pg_qualified': 189, 'not_playable': 2, 'supported_unqualified': 145})
+        self.assertEqual(sum(coverage['counts'].values()), 336)
+        selected = {
+            'oteryn:reward-claim.kv.nightmare_teddy_quest',
+            'oteryn:reward-claim.kv.purpletome1',
+            'oteryn:reward-claim.kv.purpletome2',
+            'oteryn:reward-claim.kv.purpletome3',
+            'oteryn:reward-claim.quest.key.id4055',
+        }
+        claims = {c['claim']: c for q in coverage['quests'] for c in q['chests']}
+        for key in selected:
+            self.assertEqual(claims[key]['status'], 'dispatch_pg_qualified')
+            self.assertTrue(claims[key]['reason'])
+            self.assertTrue(all(source['reward_matches_current_source']
+                                for placement in claims[key]['placements']
+                                for source in placement['sources']))
         ledger = qualification.read_json(qualification.LEDGER)
         for key in qualification.ITEMHOLD_ADMISSIONS:
-            record = ledger["claims"][key]
-            self.assertEqual(record["disposition"], "blocked")
-            self.assertEqual(record["dependency"], "QUEST-QUAL-1")
+            self.assertNotIn(key, ledger["claims"])
+            coverage = qualification.read_json(qualification.COVERAGE)
+            matches = [chest for quest in coverage["quests"]
+                       for chest in quest.get("chests", []) if chest.get("claim") == key]
+            self.assertEqual(len(matches), 1)
+            self.assertEqual(matches[0]["status"], "dispatch_pg_qualified")
+            self.assertTrue(matches[0]["reason"])
+            self.assertTrue(matches[0]["placements"])
 
     def test_missing_row_is_rejected(self):
-        for key in [next(iter(self.ledger["claims"])), *sorted(qualification.ITEMHOLD_ADMISSIONS)]:
+        for key in sorted(self.ledger["claims"]):
             with self.subTest(claim=key):
                 ledger = copy.deepcopy(self.ledger)
                 del ledger["claims"][key]
                 self.assertIn(f"missing claim: {key}", self.check(ledger))
+
+    def test_itemhold_admissions_retain_their_qualified_source_witnesses(self):
+        coverage = json.loads(qualification.COVERAGE.read_text())
+        claims = {chest['claim']: chest for quest in coverage['quests']
+                  for chest in quest['chests']}
+        for key in qualification.ITEMHOLD_ADMISSIONS:
+            with self.subTest(claim=key):
+                self.assertNotIn(key, self.ledger['claims'])
+                self.assertEqual(claims[key]['status'], 'dispatch_pg_qualified')
+                self.assertEqual(claims[key]['reason'], {
+                    'oteryn:reward-claim.kv.ornamentedshield':
+                        'quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal',
+                    'oteryn:reward-claim.kv.triangletower':
+                        'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
+                    'oteryn:reward-claim.kv.powerring2':
+                        'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
+                    'oteryn:reward-claim.kv.draconia1':
+                        'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
+                    'oteryn:reward-claim.kv.fireaxe1':
+                        'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
+                    'oteryn:reward-claim.kv.goblintemple2':
+                        'quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal',
+                    'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine':
+                        'quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal',
+                }[key])
 
     def test_invented_test_is_rejected(self):
         record = next(iter(self.ledger["claims"].values()))

@@ -88,7 +88,8 @@ fn m43_data_attachment_waits_for_separately_packaged_opening() -> Result<(), Str
     let before = document.callbacks.clone();
     colours_peer::append_after_opening(&mut document).map_err(fail)?;
     assert_eq!(document.callbacks, before);
-    validate_document(document).map_err(fail)?;
+    validate_document_with_capacity(document, questpc7_registry_bounds::PER_DOCUMENT)
+        .map_err(fail)?;
     Ok(())
 }
 

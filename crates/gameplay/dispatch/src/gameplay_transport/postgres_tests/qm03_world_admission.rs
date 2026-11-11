@@ -180,8 +180,21 @@ async fn anniversary(
     );
     assert_eq!(state(h).await?, before);
     let catalogue = crate::content::blessing_catalogue::BlessingCatalogue::load()?;
-    let regular: Vec<_> = catalogue.regular().collect();
-    assert_eq!(regular.len(), 5);
+    let requirements = callback
+        .character_requirements
+        .as_ref()
+        .ok_or("Anniversary character requirements")?;
+    assert_eq!(requirements.blessings.len(), 5);
+    let regular: Vec<_> = catalogue
+        .blessings
+        .iter()
+        .filter(|b| requirements.blessings.contains(&b.storage_key))
+        .collect();
+    assert_eq!(
+        regular.len(),
+        5,
+        "every required blessing is in the live catalogue"
+    );
     for (index, blessing) in regular.iter().enumerate() {
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica")

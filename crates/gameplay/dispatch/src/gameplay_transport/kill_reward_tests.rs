@@ -145,12 +145,14 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         // W06 callbacks are absent for this ordinary-kill fixture.
         echo: None,
         callback_loot: Vec::new(),
+        tutorial_loot: Arc::default(),
         source_callback_loot: None,
         task_board_recipients: Arc::default(),
         talisman: Arc::default(),
         boss_reward: None,
         activity_death: None,
         grizzly: None,
+        objectives: None,
         damage_shares: Vec::new(),
         prey_checkpoint: None,
         activity_observed_at: None,
@@ -159,6 +161,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         creature: "fixture:rat".into(),
         soulpit_experience: None,
         row: Some(row(drops)),
+        encounter_experience: None,
         bosstiary_only: None,
         boss_slot_bonuses: std::sync::Arc::new(std::sync::OnceLock::new()),
         ground: DeathGroundContext {
@@ -202,6 +205,31 @@ fn taken(outcome: TakeOutcome) -> TakenKillSettlement {
         TakeOutcome::Empty => panic!("expected an entry, found none"),
         TakeOutcome::CapacityWait => panic!("expected an entry, found capacity_wait"),
     }
+}
+
+#[test]
+fn newhaven_cached_plan_reserves_only_shortfall_and_releases_it() {
+    let queue = KillSettlementQueue::default();
+    let entry = pending(2, 50, 3, 30);
+    let death = entry.facts.death;
+    assert_eq!(queue.append(entry), AppendOutcome::Queued);
+    let in_flight = taken(queue.take(session(50), 3));
+    let initial = in_flight.loot_mints;
+    assert!((28..64).contains(&initial));
+    assert!(queue.ensure_loot_mint_reservation(death, initial, 28));
+    assert_eq!(queue.counts().2, initial);
+    assert!(queue.ensure_loot_mint_reservation(death, initial, initial + 1));
+    assert_eq!(queue.counts().2, initial + 1);
+    assert!(queue.ensure_loot_mint_reservation(death, initial, initial + 1));
+    assert_eq!(
+        queue.counts().2,
+        initial + 1,
+        "same plan never double reserves"
+    );
+    assert!(!queue.ensure_loot_mint_reservation(death, initial, 65));
+    assert_eq!(queue.counts().2, initial + 1);
+    in_flight.finish();
+    assert_eq!(queue.counts(), (0, 0, 0));
 }
 
 #[test]

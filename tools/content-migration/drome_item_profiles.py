@@ -11,6 +11,8 @@ import argparse
 import copy
 import hashlib
 import json
+
+from native_profile_composition import encode_native_profile
 import re
 import subprocess
 import sys
@@ -218,7 +220,7 @@ def admit(root: Path, generated: dict[str, bytes], profile_path: str,
                        for field in ("physical", "stack", "container", "temporal", "presentation"))):
             _fail(key, "NATIVE_CONFLICT")
     document["records"] = sorted(document["records"] + additions, key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
+    raw = encode_native_profile(document)
     manifest = json.loads(generated[manifest_path])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(raw).hexdigest()
     manifest_raw = canonical(manifest)

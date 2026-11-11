@@ -54,18 +54,12 @@ pub(super) fn prepare_step_in(
     {
         return None;
     }
-    let Some(pos) = (|| {
-        Some(TilePos {
-            x: at.x.try_into().ok()?,
-            y: at.y.try_into().ok()?,
-            floor: i8::try_from(at.floor).ok()?.checked_neg()?,
-        })
-    })() else {
-        return None;
+    let pos = TilePos {
+        x: at.x.try_into().ok()?,
+        y: at.y.try_into().ok()?,
+        floor: i8::try_from(at.floor).ok()?.checked_neg()?,
     };
-    let Some(tile) = map.overlay.base().tile(pos.x, pos.y, pos.floor) else {
-        return None;
-    };
+    let tile = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
     let Ok(Some(stack)) = view::compose_tile(&map.overlay, &map.facts, pos) else {
         return None;
     };

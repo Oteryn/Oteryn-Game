@@ -83,14 +83,14 @@ async fn observe_source(
         .await?;
     let account = serde_json::json!({
         "version": 1, "operation": "ReadAccountSecurityV1", "result": "observed",
-        "source_authority": SOURCE, "source_revision": "1", "decision_identity": "account-1",
+        "source_authority": SOURCE, "source_revision": "1", "decision_identity": "1",
         "source_observed_at": now.to_string(), "clock_uncertainty_seconds": "0",
         "account_id": subject.account_id, "purpose": "platform_security",
         "scope": "fresh_admission", "allowed": true, "minimum_valid_generation": "1",
     });
     let trust = serde_json::json!({
         "version": 1, "operation": "ReadFreshSigningTrustV1", "result": "observed",
-        "source_authority": SOURCE, "source_revision": "1", "decision_identity": "trust-1",
+        "source_authority": SOURCE, "source_revision": "1", "decision_identity": "1",
         "source_observed_at": now.to_string(), "clock_uncertainty_seconds": "0",
         "issuer": ISSUER, "profile": PROFILE, "key_purpose": "fresh_admission", "key_id": KEY,
         "trusted": true, "public_key": URL_SAFE_NO_PAD.encode(signing.verifying_key().to_bytes()),
@@ -99,13 +99,13 @@ async fn observe_source(
         (
             NativeSourceOperation::ReadAccountSecurityV1,
             NativeSourceSubject::account_security(subject.account_id.clone())?,
-            "account-1",
+            "1",
             account,
         ),
         (
             NativeSourceOperation::ReadFreshSigningTrustV1,
             NativeSourceSubject::signing_trust(ISSUER, PROFILE, "fresh_admission", KEY)?,
-            "trust-1",
+            "1",
             trust,
         ),
     ] {

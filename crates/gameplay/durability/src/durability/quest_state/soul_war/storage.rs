@@ -13,7 +13,7 @@ pub(super) async fn database_time(tx: &mut Transaction<'_, Postgres>) -> StoredR
     )
 }
 
-pub(super) async fn load(
+pub(in crate::durability) async fn load(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
 ) -> StoredResult<SoulWarState> {

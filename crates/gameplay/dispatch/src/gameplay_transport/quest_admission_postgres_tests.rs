@@ -107,11 +107,7 @@ fn execute(case: Case) -> TestResult {
         );
         drop(refresh);
         let key = super::quest_runtime_fixture::TRANSITION;
-        let fence = owner
-            .current_quest_fence(session)
-            .await
-            .map_err(|_| "fence")?
-            .ok_or("live fence")?;
+        let fence = super::death_ml_loss_composed::current_fence(&owner, session).await?;
         let request = |command_id| -> TestResult<QuestTransitionRequest> {
             Ok(QuestTransitionRequest {
                 transition_key: key.into(),

@@ -209,6 +209,7 @@ fn placement_candidate(placement: &Value) -> Result<Option<CandidatePlacement>, 
                 count: child.count,
                 key_number: None,
                 text: None,
+                charges_remaining: None,
             });
         }
     }

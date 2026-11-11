@@ -297,7 +297,7 @@ async fn shop(
                     && npc.placements.iter().any(|p| {
                         entity.position.x == i32::from(p.x)
                             && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == -i16::from(p.floor)
+                            && entity.position.floor == i16::from(p.floor)
                     })
             })
         })

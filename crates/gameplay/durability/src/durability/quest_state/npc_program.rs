@@ -7,12 +7,12 @@ mod achievements;
 mod equipped;
 mod fathers_burden;
 pub(in crate::durability) mod hot_cuisine_m42;
+#[cfg(test)]
+mod hot_cuisine_m42_tests;
 mod items;
 mod marlin_trophy;
 mod rewards;
 pub mod teleport;
-#[cfg(test)]
-mod hot_cuisine_m42_tests;
 
 /// Advisory for preview; the receipt owner reloads every fact under the Character fence.
 #[derive(Clone, Debug, Default)]
@@ -55,7 +55,7 @@ impl NpcProgramRequest {
         }
     }
 
-    fn binding(&self, character: CharacterId) -> [u8; 33] {
+    pub(in crate::durability) fn binding(&self, character: CharacterId) -> [u8; 33] {
         let mut digest =
             Sha256::new().chain_update(request_binding(character, &self.quest_request()));
         for value in [&self.npc, &self.message] {
@@ -99,8 +99,17 @@ pub fn preview_with_player_name(
     now: i64,
     eligibility: &NpcEligibility,
     player_name: Option<&str>,
-) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
-    preview_with_appearance(request, tracks, catalogue, now, eligibility, player_name, (&BTreeMap::new(), 0))
+) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
+{
+    preview_with_appearance(
+        request,
+        tracks,
+        catalogue,
+        now,
+        eligibility,
+        player_name,
+        (&BTreeMap::new(), 0),
+    )
 }
 
 /// Advisory appearance preview; the writer reloads the locked account snapshot.
@@ -122,8 +131,20 @@ pub fn preview_with_appearance(
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
-    let cooking_inventory = if hot_cuisine_m42::owns(request) { Some(hot_cuisine_m42::optimistic()?) } else { None };
-    match evaluate_source(&source, request, tracks, catalogue, now, facts, cooking_inventory.as_ref()) {
+    let cooking_inventory = if hot_cuisine_m42::owns(request) {
+        Some(hot_cuisine_m42::optimistic()?)
+    } else {
+        None
+    };
+    match evaluate_source(
+        &source,
+        request,
+        tracks,
+        catalogue,
+        now,
+        facts,
+        cooking_inventory.as_ref(),
+    ) {
         Err(_) if request.npc == "oteryn:npc.tereban" => evaluate_source(
             &source,
             request,
@@ -290,7 +311,10 @@ impl DurabilityRoot {
         clippy::too_many_arguments,
         reason = "physical lane, current authority and item content are independent proofs"
     )]
-    pub async fn commit_character_npc_program<C: super::super::item_loop_move::ItemLoopContent>(
+    pub async fn commit_character_npc_program<
+        C: super::super::item_loop_move::ItemLoopContent,
+        G: super::grizzly::GrizzlyPremiumGate,
+    >(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -299,6 +323,7 @@ impl DurabilityRoot {
         request: NpcProgramRequest,
         catalogue: Arc<QuestStateCatalogue>,
         items: &C,
+        premium: &G,
     ) -> Result<NpcProgramCommit> {
         self.commit_npc_program_source(
             authority,
@@ -308,6 +333,7 @@ impl DurabilityRoot {
             request,
             catalogue,
             items,
+            premium,
             NpcRuleCatalog::runtime().map_err(|_| CharacterProgressionError::InvalidInput)?,
             None,
         )
@@ -318,7 +344,10 @@ impl DurabilityRoot {
         clippy::too_many_arguments,
         reason = "immutable source shares all production authority inputs"
     )]
-    async fn commit_npc_program_source<C: super::super::item_loop_move::ItemLoopContent>(
+    async fn commit_npc_program_source<
+        C: super::super::item_loop_move::ItemLoopContent,
+        G: super::grizzly::GrizzlyPremiumGate,
+    >(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -327,6 +356,7 @@ impl DurabilityRoot {
         request: NpcProgramRequest,
         catalogue: Arc<QuestStateCatalogue>,
         items: &C,
+        premium: &G,
         source: &NpcRuleCatalog,
         teleport: Option<teleport::NpcTeleportAdmission>,
     ) -> Result<NpcProgramCommit> {
@@ -351,8 +381,9 @@ impl DurabilityRoot {
             .admitted_for_npc(&request.npc, &catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .ok_or(CharacterProgressionError::InvalidInput)?;
-        let mut content = items;
-        self.try_issue_semantic_pass()?.run_with_context(&mut content, move |holder,deadline,content| Box::pin(async move {
+        let mut participants = (items, premium);
+        self.try_issue_semantic_pass()?.run_with_context(&mut participants, move |holder,deadline,participants| Box::pin(async move {
+            let (content, premium) = participants;
             let mut tx=super::super::db::begin_type2_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
             lock_admission_relations(&mut tx).await?;
@@ -499,6 +530,16 @@ impl DurabilityRoot {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && (!plan.track_changes.is_empty() || plan.completes)=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
+            if source.programs().iter().any(|program| {
+                program.document.quest == plan.quest && program.document.premium_required
+            }) {
+                let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id).fetch_one(&mut **tx).await?;
+                let account = account.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
+                if !premium.task_permitted(&mut tx, account).await? {
+                    return Ok(Ok(refused(QuestRefusal::StageMismatch)));
+                }
+            }
             let outfit_rewards = if plan.effects.iter().any(|effect| matches!(effect,
                 oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::Outfit { .. } |
                 oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::OutfitAddon { .. })) {
