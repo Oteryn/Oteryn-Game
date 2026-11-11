@@ -10,11 +10,11 @@ rewrites the Crystal facts; register_spell_families.py [--check] applies the ove
 import argparse
 import hashlib
 import json
-
-from native_profile_composition import encode_native_profile
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+from native_profile_composition import encode_native_profile
 
 CANARY = 'imports/canary/items-xml/items.xml'
 CANARY_SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
@@ -170,7 +170,7 @@ def complete_boots(root, generated, profile_path, manifest_path, order, canonica
             raise ValueError(f"IMBUEMENT_BOOT_PROFILE {binding['external_id']}")
         record['semantics']['imbuement'] = expected
     document['records'].sort(key=order)
-    encoded = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    encoded = encode_native_profile(document)
     generated[profile_path] = encoded
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(encoded).hexdigest()

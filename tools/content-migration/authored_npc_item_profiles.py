@@ -2,10 +2,9 @@
 import hashlib
 import json
 
-from native_profile_composition import encode_native_profile
-
 import authored_quest_item_custody as custody
 import quest_batch3_item_profiles as references
+from native_profile_composition import encode_native_profile
 
 INTENT = 'tools/content-schema/native-gameplay/authored-npc-item-custody.json'
 XML = 'imports/canary/items-xml/items.xml'

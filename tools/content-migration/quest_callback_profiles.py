@@ -3,13 +3,12 @@ import copy
 import difflib
 import hashlib
 import json
-
-from native_profile_composition import encode_native_profile
 import sys
 import xml.etree.ElementTree as ET
 
 import timed_item_profiles as timed
 import writable_item_profiles as writing
+from native_profile_composition import encode_native_profile
 
 SOURCE = 'imports/canary/items-xml/items.xml'
 SOURCE_SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
