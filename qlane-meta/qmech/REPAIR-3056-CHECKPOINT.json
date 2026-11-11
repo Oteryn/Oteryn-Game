@@ -3,7 +3,8 @@
   "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
   "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
   "parents": {
-    "previous_published_head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
+    "previous_published_head": "5b25618eb871f909cf4d6a82c72ed73ae91f54ff",
+    "integrated_source_helper": "b24777cbfc14c9424fce4b2c18755b94c9b32015",
     "integrated_main": "4e29529abacfcbff821bfb7560424c6684b936d7"
   },
   "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
@@ -11,17 +12,20 @@
     "workflow": ".github/workflows/content-tree-migration.yml",
     "label": "content-candidate",
     "outputs": "Exact-head generated-content patch, including canonical World changes, exported for review without an automatic commit/ref update.",
-    "routing_evidence": "Generation was moved to the active migration workflow in140b3482b684d08b86d155c2459bce7ff45691e2. G4 was manually disabled earlier; a G4 run appeared in the head64 discovery, and its current enabling actor/state was not established. No G4 mutation was made for this checkpoint."
+    "routing_evidence": "Generation was moved to the active migration workflow in140b3482b684d08b86d155c2459bce7ff45691e2. G4 was manually disabled earlier; a G4 run appeared in the head64 discovery, and its current enabling actor/state was not established. No G4 mutation was made for this checkpoint.",
+    "candidate_label_at_publication": false,
+    "authoring_pause_reason": "Exact helper generation43032293380 failed at downstream BossYield7385; root removed canonical content-candidate before source publication to avoid repeating known-failing full generation. Restore only for a repaired source candidate."
   },
   "pending": [
-    "Complete exact-head canonical generation on GitHub; inspect bound artifact base/archive/patch/paths before applying generated content and final World pins.",
-    "Run the full migration parent after early validation gates: all11 full-module routes, including EquipmentPin36, KnownSpeed8, EquipmentOverlap8, Boss12, authoredNPC2, Yield10, Rotten2, M04_10, WorldChange15, NativeOverlay14 and Lion14. Bounded local tests are not this full parent result.",
-    "Observe complete native registration output keyset and residual after the explicit proof/merged union. Final standalone registration69 printed56; keyset and residual UNKNOWN. Do not guess or blindly change43.",
-    "After data materialization, qualify Rust/runtime failures, the actual boss inventory marker and private-drop behavior; retain actual execution versus cache/compile distinctions.",
-    "Verify final generated43501..43504 native0/canonical150 and complete the whole Rotten2 module on a runner. The final new test ended locally inside source.capture with SIGKILL of unknown cause; the existing outside-record digests are unchanged and require exact qualification, not blind replacement.",
-    "Once code/data confidence is established, run the complete final PostgreSQL/Node qualification on GitHub. Current wrappers skipped DB; previous c74 evidence is historical.",
-    "Keep the six deferred P2/P3 groups together for the final pass; external live client-capture inputs remain unverified until real producer/consumer evidence exists.",
-    "Two allowed Codex reviews were already used; latest clean review applies only to41beb4536f0ea10b1d5fadfa066a5f310ae8b1f7. Later material changes have no fresh Codex approval. Do not trigger a third review or infer merge authorization."
+    "Repair the now-observed exact BossYield Crimson Sword7385 profile mismatch after source-qualified predecessor/QuickLoot/BossYield/House composition; do not broaden historical14 intersections or infer actual row fields from the candidate.",
+    "Finish normal content generation, then authenticate exact source head/run/job/attempt/artifact digest/base/patch and exact paths before applying derived content and final World pins.",
+    "Execute the full existing migration parent after its early validation gates, including all56 Equipment cases and the new custody/QN3/Feaster routes. The73 selected local tests do not replace that parent.",
+    "Read the complete actual native registration output keyset and residual. The last canonical standalone result is56; do not guess a new inventory or weaken43 without qualified source closure.",
+    "After materialization, recheck all Rust/runtime failures, the actual boss inventory marker, private-drop behavior, exact remaining26 unrelated failures and any newly visible diagnostics.",
+    "Verify generated43501..43504 native0/canonical150 and the whole Rotten2 module with exact outside-record changes; no blind digest replacement.",
+    "Once code and derived data are qualified, execute final PostgreSQL partitions, all three real PG-produced client transcripts and Node on GitHub. Route-less returns and result cache notices are not DB/client execution.",
+    "Complete the grouped P2/P3 disposition: helper source repairs are recorded below; real client replay remains open, Rotten hunting16 remains accepted separate work, mixed33792/33949 reachability remains unproven.",
+    "Preserve the two-review root limit. Later material source changes have no fresh root Codex approval; no third review and no merge authorization are inferred."
   ],
   "previous_execution_only": {
     "merge_run": 42917781849,
@@ -71,311 +75,146 @@
     }
   ],
   "last_checkpoint_execution": {
-    "head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
-    "merge_run": 43017482118,
-    "monitor_state": "ALL17_RUNS_TERMINAL_AUTHORING_REPAIR_REQUIRED",
+    "head": "5b25618eb871f909cf4d6a82c72ed73ae91f54ff",
+    "tree": "bc7a8359de299cd3d977af5539de6fd0ac4e0d04",
+    "monitor_state": "ALL_17_CLOSED_NOT_QUALIFIED",
     "open_runs": [],
-    "terminal_monitor_receipt": {
-      "path": "batch69-retained-merge-monitor-closed.json",
-      "sha256": "7cad00a4c915cf9fdd9173010d476e362e7625f2593b96dff35fc6795930e271"
-    },
     "final_run_summaries": {
-      "path": "batch69-final-run-summaries.json",
-      "sha256": "884e718d54eb067cc16a5b9b269080186db8dcd364d82ef01f636496f0c67b09"
+      "path": "batch70-all17-final-summary.json",
+      "conclusions": {
+        "success": 11,
+        "failure": 6
+      },
+      "run_attempt": 1,
+      "sha256": "cf9161a2dad9c799069daf6c0559eb086baf5b488dce90221d700ba37efcbc31"
     },
-    "terminal_run_conclusions": {
-      "Merge authority audit": {
-        "id": 43017476402,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "G4 Item Crystal Identity Bindings": {
-        "id": 43017482698,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "World Metadata Authoring": {
-        "id": 43017482596,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "failure"
-      },
-      "Wheel Authoring Schema": {
-        "id": 43017482722,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Agent governance • pull_request • 3056": {
-        "id": 43017482332,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Proficiency Authoring Schema": {
-        "id": 43017482584,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Architecture semantic audit • pull_request • 3056": {
-        "id": 43017482172,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Quest Authoring Schema": {
-        "id": 43017482301,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "failure"
-      },
-      "Item Authoring Schema": {
-        "id": 43017482565,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Store Authoring Schema": {
-        "id": 43017482810,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Area Authoring Schema": {
-        "id": 43017482991,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Content Tree Migration Equivalence": {
-        "id": 43017482254,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "failure"
-      },
-      "Craft Authoring": {
-        "id": 43017482300,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "failure"
-      },
-      "RewardClaim Authoring": {
-        "id": 43017482417,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "failure"
-      },
-      "Native entry room qualification": {
-        "id": 43017482188,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      "Merge gate • pull_request • 3056": {
-        "id": 43017482118,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "failure"
-      },
-      "PR PostgreSQL harness": {
-        "id": 43017482374,
-        "run_attempt": 1,
-        "status": "completed",
-        "conclusion": "success"
-      }
-    },
-    "generator_run": 43017482254,
-    "generator_job": 130512045592,
-    "generator_result": "Actual converter completed, final standalone registration printed56 and custody additions2791 completed. Known-speed capture and strict refresh returned by exact traceback plus sequential source order; this is not a full8 test-suite PASS. Equipment regenerate then refused QENGINE/NPC shared source identity or facts differ. The actual failed runner row pair was not captured. Final Equipment fixture write, seasonal/metadata tail, World pins and export/upload were not reached; artifacts empty.",
-    "generator_log_sha256": "15932413b2e1fa2107d2927b9ba0b5fad42afd4e1bffd6b387f77a40bcf6a792",
-    "generator_receipt": {
-      "path": "batch69-step-generator-terminal-receipt.json",
-      "sha256": "1ed915cf275e1b4ebaf98fc69df158d980d0bcbaff5a5e6f5f1eba1057a7508f"
-    },
-    "registered_output_count": 56,
-    "registered_output_count_basis": "Actual final standalone registration marker at raw1148; full keyset and residual UNKNOWN.",
-    "rust_policy_result": "RESULT REUSE ONLY. Current metadata/fmt/architecture/JSON/closure checks and record/save steps skipped. Advertised cache SHA bd290b395ffc85a215804caa3983c46c903d849a is kept separate from the historical actual66 checkout.",
-    "rust_policy_receipt": {
-      "path": "batch69-retained-control-results-recovery.json",
-      "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
-    },
-    "rust_policy_last_actual_checks": {
-      "head": "183c6551efa22860c204513111318b442aa047d9",
-      "run_id": 42995700580,
-      "job_id": 130440077999,
+    "merge_run": 43028141371,
+    "generator": {
+      "run_id": 43028141401,
+      "job_id": 130547972191,
+      "conclusion": "failure",
+      "error": "QENGINE/NPC shared source identity or facts differ",
+      "source": "tools/content-migration/refresh_equipment_profile_pin.py:329, main:579",
+      "raw_sha256": "d4ff1fca0e7b5f190890c5dcf680e2624d1501d0bc6b6d136bd8bb5bcc4dca80",
+      "artifacts": 0,
+      "actual_standalone_registration_files": 56,
+      "full_keyset_and_residual": "UNKNOWN",
+      "full_conflicting_rows": "UNKNOWN: the old refusal did not print operands",
       "receipt": {
-        "path": "batch66-retained-policy-terminal-proof.json",
-        "sha256": "9560b6ffaf181b790b91ba43b403c648496b89eeb03c9977445d6dfb1cca4cbc"
+        "path": "batch70-step-generator-terminal-receipt.json",
+        "sha256": "9d2661da0c053246d25034d042f49de04b2b04a9844649c77658bdf4a2b45482"
       }
     },
-    "clippy_result": "Actual strict Clippy passed all67 selected packages; zero result reuse; compilation4m18s.",
-    "clippy_job": 130512748790,
-    "clippy_receipt": {
-      "path": "batch69-rotten-clippy-terminal-proof.json",
-      "sha256": "0080290849b95712194aaea8f3e8cd1bbf13edc6d1df50b11337f6c00a40a1c8"
-    },
-    "rust_unit_result": "Actual12509 disjoint cases:11880 PASS/629 FAIL. All executed identities/statuses and all629 normalized full failure blocks match68. Cached package notices are not new test execution.",
-    "rust_unit_jobs": [
-      {
-        "shard": 1,
-        "job_id": 130512748869,
-        "raw_log": "merge43017482118-job130512748869-unit1-terminal.log",
-        "log_sha256": "330ebe8a372727e353d66f8c15d1172d2ede15c7d7b9c213139da6c5a5d9508b",
-        "actual_executed": 4174,
-        "actual_counts": {
-          "PASS": 3951,
-          "FAIL": 223
-        },
-        "individual_counts_match_summary": true,
-        "cache_reuse_packages": 8
-      },
-      {
-        "shard": 2,
-        "job_id": 130512748855,
-        "raw_log": "merge43017482118-job130512748855-unit2-terminal.log",
-        "log_sha256": "80cfa27182960deff60159f67080e73f8faaf1929859ee95cc66160b31e8432f",
-        "actual_executed": 4224,
-        "actual_counts": {
-          "PASS": 4025,
-          "FAIL": 199
-        },
-        "individual_counts_match_summary": true,
-        "cache_reuse_packages": 8
-      },
-      {
-        "shard": 3,
-        "job_id": 130512748907,
-        "raw_log": "merge43017482118-job130512748907-unit3-terminal.log",
-        "log_sha256": "c41ffe6f31a9f5c35963f51b2275b6c9078f352014c5e8a44a29adfcc561828a",
-        "actual_executed": 4111,
-        "actual_counts": {
-          "PASS": 3904,
-          "FAIL": 207
-        },
-        "individual_counts_match_summary": true,
-        "cache_reuse_packages": 6
-      }
-    ],
-    "unit_failure_groups": {
-      "Item_updates_base_pin": 316,
-      "Feaster_callback_unmaterialized": 287,
-      "Other": 26
-    },
-    "unit_comparison": {
-      "case_reconciliation": {
-        "path": "batch69-root-unit-all-reconciliation.json",
-        "sha256": "c549fcd9e6e8e7bd431e0af13faa51a765ca6edb81a551c42fb3b0756da3068c"
-      },
-      "shards12_full_failure_comparison": {
-        "path": "batch69-retained-unit12-comparison.json",
-        "sha256": "2e05138405be1bcd3755fb81272ff9a488c78189576738429a7a0ac281c9cfc2"
-      },
-      "shard3_full_failure_comparison": {
-        "path": "batch69-rotten-unit3-versus68.json",
-        "sha256": "663211955a499e8d464bc89b502c878377e29a8ba4e0eaa4ba94c1711a593e61"
+    "unit": {
+      "actual": 12509,
+      "passed": 11880,
+      "failed": 629,
+      "jobs": [
+        130552184579,
+        130552184437,
+        130552184616
+      ],
+      "literal_failure_groups": {
+        "Item_updates_base_pin": 316,
+        "Feaster_callback": 287,
+        "Other": 26
       },
       "identity_status_sha256": "f8031ea99206afff53b8e594a6cde6c860c43e470f9c3cdb881d2cbcafd792ac",
-      "literal_cache_producer_run": 42987261419,
-      "literal_cache_advertised_sha": "8b90875542899f065186385ce59db57bcb969e39",
-      "actual_source65_checkout": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
-      "limit": "Historical source65 successes and advertised cache markers are not executed69 cases. All raw logs retained byte-exact; unit1/2 baseline68 each required one additional recovery fetch after workspace loss."
-    },
-    "focused_source_regressions": {
-      "basis": "The complete69 case census and full failure-block comparisons preserve the four prior focused outcomes. Prior line numbers/durations remain only in archived68; no new per-case timing is asserted.",
-      "outcomes": {
-        "npc_only_track_owners_keep_exact_existing_quest_predecessors": "PASS",
-        "published_ungated_quest_hash_baseline": "FAIL; invalid callback oteryn:quest-callback/questpc7-feaster-entry",
-        "qn5_structured_premium_world_entry_requires_personal_world_fences": "PASS",
-        "core_extension_requires_exact_contract_command_binding_and_test": "PASS"
+      "comparison_to69": "All actual identities/statuses and all629 complete bounded-normalized failure blocks unchanged.",
+      "root_union": {
+        "path": "batch70-root-unit-all-reconciliation.json",
+        "sha256": "64d99cf90b6d490f41bd7bd4e947e1c58b906d0ee2cd3442af1031ebd090bba9"
       },
+      "unit12": {
+        "path": "batch70-retained-unit12-terminal-proof.json",
+        "sha256": "555ef5c92262fac8076dbb027b0893ba20c6316b8103ec92e9a9e56094afb447"
+      },
+      "unit3": {
+        "path": "batch70-rotten-unit3-terminal-proof.json",
+        "sha256": "2c1813358bb99a36b3860dd3a938315cc27a790a9bccf30d9ea117532f9e350c"
+      },
+      "result_reuse_not_counted_as_execution": true
+    },
+    "clippy": {
+      "job_id": 130552184581,
+      "actual_packages": 67,
+      "result_reuse": 0,
+      "conclusion": "success",
       "receipt": {
-        "path": "batch69-root-unit-all-reconciliation.json",
-        "sha256": "c549fcd9e6e8e7bd431e0af13faa51a765ca6edb81a551c42fb3b0756da3068c"
+        "path": "batch70-rotten-clippy-terminal-proof.json",
+        "sha256": "4bb7e6f2de604cac2ccbd755b2b551daa79bda33456d1623d5109684e8c019d5"
+      }
+    },
+    "policy": {
+      "job_id": 130552184386,
+      "result": "REUSE_ONLY; policy steps6-13 skipped",
+      "receipt": {
+        "path": "batch70-retained-policy-terminal-proof.json",
+        "sha256": "42d1794e07ac1219bd8d09e1aa15559bb929cd28891e43df35722f9a537cb883"
       }
     },
     "native_entry": {
-      "run_id": 43017482188,
-      "job_id": 130512044461,
-      "actual_passed": 3,
-      "actual_failed": 0,
-      "platform_pin": "eb65ce453949a352fdc0e3ed0132d2cde0084fb7",
+      "run_id": 43028141364,
+      "job_id": 130547973824,
+      "actual_pass": 3,
       "receipt": {
-        "path": "batch69-rotten-native-terminal-proof.json",
-        "sha256": "2d806759cbb91c5ad7bc3b60510648b558a3656d2701fb7a938937ea980270e1"
-      },
-      "qualification": "Only three actual native entry cases and the disposable World/Channel issuer evidence; not full native or PostgreSQL qualification."
-    },
-    "boss_inventory": "No NATIVE_REWARD_BOSS_QUALIFICATION marker. Private-drop still failed the global Item update guard before behavior assertions; boss census UNKNOWN.",
-    "postgres": "Run43017482374 wrapper success; all three heavy legs skipped, heavy-tests absent. No database, Node boot or harness-build execution on this head.",
-    "postgres_receipt": {
-      "path": "batch69-retained-control-results-recovery.json",
-      "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
-    },
-    "quest_authoring": {
-      "run_id": 43017482301,
-      "unit_job_id": 130512044976,
-      "counts": {
-        "total_modules": 182,
-        "passed_modules": 172,
-        "failed_modules": 10,
-        "individual_failure_cases": 9,
-        "individual_error_cases": 1
-      },
-      "comparison": "Same182 module identities as68. One new failure: ExistingNativeProvider.test_compatible_provider_record_is_preserved_exactly first observes i5805 gaining source-qualified speed_bonus0 versus the old committed row lacking it. Existing nine failure/error identities remain; eight normalized blocks unchanged and QENGINE rewards first stale path moved from its profile packet to content/spells.manifest.json. Full all-row compatibility after canonical generation remains UNKNOWN.",
-      "receipt": {
-        "path": "batch69-root-quest-terminal-proof.json",
-        "sha256": "1539d4f78bd30056ea4fd30e7fbdaabcd3e1fe8c3b26abf557656d4c123415e9"
+        "path": "batch70-rotten-native-terminal-proof.json",
+        "sha256": "6d04857b281a5cffa0f9035eda5fb0f960d311d9187d3be8e176dbc25d059d98"
       }
     },
-    "migration_parent": "Validate130512045353 failed Imbuement at step7; parent14 skipped. All ten whole-module routes were unexecuted in CI69, including all8 known-speed cases. The whole36 Equipment pin module is new in source70.",
-    "migration_parent_receipt": {
-      "path": "batch69-step-validate-terminal-receipt.json",
-      "sha256": "992733731f73251f1e9deec41e41f318f604b9c6091ce43712bc765317231a83"
-    },
-    "protected_authority": {
-      "run_id": 43017476402,
-      "job_id": 130512031846,
-      "result": "Actual exact-head authority PASS; approved merge-gate blob f574c67416ff8323327cfc6ac0e5829a1c9cba92 and merge-group blob7b7f36b197a72a4317d6318b1cc4ec4ab9b602f6. Not fresh Codex/runtime/PG approval.",
+    "quest": {
+      "run_id": 43028141539,
+      "unit_job": 130547973194,
+      "actual_modules": 182,
+      "passed_modules": 172,
+      "failed_modules": 10,
+      "individual_failures": 9,
+      "individual_errors": 1,
+      "comparison": "All182 module identities/statuses and10 full normalized blocks unchanged69; no new differences.",
+      "failure": "i5805 speed0 stale native provider; donor npc.json.gz and completion variant packet stale",
       "receipt": {
-        "path": "batch69-retained-control-results-recovery.json",
-        "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
+        "path": "batch70-root-quest-terminal-proof.json",
+        "sha256": "6aa11f824da93dbc9a17509f444d42d856514562f2eecef9284751332ba386e4"
+      }
+    },
+    "migration_parent": {
+      "job_id": 130547972554,
+      "result": "NOT_EXECUTED: early Imbuement candidate validation failed; parent step14 skipped, including full EquipmentPin36",
+      "receipt": {
+        "path": "batch70-step-validate-terminal-receipt.json",
+        "sha256": "8221d86705f30dd9b02d2465acada2ce88eeed1b3618c55b3e27f5ae6533654f"
       }
     },
     "world_bundle": {
-      "job_id": 130512748769,
-      "result": "Actual release compilation33.68s and pin-check failed. Committed46277d7a versus tree f9d3b06e, inputs ef7da8c6; same digests as68. Double build not completed; upload skipped.",
-      "receipt": {
-        "path": "batch69-retained-control-results-recovery.json",
-        "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
-      }
+      "job_id": 130552184204,
+      "result": "Pin check failed after actual25.73s compile; double build not completed and artifact skipped",
+      "committed": "46277d7aba6fa0de09360eacea94b90d9db9f7e2969170b560f2a7c867375aa0",
+      "tree": "f9d3b06e73b5a7eaf8fc002e32eefe264127c9b33d37c062af753f0b5cada226",
+      "inputs": "ef7da8c68d883d520a27d2755e401b5a1003550940e32640baf49f271a3e524e"
     },
-    "g4_identity_bindings": {
-      "run_id": 43017482698,
-      "result": "API all11 listed steps success; no raw or test-count claim.",
-      "receipt": {
-        "path": "batch69-retained-control-results-recovery.json",
-        "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
-      }
+    "postgres": {
+      "run_id": 43028141439,
+      "wrapper": "success",
+      "actual_database_execution": false,
+      "skipped_jobs": [
+        130547975602,
+        130548021566,
+        130548041365
+      ],
+      "heavy_tests_label": false
     },
-    "additional_authoring": {
-      "path": "batch69-retained-control-results-recovery.json",
-      "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
+    "authoring": {
+      "world": "stale islands index/sample capture",
+      "craft": "craft registration drift: content/manifest.json",
+      "rewardclaim": "17 actual tests passed; completion variant packet stale",
+      "governance": "workflow success; two validation steps skipped",
+      "remaining_controls": "API success only where no raw execution was inspected"
     },
-    "additional_api_successes": {
-      "path": "batch69-root-additional-seven-final-api.json",
-      "sha256": "a52f367b8a178a57ec61ffcc6174d46d01d451f8341099693b632e3ab05265ad"
+    "controls_receipt": {
+      "path": "batch70-root-control-results.json",
+      "sha256": "2b2578c64ef8d634bc97ff680d7f67e97d23c8bfab3cafd5f1e6361f560c219e"
     },
-    "other_26_failure_disposition": {
-      "receipt": {
-        "path": "batch66-rotten-prior65-other26-disposition.json",
-        "sha256": "590ea02ce65cba41a8bb1c5c2202f3a7ac95d52e6208bfbf6e29ae42679b00f1"
-      },
-      "limit": "Seven boot failures retain UNKNOWN first refusal; none is silently assigned to a proven generator-dependent cause."
-    },
-    "qualification": "NOT_QUALIFIED. Canonical artifact, full migration/native/runtime and final PostgreSQL checks remain pending."
+    "qualification": "Historical exact5b execution only; neither helperb247 nor this checkpoint successor inherits a runtime or merge qualification."
   },
   "followup_source_repair": {
     "parent": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
@@ -562,74 +401,69 @@
     "qualification": "Independent bounded source peer passed. Actual canonical110+2 generation and Rust execution remain pending; no generated JSON was hand-edited."
   },
   "source_review_at_checkpoint": {
-    "base_head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
-    "source_files": 3,
-    "scope": "Compose the exact shared QENGINE/NPC jar i27654 through the unchanged qualified House owner in both source documents before strict full-row Equipment comparison; preserve all other facts and source rows. Route all36 Equipment pin tests through the existing migration parent.",
-    "groups": [
+    "base_head": "5b25618eb871f909cf4d6a82c72ed73ae91f54ff",
+    "helper_head": "b24777cbfc14c9424fce4b2c18755b94c9b32015",
+    "helper_tree": "5370a3a9229d51775eee2f0b8ee5449a1a7b3c57",
+    "source_delta_paths": 102,
+    "scope": "Bounded independent reviews of retained Soul War ingress/reconciliation, Character receipt history, buffered movement, native death/Herald authority, M39/M47/personal journals, Ground dispatch, Spite/Tibiadrome, source qualification, normal generation order and PG/client capture routing. Individual peer receipts state unreviewed large fixture portions. No blanket execution approval.",
+    "reviews": [
       {
-        "name": "shared_engine_npc_house_composition",
-        "source_count": 2,
-        "source_files": [
-          {
-            "path": "tools/content-migration/refresh_equipment_profile_pin.py",
-            "base_sha256": "0e4a6f391ddfe1d27d83d667babf2d21f8d54e195ec8e361754b44d10d4e8a35",
-            "sha256": "0c5c8a2fa52d33a0494d4bc75c2719e7c8e504f539cd3303c3b89641c1532439",
-            "bytes": 32054
-          },
-          {
-            "path": "tools/content-migration/test_refresh_equipment_profile_pin.py",
-            "base_sha256": "f96b25d70823f6bcccc50a6acb64050b9118152fa82d1feb72e033375ae5057b",
-            "sha256": "e8379990359b85810b03deec6257f69fdaffe354a3dceee7fbe1c74f526eab81",
-            "bytes": 30129
-          }
-        ],
-        "author_manifest": {
-          "path": "batch70-step-equipment-coowner2-frozen.json",
-          "sha256": "3b0e1e70944b7f170d22f299d2bcbceef5a945e61357c3fe13916271828a6df6"
-        },
-        "proof": {
-          "path": "batch70-step-equipment-coowner2-proof.json",
-          "sha256": "81e5666e803eb739b8062cdc4c1b718e174b1a7dcfd89e1b80d606a646952d72"
-        },
-        "independent_peer": {
-          "path": "batch70-rotten-peer-equipment-coowner2-route1.json",
-          "sha256": "41dd804eeaff8b81e4a95197ee19b97b8ef169c3f7b416b0e2e4569cf31b541b"
-        }
+        "path": "batch71-root-helper-source-review.json",
+        "sha256": "4ea2336c748235052d16da04671000d04de5e8d07ebb7001886825242c82ae1e"
       },
       {
-        "name": "whole_equipment_pin_module_route",
-        "source_count": 1,
-        "source_files": [
-          {
-            "path": "tools/content-migration/test_world_project_v2_to_tree.py",
-            "base_sha256": "e10808015081295e44b18011836a12e65b879b4655647fc559dcb0aecae95de1",
-            "sha256": "efa4452b495989c479d4a2982b2d6c44c1ef5e3a2d8daa9bfd219ca2feaddec1",
-            "bytes": 26722
-          }
-        ],
-        "author_manifest": {
-          "path": "batch70-root-equipment-route1-frozen.json",
-          "sha256": "416fe8b7c0ca1eeb6f988e062cfdb8f624ce1d0bb41b16de1558d648300e6f93"
-        },
-        "independent_peer": {
-          "path": "batch70-rotten-peer-equipment-coowner2-route1.json",
-          "sha256": "41dd804eeaff8b81e4a95197ee19b97b8ef169c3f7b416b0e2e4569cf31b541b"
-        }
+        "path": "batch71-root-runtime-source-review.json",
+        "sha256": "ffa4ec7320d498d0afb2fa0822d8777ca2b05a22fc89cf8a0185e3ec869c94cc"
+      },
+      {
+        "path": "batch70-rotten-peer-soulwar-retained6.json",
+        "sha256": "49cdaa31aed553b6058d885e6162c07f7deba4f8db96bbc1c511b9916fdea0c0"
+      },
+      {
+        "path": "helper3111-retained-priority-runtime-peer.json",
+        "sha256": "8ca6c1c112b8d0a1057327153dc6dde38a9fe87e9a8d9bf12f2763f2be86f059"
+      },
+      {
+        "path": "batch70-rotten-peer-m39-m47-journals.json",
+        "sha256": "218031949eef1c21344b60b7d01df033ba7b81a99ce27233059f4ea5e65db079"
+      },
+      {
+        "path": "batch71-step-helper-content-prerequisites-review.json",
+        "sha256": "16f07532b47d94ad52ceda73b83a28284ec958ce93ec21c8a13de4c3b8ef5973"
+      },
+      {
+        "path": "batch71-step-jar-helper-source-review.json",
+        "sha256": "9f5af7baf7e94055288aa8ed284e6c1ee9447b73e9553765e7378aa1d81460dc"
       }
     ],
-    "authorized_control_changes": "One module argument in the existing awaited parent check. No workflow, label, runner, gate, source pin, generated data or Rust assertion edits.",
-    "root_final_source_checks": {
-      "path": "batch70-root-source3-final-checks.json",
-      "sha256": "c5d88185e988630259ce63f5c3ff9d5d80e44c7b129e3c7cb98e615614c28d92"
+    "actual_bounded_checks": {
+      "head": "b24777cbfc14c9424fce4b2c18755b94c9b32015",
+      "python_tests": 73,
+      "passed": 73,
+      "failed": 0,
+      "skipped": 0,
+      "rustfmt_files": 64,
+      "python_ast_files": 28,
+      "root": {
+        "path": "batch71-root-light-verification.json",
+        "sha256": "1c8b97cc19bc3bf1339980075c8d9a09586cc40147a1ac573e874856978fc8a2"
+      },
+      "content": {
+        "path": "batch71-step-helper-bounded-checks.json",
+        "sha256": "1823744d3d5619c81cf28879615f525cd30547c8ea606dfce98e229779d92d53"
+      },
+      "limits": "Focused Python source/fixture checks only. No Cargo/Rust test execution, full generation, PG, Node or actual client replay."
     }
   },
   "prior_source_checkpoint": {
-    "head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
-    "parent": "e453951e826922b7467a89a390dc335f1ce72458",
+    "head": "5b25618eb871f909cf4d6a82c72ed73ae91f54ff",
+    "parent": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
     "main_ancestor": "4e29529abacfcbff821bfb7560424c6684b936d7",
-    "source_groups": 2,
-    "source_files": 3,
-    "source_review_matrix": "Exact source69 review and its prior execution are retained in superseded_checkpoint_records."
+    "source_groups": [
+      "House-only shared Equipment Jar composition",
+      "whole EquipmentPin36 parent route"
+    ],
+    "source_review_matrix": "Historical source70 bounded peers and4 selected regression tests; actual generation still failed at complete Jar row equality."
   },
   "grizzly_retained_pin_repair": {
     "cause": "The complete retained shop packet matched integrated main f01f1858. Its items-11000-11499 descriptor still referenced that main blob, while the merged HEAD shard includes a previously approved non-shop Item22008 materialization/stack change.",
@@ -744,7 +578,7 @@
         "id": "client_capture_replays",
         "priority": "P2",
         "category": "verification_gap",
-        "status": "OPEN: actual client replay proof not established by current received evidence",
+        "status": "OPEN: actual PG/client replay proof still pending; grouped execution routing now present",
         "facts": [
           "Current Capture::load_schema returns Ok(None) and emits SRX3_NATIVE_CAPTURE_SKIPPED when the requested variable is unset; each of the three consumers then returns Ok(()). A test summary PASS alone does not establish transcript replay.",
           "Fresh exact-variable scan of all checked-in .github/workflows/*.yml and *.yaml has zero references to these three names. External/manual runner configuration remains UNKNOWN; this is not a claim that every runner leaves them unset."
@@ -795,7 +629,11 @@
           }
         ],
         "recommendation": "On the authorized real qualification runner, run one intended PG producer per unique capture path; require its real nonempty emitted file and matching admitted metadata, then run the corresponding client consumer and retain its completion marker. Primal also requires the real nonzero captured server digest and pinned OTERYN_ASSET_DIR. Preserve the visible environment skip; never manufacture a transcript or treat a route-less success as play proof.",
-        "closure_evidence": "Exact candidate SHA, actual producer completion, captured file digest/metadata, corresponding consumer completion marker and required real asset cache. No such closure is claimed here."
+        "closure_evidence": "Exact candidate SHA, actual producer completion, captured file digest/metadata, corresponding consumer completion marker and required real asset cache. No such closure is claimed here.",
+        "previous_status_at_5b": "OPEN: actual client replay proof not established by current received evidence",
+        "integration_disposition": "Exact same-head archives, all three producer/consumer identities, fresh captures, markers and nonzero Primal digest checks are wired; source and9 bounded routing tests pass, actual replays not executed.",
+        "integration_source": "b24777cbfc14c9424fce4b2c18755b94c9b32015",
+        "historical_facts_scope": "Existing facts above retain their original checkpoint scope; latest integration disposition is separate."
       },
       {
         "id": "rotten_hunting16_and_literal_elderbloodjaw",
@@ -901,7 +739,7 @@
         "id": "historical_json_duplicate_keys",
         "priority": "P2",
         "category": "inherited_historical_evidence_ambiguity",
-        "status": "OPEN: preserve original historical bytes; clarification deferred",
+        "status": "GROUPED SOURCE CLARIFICATION VERIFIED; original historical bytes preserved",
         "facts": [
           "Five historical qlane-meta/questpc7 JSON files contain six duplicate member occurrences with conflicting digest values:1283 in all five and1282 additionally in MIGRATION-REGISTRY-PROOF.",
           "All five files still match the prior audit hashes and incoming mainf01f18582443f482b7adcfaf32cae3f9d3616876 byte-for-byte.",
@@ -976,12 +814,16 @@
           }
         ],
         "risk": "A last-value-wins JSON reader loses the earlier digest, so these documents cannot support an unambiguous single-value history claim.",
-        "recommendation": "Preserve historical files. Resolve both digest observations against their original commits and append a separate clarification before relying on them as provenance. Do not silently delete duplicate members or treat historical records as current runtime qualification."
+        "recommendation": "Preserve historical files. Resolve both digest observations against their original commits and append a separate clarification before relying on them as provenance. Do not silently delete duplicate members or treat historical records as current runtime qualification.",
+        "previous_status_at_5b": "OPEN: preserve original historical bytes; clarification deferred",
+        "integration_disposition": "New HISTORICAL-MIGRATION-DIGEST-CLARIFICATION.json verified against all six immutable component files and two component+LF+component hashes; five original JSON documents and six duplicate occurrences preserved.",
+        "integration_source": "b24777cbfc14c9424fce4b2c18755b94c9b32015",
+        "historical_facts_scope": "Existing facts above retain their original checkpoint scope; latest integration disposition is separate."
       },
       {
         "id": "historical_feaster_merge_audit_owner_partition",
         "priority": "P2",
-        "status": "DEFERRED_FOR_FINAL_GROUP",
+        "status": "GROUPED SOURCE REPAIR PRESENT; selected regression PASS, full parent pending",
         "path": "tools/content-migration/questpc7_merge_audit_inventories.py",
         "facts": [
           "The historical script still validates a single112-entry document and rewrites the old single-document Rust fixture assertion. Canonical Feaster ownership is now110+2 across two mounted files.",
@@ -993,12 +835,16 @@
           "path": "batch61-step-feaster-audit-deferred.json",
           "sha256": "c350505da3556d790a4ea615ef5e4d9efac53863a3bf29112221dbcc2cc01ed3"
         },
-        "unknown": "External or manual invocations are not verified."
+        "unknown": "External or manual invocations are not verified.",
+        "previous_status_at_5b": "DEFERRED_FOR_FINAL_GROUP",
+        "integration_disposition": "Historical audit preserves exact110+2=112 union/keyset and residual103 with separate ownership; no Rust count weakening.",
+        "integration_source": "b24777cbfc14c9424fce4b2c18755b94c9b32015",
+        "historical_facts_scope": "Existing facts above retain their original checkpoint scope; latest integration disposition is separate."
       },
       {
         "id": "qn3_batch3_retained_census_gap",
         "priority": "P2",
-        "status": "DEFERRED_FOR_FINAL_GROUP",
+        "status": "GROUPED SOURCE REPAIR PRESENT; selected M42/Jar checks PASS, full parent pending",
         "path": "tools/content-schema/native-gameplay/quest-batch3-item-profiles.json",
         "facts": [
           "The incoming packet omits the existing QN3 dangerous-depths authoring input and i27654 census row. Its capture selector still includes that source.",
@@ -1010,7 +856,11 @@
           "path": "batch64-step-qn3-surprise-jar-disposition.json",
           "sha256": "87a3979d1a5dd922668f052e33f4964f84216797a5d71b843c63431b82f23692"
         },
-        "limits": "No runtime or PostgreSQL execution was performed by this source-only investigation."
+        "limits": "No runtime or PostgreSQL execution was performed by this source-only investigation.",
+        "previous_status_at_5b": "DEFERRED_FOR_FINAL_GROUP",
+        "integration_disposition": "Batch3 adds Jar27654 only, preserving all138 prior full rows; exact source successor and72 f01 cooking rows/closure remain guarded.",
+        "integration_source": "b24777cbfc14c9424fce4b2c18755b94c9b32015",
+        "historical_facts_scope": "Existing facts above retain their original checkpoint scope; latest integration disposition is separate."
       }
     ]
   },
@@ -3353,6 +3203,664 @@
         "source_files": 3,
         "source_review_matrix": "Exact source68 review and its prior execution are retained in superseded_checkpoint_records."
       }
+    },
+    {
+      "checkpoint_source_head": "5b25618eb871f909cf4d6a82c72ed73ae91f54ff",
+      "checkpoint_file_sha256": "430e8470a26c5dd26b96aaa66f94b1436bc86b2638b0ae38f4d31da5cfc9b062",
+      "last_checkpoint_execution": {
+        "head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
+        "merge_run": 43017482118,
+        "monitor_state": "ALL17_RUNS_TERMINAL_AUTHORING_REPAIR_REQUIRED",
+        "open_runs": [],
+        "terminal_monitor_receipt": {
+          "path": "batch69-retained-merge-monitor-closed.json",
+          "sha256": "7cad00a4c915cf9fdd9173010d476e362e7625f2593b96dff35fc6795930e271"
+        },
+        "final_run_summaries": {
+          "path": "batch69-final-run-summaries.json",
+          "sha256": "884e718d54eb067cc16a5b9b269080186db8dcd364d82ef01f636496f0c67b09"
+        },
+        "terminal_run_conclusions": {
+          "Merge authority audit": {
+            "id": 43017476402,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "G4 Item Crystal Identity Bindings": {
+            "id": 43017482698,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "World Metadata Authoring": {
+            "id": 43017482596,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "Wheel Authoring Schema": {
+            "id": 43017482722,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Agent governance • pull_request • 3056": {
+            "id": 43017482332,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Proficiency Authoring Schema": {
+            "id": 43017482584,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Architecture semantic audit • pull_request • 3056": {
+            "id": 43017482172,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Quest Authoring Schema": {
+            "id": 43017482301,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "Item Authoring Schema": {
+            "id": 43017482565,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Store Authoring Schema": {
+            "id": 43017482810,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Area Authoring Schema": {
+            "id": 43017482991,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Content Tree Migration Equivalence": {
+            "id": 43017482254,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "Craft Authoring": {
+            "id": 43017482300,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "RewardClaim Authoring": {
+            "id": 43017482417,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "Native entry room qualification": {
+            "id": 43017482188,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          "Merge gate • pull_request • 3056": {
+            "id": 43017482118,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          "PR PostgreSQL harness": {
+            "id": 43017482374,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success"
+          }
+        },
+        "generator_run": 43017482254,
+        "generator_job": 130512045592,
+        "generator_result": "Actual converter completed, final standalone registration printed56 and custody additions2791 completed. Known-speed capture and strict refresh returned by exact traceback plus sequential source order; this is not a full8 test-suite PASS. Equipment regenerate then refused QENGINE/NPC shared source identity or facts differ. The actual failed runner row pair was not captured. Final Equipment fixture write, seasonal/metadata tail, World pins and export/upload were not reached; artifacts empty.",
+        "generator_log_sha256": "15932413b2e1fa2107d2927b9ba0b5fad42afd4e1bffd6b387f77a40bcf6a792",
+        "generator_receipt": {
+          "path": "batch69-step-generator-terminal-receipt.json",
+          "sha256": "1ed915cf275e1b4ebaf98fc69df158d980d0bcbaff5a5e6f5f1eba1057a7508f"
+        },
+        "registered_output_count": 56,
+        "registered_output_count_basis": "Actual final standalone registration marker at raw1148; full keyset and residual UNKNOWN.",
+        "rust_policy_result": "RESULT REUSE ONLY. Current metadata/fmt/architecture/JSON/closure checks and record/save steps skipped. Advertised cache SHA bd290b395ffc85a215804caa3983c46c903d849a is kept separate from the historical actual66 checkout.",
+        "rust_policy_receipt": {
+          "path": "batch69-retained-control-results-recovery.json",
+          "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
+        },
+        "rust_policy_last_actual_checks": {
+          "head": "183c6551efa22860c204513111318b442aa047d9",
+          "run_id": 42995700580,
+          "job_id": 130440077999,
+          "receipt": {
+            "path": "batch66-retained-policy-terminal-proof.json",
+            "sha256": "9560b6ffaf181b790b91ba43b403c648496b89eeb03c9977445d6dfb1cca4cbc"
+          }
+        },
+        "clippy_result": "Actual strict Clippy passed all67 selected packages; zero result reuse; compilation4m18s.",
+        "clippy_job": 130512748790,
+        "clippy_receipt": {
+          "path": "batch69-rotten-clippy-terminal-proof.json",
+          "sha256": "0080290849b95712194aaea8f3e8cd1bbf13edc6d1df50b11337f6c00a40a1c8"
+        },
+        "rust_unit_result": "Actual12509 disjoint cases:11880 PASS/629 FAIL. All executed identities/statuses and all629 normalized full failure blocks match68. Cached package notices are not new test execution.",
+        "rust_unit_jobs": [
+          {
+            "shard": 1,
+            "job_id": 130512748869,
+            "raw_log": "merge43017482118-job130512748869-unit1-terminal.log",
+            "log_sha256": "330ebe8a372727e353d66f8c15d1172d2ede15c7d7b9c213139da6c5a5d9508b",
+            "actual_executed": 4174,
+            "actual_counts": {
+              "PASS": 3951,
+              "FAIL": 223
+            },
+            "individual_counts_match_summary": true,
+            "cache_reuse_packages": 8
+          },
+          {
+            "shard": 2,
+            "job_id": 130512748855,
+            "raw_log": "merge43017482118-job130512748855-unit2-terminal.log",
+            "log_sha256": "80cfa27182960deff60159f67080e73f8faaf1929859ee95cc66160b31e8432f",
+            "actual_executed": 4224,
+            "actual_counts": {
+              "PASS": 4025,
+              "FAIL": 199
+            },
+            "individual_counts_match_summary": true,
+            "cache_reuse_packages": 8
+          },
+          {
+            "shard": 3,
+            "job_id": 130512748907,
+            "raw_log": "merge43017482118-job130512748907-unit3-terminal.log",
+            "log_sha256": "c41ffe6f31a9f5c35963f51b2275b6c9078f352014c5e8a44a29adfcc561828a",
+            "actual_executed": 4111,
+            "actual_counts": {
+              "PASS": 3904,
+              "FAIL": 207
+            },
+            "individual_counts_match_summary": true,
+            "cache_reuse_packages": 6
+          }
+        ],
+        "unit_failure_groups": {
+          "Item_updates_base_pin": 316,
+          "Feaster_callback_unmaterialized": 287,
+          "Other": 26
+        },
+        "unit_comparison": {
+          "case_reconciliation": {
+            "path": "batch69-root-unit-all-reconciliation.json",
+            "sha256": "c549fcd9e6e8e7bd431e0af13faa51a765ca6edb81a551c42fb3b0756da3068c"
+          },
+          "shards12_full_failure_comparison": {
+            "path": "batch69-retained-unit12-comparison.json",
+            "sha256": "2e05138405be1bcd3755fb81272ff9a488c78189576738429a7a0ac281c9cfc2"
+          },
+          "shard3_full_failure_comparison": {
+            "path": "batch69-rotten-unit3-versus68.json",
+            "sha256": "663211955a499e8d464bc89b502c878377e29a8ba4e0eaa4ba94c1711a593e61"
+          },
+          "identity_status_sha256": "f8031ea99206afff53b8e594a6cde6c860c43e470f9c3cdb881d2cbcafd792ac",
+          "literal_cache_producer_run": 42987261419,
+          "literal_cache_advertised_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "actual_source65_checkout": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
+          "limit": "Historical source65 successes and advertised cache markers are not executed69 cases. All raw logs retained byte-exact; unit1/2 baseline68 each required one additional recovery fetch after workspace loss."
+        },
+        "focused_source_regressions": {
+          "basis": "The complete69 case census and full failure-block comparisons preserve the four prior focused outcomes. Prior line numbers/durations remain only in archived68; no new per-case timing is asserted.",
+          "outcomes": {
+            "npc_only_track_owners_keep_exact_existing_quest_predecessors": "PASS",
+            "published_ungated_quest_hash_baseline": "FAIL; invalid callback oteryn:quest-callback/questpc7-feaster-entry",
+            "qn5_structured_premium_world_entry_requires_personal_world_fences": "PASS",
+            "core_extension_requires_exact_contract_command_binding_and_test": "PASS"
+          },
+          "receipt": {
+            "path": "batch69-root-unit-all-reconciliation.json",
+            "sha256": "c549fcd9e6e8e7bd431e0af13faa51a765ca6edb81a551c42fb3b0756da3068c"
+          }
+        },
+        "native_entry": {
+          "run_id": 43017482188,
+          "job_id": 130512044461,
+          "actual_passed": 3,
+          "actual_failed": 0,
+          "platform_pin": "eb65ce453949a352fdc0e3ed0132d2cde0084fb7",
+          "receipt": {
+            "path": "batch69-rotten-native-terminal-proof.json",
+            "sha256": "2d806759cbb91c5ad7bc3b60510648b558a3656d2701fb7a938937ea980270e1"
+          },
+          "qualification": "Only three actual native entry cases and the disposable World/Channel issuer evidence; not full native or PostgreSQL qualification."
+        },
+        "boss_inventory": "No NATIVE_REWARD_BOSS_QUALIFICATION marker. Private-drop still failed the global Item update guard before behavior assertions; boss census UNKNOWN.",
+        "postgres": "Run43017482374 wrapper success; all three heavy legs skipped, heavy-tests absent. No database, Node boot or harness-build execution on this head.",
+        "postgres_receipt": {
+          "path": "batch69-retained-control-results-recovery.json",
+          "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
+        },
+        "quest_authoring": {
+          "run_id": 43017482301,
+          "unit_job_id": 130512044976,
+          "counts": {
+            "total_modules": 182,
+            "passed_modules": 172,
+            "failed_modules": 10,
+            "individual_failure_cases": 9,
+            "individual_error_cases": 1
+          },
+          "comparison": "Same182 module identities as68. One new failure: ExistingNativeProvider.test_compatible_provider_record_is_preserved_exactly first observes i5805 gaining source-qualified speed_bonus0 versus the old committed row lacking it. Existing nine failure/error identities remain; eight normalized blocks unchanged and QENGINE rewards first stale path moved from its profile packet to content/spells.manifest.json. Full all-row compatibility after canonical generation remains UNKNOWN.",
+          "receipt": {
+            "path": "batch69-root-quest-terminal-proof.json",
+            "sha256": "1539d4f78bd30056ea4fd30e7fbdaabcd3e1fe8c3b26abf557656d4c123415e9"
+          }
+        },
+        "migration_parent": "Validate130512045353 failed Imbuement at step7; parent14 skipped. All ten whole-module routes were unexecuted in CI69, including all8 known-speed cases. The whole36 Equipment pin module is new in source70.",
+        "migration_parent_receipt": {
+          "path": "batch69-step-validate-terminal-receipt.json",
+          "sha256": "992733731f73251f1e9deec41e41f318f604b9c6091ce43712bc765317231a83"
+        },
+        "protected_authority": {
+          "run_id": 43017476402,
+          "job_id": 130512031846,
+          "result": "Actual exact-head authority PASS; approved merge-gate blob f574c67416ff8323327cfc6ac0e5829a1c9cba92 and merge-group blob7b7f36b197a72a4317d6318b1cc4ec4ab9b602f6. Not fresh Codex/runtime/PG approval.",
+          "receipt": {
+            "path": "batch69-retained-control-results-recovery.json",
+            "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
+          }
+        },
+        "world_bundle": {
+          "job_id": 130512748769,
+          "result": "Actual release compilation33.68s and pin-check failed. Committed46277d7a versus tree f9d3b06e, inputs ef7da8c6; same digests as68. Double build not completed; upload skipped.",
+          "receipt": {
+            "path": "batch69-retained-control-results-recovery.json",
+            "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
+          }
+        },
+        "g4_identity_bindings": {
+          "run_id": 43017482698,
+          "result": "API all11 listed steps success; no raw or test-count claim.",
+          "receipt": {
+            "path": "batch69-retained-control-results-recovery.json",
+            "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
+          }
+        },
+        "additional_authoring": {
+          "path": "batch69-retained-control-results-recovery.json",
+          "sha256": "d17cf96d4756770ba3749df1d79a1a02abab9ea81fe0dada3663390fbb92dfd1"
+        },
+        "additional_api_successes": {
+          "path": "batch69-root-additional-seven-final-api.json",
+          "sha256": "a52f367b8a178a57ec61ffcc6174d46d01d451f8341099693b632e3ab05265ad"
+        },
+        "other_26_failure_disposition": {
+          "receipt": {
+            "path": "batch66-rotten-prior65-other26-disposition.json",
+            "sha256": "590ea02ce65cba41a8bb1c5c2202f3a7ac95d52e6208bfbf6e29ae42679b00f1"
+          },
+          "limit": "Seven boot failures retain UNKNOWN first refusal; none is silently assigned to a proven generator-dependent cause."
+        },
+        "qualification": "NOT_QUALIFIED. Canonical artifact, full migration/native/runtime and final PostgreSQL checks remain pending."
+      },
+      "source_review_at_checkpoint": {
+        "base_head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
+        "source_files": 3,
+        "scope": "Compose the exact shared QENGINE/NPC jar i27654 through the unchanged qualified House owner in both source documents before strict full-row Equipment comparison; preserve all other facts and source rows. Route all36 Equipment pin tests through the existing migration parent.",
+        "groups": [
+          {
+            "name": "shared_engine_npc_house_composition",
+            "source_count": 2,
+            "source_files": [
+              {
+                "path": "tools/content-migration/refresh_equipment_profile_pin.py",
+                "base_sha256": "0e4a6f391ddfe1d27d83d667babf2d21f8d54e195ec8e361754b44d10d4e8a35",
+                "sha256": "0c5c8a2fa52d33a0494d4bc75c2719e7c8e504f539cd3303c3b89641c1532439",
+                "bytes": 32054
+              },
+              {
+                "path": "tools/content-migration/test_refresh_equipment_profile_pin.py",
+                "base_sha256": "f96b25d70823f6bcccc50a6acb64050b9118152fa82d1feb72e033375ae5057b",
+                "sha256": "e8379990359b85810b03deec6257f69fdaffe354a3dceee7fbe1c74f526eab81",
+                "bytes": 30129
+              }
+            ],
+            "author_manifest": {
+              "path": "batch70-step-equipment-coowner2-frozen.json",
+              "sha256": "3b0e1e70944b7f170d22f299d2bcbceef5a945e61357c3fe13916271828a6df6"
+            },
+            "proof": {
+              "path": "batch70-step-equipment-coowner2-proof.json",
+              "sha256": "81e5666e803eb739b8062cdc4c1b718e174b1a7dcfd89e1b80d606a646952d72"
+            },
+            "independent_peer": {
+              "path": "batch70-rotten-peer-equipment-coowner2-route1.json",
+              "sha256": "41dd804eeaff8b81e4a95197ee19b97b8ef169c3f7b416b0e2e4569cf31b541b"
+            }
+          },
+          {
+            "name": "whole_equipment_pin_module_route",
+            "source_count": 1,
+            "source_files": [
+              {
+                "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+                "base_sha256": "e10808015081295e44b18011836a12e65b879b4655647fc559dcb0aecae95de1",
+                "sha256": "efa4452b495989c479d4a2982b2d6c44c1ef5e3a2d8daa9bfd219ca2feaddec1",
+                "bytes": 26722
+              }
+            ],
+            "author_manifest": {
+              "path": "batch70-root-equipment-route1-frozen.json",
+              "sha256": "416fe8b7c0ca1eeb6f988e062cfdb8f624ce1d0bb41b16de1558d648300e6f93"
+            },
+            "independent_peer": {
+              "path": "batch70-rotten-peer-equipment-coowner2-route1.json",
+              "sha256": "41dd804eeaff8b81e4a95197ee19b97b8ef169c3f7b416b0e2e4569cf31b541b"
+            }
+          }
+        ],
+        "authorized_control_changes": "One module argument in the existing awaited parent check. No workflow, label, runner, gate, source pin, generated data or Rust assertion edits.",
+        "root_final_source_checks": {
+          "path": "batch70-root-source3-final-checks.json",
+          "sha256": "c5d88185e988630259ce63f5c3ff9d5d80e44c7b129e3c7cb98e615614c28d92"
+        }
+      },
+      "prior_source_checkpoint": {
+        "head": "a96f10e1747047a3b66ff0fa79bb076a5c403d3b",
+        "parent": "e453951e826922b7467a89a390dc335f1ce72458",
+        "main_ancestor": "4e29529abacfcbff821bfb7560424c6684b936d7",
+        "source_groups": 2,
+        "source_files": 3,
+        "source_review_matrix": "Exact source69 review and its prior execution are retained in superseded_checkpoint_records."
+      },
+      "deferred_p2_backlog": {
+        "scope": "Six inherited groups retained for final grouped handling; no closure or new current-head execution is implied.",
+        "entries": [
+          {
+            "id": "client_capture_replays",
+            "priority": "P2",
+            "category": "verification_gap",
+            "status": "OPEN: actual client replay proof not established by current received evidence",
+            "facts": [
+              "Current Capture::load_schema returns Ok(None) and emits SRX3_NATIVE_CAPTURE_SKIPPED when the requested variable is unset; each of the three consumers then returns Ok(()). A test summary PASS alone does not establish transcript replay.",
+              "Fresh exact-variable scan of all checked-in .github/workflows/*.yml and *.yaml has zero references to these three names. External/manual runner configuration remains UNKNOWN; this is not a claim that every runner leaves them unset."
+            ],
+            "repo_paths": [
+              "apps/client/src/play/capture_test_support.rs",
+              "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native/capture.rs",
+              "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native/early_exit.rs",
+              "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_primal.rs",
+              "apps/client/src/features/0015-item-use/tests/actual_capture.rs",
+              "apps/client/src/features/0015-item-use/tests/actual_capture_exit.rs",
+              "apps/client/src/features/0117-boss-encounter/tests/actual_capture.rs"
+            ],
+            "required_real_inputs_and_consumers": [
+              {
+                "environment": "SRX3_SOULPIT_CAPTURE_PATH",
+                "server_test": "srx3_soulpit_native_use_scope_barrier_and_spawn_postgres",
+                "producer": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native/capture.rs",
+                "consumer_test": "srx3_soulpit_actual_server_transcript_native_use_waves_icons_and_return",
+                "consumer": "apps/client/src/features/0015-item-use/tests/actual_capture.rs",
+                "schema": "OTERYN_NATIVE_SCOPE_REPLAY/v1",
+                "client_completion_marker": "SRX3_SOULPIT ACTUAL_SERVER_NATIVE_PLAY_COMPLETED",
+                "current_client_capture_execution": "UNVERIFIED; no runtime environment or external/manual capture configuration inspected in this task",
+                "server_test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native.rs"
+              },
+              {
+                "environment": "SRX3_SOULPIT_EXIT_CAPTURE_PATH",
+                "server_test": "srx3_soulpit_native_early_exit_retires_private_encounter_postgres",
+                "producer": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native/early_exit.rs",
+                "consumer_test": "srx3_soulpit_actual_server_native_core_and_early_exit_gestures",
+                "consumer": "apps/client/src/features/0015-item-use/tests/actual_capture_exit.rs",
+                "schema": "OTERYN_NATIVE_SOULPIT_EXIT_REPLAY/v1",
+                "client_completion_marker": "SRX3_SOULPIT ACTUAL_SERVER_NATIVE_EARLY_EXIT_PLAY_COMPLETED",
+                "current_client_capture_execution": "UNVERIFIED; no runtime environment or external/manual capture configuration inspected in this task",
+                "server_test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_soulpit_native.rs"
+              },
+              {
+                "environment": "SRX3_PRIMAL_CAPTURE_PATH",
+                "server_test": "srx3_primal_real_source_entry_wave_pods_and_terminal_postgres",
+                "producer": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_primal.rs",
+                "consumer_test": "srx3_primal_actual_server_transcript_native_entry_pod_and_return",
+                "consumer": "apps/client/src/features/0117-boss-encounter/tests/actual_capture.rs",
+                "schema": "OTERYN_NATIVE_SCOPE_REPLAY/v1",
+                "additional_input": "Actual captured nonzero native_server_artifact_digest and existing pinned OTERYN_ASSET_DIR cache.",
+                "client_completion_marker": "SRX3_PRIMAL ACTUAL_SERVER_NATIVE_PLAY_COMPLETED",
+                "current_client_capture_execution": "UNVERIFIED; no runtime environment or external/manual capture configuration inspected in this task",
+                "server_test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_primal.rs"
+              }
+            ],
+            "recommendation": "On the authorized real qualification runner, run one intended PG producer per unique capture path; require its real nonempty emitted file and matching admitted metadata, then run the corresponding client consumer and retain its completion marker. Primal also requires the real nonzero captured server digest and pinned OTERYN_ASSET_DIR. Preserve the visible environment skip; never manufacture a transcript or treat a route-less success as play proof.",
+            "closure_evidence": "Exact candidate SHA, actual producer completion, captured file digest/metadata, corresponding consumer completion marker and required real asset cache. No such closure is claimed here."
+          },
+          {
+            "id": "rotten_hunting16_and_literal_elderbloodjaw",
+            "priority": "P2",
+            "category": "accepted_scope_deferred_functionality",
+            "status": "OPEN: retained accepted deferred hunting-area parity, separate from five boss-entry qualification",
+            "scope_evidence": {
+              "package": "qlane-meta/qmech/PACKAGE.md",
+              "narrow_boss_assignment": [
+                "qlane-meta/qmech/ASSIGN.md:34",
+                "qlane-meta/qmech/CLAIMS.md:43"
+              ],
+              "inventory": "tools/content-schema/quest-authoring/batches/quests4/rotten_blood_quest.json",
+              "json_pointers": [
+                "/step_inventory/37",
+                "/step_inventory/44"
+              ],
+              "inventory_labels": [
+                "Ordinary monster death binding",
+                "Hazard bloodjaw on kill"
+              ],
+              "both_rows_currently_partial": true
+            },
+            "facts": [
+              "The current inventory explicitly records startup binding for16 listed types and the hazard spawn of literal elderbloodjaw; these rows are not the unrelated rotten-putrefactory-return exclusion.",
+              "Inventory and the current six-source native death registry/generator are byte-identical to the prior verified hunting packet head. Current registry keys are recorded below; this task did not infer completed hunting handlers from boss entry support.",
+              "Prior bounded source/runtime review established no current16-handler FIFO deadlock and no demonstrated P1 boss-entry impact. Its820 World spawn count is historical evidence at850387a10a754917ae0e15769a6f7aab6f1c2860, not a newly regenerated count at this head."
+            ],
+            "current_registry_keys": [
+              "oteryn:creature.bakragore",
+              "oteryn:creature.chagorz",
+              "oteryn:creature.ichgahal",
+              "oteryn:creature.murcion",
+              "oteryn:creature.mushroom",
+              "oteryn:creature.vemiath"
+            ],
+            "hunting_creatures": [
+              "oteryn:creature.bloated_man_maggot",
+              "oteryn:creature.converter",
+              "oteryn:creature.darklight_construct",
+              "oteryn:creature.darklight_emitter",
+              "oteryn:creature.darklight_matter",
+              "oteryn:creature.darklight_source",
+              "oteryn:creature.darklight_striker",
+              "oteryn:creature.meandering_mushroom",
+              "oteryn:creature.mycobiontic_beetle",
+              "oteryn:creature.oozing_carcass",
+              "oteryn:creature.oozing_corpus",
+              "oteryn:creature.rotten_man_maggot",
+              "oteryn:creature.sopping_carcass",
+              "oteryn:creature.sopping_corpus",
+              "oteryn:creature.walking_pillar",
+              "oteryn:creature.wandering_pillar"
+            ],
+            "literal_source": {
+              "name": "elderbloodjaw",
+              "distinct_existing_name": "elder_bloodjaw",
+              "repository": "zimbadev/crystalserver",
+              "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+              "monster_path": "data-global/monster/quests/rotten_blood_quest/elderbloodjaw.lua",
+              "spawn_caller": "data-global/scripts/quests/rotten_blood_quest/eventcallback_on_combat_rottenblood.lua:52"
+            },
+            "repo_paths": [
+              "tools/content-schema/quest-authoring/batches/quests4/rotten_blood_quest.json",
+              "tools/content-schema/native-gameplay/build_srx3_rotten_death_events.py",
+              "tools/content-schema/native-gameplay/srx3-rotten-death-events.json",
+              "crates/gameplay/content/src/content/native_rotten_death_events.rs",
+              "crates/gameplay/entities/src/carrier/native_source_death.rs",
+              "crates/gameplay/entities/src/carrier/damage_ledger.rs",
+              "crates/gameplay/entities/src/carrier/runtime_actor_periodic.rs",
+              "crates/gameplay/dispatch/src/gameplay_transport/party_spell_owner.rs",
+              "crates/gameplay/dispatch/src/gameplay_transport/source_death.rs",
+              "crates/gameplay/content/src/content/project/native_spell_world/callback_context.rs"
+            ],
+            "unresolved_dependencies": [
+              "Actual raw last-hit/full damage provenance across all real HP producers; reward totals and SourcePlayerDamageShare are not substitutes.",
+              "Actual current party/master/leader ordering and shared-state inputs, including original identity continuity.",
+              "Correct script-lifetime Player cooldown continuity across relog/handoff; no invented ActorRef/session cache or permanent quest timer.",
+              "Exact current published Channel source-map qualification; complete literal elderbloodjaw HP/content/spell shape.",
+              "Any no-principal corpse extension must remain exact-source, exact-item, current-scope/pin/XID fenced; activate no registry event before its handler and corpse completion are closed."
+            ],
+            "recommendation": "Keep this one disclosed functional follow-up group. Resolve the proven input/identity/content dependencies before proposing implementation; do not add aliasing, no-op handlers, guessed killer data or broad NULL-principal admission."
+          },
+          {
+            "id": "mixed33792_33949_item_prefix",
+            "priority": "P2",
+            "category": "candidate_reachability_unknown",
+            "status": "OPEN CANDIDATE: no ordinary reachable production mixed stack demonstrated",
+            "facts": [
+              "The earlier bounded peer identified the source33792 Condensed Remorse false return for a non-player, which would stop a later33949 Dead Aspect callback on the same original physical stack.",
+              "Current SourceGroundStepKind still recognizes33876,33949,33984 only. Existing actual three-kind prefix ordering is not a proof of ordinary33792/33949 co-location."
+            ],
+            "repo_paths": [
+              "crates/gameplay/durability/src/durability/creature_source_items/source_step/creature.rs",
+              "crates/gameplay/durability/src/durability/creature_source_items/source_step.rs",
+              "crates/gameplay/durability/src/durability/quest_state/soul_war_source/step/standing_read.rs",
+              "crates/gameplay/dispatch/src/gameplay_transport/spite_step.rs"
+            ],
+            "unknown": "Whether an ordinary production owner can create or retain the mixed original Item stack in the relevant native scope.",
+            "recommendation": "First provide a concrete reachable placement/caller and original ordering proof. If reachable, retain the finite source nil/false prefix through the existing original-owner/cursor path. Until then, keep this candidate out of confirmed P1 claims and avoid speculative code."
+          },
+          {
+            "id": "historical_json_duplicate_keys",
+            "priority": "P2",
+            "category": "inherited_historical_evidence_ambiguity",
+            "status": "OPEN: preserve original historical bytes; clarification deferred",
+            "facts": [
+              "Five historical qlane-meta/questpc7 JSON files contain six duplicate member occurrences with conflicting digest values:1283 in all five and1282 additionally in MIGRATION-REGISTRY-PROOF.",
+              "All five files still match the prior audit hashes and incoming mainf01f18582443f482b7adcfaf32cae3f9d3616876 byte-for-byte.",
+              "The prior bounded consumer review found documentation references but no runtime or required CI guard consumer. Its inspected migration JSON guard inputs were three explicit docs/migration/rust-*.json files, not these histories. No claim is made about external manual tooling."
+            ],
+            "repo_paths": [
+              "qlane-meta/questpc7/MIGRATION-REGISTRY-PROOF.json",
+              "qlane-meta/questpc7/restart2-baseline.json",
+              "qlane-meta/questpc7/restart3-baseline.json",
+              "qlane-meta/questpc7/restart4-baseline.json",
+              "qlane-meta/questpc7/restart5-inherited-product-files.json"
+            ],
+            "files": [
+              {
+                "path": "qlane-meta/questpc7/MIGRATION-REGISTRY-PROOF.json",
+                "sha256": "c46a467772a54f1aed8060cd23e686b99c5eb5f32085e8351a8100fef2aa7682",
+                "byte_equal_incoming_main": true,
+                "duplicate_members": [
+                  {
+                    "key": "1283_quest_viola_rewards.sql",
+                    "values_equal": false
+                  },
+                  {
+                    "key": "1282_quest_native_npc_revision.sql",
+                    "values_equal": false
+                  }
+                ]
+              },
+              {
+                "path": "qlane-meta/questpc7/restart2-baseline.json",
+                "sha256": "65e275d5830c9a4730be29adb65fe55223f776ebd50e0e63a5abda9278825a2e",
+                "byte_equal_incoming_main": true,
+                "duplicate_members": [
+                  {
+                    "key": "apps/game-server/migrations/1283_quest_viola_rewards.sql",
+                    "values_equal": false
+                  }
+                ]
+              },
+              {
+                "path": "qlane-meta/questpc7/restart3-baseline.json",
+                "sha256": "ffd43ef2dbc9a14ef8f6fa9cca67de0723231802330f0ecb96ceb4f2cb5b70f6",
+                "byte_equal_incoming_main": true,
+                "duplicate_members": [
+                  {
+                    "key": "apps/game-server/migrations/1283_quest_viola_rewards.sql",
+                    "values_equal": false
+                  }
+                ]
+              },
+              {
+                "path": "qlane-meta/questpc7/restart4-baseline.json",
+                "sha256": "027065466a1ca399d703169cbab1a4e93f8c3aa7aa8986c9c4a8ac0cdcdac308",
+                "byte_equal_incoming_main": true,
+                "duplicate_members": [
+                  {
+                    "key": "apps/game-server/migrations/1283_quest_viola_rewards.sql",
+                    "values_equal": false
+                  }
+                ]
+              },
+              {
+                "path": "qlane-meta/questpc7/restart5-inherited-product-files.json",
+                "sha256": "1c78c0833c85f79c540a291c1a17251128e3764a725b3f765e4d0e0b83dd57f5",
+                "byte_equal_incoming_main": true,
+                "duplicate_members": [
+                  {
+                    "key": "apps/game-server/migrations/1283_quest_viola_rewards.sql",
+                    "values_equal": false
+                  }
+                ]
+              }
+            ],
+            "risk": "A last-value-wins JSON reader loses the earlier digest, so these documents cannot support an unambiguous single-value history claim.",
+            "recommendation": "Preserve historical files. Resolve both digest observations against their original commits and append a separate clarification before relying on them as provenance. Do not silently delete duplicate members or treat historical records as current runtime qualification."
+          },
+          {
+            "id": "historical_feaster_merge_audit_owner_partition",
+            "priority": "P2",
+            "status": "DEFERRED_FOR_FINAL_GROUP",
+            "path": "tools/content-migration/questpc7_merge_audit_inventories.py",
+            "facts": [
+              "The historical script still validates a single112-entry document and rewrites the old single-document Rust fixture assertion. Canonical Feaster ownership is now110+2 across two mounted files.",
+              "No current workflow or regeneration dispatcher caller was found in the bounded source search. This is not a blocker claim for the running generator.",
+              "The temporary author-only extraction was captured in scratch and the sole touched source restored exactly; no implementation from this P2 scope is currently pending."
+            ],
+            "required_fix": "At final cleanup, reconcile its exact112-key union,103-key residual and fixture check with the two explicit owners; preserve missing/duplicate/foreign and overlap refusals.",
+            "evidence": {
+              "path": "batch61-step-feaster-audit-deferred.json",
+              "sha256": "c350505da3556d790a4ea615ef5e4d9efac53863a3bf29112221dbcc2cc01ed3"
+            },
+            "unknown": "External or manual invocations are not verified."
+          },
+          {
+            "id": "qn3_batch3_retained_census_gap",
+            "priority": "P2",
+            "status": "DEFERRED_FOR_FINAL_GROUP",
+            "path": "tools/content-schema/native-gameplay/quest-batch3-item-profiles.json",
+            "facts": [
+              "The incoming packet omits the existing QN3 dangerous-depths authoring input and i27654 census row. Its capture selector still includes that source.",
+              "The current Gnomus measurements-report gives i27654 x1. The full profile is identical in accepted87da batch3, current ENG-M05, QENGINE proof and native provider. Earlier active QENGINE capture/admission preserves this custody.",
+              "This is not an established runtime jar regression; QNPCFX strict8/current1 is a separate active P1 repair."
+            ],
+            "required_fix": "At final grouped provenance cleanup, reconcile the retained QN3 census/input against the current source and all existing owners without adding another native owner or weakening holds.",
+            "evidence": {
+              "path": "batch64-step-qn3-surprise-jar-disposition.json",
+              "sha256": "87a3979d1a5dd922668f052e33f4964f84216797a5d71b843c63431b82f23692"
+            },
+            "limits": "No runtime or PostgreSQL execution was performed by this source-only investigation."
+          }
+        ]
+      }
     }
   ],
   "boss_reward_yield_trader_custody_repair": {
@@ -3752,5 +4260,78 @@
       "static": "AST compile, exact full-file inverse3, original32 test bodies and11 existing production functions unchanged, seven source/data controls unchanged, git diff --check."
     },
     "qualification": "Bounded source repair only. Full generator, materialized shared native row, complete36 module and migration parent/runtime/PG remain pending."
+  },
+  "helper_source_integration_repair": {
+    "helper_pr": 3111,
+    "helper_branch": "codex/pr3056-repair-20261111-1a23",
+    "source_head": "b24777cbfc14c9424fce4b2c18755b94c9b32015",
+    "source_tree": "5370a3a9229d51775eee2f0b8ee5449a1a7b3c57",
+    "parents": [
+      "b22dcfd14b9da17b582f7178f103ad9881985b93",
+      "5b25618eb871f909cf4d6a82c72ed73ae91f54ff"
+    ],
+    "github_compare": {
+      "merge_base": "5b25618eb871f909cf4d6a82c72ed73ae91f54ff",
+      "ahead": 27,
+      "behind": 0,
+      "paths": 102
+    },
+    "local_ancestry_limit": "The local checkout is shallow; local rev-list count0/4515 is not the published ahead count.",
+    "full_source_diff_sha256": "06dc407d7ea21df708ad977c444212e50d106a6f6a541ba64219d737439e2ed0",
+    "soulwar_p1": {
+      "review_threads": [
+        "PRRT_kwDOT8SzxM62JoBm",
+        "PRRT_kwDOT8SzxM62JoBv"
+      ],
+      "repair_commit": "128f1578bd4f419cb99cb7d6323dca69720f90fe",
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/item_use/soul_war_source.rs",
+      "source_disposition": "Both reported mechanisms apply to5b. All six repair files are byte-identical128f/b247; explicit retained phases and receipt-first original-command completion are present.",
+      "pg_regressions_added": 6,
+      "pg_execution": "NOT_RUN on integrated source; no thread closure or blanket review approval inferred."
+    },
+    "jar": {
+      "source_change": "Keep observed QENGINE unchanged; project only shared NPC Jar through real guarded QuickLoot taxonomy and House owners; preserve exact full-row/intersection comparison and complete refusal operands.",
+      "canonical_taxonomy": {
+        "primary": "Valuables"
+      },
+      "test_inventory": "56 Equipment cases statically routed; original identities retained, selected6 executed here. Full module and parent remain pending.",
+      "actual70_rows": "UNKNOWN; the validated source mechanism does not prove it was the only runner difference."
+    },
+    "retained_source_groups": [
+      "Character receipt-family recovery",
+      "M39 cross-owner once claims and M47 historical fixtures",
+      "paced STEP recovery and map-base Ground routing",
+      "Tibiadrome/Spite durable clocks and progress",
+      "native terminal deaths and Herald top-damage binding",
+      "typed World serialization and final NPC service counts",
+      "strict corpse/yield/craft qualification and closed speed0 for2833/5805/5806",
+      "QN3/M42 custody, Feaster110+2 and historical digest clarification",
+      "actual PG-to-client transcript routing"
+    ],
+    "generation_evidence": {
+      "run_id": 43032293380,
+      "job_id": 130562149657,
+      "head": "b24777cbfc14c9424fce4b2c18755b94c9b32015",
+      "tree": "5370a3a9229d51775eee2f0b8ee5449a1a7b3c57",
+      "attempt": 1,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "failed_at": "2026-11-11T14:14:04Z",
+      "artifacts": 0,
+      "source": "tools/content-migration/refresh_equipment_profile_pin.py:491",
+      "error": "SRX3 source profile differs: SRX3-BOSS-YIELDS/oteryn:item.tibia.i7385",
+      "actual_standalone_registration_files": 56,
+      "earlier_jar_guard": "PASSED by actual later traceback and source order",
+      "remaining_conflicting_full_rows": "UNKNOWN: this guard did not print operands",
+      "next_fix": "Exact chosen-Trader/QuickLoot/BossYield/House source composition; preserve historical14 intersections and all source guards.",
+      "qualification": "Final pins/export/upload skipped; no canonical artifact or generator success.",
+      "raw_receipt": {
+        "path": "batch71-helper-generator-terminal-receipt.json",
+        "sha256": "f3e9be55b59cc351b9085e1ca857c649d311b4001da5a2ac41aefb48145c38f8"
+      },
+      "raw_log_sha256": "81dfbb0667c5fe09e91bf4413898943f7ef0660e7f76daacfa277411f7d3bc5c"
+    },
+    "codex_review_limit": "The root task already consumed its two allowed reviews. The previous root clean review is historical41beb4536f0ea10b1d5fadfa066a5f310ae8b1f7. Existing helper review findings were read and verified; no third root provider invocation was made. This checkpoint is not merge authorization.",
+    "boot_diagnostic_candidate": "The previously prepared test-only QuestLoadError diagnostic remains scratch-only and is not included in this integration."
   }
 }
