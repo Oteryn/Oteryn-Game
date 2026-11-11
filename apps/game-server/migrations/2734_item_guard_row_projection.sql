@@ -22,8 +22,8 @@ BEGIN
     IF TG_OP = 'UPDATE'$refresh$;
 BEGIN
     body := pg_get_functiondef('game_item_instance_guard()'::regprocedure);
-    IF (length(body)-length(replace(body,old_call,'')))/length(old_call) <> 70
-       OR (length(body)-length(replace(body,new_call,'')))/length(new_call) <> 39
+    IF (length(body)-length(replace(body,old_call,'')))/length(old_call) <> 72
+       OR (length(body)-length(replace(body,new_call,'')))/length(new_call) <> 40
        OR (length(body)-length(replace(body,refresh_anchor,'')))/length(refresh_anchor) <> 1
        OR regexp_count(body,E'\\mBEGIN\\M',1,'i') <> 1
        OR regexp_count(body,E'\\mDECLARE\\M',1,'i') <> 0
