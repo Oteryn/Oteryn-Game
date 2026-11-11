@@ -677,7 +677,7 @@ fn loyalty_sources(page: &[Source], points: &BTreeMap<CharacterId, u64>) -> Vec<
         .collect()
 }
 
-/// N014 category 13: the account loyalty projection of 0406/0925, which Platform alone writes;
+/// N014 category 13: the account loyalty projection (0406), Platform's points as Game pulled them;
 /// same eligibility as categories 1-9, one set-based read per page inside the cut.
 async fn read_loyalty(
     tx: &mut Transaction<'_, Postgres>,

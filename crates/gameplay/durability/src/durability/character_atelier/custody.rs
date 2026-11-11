@@ -22,6 +22,7 @@ enum GemAtelierCause {
     Reveal,
     Dismantle,
     GradeUp,
+    Reshape,
 }
 impl GemAtelierCause {
     fn from_mutation(mutation: &AtelierMutation) -> std::result::Result<Self, DurabilityError> {
@@ -29,6 +30,7 @@ impl GemAtelierCause {
             AtelierMutation::Reveal { .. } => Ok(Self::Reveal),
             AtelierMutation::Dismantle { .. } => Ok(Self::Dismantle),
             AtelierMutation::GradeUp { .. } => Ok(Self::GradeUp),
+            AtelierMutation::Reshape { .. } => Ok(Self::Reshape),
             _ => Err(DurabilityError::InvalidStoredState),
         }
     }
@@ -37,6 +39,7 @@ impl GemAtelierCause {
             Self::Reveal => "REVEAL",
             Self::Dismantle => "DISMANTLE",
             Self::GradeUp => "GRADE_UP",
+            Self::Reshape => "RESHAPE",
         }
     }
 }

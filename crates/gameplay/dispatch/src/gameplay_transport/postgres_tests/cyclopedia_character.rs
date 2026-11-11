@@ -215,6 +215,14 @@ fn tabs_scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_pvp_state (character_id, world_id) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid)")
             .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&h.pool).await?;
         pvp_source_death_fixture::seed_ledger(&h.pool, 41, 60, true, Some(1), "0 seconds").await?;
+        // One recorded PvP harm receipt: the death owner captures its attacker as the
+        // most-damage dealer (capability 488). Receipt rows are fixture setup only.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_pvp_harm(game_session_id,command_id,ordinal,victim,attacker,binding,damage,unjustified) \
+            VALUES(encode($3,'hex')::uuid,1,0,encode($1,'hex')::uuid,encode($2,'hex')::uuid,$4,25,true)")
+            .bind(id(41).as_slice()).bind(id(60).as_slice()).bind(id(77).as_slice()).bind([7_u8; 32].as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
         let mut request = crate::gameplay_transport::death_ml_loss_postgres::death(90)?;
         request.pvp_contributors = vec![PvpDeathContributor {
             character_id: CharacterId::from_bytes(id(60)).map_err(debug)?,
@@ -374,11 +382,12 @@ fn tabs_scenario() -> TestResult {
         expected.extend_from_slice(&u32::try_from(level)?.to_le_bytes());
         expected.push(5);
         expected.extend_from_slice(b"Pvpci");
-        expected.push(0);
+        expected.push(5);
+        expected.extend_from_slice(b"Pvpci");
         expected.push(u8::from(unjustified));
         assert_eq!(
             detailed, expected,
-            "one row: the V1 row, then level, killer, unknown most-damage killer and the flag"
+            "one row: the V1 row, then level, killer, the captured most-damage dealer and the flag"
         );
         drop(owner);
         drop(authority);

@@ -1,7 +1,7 @@
 use super::*;
 use crate::durability::character_atelier::AtelierResources;
 use crate::durability::character_wheel::{
-    WheelChangeRequest, WheelCommitOutcome, WheelOccurrence, WheelSlots,
+    WheelChangeRequest, WheelCommitOutcome, WheelOccurrence, WheelSlots, WheelVesselIntent,
 };
 use crate::durability::item_fee_burn::test_support::{definition, request as fee_request};
 use crate::gameplay_transport::atelier::{GemBuildCommand, GemBuildOutcome};
@@ -34,6 +34,7 @@ pub(super) async fn exercise(
         content: &content,
         coins: fee_request(2, 1)?.change,
         fragment: definition("oteryn:item.tibia.i46625"),
+        supply_stash: false,
     });
     let session = crate::bestiary_postgres_harness::fence(1)?.game_session_id;
     let mut requests = Vec::new();
@@ -208,7 +209,7 @@ pub(super) async fn exercise(
         occurrence: WheelOccurrence::from_bytes(id(179)).map_err(debug)?,
         expected_wheel_revision: 0,
         slots: WheelSlots::ZERO,
-        vessels: Some(lesser_slot),
+        vessels: Some(WheelVesselIntent::Slots(lesser_slot)),
     };
     advance_ex_action(owner)?;
     assert!(
@@ -224,7 +225,7 @@ pub(super) async fn exercise(
         occurrence: WheelOccurrence::from_bytes(id(189)).map_err(debug)?,
         expected_wheel_revision: 0,
         slots: earned,
-        vessels: Some(regular_slot),
+        vessels: Some(WheelVesselIntent::Slots(regular_slot)),
     };
     advance_ex_action(owner)?;
     assert!(
@@ -350,7 +351,7 @@ pub(super) async fn exercise(
         expected_wheel_revision: 1,
         slots: WheelSlots::new(full).map_err(debug)?,
         // The full red slice unlocks three Gem Vessel nodes, opening slots 0..=2.
-        vessels: Some(regular_slot),
+        vessels: Some(WheelVesselIntent::Slots(regular_slot)),
     };
     // Keep the existing 11-point central slice too: moving points still needs a temple.
     let mut wheel = wheel;
@@ -383,6 +384,39 @@ pub(super) async fn exercise(
         Some(&vec![0, 3])
     );
     assert!(!effects.sockets.gem_values_milli.is_empty());
+    // A receipt replay projects the vessel slots as the committing write did: with green
+    // socketed in slot 1, a Set Lock and its replay return the same state.
+    for (seed, locked) in [(218, true), (221, false)] {
+        let request = AtelierRequest {
+            occurrence: id(seed),
+            expected_atelier_revision: stored(h).await?.revision,
+            mutation: AtelierMutation::SetLock { gem: green, locked },
+            resources: None,
+        };
+        advance_ex_action(owner)?;
+        let GemBuildOutcome::Atelier(AtelierOutcome::Committed {
+            state: committed, ..
+        }) = owner
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(request.clone()))
+            .await
+            .map_err(debug)?
+        else {
+            return Err("set lock commit".into());
+        };
+        let socketed = &committed.gems[&u128::from_be_bytes(green)];
+        assert_eq!((socketed.slot, socketed.vessel), (Some(1), true));
+        advance_ex_action(owner)?;
+        let GemBuildOutcome::Atelier(AtelierOutcome::AlreadyCommitted {
+            state: replayed, ..
+        }) = owner
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(request))
+            .await
+            .map_err(debug)?
+        else {
+            return Err("set lock replay".into());
+        };
+        assert_eq!(replayed, committed);
+    }
     let supreme_mod = stored(h).await?.gems[&u128::from_be_bytes(id(182))].mods[2];
     for seed in 196..199 {
         let request = AtelierRequest {
@@ -396,6 +430,7 @@ pub(super) async fn exercise(
                 content: &content,
                 coins: fee_request(3, 1)?.change,
                 fragment: definition("oteryn:item.tibia.i46626"),
+                supply_stash: false,
             })),
         };
         advance_ex_action(owner)?;
@@ -435,6 +470,7 @@ pub(super) async fn exercise(
             content: &content,
             coins: fee_request(4, 1)?.change,
             fragment: definition("oteryn:item.tibia.i46626"),
+            supply_stash: false,
         })),
     };
     advance_ex_action(owner)?;

@@ -178,9 +178,11 @@ pub fn place(vessels: &GemVessels, slot: usize, gem: Option<[u8; 16]>) -> Option
 }
 
 /// Converts a set of socketed gems from the legacy domain-indexed vector (green, red,
-/// purple, blue) into slots. A gem that is still socketed keeps its slot; a gem no longer
-/// listed leaves its slot; a newly listed gem takes the first free slot of its quality.
-/// `quality_of` returns `None` for an unknown gem, which refuses the whole conversion.
+/// purple, blue) into slots. A gem that is still socketed keeps its slot; a gem the client
+/// saw in its four cells ([`legacy_cells`]) and no longer lists leaves its slot; a gem
+/// socketed beyond those four cells, which the client never saw, keeps its slot; a newly
+/// listed gem takes the first free slot of its quality. `quality_of` returns `None` for an
+/// unknown gem, which refuses the whole conversion.
 pub fn from_legacy_cells(
     current: &GemVessels,
     cells: &[Option<[u8; 16]>; 4],
@@ -194,9 +196,10 @@ pub fn from_legacy_cells(
     {
         return None;
     }
+    let visible = legacy_cells(current);
     let mut next = NO_GEM_VESSELS;
     for (slot, cell) in current.iter().enumerate() {
-        if cell.is_some_and(|id| cells.contains(&Some(id))) {
+        if cell.is_some_and(|id| cells.contains(&Some(id)) || !visible.contains(&Some(id))) {
             next[slot] = *cell;
         }
     }
@@ -303,6 +306,46 @@ mod tests {
             legacy_cells(&expected),
             [Some([2; 16]), Some([1; 16]), Some([4; 16]), Some([3; 16])]
         );
+    }
+
+    #[test]
+    fn legacy_save_keeps_gems_socketed_beyond_the_four_cells() {
+        let atelier = state(&[
+            (1, GemQuality::Lesser),
+            (2, GemQuality::Regular),
+            (3, GemQuality::Greater),
+            (4, GemQuality::Lesser),
+            (5, GemQuality::Regular),
+            (6, GemQuality::Greater),
+        ]);
+        let quality = |id: [u8; 16]| {
+            atelier
+                .gems
+                .get(&u128::from_be_bytes(id))
+                .map(|gem| gem.quality)
+        };
+        let mut current = NO_GEM_VESSELS;
+        for (slot, id) in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)] {
+            current[slot] = Some([id; 16]);
+        }
+        let shown = legacy_cells(&current);
+        assert_eq!(
+            shown,
+            [Some([1; 16]), Some([2; 16]), Some([3; 16]), Some([4; 16])]
+        );
+        // The client unsockets gem 1 and sockets gem 6: gem 5, socketed beyond the four
+        // cells it was shown, keeps its slot.
+        let saved = from_legacy_cells(
+            &current,
+            &[Some([6; 16]), Some([2; 16]), Some([3; 16]), Some([4; 16])],
+            quality,
+        );
+        let mut expected = current;
+        expected[0] = None;
+        expected[5] = Some([6; 16]);
+        assert_eq!(saved, Some(expected));
+        // Saving exactly what was shown changes nothing.
+        assert_eq!(from_legacy_cells(&current, &shown, quality), Some(current));
     }
 
     #[test]

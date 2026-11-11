@@ -1,0 +1,17 @@
+{
+  "mechanic": "0483-gem-atelier",
+  "kind": "handlers",
+  "id": "0483-gem-atelier-reshape",
+  "status": "unsupported",
+  "reason": "Reshape (6214) is served by the server package; the client Reshape action lands in the next client slice.",
+  "commands": [
+    6214
+  ],
+  "not_applicable": {
+    "state": "The Reshape state lands with client support.",
+    "protocol": "The canonical codec is oteryn-protocol-oteryn atelier::v2.",
+    "view": "The Reshape view lands with client support.",
+    "input": "The Reshape input lands with client support.",
+    "settings": "The Gem Atelier has no client settings."
+  }
+}

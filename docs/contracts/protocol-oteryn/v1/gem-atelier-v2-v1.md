@@ -5,8 +5,9 @@ vocation's Wheel has twelve Gem Vessel nodes, the former Vessel Resonance nodes.
 allocated node opens the next Gem Vessel slot and grants flat damage and healing. A gem fits
 any open slot of its own quality.
 
-Commands 6210 (`ATELIER_V2_QUERY`), 6211 (`ATELIER_V2_SET_LOCK`), 6212 (`ATELIER_V2_MUTATE`)
-and 6213 (`ATELIER_V2_REPLACE_VESSEL`) require selected capability 483 (`GEM_ATELIER_V2`),
+Commands 6210 (`ATELIER_V2_QUERY`), 6211 (`ATELIER_V2_SET_LOCK`), 6212 (`ATELIER_V2_MUTATE`),
+6213 (`ATELIER_V2_REPLACE_VESSEL`) and 6214 (`ATELIER_V2_RESHAPE`) require selected capability
+483 (`GEM_ATELIER_V2`),
 which requires capability 148. Capability 483 is not offered until the client implements the
 slots. Capability 148 and its commands stay for old clients (see [Gem Atelier v1](atelier-v1.md)).
 
@@ -33,13 +34,15 @@ The slot's previous occupant returns to the gem list. The Wheel allocation is un
 write uses the durable, session-generation fenced Wheel writer: a slot that changes to a gem
 must be open and of the gem's quality, the gem must be a current gem of the Character, and
 no gem fills two slots. A refusal returns `refused=true` with nothing written. The same
-occurrence and intent returns its recorded result.
+occurrence and intent returns its recorded result: the receipt binds the expected Wheel
+revision, slot and gem as sent, never the allocation or slots read at the time, so a retry
+replays even after later Wheel changes. A capability 148 allocation save binds its four cells
+as sent, as before migration 2770, and its gems are placed after the receipt lookup; a gem
+socketed beyond the four cells such a client is shown keeps its slot.
 
 Lock and paid requests run through the v1 Atelier writer unchanged.
 
-Command 6214 (`ATELIER_V2_RESHAPE`, Mod Reshaping) is claimed but not yet registered or
-served: its fee and fragment burns need a new audited fee cause. Its request is fixed by the
-codec:
+- Reshape (Mod Reshaping):
 
 | Field | Wire tag | Value |
 | --- | --- | --- |
@@ -50,8 +53,24 @@ codec:
 
 Reshaping requires the temple and Premium, an unlocked gem and the position's price: 125,000
 gold and one lesser fragment, 1,000,000 gold and two lesser fragments, or 5,000,000 gold and
-three greater fragments. The new modifier is drawn from the position's reveal pool; the two
-basic positions never hold the same modifier. The gem keeps its identity, quality and slot.
+three greater fragments. The new modifier is drawn from the position's reveal pool minus the
+modifier the position holds now, so the result always differs; the two basic positions never
+hold the same modifier. The gem keeps its identity, quality and slot.
+Outside the temple or without Premium the reply is `refused=true` with nothing written,
+unless the occurrence already committed: that receipt is returned, whatever the temple and
+Premium state at the retry.
+
+Reshape runs through the v1 Atelier writer as receipt kind `RESHAPE`: the modifier draw, the
+gold fee (audited fee cause 483 `gem_reshape`, service key `oteryn:atelier.reshape`), the
+fragment BURNs and the receipt commit in one session-generation fenced transaction.
+Fragments come from carried containers first. While the character stands at a depot locker,
+or a Steward hireling serves its open stash (the hireling depot service), the Supply Stash pays
+the remainder through its ledger; otherwise only carried fragments count, and a shortfall is
+`refused=true` with nothing written. The server checks this access at commit time. Migration 2771
+binds receipt, fee and fragments: the fee names the position, and exactly one modifier of one
+unlocked gem changes, only at that position; gems compare without the retired `domain` of
+pre-2770 history and without the projected `vessel` flag. The same occurrence and intent
+returns its recorded result.
 
 ## Reply
 

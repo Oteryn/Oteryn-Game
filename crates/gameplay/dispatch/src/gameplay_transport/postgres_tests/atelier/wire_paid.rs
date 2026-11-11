@@ -446,7 +446,7 @@ async fn stow_asset(
     stow_asset_command(owner, admitted, input, quantity, 150).await
 }
 
-async fn stow_asset_command(
+pub(super) async fn stow_asset_command(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     input: u8,

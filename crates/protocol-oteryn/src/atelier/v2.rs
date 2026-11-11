@@ -14,8 +14,7 @@ pub const COMMAND_TYPE_ATELIER_V2_QUERY: u32 = 6210;
 pub const COMMAND_TYPE_ATELIER_V2_SET_LOCK: u32 = 6211;
 pub const COMMAND_TYPE_ATELIER_V2_MUTATE: u32 = 6212;
 pub const COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL: u32 = 6213;
-/// Mod Reshaping. Claimed for WU26-10; not registered or served until its custody slice
-/// (fee and fragment burn) lands.
+/// Mod Reshaping (WU26-10): paid through fee cause 483 with its fragment BURNs.
 pub const COMMAND_TYPE_ATELIER_V2_RESHAPE: u32 = 6214;
 pub const MAX_REQUEST_BYTES: usize = super::MAX_REQUEST_BYTES;
 pub const MAX_REPLY_BYTES: usize = 16_384;

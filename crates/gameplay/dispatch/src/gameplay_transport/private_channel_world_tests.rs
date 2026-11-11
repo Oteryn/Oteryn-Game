@@ -174,14 +174,10 @@ fn private_channel_member_reads_show_the_extension_and_notify_after_the_baseline
     use oteryn_protocol_oteryn::chat::line_extended::ChannelNoticeKind;
     use oteryn_protocol_oteryn::chat::private_channel::InvitedChannel;
     let state = PrivateChannelRuntime::default();
-    let admitted = admitted(1)?;
-    let viewer = *admitted.game_session_id.as_bytes();
-    let reservation = state.begin(admitted).ok_or("reservation")?;
-    assert!(state.finish(
-        admitted.game_session_id,
-        reservation,
-        Some(vec![interest()])
-    ));
+    let current = admitted(1)?;
+    let viewer = *current.game_session_id.as_bytes();
+    let reservation = state.begin(current).ok_or("reservation")?;
+    assert!(state.finish(current.game_session_id, reservation, Some(vec![interest()])));
     let list = ChatChannelList {
         own_channel: None,
         invited: vec![InvitedChannel {
@@ -209,7 +205,7 @@ fn private_channel_member_reads_show_the_extension_and_notify_after_the_baseline
     // The first read is the baseline: the list with both fields, no notice.
     let (shown, notices) = state
         .list_extended(
-            &admitted,
+            &current,
             read(
                 vec![row(viewer, "Aldric", true), row(bryn, "Bryn", true)],
                 Vec::new(),
@@ -222,11 +218,11 @@ fn private_channel_member_reads_show_the_extension_and_notify_after_the_baseline
     assert_eq!(extension.joined, vec![100]);
     assert_eq!(extension.participants[0].names, vec!["Aldric", "Bryn"]);
     assert!(notices.is_empty());
-    assert_eq!(state.probe(&admitted), vec![bryn]);
+    assert_eq!(state.probe(&current), vec![bryn]);
     // Cora joins: a notice and a changed extension; the legacy list is unchanged.
     let (shown, notices) = state
         .list_extended(
-            &admitted,
+            &current,
             read(
                 vec![
                     row(viewer, "Aldric", true),
@@ -246,7 +242,7 @@ fn private_channel_member_reads_show_the_extension_and_notify_after_the_baseline
     // Cora is excluded (row gone, session active), Bryn leaves (row kept, not joined).
     let (_, notices) = state
         .list_extended(
-            &admitted,
+            &current,
             read(
                 vec![row(viewer, "Aldric", true), row(bryn, "Bryn", false)],
                 vec![bryn, cora],
@@ -268,7 +264,7 @@ fn private_channel_member_reads_show_the_extension_and_notify_after_the_baseline
     // An unchanged read sends neither a list nor a notice; 494 alone sends no notice.
     let unchanged = state
         .list_extended(
-            &admitted,
+            &current,
             read(
                 vec![row(viewer, "Aldric", true), row(bryn, "Bryn", false)],
                 vec![bryn],
@@ -280,7 +276,7 @@ fn private_channel_member_reads_show_the_extension_and_notify_after_the_baseline
     assert_eq!(unchanged, (None, Vec::new()));
     let (shown, notices) = state
         .list_extended(
-            &admitted,
+            &current,
             read(vec![row(viewer, "Aldric", true)], Vec::new()),
             true,
             false,

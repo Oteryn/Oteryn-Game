@@ -5,6 +5,7 @@ pub mod cast;
 pub mod chat;
 
 pub mod party;
+pub mod platform_streams;
 pub mod premium;
 pub mod security;
 

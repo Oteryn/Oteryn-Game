@@ -35,6 +35,10 @@ pub struct AtelierResources<'a> {
     pub content: &'a dyn super::item_loop_move::ItemLoopContent,
     pub coins: super::item_fee_burn::FeeChangeFacts,
     pub fragment: super::item_mint::TypedDefinitionRef,
+    /// The character stands at a depot locker, so its Supply Stash is open. Only Mod
+    /// Reshaping reads it: carried fragments first, then the stash pays the remainder.
+    /// Grade Up keeps its unconditional stash remainder; Reveal never reaches the stash.
+    pub supply_stash: bool,
 }
 impl std::fmt::Debug for AtelierResources<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -51,6 +55,8 @@ pub enum AtelierMutation {
     Reveal { quality: GemQuality },
     Dismantle { gem: [u8; 16] },
     GradeUp { kind: FragmentKind, mod_id: u16 },
+    /// Mod Reshaping: redraws modifier `position` (1..=3) of a revealed gem.
+    Reshape { gem: [u8; 16], position: u8 },
 }
 
 #[derive(Debug, Clone)]
@@ -182,7 +188,11 @@ impl DurabilityRoot {
                         return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
                     }
                     let revision = CharacterRevision::new(numeric_u64(&row, "committed_character_revision")?).map_err(|_| DurabilityError::InvalidStoredState)?;
-                    let state = decode_state(row.try_get("outcome_json")?)?;
+                    // Vessel placement is not stored in the receipt: project the vessel owner's
+                    // slots as the committing write did, so the replay keeps the socket view.
+                    let mut state = decode_state(row.try_get("outcome_json")?)?;
+                    let vessels = super::character_wheel::read_vessels(&mut tx, fence.character_id).await?;
+                    oteryn_gameplay_progression::atelier::vessels::project(&mut state, &vessels);
                     tx.commit(deadline).await?;
                     return Ok(Ok(AtelierOutcome::AlreadyCommitted { revision, state }));
                 }

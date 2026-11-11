@@ -14,6 +14,8 @@ with a seven-day cycle of fixed rewards (`content/interactions/daily-rewards.jso
 days). Consecutive claims walk days 1..7 and wrap to day 1; a gap the jokers cannot cover
 restarts the streak and the cycle at day 1. A lane stored before the rework on day 8..30
 resumes on the same weekday, `1 + ((lane_day - 1) % 7)`.
+Migration 2763 admits the wrap in `game_daily_reward_projection_guard`: after a day 7
+claim the stored lane day is 1; states written before it (lane day 8 after day 7) still prove.
 
 ## query
 

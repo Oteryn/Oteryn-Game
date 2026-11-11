@@ -16,6 +16,7 @@ pub(super) async fn plan(
     key: &str,
     mut needed: u32,
 ) -> std::result::Result<Option<MaterialPlan>, DurabilityError> {
+    let total = needed;
     if !(1..=30).contains(&needed) {
         return Ok(None);
     }
@@ -127,7 +128,11 @@ pub(super) async fn plan(
     if needed == 0 {
         return Ok(Some(result));
     }
-    if !matches!(request.mutation, AtelierMutation::GradeUp { .. })
+    // Mod Reshaping reaches the stash only with the Supply Stash open at a depot
+    // (owner decision WU26-10); away from a depot it burns carried fragments only.
+    let reshape = matches!(request.mutation, AtelierMutation::Reshape { .. });
+    if !(matches!(request.mutation, AtelierMutation::GradeUp { .. })
+        || (reshape && resources.supply_stash))
         || resources.fragment.family != "Item"
         || resources.fragment.production_key != key
     {
@@ -141,7 +146,19 @@ pub(super) async fn plan(
         return Ok(None);
     };
     let before: i64 = balance.try_get("quantity")?;
-    if before < i64::from(needed) {
+    let short = if reshape {
+        let held = u32::try_from(before.min(i64::from(u32::MAX)))
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        oteryn_gameplay_progression::atelier::reshape::fragment_sources(
+            total,
+            total - needed,
+            held,
+            resources.supply_stash,
+        ) != Some((total - needed, needed))
+    } else {
+        before < i64::from(needed)
+    };
+    if short {
         return Ok(None);
     }
     let entry: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")

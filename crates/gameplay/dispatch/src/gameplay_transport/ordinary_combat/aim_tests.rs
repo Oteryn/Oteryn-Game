@@ -150,3 +150,38 @@ fn invalid_target_option_for_non_wave_spell_is_refused() {
         assert_eq!(aim(spell, &cast(SpellTarget::None, false)), Ok(None));
     }
 }
+
+#[test]
+fn cursor_on_another_floor_is_target_illegal_not_the_facing() {
+    let caster = MovementLocalPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    // Another floor is TARGET_ILLEGAL (`SPELL_AIM_MODE_CURSOR`), never a facing fallback.
+    for floor in [6, 8] {
+        assert_eq!(
+            cursor_point(
+                caster,
+                TilePosition {
+                    x: 101,
+                    y: 100,
+                    floor
+                }
+            ),
+            Err(SpellCastDisposition::TargetIllegal),
+            "{floor}"
+        );
+    }
+    // On the caster's floor a cursor in view aims; one outside the view keeps the facing.
+    assert_eq!(cursor_point(caster, at(97, 97)), Ok(Some(at(97, 97))));
+    assert_eq!(cursor_point(caster, at(130, 100)), Ok(None));
+    assert_eq!(
+        aimed_origin(
+            at(100, 100),
+            Some(Direction::North),
+            cursor_point(caster, at(130, 100)).unwrap()
+        ),
+        Ok((at(100, 99), Direction::North))
+    );
+}

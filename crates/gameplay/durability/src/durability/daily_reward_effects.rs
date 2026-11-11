@@ -42,8 +42,18 @@ pub(super) async fn grant(
             None
         };
         sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,definition,quantity,status,delivering_transaction_id,item_instance_id) VALUES(encode($1,'hex')::uuid,$2,$3,CASE WHEN $3='TEMPLE_SCROLL' THEN 'oteryn:item.tibia.i25718' END,$4,'DELIVERED',encode($1,'hex')::uuid,$5::uuid)")
-            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity)).bind(item)
+            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity)).bind(item.as_deref())
             .execute(&mut ***tx).await?;
+        // WU26-06: the delivered scroll vanishes seven days later through the existing Item
+        // deadline owner (docs/contracts/TEMPLE_TELEPORT_SCROLL_V1.md; migration 2762).
+        if let Some(item) = &item {
+            super::item_use::temple_scroll::schedule_delivered_scroll(
+                &mut ***tx,
+                item,
+                &request.transaction_id,
+            )
+            .await?;
+        }
         line += 1;
     }
     if reward.prey_wildcards > 0 {

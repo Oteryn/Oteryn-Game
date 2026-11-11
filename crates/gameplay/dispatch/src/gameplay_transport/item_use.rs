@@ -9,6 +9,9 @@ pub(super) mod drome_cube;
 #[path = "item_use_gourmet.rs"]
 pub(super) mod gourmet;
 
+#[path = "item_use_temple_scroll.rs"]
+pub(super) mod temple_scroll;
+
 use std::num::NonZeroU32;
 use std::time::Duration;
 
@@ -117,6 +120,11 @@ impl ItemUseGate {
             }
             // The concoction cooldown is durable; the writer refuses inside it.
             ItemUseKind::Concoction => {
+                self.in_flight_since_ms = Some(now_ms);
+                return Ok(());
+            }
+            // WU26-06: the Temple Teleport Scroll has no cooldown of its own.
+            ItemUseKind::TempleScroll => {
                 self.in_flight_since_ms = Some(now_ms);
                 return Ok(());
             }
@@ -555,6 +563,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| entry.item.item_instance_id == source)
             .ok_or(UseDisposition::StaleState)?;
+        if entry.item.definition.production_key
+            == crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_KEY
+        {
+            return self
+                .use_temple_scroll(actor, command, fence, &inventory, entry)
+                .await;
+        }
         let record = record(native, &entry.item.definition);
         if let Some(potion) =
             oteryn_gameplay_progression::condition_potions::PotionCondition::from_key(

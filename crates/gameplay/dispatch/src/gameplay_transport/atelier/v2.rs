@@ -1,9 +1,10 @@
 //! Gem Atelier v2 (capability 483): the v1 Atelier writer's replies without the gem domain,
-//! plus the ordered Gem Vessel slots and Replace Vessel through the durable Wheel writer.
+//! plus the ordered Gem Vessel slots and Replace Vessel through the durable Wheel writer, and
+//! Mod Reshaping through the same Atelier writer.
 use super::AtelierWireReply;
 use crate::gameplay_transport::connection::AdmittedSession;
 use crate::gameplay_transport::wheel_allocation::FencedWheelChange;
-use oteryn_gameplay_progression::atelier::vessels;
+use oteryn_gameplay_progression::atelier::{reshape, vessels};
 use oteryn_protocol_oteryn::atelier as v1;
 use oteryn_protocol_oteryn::atelier::v2 as wire;
 
@@ -22,21 +23,27 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             return AtelierWireReply::Rejected;
         }
         // Lock and paid requests carry the v1 bytes and run through the one Atelier writer.
-        let (v1_kind, replace) = match kind {
+        let (v1_kind, replace, reshape) = match kind {
             wire::COMMAND_TYPE_ATELIER_V2_QUERY if wire::decode_query(payload).is_ok() => {
-                (v1::COMMAND_TYPE_ATELIER_QUERY, None)
+                (v1::COMMAND_TYPE_ATELIER_QUERY, None, None)
             }
             wire::COMMAND_TYPE_ATELIER_V2_SET_LOCK if wire::decode_set_lock(payload).is_ok() => {
-                (v1::COMMAND_TYPE_ATELIER_SET_LOCK, None)
+                (v1::COMMAND_TYPE_ATELIER_SET_LOCK, None, None)
             }
             wire::COMMAND_TYPE_ATELIER_V2_MUTATE if wire::decode_mutate(payload).is_ok() => {
-                (v1::COMMAND_TYPE_ATELIER_MUTATE, None)
+                (v1::COMMAND_TYPE_ATELIER_MUTATE, None, None)
             }
             wire::COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL => {
                 let Ok(request) = wire::decode_replace_vessel(payload) else {
                     return AtelierWireReply::Rejected;
                 };
-                (v1::COMMAND_TYPE_ATELIER_QUERY, Some(request))
+                (v1::COMMAND_TYPE_ATELIER_QUERY, Some(request), None)
+            }
+            wire::COMMAND_TYPE_ATELIER_V2_RESHAPE => {
+                let Ok(request) = wire::decode_reshape(payload) else {
+                    return AtelierWireReply::Rejected;
+                };
+                (v1::COMMAND_TYPE_ATELIER_MUTATE, None, Some(request))
             }
             _ => return AtelierWireReply::Rejected,
         };
@@ -53,15 +60,21 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         } else {
             payload
         };
-        let reply = match self.atelier_v1_wire(admitted, v1_kind, v1_payload).await {
+        let reply = match reshape {
+            Some(request) => self.reshape(admitted, request).await,
+            None => self.atelier_v1_wire(admitted, v1_kind, v1_payload).await,
+        };
+        let reply = match reply {
             AtelierWireReply::Payload(bytes) => bytes,
             other => return other,
         };
         let Ok(reply) = v1::decode_reply(&reply) else {
             return AtelierWireReply::Unavailable;
         };
+        // Quotes ride on query replies only (contract); a Replace Vessel reply carries none.
+        let quotes = kind == wire::COMMAND_TYPE_ATELIER_V2_QUERY;
         match self
-            .atelier_v2_reply(admitted, reply, replace_refused)
+            .atelier_v2_reply(admitted, reply, replace_refused, quotes)
             .await
         {
             Some(bytes) => AtelierWireReply::Payload(bytes),
@@ -89,13 +102,11 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         let Some(item_fence) = self.wheel_change_gate(admitted, true).await else {
             return FencedWheelChange::Rejected;
         };
-        let Some(read) = self.atelier_wheel_read(item_fence).await else {
-            return FencedWheelChange::Unavailable;
-        };
-        let Some(vessels) = vessels::place(&read.vessels, usize::from(request.slot), request.gem)
-        else {
+        if usize::from(request.slot) >= vessels::GEM_VESSEL_SLOTS {
             return FencedWheelChange::Rejected;
-        };
+        }
+        // The Wheel writer binds the slot and gem as sent and places them against the stored
+        // slots after its receipt lookup, keeping the stored allocation.
         let outcome = self
             .wheel_fenced_change(
                 admitted,
@@ -103,8 +114,13 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 crate::durability::character_wheel::WheelChangeRequest {
                     occurrence,
                     expected_wheel_revision: request.expected_wheel_revision,
-                    slots: read.allocation.slots,
-                    vessels: Some(vessels),
+                    slots: crate::durability::character_wheel::WheelSlots::ZERO,
+                    vessels: Some(
+                        crate::durability::character_wheel::WheelVesselIntent::Place {
+                            slot: request.slot,
+                            gem: request.gem,
+                        },
+                    ),
                 },
             )
             .await;
@@ -114,6 +130,60 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         outcome
+    }
+
+    /// Mod Reshaping: only in a temple and with Premium; a refusal writes nothing. The
+    /// modifier draw, gold, fragment BURNs and receipt commit in the one Atelier writer.
+    async fn reshape(
+        &self,
+        admitted: AdmittedSession,
+        request: wire::ReshapeRequest,
+    ) -> AtelierWireReply {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(v1::CAPABILITY_WHEEL_ALLOCATION_V1)
+        {
+            return AtelierWireReply::Rejected;
+        }
+        let (Some(expected), Some(actor)) = (admitted.item_fence, admitted.runtime_actor) else {
+            return AtelierWireReply::Rejected;
+        };
+        if expected.game_session_id != admitted.game_session_id
+            || expected.connection_generation.get() != admitted.continuity.connection_generation
+        {
+            return AtelierWireReply::Rejected;
+        }
+        let in_temple = crate::gameplay_transport::wheel_allocation::removal_permitted(
+            self,
+            actor,
+            admitted.game_session_id,
+        )
+        .await;
+        let Some(read) = self.atelier_wheel_read(expected).await else {
+            return AtelierWireReply::Unavailable;
+        };
+        // Admission binds fresh writes only: a refused request still reaches the writer as
+        // a replay probe, so a committed occurrence whose reply was lost replays its receipt
+        // after Premium lapsed or combat began.
+        let refused = reshape::admitted(in_temple, read.premium_permitted).is_err();
+        let request = Some(crate::durability::character_atelier::AtelierRequest {
+            occurrence: request.occurrence,
+            expected_atelier_revision: request.expected_revision,
+            mutation: crate::durability::character_atelier::AtelierMutation::Reshape {
+                gem: request.gem,
+                position: request.position,
+            },
+            resources: None,
+        });
+        self.atelier_v1_apply(
+            admitted,
+            expected,
+            v1::COMMAND_TYPE_ATELIER_MUTATE,
+            request,
+            refused,
+        )
+        .await
     }
 
     async fn atelier_wheel_read(
@@ -137,6 +207,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         reply: v1::AtelierReply,
         replace_refused: bool,
+        quotes: bool,
     ) -> Option<Vec<u8>> {
         let fence = admitted.item_fence?;
         let actor = admitted.runtime_actor?;
@@ -198,6 +269,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             quality_quotes: reply
                 .quality_quotes
                 .into_iter()
+                .filter(|_| quotes)
                 .map(|quote| wire::QualityQuote {
                     quality: quote.quality,
                     reveal_gold: quote.reveal_gold,
@@ -206,7 +278,11 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                     fragment_max: quote.fragment_max,
                 })
                 .collect(),
-            grade_quotes: reply.grade_quotes,
+            grade_quotes: if quotes {
+                reply.grade_quotes
+            } else {
+                Vec::new()
+            },
             vessels: slots,
             vessel_nodes: vessels::node_slots(rules, &read.vocation),
             vessel_node_bonus: vessels::GEM_VESSEL_FLAT_DAMAGE_HEALING,

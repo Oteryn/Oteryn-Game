@@ -44,13 +44,38 @@ pub fn admitted(in_temple: bool, premium: bool) -> Result<(), ReshapeRefusal> {
     }
 }
 
+/// The Supply Stash is open for Mod Reshaping at a depot locker or at a hireling serving
+/// its depot/stash function (the Steward stash service), and nowhere else (WU26-10).
+pub fn supply_stash_open(at_depot_locker: bool, hireling_stash: bool) -> bool {
+    at_depot_locker || hireling_stash
+}
+
+/// Where a reshape's `needed` fragments come from: carried containers first; the Supply
+/// Stash pays the remainder only while it is open at a depot (owner decision WU26-10).
+/// Returns the (carried, stash) split, or `None` when the reachable fragments fall short.
+pub fn fragment_sources(
+    needed: u32,
+    carried: u32,
+    stash: u32,
+    at_depot: bool,
+) -> Option<(u32, u32)> {
+    let from_carried = needed.min(carried);
+    let rest = needed - from_carried;
+    if rest == 0 {
+        return Some((from_carried, 0));
+    }
+    (at_depot && stash >= rest).then_some((from_carried, rest))
+}
+
 /// The modifiers position `position` may draw for a gem holding `mods`, in catalogue order.
-/// As in the reveal draw, the two basic positions never hold the same modifier.
+/// A redraw never returns the modifier the position holds now (owner decision WU26-10), and,
+/// as in the reveal draw, the two basic positions never hold the same modifier. `None` means
+/// the gem has no such position. Every position pool holds at least two modifiers (content
+/// invariant, tested below), so the list is never empty for valid content; the durable draw
+/// treats an empty list as invalid content, not as a player refusal.
 pub fn choices(family: &serde_json::Value, mods: &[u16], position: u8) -> Option<Vec<u16>> {
     let index = usize::from(position.checked_sub(1)?);
-    if index >= mods.len() {
-        return None;
-    }
+    let current = *mods.get(index)?;
     let other_basic = match index {
         0 => mods.get(1).copied(),
         1 => mods.first().copied(),
@@ -60,11 +85,11 @@ pub fn choices(family: &serde_json::Value, mods: &[u16], position: u8) -> Option
     let mut out = Vec::with_capacity(list.len());
     for entry in list {
         let id = u16::try_from(entry.as_u64()?).ok()?;
-        if Some(id) != other_basic {
+        if id != current && Some(id) != other_basic {
             out.push(id);
         }
     }
-    (!out.is_empty()).then_some(out)
+    Some(out)
 }
 
 #[cfg(test)]
@@ -92,12 +117,67 @@ mod tests {
         assert_eq!(admitted(false, false), Err(ReshapeRefusal::OutsideTemple));
     }
 
+    #[test]
+    fn reshape_supply_stash_opens_at_a_locker_or_a_stash_hireling() {
+        assert!(supply_stash_open(true, false));
+        assert!(supply_stash_open(false, true));
+        assert!(supply_stash_open(true, true));
+        assert!(!supply_stash_open(false, false));
+        // A stash hireling pays the remainder exactly like a depot locker.
+        let hireling = supply_stash_open(false, true);
+        assert_eq!(fragment_sources(2, 1, 9, hireling), Some((1, 1)));
+        let neither = supply_stash_open(false, false);
+        assert_eq!(fragment_sources(2, 1, 9, neither), None);
+    }
+
+    #[test]
+    fn reshape_fragments_come_from_carried_first_and_the_stash_only_at_a_depot() {
+        // Away from a depot: carried containers only.
+        assert_eq!(fragment_sources(2, 2, 9, false), Some((2, 0)));
+        assert_eq!(fragment_sources(2, 1, 9, false), None);
+        assert_eq!(fragment_sources(1, 0, 9, false), None);
+        // At a depot with the Supply Stash open: carried first, then the stash.
+        assert_eq!(fragment_sources(2, 2, 9, true), Some((2, 0)));
+        assert_eq!(fragment_sources(2, 1, 9, true), Some((1, 1)));
+        assert_eq!(fragment_sources(3, 0, 3, true), Some((0, 3)));
+        assert_eq!(fragment_sources(3, 1, 1, true), None);
+    }
+
     fn pool(family: &serde_json::Value, list: &str) -> Result<Vec<u16>, Error> {
         let mut out = Vec::new();
         for entry in family[list].as_array().ok_or("pool")? {
             out.push(u16::try_from(entry.as_u64().ok_or("mod id")?)?);
         }
         Ok(out)
+    }
+
+    #[test]
+    fn every_reshape_position_pool_has_another_modifier() -> Result<(), Error> {
+        let data = WheelGemData::embedded()?;
+        let vocations = data.gems()["vocations"].as_object().ok_or("vocations")?;
+        assert!(!vocations.is_empty());
+        for (vocation, family) in vocations {
+            let pools = POSITION_POOLS
+                .iter()
+                .map(|list| pool(family, list))
+                .collect::<Result<Vec<_>, _>>()?;
+            for (list, entries) in POSITION_POOLS.iter().zip(&pools) {
+                assert!(entries.len() >= 2, "{vocation} {list}");
+            }
+            // Whatever the gem holds, every position still has a modifier to draw.
+            for &first in &pools[0] {
+                for &second in pools[1].iter().filter(|id| **id != first) {
+                    for &supreme in &pools[2] {
+                        let mods = [first, second, supreme];
+                        for position in 1..=3 {
+                            let drawn = choices(family, &mods, position).ok_or("position")?;
+                            assert!(!drawn.is_empty(), "{vocation} {mods:?} {position}");
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
     #[test]
@@ -136,14 +216,25 @@ mod tests {
             },
         );
 
-        // The second basic position never draws the first position's modifier.
+        // The second basic position never draws the first position's modifier, and no
+        // position redraws the modifier it holds now.
         let basic = choices(family, &mods, 2).ok_or("choices")?;
-        assert!(!basic.contains(&mods[0]));
+        assert!(!basic.contains(&mods[0]) && !basic.contains(&mods[1]));
         assert_eq!(
-            basic.len() + usize::from(second.contains(&mods[0])),
+            basic.len() + usize::from(second.contains(&mods[0])) + 1,
             second.len()
         );
-        assert_eq!(choices(family, &mods, 3), Some(supreme.clone()));
+        let other_supreme: Vec<u16> = supreme
+            .iter()
+            .copied()
+            .filter(|id| *id != mods[2])
+            .collect();
+        assert_eq!(choices(family, &mods, 3), Some(other_supreme));
+        let fresh_first = *choices(family, &mods, 1)
+            .ok_or("first choices")?
+            .first()
+            .ok_or("another first modifier")?;
+        assert!(fresh_first != mods[0] && fresh_first != mods[1]);
         assert_eq!(choices(family, &mods, 4), None);
         assert_eq!(choices(family, &mods[..1], 2), None);
 
@@ -156,6 +247,19 @@ mod tests {
                     id,
                     position: 2,
                     mod_id: mods[0],
+                },
+            ),
+            Err(AtelierRefusal::InvalidDraw)
+        );
+        assert_eq!(state, before);
+        // Redrawing the modifier a position already holds is refused too.
+        assert_eq!(
+            state.commit(
+                0,
+                AtelierAction::Reshape {
+                    id,
+                    position: 3,
+                    mod_id: mods[2],
                 },
             ),
             Err(AtelierRefusal::InvalidDraw)
@@ -205,7 +309,7 @@ mod tests {
                 AtelierAction::Reshape {
                     id,
                     position: 1,
-                    mod_id: first[0],
+                    mod_id: fresh_first,
                 },
             ),
             Err(AtelierRefusal::InsufficientGold)
@@ -233,7 +337,7 @@ mod tests {
                 AtelierAction::Reshape {
                     id,
                     position: 1,
-                    mod_id: first[0],
+                    mod_id: fresh_first,
                 },
             ),
             Err(AtelierRefusal::Locked)

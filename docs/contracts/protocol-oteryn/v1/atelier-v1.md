@@ -31,7 +31,9 @@ a price, draw, resource balance or mint identity.
 Winter Update 2026 removed the gem domain ([Gem Atelier v2](gem-atelier-v2-v1.md)).
 Switch domain (action 2) still decodes and returns `refused=true` without a write. A
 gem row's `domain` field now carries the gem's position among the first four
-socketed gems in slot order, or zero, so old clients keep their four vessel cells.
+socketed gems in slot order, or zero, so old clients keep their four vessel cells. Its
+`vessel` flag is set only for those four gems; a gem socketed beyond them stays socketed
+and is shown unsocketed, since the client refuses two socketed gems in one cell.
 
 Mutations use the existing Character revision sequencer and the session-generation
 fenced Atelier writer. Material burns/mints, coin and bank debits, Character revision,

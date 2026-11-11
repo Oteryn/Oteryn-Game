@@ -372,7 +372,7 @@ async fn prepare_spatial(
                 aim,
                 attack_target,
                 now,
-            ),
+            )?,
         )?),
         None => None,
     };

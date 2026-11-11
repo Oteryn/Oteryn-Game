@@ -2214,6 +2214,14 @@ mod death_build_postgres {
                         .fetch_one(&h.pool)
                         .await?;
                 assert_eq!(killer_key, "oteryn:creature.dragon");
+                // Without player damage amounts the captured creature final blow is the
+                // most-damage dealer (capability 488).
+                let most_damage: Option<i16> = sqlx::query_scalar(
+                    "SELECT most_damage_ordinal FROM game_public_death_classifications",
+                )
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(most_damage, Some(0));
 
                 assert!(matches!(
                     h.root

@@ -1,4 +1,4 @@
-//! N009: the control-only Platform sanction projection (2800) and the fenced own record (6240).
+//! N009: the Game-run Platform sanction projection (2800, 2802) and the fenced own record (6240).
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -81,38 +81,40 @@ fn sanction_record_postgres_projection_is_idempotent_and_the_read_is_own_and_fen
         let kind = COMMAND_TYPE_SANCTION_RECORD_QUERY;
         // No selected capability: real dispatch refuses.
         assert_eq!(exchange(&owner, &mut admitted, 1, kind, &[]).await?.0, CommandStatus::Rejected);
-        admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[CAPABILITY_SANCTION_RECORD_V1]).ok_or("selection")?;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES, &[CAPABILITY_SANCTION_RECORD_V1]).ok_or("selection")?;
+        assert!(admitted.continuity.selected_capabilities.contains(CAPABILITY_SANCTION_RECORD_V1));
         let (status, empty) = exchange(&owner, &mut admitted, 2, kind, &[]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(decode_reply(&empty), Some(SanctionRecord { more: false, entries: Vec::new() }));
         assert_eq!(exchange(&owner, &mut admitted, 3, kind, &[0]).await?.0, CommandStatus::Rejected);
 
-        // Platform's control-plane writer: idempotent by decision revision.
+        // Game's stream puller projects (2802); the control role no longer can. Idempotent by
+        // decision revision.
         let mute_stream = "01900000-0000-7000-8000-0000000000a1";
         let ban_stream = "01900000-0000-7000-8000-0000000000a2";
         let mute = Decision { stream: mute_stream, revision: 1, account: &account, character: Some(&character), kind: 1, reason: "Insulting", starts: 1_000, ends: Some(2_000), revoked: false };
-        let mut runtime = h.pool.acquire().await?;
-        runtime.execute("SET ROLE oteryn_game_runtime").await?;
-        assert_eq!(sqlstate(project(&mut runtime, &mute).await).as_deref(), Some("42501"));
-        runtime.execute("RESET ROLE").await?;
-        drop(runtime);
         let mut control = h.pool.acquire().await?;
         control.execute("SET ROLE oteryn_game_control").await?;
-        assert_eq!(project(&mut control, &mute).await?, 1);
-        assert_eq!(project(&mut control, &mute).await?, 2);
-        assert_eq!(sqlstate(project(&mut control, &Decision { reason: "Spamming", ..mute }).await).as_deref(), Some("23000"));
-        let lifted = Decision { revision: 2, revoked: true, ..mute };
-        assert_eq!(project(&mut control, &lifted).await?, 1);
-        assert_eq!(project(&mut control, &mute).await?, 3);
-        assert_eq!(sqlstate(project(&mut control, &Decision { revision: 3, kind: 2, ..lifted }).await).as_deref(), Some("23000"));
-        assert_eq!(sqlstate(project(&mut control, &Decision { stream: ban_stream, account: &foreign, ..mute }).await).as_deref(), Some("23503"));
-        assert_eq!(sqlstate(project(&mut control, &Decision { stream: ban_stream, ends: None, ..mute }).await).as_deref(), Some("23514"));
-        let ban = Decision { stream: ban_stream, revision: 1, account: &account, character: None, kind: 4, reason: "Account trading", starts: 3_000, ends: None, revoked: false };
-        assert_eq!(project(&mut control, &ban).await?, 1);
-        let foreign_notation = Decision { stream: "01900000-0000-7000-8000-0000000000a3", account: &foreign, character: None, kind: 6, starts: 4_000, ..ban };
-        assert_eq!(project(&mut control, &foreign_notation).await?, 1);
+        assert_eq!(sqlstate(project(&mut control, &mute).await).as_deref(), Some("42501"));
         control.execute("RESET ROLE").await?;
         drop(control);
+        let mut runtime = h.pool.acquire().await?;
+        runtime.execute("SET ROLE oteryn_game_runtime").await?;
+        assert_eq!(project(&mut runtime, &mute).await?, 1);
+        assert_eq!(project(&mut runtime, &mute).await?, 2);
+        assert_eq!(sqlstate(project(&mut runtime, &Decision { reason: "Spamming", ..mute }).await).as_deref(), Some("23000"));
+        let lifted = Decision { revision: 2, revoked: true, ..mute };
+        assert_eq!(project(&mut runtime, &lifted).await?, 1);
+        assert_eq!(project(&mut runtime, &mute).await?, 3);
+        assert_eq!(sqlstate(project(&mut runtime, &Decision { revision: 3, kind: 2, ..lifted }).await).as_deref(), Some("23000"));
+        assert_eq!(sqlstate(project(&mut runtime, &Decision { stream: ban_stream, account: &foreign, ..mute }).await).as_deref(), Some("23503"));
+        assert_eq!(sqlstate(project(&mut runtime, &Decision { stream: ban_stream, ends: None, ..mute }).await).as_deref(), Some("23514"));
+        let ban = Decision { stream: ban_stream, revision: 1, account: &account, character: None, kind: 4, reason: "Account trading", starts: 3_000, ends: None, revoked: false };
+        assert_eq!(project(&mut runtime, &ban).await?, 1);
+        let foreign_notation = Decision { stream: "01900000-0000-7000-8000-0000000000a3", account: &foreign, character: None, kind: 6, starts: 4_000, ..ban };
+        assert_eq!(project(&mut runtime, &foreign_notation).await?, 1);
+        runtime.execute("RESET ROLE").await?;
+        drop(runtime);
 
         // Only the account-wide rows and this Character's rows, newest first.
         let (status, bytes) = exchange(&owner, &mut admitted, 4, kind, &[]).await?;

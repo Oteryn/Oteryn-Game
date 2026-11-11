@@ -77,7 +77,9 @@ pub(super) async fn schedule_action_item_in_transaction(
 
 /// Executes original source deadlines on the one actual Item store. Inventory
 /// is eligible only under a currently active Character in this owned Channel;
-/// an offline or foreign-scope item keeps its original overdue schedule.
+/// an offline or foreign-scope item keeps its original overdue schedule. A due
+/// Temple Teleport Scroll is removed wherever it is, for an online or offline
+/// Character (WU26-06, migration 2762's `game_temple_scroll_expire_due`).
 pub async fn drain_due_items_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
@@ -213,6 +215,12 @@ pub async fn drain_due_items_in_transaction(
             .bind(&event).bind(&transaction).bind(bytes).execute(&mut **tx).await?;
         changed += 1;
     }
+    // Stored (Inbox, depot) scrolls and scrolls of offline Characters, under no session.
+    let scrolls: i32 = sqlx::query_scalar("SELECT game_temple_scroll_expire_due(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4)")
+        .bind(world.as_slice()).bind(channel.as_slice()).bind(authority.generation().to_string())
+        .bind(i32::try_from(limit - changed).map_err(|_| SpellItemError::Rejected("Item timer batch bound"))?)
+        .fetch_one(&mut **tx).await?;
+    let changed = changed + usize::try_from(scrolls).map_err(|_| SpellItemError::Rejected("Item timer batch bound"))?;
     let floor = super::item_loop_move::floor_transform::drain_due(tx, authority, limit - changed).await?;
     Ok(changed + floor)
 }

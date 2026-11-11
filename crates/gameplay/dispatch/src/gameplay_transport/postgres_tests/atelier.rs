@@ -21,6 +21,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 pub(super) mod fixture;
 #[path = "atelier/paid.rs"]
 mod paid;
+#[path = "atelier/reshape.rs"]
+mod reshape;
 #[path = "atelier/wire_paid.rs"]
 mod wire_paid;
 
@@ -490,6 +492,9 @@ fn scenario() -> TestResult {
         migration_reapplication(&h).await?;
         paid::exercise(&mut owner, &h).await?;
         migration_reapplication(&h).await?;
+        // Reapplying 0314 restores a receipt kind list without RESHAPE, so Mod
+        // Reshaping history is written only after the last reapplication.
+        reshape::exercise(&mut owner, &h, &admitted).await?;
         drop(restarted);
         drop(owner);
         drop(authority);
@@ -603,6 +608,13 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
     sqlx::raw_sql(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../apps/game-server/migrations/2770_gem_vessel_slots.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    // Mod Reshaping widens the guards that the reapplied 0314, 0745 and 0747 restored.
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/2771_gem_reshape.sql"
     )))
     .execute(&mut *tx)
     .await?;

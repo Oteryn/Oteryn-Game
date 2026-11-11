@@ -14,6 +14,7 @@ pub(super) fn is_cause(cause: &FeeBurnCause) -> bool {
         FeeBurnCause::QuestRewardPayment { .. } | FeeBurnCause::GemReveal { .. }
             | FeeBurnCause::GemSwitchDomain { .. }
             | FeeBurnCause::GemGradeUp { .. }
+            | FeeBurnCause::GemReshape { .. }
     )
 }
 
@@ -184,7 +185,8 @@ impl CarriedInputs {
         let value = match &mut cause {
             FeeBurnCauseV1::GemReveal(value)
             | FeeBurnCauseV1::GemSwitchDomain(value)
-            | FeeBurnCauseV1::GemGradeUp(value) => value,
+            | FeeBurnCauseV1::GemGradeUp(value)
+            | FeeBurnCauseV1::GemReshape(value) => value,
             FeeBurnCauseV1::QuestRewardPayment(value) => value.purchase.as_mut().ok_or(FeeBurnError::InvalidInput)?,
             _ => return Err(FeeBurnError::InvalidInput),
         };

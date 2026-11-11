@@ -47,7 +47,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         payload: &[u8],
     ) -> AtelierWireReply {
         use oteryn_protocol_oteryn::atelier::v2 as wire;
-        if (wire::COMMAND_TYPE_ATELIER_V2_QUERY..=wire::COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL)
+        if (wire::COMMAND_TYPE_ATELIER_V2_QUERY..=wire::COMMAND_TYPE_ATELIER_V2_RESHAPE)
             .contains(&kind)
         {
             self.atelier_v2_wire(admitted, kind, payload).await
@@ -128,8 +128,55 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => return AtelierWireReply::Rejected,
         };
+        self.atelier_v1_apply(admitted, expected, kind, request, refused)
+            .await
+    }
+
+    /// Mod Reshaping reads the Supply Stash through a hireling only where the stash owner
+    /// already grants it: the current Steward hireling serving this session's open stash.
+    pub(super) async fn reshape_hireling_stash(
+        &self,
+        actor: Option<crate::foundation::ExactActorRef>,
+        game_session_id: crate::foundation::GameSessionId,
+        item_fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+    ) -> bool {
+        let Some(actor) = actor else {
+            return false;
+        };
+        let command = super::connection::UseCommand {
+            game_session_id,
+            command_id: 0,
+            item_fence,
+        };
+        super::npc_command::hireling_services::stash_access(self, actor, command)
+            .await
+            .is_some()
+    }
+
+    /// Commits one decoded request through the one Atelier writer and builds the capability
+    /// 148 reply. Mod Reshaping (capability 483) enters here with its own decoded request.
+    /// A request that arrives already `refused` is a replay probe: it reaches the writer
+    /// without resources, so a committed occurrence replays its receipt and a fresh one is
+    /// refused with nothing written.
+    pub(super) async fn atelier_v1_apply(
+        &self,
+        admitted: super::connection::AdmittedSession,
+        expected: crate::durability::item_transfer::CurrentCharacterItemFence,
+        kind: u32,
+        request: Option<crate::durability::character_atelier::AtelierRequest<'static>>,
+        mut refused: bool,
+    ) -> AtelierWireReply {
+        use oteryn_protocol_oteryn::atelier as wire;
         let mut recorded = None;
-        if let Some(mut request) = request {
+        let replay_only = refused;
+        if let Some(request) = request {
+            // Rebuilt so the resources may borrow this call's pinned content.
+            let mut request = crate::durability::character_atelier::AtelierRequest {
+                occurrence: request.occurrence,
+                expected_atelier_revision: request.expected_atelier_revision,
+                mutation: request.mutation,
+                resources: None,
+            };
             let Some(permit) = self.spell_lane_permit().await else {
                 return AtelierWireReply::Unavailable;
             };
@@ -142,6 +189,21 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     return AtelierWireReply::Rejected;
                 }
             }
+            // A Steward hireling serving an open stash grants the same stash access as a
+            // depot locker; it is re-read here, before the runtime lock is taken.
+            let reshape = matches!(
+                request.mutation,
+                crate::durability::character_atelier::AtelierMutation::Reshape { .. }
+            );
+            let hireling_stash = reshape
+                && !replay_only
+                && self
+                    .reshape_hireling_stash(
+                        admitted.runtime_actor,
+                        admitted.game_session_id,
+                        Some(expected),
+                    )
+                    .await;
             let backpack = match self
                 .root
                 .read_character_backpack(self.character, expected.character_id)
@@ -158,7 +220,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         .with_wheel(self.premium_coordinator)
                 });
             {
-                let runtime = self.runtime.lock().await;
+                let mut runtime = self.runtime.lock().await;
                 let binding = runtime.binding();
                 if admitted.world_id != binding.world_id()
                     || binding.channel_id() != Some(admitted.channel_id)
@@ -183,7 +245,22 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // Pinned native definitions and the ordinary backpack/coin owner supply all
                 // economic facts. Missing resources do not hide an already committed receipt.
-                if let Some(content) = &content {
+                // Mod Reshaping may draw on the Supply Stash only where the stash is open:
+                // at a depot locker, read from the live position at commit time, or at a
+                // Steward hireling serving the stash (owner decisions WU26-10).
+                let at_locker = reshape
+                    && admitted.runtime_actor.is_some_and(|actor| {
+                        super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
+                            .as_ref()
+                            .and_then(super::depot::locker)
+                            .is_some()
+                    });
+                let supply_stash = reshape
+                    && oteryn_gameplay_progression::atelier::reshape::supply_stash_open(
+                        at_locker,
+                        hireling_stash,
+                    );
+                if !replay_only && let Some(content) = &content {
                     request.resources = atelier_wire_resources(
                         self,
                         &runtime,
@@ -191,6 +268,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         content,
                         admitted.game_session_id,
                         &request,
+                        supply_stash,
                     );
                 }
             }
@@ -209,7 +287,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 Ok(GemBuildOutcome::Atelier(
                     crate::durability::character_atelier::AtelierOutcome::Committed { state, .. }
                     | crate::durability::character_atelier::AtelierOutcome::AlreadyCommitted { state, .. },
-                )) => recorded = Some(state),
+                )) => {
+                    refused = false;
+                    recorded = Some(state);
+                }
                 Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput
                     | crate::durability::character_progression::CharacterProgressionError::AuthorityRejected
                     | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence) => return AtelierWireReply::Rejected,
@@ -318,23 +399,27 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let gems = state
             .gems
             .values()
-            .map(|gem| wire::GemView {
-                id: gem.id.to_be_bytes(),
-                quality: match gem.quality {
-                    oteryn_gameplay_progression::atelier::GemQuality::Lesser => 0,
-                    oteryn_gameplay_progression::atelier::GemQuality::Regular => 1,
-                    oteryn_gameplay_progression::atelier::GemQuality::Greater => 2,
-                },
+            .map(|gem| {
                 // Gems have no domain. Capability 148 clients index their four vessel
-                // cells by this field, so a socketed gem reports its legacy cell.
-                domain: legacy
+                // cells by this field, so a gem in a legacy cell reports that cell. A gem
+                // socketed beyond the four cells stays socketed but is shown unsocketed,
+                // since the client refuses two socketed gems in one cell.
+                let cell = legacy
                     .iter()
                     .position(|cell| *cell == Some(gem.id.to_be_bytes()))
-                    .and_then(|cell| u8::try_from(cell).ok())
-                    .unwrap_or(0),
-                locked: gem.locked,
-                vessel: gem.vessel,
-                modifiers: gem.mods.clone(),
+                    .and_then(|cell| u8::try_from(cell).ok());
+                wire::GemView {
+                    id: gem.id.to_be_bytes(),
+                    quality: match gem.quality {
+                        oteryn_gameplay_progression::atelier::GemQuality::Lesser => 0,
+                        oteryn_gameplay_progression::atelier::GemQuality::Regular => 1,
+                        oteryn_gameplay_progression::atelier::GemQuality::Greater => 2,
+                    },
+                    domain: cell.unwrap_or(0),
+                    locked: gem.locked,
+                    vessel: cell.is_some(),
+                    modifiers: gem.mods.clone(),
+                }
             })
             .collect();
         wire::encode_reply(&wire::AtelierReply {
@@ -578,6 +663,7 @@ fn atelier_wire_resources<'a>(
     content: &'a dyn crate::durability::item_loop_move::ItemLoopContent,
     session: crate::foundation::GameSessionId,
     request: &crate::durability::character_atelier::AtelierRequest<'_>,
+    supply_stash: bool,
 ) -> Option<Box<crate::durability::character_atelier::AtelierResources<'a>>> {
     use crate::durability::character_atelier::{AtelierMutation, AtelierResources};
     use oteryn_gameplay_progression::atelier::{FragmentKind, GemQuality};
@@ -589,6 +675,8 @@ fn atelier_wire_resources<'a>(
     }
     let supreme = match request.mutation {
         AtelierMutation::GradeUp { kind, .. } => kind == FragmentKind::Supreme,
+        // Mod Reshaping pays greater fragments only for the third position.
+        AtelierMutation::Reshape { position, .. } => position == 3,
         AtelierMutation::Dismantle { gem } => admission
             .states
             .atelier_sessions
@@ -627,6 +715,7 @@ fn atelier_wire_resources<'a>(
             production_key: key.into(),
             revision_ref: index.revision(key)?.into(),
         },
+        supply_stash,
     }))
 }
 
