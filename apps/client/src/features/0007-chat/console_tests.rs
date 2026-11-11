@@ -277,6 +277,61 @@ fn legacy_help_opens_and_closes_without_public_channels_capability()
 }
 
 #[test]
+fn native_chat_shortcut_rearms_after_application_deactivation()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{Modifier, Modifiers};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    outbox.chat_public_initialize(true, Some((ChatRoomSet::default(), Vec::new())));
+    let mut input = crate::play::PreferenceInput::default();
+    let ctrl = Modifiers::one(Modifier::Control);
+    let press = |input: &mut crate::play::PreferenceInput| {
+        assert!(super::console::native_key(
+            &link, input, 0x54, ctrl, true, false, false
+        ));
+    };
+    let help = crate::combat_input::PlayCommand::ChatPublic(
+        oteryn_session::ChatIntent::OpenRoom(oteryn_session::ChatRoom::Help),
+    );
+    let acknowledge = || {
+        outbox.chat_public_result(
+            &oteryn_session::ChatIntent::OpenRoom(oteryn_session::ChatRoom::Help),
+            &oteryn_session::ChatOutcome {
+                command_id: 1,
+                status: CommandStatus::Accepted,
+                disposition: oteryn_session::ChatDisposition::Ok,
+                wait_seconds: 0,
+                result_server_sequence: 1,
+            },
+        );
+    };
+    press(&mut input);
+    assert_eq!(commands.try_recv()?, help);
+    acknowledge();
+    // Activation while already active must not turn a held key into a new press.
+    super::console::native_activation(&mut input, true);
+    press(&mut input);
+    assert!(commands.try_recv().is_err());
+    // The release happens in another application, so this window never sees it.
+    super::console::native_activation(&mut input, false);
+    super::console::native_activation(&mut input, true);
+    press(&mut input);
+    assert_eq!(
+        commands
+            .try_recv()
+            .map_err(|_| "shortcut did not dispatch after reactivation")?,
+        help
+    );
+    acknowledge();
+    assert!(super::console::native_key(
+        &link, &mut input, 0x54, ctrl, false, false, false
+    ));
+    press(&mut input);
+    assert_eq!(commands.try_recv()?, help);
+    Ok(())
+}
+
+#[test]
 fn native_chat_keys_dispatch_saved_bindings_while_composing()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_input_actions::{Modifier, Modifiers};

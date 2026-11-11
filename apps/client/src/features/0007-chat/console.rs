@@ -357,6 +357,18 @@ pub(super) fn update_tab_labels(held: &mut Vec<String>, labels: &[String]) -> bo
     true
 }
 
+/// Called by the native window procedure, including nonqueued activation messages.
+#[cfg(any(windows, test))]
+pub(super) fn native_activation(input: &mut crate::play::PreferenceInput, active: bool) {
+    if !active {
+        let _ = input.route_chat(
+            &crate::play::ReferencePreferences::default(),
+            &[oteryn_input_actions::NormalizedInputEvent::FocusChanged { focused: false }],
+            true,
+        );
+    }
+}
+
 /// Native editors use the same saved custom bindings as the game window.
 #[cfg(any(windows, test))]
 pub(super) fn native_key(

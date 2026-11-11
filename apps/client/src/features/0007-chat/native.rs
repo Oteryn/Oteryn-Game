@@ -35,7 +35,10 @@ const CHAT_MODE: usize = 109;
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 
 #[derive(Default)]
-struct Actions(Vec<usize>);
+struct Actions {
+    pending: Vec<usize>,
+    keyboard_input: crate::play::PreferenceInput,
+}
 
 #[path = "native_helpers.rs"]
 mod helpers;
@@ -95,14 +98,6 @@ unsafe fn keyboard(
         GetKeyState, VK_CONTROL, VK_LWIN, VK_MENU, VK_RWIN, VK_SHIFT,
     };
     unsafe {
-        if msg.message == WM_KILLFOCUS {
-            let _ = input.route_chat(
-                &crate::play::ReferencePreferences::default(),
-                &[oteryn_input_actions::NormalizedInputEvent::FocusChanged { focused: false }],
-                true,
-            );
-            return false;
-        }
         if !matches!(
             msg.message,
             WM_KEYDOWN | WM_KEYUP | WM_SYSKEYDOWN | WM_SYSKEYUP

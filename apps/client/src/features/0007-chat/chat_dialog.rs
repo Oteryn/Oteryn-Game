@@ -177,12 +177,11 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let mut mirror = mirror::Mirror::new(hwnd);
         let mut held = String::new();
         let mut held_labels = Vec::new();
-        let mut keyboard_input = crate::play::PreferenceInput::default();
         let mut msg: MSG = std::mem::zeroed();
         loop {
             while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
                 mirror.input(&msg, tabs, &weak);
-                if keyboard(&msg, &weak, &commands, &mut keyboard_input) {
+                if keyboard(&msg, &weak, &commands, &mut actions.keyboard_input) {
                     continue;
                 }
                 TranslateMessage(&msg);
@@ -220,7 +219,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 !guild_mode || oteryn_client_ui::chat_guild_room::available(&mailbox.chat);
             EnableWindow(message, i32::from(enabled));
             EnableWindow(GetDlgItem(hwnd, SEND as i32), i32::from(enabled));
-            for action in std::mem::take(&mut actions.0) {
+            for action in std::mem::take(&mut actions.pending) {
                 if console.action(action, &mut mailbox, &commands, transcript) {
                     continue;
                 }

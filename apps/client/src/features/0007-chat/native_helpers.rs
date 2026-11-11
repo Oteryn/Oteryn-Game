@@ -3,6 +3,13 @@
 use super::*;
 pub(super) unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
+        if msg == WM_ACTIVATEAPP {
+            let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
+            if !actions.is_null() {
+                console::native_activation(&mut (*actions).keyboard_input, w != 0);
+            }
+            return 0;
+        }
         if msg == WM_COMMAND {
             let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
             let id = w & 0xffff;
@@ -24,7 +31,7 @@ pub(super) unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LP
                     || channel_dialog::accepts(id, note)
                     || console_controls::accepts(id, note))
             {
-                (*actions).0.push(id);
+                (*actions).pending.push(id);
             }
             return 0;
         }
