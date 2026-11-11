@@ -17,8 +17,8 @@
     {
       "key": "oteryn:quest-progress/oramond/native-roots/last-start",
       "quest": "oteryn:quest.oramond_quest",
-      "initial": -1,
-      "min": -1,
+      "initial": 0,
+      "min": 0,
       "max": 9223372036854775807,
       "writable": true,
       "sources": [

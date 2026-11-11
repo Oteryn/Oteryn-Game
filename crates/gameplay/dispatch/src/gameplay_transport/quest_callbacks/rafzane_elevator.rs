@@ -30,8 +30,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let optional_pvp = self
                 .special_movement_policy(&permit, actor, command.game_session_id)
                 .await;
-            let mut states = self.states.spell_states.lock().await;
-            let mut runtime = self.runtime.lock().await;
+            let (mut runtime, mut states) =
+                elevator_owners(&self.runtime, &self.states.spell_states).await;
             if !runtime
                 .player_control_facts(actor, command.game_session_id)
                 .is_ok_and(|f| f.control_loss.is_none())
@@ -180,5 +180,75 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition: result,
             ..UseOutcome::rejected()
         })
+    }
+}
+
+async fn elevator_owners<'a>(
+    runtime: &'a tokio::sync::Mutex<ChannelRuntimeV1>,
+    states: &'a tokio::sync::Mutex<ChannelSpellStates>,
+) -> (
+    tokio::sync::MutexGuard<'a, ChannelRuntimeV1>,
+    tokio::sync::MutexGuard<'a, ChannelSpellStates>,
+) {
+    loop {
+        let runtime = runtime.lock().await;
+        if let Ok(states) = states.try_lock() {
+            return (runtime, states);
+        }
+        // Existing spell work can hold states while waiting for Runtime.
+        // Yield both owners so neither lock order can strand the Channel.
+        drop(runtime);
+        drop(states.lock().await);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::future::Future;
+    use std::task::Poll;
+
+    #[test]
+    fn rafzane_elevator_waits_without_holding_either_owner() -> Result<(), String> {
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .map_err(|e| e.to_string())?
+            .block_on(async {
+                let (runtime, _, _, _) =
+                    crate::gameplay_transport::spell_presentations::tests::runtime();
+                let runtime = tokio::sync::Mutex::new(runtime);
+                let states = tokio::sync::Mutex::new(ChannelSpellStates::default());
+                {
+                    let held = runtime.lock().await;
+                    let mut acquiring = std::pin::pin!(elevator_owners(&runtime, &states));
+                    std::future::poll_fn(|cx| {
+                        assert!(acquiring.as_mut().poll(cx).is_pending());
+                        Poll::Ready(())
+                    })
+                    .await;
+                    assert!(
+                        states.try_lock().is_ok(),
+                        "an entity observer must be able to finish its spell-state read"
+                    );
+                    drop(held);
+                    drop(acquiring.await);
+                }
+                {
+                    let held = states.lock().await;
+                    let mut acquiring = std::pin::pin!(elevator_owners(&runtime, &states));
+                    std::future::poll_fn(|cx| {
+                        assert!(acquiring.as_mut().poll(cx).is_pending());
+                        Poll::Ready(())
+                    })
+                    .await;
+                    assert!(
+                        runtime.try_lock().is_ok(),
+                        "a spell owner must be able to finish its runtime work"
+                    );
+                    drop(held);
+                    drop(acquiring.await);
+                }
+                Ok(())
+            })
     }
 }

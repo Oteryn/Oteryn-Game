@@ -1943,3 +1943,47 @@ fn core_prefix_prunes_departed_head_and_conditionally_takes_its_successor() {
     second.finish();
     assert_eq!(queue.core_head(), Ok(None));
 }
+
+#[test]
+fn ordinary_kill_retry_retains_event_rates_with_prepared_experience() {
+    use oteryn_gameplay_foundation::scheduled_events::{Schedule, current_rates, test_clock};
+    let schedule = || {
+        Schedule::parse(r#"{"events":[{"name":"double","startdate":"01/01/2030","enddate":"01/02/2030","ingame":{"exprate":200,"lootrate":150}}]}"#).expect("event schedule")
+    };
+    let before_event = test_clock::set(schedule(), 1_893_455_999);
+    let queue = KillSettlementQueue::default();
+    let entry = pending(30, 51, 3, 1);
+    assert!(matches!(queue.append(entry), AppendOutcome::Queued));
+    let first = taken(queue.take(session(51), 3));
+    let rates = first.event_rates;
+    let entry = first.entry().expect("taken entry");
+    assert_eq!(entry.source_drop_rates, Some(rates));
+    entry
+        .prepared_experience
+        .set(PreparedKillExperience {
+            creature: entry.creature.clone(),
+            character: *entry.facts.principal.character.as_bytes(),
+            base: 5,
+            event_rate: rates.experience,
+            amount: ExactI64::new(5),
+        })
+        .expect("first preparation");
+    first.requeue();
+    drop(before_event);
+    let _during_event = test_clock::set(schedule(), 1_893_456_000);
+    assert_ne!(current_rates(), rates);
+    let retry = taken(queue.take(session(51), 3));
+    assert_eq!(retry.event_rates, rates);
+    assert_eq!(
+        retry
+            .entry()
+            .expect("retry entry")
+            .prepared_experience
+            .get()
+            .expect("captured XP")
+            .event_rate,
+        retry.event_rates.experience
+    );
+    retry.finish();
+    assert!(matches!(queue.take(session(51), 3), TakeOutcome::Empty));
+}

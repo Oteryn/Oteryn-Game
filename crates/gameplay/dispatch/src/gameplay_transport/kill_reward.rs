@@ -1576,9 +1576,12 @@ impl KillSettlementQueue {
         if check_inflight_loot_mint_capacity(inflight_before, loot_mints).is_err() {
             return TakeOutcome::CapacityWait;
         }
-        let Some(entry) = state.queued.remove(index) else {
+        let Some(mut entry) = state.queued.remove(index) else {
             return TakeOutcome::Empty;
         };
+        // Ordinary deaths retain the same rate snapshot when an uncertain
+        // settlement requeues their already prepared experience.
+        entry.source_drop_rates.get_or_insert(event_rates);
         state.reserved_loot_mints = inflight_before + loot_mints;
         state.in_flight.push((
             entry.facts.death,

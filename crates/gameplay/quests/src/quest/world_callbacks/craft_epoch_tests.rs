@@ -5,7 +5,7 @@ use super::*;
 fn spent_material_counter_can_own_repeatable_crafting_rewards() -> Result<(), String> {
     let mut callback = load()?
         .into_iter()
-        .find(|c| c.item_on_target.is_some())
+        .find(|c| c.key == "oteryn:quest-callback/qready1-cursed-grind")
         .ok_or("carried material fixture")?;
     callback.key = "oteryn:quest-callback/qready1-cursed-grind".into();
     callback.quest = "oteryn:quest.the_cursed_crystal".into();

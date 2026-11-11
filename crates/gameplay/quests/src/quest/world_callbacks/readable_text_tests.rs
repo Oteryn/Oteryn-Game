@@ -4,7 +4,7 @@ use super::*;
 fn world_readable_rewards_use_the_same_text_bounds() -> Result<(), String> {
     let mut callback = load()?
         .into_iter()
-        .find(|c| c.effects.item_reward.is_some())
+        .find(|c| c.key == "oteryn:quest-callback/l2-djinn-tear-fountain")
         .ok_or("world reward")?;
     let reward = callback.effects.item_reward.as_mut().ok_or("item reward")?;
     reward.item = "oteryn:item.tibia.i2814".into();

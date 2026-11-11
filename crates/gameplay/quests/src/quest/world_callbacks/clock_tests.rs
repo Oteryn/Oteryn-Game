@@ -65,7 +65,7 @@ fn world_callback_clock_operations_are_lowered_and_bounded() -> Result<(), Strin
 fn elapsed_clock_can_own_a_repeatable_world_reward_epoch() -> Result<(), String> {
     let mut callback = load()?
         .into_iter()
-        .find(|c| c.effects.item_reward.is_some())
+        .find(|c| c.key == "oteryn:quest-callback/l2-djinn-tear-fountain")
         .ok_or("world reward fixture")?;
     let reward = callback.effects.item_reward.clone();
     callback.storage.clear();

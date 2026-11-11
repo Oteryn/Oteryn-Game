@@ -4,7 +4,7 @@ use super::*;
 fn literal_reward_text_reaches_world_source_validation() -> Result<(), String> {
     let mut callback = load()?
         .into_iter()
-        .find(|c| c.effects.item_reward.is_some())
+        .find(|c| c.key == "oteryn:quest-callback/l2-djinn-tear-fountain")
         .ok_or("existing World item reward fixture")?;
     callback.effects.item_reward = Some(serde_json::from_value(serde_json::json!({
         "item":"oteryn:item.tibia.i2814", "count":1,"contents":[],"text":"Literal source text.\n"

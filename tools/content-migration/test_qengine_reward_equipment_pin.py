@@ -99,6 +99,11 @@ from refresh_equipment_profile_pin import ROOT, TEST
 
 
 class QengineRewardPinTests(unittest.TestCase):
+    def test_checked_in_witness_matches_source_ids(self):
+        packet = json.loads((ROOT / "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes())
+        source = TEST.read_text()
+        self.assertEqual(pin.refresh(source, packet), source)
+
     def test_source_identity_pin_rejects_missing_or_duplicate_rows(self):
         packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json').read_bytes())
         source = TEST.read_text()
