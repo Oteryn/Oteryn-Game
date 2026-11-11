@@ -38,10 +38,12 @@ impl<S: SessionStream> Session<S> {
             .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
             .await?;
         let (payload, detail) = self.item_result_payload(&result.payload)?;
-        let disposition = world_spatial::decode_step_result_paced(
+        let disposition = world_spatial::decode_step_result_profile(
             payload,
             self.is_selected(CAPABILITY_PACED_MOVEMENT_V1),
-        )?;
+            self.is_selected(world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1),
+        )?
+        .disposition;
         check_status_pairing(
             result.command_id,
             result.status,

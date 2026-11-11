@@ -1,0 +1,156 @@
+{
+  "state": "NATIVE_POSTGRES_GREEN",
+  "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+  "baseline": {
+    "case": "nx6_wayfarer_real_npc_atomic_finale_replay_and_fences",
+    "seconds": 67.142,
+    "marker": "NX6_POSTGRES_CASE_COMPLETED elapsed=32.502431928s"
+  },
+  "red": {
+    "postgres_seconds": 65.588,
+    "marker": "POSTGRES_CASE_STARTED questpc8_wrath_dream_report",
+    "error": "WRATH_DREAM_REPORT_RED: chosen stage has no receipt-bound native report",
+    "log": "/tmp/questpc8b-dream-report-red-pg.log"
+  },
+  "quest_units": {
+    "passed": 355,
+    "seconds": 45.51,
+    "log": "/tmp/questpc8b-dream-quest-units-green.log",
+    "initial_failures": 2,
+    "root_cause": "Both receipt-test bases lacked the now-required existing Wrath receipt owner; add source tracks/finale without weakening any assertions"
+  },
+  "python_tests": {
+    "passed": 10,
+    "chosen_progress_seconds": 4.353,
+    "chosen_journal_seconds": 9.854
+  },
+  "checks": {
+    "workspace": {
+      "exit": 0,
+      "seconds": 110.9995363689959
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.374426850001328
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.293483567002113
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 168.55717318798997
+    },
+    "pg": {
+      "exit": 0,
+      "seconds": 331.2792491619912
+    }
+  },
+  "regeneration": {
+    "proof": {
+      "exit": 0,
+      "seconds": 0.41264674501144327
+    },
+    "tree": {
+      "exit": 0,
+      "seconds": 34.79957839399867
+    },
+    "claims": {
+      "exit": 0,
+      "seconds": 2.785836159993778
+    },
+    "bindings": {
+      "exit": 0,
+      "seconds": 14.542984277999494
+    },
+    "completion": {
+      "exit": 0,
+      "seconds": 4.840443613997195
+    },
+    "matrix": {
+      "exit": 0,
+      "seconds": 0.498045986998477
+    },
+    "native": {
+      "exit": 0,
+      "seconds": 341.1531661300105
+    },
+    "audit": {
+      "exit": 0,
+      "seconds": 0.019867206006892957
+    },
+    "pins": {
+      "exit": 0,
+      "seconds": 114.29354220700043
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.3424597260018345
+    },
+    "chosen": {
+      "exit": 0,
+      "seconds": 0.30668962399067823
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.254852101003053
+    }
+  },
+  "shared_reuse": "Existing NX6 native NPC dialogue, atomic dream finale and Wayfarer achievement; existing required_receipts callback engine",
+  "authoring_repair": "Restore four exact previously-published opening callbacks, three tracks and Zalamon greeting to owning author input; generated existing rows unchanged",
+  "scope": "Chosen Wrath s7 report advances stage6 to7 after exact dream receipt; no item/achievement reward and no whole-quest completion",
+  "own_migrations": "1300-1308 unchanged; no new migration",
+  "review": "Independent final product review: no findings",
+  "remaining_quests": {
+    "qualified": 21,
+    "total": 23,
+    "Colours": "Live-player colour predicate still queued with qengine2",
+    "Wrath": "Continue chosen graph; item-look disguise still queued with qengine2"
+  },
+  "pending": [
+    "remaining dispatch full unit coverage: CI scope; not claimed complete"
+  ],
+  "green": {
+    "cases": [
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::questpc8_colours_opening::questpc8_colours_native_envelope_and_self_marking_postgres",
+        "seconds": 68.289
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::nx6_wayfarer::nx6_wayfarer_real_npc_atomic_finale_replay_and_fences",
+        "seconds": 69.269
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::questpc8_wrath_opening::questpc8_wrath_native_opening_exact_materials_crate_and_replay",
+        "seconds": 98.435
+      }
+    ],
+    "markers": [
+      "POSTGRES_CASE_STARTED authored-colours-opening after PostgreSQL fixture initialization",
+      "POSTGRES_CASE_STARTED questpc8_colours_opening after PostgreSQL fixture initialization",
+      "POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_colours_opening duration=68.247384161s result=Ok(())",
+      "POSTGRES_CASE_STARTED questpc8_wrath_dream_report",
+      "POSTGRES_WRATH_DREAM_RECEIPT_STAGE_REPLAY_AND_COLD_REFUSAL_PASS",
+      "NX6_POSTGRES_CASE_COMPLETED elapsed=34.150015952s",
+      "POSTGRES_CASE_STARTED authored-wrath-opening after PostgreSQL fixture initialization",
+      "POSTGRES_CASE_STARTED questpc8_wrath_opening after PostgreSQL fixture initialization",
+      "POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_wrath_native_opening duration=98.385301506s result=Ok(())"
+    ],
+    "summary": "Summary [  98.437s] 3 tests run: 3 passed (3 slow), 2966 skipped",
+    "product_head": "bd7f26fe8f177994d8ef1f0cf27c85cb46427b13"
+  },
+  "repaired_validation_failure": {
+    "case": "nx6_wayfarer_real_npc_atomic_finale_replay_and_fences",
+    "seconds": 69.232,
+    "point": "6301 dream journey rejected; NX6 donor fixture lacked native Premium authority",
+    "all_selected_results_collected": {
+      "passed": 2,
+      "failed": 1
+    },
+    "fix": "Provision existing latched Premium fixture and session admission; require authority before missing-receipt check; preserve production requirement",
+    "rerun": "all3selectedcasesPASS98.437s",
+    "log": "/tmp/questpc8b-dream-first-green-attempt.log"
+  }
+}

@@ -19,10 +19,14 @@ LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
 ITEMHOLD_ADMISSIONS = frozenset({
     "oteryn:reward-claim.kv.ornamentedshield",
     "oteryn:reward-claim.kv.powerring2",
+    "oteryn:reward-claim.kv.triangletower",
 })
-# Triangle now has the canonical source-placement PG reward witness and leaves
-# this pending-route inventory; the two remaining ITEMHOLD routes stay blocked.
-EXPECTED_DENOMINATOR = 297 + len(ITEMHOLD_ADMISSIONS)
+# QUEST-FINISH supports 334 in-scope claims. The 39 previously qualified claims
+# plus 88 Phase A claims, the Mintwallin prison key and 44 further A..M
+# story/outfit reward sources have source-selector dispatch PostgreSQL proof.
+# Every other supported claim keeps its per-World qualification hold; reward
+# qualification does not certify access puzzles or a complete storyline.
+EXPECTED_DENOMINATOR = 145
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",

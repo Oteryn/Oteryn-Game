@@ -53,6 +53,7 @@ fn observed(
         conversation_revision: context.1,
         position: [32596, 31745, 7],
         world: QuestWorldContext {
+            party: Vec::new(),
             map_revision: format!(
                 "sha256:{}",
                 encoded(&runtime.content_pin().map_revision_digest())

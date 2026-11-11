@@ -1,0 +1,68 @@
+{
+  "batch": "gerimor-assignments-main-c77-green",
+  "source_head": "50cf70e7fc483f7b5604814eacaf51d53ea090e2",
+  "main_sha": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+  "whole_quest_qualified": false,
+  "scope": "Seven initial Gerimor assignments only; bosses, reports, rewards and final access remain unqualified.",
+  "postgres": {
+    "server_version_num": 180006,
+    "gerimor_seconds": 58.553302528,
+    "annihilator_seconds": 61.425231976,
+    "elvenbane_seconds": 58.352880762,
+    "passed": 3,
+    "red_before_implementation_seconds": 44.791193812,
+    "red_error": "missing source cult menu: []"
+  },
+  "crate_unit_results": {
+    "quests": {
+      "passed": 320,
+      "seconds": 28.45
+    },
+    "client_assets": {
+      "passed": 10,
+      "seconds": 0.29
+    },
+    "dispatch": {
+      "passed": 1613,
+      "seconds": 676.383,
+      "selection": "Non-PostgreSQL unit cases; own PostgreSQL cases exercised separately.",
+      "command": "cargo nextest run -p oteryn-gameplay-dispatch --lib -E 'not test(/postgres/)' --test-threads 4"
+    }
+  },
+  "clippy": {
+    "quests_dispatch_all_targets_all_features": "PASS 6m47s including queue wait",
+    "client_assets_all_targets_all_features": "PASS 2m10s including queue wait"
+  },
+  "runtime_artifacts_unchanged_since_checkpoint": {
+    "content/dialogues/quest-rules-supplemental/questpc2-gerimor.json": "93c301b9d46246cb08035ec4d830b841a4c0275fcb74ef2e6d993f8d47dd5661",
+    "content/items/definitions/spell-native-profiles.json": "37fca33b1ab17c21c4f5ff60ae4561897b2d7a089a53f5a7a5113f02cdfab925",
+    "content/items/definitions/srx1-item-updates.json": "a7427f85a3b6f900b1801d9b7538a24b8ac80a3bab861da27dc68661bb4e3e9a",
+    "content/world/placements/index.json": "40541fff8fe4847590700b6253de57506e9ad84b2b88c62841d0bbe546827303",
+    "content/world/pins/oteryn.json": "2ec365eeb4cd93f4ab85c0db436abf00370559e2f69006576cc5af631f36eae4"
+  },
+  "logs": {
+    "/tmp/questpc2b-gerimor-postmerge-pg.log": "7c77cc1f62629892129ded28cde2e033a4b071418f0a2c379429ee2dd41c173b",
+    "/tmp/questpc2b-gerimor-postmerge-quest-client-units.log": "fc4e23ceaf37e38f360dc9cf75ea91b782e4bca53c478c006544c0bda383922b",
+    "/tmp/questpc2b-gerimor-dispatch-units.log": "17005c763462d72248b4c9ca815f87b95226ba12285cd2cdf083a9d4cd51ca09",
+    "/tmp/questpc2b-gerimor-clippy.log": "06745516a26a3f523ef6edb2c6baa2db167a2b2d72bbbb92ed7502556a9392de",
+    "/tmp/questpc2b-gerimor-client-clippy.log": "0dd2b9e505350e53e3f09c7885a45b4458070a7b6f572dd71225252a4bfa8ccb",
+    "/tmp/questpc2b-gerimor-merge-regression-0.log": "b8326fb0bcf508602e8d7fcf258e66690838aa11a0337000c7991c12f559b774",
+    "/tmp/questpc2b-gerimor-merge-regression-1.log": "317271d1da9e489965f4ce689b63fc864a40725db0dff156693770c32a66b8df",
+    "/tmp/questpc2b-gerimor-green-receipt-workspace-check.log": "1954232c8a93a4f86b5d6dae4be315db219096e8bfbae1b38cbe9241fe9b81a0",
+    "/tmp/questpc2b-gerimor-green-receipt-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "remaining_scope": {
+    "whole_qualified": 3,
+    "active_incomplete": 6,
+    "not_started": 20,
+    "other_lane_excluded": 6
+  },
+  "final_gates": {
+    "workspace_all_targets": "PASS2m08s on pushed source head50cf70e7f",
+    "fmt": "PASS",
+    "duplicate_migrations": "PASS",
+    "generated_equipment_pin": "PASS3827 independent source cohort sum",
+    "generated_completion_matrix": "PASS; unchanged source input",
+    "native_generation_and_world_pins": "Already regenerated for50cf70e7f; all five runtime artifact digests unchanged."
+  }
+}

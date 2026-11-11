@@ -32,6 +32,20 @@ def function(name):
 
 class RuntimeEvidenceTests(unittest.TestCase):
     def exercise(self, signum):
+        inbound_phases = (
+            'frame', 'frame_error', 'held', 'step_due', 'probe', 'server_message',
+            'serene', 'quest_log', 'chat', 'visibility', 'combat', 'chase',
+            'target_move', 'npc',
+        )
+        authority_stages = (
+            'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
+            'bazaar', 'revision_chain', 'appearance', 'build_chain',
+            'proficiency_history', 'familiar_chain', 'spell_familiar_group',
+            'spell_item_chain', 'audit_payload',
+        )
+        # Cover every label across both signal fixtures without exceeding the
+        # monitor's unchanged limit of eight records for this event.
+        authority_stages = authority_stages[::2] if signum == signal.SIGTERM else authority_stages[1::2]
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             work = root / 'work'
@@ -108,6 +122,17 @@ stage seam_stages -- blocked
                     log.write('oteryn-game-server event=serve_end reason=control_lost path=liveness_missed '
                               'source=crates/gameplay/serve.rs:8:3 next_command_id=17 server_sequence=23 '
                               'password=do-not-print-this-secret\n')
+                    for phase in inbound_phases:
+                        log.write(f'oteryn-game-server event=serve_end reason=disconnected phase={phase} '
+                                  'source=crates/gameplay/serve.rs:9:3 next_command_id=18 server_sequence=24\n')
+                    log.write('oteryn-game-server event=serve_end reason=disconnected '
+                              'phase=unapproved-phase-secret '
+                              'source=crates/gameplay/serve.rs:10:3 next_command_id=19 server_sequence=25\n')
+                    for stage in authority_stages:
+                        log.write('oteryn-game-server ts=2 level=warn module=durability '
+                                  f'event=character_authority_check_failed stage={stage}\n')
+                    log.write('oteryn-game-server ts=3 level=warn module=durability '
+                              'event=character_authority_check_failed stage=unapproved-stage-secret\n')
                     log.write('oteryn-game-server ts=1 level=error module=test event=admission_refused '
                               'error="permission denied for table secret-table" '
                               'database_url=postgres://fixture:do-not-print-this-secret@db/fixture\n')
@@ -126,6 +151,14 @@ stage seam_stages -- blocked
             self.assertEqual(process.returncode, 128 + signum, text)
             self.assertEqual(text.count('cleanup=complete'), 1, text)
             self.assertIn('event=serve_end reason=control_lost path=liveness_missed', text)
+            for phase in inbound_phases:
+                self.assertIn(f'event=serve_end reason=disconnected phase={phase} ', text)
+            self.assertIn('event=serve_end reason=disconnected source=crates/gameplay/serve.rs:10:3 ', text)
+            self.assertNotIn('unapproved-phase-secret', text)
+            for stage in authority_stages:
+                self.assertIn(f'event=character_authority_check_failed check_stage={stage} ', text)
+            self.assertIn('event=character_authority_check_failed ts=3 ', text)
+            self.assertNotIn('unapproved-stage-secret', text)
             self.assertIn('event=durability_pass_retired', text)
             self.assertIn('event=listener_connection_poll_slow ready=false ms=5650', text)
             self.assertIn('signature=permission_denied', text)

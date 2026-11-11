@@ -1,0 +1,184 @@
+{
+  "regions": 15,
+  "source_attribute_additions": [
+    {
+      "position": [
+        32652,
+        32107,
+        7
+      ],
+      "unique": 5001
+    },
+    {
+      "position": [
+        33327,
+        32182,
+        7
+      ],
+      "unique": 6173
+    },
+    {
+      "position": [
+        32448,
+        32042,
+        8
+      ],
+      "action": 1035
+    },
+    {
+      "position": [
+        32451,
+        32048,
+        8
+      ],
+      "unique": 6132
+    },
+    {
+      "position": [
+        32455,
+        32048,
+        8
+      ],
+      "unique": 6133
+    },
+    {
+      "position": [
+        32644,
+        32131,
+        8
+      ],
+      "unique": 6065
+    },
+    {
+      "position": [
+        32816,
+        32279,
+        8
+      ],
+      "unique": 6170
+    },
+    {
+      "position": [
+        32814,
+        32281,
+        8
+      ],
+      "unique": 6112
+    },
+    {
+      "position": [
+        32980,
+        31727,
+        9
+      ],
+      "unique": 6020
+    },
+    {
+      "position": [
+        32981,
+        31727,
+        9
+      ],
+      "unique": 6021
+    },
+    {
+      "position": [
+        32985,
+        31727,
+        9
+      ],
+      "unique": 6022
+    },
+    {
+      "position": [
+        32981,
+        31760,
+        9
+      ],
+      "action": 1040
+    },
+    {
+      "position": [
+        33089,
+        32030,
+        9
+      ],
+      "unique": 6150
+    },
+    {
+      "position": [
+        32356,
+        32074,
+        10
+      ],
+      "action": 40031
+    },
+    {
+      "position": [
+        32353,
+        32073,
+        11
+      ],
+      "action": 1040
+    },
+    {
+      "position": [
+        33155,
+        31880,
+        11
+      ],
+      "unique": 6068
+    },
+    {
+      "position": [
+        33444,
+        32605,
+        11
+      ],
+      "unique": 6305
+    },
+    {
+      "position": [
+        32346,
+        32063,
+        12
+      ],
+      "unique": 6135
+    },
+    {
+      "position": [
+        32424,
+        31591,
+        15
+      ],
+      "unique": 6128
+    },
+    {
+      "position": [
+        32427,
+        31591,
+        15
+      ],
+      "unique": 6129
+    },
+    {
+      "position": [
+        32421,
+        31594,
+        15
+      ],
+      "unique": 6130
+    },
+    {
+      "position": [
+        33063,
+        31624,
+        15
+      ],
+      "unique": 6076
+    }
+  ],
+  "changed_rewards": [
+    "oteryn:reward-claim.kv.poisondaggers"
+  ]
+}

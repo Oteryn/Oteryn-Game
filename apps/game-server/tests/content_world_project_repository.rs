@@ -17,18 +17,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        418,
-        "c4a89b37a6469d28d7237de37e521c92ba5dc606459f46f74b496c6fb90a75b1",
+        417,
+        "0ef9ad0c870054e7d07ee3f91c58d203f7fba2a12aaef40fe43531328aecf04e",
     ),
     (
         "definitions/declarations.json",
-        27_789_388,
-        "cc4e1b2427cba025b465d126bdd36b76f52f4312ca072644442055af85bfedcc",
+        27_791_566,
+        "f6c3980dc2fcd15196375d1840b8d8369c74e345af2f28f2d0ec71161dc6dd8e",
     ),
     (
         "definitions/reference.json",
-        27_392_657,
-        "2a0677dca5bf18dbb2cb2a4d35ee26484d34eef4125d6c3eca75c500804e8a41",
+        27_393_337,
+        "69efd3de7cc33ae662856712130d29a261adbe850ebcfc763ebcc827617ead11",
     ),
     (
         "editor/author.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1957,
-        "5dee43dac6802ce6d9bcb96d5fa13a7176ca7ee3aea6f0aae68308dfa8075f37",
+        1956,
+        "05b01d2741da5876121e5ddd1365e8289aeafee91098dfb975581d995b9261a5",
     ),
     (
         "presentations/bindings.json",
@@ -47,18 +47,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        408,
-        "d3cca18ce0d03e4f2878cd81a00d8abc930b87544ee00f3d27c981c6a53192a2",
+        407,
+        "d18ce93a7c3f256750ef042fe336c2949956083f8e0883ddfd2b35ce780c8762",
     ),
     (
         "provenance/imports.json",
-        6_773_975,
-        "dc291fbe0517cdf75ec8f18fa82e7ff4b29aeb516ff238a5ac51179ca75c1e63",
+        6_774_564,
+        "3790f330f3b822b0c614d36c40e0cff52f3675885d9b8220b1c531b9a6adf0fe",
     ),
     (
         "provenance/sources.json",
-        1_667_515,
-        "8cccedce1f947efb3bcaf4b79bf69e915781bcef21b5c3f4e39822a9d7c116c1",
+        1_668_021,
+        "80f9e1e50f35ee74f45b2a91d91b21b6b1c90213a1101a31efc446f069c177dd",
     ),
     (
         "worlds/world.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "a36690ef76871e794e391198db3262afdfeb0433fc3430f69b848cfb77a1d287";
+const TREE_SHA256: &str = "663b7541a05e5f03452833124bb2adaac4194831557b49b575125b78cde808ec";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -150,9 +150,9 @@ const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
 /// Full generated population, including qualified source proxies and Wiki metadata.
-const CREATURES: usize = 1_864;
-const CREATURE_RECORDS: usize = 26_208;
-const CREATURE_PROFILES: usize = 25_065;
+const CREATURES: usize = 1_865;
+const CREATURE_RECORDS: usize = 26_211;
+const CREATURE_PROFILES: usize = 25_068;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2_564;
@@ -185,7 +185,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 30,
+        max_import_records: 31,
         max_reimport_states: 404,
     }
 }
@@ -397,7 +397,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "seasonal-cake-creature-20261107-r1"
     );
     // E06 adds its client market mint batch; Cake adds one separate qualified batch.
-    assert_eq!(project.imports().len(), 36);
+    assert_eq!(project.imports().len(), 37);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
@@ -1175,7 +1175,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 30);
+    assert_eq!(v2.sources.len(), 31);
     let source_for = |batch: &str| {
         v2.sources
             .iter()

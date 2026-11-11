@@ -28,7 +28,7 @@ fn worldchg_trader_postgres_yasir_current_day_ship_and_receipt_gate() -> TestRes
     }
     super::kill_reward_e2e::scenario_thread::run("worldchg-trader", scenario)
 }
-async fn day(h: &Harness, world: crate::foundation::WorldId, epoch: u64) -> TestResult {
+pub(super) async fn day(h: &Harness, world: crate::foundation::WorldId, epoch: u64) -> TestResult {
     sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(0),'1970-01') ON CONFLICT DO NOTHING")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind([7u8;32].as_slice()).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_reset_active(world_id,reset_epoch) VALUES(encode($1,'hex')::uuid,$2::text::numeric) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=excluded.reset_epoch")

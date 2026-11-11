@@ -1,0 +1,3604 @@
+{
+  "oteryn:reward-claim.kv.adoreduh": {
+    "quest": "canary:quest/adorned_uh_rune_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33136,
+          "y": 31601,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:468",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6025
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:767",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6025
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.alawars_vault1": {
+    "quest": "canary:quest/alawar_s_vault_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32105,
+          "y": 31567,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:619",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6045
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:918",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6045
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.alawars_vault2": {
+    "quest": "canary:quest/alawar_s_vault_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32109,
+          "y": 31567,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:626",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6046
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:925",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6046
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id4502": {
+    "quest": "canary:quest/alawar_s_vault_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32201,
+          "y": 31571,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:153",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5008
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:435",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5008
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach": {
+    "quest": "canary:quest/an_interest_in_botany_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33004,
+          "y": 31530,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2523",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6296
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2807",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6296
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp": {
+    "quest": "canary:quest/barbarian_arena_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32231,
+          "y": 31068,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2031",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6221
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2316",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6221
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present": {
+    "quest": "canary:quest/barbarian_arena_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32231,
+          "y": 31065,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2023",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6220
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2308",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6220
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons": {
+    "quest": "canary:quest/barbarian_arena_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32235,
+          "y": 31064,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2053",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6224
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2338",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6224
+          }
+        ]
+      },
+      {
+        "position": {
+          "x": 32235,
+          "y": 31066,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2046",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6223
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2331",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6223
+          }
+        ]
+      },
+      {
+        "position": {
+          "x": 32235,
+          "y": 31068,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2039",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6222
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2324",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6222
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp": {
+    "quest": "canary:quest/barbarian_arena_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32231,
+          "y": 31061,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2069",
+            "reward_matches_current_source": false,
+            "server": "canary",
+            "unique_id": 6226
+          },
+          {
+            "accepted_override": "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
+            "citation": "crystal:data-global/startup/tables/chest.lua:2354",
+            "reward_matches_current_source": false,
+            "server": "crystalserver",
+            "unique_id": 6226
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present": {
+    "quest": "canary:quest/barbarian_arena_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32231,
+          "y": 31058,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2061",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6225
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2346",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6225
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons": {
+    "quest": "canary:quest/barbarian_arena_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32235,
+          "y": 31057,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2091",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6229
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2376",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6229
+          }
+        ]
+      },
+      {
+        "position": {
+          "x": 32235,
+          "y": 31059,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2084",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6228
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2369",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6228
+          }
+        ]
+      },
+      {
+        "position": {
+          "x": 32235,
+          "y": 31061,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2077",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6227
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2362",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6227
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp": {
+    "quest": "canary:quest/barbarian_arena_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32231,
+          "y": 31054,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2107",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6231
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2392",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6231
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present": {
+    "quest": "canary:quest/barbarian_arena_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32231,
+          "y": 31051,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2099",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6230
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2384",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6230
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons": {
+    "quest": "canary:quest/barbarian_arena_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32235,
+          "y": 31050,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2129",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6234
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2414",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6234
+          }
+        ]
+      },
+      {
+        "position": {
+          "x": 32235,
+          "y": 31052,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2122",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6233
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2407",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6233
+          }
+        ]
+      },
+      {
+        "position": {
+          "x": 32235,
+          "y": 31054,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2115",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6232
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2400",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6232
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.barbarianaxe1": {
+    "quest": "canary:quest/barbarian_axe_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33184,
+          "y": 31945,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:476",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6026
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:775",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6026
+          }
+        ]
+      },
+      {
+        "position": {
+          "x": 33185,
+          "y": 31945,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:483",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6027
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:782",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6027
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.battleaxe": {
+    "quest": "canary:quest/battle_axe_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32305,
+          "y": 32254,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1708",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6180
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1993",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6180
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.bear_chest2": {
+    "quest": "canary:quest/bear_room_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32144,
+          "y": 32096,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1167",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6115
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1467",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6115
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.bear_chest3": {
+    "quest": "canary:quest/bear_room_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32141,
+          "y": 32097,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1174",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6116
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1474",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6116
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id4601": {
+    "quest": "canary:quest/bear_room_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32150,
+          "y": 32112,
+          "z": 12
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:193",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5013
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:468",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5013
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.simon_the_beggars_favorite_staff": {
+    "quest": "canary:quest/beggar_outfits_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33167,
+          "y": 31600,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1782",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6189
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2067",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6189
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.behemothquest1": {
+    "quest": "canary:quest/behemoth_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33294,
+          "y": 31658,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:851",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6075
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1150",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6075
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.behemothquest2": {
+    "quest": "canary:quest/behemoth_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33295,
+          "y": 31658,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:671",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6052
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:970",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6052
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.behemothquest3": {
+    "quest": "canary:quest/behemoth_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33297,
+          "y": 31658,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:678",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6053
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:977",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6053
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.behemothquest4": {
+    "quest": "canary:quest/behemoth_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33298,
+          "y": 31658,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:685",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6054
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:984",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6054
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls": {
+    "quest": "canary:quest/berserker_treasure_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33199,
+          "y": 31923,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:771",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6066
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1070",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6066
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.blackknight1": {
+    "quest": "canary:quest/black_knight_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32868,
+          "y": 31955,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:634",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6047
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:933",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6047
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.blackknight2": {
+    "quest": "canary:quest/black_knight_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32880,
+          "y": 31955,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:641",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6048
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:940",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6048
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id5010": {
+    "quest": "canary:quest/black_knight_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32800,
+          "y": 31959,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:139",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5006
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:421",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5006
+          }
+        ]
+      },
+      {
+        "position": {
+          "x": 32813,
+          "y": 31964,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:146",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5007
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:428",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5007
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.bloodherb": {
+    "quest": "canary:quest/blood_herb_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32769,
+          "y": 31968,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1132",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6111
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1432",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6111
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.captain_iglues": {
+    "quest": "canary:quest/captain_iglues_treasure_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32039,
+          "y": 32121,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1190",
+            "reward_matches_current_source": false,
+            "server": "canary",
+            "unique_id": 6117
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1482",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6117
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge1": {
+    "quest": "canary:quest/children_of_the_revolution_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33247,
+          "y": 31161,
+          "z": 6
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2472",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6289
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2756",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6289
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge2": {
+    "quest": "canary:quest/children_of_the_revolution_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33264,
+          "y": 31130,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2486",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6291
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2770",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6291
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.flask_of_extra_greasy_oil": {
+    "quest": "canary:quest/children_of_the_revolution_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33327,
+          "y": 31410,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2479",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6290
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2763",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6290
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.circleroom1": {
+    "quest": "canary:quest/circle_room_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32495,
+          "y": 31992,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1241",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6122
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1526",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6122
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.circleroom2": {
+    "quest": "canary:quest/circle_room_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32497,
+          "y": 31992,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1248",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6123
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1533",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6123
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.combatknife": {
+    "quest": "canary:quest/combat_knife_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32102,
+          "y": 32235,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1190",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6117
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:564",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5025
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.crusaderhelmet": {
+    "quest": "canary:quest/crusader_helmet_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32427,
+          "y": 31943,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1581",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6164
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1866",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6164
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.crystalwand1": {
+    "quest": "canary:quest/crystal_wand_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32479,
+          "y": 31611,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1256",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6124
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1541",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6124
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.crystalwand2": {
+    "quest": "canary:quest/crystal_wand_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32481,
+          "y": 31611,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1263",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6125
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1548",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6125
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.petrified_scream_quest": {
+    "quest": "canary:quest/cults_of_tibia_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32739,
+          "y": 31426,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2664",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6313
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2941",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6313
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_5.darashia_dragon": {
+    "quest": "canary:quest/darashia_dragon_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33233,
+          "y": 32280,
+          "z": 12
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2441",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6285
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2725",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6285
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.darkarmor": {
+    "quest": "canary:quest/dark_armor_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33178,
+          "y": 31870,
+          "z": 12
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:491",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6028
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:790",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6028
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u10_50.dark_trails.reward05_gloth_and_belongings": {
+    "quest": "canary:quest/dark_trails_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33468,
+          "y": 32083,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2591",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6304
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2861",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6303
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u10_50.dark_trails.reward10_gloth_and_belongings": {
+    "quest": "canary:quest/dark_trails_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33487,
+          "y": 32085,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2599",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6305
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2869",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6304
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u10_50.dark_trails.reward_small_notebook": {
+    "quest": "canary:quest/dark_trails_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33457,
+          "y": 32073,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2584",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6303
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2854",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6302
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.deadarcher": {
+    "quest": "canary:quest/dead_archer_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32514,
+          "y": 32303,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1620",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6169
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1905",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6169
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.deeperfibula1": {
+    "quest": "canary:quest/deeper_fibula_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32239,
+          "y": 32471,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:340",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6008
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:639",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6008
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.deeperfibula2": {
+    "quest": "canary:quest/deeper_fibula_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32239,
+          "y": 32478,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:347",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6009
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:646",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6009
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.deeperfibula3": {
+    "quest": "canary:quest/deeper_fibula_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32233,
+          "y": 32491,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:354",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6010
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:653",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6010
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.deeperfibula5": {
+    "quest": "canary:quest/deeper_fibula_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32256,
+          "y": 32500,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:368",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6012
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:667",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6012
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id3980": {
+    "quest": "canary:quest/deeper_fibula_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32219,
+          "y": 32401,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:88",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5000
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:370",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5000
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.demonaring1": {
+    "quest": "canary:quest/demona_ring_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32504,
+          "y": 31596,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1271",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6126
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1556",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6126
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.demonaring2": {
+    "quest": "canary:quest/demona_ring_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32515,
+          "y": 31596,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1278",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6127
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1563",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6127
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.desert1": {
+    "quest": "canary:quest/desert_dungeon_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32668,
+          "y": 32069,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1521",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6157
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1806",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6157
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.devilhemet1": {
+    "quest": "canary:quest/devil_helmet_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32459,
+          "y": 32144,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1374",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6139
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1659",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6139
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.devilhemet2": {
+    "quest": "canary:quest/devil_helmet_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32465,
+          "y": 32148,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1381",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6140
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1666",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6140
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.devilhemet3": {
+    "quest": "canary:quest/devil_helmet_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32466,
+          "y": 32148,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1388",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6141
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1673",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6141
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id3610": {
+    "quest": "canary:quest/devil_helmet_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32589,
+          "y": 32100,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:225",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5017
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:500",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5017
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id3667": {
+    "quest": "canary:quest/devil_helmet_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32576,
+          "y": 32216,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:217",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5016
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:492",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5016
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.doublehero1": {
+    "quest": "canary:quest/double_hero_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33109,
+          "y": 31679,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:521",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6032
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:820",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6032
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.doublehero2": {
+    "quest": "canary:quest/double_hero_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33110,
+          "y": 31679,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:528",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6033
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:827",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6033
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.doublet": {
+    "quest": "canary:quest/doublet_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32084,
+          "y": 32181,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1716",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6181
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2001",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6181
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.draconia2": {
+    "quest": "canary:quest/draconia_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32804,
+          "y": 31582,
+          "z": 2
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:458",
+            "reward_matches_current_source": false,
+            "server": "canary",
+            "unique_id": 6024
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:757",
+            "reward_matches_current_source": false,
+            "server": "crystalserver",
+            "unique_id": 6024
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id3008": {
+    "quest": "canary:quest/draconia_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32800,
+          "y": 31582,
+          "z": 2
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:273",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5023
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:548",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5023
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.dragoncorpse": {
+    "quest": "canary:quest/dragon_corpse_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32179,
+          "y": 32224,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1556",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6161
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1841",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6161
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1": {
+    "quest": "canary:quest/dragon_tower_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33072,
+          "y": 32169,
+          "z": 2
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:832",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6073
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1131",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6073
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2": {
+    "quest": "canary:quest/dragon_tower_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33078,
+          "y": 32169,
+          "z": 2
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:841",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6074
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1140",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6074
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book": {
+    "quest": "canary:quest/dreamer_s_challenge_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32850,
+          "y": 32285,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1839",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6196
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2124",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6196
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond": {
+    "quest": "canary:quest/dreamer_s_challenge_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32835,
+          "y": 32223,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1878",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6201
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2163",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6201
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u7_8.druid_outfits.wolf_tooth_chain": {
+    "quest": "canary:quest/druid_outfits_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32939,
+          "y": 31776,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1791",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6190
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2076",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6190
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.edrongoblin2": {
+    "quest": "canary:quest/edron_goblin_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33095,
+          "y": 31801,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:543",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6035
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:842",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6035
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u7_5.elephant_tusk": {
+    "quest": "canary:quest/elephant_tusk_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32922,
+          "y": 32755,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1749",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6185
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2034",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6185
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id3800": {
+    "quest": "canary:quest/emperor_s_cookies_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32605,
+          "y": 31908,
+          "z": 3
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:112",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5003
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:394",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5003
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id3802": {
+    "quest": "canary:quest/emperor_s_cookies_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32599,
+          "y": 31923,
+          "z": 6
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:131",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5005
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:413",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5005
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.explorerbrooch": {
+    "quest": "canary:quest/explorer_brooch_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32636,
+          "y": 31873,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:419",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6019
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:718",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6019
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.fanfare": {
+    "quest": "canary:quest/fanfare_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32390,
+          "y": 31769,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1396",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6142
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1681",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6142
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id3520": {
+    "quest": "canary:quest/fanfare_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32376,
+          "y": 31802,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:233",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5018
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:508",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5018
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones": {
+    "quest": "canary:quest/ferumbras_ascension_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33393,
+          "y": 32373,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2624",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6308
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2894",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6307
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night": {
+    "quest": "canary:quest/ferumbras_ascension_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33384,
+          "y": 32323,
+          "z": 12
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2617",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6307
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2887",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6306
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth": {
+    "quest": "canary:quest/ferumbras_ascension_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33408,
+          "y": 32396,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2631",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6309
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2908",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6309
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.fireaxe2": {
+    "quest": "canary:quest/fire_axe_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33084,
+          "y": 31650,
+          "z": 12
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:551",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6036
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:850",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6036
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.fishing_box": {
+    "quest": "canary:quest/fishing_box_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32015,
+          "y": 31409,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2137",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6235
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2422",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6235
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.halls_of_hope.reward1": {
+    "quest": "canary:quest/forgotten_knowledge_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32349,
+          "y": 32194,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:292",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6001
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:591",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6001
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.halls_of_hope.reward2": {
+    "quest": "canary:quest/forgotten_knowledge_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32382,
+          "y": 32368,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:298",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6002
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:597",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6002
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.halls_of_hope.reward3": {
+    "quest": "canary:quest/forgotten_knowledge_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32287,
+          "y": 32119,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:304",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6003
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:603",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6003
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.halls_of_hope.reward4": {
+    "quest": "canary:quest/forgotten_knowledge_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32389,
+          "y": 32001,
+          "z": 6
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:310",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6004
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:609",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6004
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.halls_of_hope.reward5": {
+    "quest": "canary:quest/forgotten_knowledge_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32449,
+          "y": 32109,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:316",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6005
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:615",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6005
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.ghostsilver_lantern_quest": {
+    "quest": "canary:quest/forgotten_knowledge_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32825,
+          "y": 31664,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2639",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6310
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2916",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6310
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.imbuing_crystal_quest": {
+    "quest": "canary:quest/forgotten_knowledge_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33026,
+          "y": 31662,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2655",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6312
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2932",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6312
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.painting_of_agirl_quest": {
+    "quest": "canary:quest/forgotten_knowledge_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32883,
+          "y": 31686,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2647",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6311
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2924",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6311
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.geomancer": {
+    "quest": "canary:quest/geomancer_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32456,
+          "y": 32008,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1333",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6134
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1618",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6134
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.ghoulroom2": {
+    "quest": "canary:quest/ghoul_room_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32500,
+          "y": 32177,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1359",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6137
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1644",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6137
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id3600": {
+    "quest": "canary:quest/ghoul_room_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32509,
+          "y": 32181,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:209",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5015
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:484",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5015
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.goblintemple": {
+    "quest": "canary:quest/goblin_temple_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 31973,
+          "y": 32209,
+          "z": 12
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1198",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6118
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1490",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6118
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.griffinshield1": {
+    "quest": "canary:quest/griffin_shield_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32498,
+          "y": 31721,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1588",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6165
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1873",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6165
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.griffinshield2": {
+    "quest": "canary:quest/griffin_shield_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32500,
+          "y": 31721,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1595",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6166
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1880",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6166
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.griffinshield3": {
+    "quest": "canary:quest/griffin_shield_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32503,
+          "y": 31724,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1602",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6167
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1887",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6167
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.heavenblossom": {
+    "quest": "canary:quest/heaven_blossom_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33104,
+          "y": 32154,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1404",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6143
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1689",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6143
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01": {
+    "quest": "canary:quest/hidden_threats_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33080,
+          "y": 32014,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1009",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6095
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1309",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6095
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02": {
+    "quest": "canary:quest/hidden_threats_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33031,
+          "y": 32050,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1016",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6096
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1316",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6096
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file": {
+    "quest": "canary:quest/hidden_threats_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33078,
+          "y": 31980,
+          "z": 13
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1002",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6094
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1302",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6094
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow": {
+    "quest": "canary:quest/hunter_outfits_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32369,
+          "y": 32795,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1799",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6191
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2084",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6191
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya": {
+    "quest": "canary:quest/inukaya_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32483,
+          "y": 31110,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1982",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6215
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2267",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6215
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.ironhamer": {
+    "quest": "canary:quest/iron_hammer_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32434,
+          "y": 31938,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1648",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6172
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1933",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6172
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.ironhelmet": {
+    "quest": "canary:quest/iron_helmet_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32769,
+          "y": 32225,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1610",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6168
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1895",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6168
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.ironore": {
+    "quest": "canary:quest/iron_ore_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32532,
+          "y": 31873,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1412",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6144
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1697",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6144
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.isleofthemists": {
+    "quest": "canary:quest/isle_of_the_mists_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32852,
+          "y": 32332,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1420",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6145
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1705",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6145
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.katanacorpse1": {
+    "quest": "canary:quest/katana_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32175,
+          "y": 32145,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1566",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6162
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1851",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6162
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.katanacorpse2": {
+    "quest": "canary:quest/katana_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32174,
+          "y": 32149,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1573",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6163
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1858",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6163
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.key.id4603": {
+    "quest": "canary:quest/katana_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32176,
+          "y": 32132,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:201",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5014
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:476",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5014
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest": {
+    "quest": "canary:quest/knight_outfits_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32860,
+          "y": 32516,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1807",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6192
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2092",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6192
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1": {
+    "quest": "canary:quest/koshei_the_deathless_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33194,
+          "y": 32458,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2146",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6236
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2431",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6236
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2": {
+    "quest": "canary:quest/koshei_the_deathless_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33305,
+          "y": 32277,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2153",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6237
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2438",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6237
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3": {
+    "quest": "canary:quest/koshei_the_deathless_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33212,
+          "y": 32593,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2160",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6238
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2445",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6238
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4": {
+    "quest": "canary:quest/koshei_the_deathless_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33053,
+          "y": 32468,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2167",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6239
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2452",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6239
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold": {
+    "quest": "canary:quest/koshei_the_deathless_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33273,
+          "y": 32470,
+          "z": 11
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2188",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6242
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2473",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6242
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs": {
+    "quest": "canary:quest/koshei_the_deathless_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33261,
+          "y": 32444,
+          "z": 12
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2174",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6240
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2459",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6240
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum": {
+    "quest": "canary:quest/koshei_the_deathless_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 33261,
+          "y": 32448,
+          "z": 12
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2181",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6241
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2466",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6241
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines": {
+    "quest": "canary:quest/lion_trophy_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32154,
+          "y": 31116,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2014",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6219
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2299",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6219
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_5.lone_medusa": {
+    "quest": "canary:quest/lone_medusa_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32406,
+          "y": 32764,
+          "z": 1
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2449",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6286
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2733",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6286
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.longsword1": {
+    "quest": "canary:quest/longsword_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32649,
+          "y": 31969,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1428",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6146
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1713",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6146
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.longsword2": {
+    "quest": "canary:quest/longsword_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32650,
+          "y": 31969,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1435",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6147
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1720",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6147
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.longsword3": {
+    "quest": "canary:quest/longsword_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32651,
+          "y": 31969,
+          "z": 9
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1442",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6148
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1727",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6148
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.madmageroom1": {
+    "quest": "canary:quest/mad_mage_room_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32578,
+          "y": 32195,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:894",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6080
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1193",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6080
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.madmageroom2": {
+    "quest": "canary:quest/mad_mage_room_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32575,
+          "y": 32195,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:901",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6081
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1200",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6081
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.minohell1": {
+    "quest": "canary:quest/minotaur_hell_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32130,
+          "y": 32066,
+          "z": 12
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1217",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6120
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1509",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6120
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.minohell2": {
+    "quest": "canary:quest/minotaur_hell_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32127,
+          "y": 32065,
+          "z": 12
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1233",
+            "reward_matches_current_source": false,
+            "server": "canary",
+            "unique_id": 6121
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1516",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6121
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.minohell3": {
+    "quest": "canary:quest/minotaur_hell_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32124,
+          "y": 32064,
+          "z": 12
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1233",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6121
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:571",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5026
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.minotaurleatherquest": {
+    "quest": "canary:quest/minotaur_leather_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32302,
+          "y": 32415,
+          "z": 7
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1452",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6149
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1737",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6149
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.kv.mintwallincyclops": {
+    "quest": "canary:quest/mintwallin_cyclops_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32591,
+          "y": 32097,
+          "z": 14
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1366",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6138
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:1651",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6138
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim": {
+    "quest": "crystalserver:quest/berserk_potion_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32490,
+          "y": 31192,
+          "z": 10
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2006",
+            "reward_matches_current_source": false,
+            "server": "canary",
+            "unique_id": 6218
+          },
+          {
+            "accepted_override": "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
+            "citation": "crystal:data-global/startup/tables/chest.lua:2291",
+            "reward_matches_current_source": false,
+            "server": "crystalserver",
+            "unique_id": 6218
+          }
+        ]
+      }
+    ]
+  },
+  "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir": {
+    "quest": "crystalserver:quest/frost_dragon_quest",
+    "placements": [
+      {
+        "position": {
+          "x": 32146,
+          "y": 31430,
+          "z": 8
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1998",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 6217
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:2283",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 6217
+          }
+        ]
+      }
+    ]
+  }
+}

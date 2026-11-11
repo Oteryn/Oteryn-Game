@@ -191,6 +191,42 @@ class ItemKeySetTests(unittest.TestCase):
 class LootTablesTests(unittest.TestCase):
     """ARCH-KILL-REWARD-LOGOUT-1 §1.1: the loot section is generated from the Content definitions."""
 
+    def test_corruptor_projects_current_items_and_native_corpse_without_changing_source(self):
+        _, creatures = full.read(full.CREATURE_PROFILES)
+        document = json.loads(full.loot_tables(creatures))
+        table = next(row for row in document['tables']
+                     if row['identity']['key'] == 'oteryn:loot.creature.the_corruptor')
+        entries = {row['item']['key']: row for row in table['entries']}
+        expected = {3031: (13, 46, 1000000), 266: (1, 3, 238100),
+                    268: (1, 3, 238100), 3338: (1, 1, 142900),
+                    3359: (1, 1, 47600), 7991: (1, 1, 47600),
+                    3375: (1, 1, 47600), 3074: (1, 1, 47600),
+                    3723: (1, 2, 47600), 51760: (1, 1, 47600)}
+        self.assertEqual({f'oteryn:item.tibia.i{item}' for item in expected}, set(entries))
+        for item, counts in expected.items():
+            row = entries[f'oteryn:item.tibia.i{item}']
+            self.assertEqual(counts, (row['min_count'], row['max_count'], row['probability_ppm']))
+        items = {row['item']['key']: row for row in document['items']}
+        for item in expected:
+            self.assertTrue(items[f'oteryn:item.tibia.i{item}']['materializable'], item)
+        for item in (3359, 3285, 3375, 3571, 51760, 3074, 7991, 3066, 50195, 51119):
+            self.assertTrue(items[f'oteryn:item.tibia.i{item}']['materializable'])
+        for item in (52113, 52114, 52115):
+            self.assertTrue(items[f'oteryn:item.tibia.i{item}']['materializable'])
+            self.assertEqual(30, items[f'oteryn:item.tibia.i{item}']['container_capacity'])
+        self.assertIsNone(items['oteryn:item.tibia.i52116']['container_capacity'])
+        # Reference shards retain their identities and source admission. Only
+        # the native projection supplies these production reward facts.
+        source = full.item_facts()
+        self.assertFalse(source['oteryn:item.tibia.i52113']['materializable'])
+        for path in full.LOOT_DEFINITIONS.glob('loot-*.json'):
+            _, shard = full.read(path)
+            for row in shard['records']:
+                if row['definition']['identity'] == table['identity']:
+                    self.assertEqual(9, len(row['definition']['entries']))
+                    self.assertIn('oteryn:item.tibia.i8820',
+                                  {entry['item']['key'] for entry in row['definition']['entries']})
+
     def test_checked_in_section_is_generated_from_the_production_profiles(self):
         _, creatures = full.read(full.CREATURE_PROFILES)
         raw = full.loot_tables(creatures)

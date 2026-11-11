@@ -296,3 +296,41 @@ fn p17c_field_functions_select_with_prerequisites_on_the_default_client() -> Res
         .join()
         .map_err(|_| "field selection thread panicked")?
 }
+
+#[test]
+fn unselected_diagonal_step_and_pending_recovery_send_no_bytes() -> Result<(), BoxError> {
+    block_on(async {
+        let (client, mut server) = tokio::io::duplex(64 * 1024);
+        let peer = tokio::spawn(async move {
+            join_peer(&mut server, &[13], &[], &[]).await?;
+            let mut bytes = Vec::new();
+            server.read_to_end(&mut bytes).await?;
+            assert!(
+                bytes.is_empty(),
+                "unselected diagonal must not reach the transport"
+            );
+            Ok::<(), BoxError>(())
+        });
+        let mut session = Session::admit(client, admission()?).await?;
+        for direction in [
+            StepDirection::NorthEast,
+            StepDirection::SouthEast,
+            StepDirection::SouthWest,
+            StepDirection::NorthWest,
+        ] {
+            assert!(matches!(
+                session.step(direction).await,
+                Err(SessionError::CapabilityNotSelected { capability: 371 })
+            ));
+            assert_eq!(session.next_command_id(), 7);
+        }
+        assert!(matches!(
+            session
+                .disconnect_after_step(StepDirection::NorthEast)
+                .await,
+            Err(SessionError::CapabilityNotSelected { capability: 371 })
+        ));
+        peer.await??;
+        Ok(())
+    })?
+}

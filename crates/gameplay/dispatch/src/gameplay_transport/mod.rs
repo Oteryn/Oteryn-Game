@@ -30,6 +30,7 @@ pub mod bulletin;
 mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
+mod bundle_ladder;
 mod bundle_map_position;
 mod cake_event;
 mod capabilities;
@@ -72,6 +73,7 @@ mod endgame_entry;
 mod entity_names;
 mod equipment_move;
 mod equipment_reflection;
+mod falcon_chests;
 mod field_removal;
 mod first_vocation_vitals;
 pub mod fresh_evidence;
@@ -159,6 +161,9 @@ mod pvp_expert;
 mod pvp_live;
 mod quest_admission;
 mod quest_callbacks;
+mod quest_death_loot;
+mod quest_disguise;
+mod quest_kill_objectives;
 mod quest_kills;
 mod quest_log_source;
 mod quest_timer_cycle;
@@ -206,6 +211,7 @@ mod timed_item_wire;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
+mod viola_book;
 mod vip_presence;
 mod vocation_choice;
 pub mod weapon_proficiency;
@@ -600,6 +606,9 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// Origin of the owner clock cooldowns are measured on: process-local and monotonic, never a
     /// client or wall-clock time (spell cast §2).
     pub clock_origin: std::time::Instant,
+    /// Explicit receipt rollout configuration for isolated composed-owner fixtures.
+    #[cfg(test)]
+    pub test_step_wait_receipts: Option<bool>,
     pub states: std::sync::Arc<channel_states::ChannelSessionStates>,
     /// Exact native owners retained for committed activity entry, return and recovery.
     pub activity_runtimes: std::sync::Arc<activity_runtime::ActivityRuntimeRegistry<'a>>,

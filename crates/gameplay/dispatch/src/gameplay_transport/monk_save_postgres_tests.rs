@@ -219,10 +219,18 @@ impl Dependencies {
         harness: &'a Harness,
         authority: &'a ReconciledCharacterAuthority<'f, 's>,
     ) -> ComposedFreshAdmission<'a, 'f, 's> {
+        self.owner_from(&harness.root, &harness.node, authority)
+    }
+    fn owner_from<'a, 'f, 's>(
+        &'a self,
+        root: &'a crate::durability::DurabilityRoot,
+        holder: &'a crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+        authority: &'a ReconciledCharacterAuthority<'f, 's>,
+    ) -> ComposedFreshAdmission<'a, 'f, 's> {
         let mut owner = crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
-            root: &harness.root,
+            root,
             character: authority,
-            holder: &harness.node,
+            holder,
             evidence: &self.evidence,
             world_id: self.admitted.world_id,
             channel_id: self.admitted.channel_id,
@@ -868,9 +876,12 @@ mod death_ml_loss_composed {
         owner: &ComposedFreshAdmission<'_, '_, '_>,
         session: GameSessionId,
     ) -> TestResult<CurrentCharacterGameplayFence> {
-        super::maintain_ready(owner.root).await?;
+        // Setup needs the same bounded holder recovery as fresh admission:
+        // a completed durable pass can retire its holder before the next read.
+        let budget =
+            crate::gameplay_transport::AdmissionRetryBudget::for_root(&session, owner.root);
         Ok(owner
-            .current_quest_fence(session)
+            .current_quest_fence_within(&budget, session)
             .await
             .map_err(|()| "fence read")?
             .ok_or("terminal session")?)

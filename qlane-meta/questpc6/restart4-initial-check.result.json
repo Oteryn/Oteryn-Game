@@ -1,0 +1,6 @@
+{
+  "command": "CARGO_BUILD_JOBS=4 /home/mole/oteryn-cache/codex-bin/cargo check --locked --offline -p oteryn-gameplay-dispatch",
+  "exit": 0,
+  "log": ".questpc/restart4-initial-check.log",
+  "scope": "initial restart compilation before source edits"
+}

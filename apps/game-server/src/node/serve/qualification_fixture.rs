@@ -152,6 +152,7 @@ async fn prepare_items(
         let item = generation_item_facts(native, &definition)
             .map_err(|error| format!("qualification Item {key}: {error:?}"))?;
         let request = RewardClaimMintRequest {
+            backpack_outputs: false,
             // Reserved fixture ids cannot collide with the client's low command ids.
             command: crate::foundation::CommandRef::new(
                 current.current_game_session_id(),
@@ -167,6 +168,8 @@ async fn prepare_items(
             quantity: 1,
             contents: Vec::new(),
             root_text: None,
+            root_fluid_subtype: None,
+            root_charges_remaining: None,
             backpack: backpack.clone(),
             content_revision: inventory.content_revision.clone(),
             ruleset_revision: inventory.ruleset_revision.clone(),

@@ -3,6 +3,14 @@
   "owner": "crates",
   "events": [
     {
+      "event": "character_authority_check_failed",
+      "level": "warn",
+      "span": false,
+      "fields": ["stage"],
+      "codes": [],
+      "note": "Closed integrity or recovery-fence check name; no identities or stored payloads."
+    },
+    {
       "event": "character_revision_chain_violation",
       "level": "warn",
       "span": false,

@@ -1,0 +1,308 @@
+{
+  "quest": "oteryn:quest.ferumbras_ascension_quest",
+  "test": "questpc7_ferumbras_full_native_seals_and_reward_bundle",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc7_ferumbras_full_native_seals_and_reward_bundle -- --nocapture --test-threads=1",
+  "red": {
+    "seconds": 41.469268453,
+    "log": "/tmp/questpc7-ferumbras-red.log",
+    "reason": "missing native entry after real PG harness creation"
+  },
+  "expanded_red": [
+    {
+      "seconds": 44.343084621,
+      "log": "/tmp/questpc7-ferumbras-green.log",
+      "reason": "fixture Ground MINT binding mismatch"
+    },
+    {
+      "seconds": 43.456666898,
+      "log": "/tmp/questpc7-ferumbras-green2.log",
+      "reason": "diagnostic isolates fixture second MINT; production ground-cell guard retained"
+    },
+    {
+      "seconds": 44.125205511,
+      "log": "/tmp/questpc7-ferumbras-green3.log",
+      "reason": "ritual requires one physical stack; story changed to real pickup/carried merge/drop10, preserving short9 assertion"
+    },
+    {
+      "seconds": 52.093024636,
+      "log": "/tmp/questpc7-ferumbras-green4.log",
+      "reason": "all8 native bosses, exact passages and both all-value refusals pass; final grant error hidden"
+    },
+    {
+      "seconds": 50.768375617,
+      "log": "/tmp/questpc7-ferumbras-green5.log",
+      "reason": "diagnostic InvalidStoredState; new achievement raw source event exceeds existing64-byte bound; stable SHA-256 fixes size without changing guard"
+    }
+  ],
+  "green": {
+    "seconds": 52.479192159,
+    "log": "/tmp/questpc7-ferumbras-final-green.log",
+    "marker": "QUESTPC7_FERUMBRAS POSTGRES_CASE_COMPLETED duration=52.479192159s success=true",
+    "passed": 1,
+    "failed": 0
+  },
+  "state": "QUALIFIED",
+  "mechanisms": [
+    "explicit opt-in once-only completing world item/outfit bundle; legacy mixed field refusal remains",
+    "bounded unique world achievements reuse fenced grant_missing in same transaction; stable32-byte source event",
+    "exact existing item MINT/appearance/achievement owners retained; no migration needed",
+    "fixture Ground MINT now uses real content/frame metadata, preserving production compatibility guard"
+  ],
+  "assertions": [
+    "fresh native level150/Premium subject; no quest-state seeds",
+    "zero/short9 ritual refusals with no charge; native pickup, carried merge and drop exact10",
+    "eight actual native species in source arenas, ordered by earned personal passages",
+    "duplicate lethal notifications/drains once; next guardian inactive before its passage",
+    "each actual native passage destination asserted",
+    "fresh Premium refusal grants none of tokens/outfit/achievement",
+    "full20-slot backpack refuses entire bundle with no source/progress/value output",
+    "real native food USE frees one slot before atomic final delivery",
+    "Silver22516x5, all3 native Rift Warrior grant facts, HatHunter and once-only completion",
+    "new command repeat grants no additional value",
+    "exact native command replay does not grant again",
+    "ordinary native appearance command selects earned full Rift Warrior"
+  ],
+  "boundary": "Complete selected finite Oteryn programme. Original raid/global/cooldown/party phases and ordinary corpse loot unchanged; ritual readiness is chosen milestone, not a claim of unsupported Godbreaker crafting.",
+  "initial_green": {
+    "seconds": 53.501737447,
+    "log": "/tmp/questpc7-ferumbras-green6.log",
+    "marker": "QUESTPC7_FERUMBRAS POSTGRES_CASE_COMPLETED duration=53.501737447s success=true",
+    "passed": 1
+  },
+  "validation": {
+    "state": "GREEN",
+    "gates": [
+      {
+        "check": "hero-pg",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-dispatch",
+          "--lib",
+          "questpc7_hero_full_native_investigation",
+          "--",
+          "--nocapture",
+          "--test-threads=1"
+        ],
+        "seconds": 53.53,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-hero-pg.log"
+      },
+      {
+        "check": "loader-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "--lib",
+          "loader::tests::"
+        ],
+        "seconds": 6.161,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-loader-units.log"
+      },
+      {
+        "check": "world-callback-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "--lib",
+          "world_callbacks::"
+        ],
+        "seconds": 2.799,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-world-callback-units.log"
+      },
+      {
+        "check": "author",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/content-schema/quest-authoring",
+          "-p",
+          "test_qengine_rewards.py"
+        ],
+        "seconds": 14.809,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-author.log"
+      },
+      {
+        "check": "item-author",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/content-migration",
+          "-p",
+          "test_qengine_reward_item_profiles.py"
+        ],
+        "seconds": 0.22,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-item-author.log"
+      },
+      {
+        "check": "item-generation",
+        "command": [
+          "python3",
+          "tools/content-migration/register_spell_families.py",
+          "--check"
+        ],
+        "seconds": 72.41,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-item-generation.log"
+      },
+      {
+        "check": "generation",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/qengine_rewards.py",
+          "--check"
+        ],
+        "seconds": 9.321,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-generation.log"
+      },
+      {
+        "check": "check",
+        "command": [
+          "cargo",
+          "check",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "-p",
+          "oteryn-gameplay-durability",
+          "-p",
+          "oteryn-gameplay-dispatch"
+        ],
+        "seconds": 99.341,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-check.log"
+      },
+      {
+        "check": "clippy",
+        "command": [
+          "cargo",
+          "clippy",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "-p",
+          "oteryn-gameplay-durability",
+          "-p",
+          "oteryn-gameplay-dispatch",
+          "--all-targets",
+          "--all-features",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "seconds": 124.453,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-clippy.log"
+      },
+      {
+        "check": "pin-refresh",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "seconds": 118.208,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-pin-refresh.log"
+      },
+      {
+        "check": "pin-check",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-check",
+          ".",
+          "/tmp/questpc7-ferumbras-pin-check"
+        ],
+        "seconds": 132.653,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-pin-check.log"
+      },
+      {
+        "check": "content",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "integration_rest",
+          "content_"
+        ],
+        "seconds": 158.695,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-content.log"
+      },
+      {
+        "check": "world",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "content_world_project_repository"
+        ],
+        "seconds": 48.668,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-world.log"
+      },
+      {
+        "check": "fmt",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "seconds": 11.351,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-ferumbras-fmt.log"
+      }
+    ],
+    "test_counts": {
+      "hero_pg": 1,
+      "loader": 9,
+      "world_callbacks": 22,
+      "quest_authoring": 24,
+      "item_authoring": 3,
+      "content": 123,
+      "world": 5
+    },
+    "retained_hero_postgres_seconds": 53.248291101,
+    "clippy_correction": "Exact type alias replaces complex test tuple; no lint allowance or assertion change. Passed gates retained, failed clippy rerun strictly."
+  },
+  "review": "Reviewed authored mechanism, route, native item admission and fixtures. Old mixed-value refusal remains without explicit bundle opt-in; world grants require original world context and complete Character fence. All value owners share one transaction, stable32-byte achievement event; no migration, effect-bound increase or NPC grant identity change. All source spawn/portal cells verified against retained map/client flags. No blocking findings."
+}

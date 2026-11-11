@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/venv-ci312/bin/python tools/content-schema/quest-authoring/quest_donor_source_authoring.py --check",
+  "exit": 0,
+  "duration_seconds": 411.754
+}

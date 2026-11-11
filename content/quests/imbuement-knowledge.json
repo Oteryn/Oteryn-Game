@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "rules": [
+    {
+      "family": 1,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.heart_of_destruction_quest",
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:37:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:253:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:271:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 3,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:145:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 4,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:163:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 5,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:181:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 6,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:199:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 7,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:217:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 8,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:235:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 10,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:415:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 11,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.heart_of_destruction_quest",
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:37:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:253:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:271:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 12,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.heart_of_destruction_quest",
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:37:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:253:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:271:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 14,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:289:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 15,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:307:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 16,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:325:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 17,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:343:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 18,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:361:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 19,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:379:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    },
+    {
+      "family": 20,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.forgotten_knowledge_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:397:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+      ]
+    }
+  ]
+}

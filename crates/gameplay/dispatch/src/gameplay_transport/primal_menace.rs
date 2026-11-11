@@ -111,7 +111,8 @@ pub(super) fn tick(
     now_ms: u64,
 ) {
     if runtime.owner_fence().is_err()
-        || room.compiled().server_digest() != runtime.content_pin().server_artifact_digest()
+        || room.movement_cells().scope().generation_digest
+            != runtime.content_pin().server_artifact_digest()
         || content.source_digest() != runtime.content_pin().server_artifact_digest()
     {
         return;

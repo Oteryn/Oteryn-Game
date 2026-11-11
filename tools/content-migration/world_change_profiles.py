@@ -2,6 +2,8 @@
 import hashlib
 import json
 
+from native_profile_composition import encode_native_profile
+
 PATH = "tools/content-schema/native-gameplay/world-change-item-profiles.json"
 IDS = frozenset({3583, 3990, 4103, 4104, 5963, 12059, 12060, 12061, 12062, 12063, 12065, 12077, 12368, 12369, 13853, 13854, 13855, 13856, 13974, 13976, 14018, 14020, 14051, 14052, 14053, 14054, 14055, 14064, 14074, 14163, 14164, 14255, 21752, 21803, 21804, 21805, 21812, 21893, 21894, 21895, 21896})
 SCHEMA = "OTERYN_NATIVE_WORLD_CHANGE_ITEM_PROFILES/v1"
@@ -85,7 +87,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                        for group in ("physical", "stack", "container", "temporal", "charges"))):
             raise ValueError("WORLD_CHANGE_ITEM_PROFILE_DUPLICATE")
     document["records"] = sorted(document["records"] + additions, key=order)
-    data = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
+    data = encode_native_profile(document)
     generated[profile_path] = data
     manifest = json.loads(generated[manifest_path])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(data).hexdigest()

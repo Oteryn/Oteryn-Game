@@ -258,7 +258,7 @@ impl ItemMintCause {
     }
 }
 
-/// Actual typed Ground in the death's own World/Channel and generation.
+/// Actual typed Ground in the death's own World and runtime scope and generation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GroundPlacement {
     pub spatial_position: Vec<u8>,
@@ -336,10 +336,6 @@ impl ItemMintCandidate {
     #[allow(
         dead_code,
         reason = "used only by the PostgreSQL item-writer test support"
-    )]
-    #[allow(
-        clippy::expect_used,
-        reason = "a fresh native death lane has no retained failure state"
     )]
     pub async fn fresh_death_lane_permit(&self) -> SpellLanePermit {
         SpellLanePermit::of_fresh_scope_lane(self.request.cause.death.runtime_scope).await
@@ -1064,6 +1060,7 @@ impl DurabilityRoot {
                 &mut [],
                 top_damage_character_id,
                 boss,
+                None,
             )
             .await?;
         outcomes.pop().ok_or(ItemMintError::InvalidInput)
@@ -1084,6 +1081,7 @@ impl DurabilityRoot {
         children: &mut [ItemMintCandidate],
         top_damage_character_id: [u8; 16],
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
+        tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
     ) -> Result<Vec<ItemMintOutcome>> {
         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
             return Err(ItemMintError::InvalidInput);
@@ -1130,6 +1128,39 @@ impl DurabilityRoot {
                 .await?;
             frozen_children.push((FrozenMint::of(child), placement));
             parents.push(child.item_instance_id);
+        }
+        if let Some(claim) = &tutorial_corruptor {
+            let death = candidate.request.cause.death;
+            if claim.fence.character_id.as_bytes() != &top_damage_character_id
+                || claim.death.world_id() != death.world_id
+                || claim.death.channel_id().is_none()
+                || claim.death.runtime_scope() != death.runtime_scope
+                || claim.death.scope_ownership_generation() != death.scope_ownership_generation
+                || claim.death.actor_local_id() != death.actor_local_id
+                || claim.death.actor_local_generation() != death.actor_local_generation
+                || claim.draw_ordinals.len() != claim.items().len()
+                || claim.items().iter().enumerate().any(|(offset, id)| {
+                    let key = format!("oteryn:item.tibia.i{id}");
+                    let purpose = super::tutorial_corruptor::guarantee_purpose(*id);
+                    let mut selected = frozen_children
+                        .iter()
+                        .filter(|(child, _)| child.request.cause.purpose_key == purpose);
+                    match (selected.next(), selected.next()) {
+                        (Some((child, placement)), None) => {
+                            child.request.item.production_key != key
+                                || child.request.quantity != 1
+                                || child.request.cause.draw_ordinal
+                                    != u32::try_from(offset).unwrap_or(u32::MAX)
+                                || placement.corpse_item_instance_id != candidate.item_instance_id
+                                || placement.placement_ordinal
+                                    != u32::try_from(offset + 1).unwrap_or(u32::MAX)
+                        }
+                        _ => true,
+                    }
+                })
+            {
+                return Err(ItemMintError::InvalidInput);
+            }
         }
         let frozen = FrozenMint::of(candidate);
         let node = node.clone();
@@ -1179,6 +1210,19 @@ impl DurabilityRoot {
                         return Ok(Ok(outcomes));
                     }
 
+                    // Historical receipts above remain replayable. A fresh tutorial
+                    // batch locks and qualifies its Character before any item row.
+                    if let Some(claim) = &tutorial_corruptor
+                        && super::character_progression::assert_gameplay_fence(
+                            &mut tx,
+                            &claim.fence,
+                            &node,
+                        )
+                        .await?
+                        .is_err()
+                    {
+                        return Ok(Err(ItemMintError::AuthorityRejected));
+                    }
                     let Some(row) = load_reservation(&mut tx, &frozen.request.cause).await? else {
                         return Ok(Err(ItemMintError::ConflictingCandidate));
                     };
@@ -1306,6 +1350,10 @@ impl DurabilityRoot {
                             occurred_at_unix_ms: child.occurred_at_unix_ms,
                             envelope_sha256: child.envelope_sha256,
                         }));
+                    }
+                    if let Some(claim) = &tutorial_corruptor {
+                        super::tutorial_corruptor::consume_in_transaction(&mut tx, &node, claim)
+                            .await?;
                     }
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
@@ -1955,6 +2003,7 @@ async fn fence_is_live(
            AND ownership_generation = $4::text::numeric(20,0) \
            AND holder_node_id = encode($5,'hex')::uuid \
            AND holder_registration_revision = $6::text::numeric(20,0) \
+           AND ($7::bytea IS NULL OR game_runtime_scope_assignment_history_valid()) \
          FOR SHARE",
     )
     .bind(assignment_scope_key(death.runtime_scope).as_slice())
@@ -2089,7 +2138,11 @@ async fn insert_corpse_loot_mint(
     let Some(root) = root else {
         return Err(DurabilityError::InvalidStoredState);
     };
-    permit.check_scope(decode_ground_scope(&root)?)?;
+    let root_scope = decode_ground_scope(&root)?;
+    if root_scope != death.runtime_scope {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    permit.check_scope(root_scope)?;
     insert_item_instance(tx, frozen).await?;
     sqlx::query(
         "INSERT INTO game_item_corpse_container_entries(item_instance_id, world_id, \

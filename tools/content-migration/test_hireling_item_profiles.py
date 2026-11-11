@@ -68,9 +68,10 @@ class HirelingItemProfiles(unittest.TestCase):
         self.assertEqual(self.overlay["catalogue"]["cook_items"], list(range(29408, 29417)))
 
     def test_complete_active_profiles_fit_the_unchanged_native_input_bound(self):
-        # native_gameplay.rs::MAX_PROFILES remains 8 MiB. The former indented
+        # native_gameplay.rs::MAX_ITEM_PROFILES is the existing 16 MiB Item bound.
+        # The former indented
         # 2,104-record output reached 9,074,560 bytes and could not activate.
-        self.assertLessEqual(len(self.raw), 8 * 1024 * 1024,
+        self.assertLessEqual(len(self.raw), 16 * 1024 * 1024,
             "the full active Item closure must activate without widening its resource bound")
         self.assertEqual(len(self.profiles), len(json.loads(self.raw)["records"]),
             "serialization cannot hide duplicate canonical Item profiles")
@@ -174,6 +175,7 @@ class HirelingItemProfiles(unittest.TestCase):
             "oteryn:item.tibia.i10454": (115, 114, 27704),
             "oteryn:item.tibia.i18924": (510, 509, 38605),
             "oteryn:item.tibia.i27598": (230, 229, 52453),
+            "oteryn:item.tibia.i32228": (20, 250, 60653),
         })
         self.check_shared_weights(hireling.MERGED_MAIN_NATIVE_WEIGHTS)
 

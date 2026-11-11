@@ -96,7 +96,12 @@ class QuestAccessBindings(unittest.TestCase):
                 / f"content/world/placements/region-z{z:02}-x{x // 256:03}-y{y // 256:03}.b3"
             )
             found = []
-            for _, tiles in codec.decode_region(path.read_bytes())[3]:
+            # Runtime startup projection preserves the binary source inputs.
+            projected, imported = access.overlay_region(
+                path.read_bytes(), index["palette"], [row]
+            )
+            self.assertEqual(len(imported), 1, row)
+            for _, tiles in codec.decode_region(projected)[3]:
                 for tx, ty, _, _, _, items in tiles:
                     if (tx, ty) == (x, y):
                         found.extend(

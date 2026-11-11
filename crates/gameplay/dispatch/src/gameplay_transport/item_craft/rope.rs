@@ -208,7 +208,7 @@ fn rope_in_channel(
     let Ok(expected) = runtime.read_actor_position(actor) else {
         return UseDisposition::Rejected;
     };
-    let blocking = crate::map::floor::BundleDoors(at.map.facts.doors());
+    let blocking = crate::map::floor::BundleDoors(&at.map.facts);
     let blocked = crate::gameplay_transport::pvp_live::pz_blocked(states, actor, session, now);
     let proof = match crate::map::floor::prepare_bundle_rope(
         runtime, cells, actor, session, expected, spot, blocked, &blocking,

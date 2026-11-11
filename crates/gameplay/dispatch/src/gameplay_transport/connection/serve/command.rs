@@ -238,7 +238,11 @@ where
             .selected_capabilities
             .command_selected(command.command_type)
         && ((command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
-            && decode_step_intent(command.payload).is_ok())
+            && decode_step_intent_selected(
+                session.selected_capabilities.as_slice(),
+                command.payload,
+            )
+            .is_ok())
             || (command.command_type == 11 && decode_attack_target_intent(command.payload).is_ok())
             || (command.command_type == 23 && decode_logout_intent(command.payload).is_ok())
             || walk_target.is_some())

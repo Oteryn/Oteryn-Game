@@ -605,7 +605,7 @@ signal.signal(signal.SIGINT, stop)
 signal.signal(signal.SIGTERM, stop)
 events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'join_prepare_failed', 'listener_poll_slow', 'listener_connection_poll_slow',
-          'pass_dropped'}
+          'pass_dropped', 'character_authority_check_failed'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
@@ -615,10 +615,16 @@ labels = {
              'updates_timeout', 'activity_transfer', 'house_transfer'},
     'guard': {'house_transfer_input', 'activity_transfer_input'},
     'phase': {'activity_scope', 'initial', 'items', 'sessions', 'world',
-              'trade_open', 'trade_observation', 'inventory', 'visibility', 'appearances'},
+              'trade_open', 'trade_observation', 'inventory', 'visibility', 'appearances',
+              'frame', 'frame_error', 'held', 'step_due', 'probe', 'server_message',
+              'serene', 'quest_log', 'chat', 'combat', 'chase', 'target_move', 'npc'},
     'deadline_exceeded': {'true', 'false'},
     'ready': {'true', 'false'},
 }
+authority_stages = {'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
+                    'bazaar', 'revision_chain', 'appearance', 'build_chain',
+                    'proficiency_history', 'familiar_chain', 'spell_familiar_group',
+                    'spell_item_chain', 'audit_payload'}
 numbers = {'ts', 'next_command_id', 'server_sequence', 'command_type', 'command_id',
            'ms', 'connections', 'lifecycles', 'held_ms'}
 counts = collections.Counter()
@@ -644,6 +650,8 @@ def report(line):
     for key, allowed in labels.items():
         if fields.get(key) in allowed:
             safe.append((key, fields[key]))
+    if event == 'character_authority_check_failed' and fields.get('stage') in authority_stages:
+        safe.append(('check_stage', fields['stage']))
     for key in ('source', 'caller'):
         value = fields.get(key, '')
         if value in {'maintenance', 'none'} or re.fullmatch(

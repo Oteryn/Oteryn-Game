@@ -43,6 +43,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         let encoded =
             oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
+        if let Some(same) = self.bundle_map().and_then(|map| {
+            map.facts.naginata_pick_replay(
+                *command.game_session_id.as_bytes(),
+                command.command_id,
+                &encoded,
+            )
+        }) {
+            return Ok(Some(outcome(if same {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            })));
+        }
         let permit = self.spell_lane_permit().await.ok_or(())?;
         if let Some(result) = self
             .root
@@ -133,7 +146,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mutation = {
             let mut runtime = self.runtime.lock().await;
-            let states = self.states.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             if runtime.binding().world_id() != self.world_id
                 || runtime.binding().channel_id() != Some(self.channel_id)
                 || pinned_index(&runtime, self.active_generation).is_none()
@@ -226,6 +239,80 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(action) = at.map.facts.terrain_tool_action(key) else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
+            if state == 1791
+                && action == Some(40031)
+                && pos
+                    == (crate::map::overlay::TilePos {
+                        x: 32356,
+                        y: 32074,
+                        floor: -10,
+                    })
+                && definition.production_key == "oteryn:item.tibia.i3456"
+            {
+                // The source's shared six-hit counter belongs to this Channel map,
+                // not to a Character's durable quest tracks. Command replay lives
+                // beside the map projection so it cannot deal physical damage twice.
+                let digest = Sha256::new()
+                    .chain_update(b"oteryn:naginata-pick:v1")
+                    .chain_update(command.game_session_id.as_bytes())
+                    .chain_update(command.command_id.to_be_bytes())
+                    .finalize();
+                let mut occurrence = [0; 16];
+                occurrence.copy_from_slice(&digest[..16]);
+                let draw = deterministic_decision_u64(
+                    &GameplayDecisionRoot::from_bytes(
+                        runtime.content_pin().server_artifact_digest(),
+                    ),
+                    DecisionOccurrenceId::from_bytes(occurrence),
+                    "quest.naginata.pick_damage",
+                    0,
+                )
+                .map_err(|_| ())?;
+                let rolled = crate::spell::uniform_draw(draw, 31, 39);
+                let damage = states
+                    .get(&runtime, actor, command.game_session_id)
+                    .and_then(|state| {
+                        state.equipped_element_protection(
+                            crate::content::ReferenceResistanceKind::Physical,
+                        )
+                    })
+                    .and_then(|protection| {
+                        oteryn_gameplay_items::equipment_effects::apply_protection(
+                            rolled, protection,
+                        )
+                    })
+                    .unwrap_or(rolled);
+                let damage = u32::try_from(damage).map_err(|_| ())?;
+                let committed = at.map.facts.apply_naginata_pick(
+                    key,
+                    facts.object_revision(key),
+                    before,
+                    *command.game_session_id.as_bytes(),
+                    command.command_id,
+                    &encoded,
+                    || {
+                        states
+                            .apply_creature_damage_native(
+                                &runtime,
+                                actor,
+                                command.game_session_id,
+                                damage,
+                                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                                    self.owner_now().get(),
+                                ),
+                            )
+                            .is_some()
+                    },
+                );
+                if committed {
+                    at.map.facts.emit_movement_effect(pos, 3);
+                }
+                return Ok(Some(outcome(if committed {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                })));
+            }
             let catalogue = terrain_tools::crystal_core_bindings();
             let Some(plan) =
                 terrain_tools::dispatch(&catalogue, &definition.production_key, state, action, 0)

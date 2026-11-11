@@ -7,7 +7,7 @@ use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::AdmittedSession;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::{
-    MessageType, decode_command_result, decode_state_delta, decode_wire_envelope,
+    CommandStatus, MessageType, decode_command_result, decode_state_delta, decode_wire_envelope,
 };
 use std::time::Duration;
 use tokio::io::DuplexStream;
@@ -41,6 +41,30 @@ async fn result(client: &mut DuplexStream, id: u64, expected: u8) -> TestResult 
             return Ok(());
         }
     }
+}
+
+async fn follow_check_barrier(client: &mut DuplexStream, id: u64, payload: &[u8]) -> TestResult {
+    // Replays observe the connection loop without replacing FOLLOW. The first ACK
+    // finishes any earlier owner work. After the wait, a due FOLLOW check must finish
+    // before the second remaining ACK, even when one ready frame wins the first turn.
+    for replay in 0..3 {
+        if replay == 1 {
+            tokio::time::sleep(Duration::from_millis(350)).await;
+        }
+        send(client, id, 81, payload).await?;
+        loop {
+            let frame = read(client).await?;
+            let envelope = decode_wire_envelope(&frame)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload())?;
+                assert_eq!(result.command_id, id);
+                assert_eq!(result.status, CommandStatus::DuplicateReplay);
+                assert_eq!(result.payload, [8, 1]);
+                break;
+            }
+        }
+    }
+    Ok(())
 }
 
 async fn next_step(client: &mut DuplexStream) -> TestResult<MovementLocalPosition> {
@@ -203,9 +227,9 @@ pub(super) async fn client_scenario(
         .await
         .remove_terminal_session(target_session, target)
         .map_err(debug)?;
-    tokio::time::sleep(Duration::from_millis(350)).await;
+    follow_check_barrier(client, 5, &follow).await?;
     let lost = position(owner, actor).await?;
-    tokio::time::sleep(Duration::from_millis(350)).await;
+    follow_check_barrier(client, 5, &follow).await?;
     assert_eq!(position(owner, actor).await?, lost);
     send(client, 6, 81, &follow).await?;
     result(client, 6, 3).await?;
@@ -292,7 +316,7 @@ pub(super) async fn client_scenario(
             .map_err(debug)?;
         old.position()
     };
-    tokio::time::sleep(Duration::from_millis(350)).await;
+    follow_check_barrier(client, 11, &rat_follow).await?;
     let floor_stopped = position(owner, actor).await?;
     {
         let mut runtime = owner.runtime.lock().await;
@@ -305,7 +329,7 @@ pub(super) async fn client_scenario(
             .commit_creature_relocation(rat, now, at(old.x, 1))
             .map_err(debug)?;
     }
-    tokio::time::sleep(Duration::from_millis(350)).await;
+    follow_check_barrier(client, 11, &rat_follow).await?;
     assert_eq!(position(owner, actor).await?, floor_stopped);
     send(client, 12, 81, &rat_follow).await?;
     result(client, 12, 1).await?;
@@ -328,7 +352,7 @@ pub(super) async fn client_scenario(
             cell: death_cell,
         },
     ));
-    tokio::time::sleep(Duration::from_millis(350)).await;
+    follow_check_barrier(client, 12, &rat_follow).await?;
     assert_eq!(
         position(owner, actor).await?,
         death_cell,

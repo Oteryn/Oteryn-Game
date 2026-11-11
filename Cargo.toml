@@ -149,3 +149,11 @@ unwrap_used = "deny"
 # Line tables keep file:line in panics and backtraces; full debug info
 # (CARGO_PROFILE_DEV_DEBUG=2) doubles target/ and slows incremental links.
 debug = "line-tables-only"
+
+# Content qualification hashes large native artifacts in dev and test builds.
+# Optimize the existing crypto implementation without changing test assertions,
+# debug assertions or overflow checks for any package.
+[profile.dev.package.sha2]
+opt-level = 3
+debug-assertions = true
+overflow-checks = true

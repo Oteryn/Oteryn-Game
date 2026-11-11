@@ -1,0 +1,381 @@
+{
+  "scope_count": 35,
+  "records_found": 35,
+  "records": [
+    {
+      "canonical": "oteryn:quest.the_annihilator_quest",
+      "location": "content/quests/definitions/quests-00000-00099.json#/records/88/definition",
+      "native_lowering": null,
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.the_pits_of_inferno_quest",
+      "location": "content/quests/definitions/quests-00000-00099.json#/records/89/definition",
+      "native_lowering": null,
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.barbarian_arena_quest",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/12/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.cults_of_tibia_quest",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/26/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.dangerous_depths_quest",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/27/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.deeplings_worldchange",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/30/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.demon_oak",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/31/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.desert_dungeon_quest",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/33/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.elemental_spheres_quest",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/37/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.forgotten_knowledge_quest",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/45/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.goblin_merchant_quest",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/51/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.grimvale_quest",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/55/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.heart_of_destruction_quest",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/57/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.hero_of_rathleton_quest",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/58/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.rotten_blood_quest",
+      "location": "content/quests/definitions/quests-00100-00199.json#/records/93/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.authored.elvenbane_quest",
+      "location": "content/quests/definitions/quests-00300-00351.json#/records/1/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "canonical_reward_refs": [],
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": null
+    },
+    {
+      "canonical": "oteryn:quest.authored.make_believe_quest",
+      "location": "content/quests/definitions/quests-00300-00351.json#/records/15/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "canonical_reward_refs": [],
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": null
+    },
+    {
+      "canonical": "oteryn:quest.authored.ravenous_madness_quest",
+      "location": "content/quests/definitions/quests-00300-00351.json#/records/27/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "canonical_reward_refs": [],
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": null
+    },
+    {
+      "canonical": "oteryn:quest.authored.rise_of_devovorga",
+      "location": "content/quests/definitions/quests-00300-00351.json#/records/28/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "canonical_reward_refs": [],
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": null
+    },
+    {
+      "canonical": "oteryn:quest.soul_war_quest",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/6/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.the_dream_courts_quest",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/21/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.the_inquisition_quest",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/28/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.the_order_of_the_lion_quest",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/33/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.tower_defence_quest",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/55/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/59/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.25_years_of_tibia_quest",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/67/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.the_roost_of_the_graveborn_quest",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/81/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.within_the_tides_quest",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/83/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": 0
+    },
+    {
+      "canonical": "oteryn:quest.authored.asura_palace_quest",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/87/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "canonical_reward_refs": [],
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": null
+    },
+    {
+      "canonical": "oteryn:quest.authored.bewitched",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/89/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "canonical_reward_refs": [],
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": null
+    },
+    {
+      "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/92/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "canonical_reward_refs": [],
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": null
+    },
+    {
+      "canonical": "oteryn:quest.authored.child_of_destiny_quest",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/93/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "canonical_reward_refs": [],
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": null
+    },
+    {
+      "canonical": "oteryn:quest.authored.demon_wars_world_change",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/95/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "canonical_reward_refs": [],
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": null
+    },
+    {
+      "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/97/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "canonical_reward_refs": [],
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": null
+    },
+    {
+      "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
+      "location": "content/quests/definitions/quests-00200-00299.json#/records/98/definition",
+      "native_lowering": {
+        "canonical_interaction_refs": [],
+        "canonical_progress_refs": [],
+        "canonical_reward_refs": [],
+        "state": "WAITING_IMPLEMENTATION"
+      },
+      "recipe_stage_count": null
+    }
+  ]
+}

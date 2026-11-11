@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import json
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -44,6 +45,7 @@ def world_successor_files(dirs: list[dict])->list[str]:
         payload=json.loads((ROOT/LEGACY_ROOT/marker).read_text(encoding="utf-8"))
         if payload.get("schema")==FAMILY_INDEX:
             files|={shard[len(LEGACY_ROOT):] for shard in payload["shards"]}
+            files|={pin["path"][len(LEGACY_ROOT):] for pin in payload.get("authored_props",[])}
     files|=set(spawn_family_files())
     files|=set(npc_placement_family_files())
     return sorted(files)
@@ -80,7 +82,17 @@ def check_family_index(path: str, payload: dict, local: set[str], locators: set[
     shards=payload.get("shards",[])
     req(not shared or len(shards)==SHARED_MAX_SHARDS,f"WORLD_SHARED_SHARD_COUNT:{path}")
     req(all(s.startswith(path) and "/" not in s[len(path):] for s in shards),f"WORLD_SHARD_OUTSIDE:{path}")
-    req(local=={"index.json",*locators,*(s[len(path):] for s in shards)},f"WORLD_STRAY_FILE:{path}")
+    authored=payload.get("authored_props",[])
+    req(isinstance(authored,list) and len(authored)<=64,f"WORLD_AUTHORED_PROP_BOUND:{path}")
+    authored_paths=set()
+    for pin in authored:
+        prop=pin.get("path","")
+        req(prop.startswith(path) and "/" not in prop[len(path):] and prop.endswith(".json") and prop not in authored_paths,f"WORLD_AUTHORED_PROP_PATH:{path}")
+        authored_paths.add(prop)
+        target=ROOT/prop
+        req(target.is_file() and not target.is_symlink() and target.stat().st_size<=262144,f"WORLD_AUTHORED_PROP_FILE:{prop}")
+        req(hashlib.sha256(target.read_bytes()).hexdigest()==pin.get("sha256"),f"WORLD_AUTHORED_PROP_HASH:{prop}")
+    req(local=={"index.json",*locators,*(s[len(path):] for s in shards),*(s[len(path):] for s in authored_paths)},f"WORLD_STRAY_FILE:{path}")
 def main()->int:
     dirs=directory_nodes()
     if sys.argv[1:]==["--print-world-markers"]:
