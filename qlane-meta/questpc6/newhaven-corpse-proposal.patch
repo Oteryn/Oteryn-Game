@@ -1,0 +1,97 @@
+--- a/tools/content-migration/quest_finish_newhaven_items.py
++++ b/tools/content-migration/quest_finish_newhaven_items.py
+@@ -24,6 +24,11 @@
+     'monk': (50195, 51119),
+ }
+ APPEARANCE_TRANSLATIONS = {51166: 51119}
++# Crystal201189f8 data/items/items.xml:87366-69; current client object52113
++# independently proves immovable container/corpse, sprite277071. Preserve source
++# capacity48; the Game corpse owner independently enforces its accepted30 cap.
++CORPSE_ID = 52113
++CORPSE_SOURCE_CAPACITY = 48
+ # id: name, weight in hundredths of an ounce, primary slot, vocations,
+ # minimum level (None = source did not specify), Wiki page, revision.
+ SPEC = {
+@@ -63,9 +68,12 @@
+         item = int(key.removeprefix('oteryn:item.tibia.i'))
+     except ValueError:
+         return False
+-    if item not in SPEC:
++    if item == CORPSE_ID:
++        name, weight, slot, vocations, level = 'dead the corruptor', None, None, (), None
++    elif item in SPEC:
++        name, weight, slot, vocations, level, _, _ = SPEC[item]
++    else:
+         return False
+-    name, weight, slot, vocations, level, _, _ = SPEC[item]
+     semantics = definition.get('semantics', {})
+     previous_name = semantics.get('presentation', {}).get('value', {}).get('name', {})
+     if previous_name.get('state') == 'KNOWN' and previous_name.get('value', '').lower() != name:
+@@ -74,8 +82,10 @@
+     semantics = replacement.setdefault('semantics', {})
+     for group in UNKNOWN_GROUPS:
+         semantics.setdefault(group, unknown())
+-    semantics['physical'] = known({'weight': known(weight), 'movable': known(True),
+-                                    'pickupable': known(True)})
++    semantics['physical'] = known({'weight': known(weight) if weight is not None else unknown(),
++        'movable': known(item != CORPSE_ID), 'pickupable': known(item != CORPSE_ID)})
++    if item == CORPSE_ID:
++        semantics['container'] = known({'capacity': known(CORPSE_SOURCE_CAPACITY)})
+     semantics['stack'] = known({'stackable': known(False), 'stack_max': {'state': 'NOT_APPLICABLE'}})
+     semantics['presentation'] = known({'name': known(name),
+         'description': semantics.get('presentation', {}).get('value', {}).get('description', unknown())})
+@@ -125,6 +135,9 @@
+                 or flags.get('flags.take') is not True
+                 or flags.get('flags.unmove', False)):
+             raise ValueError(f'NEWHAVEN_CLIENT_IDENTITY:{item}')
++    flags = objects.get(CORPSE_ID, {}).get('flags', {})
++    if not all(flags.get('flags.' + flag) is True for flag in ('container', 'unmove', 'corpse')):
++        raise ValueError('NEWHAVEN_CLIENT_CORPSE')
+
+
+ def apply_native(root, generated, profile_path, manifest_path, provider_order, canonical_bytes):
+@@ -138,7 +151,7 @@
+         for row in json.loads(path.read_bytes())['records']:
+             definition = row['definition']
+             key = definition['identity']['key']
+-            if key in {f'oteryn:item.tibia.i{item}' for item in SPEC}:
++            if key in {f'oteryn:item.tibia.i{item}' for item in (*SPEC, CORPSE_ID)}:
+                 if key in canonical:
+                     raise ValueError('NEWHAVEN_DUPLICATE_ITEM')
+                 canonical[key] = copy.deepcopy(definition)
+@@ -148,7 +161,7 @@
+         (root / 'content/items/taxonomy/items.json').read_bytes())['records']}
+     document = json.loads(generated[profile_path])
+     indexed = {row['production_definition']['production_key']: row for row in document['records']}
+-    for item in sorted(SPEC):
++    for item in sorted((*SPEC, CORPSE_ID)):
+         key = f'oteryn:item.tibia.i{item}'
+         definition = canonical[key]
+         apply(definition)
+@@ -166,7 +179,7 @@
+         }
+         row['semantics'] = copy.deepcopy(definition['semantics'])
+         row['admission'] = {'materializable': True, 'stack_class': 'NonStackable',
+-                            'legal_destinations': ['CharacterInventory', 'Ground']}
++                            'legal_destinations': ['Ground'] if item == CORPSE_ID else ['CharacterInventory', 'Ground']}
+         if key in taxonomy:
+             row['authoring']['taxonomy'] = copy.deepcopy(taxonomy[key])
+         if item == 51119:
+--- a/tools/content-migration/test_quest_finish_newhaven_items.py
++++ b/tools/content-migration/test_quest_finish_newhaven_items.py
+@@ -37,6 +37,15 @@
+                         self.assertEqual(vocations['value'], sorted(set(vocations['value']), key=order.index))
+         key = 'oteryn:item.tibia.i3066'
+         self.assertEqual(after[key]['authoring']['ranged'], before[key]['authoring']['ranged'])
++
++    def test_corruptor_corpse_preserves_source_capacity_and_immovability(self):
++        corpse = {'identity': {'family': 'Item', 'key': 'oteryn:item.tibia.i52113'}}
++        self.assertTrue(newhaven.apply(corpse))
++        sem = corpse['semantics']
++        self.assertEqual(sem['container']['value']['capacity'], newhaven.known(48))
++        self.assertEqual(sem['physical']['value']['movable'], newhaven.known(False))
++        self.assertEqual(sem['physical']['value']['pickupable'], newhaven.known(False))
++        self.assertTrue(corpse['materializable'])
+
+     def test_five_vocations_use_current_named_wiki_identities(self):
+         self.assertEqual(newhaven.CORRUPTOR_ITEMS, {

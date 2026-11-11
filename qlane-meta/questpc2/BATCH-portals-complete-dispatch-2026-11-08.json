@@ -1,0 +1,24 @@
+{
+  "source_head": "6097245f577aad0033891fdcefa2207aee86690b",
+  "dispatch_non_pg": {
+    "passed": 1613,
+    "seconds": 723.98,
+    "not_selected": 1378
+  },
+  "log": "/tmp/questpc2b-portals-final-dispatch-units.log",
+  "log_sha256": "3d7aa6ca9ef010126679b0dd79371bba65cd00f0fb2c58535b63206ff6b94a8c",
+  "context": "All final regenerated gameplay code/data; content frozen through complete no-fail-fast selection. Binary built before merge metadata commit; gameplay files identical.",
+  "other_validation": "BATCH-albinius-portals-gnomus-boundary-2026-11-08.json",
+  "remaining_known_failures": [],
+  "new_whole_quests_qualified": 0,
+  "receipt_prepush": {
+    "regeneration": "PASS; full documented pipeline, no content delta",
+    "workspace_all_targets": "PASS",
+    "fmt": "PASS",
+    "main": "f5b584ef1 already merged",
+    "scope": "Lane metadata only; prior full authoring/content/PG/unit proof covers identical gameplay source.",
+    "generation_log_sha256": "2e937e930f2e378aa794dd4baa6203fdcc8c78c8332ef439a95406668759b0bc",
+    "check_log_sha256": "ea3b0f6ea8adfb1d7bfbef03e22f5b9f050ca34a77f0699ebe46871330bf016a",
+    "fmt_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

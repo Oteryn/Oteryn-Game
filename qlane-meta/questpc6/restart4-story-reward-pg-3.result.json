@@ -1,0 +1,25 @@
+{
+  "log": ".questpc/restart4-story-reward-pg-3.log",
+  "log_sha256": "8f74bf8ffd8bf88d2fca59130da8efceb64656285fa477b4736d4b8143ddbc73",
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--all-features",
+    "--lib",
+    "--",
+    "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "exit": 0,
+  "duration_seconds": 89.571,
+  "test_results": {
+    "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal": "ok"
+  },
+  "qualified_cohorts": 1,
+  "qualified_quests": 4
+}

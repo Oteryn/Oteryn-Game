@@ -1,0 +1,85 @@
+--- a/crates/gameplay/quests/src/quest/loader.rs
++++ b/crates/gameplay/quests/src/quest/loader.rs
+@@ -227,6 +227,8 @@
+         super::rotten_blood::ACCESS_DOOR_TRACK.into(),
+         "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
+     );
++    lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
++        .map_err(QuestLoadError::Json)?;
+     // Preserve source captures and their counts; only the production catalogue
+     // and its executable bindings are filtered by the owner's target scope.
+     lowered.catalogue = QuestStateCatalogue::new(
+--- a/crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
+@@ -35,6 +35,7 @@
+
+ /// The instants of the talk intents of the last second of one session.
+ type RecentIntents = VecDeque<u64>;
++mod catalogue;
+ mod classic_quests;
+ mod coin_exchange;
+ mod dark_trails;
+@@ -74,6 +75,7 @@
+     monk: Option<monk::Pending>,
+     quest_dialogue: quest_dialogue::State,
+     endgame: Option<endgame::Pending>,
++    catalogue: Option<catalogue::Pending>,
+     classic: Option<classic_quests::Pending>,
+     liquid_black: Option<liquid_black::State>,
+     threatened_dreams: Option<threatened_dreams::Pending>,
+@@ -754,6 +756,11 @@
+         drop(runtime);
+         return monk::apply(admission, actor, command, intent, step).await;
+     }
++    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime) {
++        drop(runtime);
++        drop(_trade_permit);
++        return catalogue::apply(admission, actor, command, intent, step).await;
++    }
+     if let Some(step) = classic_quests::prepare(admission, actor, command, &intent, &runtime) {
+         drop(runtime);
+         drop(_trade_permit);
+--- a/crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs
+@@ -324,6 +324,9 @@
+     if let Some(outcome) = super::monk::resume(admission, command).await {
+         return Some(outcome);
+     }
++    if let Some(outcome) = super::catalogue::resume(admission, command).await {
++        return Some(outcome);
++    }
+     if let Some(outcome) = super::classic_quests::resume(admission, command).await {
+         return Some(outcome);
+     }
+--- a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs
+@@ -23,7 +23,7 @@
+     stateless_destination: Option<Position>,
+ ) -> TestResult {
+     let monk = name.starts_with("monk-guidance");
+-    let classic_npc = matches!(name, "classic-quests-npc" | "classic-rottin-disrepair" | "threatened-dreams-npc" | "conditional-quest-greetings");
++    let classic_npc = matches!(name, "catalogue-npc" | "classic-quests-npc" | "classic-rottin-disrepair" | "threatened-dreams-npc" | "conditional-quest-greetings");
+     let rotten_purchase = name == "rotten-blood-access-purchase";
+     let target_swap = name == "fish-napping-key-target-swap";
+     let mut callback = callback(if classic_npc {
+@@ -187,6 +187,8 @@
+                 expected_destination,
+             )
+             .await?;
++        } else if name == "catalogue-npc" {
++            super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+         } else if name == "conditional-quest-greetings" {
+             super::super::conditional_quest_greetings::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+         } else if name == "threatened-dreams-npc" {
+--- a/crates/gameplay/durability/src/durability/quest_state/writer.rs
++++ b/crates/gameplay/durability/src/durability/quest_state/writer.rs
+@@ -103,6 +103,9 @@
+         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
+         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
+     ) -> Result<QuestTransitionOutcome> {
++        if request.transition_key.starts_with("oteryn:quest-npc/") {
++            return Err(CharacterProgressionError::InvalidInput);
++        }
+         // The specialised owner evaluates these computed rules under the locked snapshot.
+         // A generic NPC transition cannot bypass the action/cause validation.
+         let grizzly_key = request

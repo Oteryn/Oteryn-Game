@@ -1,0 +1,57 @@
+{
+  "state": "NATIVE_POND_PERSONAL_USE_PG_QUALIFIED",
+  "whole_quest": "ACTIVE",
+  "test": "questpc7_goblin_exact_pond_consumes_rat_urine_once",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red_seconds": 65.860055344,
+  "red_error": "NothingToUse instead of Committed after real NPC introduction and paid tools",
+  "green_seconds": 68.421387159,
+  "green_marker": "QUESTPC7_GOBLIN_POND POSTGRES_CASE_COMPLETED duration=68.421387159s success=true",
+  "logs": "/workspace/scratch/questpc7-pond-{red,green}.log",
+  "source": {
+    "region": "content/world/placements/region-z10-x129-y125.b3",
+    "sha256": "49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+    "cell": [
+      33134,
+      32093,
+      -10
+    ],
+    "items": [
+      9527,
+      16299
+    ],
+    "flags": 0,
+    "house": 0
+  },
+  "assertions": [
+    "real introduction and exact1125gold toolkit purchase",
+    "one carried rat urine17671 consumed",
+    "personal urine counter0to1",
+    "command replay and fresh duplicate have no additional effects",
+    "other job counters/tools and8875gold unchanged"
+  ],
+  "quests_unit": "308passed,0failed in20.69s",
+  "pending": [
+    "dispatch full unit crate pending CI/cadence exception"
+  ],
+  "assumption": "Personal application preserves shared water and introduces no global world-change mechanic.",
+  "publication_checks": {
+    "red": "POND_RED_EXIT=100",
+    "green": "POND_GREEN_EXIT=0",
+    "quests-unit": "POND_QUESTS_UNIT_EXIT=0",
+    "check": "POND_CHECK_EXIT=0",
+    "clippy": "POND_CLIPPY_EXIT=0",
+    "final-fmt": "POND_FMT_EXIT=0",
+    "equipment": "POND_EQUIPMENT_EXIT=0",
+    "generated-checks": "POND_GENERATED_CHECKS_EXIT=0",
+    "pins": "POND_PINS_EXIT=0"
+  },
+  "workspace_check": "5m33s PASS",
+  "strict_clippy": "changed content/dispatch/quests4m20s PASS",
+  "equipment_regression": "49.38s PASS",
+  "content_unit": "330passed,0failed,1existingignored in491.72s",
+  "main_exception": {
+    "main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+    "reason": "Same previously proven67-file shared-effects collision; owner15-minute abort exception and qengine2 convergence request retained."
+  }
+}

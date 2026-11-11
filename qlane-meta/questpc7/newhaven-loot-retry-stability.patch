@@ -1,0 +1,146 @@
+--- a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
+@@ -110,6 +110,8 @@
+     /// Frozen callback facts survive corpse replay and actor-slot reuse.
+     pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
+     pub(super) callback_loot: Vec<crate::combat::LootDefinitionRef>,
++    /// The first prepared tutorial table survives retries and retained-corpse replay.
++    pub(super) tutorial_loot: Arc<OnceLock<crate::domain::loot_data::LootTableDefinition>>,
+     /// Frozen under the existing party/Character locks before the first commit attempt.
+     /// Clones and a requeued entry retain the original recipients and occurrence IDs.
+     pub(super) task_board_recipients: Arc<OnceLock<Vec<TaskBoardKillRecipient>>>,
+@@ -189,6 +191,7 @@
+             forge: None,
+             echo: None,
+             callback_loot: Vec::new(),
++            tutorial_loot: Arc::default(),
+             task_board_recipients: Arc::default(),
+             talisman: Arc::default(),
+             boss_reward: None,
+@@ -259,6 +262,9 @@
+     /// At most one clock per bounded native corpse projection, including settled
+     /// deaths whose original command may still replay. Pruned on every capture.
+     activity_deaths: Vec<(ExactActorRef, CapturedActivityDeath)>,
++    /// Same retained-projection bound as activity_deaths; no uncommitted death is
++    /// recovered across a lost scope incarnation (D52).
++    tutorial_loot: Vec<(ExactActorRef, Arc<OnceLock<crate::domain::loot_data::LootTableDefinition>>)>,
+     queued: VecDeque<PendingKillSettlement>,
+     /// Admission order survives retries and release parks. Bounded by KILLRW-RL-01.
+     accepted_order: VecDeque<CreatureDeathOccurrenceKey>,
+@@ -694,6 +700,23 @@
+         state.activity_deaths.try_reserve(1).ok()?;
+         state.activity_deaths.push((target, frozen.clone()));
+         Some(frozen)
++    }
++
++    fn freeze_tutorial_loot(
++        &self,
++        runtime: &ChannelRuntimeV1,
++        target: ExactActorRef,
++    ) -> Arc<OnceLock<crate::domain::loot_data::LootTableDefinition>> {
++        let mut state = self.state();
++        state.tutorial_loot.retain(|(actor, _)| runtime.retains_corpse_projection(*actor));
++        if let Some((_, table)) = state.tutorial_loot.iter().find(|(actor, _)| *actor == target) {
++            return Arc::clone(table);
++        }
++        let table = Arc::default();
++        if runtime.retains_corpse_projection(target) {
++            state.tutorial_loot.push((target, Arc::clone(&table)));
++        }
++        table
+     }
+
+     pub fn append(&self, entry: PendingKillSettlement) -> AppendOutcome {
+@@ -1410,6 +1433,7 @@
+                             forge: None,
+                             echo,
+                             callback_loot: Vec::new(),
++            tutorial_loot: Arc::default(),
+                             task_board_recipients: Arc::default(),
+                             talisman: Arc::default(),
+                             boss_reward: None,
+@@ -1733,7 +1757,7 @@
+         forge,
+         echo,
+         callback_loot,
+-        task_board_recipients: Arc::default(),
++        tutorial_loot: Arc::default(),        task_board_recipients: Arc::default(),
+         talisman: Arc::default(),
+         grizzly: None,
+         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
+@@ -1762,6 +1786,9 @@
+     mut entry: PendingKillSettlement,
+ ) -> AppendOutcome {
+     super::grizzly_kills::capture(runtime, queue, &mut entry);
++    if entry.creature == "oteryn:creature.the_corruptor" {
++        entry.tutorial_loot = queue.freeze_tutorial_loot(runtime, entry.target);
++    }
+     let target = entry.target;
+     let creature = entry.creature.clone();
+     let outcome = queue.append(entry);
+@@ -2809,9 +2836,14 @@
+                 no_progression: false,
+             };
+         };
+-        if let Some(claim) = &tutorial_corruptor
++        // The cached first table can contain more ordinary rolls than this
++        // retry's live modifiers reserved. Charge the full bounded plan as extra;
++        // the existing take and extras are both released on every requeue/end.
++        if tutorial_corruptor.is_some()
+             && !admission.states.attack.lock().await.kills()
+-                .reserve_extra_loot_mints(entry.facts.death, claim.items().len())
++                .reserve_extra_loot_mints(entry.facts.death,
++                    plan_creature_loot(loot_plan_seed(entry.facts.death), &row.loot_table_ref, &loot_table)
++                        .map_or(oteryn_gameplay_items::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX, |plan| plan.entries.len()))
+         {
+             return SettleReport { verdict: SettleVerdict::Retry, no_progression: false };
+         }
+--- a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs
+@@ -140,6 +140,7 @@
+         // W06 callbacks are absent for this ordinary-kill fixture.
+         echo: None,
+         callback_loot: Vec::new(),
++        tutorial_loot: Arc::default(),
+         task_board_recipients: Arc::default(),
+         talisman: Arc::default(),
+         boss_reward: None,
+--- a/crates/gameplay/combat/src/combat/death_reward.rs
++++ b/crates/gameplay/combat/src/combat/death_reward.rs
+@@ -489,6 +489,16 @@
+         if claim.source_outputs().len() != claim.items().len() {
+             return Err(CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput));
+         }
++        let guaranteed_count = u32::try_from(claim.items().len())
++            .map_err(|_| CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
++        // Guarantee slots are stable even if an ordinary draw changes. Child
++        // ordinals stay relative to their own parent, as in the original plan.
++        for entry in &mut plan.entries {
++            if entry.parent.is_none() {
++                entry.placement_ordinal = entry.placement_ordinal.checked_add(guaranteed_count)
++                    .ok_or(CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
++            }
++        }
+         for (offset, (id, source)) in claim.source_outputs().enumerate() {
+             let entry = plan.entries.iter_mut().find(|entry|
+                 entry.parent.is_none() && entry.draw_ordinal == source)
+@@ -505,6 +515,7 @@
+             entry.purpose_key = purpose;
+             entry.draw_ordinal = u32::try_from(offset)
+                 .map_err(|_| CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
++            entry.placement_ordinal = entry.draw_ordinal + 1;
+         }
+     }
+     // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.
+--- a/crates/gameplay/durability/src/durability/item_mint.rs
++++ b/crates/gameplay/durability/src/durability/item_mint.rs
+@@ -965,7 +965,8 @@
+                         (Some((child, placement)), None) => child.request.item.production_key != key
+                             || child.request.quantity != 1
+                             || child.request.cause.draw_ordinal != u32::try_from(offset).unwrap_or(u32::MAX)
+-                            || placement.corpse_item_instance_id != candidate.item_instance_id,
++                            || placement.corpse_item_instance_id != candidate.item_instance_id
++                            || placement.placement_ordinal != u32::try_from(offset + 1).unwrap_or(u32::MAX),
+                         _ => true,
+                     }
+                 })
