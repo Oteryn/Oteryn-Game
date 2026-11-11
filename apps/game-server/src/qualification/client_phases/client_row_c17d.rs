@@ -82,14 +82,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         let mut caster = connect_character(clients, 0xd5, 0).await?;
         let row_needs_logout_1 = true;
         let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
-            travel_to_spawn(&mut victim, world, &metadata.spawns, "oteryn:creature.rat").await?;
+            full_e2ef5::with_observer_liveness(&mut caster, travel_to_spawn(&mut victim, world, &metadata.spawns, "oteryn:creature.rat")).await?;
             let victim_at = tile(victim.world_spatial().actor_position)?;
             let path = route(world, tile(caster.world_spatial().actor_position)?, |at| {
                 at.floor == victim_at.floor
                     && at.x.abs_diff(victim_at.x).max(at.y.abs_diff(victim_at.y)) <= 1
             })
             .ok_or("no route for Challenge caster")?;
-            walk(&mut caster, world, &path).await?;
+            full_e2ef5::with_observer_liveness(&mut victim, walk(&mut caster, world, &path)).await?;
             let rat = caster
                 .world_entities()
                 .and_then(|entities| {

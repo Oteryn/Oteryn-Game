@@ -90,7 +90,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             && at.x.abs_diff(other.x).max(at.y.abs_diff(other.y)) <= 1
     })
     .ok_or("peer approach route unavailable")?;
-    walk(&mut leader, world, &path).await?;
+    full_e2ef5::with_observer_liveness(&mut peer, walk(&mut leader, world, &path)).await?;
     let (leader_ref, peer_ref) = (own(&leader)?, own(&peer)?);
 
     party(&mut leader, Some(PartyIntent::Invite(peer_ref))).await?;

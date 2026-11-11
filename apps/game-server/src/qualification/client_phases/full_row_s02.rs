@@ -171,7 +171,7 @@ async fn place_pair(
             })
     })
     .ok_or("step walk-a: no reachable unprotected pair")?;
-    walk(a, world, &path).await?;
+    full_e2ef5::with_observer_liveness(b, walk(a, world, &path)).await?;
     let target = tile(a.world_spatial().actor_position)?;
     let path = route(world, tile(b.world_spatial().actor_position)?, |at| {
         at != target
@@ -182,7 +182,7 @@ async fn place_pair(
                 .is_some_and(|t| !t.protection_zone())
     })
     .ok_or("step walk-b: no reachable adjacent unprotected tile")?;
-    walk(b, world, &path).await?;
+    full_e2ef5::with_observer_liveness(a, walk(b, world, &path)).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     while tokio::time::Instant::now() < deadline {
         pump(a, b).await?;

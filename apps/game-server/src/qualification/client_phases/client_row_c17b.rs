@@ -92,7 +92,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         let mut observer = connect_character(clients, 0xc2, 0).await?;
         let row_needs_logout_1 = true;
         let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
-    travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    full_e2ef5::with_observer_liveness(&mut observer, travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat")).await?;
     let caster_position = tile(caster.world_spatial().actor_position)?;
     let path = route(
         world,
@@ -103,7 +103,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         },
     )
     .ok_or("C17b.client observer cannot reach caster")?;
-    walk(&mut observer, world, &path).await?;
+    full_e2ef5::with_observer_liveness(&mut caster, walk(&mut observer, world, &path)).await?;
     let caster_ref = own(&caster)?;
     let entities = observer
         .world_entities()

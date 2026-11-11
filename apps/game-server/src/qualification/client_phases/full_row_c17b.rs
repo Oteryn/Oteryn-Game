@@ -189,7 +189,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut caster = row_connect_character(clients, 0xb1, 1).await?;
     let mut observer = row_connect_character(clients, 0xb2, 0).await?;
-    travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    full_e2ef5::with_observer_liveness(&mut observer, travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat")).await?;
     let caster_tile = tile(caster.world_spatial().actor_position)?;
     let path = route(
         world,
@@ -204,7 +204,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         },
     )
     .ok_or("step=meet observed=no-walk-route need=reachable-rat-spawn")?;
-    walk(&mut observer, world, &path).await?;
+    full_e2ef5::with_observer_liveness(&mut caster, walk(&mut observer, world, &path)).await?;
     let caster_ref = own(&caster)?;
     let rat = caster
         .world_entities()
@@ -353,14 +353,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         at == TOWN
     })
     .ok_or("step=cleanup observed=no-caster-route-home")?;
-    walk(&mut caster, world, &back).await?;
+    full_e2ef5::with_observer_liveness(&mut observer, walk(&mut caster, world, &back)).await?;
     let back = route(
         world,
         tile(observer.world_spatial().actor_position)?,
         |at| at == TOWN,
     )
     .ok_or("step=cleanup observed=no-observer-route-home")?;
-    walk(&mut observer, world, &back).await?;
+    full_e2ef5::with_observer_liveness(&mut caster, walk(&mut observer, world, &back)).await?;
     logout(&mut caster).await?;
     logout(&mut observer).await
 }

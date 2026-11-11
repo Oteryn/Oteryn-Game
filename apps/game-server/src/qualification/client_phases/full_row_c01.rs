@@ -91,7 +91,12 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = match row_complete(journey(&mut row, clients)).await {
+    let result = match row_complete_with_timeout(
+        Duration::from_secs(900),
+        journey(&mut row, clients),
+    )
+    .await
+    {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout need=responsive-combat-lifecycle".into()),
     };
@@ -312,7 +317,6 @@ fn inventory_signature(client: &DevClientSession) -> TestResult<Vec<(u32, u32)>>
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    row_complete(async {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(900);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -420,8 +424,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await??;
     }
     row_result
-
-    }).await?
 }
 
 #[cfg(test)]

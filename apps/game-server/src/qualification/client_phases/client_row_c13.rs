@@ -90,7 +90,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
                     .is_some_and(|entry| !entry.protection_zone())
             })
             .ok_or("C13.client has no route outside protection zone")?;
-            walk(&mut owner, world, &path).await?;
+            full_e2ef5::with_observer_liveness(&mut observer, walk(&mut owner, world, &path)).await?;
             let spot = tile(owner.world_spatial().actor_position)?;
             let near = |at: TilePos| {
                 at != spot
@@ -99,7 +99,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             };
             let approach = route(world, tile(observer.world_spatial().actor_position)?, near)
                 .ok_or("C13.client observer has no route next to the owner")?;
-            walk(&mut observer, world, &approach).await?;
+            full_e2ef5::with_observer_liveness(&mut owner, walk(&mut observer, world, &approach)).await?;
             owner.take_events();
             observer
                 .service_liveness(Duration::from_millis(100))

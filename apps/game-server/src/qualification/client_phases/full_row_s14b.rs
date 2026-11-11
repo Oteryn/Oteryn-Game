@@ -209,6 +209,36 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         "member-row-missing",
     )?;
 
+    let previous_session = member.join_snapshot().game_session_id;
+    logout(&mut member).await?;
+    member = row_connect_world(clients, 0xe3).await?;
+    expect(
+        member.join_snapshot().game_session_id != previous_session,
+        "request-relog-session",
+        "session-reused",
+    )?;
+    let (handle, state) = browse(&mut member, &want)
+        .await?
+        .ok_or("step=request-relog;observed=listing-vanished")?;
+    expect(
+        state == tf::MemberStatus::Pending,
+        "request-relog-status",
+        state,
+    )?;
+    expect(
+        pending(clients).await? == 1,
+        "request-relog-durable",
+        "member-row-missing",
+    )?;
+    let waiting = applicants(&mut lead).await?;
+    expect(
+        waiting
+            .iter()
+            .any(|entry| entry.status == tf::MemberStatus::Pending),
+        "request-relog-applicant",
+        waiting.len(),
+    )?;
+
     let status = member_action(&mut member, tf::MemberAction::Cancel { leader: handle }).await?;
     expect(status == CommandStatus::Accepted, "cancel", status)?;
     let (_, state) = browse(&mut member, &want)

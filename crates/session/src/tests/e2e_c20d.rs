@@ -22,7 +22,7 @@ fn replays_temple_respawn_payloads_and_rejects_invalid_vitals() -> Result<(), Bo
             )
         } else {
             let observation = WireSpatialObservation {
-                content_generation: CONTENT_GENERATION,
+                content_generation: [0x73; 32],
                 actor_position: ActorPosition {
                     x: 32_369,
                     y: 32_238,
@@ -58,7 +58,31 @@ fn replays_temple_respawn_payloads_and_rejects_invalid_vitals() -> Result<(), Bo
         );
         assert_eq!(visible, expected);
 
-        let (mut session, _peer) = vitals_pair().await?;
+        let baseline = encode_world_spatial(&WireSpatialObservation {
+            content_generation: observation.content_generation,
+            actor_position: at(0, 0),
+        });
+        let (client, mut peer) = tokio::io::duplex(64 * 1024);
+        let joining = tokio::spawn(async move {
+            join_peer_with(
+                &mut peer,
+                &[13],
+                &[],
+                &[],
+                (SNAPSHOT_TYPE_WORLD_SPATIAL_V1, baseline),
+                &[(
+                    3,
+                    3,
+                    1,
+                    actor_spell::encode_actor_vitals(&super::vitals(150, 55))
+                        .map_err(|error| format!("vitals fixture: {error:?}"))?,
+                )],
+            )
+            .await?;
+            Ok::<_, BoxError>(peer)
+        });
+        let mut session = Session::admit(client, admission()?).await?;
+        let _peer = joining.await??;
         let spatial = encode_state_delta(
             1,
             41,

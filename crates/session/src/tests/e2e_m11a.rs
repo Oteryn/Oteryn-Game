@@ -19,9 +19,28 @@ struct Fixture {
 fn e2e_m11a_replays_levitate_deltas_and_refuses_invalid_payload() -> Result<(), BoxError> {
     block_on(async {
         let fixture = fixture()?;
+        let observation =
+            world_spatial::decode_world_spatial(&fixture.spatial[0]).map_err(debug)?;
+        let baseline = encode_world_spatial(&WireSpatialObservation {
+            content_generation: observation.content_generation,
+            actor_position: at(0, 0),
+        });
         let (client, mut server) = tokio::io::duplex(64 * 1024);
         let peer = tokio::spawn(async move {
-            send_vitals_join(&mut server).await?;
+            join_peer_with(
+                &mut server,
+                &[13],
+                &[],
+                &[],
+                (SNAPSHOT_TYPE_WORLD_SPATIAL_V1, baseline),
+                &[(
+                    3,
+                    3,
+                    1,
+                    actor_spell::encode_actor_vitals(&vitals(150, 55)).map_err(debug)?,
+                )],
+            )
+            .await?;
             Ok::<(), BoxError>(())
         });
         let mut session = Session::admit(client, admission()?).await?;
@@ -115,7 +134,7 @@ fn fixture() -> Result<Fixture, BoxError> {
     Ok(Fixture {
         spatial: positions.map(|actor_position| {
             encode_world_spatial(&WireSpatialObservation {
-                content_generation: CONTENT_GENERATION,
+                content_generation: [0x73; 32],
                 actor_position,
             })
         }),

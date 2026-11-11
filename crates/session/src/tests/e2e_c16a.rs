@@ -21,6 +21,9 @@ fn e2e_c16a_replays_barrier_map_payloads() -> Result<(), BoxError> {
             first_visible_floor: 0,
         };
         let (snapshot, cases, expected) = fixture(&header)?;
+        let header = decode_world_map_snapshot(&snapshot)
+            .map_err(|error| format!("map snapshot: {error:?}"))?
+            .header;
         let (client, mut server) = tokio::io::duplex(256 * 1024);
         let peer = tokio::spawn(async move {
             read_frame(&mut server).await?;
@@ -38,7 +41,10 @@ fn e2e_c16a_replays_barrier_map_payloads() -> Result<(), BoxError> {
                 })?,
             )
             .await?;
-            let spatial_payload = spatial(100);
+            let spatial_payload = encode_world_spatial(&WireSpatialObservation {
+                content_generation: header.content_generation,
+                actor_position: header.origin,
+            });
             for frame in encode_single_chunk_snapshot(
                 1,
                 1,
@@ -177,6 +183,13 @@ fn fixture(header: &MapViewHeader) -> Result<Fixture, BoxError> {
             .collect();
         return Ok((snapshot, cases, expanded));
     }
+    // A capture may use a different binding from the shared synthetic admission helpers.
+    let header = &MapViewHeader {
+        content_generation: [0x73; 32],
+        bundle_digest: [0x94; 32],
+        reset_epoch: 7,
+        ..*header
+    };
     let snapshot = encode_world_map_snapshot(&WorldMapViewSnapshot {
         header: *header,
         tiles: vec![],

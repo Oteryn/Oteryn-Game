@@ -76,7 +76,7 @@ fn fixture() -> Result<Capture, BoxError> {
     }
     let mut snapshot =
         appearance::Snapshot::decode(GOLDEN_SNAPSHOT).map_err(|e| format!("{e:?}"))?;
-    snapshot.catalogue.context.content_generation = CONTENT_GENERATION;
+    snapshot.catalogue.context.content_generation = [0x73; 32];
     snapshot.bindings[0].context = snapshot.catalogue.context;
     snapshot.bindings[0].entity.identity = OWN;
     let mut binding = snapshot.bindings[0].clone();
@@ -129,7 +129,7 @@ fn e2e_c17c_creature_illusion_replay() -> Result<(), BoxError> {
         let spatial = (
             SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
             encode_world_spatial_entities_snapshot(&WorldSpatialEntitiesSnapshot {
-                content_generation: CONTENT_GENERATION,
+                content_generation: snapshot.catalogue.context.content_generation,
                 actor_position: at(0, 0),
                 own_identity: capture.identity,
                 entities: vec![entity],

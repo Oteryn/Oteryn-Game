@@ -20,17 +20,7 @@ fn furniture_rotation_real_payload_replays_and_malformed_delta_is_atomic() -> Re
 
 async fn run_replay() -> Result<(), BoxError> {
     let (payload, expected) = fixture()?;
-    let header = MapViewHeader {
-        content_generation: CONTENT_GENERATION,
-        bundle_digest: [0x22; 32],
-        reset_epoch: 0,
-        origin: ActorPosition {
-            x: 0,
-            y: 0,
-            floor: 0,
-        },
-        first_visible_floor: 0,
-    };
+    let header = captured_header(&payload)?;
     let (client, mut server) = tokio::io::duplex(256 * 1024);
     let peer = tokio::spawn(async move {
         read_frame(&mut server).await?;
@@ -48,7 +38,10 @@ async fn run_replay() -> Result<(), BoxError> {
             })?,
         )
         .await?;
-        let spatial_payload = spatial(0);
+        let spatial_payload = encode_world_spatial(&WireSpatialObservation {
+            content_generation: header.content_generation,
+            actor_position: header.origin,
+        });
         let map_payload = world_map::encode_world_map_snapshot(&WorldMapViewSnapshot {
             header,
             tiles: vec![],
@@ -155,9 +148,9 @@ fn fixture() -> Result<Fixture, BoxError> {
         ));
     }
     let header = MapViewHeader {
-        content_generation: CONTENT_GENERATION,
-        bundle_digest: [0x22; 32],
-        reset_epoch: 0,
+        content_generation: [0x73; 32],
+        bundle_digest: [0x94; 32],
+        reset_epoch: 7,
         origin: ActorPosition {
             x: 0,
             y: 0,
@@ -208,4 +201,55 @@ fn fixture() -> Result<Fixture, BoxError> {
             .map_err(|error| format!("fixture encode: {error:?}"))?,
         (1, 2, 41, definition.get(), 2359),
     ))
+}
+
+// Captures use the production encoder, which writes the shared header first. Decode that
+// header as an empty snapshot, then let the normal delta decoder validate the complete payload.
+fn captured_header(
+    payload: &[u8],
+) -> Result<oteryn_protocol_oteryn::world_map::MapViewHeader, BoxError> {
+    let mut cursor = 0;
+    if oteryn_protocol_oteryn::read_varint(payload, &mut cursor)? != 0x0a {
+        return Err("map capture does not start with its header".into());
+    }
+    let length = usize::try_from(oteryn_protocol_oteryn::read_varint(payload, &mut cursor)?)?;
+    let end = cursor
+        .checked_add(length)
+        .ok_or("map header length overflow")?;
+    let header = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(
+        payload.get(..end).ok_or("truncated map header")?,
+    )
+    .map_err(|error| format!("map header: {error:?}"))?
+    .header;
+    oteryn_protocol_oteryn::world_map::decode_world_map_delta(&header, payload)
+        .map_err(|error| format!("map capture: {error:?}"))?;
+    Ok(header)
+}
+
+#[test]
+fn captured_header_reads_non_fixture_binding_and_rejects_truncation() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::world_map::*;
+    let header = MapViewHeader {
+        content_generation: [0x73; 32],
+        bundle_digest: [0x94; 32],
+        reset_epoch: 7,
+        origin: ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 0,
+        },
+        first_visible_floor: 0,
+    };
+    let payload = encode_world_map_delta(
+        &header,
+        &WorldMapViewDelta {
+            header,
+            tiles: vec![],
+            cleared: vec![header.origin],
+        },
+    )
+    .map_err(|error| format!("map fixture: {error:?}"))?;
+    assert_eq!(captured_header(&payload)?, header);
+    assert!(captured_header(&payload[..payload.len() - 1]).is_err());
+    Ok(())
 }

@@ -117,14 +117,12 @@ async fn capture(
                 )
                 .into());
             }
-            let seconds =
-                condition.remaining_ms / 1_000 + i64::from(condition.remaining_ms % 1_000 != 0);
             if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
                 let path = Path::new(&path);
                 std::fs::write(path.join("c16b-condition.bin"), &payload)?;
                 std::fs::write(
                     path.join("c16b-expected.txt"),
-                    format!("≪ Paralysed: {seconds}s\r\n"),
+                    oteryn_dev_client::client_ui::condition_status::status_text(&status),
                 )?;
             }
             Ok::<(), Box<dyn std::error::Error>>(())

@@ -4,7 +4,9 @@
 
 use oteryn_client_runtime::combat::{CombatCommand, CombatReport, run_combat};
 use oteryn_client_runtime::spell::SpellFeedback;
-use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent, SpellTarget};
+use oteryn_protocol_oteryn::actor_spell::{
+    self, SpellCastDisposition, SpellCastIntent, SpellTarget,
+};
 use oteryn_protocol_oteryn::attack::{self, ActorCombatState, FightModes};
 use oteryn_protocol_oteryn::{
     DomainSnapshot, ServerAcceptedValue, encode_command_result, encode_server_accepted,
@@ -51,7 +53,23 @@ fn id(marker: u8) -> [u8; 16] {
 #[test]
 fn replays_server_payload_and_rejects_invalid_combat_state() -> Result<(), Error> {
     let (combat, result, expected) = fixture()?;
+    replay(combat.clone(), result, expected)?;
+    replay(
+        combat,
+        actor_spell::encode_spell_cast_result(oteryn_session::SpellCastDisposition::Rejected),
+        "Rejected\n".into(),
+    )
+}
+
+fn replay(combat: Vec<u8>, result: Vec<u8>, expected: String) -> Result<(), Error> {
     assert!(attack::decode_actor_combat_state(&[0xff]).is_err());
+    let disposition =
+        actor_spell::decode_spell_cast_result(&result).map_err(|error| format!("{error:?}"))?;
+    let result_status = if disposition == SpellCastDisposition::Rejected {
+        CommandStatus::Rejected
+    } else {
+        CommandStatus::Accepted
+    };
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), Error> {
@@ -131,7 +149,7 @@ fn replays_server_payload_and_rejects_invalid_combat_state() -> Result<(), Error
                                 1,
                                 2,
                                 command.command_id,
-                                CommandStatus::Accepted,
+                                result_status,
                                 &result,
                             )?,
                         )
@@ -162,7 +180,19 @@ fn replays_server_payload_and_rejects_invalid_combat_state() -> Result<(), Error
                     assert!(matches!(report, CombatReport::Cast(_)));
                     let CombatReport::Cast(disposition) = report else { return Err("cast returned a non-cast report".into()); };
                     assert_eq!(format!("{disposition:?}\n"), expected);
-                    assert_eq!(feedback.text(), Some("Illegal target"));
+                    let expected_feedback = match disposition {
+                        SpellCastDisposition::Cast => "Spell cast",
+                        SpellCastDisposition::CoolingDown => "Spell is cooling down",
+                        SpellCastDisposition::LevelTooLow => "Level too low",
+                        SpellCastDisposition::MagicLevelTooLow => "Magic level too low",
+                        SpellCastDisposition::NotEnoughMana => "Not enough mana",
+                        SpellCastDisposition::NotEnoughSoul => "Not enough soul",
+                        SpellCastDisposition::NotAvailable => "Spell not available",
+                        SpellCastDisposition::TargetRequired => "Select a target first",
+                        SpellCastDisposition::TargetIllegal => "Illegal target",
+                        SpellCastDisposition::Rejected => "Spells unavailable",
+                    };
+                    assert_eq!(feedback.text(), Some(expected_feedback));
                     assert_eq!(session.combat_state(), before.as_ref());
                     server.await??;
                     Ok(())

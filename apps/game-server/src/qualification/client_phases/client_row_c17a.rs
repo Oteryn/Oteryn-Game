@@ -53,6 +53,10 @@ async fn cast_and_query(
     client: &mut oteryn_dev_client::DevClientSession,
     words: &str,
 ) -> TestResult<(ConditionStatus, Vec<u8>)> {
+    let mana_before = client
+        .actor_vitals()
+        .ok_or("C17a caster vitals absent before cast")?
+        .mana;
     let cast = client
         .chat(&ChatIntent::Say {
             mode: ChatSpeechMode::Say,
@@ -74,6 +78,13 @@ async fn cast_and_query(
         return Err(format!("C17a condition query refused after {words}").into());
     }
     let status = ConditionStatus::decode(&reply.payload).ok_or("C17a malformed condition reply")?;
+    let mana_after = client
+        .actor_vitals()
+        .ok_or("C17a caster vitals absent after cast")?
+        .mana;
+    if mana_after >= mana_before {
+        return Err(format!("C17a support cast did not debit mana: {words}").into());
+    }
     if !status
         .conditions
         .iter()
@@ -94,25 +105,30 @@ async fn wait_support_cooldown(client: &mut oteryn_dev_client::DevClientSession)
 }
 
 fn visible(status: &ConditionStatus) -> TestResult<String> {
-    let condition = status
+    status
         .conditions
         .iter()
         .find(|condition| condition.icon == 13)
         .ok_or("C17a Haste icon absent")?;
-    let duration = if condition.remaining_ms == -1 {
-        "Permanent".into()
-    } else {
-        format!(
-            "{}s",
-            condition.remaining_ms / 1_000 + i64::from(condition.remaining_ms % 1_000 != 0)
-        )
-    };
-    Ok(format!("» Haste: {duration}\r\n"))
+    Ok(oteryn_dev_client::client_ui::condition_status::status_text(status))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn full_row_haste_display_preserves_other_active_conditions() -> TestResult {
+        use oteryn_protocol_oteryn::condition_status::ActiveCondition;
+        let status = ConditionStatus {
+            conditions: vec![
+                ActiveCondition { icon: 1, sub_id: 0, remaining_ms: 1001 },
+                ActiveCondition { icon: 13, sub_id: 0, remaining_ms: 1000 },
+                ActiveCondition { icon: 15, sub_id: 0, remaining_ms: -1 },
+            ],
+        };
+        assert_eq!(visible(&status)?, "☠ Poison: 2s\r\n» Haste: 1s\r\n♧ Food: Permanent\r\n");
+        Ok(())
+    }
     #[test]
     fn haste_display_rounds_up_and_handles_permanent() -> TestResult {
         use oteryn_protocol_oteryn::condition_status::ActiveCondition;

@@ -20,7 +20,7 @@ fn real_m05_door_payloads_replay_through_session_store() -> Result<(), BoxError>
             )
         } else {
             let entry = |placement: &[u8], state: &[u8], revision| WorldObjectOverlayEntry {
-                content_generation: CONTENT_GENERATION,
+                content_generation: [0x73; 32],
                 placement: placement.to_vec(),
                 state: state.to_vec(),
                 revision,
@@ -49,6 +49,7 @@ fn real_m05_door_payloads_replay_through_session_store() -> Result<(), BoxError>
             .checked_sub(1)
             .ok_or("zero M05 open revision")?;
 
+        let content_generation = entries[0].content_generation;
         let (client, server) = tokio::io::duplex(64 * 1024);
         let server_task = tokio::spawn(async move {
             let mut server = server;
@@ -67,7 +68,10 @@ fn real_m05_door_payloads_replay_through_session_store() -> Result<(), BoxError>
                 })?,
             )
             .await?;
-            let spatial_payload = spatial(0);
+            let spatial_payload = encode_world_spatial(&WireSpatialObservation {
+                content_generation,
+                actor_position: at(0, 0),
+            });
             let overlay_payload = world_object::encode_world_object_overlay_snapshot(&[])
                 .map_err(|error| format!("overlay fixture: {error:?}"))?;
             for frame in encode_single_chunk_snapshot(

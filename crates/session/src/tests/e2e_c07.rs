@@ -4,6 +4,10 @@
 //! `Session::world_map_snapshot()` / `Session::actor_vitals()`.
 use super::*;
 use oteryn_protocol_oteryn::world_map::*;
+use oteryn_protocol_oteryn::world_spatial_entities::{
+    decode_world_spatial_entities_snapshot_with_item_handles,
+    encode_world_spatial_entities_snapshot_with_item_handles,
+};
 
 #[test]
 fn e2e_c07_replays_field_placement_contact_and_expiry() -> Result<(), BoxError> {
@@ -20,7 +24,12 @@ fn e2e_c07_replays_field_placement_contact_and_expiry() -> Result<(), BoxError> 
             first_visible_floor: 0,
         };
         let (placed, expired, vitals_payload, expected) = fixture(&header)?;
+        let header = captured_header(&placed)?;
         let fields = expected.split_whitespace().collect::<Vec<_>>();
+        let field = MapDefinition::Item(
+            std::num::NonZeroU32::new(value(&fields, "field_ref")?.parse()?)
+                .ok_or("zero field reference")?,
+        );
         let health_before = value(&fields, "health_before")?.parse::<u32>()?;
         let health_after = value(&fields, "health_after")?.parse::<u32>()?;
         assert!(health_after < health_before);
@@ -31,13 +40,19 @@ fn e2e_c07_replays_field_placement_contact_and_expiry() -> Result<(), BoxError> 
         })
         .map_err(|error| format!("map snapshot: {error:?}"))?;
         let (client, mut server) = tokio::io::duplex(256 * 1024);
+        let mut spatial =
+            decode_world_spatial_entities_snapshot_with_item_handles(&item_snapshot(vec![])?.1)
+                .map_err(|error| format!("spatial fixture: {error:?}"))?;
+        spatial.content_generation = header.content_generation;
+        let spatial = encode_world_spatial_entities_snapshot_with_item_handles(&spatial)
+            .map_err(|error| format!("spatial fixture: {error:?}"))?;
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
                 &[4, 6, 18],
                 &[4, 6, 18],
                 &[],
-                (2, item_snapshot(vec![])?.1),
+                (2, spatial),
                 &[(17, 1, 1, snapshot)],
             )
             .await?;
@@ -77,8 +92,8 @@ fn e2e_c07_replays_field_placement_contact_and_expiry() -> Result<(), BoxError> 
         let mut session = Session::admit(client, admission).await?;
         session.service_liveness(Duration::from_millis(100)).await?;
         let events = session.take_events();
-        assert!(events.iter().any(|event| matches!(event, SessionEvent::WorldMap(delta) if delta.new_revision == 2 && delta.value.tiles.iter().any(|tile| !tile.items.is_empty()))));
-        assert!(events.iter().any(|event| matches!(event, SessionEvent::WorldMap(delta) if delta.new_revision == 3 && delta.value.tiles.iter().all(|tile| tile.items.iter().all(|item| item.definition != MapDefinition::Item(std::num::NonZeroU32::new(21465).unwrap_or(std::num::NonZeroU32::MIN)))))));
+        assert!(events.iter().any(|event| matches!(event, SessionEvent::WorldMap(delta) if delta.new_revision == 2 && delta.value.tiles.iter().any(|tile| tile.items.iter().any(|item| item.definition == field)))));
+        assert!(events.iter().any(|event| matches!(event, SessionEvent::WorldMap(delta) if delta.new_revision == 3 && delta.value.tiles.iter().all(|tile| tile.items.iter().all(|item| item.definition != field)))));
         assert_eq!(
             session.actor_vitals().map(|vitals| vitals.health),
             Some(health_after)
@@ -109,12 +124,19 @@ fn fixture(header: &MapViewHeader) -> Result<Fixture, BoxError> {
             std::fs::read_to_string(path.join("c07-expected.txt"))?,
         ));
     }
+    // A capture may use a different binding from the shared synthetic admission helpers.
+    let header = &MapViewHeader {
+        content_generation: [0x73; 32],
+        bundle_digest: [0x94; 32],
+        reset_epoch: 7,
+        ..*header
+    };
     let at = ActorPosition {
         x: 101,
         y: 100,
         floor: 0,
     };
-    let field = std::num::NonZeroU32::new(21465).ok_or("field definition must be nonzero")?;
+    let field = std::num::NonZeroU32::new(42).ok_or("field definition must be nonzero")?;
     let tile = |items| MapTile {
         position: at,
         items,
@@ -164,7 +186,7 @@ fn fixture(header: &MapViewHeader) -> Result<Fixture, BoxError> {
         placed,
         expired,
         vitals_payload,
-        "field_ref=21465 target=101 100 0 health_before=100 health_after=90 field_present=false\n"
+        "field_ref=42 target=101 100 0 health_before=100 health_after=90 field_present=false\n"
             .into(),
     ))
 }
@@ -174,4 +196,54 @@ fn value<'a>(fields: &'a [&str], name: &str) -> Result<&'a str, BoxError> {
         .iter()
         .find_map(|field| field.strip_prefix(&format!("{name}=")))
         .ok_or_else(|| format!("missing {name} in C07 expected values").into())
+}
+
+// Captures use the production encoder, which writes the shared header first. Decode that
+// header as an empty snapshot, then let the normal delta decoder validate the complete payload.
+fn captured_header(
+    payload: &[u8],
+) -> Result<oteryn_protocol_oteryn::world_map::MapViewHeader, BoxError> {
+    let mut cursor = 0;
+    if oteryn_protocol_oteryn::read_varint(payload, &mut cursor)? != 0x0a {
+        return Err("map capture does not start with its header".into());
+    }
+    let length = usize::try_from(oteryn_protocol_oteryn::read_varint(payload, &mut cursor)?)?;
+    let end = cursor
+        .checked_add(length)
+        .ok_or("map header length overflow")?;
+    let header = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(
+        payload.get(..end).ok_or("truncated map header")?,
+    )
+    .map_err(|error| format!("map header: {error:?}"))?
+    .header;
+    oteryn_protocol_oteryn::world_map::decode_world_map_delta(&header, payload)
+        .map_err(|error| format!("map capture: {error:?}"))?;
+    Ok(header)
+}
+
+#[test]
+fn captured_header_reads_non_fixture_binding_and_rejects_truncation() -> Result<(), BoxError> {
+    let header = MapViewHeader {
+        content_generation: [0x73; 32],
+        bundle_digest: [0x94; 32],
+        reset_epoch: 7,
+        origin: ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 0,
+        },
+        first_visible_floor: 0,
+    };
+    let payload = encode_world_map_delta(
+        &header,
+        &WorldMapViewDelta {
+            header,
+            tiles: vec![],
+            cleared: vec![header.origin],
+        },
+    )
+    .map_err(|error| format!("map fixture: {error:?}"))?;
+    assert_eq!(captured_header(&payload)?, header);
+    assert!(captured_header(&payload[..payload.len() - 1]).is_err());
+    Ok(())
 }

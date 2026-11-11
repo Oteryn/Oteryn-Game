@@ -152,6 +152,13 @@ async fn earn_reroll(client: &mut DevClientSession, world: &BundleWorld) -> Test
         route(world, start, |candidate| candidate.floor == floor && candidate.x.abs_diff(x).max(candidate.y.abs_diff(y)) <= 1)
     }).ok_or("needed:reachable-daily-reward-shrine-for-reroll-token")?;
     walk(client, world, &path).await?;
+    let opened = client
+        .session_mut()
+        .use_object(b"oteryn:placement/daily-reward-shrine", 0)
+        .await?;
+    if opened.disposition != object::UseDisposition::Committed {
+        return Err(format!("needed:daily-reward-shrine-open;observed:{opened:?}").into());
+    }
     let wall = runtime::send(client.session_mut(), &DailyRewardCommand::Query).await?;
     if wall.status != CommandStatus::Accepted
         || !matches!(wall.reply, Some(DailyRewardReply::Wall(wall)) if wall.claim_enabled && !wall.claimed)

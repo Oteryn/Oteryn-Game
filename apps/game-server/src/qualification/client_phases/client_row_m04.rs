@@ -81,7 +81,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                     })
             })
             .ok_or("M04 no adjacent player push lane")?;
-            walk(&mut target, world, &path).await?;
+            full_e2ef5::with_observer_liveness(&mut pusher, walk(&mut target, world, &path)).await?;
             let before = tile(target.world_spatial().actor_position)?;
             let reference = own(&target)?.entity;
             let deadline = tokio::time::Instant::now() + Duration::from_secs(5);

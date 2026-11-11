@@ -239,6 +239,35 @@ fn leader_listing() -> LeaderListing {
     }
 }
 
+// Member rows survive member logout while the leader keeps the advertisement active.
+// Re-browse on the successor: both listing and applicant handles are session-scoped.
+async fn relog_member(
+    clients: &SeamClients<'_>,
+    lead: &mut DevClientSession,
+    member: &mut RowClient,
+    want: &LeaderListing,
+    expected: tf::MemberStatus,
+) -> TestResult<(u64, u64)> {
+    let previous_session = member.join_snapshot().game_session_id;
+    logout(member).await?;
+    *member = row_connect_world(clients, 0xe5).await?;
+    expect(
+        member.join_snapshot().game_session_id != previous_session,
+        "moderation-relog-session",
+        "session-reused",
+    )?;
+    let (handle, state) = browse(member, want)
+        .await?
+        .ok_or("step=moderation-relog;observed=listing-vanished")?;
+    expect(state == expected, "moderation-relog-status", state)?;
+    let applicant = applicants(lead)
+        .await?
+        .into_iter()
+        .find(|entry| entry.status == expected)
+        .ok_or("step=moderation-relog;observed=applicant-missing")?;
+    Ok((handle, applicant.handle))
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let want = leader_listing();
     let (mut lead, mut member, handle) = pair(clients, (0xe4, 0xe5), want).await?;
@@ -266,6 +295,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         .await?
         .ok_or("step=deny;observed=listing-vanished")?;
     expect(state == tf::MemberStatus::Denied, "deny-status", state)?;
+    let (handle, _) = relog_member(
+        clients,
+        &mut lead,
+        &mut member,
+        &want,
+        tf::MemberStatus::Denied,
+    )
+    .await?;
 
     let status = member_action(&mut member, tf::MemberAction::Cancel { leader: handle }).await?;
     expect(
@@ -304,6 +341,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         .await?
         .ok_or("step=invite;observed=listing-vanished")?;
     expect(state == tf::MemberStatus::Invited, "invite-status", state)?;
+    let (handle, applicant) = relog_member(
+        clients,
+        &mut lead,
+        &mut member,
+        &want,
+        tf::MemberStatus::Invited,
+    )
+    .await?;
 
     let accepted = leader_action(&mut lead, tf::LeaderAction::Accept { member: applicant }).await?;
     let waiting = applicants(&mut lead).await?;
@@ -320,6 +365,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     // Cleanup runs whatever Accept answered.
     party(&mut member, Some(PartyIntent::Leave)).await.ok();
     party(&mut lead, Some(PartyIntent::Leave)).await.ok();
+    let handle = if accepted == CommandStatus::Accepted && reached {
+        let (handle, _) = relog_member(
+            clients,
+            &mut lead,
+            &mut member,
+            &want,
+            tf::MemberStatus::Accepted,
+        )
+        .await?;
+        handle
+    } else {
+        handle
+    };
     member_action(&mut member, tf::MemberAction::Cancel { leader: handle }).await?;
     let status = remove(&mut lead).await?;
     expect(status == CommandStatus::Accepted, "leader-remove", status)?;

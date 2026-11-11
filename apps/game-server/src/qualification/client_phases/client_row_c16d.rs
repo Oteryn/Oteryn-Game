@@ -7,7 +7,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, _world: &BundleWorld) 
         return;
     }
     // world.rs runs the shared Chameleon/Disintegrate journey once before these captures.
-    if let Err(error) = capture(clients).await {
+    if let Err(error) = row_complete_with_timeout(Duration::from_secs(120), capture(clients))
+        .await
+        .and_then(|result| result)
+    {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C16d.client status=FAIL evidence={error}"
         ));
@@ -17,7 +20,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, _world: &BundleWorld) 
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xd6).await?;
+    let mut client = row_connect_world(clients, 0xd6).await?;
     let row_result: TestResult<_> = async {
         let expected = own_appearance_reference(&client)?;
         let entities = client.world_entities().ok_or("C16d entities absent")?;
@@ -44,7 +47,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         Ok(())
     }
     .await;
-    let logout_result = row_logout(&mut client).await;
+    let logout_result = row_finish(&mut client).await;
     logout_result?;
     row_result
 }
