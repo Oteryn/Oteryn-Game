@@ -101,6 +101,11 @@ crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recover
 crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recovery_source_sealed::Sealed | Owner
 crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recovery_source_sealed::Sealed | RecoveryCompletion
 crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recovery_source_sealed::Sealed | RecoverySource
+# Private cfg(test) movement fixtures remain in entities, the source-step seal
+# owner. Register exact sites; retain the guard's multiplicity and stale checks.
+crates/gameplay/entities/src/carrier/encounter_roster_tests.rs | source_step_seal::Sealed | Step
+crates/gameplay/entities/src/carrier/runtime_actor_source_step.rs | source_step_seal::Sealed | Proof
+crates/gameplay/entities/src/carrier/tests/scene_move_batch.rs | source_step_seal::Sealed | SceneMoves
 crates/gameplay/entities/src/carrier/continuity.rs | owner_cycle_grant_seal::Sealed | CommittedAssignmentOwnerCycle
 # House custody owns instance cycles after independently fenced committed transfer/recovery;
 # same owner-grant boundary as CommittedAssignmentOwnerCycle (CP review required).
@@ -124,9 +129,37 @@ crates/gameplay/spell/src/spell/world_execution.rs | relocation_seal::Sealed | S
 # frozen identity. This adds no arbitrary Item or actor mint authority.
 crates/gameplay/world/src/movement/cake_extraction.rs | source_reservation_seal::Sealed | CakeMachineEntry
 crates/gameplay/world/src/map/floor.rs | source_step_seal::Sealed | BundleStepProof<'_>
+# World constructs private-field movement proofs from current map, actor and
+# landing observations; entities retains carrier mutation and rollback.
+crates/gameplay/world/src/map/floor/door_displacement.rs | source_step_seal::Sealed | DoorDisplacement<'_>
+crates/gameplay/world/src/map/floor/door_displacement.rs | source_step_seal::Sealed | DoorOpening<'_>
+crates/gameplay/world/src/map/floor/platform.rs | source_step_seal::Sealed | PlatformRider<'_>
 crates/gameplay/world/src/map/floor/quest_callback.rs | source_step_seal::Sealed | CallbackTeleport<'_>
 # World qualifies rope origin and landing and revalidates them at commit;
 # same Movement proof boundary as BundleStepProof and SourceStepProof (CP review required).
 crates/gameplay/world/src/map/floor/rope.rs | source_step_seal::Sealed | RopeProof<'_>
+crates/gameplay/world/src/map/floor/scripted_teleport.rs | source_step_seal::Sealed | ScriptedTeleport<'_>
+crates/gameplay/world/src/map/floor/source_scene.rs | source_step_seal::Sealed | SourceSceneRelocation<'_>
 crates/gameplay/world/src/movement/source_floor_change.rs | source_step_seal::Sealed | SourceStepProof<'_>
 crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_fixture/summer_handoff.rs | fresh_source_sealed::Sealed | Ready
+
+# Exact current source/physical owner ports and private test fixtures.
+# Entities and Durability retain their existing reservation, source and
+# commit checks; these registrations change no visibility or authority.
+crates/gameplay/dispatch/src/gameplay_transport/item_use/soul_war_source.rs | source_reservation_seal::Sealed | PendingSourceUse
+crates/gameplay/dispatch/src/gameplay_transport/loop_move/elemental_arrival/realization.rs | source_reservation_seal::Sealed | RealizationGuard
+crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/rotten_area.rs | source_reservation_seal::Sealed | CohortProof
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qn1_elemental_world_pin/handoff.rs | map_initializer_seal::Sealed | EmptyMap
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qn1_environment_field.rs | map_initializer_seal::Sealed | MapFixture
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/underwater_drowning.rs | map_initializer_seal::Sealed | FieldFixture
+crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/player_source.rs | source_proof_seal::Sealed | PlayerSourceSnapshot
+crates/gameplay/durability/src/durability/creature_source_items/source_step/creature.rs | source_reservation_seal::Sealed | SourceCreatureGroundStep
+crates/gameplay/durability/src/durability/creature_source_items/spite_global.rs | source_reservation_seal::Sealed | PreparedSpiteGlobalWrite
+crates/gameplay/durability/src/durability/quest_state/rotten_area/source.rs | source_reservation_seal::Sealed | QualifiedRottenAreaTarget
+crates/gameplay/durability/src/durability/quest_state/soul_war_source/step/standing_read.rs | source_reservation_seal::Sealed | PreparedSpiteStep
+crates/gameplay/entities/src/carrier/runtime_actor_source_reservation.rs | source_reservation_seal::Sealed | ItemOnly
+crates/gameplay/entities/src/carrier/soul_war/maw_tests.rs | source_reservation_seal::Sealed | UseProof
+crates/gameplay/entities/src/carrier/soul_war_mirror_runtime/tests.rs | source_proof_seal::Sealed | PeriodicSource
+crates/gameplay/entities/src/carrier/soul_war_mirror_runtime/tests.rs | source_proof_seal::Sealed | ReflectionSource
+crates/gameplay/entities/src/carrier/soul_war_mirror_runtime/tests.rs | source_proof_seal::Sealed | Source
+crates/gameplay/world/src/movement/monster_map.rs | relocation_seal::Sealed | SourcePlayerRelocation
