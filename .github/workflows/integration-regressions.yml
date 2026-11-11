@@ -1,0 +1,86 @@
+name: Integration regression qualification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/integration-regressions.yml'
+      - 'apps/game-server/tests/integration_rest/main.rs'
+      - 'apps/game-server/tests/integration_rest/content_item_fx_audio_raw.rs'
+      - 'apps/game-server/tests/integration_rest/world_reward_claims_binding.rs'
+      - 'apps/game-server/tests/sealed_impl_allowlist.rs'
+      - 'apps/game-server/tests/sealed_impl_allowlist.txt'
+      - 'apps/game-server/examples/support/item_fx_audio_raw_import.rs'
+      - 'content/world/provenance/imports.json'
+      - 'imports/ots-source-evidence/item-fx-audio295/import-batch.json'
+      - 'tools/content-schema/native-gameplay/cake-creature-admission.json'
+      - 'tools/content-schema/quest-authoring/questpc7-thaian-authoring.json'
+      - 'content/interactions/reward_claims/**'
+      - 'crates/gameplay/content/src/content/world_reward_claims.rs'
+      - 'crates/gameplay/content/src/content/world_reward_claims/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-regressions-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regressions:
+    name: Integration regressions / imports, reward claims and seal inventory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CARGO_TERM_COLOR: never
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact candidate
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.99.1 --profile minimal
+
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python tools/repository/normalize_cargo_mtimes.py
+
+      - name: Qualify every raw FX/audio import case
+        run: |
+          set -euo pipefail
+          cargo +1.99.1 test --locked -p oteryn-game-server --test integration_rest content_item_fx_audio_raw:: 2>&1 | tee "$RUNNER_TEMP/content-item-fx-audio-raw.log"
+          grep -Eq '^test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored;' "$RUNNER_TEMP/content-item-fx-audio-raw.log"
+
+      - name: Qualify every World reward-claim binding case
+        run: |
+          set -euo pipefail
+          cargo +1.99.1 test --locked -p oteryn-game-server --test integration_rest world_reward_claims_binding:: 2>&1 | tee "$RUNNER_TEMP/world-reward-claims-binding.log"
+          grep -Eq '^test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored;' "$RUNNER_TEMP/world-reward-claims-binding.log"
+
+      - name: Qualify the complete seal inventory and its negative cases
+        run: |
+          set -euo pipefail
+          cargo +1.99.1 test --locked -p oteryn-game-server --test sealed_impl_allowlist 2>&1 | tee "$RUNNER_TEMP/sealed-impl-allowlist.log"
+          grep -Eq '^test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored;' "$RUNNER_TEMP/sealed-impl-allowlist.log"
