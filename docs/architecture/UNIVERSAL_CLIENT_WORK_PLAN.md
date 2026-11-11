@@ -28,7 +28,31 @@ a second skin. So the UI layer is pixel-exact and skinnable. It is not a generic
 
 ## 3. What we need, and what to use
 
-### 3.1 UI layer: our own pixel-exact layer, not egui
+### 3.0 Decisive finding: Global is Qt 6 Quick (QML)
+
+Read-only inspection of the installed Global client (`packages/Tibia/bin`, 2026-11-11):
+
+- It ships `Qt6Quick`, `Qt6Qml` and the QtQuick and QtWebEngine modules; the Store and news pages use QtWebEngine.
+- `client.exe` holds **128 QML files as source text**, with readable constants. Examples:
+  - windows and dialogs: `AboutDialog.qml`, `ActionBar.qml`, `CyclopediaDialog.qml`, `ImbuingDialog.qml`,
+    `ExaltationForgeDialog.qml`, `CharacterSelection.qml` and others;
+  - constants such as `captionHeight: 17` and `borderWidth: 2`.
+- The images are in `graphics_resources.rcc`.
+
+So the exact layout, sizes and behaviour of every Global window exist as declarative QML. That changes the choice:
+
+| Option | How | 1:1 fidelity | Hard parts |
+|---|---|---|---|
+| **Q. Qt 6 Quick via CXX-Qt** (recommended, if the F0 spike passes) | The same engine as Global. We write our QML from the Global QML as a reference. The Rust `client-ui` view models are exposed as QObjects through CXX-Qt, which exists for exactly this. | Highest: same text rendering, controls, IME, scrolling and HiDPI behaviour | Show the wgpu map inside Qt Quick (the wgpu texture imported into Qt RHI as a native Vulkan, Metal or D3D12 texture); the Qt toolchain on CI for 3 OSes; LGPLv3 (dynamic linking, like Global); the browser later is harder (Qt for WebAssembly) |
+| R. Own Rust layer | As in 3.1, with layouts converted from the Global QML instead of OTUI | High layout fidelity; text pixels differ from Qt | We own the widgets, IME, clipboard and window management |
+
+The F0 spike decides between them. It shows a wgpu-drawn map and one QML dialog in the same window on Windows, Linux
+and macOS. If it fails or is too costly, use R.
+
+Owner question: the Global QML is CipSoft code. Do we use it only as a reference (we write our own QML, with values
+taken 1:1 from it), or do we copy it?
+
+### 3.1 UI layer, option R: our own pixel-exact layer, not egui
 
 A 1:1 copy of Global needs:
 
