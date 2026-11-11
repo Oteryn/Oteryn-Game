@@ -46,6 +46,26 @@ So the exact layout, sizes and behaviour of every Global window exist as declara
 | **Q. Qt 6 Quick via CXX-Qt** (recommended, if the F0 spike passes) | The same engine as Global. We write our QML from the Global QML as a reference. The Rust `client-ui` view models are exposed as QObjects through CXX-Qt, which exists for exactly this. | Highest: same text rendering, controls, IME, scrolling and HiDPI behaviour | Show the wgpu map inside Qt Quick (the wgpu texture imported into Qt RHI as a native Vulkan, Metal or D3D12 texture); the Qt toolchain on CI for 3 OSes; LGPLv3 (dynamic linking, like Global); the browser later is harder (Qt for WebAssembly) |
 | R. Own Rust layer | As in 3.1, with layouts converted from the Global QML instead of OTUI | High layout fidelity; text pixels differ from Qt | We own the widgets, IME, clipboard and window management |
 
+**Decision after review: R, with the Global QML as data.** Q is rejected as the main path:
+
+- It breaks owner goal D1, one client including the browser. Qt for WebAssembly together with Rust wasm and WebGPU is
+  not a realistic single build.
+- It adds a second language and the whole Qt toolchain: CI on 3 OSes, deploy tools, plugins, roughly 50 MB of DLLs.
+- Its main risk, the wgpu map inside Qt's RHI on a shared native device, is the hardest part of the whole job.
+
+R keeps one Rust stack and the browser path. The Global QML gives it the exact data:
+
+- The 128 QML files are parsed with `tree-sitter-qmljs` (MIT).
+- The tool extracts the item tree, sizes, anchors and margins, `Row`/`Column`/`Grid`, colours, fonts, image sources and
+  the style constants (for example `TibiaStyle`).
+- It writes our layout files from them.
+- Our layout engine implements the Qt Quick anchor and positioner rules, so the layouts carry over almost unchanged.
+- JavaScript bindings and logic are listed per window and written in Rust by the port tasks. Most of that logic already
+  exists in `client-ui`.
+
+Text: the same fonts as Global, rasterised by `cosmic-text`/`swash`. Hinting can differ from Qt by a pixel. The
+screenshot diff measures it. If the difference is visible, Q stays the fallback, used for the UI only.
+
 The F0 spike decides between them. It shows a wgpu-drawn map and one QML dialog in the same window on Windows, Linux
 and macOS. If it fails or is too costly, use R.
 
