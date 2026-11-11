@@ -8,27 +8,28 @@
 //! owner refused first. A served owner keeps its place until its retried step ends or a whole
 //! liveness passes without a refusal, so a step of several passes, with other work such as an
 //! evidence exchange between them, is not lost to later owners between its passes and repeated
-//! whole. Tickets are keyed by the owning task; root tasks spawned on its behalf
-//! inherit its key, and a future driven outside any task by its thread's `block_on` is keyed by
-//! that thread.
+//! whole. Tickets are keyed by the owning task, or by an explicit scope for independent
+//! futures polled in one task. Root tasks spawned on an owner's behalf inherit its key, and
+//! a future driven outside any task by its thread's `block_on` is keyed by that thread.
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::sync::Notify;
 
-/// The task that owns a checkout, or the thread whose `block_on` drives it outside any task.
+/// An independent future scope, its owning task, or the thread driving it outside any task.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum OwnerKey {
+    Scoped(u64),
     Task(tokio::task::Id),
     Thread(std::thread::ThreadId),
 }
 
 tokio::task_local! {
-    /// The owner of a root task spawned on another task's behalf.
+    /// An explicit future owner, also inherited by root tasks spawned on its behalf.
     static SPAWNED_FOR: OwnerKey;
 }
 
-/// The current owner: the owner a root task was spawned for, else the current task, else the
-/// current thread.
+/// The current owner: an explicit future scope or inherited owner, else the current task,
+/// else the current thread.
 pub(super) fn current_owner() -> OwnerKey {
     SPAWNED_FOR.try_with(|owner| *owner).unwrap_or_else(|_| {
         tokio::task::try_id().map_or_else(
@@ -87,10 +88,24 @@ pub(super) enum Turn {
     Free,
 }
 
-#[derive(Default)]
+/// Maximum retry tickets retained by one root; excess owners keep using plain backoff.
+const MAX_HOLDER_WAITERS: usize = 1024;
+
+pub(super) const HOLDER_QUEUE_ALLOCATION_BYTES: usize =
+    MAX_HOLDER_WAITERS * std::mem::size_of::<Waiter>();
+
 pub(super) struct HolderQueue {
     next_ticket: u64,
     waiters: Vec<Waiter>,
+}
+
+impl Default for HolderQueue {
+    fn default() -> Self {
+        Self {
+            next_ticket: 0,
+            waiters: Vec::with_capacity(MAX_HOLDER_WAITERS),
+        }
+    }
 }
 
 impl HolderQueue {
@@ -142,9 +157,11 @@ impl HolderQueue {
         self.waiters.iter_mut().find(|waiter| waiter.owner == owner)
     }
 
-    /// Enqueues `owner` as refused now. `false` when it already holds a ticket.
+    /// Enqueues `owner` as refused now. `false` when full or it already holds a ticket.
     fn enqueue(&mut self, owner: OwnerKey, now: Instant) -> bool {
-        if self.waiters.iter().any(|waiter| waiter.owner == owner) {
+        if self.waiters.len() >= MAX_HOLDER_WAITERS
+            || self.waiters.iter().any(|waiter| waiter.owner == owner)
+        {
             return false;
         }
         let ticket = self.next_ticket;
@@ -174,7 +191,7 @@ pub struct HolderWaiter {
 
 impl HolderWaiter {
     /// Takes a place for the current owner, refused now. `None` when an outer retry of the
-    /// same owner already holds its place.
+    /// same owner already holds its place, or the queue is full.
     pub(super) fn enqueue(queue: &Arc<Mutex<HolderQueue>>, returned: &Arc<Notify>) -> Option<Self> {
         let owner = current_owner();
         let mut locked = queue.lock().ok()?;
@@ -220,6 +237,108 @@ mod tests {
         let second = tokio::spawn(async { current_owner() }).await?;
         // Outside any task: the thread driving `block_on`.
         Ok((first, second, current_owner()))
+    }
+
+    #[test]
+    fn a_full_holder_queue_refuses_new_tickets_without_growing() -> TestResult {
+        let mut queue = HolderQueue::default();
+        let allocated = queue.waiters.capacity();
+        let now = Instant::now();
+        for index in 0..MAX_HOLDER_WAITERS {
+            assert!(queue.enqueue(OwnerKey::Scoped(u64::try_from(index)?), now));
+        }
+        let overflow = OwnerKey::Scoped(u64::MAX);
+        assert!(
+            !queue.enqueue(overflow, now),
+            "a full queue must refuse a new ticket"
+        );
+        assert_eq!(queue.waiters.len(), MAX_HOLDER_WAITERS);
+        assert_eq!(queue.waiters.capacity(), allocated);
+        assert_eq!(queue.turn(overflow, now), Turn::Kept);
+        queue.remove(OwnerKey::Scoped(0));
+        assert!(queue.enqueue(overflow, now));
+        assert_eq!(queue.turn(overflow, now), Turn::Kept);
+        assert_eq!(queue.waiters.capacity(), allocated);
+        Ok(())
+    }
+
+    #[test]
+    fn scoped_futures_in_one_task_keep_independent_fifo_tickets() -> TestResult {
+        run(async || {
+            tokio::spawn(async {
+                let queue = Arc::new(Mutex::new(HolderQueue::default()));
+                let returned = Arc::new(Notify::new());
+                let take_ticket = || async {
+                    let owner = current_owner();
+                    let ticket = HolderWaiter::enqueue(&queue, &returned);
+                    tokio::task::yield_now().await;
+                    assert_eq!(current_owner(), owner, "scope survives a pending poll");
+                    (owner, ticket)
+                };
+                let mut first = std::pin::pin!(
+                    crate::durability::DurabilityRoot::with_holder_owner(take_ticket())
+                );
+                let mut second = std::pin::pin!(
+                    crate::durability::DurabilityRoot::with_holder_owner(take_ticket())
+                );
+                let (mut first_result, mut second_result) = (None, None);
+                let ((first_owner, first_ticket), (second_owner, second_ticket)) =
+                    std::future::poll_fn(|cx| {
+                        if first_result.is_none()
+                            && let std::task::Poll::Ready(result) = first.as_mut().poll(cx)
+                        {
+                            first_result = Some(result);
+                        }
+                        if second_result.is_none()
+                            && let std::task::Poll::Ready(result) = second.as_mut().poll(cx)
+                        {
+                            second_result = Some(result);
+                        }
+                        match (first_result.take(), second_result.take()) {
+                            (Some(first), Some(second)) => std::task::Poll::Ready((first, second)),
+                            (first, second) => {
+                                first_result = first;
+                                second_result = second;
+                                std::task::Poll::Pending
+                            }
+                        }
+                    })
+                    .await;
+                assert_ne!(first_owner, second_owner);
+                assert!(first_ticket.is_some() && second_ticket.is_some());
+                {
+                    let mut locked = queue.lock().map_err(|_| "queue poisoned")?;
+                    let now = Instant::now();
+                    assert_eq!(locked.turn(first_owner, now), Turn::Mine);
+                    assert_eq!(locked.turn(second_owner, now), Turn::Kept);
+                    locked.served(first_owner);
+                    assert!(
+                        locked
+                            .find(second_owner)
+                            .is_some_and(|waiter| waiter.refused(now))
+                    );
+                }
+                drop(first_ticket);
+                assert_eq!(
+                    queue
+                        .lock()
+                        .map_err(|_| "queue poisoned")?
+                        .turn(second_owner, Instant::now()),
+                    Turn::Mine
+                );
+                drop(second_ticket);
+                assert!(
+                    queue
+                        .lock()
+                        .map_err(|_| "queue poisoned")?
+                        .waiters
+                        .is_empty()
+                );
+                Ok::<(), &'static str>(())
+            })
+            .await??;
+            Ok(())
+        })
     }
 
     #[test]

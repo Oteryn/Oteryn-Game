@@ -74,17 +74,19 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
         }
         while !stopped && accept_pause.is_none() && connections.len() < limits.connections {
             match listener.poll_accept(context) {
-                Poll::Ready(Ok((stream, _))) => connections.push(Box::pin(serve_accepted(
-                    stream,
-                    tls,
-                    &units,
-                    limits.entry_deadline,
-                    authority,
-                    identifiers,
-                    observer,
-                    shutdown,
-                    drain,
-                ))),
+                Poll::Ready(Ok((stream, _))) => {
+                    connections.push(Box::pin(DurabilityRoot::with_holder_owner(serve_accepted(
+                        stream,
+                        tls,
+                        &units,
+                        limits.entry_deadline,
+                        authority,
+                        identifiers,
+                        observer,
+                        shutdown,
+                        drain,
+                    ))))
+                }
                 Poll::Ready(Err(_)) => {
                     let mut pause = Box::pin(tokio::time::sleep(ACCEPT_ERROR_PAUSE));
                     // Registers the wake-up that resumes accepting.
@@ -99,8 +101,9 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
                 Poll::Pending => true,
                 Poll::Ready(lost) => {
                     if let Some(lost) = lost {
-                        let mut lifecycle =
-                            Box::pin(control_loss_lifecycle(authority, lost, shutdown));
+                        let mut lifecycle = Box::pin(DurabilityRoot::with_holder_owner(
+                            control_loss_lifecycle(authority, lost, shutdown),
+                        ));
                         // Registers the lifecycle's first wake-up.
                         if lifecycle.as_mut().poll(context).is_pending() {
                             lifecycles.push(lifecycle);

@@ -433,10 +433,10 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
         .checked_add(std::mem::size_of::<DurabilityRoot>())
         .ok_or(DurabilityError::RootUnavailable)?;
 
-    for requested in lengths
-        .into_iter()
-        .chain(std::iter::once(TRANSPORT_IP_TEXT_MAX_BYTES))
-    {
+    for requested in lengths.into_iter().chain([
+        TRANSPORT_IP_TEXT_MAX_BYTES,
+        holder_queue::HOLDER_QUEUE_ALLOCATION_BYTES,
+    ]) {
         total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
     }
 
@@ -495,6 +495,7 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
         arc_allocation_request::<AtomicBool>()?,
         arc_allocation_request::<Mutex<()>>()?,
         arc_allocation_request::<HolderPriority>()?,
+        arc_allocation_request::<StdMutex<HolderQueue>>()?,
         arc_allocation_request::<RootICharge>()?,
         arc_allocation_request::<RootBudgetAdapter>()?,
         arc_allocation_request::<
@@ -1172,6 +1173,16 @@ impl DurabilityRoot {
         })
     }
 
+    /// Gives one independently polled future its own holder retry identity. Work it spawns
+    /// through this root inherits that identity, even when a listener polls many such futures.
+    pub fn with_holder_owner<F: Future>(future: F) -> impl Future<Output = F::Output> {
+        static NEXT_OWNER: AtomicU64 = AtomicU64::new(0);
+        holder_queue::spawned_for(
+            holder_queue::OwnerKey::Scoped(NEXT_OWNER.fetch_add(1, Ordering::Relaxed)),
+            future,
+        )
+    }
+
     pub fn spawn_task<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
     where
         F: Future + Send + 'static,
@@ -1247,8 +1258,8 @@ impl DurabilityRoot {
     }
 
     /// Takes the current owner's place in the holder queue after a refused checkout that it
-    /// retries. `None` outside a task, or when an outer retry of the same owner already holds
-    /// the place.
+    /// retries. `None` when the queue is full, or an outer retry of the same owner already
+    /// holds the place.
     pub fn holder_waiter(&self) -> Option<HolderWaiter> {
         HolderWaiter::enqueue(&self.holder_queue, &self.holder_returned)
     }
