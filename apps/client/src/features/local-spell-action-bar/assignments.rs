@@ -20,6 +20,77 @@ pub enum SpellAim {
     #[default]
     Target,
 }
+impl SpellAim {
+    /// Dialog order of "Target Options".
+    pub const ALL: [Self; 3] = [Self::Target, Self::Facing, Self::Cursor];
+    pub fn option(self) -> oteryn_client_ui::spell_action_bar::TargetOption {
+        use oteryn_client_ui::spell_action_bar::TargetOption;
+        match self {
+            Self::Target => TargetOption::TowardsTarget,
+            Self::Facing => TargetOption::FacingDirection,
+            Self::Cursor => TargetOption::TowardsCursor,
+        }
+    }
+}
+/// Cardinal direction from the caster to the cursor tile: east/west win ties over north/south.
+pub(crate) fn cursor_direction(
+    own: (i32, i32),
+    cursor: (i32, i32),
+) -> Option<oteryn_session::StepDirection> {
+    use oteryn_session::StepDirection;
+    let (dx, dy) = (cursor.0 - own.0, cursor.1 - own.1);
+    if dx == 0 && dy == 0 {
+        None
+    } else if dx.abs() >= dy.abs() {
+        Some(if dx < 0 {
+            StepDirection::West
+        } else {
+            StepDirection::East
+        })
+    } else {
+        Some(if dy < 0 {
+            StepDirection::North
+        } else {
+            StepDirection::South
+        })
+    }
+}
+#[cfg(test)]
+mod cursor_direction_tests {
+    use super::*;
+    use oteryn_session::StepDirection;
+    #[test]
+    fn cursor_direction_prefers_east_west_on_ties_and_the_dominant_axis() {
+        assert_eq!(
+            cursor_direction((10, 10), (12, 12)),
+            Some(StepDirection::East)
+        );
+        assert_eq!(
+            cursor_direction((10, 10), (8, 8)),
+            Some(StepDirection::West)
+        );
+        assert_eq!(
+            cursor_direction((10, 10), (11, 13)),
+            Some(StepDirection::South)
+        );
+        assert_eq!(
+            cursor_direction((10, 10), (9, 6)),
+            Some(StepDirection::North)
+        );
+        assert_eq!(cursor_direction((10, 10), (10, 10)), None);
+    }
+    #[test]
+    fn spell_aim_options_follow_the_dialog_order_and_labels() {
+        assert_eq!(
+            SpellAim::ALL.map(|aim| aim.option().label()),
+            [
+                "Cast towards target",
+                "Cast in facing direction",
+                "Cast towards cursor position"
+            ]
+        );
+    }
+}
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", deny_unknown_fields)]
 pub enum BarAction {
@@ -255,18 +326,10 @@ fn activate_inner(
                         let Some(actor) = mailbox.bar_actions.own_actor else {
                             return true;
                         };
-                        use oteryn_session::StepDirection;
-                        let direction = if cursor.position.x < actor.position.x {
-                            Some(StepDirection::West)
-                        } else if cursor.position.x > actor.position.x {
-                            Some(StepDirection::East)
-                        } else if cursor.position.y < actor.position.y {
-                            Some(StepDirection::North)
-                        } else if cursor.position.y > actor.position.y {
-                            Some(StepDirection::South)
-                        } else {
-                            None
-                        };
+                        let direction = cursor_direction(
+                            (actor.position.x, actor.position.y),
+                            (cursor.position.x, cursor.position.y),
+                        );
                         crate::combat_input::CombatCommand::CastFacing {
                             spell: index,
                             direction,
