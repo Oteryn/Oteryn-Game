@@ -368,6 +368,24 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
         raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
     source_items = ET.fromstring(raw).findall('item')
     lion_records = lion_trial_item_profiles.records(root, raw, definitions)
+    # QuickLoot may already have attached canonical navigation metadata. Keep
+    # that optional owner in the expected record without borrowing its value
+    # from the native row or changing the shape of newly admitted Lion Items.
+    taxonomy_keys = {key for key in lion_records if key in present
+                     and isinstance(present[key].get('authoring'), dict)
+                     and 'taxonomy' in present[key]['authoring']}
+    lion_taxonomy = {}
+    if taxonomy_keys:
+        taxonomy = json.loads((root / 'content/items/taxonomy/items.json').read_bytes())
+        for row in taxonomy['records']:
+            key = row['target']['key']
+            if key in taxonomy_keys:
+                if key in lion_taxonomy or row['target'] != definitions[key]['identity']:
+                    raise ValueError('LION_TRIAL_ITEM_TAXONOMY:' + key)
+                lion_taxonomy[key] = row['source_taxonomy']
+        if lion_taxonomy.keys() != taxonomy_keys:
+            raise ValueError('LION_TRIAL_ITEM_TAXONOMY:'
+                             + ','.join(sorted(taxonomy_keys - lion_taxonomy.keys())))
     import quests_2_emperor_item_profiles
     source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
     import authored_quest_item_custody
@@ -379,6 +397,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
         if key in lion_records:
             record = lion_records[key]
             if key in present:
+                if key in lion_taxonomy:
+                    record['authoring']['taxonomy'] = copy.deepcopy(lion_taxonomy[key])
                 if present[key] != record:
                     before = (json.dumps(present[key], ensure_ascii=False,
                                          sort_keys=True, indent=2) + '\n').splitlines(keepends=True)

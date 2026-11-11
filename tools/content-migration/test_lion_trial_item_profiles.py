@@ -203,6 +203,123 @@ class LionTrialItemProfiles(unittest.TestCase):
                     self.assertEqual(str(repeated.exception), message)
                     self.assertEqual(generated, before)
 
+    def quick_loot_fixture(self):
+        import authored_static_item_constructors as authored
+        import quest_callback_profiles as provider
+        import quick_loot_item_profiles as quick_loot
+
+        qualified = {f'oteryn:item.tibia.i{item_id}': profiles.qualify(*self.values(item_id))
+                     for item_id in profiles.SOURCE_RECORDS}
+        earlier = set(qualified) & {f'oteryn:item.tibia.i{item_id}' for item_id in shared.IDS}
+        self.assertEqual(earlier, {f'oteryn:item.tibia.i{item_id}'
+                                   for item_id in (5467, 21389, 21466)})
+        profile = shared.PROFILE
+        manifest = 'content/spells.manifest.json'
+        generated = {
+            profile: json.dumps({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1',
+                                 'records': [qualified[key] for key in sorted(earlier)]}).encode(),
+            manifest: b'{"item_profiles":{"sha256":"pending"}}',
+            authored.ADMISSIONS: (ROOT / authored.ADMISSIONS).read_bytes(),
+        }
+        order = lambda row: row['production_definition']['production_key']
+        canonical = lambda value: (json.dumps(value, sort_keys=True) + '\n').encode()
+        quick_loot.admit(ROOT, generated, profile, manifest, order, canonical)
+        predecessor = {row['production_definition']['production_key']: row
+                       for row in json.loads(generated[profile])['records']}
+        self.assertEqual(set(predecessor), earlier | {
+            f'oteryn:item.tibia.i{item_id}' for item_id in quick_loot.IDS})
+
+        def admit():
+            provider.admit(ROOT, generated, profile, manifest, order, canonical)
+
+        return qualified, generated, predecessor, admit
+
+    def test_prior_quick_loot_taxonomy_is_preserved_from_canonical_owner(self):
+        import quest_callback_profiles as provider
+        from qualification_inputs import appearance_input_scope
+
+        qualified, generated, predecessor, admit = self.quick_loot_fixture()
+        taxonomy = json.loads((ROOT / 'content/items/taxonomy/items.json').read_bytes())
+        expected = copy.deepcopy(qualified)
+        for key in qualified.keys() & predecessor.keys():
+            row, = [row for row in taxonomy['records'] if row['target']['key'] == key]
+            self.assertEqual(row['target'], self.definitions[key]['identity'])
+            expected[key]['authoring']['taxonomy'] = copy.deepcopy(row['source_taxonomy'])
+            self.assertEqual(predecessor[key], expected[key])
+        self.assertEqual(expected['oteryn:item.tibia.i21389']['authoring']['taxonomy'],
+                         {'primary': 'Quest Items'})
+        self.assertNotIn('taxonomy', expected['oteryn:item.tibia.i3595']['authoring'])
+
+        with patch.object(provider, '_requested_inputs',
+                          return_value=(set(qualified), set(), [])), patch.object(
+                              sys, 'path', [str(ROOT / 'tools/content-schema/reward-claim-authoring'),
+                                            *sys.path]), appearance_input_scope():
+            admit()
+            accepted = copy.deepcopy(generated)
+            actual = {row['production_definition']['production_key']: row
+                      for row in json.loads(generated[shared.PROFILE])['records']}
+            self.assertEqual({key: actual[key] for key in qualified}, expected)
+            self.assertEqual({key: actual[key] for key in predecessor}, predecessor)
+            admit()
+            self.assertEqual(generated, accepted)
+            for mutation in ('wrong_taxonomy', 'null_taxonomy', 'extra_authoring', 'weight'):
+                with self.subTest(mutation=mutation):
+                    generated.clear()
+                    generated.update(copy.deepcopy(accepted))
+                    document = json.loads(generated[shared.PROFILE])
+                    row = next(row for row in document['records']
+                               if row['production_definition']['production_key']
+                               == 'oteryn:item.tibia.i21389')
+                    if mutation == 'wrong_taxonomy':
+                        row['authoring']['taxonomy'] = {'primary': 'Tools'}
+                    elif mutation == 'null_taxonomy':
+                        row['authoring']['taxonomy'] = None
+                    elif mutation == 'extra_authoring':
+                        row['authoring']['use_ability'] = 'unqualified'
+                    else:
+                        row['semantics']['physical']['value']['weight']['value'] += 1
+                    generated[shared.PROFILE] = json.dumps(document).encode()
+                    before = copy.deepcopy(generated)
+                    with self.assertRaisesRegex(ValueError, 'LION_TRIAL_NATIVE_PROFILE_DRIFT'):
+                        admit()
+                    self.assertEqual(generated, before)
+
+    def test_prior_taxonomy_requires_one_exact_canonical_target(self):
+        import quest_callback_profiles as provider
+        from qualification_inputs import appearance_input_scope
+
+        qualified, generated, _, admit = self.quick_loot_fixture()
+        taxonomy_path = ROOT / 'content/items/taxonomy/items.json'
+        taxonomy = json.loads(taxonomy_path.read_bytes())
+        read_bytes = Path.read_bytes
+        with patch.object(provider, '_requested_inputs',
+                          return_value=(set(qualified), set(), [])), patch.object(
+                              sys, 'path', [str(ROOT / 'tools/content-schema/reward-claim-authoring'),
+                                            *sys.path]), appearance_input_scope():
+            for mutation in ('missing', 'duplicate', 'wrong_family', 'wrong_revision'):
+                with self.subTest(mutation=mutation):
+                    changed = copy.deepcopy(taxonomy)
+                    row, = [row for row in changed['records']
+                            if row['target']['key'] == 'oteryn:item.tibia.i21389']
+                    if mutation == 'missing':
+                        changed['records'].remove(row)
+                    elif mutation == 'duplicate':
+                        changed['records'].append(copy.deepcopy(row))
+                    elif mutation == 'wrong_family':
+                        row['target']['family'] = 'Creature'
+                    else:
+                        row['target']['revision'] = 'unqualified'
+                    raw = json.dumps(changed).encode()
+
+                    def mutated_read_bytes(path):
+                        return raw if path == taxonomy_path else read_bytes(path)
+
+                    before = copy.deepcopy(generated)
+                    with patch.object(Path, 'read_bytes', mutated_read_bytes):
+                        with self.assertRaisesRegex(ValueError, 'LION_TRIAL_ITEM_TAXONOMY'):
+                            admit()
+                    self.assertEqual(generated, before)
+
     def test_source_duration_and_custom_action_changes_are_refused(self):
         for item_id in profiles.SOURCE_RECORDS:
             for key, value in [('duration', '1'), ('script', 'custom')]:

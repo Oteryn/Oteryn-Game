@@ -507,6 +507,14 @@ schedule_check(
     ],
     check=True,
 )
+# Exercise the closed Lion Item composition and refusals on the migration gate.
+schedule_check(
+    [
+        sys.executable,
+        str(ROOT / "tools/content-migration/test_lion_trial_item_profiles.py"),
+    ],
+    check=True,
+)
 schedule_check(
     [
         sys.executable,
