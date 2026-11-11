@@ -384,6 +384,39 @@ pub(super) async fn exercise(
         Some(&vec![0, 3])
     );
     assert!(!effects.sockets.gem_values_milli.is_empty());
+    // A receipt replay projects the vessel slots as the committing write did: with green
+    // socketed in slot 1, a Set Lock and its replay return the same state.
+    for (seed, locked) in [(218, true), (221, false)] {
+        let request = AtelierRequest {
+            occurrence: id(seed),
+            expected_atelier_revision: stored(h).await?.revision,
+            mutation: AtelierMutation::SetLock { gem: green, locked },
+            resources: None,
+        };
+        advance_ex_action(owner)?;
+        let GemBuildOutcome::Atelier(AtelierOutcome::Committed {
+            state: committed, ..
+        }) = owner
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(request.clone()))
+            .await
+            .map_err(debug)?
+        else {
+            return Err("set lock commit".into());
+        };
+        let socketed = &committed.gems[&u128::from_be_bytes(green)];
+        assert_eq!((socketed.slot, socketed.vessel), (Some(1), true));
+        advance_ex_action(owner)?;
+        let GemBuildOutcome::Atelier(AtelierOutcome::AlreadyCommitted {
+            state: replayed, ..
+        }) = owner
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(request))
+            .await
+            .map_err(debug)?
+        else {
+            return Err("set lock replay".into());
+        };
+        assert_eq!(replayed, committed);
+    }
     let supreme_mod = stored(h).await?.gems[&u128::from_be_bytes(id(182))].mods[2];
     for seed in 196..199 {
         let request = AtelierRequest {

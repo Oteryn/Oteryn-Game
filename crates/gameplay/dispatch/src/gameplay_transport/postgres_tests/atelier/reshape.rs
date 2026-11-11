@@ -179,7 +179,7 @@ pub(super) async fn exercise(
             GemBuildOutcome::Atelier(AtelierOutcome::AlreadyCommitted { .. })
         ));
         let fresh = AtelierRequest {
-            occurrence: id(seed + 35),
+            occurrence: id(seed + 55),
             expected_atelier_revision: after.revision,
             resources: None,
             ..request.clone()

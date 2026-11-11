@@ -188,7 +188,11 @@ impl DurabilityRoot {
                         return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
                     }
                     let revision = CharacterRevision::new(numeric_u64(&row, "committed_character_revision")?).map_err(|_| DurabilityError::InvalidStoredState)?;
-                    let state = decode_state(row.try_get("outcome_json")?)?;
+                    // Vessel placement is not stored in the receipt: project the vessel owner's
+                    // slots as the committing write did, so the replay keeps the socket view.
+                    let mut state = decode_state(row.try_get("outcome_json")?)?;
+                    let vessels = super::character_wheel::read_vessels(&mut tx, fence.character_id).await?;
+                    oteryn_gameplay_progression::atelier::vessels::project(&mut state, &vessels);
                     tx.commit(deadline).await?;
                     return Ok(Ok(AtelierOutcome::AlreadyCommitted { revision, state }));
                 }
