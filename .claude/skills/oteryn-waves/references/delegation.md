@@ -45,6 +45,16 @@ Write it as one self-contained file. Include, in this order:
 8. **Report:** at most 15 lines: result, head SHA or diff name, commands run
    with pass/fail counts, open questions with options and a recommendation,
    what is still PARTIAL, and the line `Codex review <head SHA>: ...`.
+   A Codex Cloud task's final message cannot be read back, so its packet
+   also says: "As the last step, write `.codex-status` at the repository
+   root: line 1 is the `OTERYN_SETUP` line from
+   `/workspace/oteryn-env/logs/setup-status` (or `OTERYN_SETUP MISSING`), line 2 is
+   `RESULT DONE|PARTIAL|BLOCKED <one-line reason>`, line 3 the success
+   check with pass/fail counts." The PC collector `cxstat.sh` reads that
+   file from the diff into `codex-status.txt`; the coordinator deletes it
+   before committing. A task with status `error` and no diff died before
+   any work (setup, network or capacity) and is relaunched from the same
+   packet.
 
 Keep the packet short and decided: write it for an engineer who has never
 seen the repository, so it names the files, the function and type names, the
