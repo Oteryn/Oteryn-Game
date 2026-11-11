@@ -407,6 +407,54 @@ struct RetainedPacedAuthority {
     commands: crate::gameplay_transport::session_ingress::SessionCommands,
 }
 
+/// Diagonal movement is offered by a Bundle World, not the fallback production set.
+/// Keep the exact requested closure so a dropped capability cannot turn a buffered
+/// diagonal into an immediate malformed-intent rejection in this regression.
+fn retained_paced_session(capabilities: &[u32]) -> Result<AdmittedSession, Box<dyn Error>> {
+    let mut admitted = positioned()?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        capabilities,
+    )
+    .ok_or("bounded Bundle selection")?;
+    assert_eq!(
+        admitted.continuity.selected_capabilities.as_slice(),
+        capabilities
+    );
+    Ok(admitted)
+}
+
+fn assert_paced_move_frames(
+    frames: &[Vec<u8>],
+    generation: u64,
+    sequence: u64,
+    command_id: u64,
+    spatial_revision: u64,
+) -> Result<(), Box<dyn Error>> {
+    assert_eq!(
+        frames,
+        &[
+            encode_command_result(
+                generation,
+                sequence,
+                command_id,
+                CommandStatus::Accepted,
+                &[0x08, 0x01, 0x10, 0x64],
+            )?,
+            encode_state_delta(
+                generation,
+                sequence + 1,
+                STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                spatial_revision,
+                spatial_revision + 1,
+                DELTA_TYPE_WORLD_SPATIAL_V1,
+                &encode_world_spatial(&at(1)),
+            )?,
+        ]
+    );
+    Ok(())
+}
+
 impl FreshAdmissionAuthority for RetainedPacedAuthority {
     fn session_commands(
         &self,
@@ -481,7 +529,7 @@ fn buffered_step_disconnect_retains_rejection_and_resumes_without_reexecuting()
                     };
                     let (end, frames) = drive_session(
                         &authority,
-                        paced_session(capabilities)?,
+                        retained_paced_session(capabilities)?,
                         &[
                             command(1, 1, step, StepDirection::East),
                             command(1, 2, step, buffered_direction),
@@ -494,6 +542,7 @@ fn buffered_step_disconnect_retains_rejection_and_resumes_without_reexecuting()
                     assert!(tokio::time::Instant::now() < start + PACE);
                     assert_eq!(authority.movement.steps.borrow().len(), 1);
                     assert_eq!(frames.len(), baseline().len() + 2);
+                    assert_paced_move_frames(&frames[baseline().len()..], 1, 1, 1, 1)?;
                     assert_eq!(ended.continuity.next_command_id, 3);
                     assert_eq!(ended.continuity.server_sequence, 2);
                     authority
@@ -532,6 +581,7 @@ fn buffered_step_disconnect_retains_rejection_and_resumes_without_reexecuting()
                         result.payload,
                         encode_step_result(StepDisposition::Rejected)
                     );
+                    assert_paced_move_frames(&frames[baseline().len() + 1..], 2, 5, 3, 2)?;
                     assert_eq!(authority.movement.steps.borrow().len(), 2);
                     assert!(
                         authority
@@ -545,6 +595,7 @@ fn buffered_step_disconnect_retains_rejection_and_resumes_without_reexecuting()
                         return Err(format!("unexpected resumed end {end:?}").into());
                     };
                     assert_eq!(ended.continuity.next_command_id, 4);
+                    assert_eq!(ended.continuity.server_sequence, 6);
                     assert!(authority.commands.resumable(&ended));
                 }
                 Ok(())
@@ -595,7 +646,7 @@ fn house_buffered_step_eof_retains_original_rejection_across_socket_replacement(
                     } else {
                         &[13, CAPABILITY_HOUSE_TRANSFER_V1]
                     };
-                    let mut admitted = paced_session(capabilities)?;
+                    let mut admitted = retained_paced_session(capabilities)?;
                     // A House retains its Channel actor while the item fence names the
                     // Instance. This is the public serve_admitted House routing condition.
                     admitted.item_fence = Some(CurrentCharacterItemFence {
@@ -636,6 +687,7 @@ fn house_buffered_step_eof_retains_original_rejection_across_socket_replacement(
                     assert!(tokio::time::Instant::now() < start + PACE);
                     assert_eq!(authority.movement.steps.borrow().len(), 1);
                     assert_eq!(frames.len(), baseline().len() + 2);
+                    assert_paced_move_frames(&frames[baseline().len()..], 1, 2, 1, 1)?;
                     // House copies the next counter after terminal output, so EOF leaves
                     // the old copy even though the real ledger reserved the second ID.
                     assert_eq!(ended.continuity.next_command_id, 2);
@@ -690,6 +742,7 @@ fn house_buffered_step_eof_retains_original_rejection_across_socket_replacement(
                         result.payload,
                         encode_step_result(StepDisposition::Rejected)
                     );
+                    assert_paced_move_frames(&frames[baseline().len() + 1..], 2, 7, 3, 2)?;
                     assert_eq!(authority.movement.steps.borrow().len(), 2);
                     assert!(
                         authority

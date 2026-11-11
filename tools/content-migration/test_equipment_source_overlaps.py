@@ -1,9 +1,11 @@
 """Source identities prove every subtraction; the runtime union is never consulted."""
+import copy
 import re
 import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 import equipment_source_overlaps as aliases
 import refresh_equipment_profile_pin as pins
@@ -26,13 +28,13 @@ class SourceOverlapProofs(unittest.TestCase):
         cls.bosses = pins.keys(next(document for name, document, _
             in pins.source_cohorts(pins.ROOT) if name == 'SRX3-BOSS-CORPSES'))
 
-    def test_exact_source_overlaps_remove_33_duplicate_contributions(self):
+    def test_exact_source_overlaps_remove_34_duplicate_contributions(self):
         result = aliases.refresh(self.SOURCE, pins.ROOT, self.bosses)
         counts = {name: int(value) for name, value in re.findall(r'\("([^"]+)", (\d+)\)', result)}
         self.assertEqual(counts, {'UNCHANGED': 123, 'QMECH-M49': 5, 'QMECH-M50': 0,
-            'M26-ENDGAME': 1, 'QREADY1-CRAFT': 4, 'ENGNPC-M05': 0,
+            'M26-ENDGAME': 1, 'QREADY1-CRAFT': 3, 'ENGNPC-M05': 0,
             'M22-TAINTED-TALISMAN': 0, 'NPCFIX2-M22': 0})
-        self.assertEqual(sum(int(v) for v in re.findall(r', (\d+)\)', self.SOURCE)) - sum(counts.values()), 33)
+        self.assertEqual(sum(int(v) for v in re.findall(r', (\d+)\)', self.SOURCE)) - sum(counts.values()), 34)
         self.assertEqual(aliases.refresh(result, pins.ROOT, self.bosses), result)
 
     def test_both_elevator_sources_include_the_same_nine_fixed_identities(self):
@@ -70,6 +72,111 @@ class SourceOverlapProofs(unittest.TestCase):
                             f'oteryn:item.tibia.i{item_id}'}} for item_id in ids]}))
                     with self.assertRaisesRegex(ValueError, 'SOURCE_IDENTITIES:packet.json'):
                         aliases.source_keys(root, 'packet.json', expected)
+
+
+class CraftSourceOverlapProofs(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.craft = json.loads((pins.ROOT / aliases.craft.PACKET).read_bytes())
+        cls.engine = json.loads((pins.ROOT / aliases.engine.PROOF).read_bytes())
+        # The count-only seam receives already qualified boss identities from its
+        # caller. Use the complete committed source packet for that unrelated input;
+        # SourceOverlapProofs above separately replays all source qualifications.
+        import boss_corpse_profiles as corpses
+        cls.bosses = pins.keys(json.loads((pins.ROOT / corpses.PATH).read_bytes()))
+
+    def test_complete_source_packets_count_the_same_ground_grinder_once(self):
+        expected = aliases.names({21506, 21507, 21573})
+        self.assertEqual(pins.keys(self.craft) & pins.keys(self.engine), expected)
+        self.assertIn(21573, aliases.engine.STATIC_IDS)
+        result = aliases.refresh(SourceOverlapProofs.SOURCE, pins.ROOT, self.bosses)
+        self.assertEqual(
+            result,
+            SourceOverlapProofs.SOURCE
+                .replace('"QMECH-M49", 19', '"QMECH-M49", 5')
+                .replace('"QMECH-M50", 9', '"QMECH-M50", 0')
+                .replace('"M26-ENDGAME", 6', '"M26-ENDGAME", 1')
+                .replace('"QREADY1-CRAFT", 6', '"QREADY1-CRAFT", 3')
+                .replace('"ENGNPC-M05", 1', '"ENGNPC-M05", 0')
+                .replace('"M22-TAINTED-TALISMAN", 1', '"M22-TAINTED-TALISMAN", 0')
+                .replace('"NPCFIX2-M22", 1', '"NPCFIX2-M22", 0'),
+        )
+        self.assertEqual(aliases.refresh(result, pins.ROOT, self.bosses), result)
+
+    def test_shared_craft_rows_preserve_the_complete_prior_profiles(self):
+        engine = {row['production_definition']['production_key']: row
+                  for row in self.engine['records']}
+        for row in self.craft['records']:
+            key = row['production_definition']['production_key']
+            if key in engine:
+                with self.subTest(key=key):
+                    self.assertEqual(aliases.craft.merge_existing(engine[key], row), engine[key])
+        grinder = engine['oteryn:item.tibia.i21573']
+        self.assertEqual(grinder['admission'], {
+            'materializable': True, 'stack_class': 'NonStackable',
+            'legal_destinations': ['Ground'],
+        })
+        self.assertEqual(grinder['semantics']['physical']['value'], {
+            'weight': {'state': 'KNOWN', 'value': 0},
+            'movable': {'state': 'KNOWN', 'value': False},
+            'pickupable': {'state': 'KNOWN', 'value': False},
+        })
+        self.assertTrue(grinder['attributes']['always_on_top'])
+        self.assertEqual(grinder['attributes']['always_on_top_order'], 2)
+
+    def test_grinder_custody_and_known_body_conflicts_still_refuse(self):
+        key = 'oteryn:item.tibia.i21573'
+        prior = next(row for row in self.engine['records']
+                     if row['production_definition']['production_key'] == key)
+        observed = next(row for row in self.craft['records']
+                        if row['production_definition']['production_key'] == key)
+        mutations = [
+            (('admission', 'legal_destinations'), ['CharacterInventory', 'Ground']),
+            (('production_binding', 'external_id'), '21574'),
+            (('production_definition', 'revision_ref'), 'invented-revision'),
+            (('semantics', 'physical', 'value', 'weight', 'value'), 1),
+            (('semantics', 'physical', 'value', 'pickupable', 'value'), True),
+            (('attributes', 'blocks_movement'), False),
+        ]
+        for path, value in mutations:
+            with self.subTest(path=path):
+                changed = copy.deepcopy(observed)
+                field = changed
+                for part in path[:-1]:
+                    field = field[part]
+                field[path[-1]] = value
+                with self.assertRaisesRegex(ValueError, 'QENGINE_REWARD_ITEM_NATIVE_CONFLICT'):
+                    aliases.craft.merge_existing(prior, changed)
+
+    def test_missing_duplicate_or_foreign_grinder_cannot_prove_an_overlap(self):
+        key = 'oteryn:item.tibia.i21573'
+        for path, packet in ((aliases.craft.PACKET, self.craft),
+                             (aliases.engine.PROOF, self.engine)):
+            for change in ('missing', 'duplicate', 'foreign'):
+                with self.subTest(path=path, change=change):
+                    changed = copy.deepcopy(packet)
+                    row = next(row for row in changed['records']
+                               if row['production_definition']['production_key'] == key)
+                    if change == 'missing':
+                        changed['records'].remove(row)
+                    elif change == 'duplicate':
+                        changed['records'].append(copy.deepcopy(row))
+                    else:
+                        row['production_definition']['production_key'] = 'oteryn:item.tibia.i21574'
+                    replacement = json.dumps(changed).encode()
+                    original_read = Path.read_bytes
+                    def read_packet(candidate):
+                        if candidate == pins.ROOT / path:
+                            return replacement
+                        return original_read(candidate)
+                    with mock.patch.object(Path, 'read_bytes', read_packet):
+                        with self.assertRaisesRegex(ValueError, 'EQUIPMENT_OVERLAP_SOURCE_IDENTITIES:'):
+                            aliases.refresh(SourceOverlapProofs.SOURCE, pins.ROOT, self.bosses)
+
+    def test_previous_four_item_contribution_is_not_an_accepted_current_count(self):
+        source = SourceOverlapProofs.SOURCE.replace('"QREADY1-CRAFT", 6', '"QREADY1-CRAFT", 4')
+        with self.assertRaisesRegex(ValueError, 'EQUIPMENT_OVERLAP_COHORT_DECLARATION:QREADY1-CRAFT'):
+            aliases.refresh(source, pins.ROOT, self.bosses)
 
 
 if __name__ == '__main__':

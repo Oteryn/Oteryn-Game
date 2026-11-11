@@ -24,6 +24,83 @@ def replace(path, before, after):
     target.write_text(text.replace(before, after))
 
 
+def check_callback_inventory(root=ROOT):
+    """Verify the accepted callback partition without rewriting its runtime test."""
+    main_path = 'content/quests/questpc7-world-callbacks.json'
+    phase_path = 'content/quests/world-callbacks/feaster-phase-routes.json'
+
+    def read_keys(path):
+        document = json.loads((root / path).read_bytes())
+        rows = document.get('callbacks')
+        if (document.get('schema') != 1 or not isinstance(rows, list)
+                or any(not isinstance(row, dict) or not isinstance(row.get('key'), str)
+                       for row in rows)):
+            raise ValueError(f'QUESTPC7_CALLBACK_DOCUMENT:{path}')
+        keys = {row['key'] for row in rows}
+        if len(keys) != len(rows):
+            raise ValueError(f'QUESTPC7_CALLBACK_DUPLICATE:{path}')
+        return keys
+
+    main = read_keys(main_path)
+    phase = read_keys(phase_path)
+    # questpc7_feaster_programme.PHASE_ROUTE_KEYS owns exactly these routes.
+    # A different two-key partition needs review even if its union is unchanged.
+    phase_keys = {
+        'oteryn:quest-callback/questpc7-feaster-entry',
+        'oteryn:quest-callback/questpc7-feaster-purification-entry',
+    }
+    if phase != phase_keys:
+        raise ValueError('QUESTPC7_CALLBACK_PHASE_OWNER')
+    if main & phase:
+        raise ValueError('QUESTPC7_CALLBACK_OWNER_OVERLAP')
+    present = main | phase
+    sign_keys = {f'oteryn:quest-callback/questpc7-goblin-sign-{i}' for i in range(1, 4)}
+    pond_keys = {'oteryn:quest-callback/questpc7-goblin-pond'} & present
+    trunk_keys = {f'oteryn:quest-callback/questpc7-goblin-trunk-{i}' for i in range(1, 4)} & present
+    if len(trunk_keys) not in (0, 3):
+        raise ValueError('QUESTPC7_CALLBACK_PARTIAL_TRUNKS')
+    smith_keys = {
+        'oteryn:quest-callback/authored-smith-cache',
+        'oteryn:quest-callback/authored-smith-cache-reward',
+    }
+    expected = 106 + len(pond_keys) + len(trunk_keys) + len(smith_keys)
+    if (not sign_keys <= present or not smith_keys <= present
+            or (len(main), len(phase), len(present)) != (110, 2, expected)
+            or expected != 112):
+        raise ValueError('QUESTPC7_CALLBACK_CLOSED_UNION')
+    residual = present - sign_keys - pond_keys - trunk_keys - smith_keys
+    if len(residual) != 103:
+        raise ValueError('QUESTPC7_CALLBACK_CLOSED_RESIDUAL')
+    # Accepted b7ccd5ad callback identities, independent of the generated split.
+    # Sorted UTF-8 keys with a newline after every key retain the complete closed
+    # union; replacing a residual key with a foreign key cannot pass by count.
+    key_bytes = ('\n'.join(sorted(present)) + '\n').encode('utf-8')
+    if hashlib.sha256(key_bytes).hexdigest() != '11dd258251746bc239c785e36605e8a8eb0a10b5b76d0303239b1195cb38bb9a':
+        raise ValueError('QUESTPC7_CALLBACK_KEYSET')
+
+    fixture = root / 'crates/gameplay/quests/src/quest/world_callbacks/outfit_tests.rs'
+    text = fixture.read_text()
+    marker = 'fn world_requirements_reject_unbounded_and_read_only_authority() -> Result<(), String> {'
+    if text.count(marker) != 1:
+        raise ValueError('QUESTPC7_CALLBACK_FIXTURE_OWNER')
+    body = text.split(marker, 1)[1].split('\n#[test]', 1)[0]
+    lines = [line.strip() for line in body.splitlines()]
+    # The current test already checks both owners, their overlap and union.
+    # Never replace it with the old monolithic parse(source)?.len() assertion.
+    guards = (
+        'let source = include_str!("../../../../../../content/quests/questpc7-world-callbacks.json");',
+        'let callbacks = parse(source)?;',
+        'let phase_callbacks = parse(include_str!(',
+        '"../../../../../../content/quests/world-callbacks/feaster-phase-routes.json"',
+        'assert_eq!((callbacks.len(), phase_callbacks.len()), (110, 2));',
+        'assert!(keys.is_disjoint(&phase_keys));',
+        'assert_eq!(keys.len() + phase_keys.len(), 112);',
+    )
+    if any(lines.count(guard) != 1 for guard in guards):
+        raise ValueError('QUESTPC7_CALLBACK_FIXTURE_GUARD')
+    return len(main), len(phase), len(present), len(residual)
+
+
 def main():
     base = 'crates/gameplay/durability/src/durability/'
     for name in ('tutorial_viola.rs',):
@@ -152,25 +229,7 @@ def main():
         replace(str(equipment.relative_to(ROOT)), anchor, anchor +
                 '    // Merged source/custody cohorts, refreshed by questpc7_merge_audit_inventories.py.\n' + row)
 
-    # Three reviewed native sign sites extend the lane's closed callback inventory.
-    callbacks = json.loads((ROOT / 'content/quests/questpc7-world-callbacks.json').read_text())['callbacks']
-    sign_keys = {f'oteryn:quest-callback/questpc7-goblin-sign-{i}' for i in range(1, 4)}
-    present = {row['key'] for row in callbacks}
-    if present & sign_keys:
-        pond_keys = {'oteryn:quest-callback/questpc7-goblin-pond'} & present
-        trunk_keys = {f"oteryn:quest-callback/questpc7-goblin-trunk-{i}" for i in range(1, 4)} & present
-        assert len(trunk_keys) in (0, 3), "all three source trunks must be registered together"
-        smith_keys = {'oteryn:quest-callback/authored-smith-cache', 'oteryn:quest-callback/authored-smith-cache-reward'}
-        assert smith_keys <= present
-        expected = 106 + len(pond_keys) + len(trunk_keys) + len(smith_keys)
-        assert sign_keys <= present and len(present) == len(callbacks) == expected
-        assert len(present - sign_keys - pond_keys - trunk_keys - smith_keys) == 103, 'review the original closed lane inventory'
-        path = ROOT / 'crates/gameplay/quests/src/quest/world_callbacks/outfit_tests.rs'
-        text = path.read_text()
-        replacement = f'assert_eq!(parse(source)?.len(), {expected});'
-        if replacement not in text:
-            old = next(value for value in (103, 106, 107, 110) if f'assert_eq!(parse(source)?.len(), {value});' in text)
-            replace(str(path.relative_to(ROOT)), f'assert_eq!(parse(source)?.len(), {old});', replacement)
+    check_callback_inventory(ROOT)
 
     defaults = Counter()
     for path in sorted((ROOT / 'content/dialogues/quest-rules').glob('quest-batch3-*.json')):

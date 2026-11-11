@@ -1,5 +1,6 @@
 """Bounds and source custody checks for the batch-three physical Item cohort."""
 import json
+import hashlib
 import copy
 import tempfile
 import unittest
@@ -111,6 +112,52 @@ class QuestBatchThreeItemProfiles(unittest.TestCase):
             self.assertIn(approved, paths)
             self.assertNotIn(withdrawn, paths)
             self.assertNotIn(transient, paths)
+
+
+class RetainedQn3CensusTests(unittest.TestCase):
+    KEY = 'oteryn:item.tibia.i27654'
+    SOURCE = 'content/dialogues/quest-rules/quest-batch3-qn3-dangerous_depths.json'
+
+    def test_retained_qn3_source_and_jar_match_all_existing_owners(self):
+        packet = json.loads((profiles.ROOT / profiles.PATH).read_bytes())
+        source = (profiles.ROOT / self.SOURCE).read_bytes()
+        descriptor = {'path': self.SOURCE, 'sha256': hashlib.sha256(source).hexdigest()}
+        self.assertEqual([row for row in packet['authoring_inputs']
+                          if row['path'] == self.SOURCE], [descriptor])
+        references, inputs = profiles.selected(profiles.ROOT)
+        self.assertIn(descriptor, inputs)
+        self.assertIn(self.KEY, references)
+        classified = [row for row in packet['classification'] if row['key'] == self.KEY]
+        self.assertEqual(len(classified), 1)
+        self.assertEqual(classified[0]['uses'], references[self.KEY])
+        self.assertEqual(classified[0]['classification'], 'EXISTING_NATIVE')
+        self.assertTrue(classified[0]['existing_native_profile'])
+        self.assertEqual(classified[0]['holds'], [])
+        self.assertIsNone(classified[0]['reason'])
+        rows = [row for row in packet['records']
+                if row['production_definition']['production_key'] == self.KEY]
+        self.assertEqual(len(rows), 1)
+        for path in (
+            profiles.NATIVE,
+            'tools/content-schema/native-gameplay/engnpc-m05-item-profiles.json',
+            'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json',
+        ):
+            with self.subTest(owner=path):
+                owner = json.loads((profiles.ROOT / path).read_bytes())
+                self.assertEqual([row for row in owner['records']
+                                  if row['production_definition']['production_key'] == self.KEY], rows)
+        self.assertFalse(packet['runtime_enabled'])
+
+    def test_retained_census_does_not_add_a_recipe_item_owner(self):
+        generated = {'profiles': json.dumps({'records': []}).encode(),
+                     'manifest': json.dumps({'item_profiles': {}}).encode()}
+        profiles.admit_recipes(profiles.ROOT, generated, 'profiles', 'manifest',
+                              lambda row: row['production_definition']['production_key'],
+                              profiles.grizzly.encode)
+        admitted = {row['production_definition']['production_key']
+                    for row in json.loads(generated['profiles'])['records']}
+        self.assertIn('oteryn:item.tibia.i3595', admitted)
+        self.assertNotIn(self.KEY, admitted)
 
 
 if __name__ == '__main__':

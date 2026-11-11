@@ -484,7 +484,7 @@ schedule_check(
     check=True,
 )
 
-# Import the complete corpse, reward yield and authored NPC custody test modules.
+# Run complete custody modules and retained QN3/Feaster source contracts.
 schedule_check(
     [
         sys.executable,
@@ -495,6 +495,10 @@ schedule_check(
         "test_authored_npc_item_profiles",
         "test_quest_corpse_profiles",
         "test_boss_reward_yield_profiles",
+        "test_equipment_source_overlaps",
+        "test_m42_cooking_canonical",
+        "test_quest_batch3_item_profiles",
+        "test_questpc7_merge_audit_callbacks",
     ],
     cwd=ROOT / "tools/content-migration",
     check=True,

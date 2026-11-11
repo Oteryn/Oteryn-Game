@@ -274,5 +274,263 @@ class CanonicalCookingRefresh(unittest.TestCase):
             self.assertEqual(self.snapshot(root), before)
 
 
+class CanonicalCookingSuccessor(unittest.TestCase):
+    def fixture(self, root):
+        import grizzly_shop_profiles as grizzly
+
+        packet, keys, historical_git = CanonicalCookingRefresh.fixture(self, root)
+        extra_before = json.dumps({'records': [
+            {'definition': {'identity': {'key': 'non-cooking'}, 'weight': 1}},
+        ]}).encode()
+        extra_current = json.loads(extra_before)
+        extra_current['records'][0]['definition']['weight'] = 2
+        (root / 'items-c.json').write_text(json.dumps(extra_current))
+        packet['source_revision'] = 'accepted-qn3-source'
+        packet['sources'] = [{'path': 'pinned/items.xml', 'sha256': 'b' * 64}]
+        packet['accepted_inputs'] = [{'path': 'native/items.json', 'sha256': 'c' * 64}]
+        packet['binding_input'] = {'path': 'bindings/items.json', 'sha256': 'd' * 64}
+        packet['authoring_inputs'].append({'path': 'accepted-qn3-authoring', 'sha256': 'e' * 64})
+        packet['records'].append({'production_definition': {
+            'production_key': 'oteryn:item.tibia.i27654'}, 'physical': 'source-proved'})
+        packet['classification'].append({'key': 'oteryn:item.tibia.i27654',
+                                         'classification': 'EXISTING_NATIVE', 'holds': []})
+        packet['canonical_inputs'] = [
+            {'path': path, 'sha256': tool.digest((root / path).read_bytes())}
+            for path in ('items-a.json', 'items-b.json', 'items-c.json')]
+        (root / tool.PACKET).write_bytes(grizzly.encode(packet))
+        approval = {'schema': 'OTERYN_M42_QN3_SOURCE_SUCCESSOR/v1',
+                    'baseline': tool.BASE, 'packet': tool.PACKET,
+                    'source_packet_sha256': tool.digest(grizzly.encode(packet)),
+                    'canonical_inputs': copy.deepcopy(packet['canonical_inputs'])}
+        approval_raw = grizzly.encode(approval)
+        (root / tool.QN3_SUCCESSOR).write_bytes(approval_raw)
+        # Exercise actual refresh from the frozen initial pin to a new shard
+        # body. Neither unrelated row may authorize a changed cooking row.
+        for path in ('items-a.json', 'items-c.json'):
+            rows = json.loads((root / path).read_bytes())
+            rows['records'][-1]['definition']['weight'] += 1
+            (root / path).write_text(json.dumps(rows))
+
+        def git(arguments, **kwargs):
+            self.assertEqual(arguments[-2], 'show')
+            prefix, path = arguments[-1].split(':', 1)
+            self.assertEqual(prefix, tool.BASE)
+            return extra_before if path == 'items-c.json' else historical_git(arguments, **kwargs)
+        return packet, keys, git, tool.digest(approval_raw)
+
+    def snapshot(self, root):
+        return CanonicalCookingRefresh.snapshot(self, root)
+
+    def test_frozen_approval_matches_current_packet_and_retains_f01(self):
+        import grizzly_shop_profiles as grizzly
+
+        root = Path(__file__).resolve().parents[2]
+        raw = (root / tool.QN3_SUCCESSOR).read_bytes()
+        self.assertEqual(tool.digest(raw), tool.QN3_SUCCESSOR_SHA256)
+        approval = json.loads(raw)
+        self.assertEqual(approval['baseline'], tool.BASE)
+        self.assertEqual(approval['packet'], tool.PACKET)
+        self.assertEqual(len(approval['canonical_inputs']), 35)
+        self.assertIn('content/items/definitions/items-15500-15999.json',
+                      [row['path'] for row in approval['canonical_inputs']])
+        packet = json.loads((root / tool.PACKET).read_bytes())
+        self.assertEqual([row['path'] for row in packet['canonical_inputs']],
+                         [row['path'] for row in approval['canonical_inputs']])
+        for row, initial in zip(packet['canonical_inputs'], approval['canonical_inputs']):
+            row['sha256'] = initial['sha256']
+        self.assertEqual(tool.digest(grizzly.encode(packet)), approval['source_packet_sha256'])
+
+    def test_exact_successor_refreshes_and_replays_without_a_new_git_baseline(self):
+        import grizzly_shop_profiles as grizzly
+
+        for fresh_pin in (False, True):
+            with self.subTest(fresh_pin=fresh_pin), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                packet, keys, git, approval_hash = self.fixture(root)
+                if fresh_pin:
+                    current = copy.deepcopy(packet)
+                    for row in current['canonical_inputs']:
+                        row['sha256'] = tool.digest((root / row['path']).read_bytes())
+                    (root / tool.PACKET).write_bytes(grizzly.encode(current))
+                with patch.object(tool, 'QN3_SUCCESSOR_SHA256', approval_hash), patch.object(
+                        tool.subprocess, 'check_output', side_effect=git), patch.object(
+                        grizzly, 'refresh_canonical_input_pins', side_effect=AssertionError('legacy only')):
+                    tool.refresh(root)
+                    first = self.snapshot(root)
+                    tool.refresh(root)
+                    self.assertEqual(self.snapshot(root), first)
+                    refreshed = json.loads(first[tool.PACKET])
+                    for descriptor in refreshed['canonical_inputs']:
+                        self.assertEqual(descriptor['sha256'],
+                                         tool.digest((root / descriptor['path']).read_bytes()))
+                        tool.verify(root, descriptor, keys)
+                refreshed['canonical_inputs'] = packet['canonical_inputs']
+                self.assertEqual(refreshed, packet)
+                self.assertEqual(len(refreshed['records']), 67)
+                self.assertEqual(sum(row['classification'] == 'HELD'
+                                     for row in refreshed['classification']), 6)
+                witness = json.loads(first[tool.WITNESS])
+                self.assertEqual(witness['baseline'], tool.BASE)
+                self.assertEqual(witness['source_packet_sha256'], tool.digest(first[tool.PACKET]))
+                self.assertEqual(set().union(*(set(rows) for rows in witness['shards'].values())), keys)
+
+    def test_changed_packet_authority_never_writes(self):
+        for change in ('profile', 'hold', 'held-classification', 'source-revision', 'source',
+                       'authoring', 'accepted-input', 'binding'):
+            with self.subTest(change=change), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                packet, _, git, approval_hash = self.fixture(root)
+                if change == 'profile':
+                    packet['records'][-1]['physical'] = 'unapproved'
+                elif change == 'hold':
+                    packet['classification'][-2]['holds'].append('unapproved')
+                elif change == 'held-classification':
+                    packet['classification'][-2]['classification'] = 'EXISTING_NATIVE'
+                elif change == 'source-revision':
+                    packet['source_revision'] = 'unapproved'
+                elif change == 'source':
+                    packet['sources'][0]['sha256'] = 'f' * 64
+                elif change == 'authoring':
+                    packet['authoring_inputs'][-1]['sha256'] = 'f' * 64
+                elif change == 'accepted-input':
+                    packet['accepted_inputs'][0]['sha256'] = 'f' * 64
+                else:
+                    packet['binding_input']['sha256'] = 'f' * 64
+                (root / tool.PACKET).write_text(json.dumps(packet))
+                before = self.snapshot(root)
+                with patch.object(tool, 'QN3_SUCCESSOR_SHA256', approval_hash), patch.object(
+                        tool.subprocess, 'check_output', side_effect=git):
+                    with self.assertRaisesRegex(ValueError, 'M42_REFRESH_PACKET_PROVENANCE'):
+                        tool.refresh(root)
+                self.assertEqual(self.snapshot(root), before)
+
+    def test_unapproved_paths_and_intermediate_pins_never_write(self):
+        for change in ('missing', 'duplicate', 'foreign', 'traversal', 'absolute', 'reordered',
+                       'extra-field', 'missing-pin', 'intermediate-pin', 'old-base-pin'):
+            with self.subTest(change=change), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                packet, _, git, approval_hash = self.fixture(root)
+                rows = packet['canonical_inputs']
+                if change == 'missing':
+                    rows.pop()
+                elif change == 'duplicate':
+                    rows.append(copy.deepcopy(rows[0]))
+                elif change in ('foreign', 'traversal', 'absolute'):
+                    rows[-1]['path'] = {'foreign': 'other.json', 'traversal': '../outside.json',
+                                        'absolute': '/outside.json'}[change]
+                elif change == 'reordered':
+                    rows.reverse()
+                elif change == 'extra-field':
+                    rows[-1]['unapproved'] = True
+                elif change == 'missing-pin':
+                    del rows[0]['sha256']
+                elif change == 'intermediate-pin':
+                    rows[0]['sha256'] = 'f' * 64
+                else:
+                    rows[0]['sha256'] = tool.digest(git(['git', 'show', f'{tool.BASE}:items-a.json']))
+                (root / tool.PACKET).write_text(json.dumps(packet))
+                before = self.snapshot(root)
+                with patch.object(tool, 'QN3_SUCCESSOR_SHA256', approval_hash), patch.object(
+                        tool.subprocess, 'check_output', side_effect=git):
+                    with self.assertRaisesRegex(ValueError, 'M42_REFRESH_'):
+                        tool.refresh(root)
+                self.assertEqual(self.snapshot(root), before)
+
+    def test_changed_cooking_rows_refuse_initial_and_fresh_pins(self):
+        for change in ('definition', 'wrapper', 'missing', 'duplicate', 'reordered', 'moved'):
+            for fresh_pin in (False, True):
+                with self.subTest(change=change, fresh_pin=fresh_pin), tempfile.TemporaryDirectory() as tmp:
+                    root = Path(tmp)
+                    packet, _, git, approval_hash = self.fixture(root)
+                    path = root / 'items-b.json'
+                    current = json.loads(path.read_bytes())
+                    if change == 'definition':
+                        current['records'][0]['definition']['weight'] += 1
+                    elif change == 'wrapper':
+                        current['records'][0]['source'] = 'unapproved'
+                    elif change == 'missing':
+                        current['records'].pop()
+                    elif change == 'duplicate':
+                        current['records'].append(copy.deepcopy(current['records'][0]))
+                    elif change == 'reordered':
+                        current['records'].reverse()
+                    else:
+                        added = root / 'items-c.json'
+                        extra = json.loads(added.read_bytes())
+                        extra['records'].append(current['records'].pop())
+                        added.write_text(json.dumps(extra))
+                    path.write_text(json.dumps(current))
+                    if fresh_pin:
+                        for row in packet['canonical_inputs']:
+                            row['sha256'] = tool.digest((root / row['path']).read_bytes())
+                        (root / tool.PACKET).write_text(json.dumps(packet))
+                    before = self.snapshot(root)
+                    with patch.object(tool, 'QN3_SUCCESSOR_SHA256', approval_hash), patch.object(
+                            tool.subprocess, 'check_output', side_effect=git):
+                        with self.assertRaisesRegex(ValueError, 'M42_REFRESH_SELECTED_CANONICAL_DRIFT'):
+                            tool.refresh(root)
+                    self.assertEqual(self.snapshot(root), before)
+
+    def test_changed_approval_cannot_authorize_a_matching_packet(self):
+        for change in ('missing', 'whitespace', 'body', 'matching-packet'):
+            with self.subTest(change=change), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                packet, _, git, approval_hash = self.fixture(root)
+                path = root / tool.QN3_SUCCESSOR
+                if change == 'missing':
+                    path.unlink()
+                elif change == 'whitespace':
+                    path.write_bytes(path.read_bytes() + b'\n')
+                else:
+                    approval = json.loads(path.read_bytes())
+                    if change == 'matching-packet':
+                        import grizzly_shop_profiles as grizzly
+                        packet['records'][-1]['physical'] = 'unapproved'
+                        (root / tool.PACKET).write_bytes(grizzly.encode(packet))
+                        approval['source_packet_sha256'] = tool.digest(grizzly.encode(packet))
+                    else:
+                        approval['canonical_inputs'][0]['sha256'] = 'f' * 64
+                    path.write_text(json.dumps(approval))
+                before = self.snapshot(root)
+                with patch.object(tool, 'QN3_SUCCESSOR_SHA256', approval_hash), patch.object(
+                        tool.subprocess, 'check_output', side_effect=git):
+                    with self.assertRaisesRegex(ValueError, 'M42_REFRESH_'):
+                        tool.refresh(root)
+                self.assertEqual(self.snapshot(root), before)
+
+
+    def test_incomplete_immutable_successor_closure_never_writes(self):
+        import grizzly_shop_profiles as grizzly
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            packet, _, git, _ = self.fixture(root)
+            path = 'items-b.json'
+            rows = json.loads(git(['git', 'show', f'{tool.BASE}:{path}']))
+            rows['records'].pop()
+            raw = json.dumps(rows).encode()
+            packet['canonical_inputs'][1]['sha256'] = tool.digest(raw)
+            packet_raw = grizzly.encode(packet)
+            (root / tool.PACKET).write_bytes(packet_raw)
+            (root / path).write_bytes(raw)
+            baseline = json.loads(git(['git', 'show', f'{tool.BASE}:{tool.PACKET}']))
+            baseline['canonical_inputs'][1]['sha256'] = tool.digest(raw)
+            approval = json.loads((root / tool.QN3_SUCCESSOR).read_bytes())
+            approval['canonical_inputs'] = packet['canonical_inputs']
+            approval['source_packet_sha256'] = tool.digest(packet_raw)
+            approval_raw = grizzly.encode(approval)
+            (root / tool.QN3_SUCCESSOR).write_bytes(approval_raw)
+
+            def incomplete(arguments, **kwargs):
+                selected_path = arguments[-1].split(':', 1)[1]
+                return {tool.PACKET: grizzly.encode(baseline), path: raw}.get(selected_path) or git(arguments, **kwargs)
+            before = self.snapshot(root)
+            with patch.object(tool, 'QN3_SUCCESSOR_SHA256', tool.digest(approval_raw)), patch.object(
+                    tool.subprocess, 'check_output', side_effect=incomplete):
+                with self.assertRaisesRegex(ValueError, 'M42_CAPTURE_COOKBOOK_CLOSURE'):
+                    tool.refresh(root)
+            self.assertEqual(self.snapshot(root), before)
+
+
 if __name__ == '__main__':
     unittest.main()

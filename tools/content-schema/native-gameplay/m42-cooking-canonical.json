@@ -1,5 +1,5 @@
 {
-  "baseline": "856a420d64cc0ea5c9e8cb2a54742b45c49b9914",
+  "baseline": "f01f18582443f482b7adcfaf32cae3f9d3616876",
   "recipe_sha256": "191410317d0968dcc87e67234a0f4fcbcc3b7b933e7fc4ca8653314a3bfde732",
   "schema": "OTERYN_M42_COOKING_CANONICAL/v1",
   "shards": {
@@ -17,7 +17,7 @@
       "oteryn:item.tibia.i11682": "1da395314411e04830fb5da4d6b3ec2c8257d9afc613ef331fb2a917b3082d0d"
     },
     "content/items/definitions/items-16500-16999.json": {
-      "oteryn:item.tibia.i2874": "bd48ccb35542fbef0bfda8639a7725f790626ff2dad0098a6b7a6751c019cfe4"
+      "oteryn:item.tibia.i2874": "b80a6b9826aac31532479b98feb18350bdd10128d7aa631111cefdd57b15a129"
     },
     "content/items/definitions/items-18500-18999.json": {
       "oteryn:item.tibia.i31590": "6d5f72cc612963a7816ac15becd30116288357b36619b157e90bb9bd8794c545"
@@ -55,7 +55,7 @@
     },
     "content/items/definitions/items-22500-22999.json": {
       "oteryn:item.tibia.i3737": "61c9d3b2f4c801dd85f0a2e8d3b5aa0c40865d6a65a76262245cfdeebb326d4d",
-      "oteryn:item.tibia.i3738": "a7b9239ae50d86b75e26477178dc3e1f1c11095de7af32e9af4f65122b81f32d",
+      "oteryn:item.tibia.i3738": "6ae49177f47b5ec01b68748609b2200e9d5f2ea24d14c992e2503213726fa3ac",
       "oteryn:item.tibia.i3739": "59e3479d076bb4991c09dde352b0bf691f698063beb519b65a0427e7a3547250",
       "oteryn:item.tibia.i3740": "8be2650fc42274b20b55839e7ef9fcbc10d27b1584f7915f567d7445efd04f53",
       "oteryn:item.tibia.i3741": "64ea7babc575be999a649962920cebfa00051e2f06ddbbf57e742f2a23f85f79"
@@ -118,5 +118,5 @@
       "oteryn:item.tibia.i9088": "98d8744cdd95990a2803c8161391dec841389688e4d7eb3c80738c24f896102f"
     }
   },
-  "source_packet_sha256": "541dc880b9678dfa84bd92f809e2ee7ee3f5f6ed2a1990d803719a8423511cb5"
+  "source_packet_sha256": "d656f812919a625654300bea4728ba4a01d3055537bd6e330919e72221bb0d9a"
 }
