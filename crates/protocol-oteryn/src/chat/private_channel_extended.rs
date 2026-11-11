@@ -64,16 +64,11 @@ fn check_extension(list: &ChatChannelList, extension: &ChannelListExtension) -> 
                 .iter()
                 .any(|invited| invited.channel_id == channel_id)
     };
-    let ascending = |ids: &mut dyn Iterator<Item = u16>| {
-        let mut last = 0;
-        ids.all(|id| {
-            let ok = id > last && listed(id);
-            last = id;
-            ok
-        })
-    };
-    if !ascending(&mut extension.joined.iter().copied())
-        || !ascending(&mut extension.participants.iter().map(|entry| entry.channel_id))
+    if !ascending(extension.joined.iter().copied(), &listed)
+        || !ascending(
+            extension.participants.iter().map(|entry| entry.channel_id),
+            &listed,
+        )
     {
         return Err(ChatWireError::Malformed);
     }
@@ -89,6 +84,16 @@ fn check_extension(list: &ChatChannelList, extension: &ChannelListExtension) -> 
         }
     }
     Ok(())
+}
+
+/// The ids strictly ascend from 1 and each is listed.
+fn ascending(mut ids: impl Iterator<Item = u16>, listed: &impl Fn(u16) -> bool) -> bool {
+    let mut last = 0;
+    ids.all(|id| {
+        let ok = id > last && listed(id);
+        last = id;
+        ok
+    })
 }
 
 /// Encodes a channel list delta (type 3) with the extension after the legacy fields. An empty
