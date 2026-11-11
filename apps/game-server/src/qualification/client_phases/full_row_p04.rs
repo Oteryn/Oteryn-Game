@@ -125,11 +125,21 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
 
     // The node-boot character is never advanced by a fixture. Repeated ordinary
     // hunts provide XP, loot and any delivery goods used below.
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let mut started = send(&mut client, 5, 0).await?;
     for _ in 0..96 {
         if started.refusal == 0 {
             break;
         }
+        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         client_hunt::hunt(&mut client).await?;
         started = send(&mut client, 5, 0).await?;
     }

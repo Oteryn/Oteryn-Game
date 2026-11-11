@@ -110,7 +110,56 @@ fn visible(status: &ConditionStatus) -> TestResult<String> {
         .iter()
         .find(|condition| condition.icon == 13)
         .ok_or("C17a Haste icon absent")?;
-    Ok(oteryn_dev_client::client_ui::condition_status::status_text(status))
+    expected_conditions(status)
+}
+
+// Capture oracle: format wire conditions independently of the client UI under test.
+fn expected_conditions(status: &ConditionStatus) -> TestResult<String> {
+    const LABELS: [(&str, &str); 27] = [
+        ("☠", "Poison"),
+        ("♨", "Burning"),
+        ("ϟ", "Energy"),
+        ("♥", "Bleeding"),
+        ("≈", "Drowning"),
+        ("❄", "Freezing"),
+        ("☀", "Dazzled"),
+        ("☾", "Cursed"),
+        ("◉", "Invisible"),
+        ("◌", "Drunk"),
+        ("⌖", "Rooted"),
+        ("!", "Feared"),
+        ("»", "Haste"),
+        ("≪", "Paralysed"),
+        ("♧", "Food"),
+        ("+", "Recovery"),
+        ("◈", "Mana shield"),
+        ("☼", "Light"),
+        ("◆", "Attributes"),
+        ("↑", "Skill bonus"),
+        ("+", "Regeneration"),
+        ("◇", "Outfit"),
+        ("✦", "Intense Hex"),
+        ("×", "Muted"),
+        ("○", "Pacified"),
+        ("−", "Powerless"),
+        ("!", "Agony"),
+    ];
+    let mut text = String::new();
+    for condition in &status.conditions {
+        let (icon, label) = LABELS
+            .get(usize::from(condition.icon).wrapping_sub(1))
+            .ok_or("unknown condition icon")?;
+        let duration = match condition.remaining_ms {
+            -1 => "Permanent".to_owned(),
+            ms if ms > 0 => format!("{}s", ms.div_euclid(1000) + i64::from(ms % 1000 != 0)),
+            _ => return Err("invalid condition duration".into()),
+        };
+        text.push_str(&format!("{icon} {label}: {duration}\r\n"));
+    }
+    if text.is_empty() {
+        text.push_str("No active conditions");
+    }
+    Ok(text)
 }
 
 #[cfg(test)]

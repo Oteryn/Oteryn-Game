@@ -11,7 +11,7 @@
 //!    positive XP settlement, and exactly one minute of stamina debit in the same hunt.
 //!    The positive award also proves the non-empty stamina XP band is applied.
 //! 4. Send LOGOUT until the combat lock permits it; expect Accepted, then remain
-//!    genuinely offline for the ten-minute delay plus one three-minute recovery period.
+//!    genuinely offline for the ten-minute delay plus one six-minute bonus-band recovery period.
 //! 5. Freshly admit the same character; expect a new game-session id and durable XP,
 //!    plus exactly one recovered stamina minute, then send LOGOUT and expect Accepted.
 
@@ -213,7 +213,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     drop(client);
 
-    tokio::time::sleep(Duration::from_secs(780)).await;
+    tokio::time::sleep(Duration::from_secs(960)).await;
     let mut fresh = row_connect_world(clients, 0xc6).await?;
     if fresh.join_snapshot().game_session_id == first_session {
         return Err("step-5 fresh admission reused the previous game session".into());

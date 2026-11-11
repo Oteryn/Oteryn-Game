@@ -198,7 +198,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             row_needs_logout_0 = false;
         }
 
-        tokio::time::sleep(Duration::from_secs(780)).await;
+        tokio::time::sleep(Duration::from_secs(960)).await;
         let mut fresh = connect_world(clients, 0xc8).await?;
         let mut row_needs_logout_1 = true;
         let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {

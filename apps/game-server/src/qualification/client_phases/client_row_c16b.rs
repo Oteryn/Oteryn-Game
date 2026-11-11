@@ -122,7 +122,7 @@ async fn capture(
                 std::fs::write(path.join("c16b-condition.bin"), &payload)?;
                 std::fs::write(
                     path.join("c16b-expected.txt"),
-                    oteryn_dev_client::client_ui::condition_status::status_text(&status),
+                    expected_conditions(&status)?,
                 )?;
             }
             Ok::<(), Box<dyn std::error::Error>>(())
@@ -164,4 +164,91 @@ async fn query(
     }
     let status = ConditionStatus::decode(&reply.payload).ok_or("C16b malformed condition reply")?;
     Ok((reply.payload, status))
+}
+
+// Capture oracle: format wire conditions independently of the client UI under test.
+fn expected_conditions(status: &ConditionStatus) -> TestResult<String> {
+    const LABELS: [(&str, &str); 27] = [
+        ("☠", "Poison"),
+        ("♨", "Burning"),
+        ("ϟ", "Energy"),
+        ("♥", "Bleeding"),
+        ("≈", "Drowning"),
+        ("❄", "Freezing"),
+        ("☀", "Dazzled"),
+        ("☾", "Cursed"),
+        ("◉", "Invisible"),
+        ("◌", "Drunk"),
+        ("⌖", "Rooted"),
+        ("!", "Feared"),
+        ("»", "Haste"),
+        ("≪", "Paralysed"),
+        ("♧", "Food"),
+        ("+", "Recovery"),
+        ("◈", "Mana shield"),
+        ("☼", "Light"),
+        ("◆", "Attributes"),
+        ("↑", "Skill bonus"),
+        ("+", "Regeneration"),
+        ("◇", "Outfit"),
+        ("✦", "Intense Hex"),
+        ("×", "Muted"),
+        ("○", "Pacified"),
+        ("−", "Powerless"),
+        ("!", "Agony"),
+    ];
+    let mut text = String::new();
+    for condition in &status.conditions {
+        let (icon, label) = LABELS
+            .get(usize::from(condition.icon).wrapping_sub(1))
+            .ok_or("unknown condition icon")?;
+        let duration = match condition.remaining_ms {
+            -1 => "Permanent".to_owned(),
+            ms if ms > 0 => format!("{}s", ms.div_euclid(1000) + i64::from(ms % 1000 != 0)),
+            _ => return Err("invalid condition duration".into()),
+        };
+        text.push_str(&format!("{icon} {label}: {duration}\r\n"));
+    }
+    if text.is_empty() {
+        text.push_str("No active conditions");
+    }
+    Ok(text)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_protocol_oteryn::condition_status::ActiveCondition;
+
+    #[test]
+    fn full_row_paralysis_golden_preserves_conditions_and_rounds_duration() -> TestResult {
+        let status = ConditionStatus {
+            conditions: vec![
+                ActiveCondition {
+                    icon: 1,
+                    sub_id: 0,
+                    remaining_ms: 1001,
+                },
+                ActiveCondition {
+                    icon: 14,
+                    sub_id: 0,
+                    remaining_ms: 1,
+                },
+                ActiveCondition {
+                    icon: 15,
+                    sub_id: 0,
+                    remaining_ms: -1,
+                },
+            ],
+        };
+        assert_eq!(
+            expected_conditions(&status)?,
+            "☠ Poison: 2s\r\n≪ Paralysed: 1s\r\n♧ Food: Permanent\r\n"
+        );
+        assert_eq!(
+            expected_conditions(&ConditionStatus::default())?,
+            "No active conditions"
+        );
+        Ok(())
+    }
 }

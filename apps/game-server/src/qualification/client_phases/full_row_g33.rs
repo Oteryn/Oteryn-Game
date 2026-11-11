@@ -1,12 +1,13 @@
 //! G33: seasonal Cake and Santa (W05d). Both producers are gated by committed annual windows
 //! in `content/encounters/event-schedule/schedule.json`: piece_of_cake Feb 21 to Feb 27 and
 //! christmas Dec 12 to Dec 31 (end exclusive). The server evaluates them on the reset epoch's
-//! calendar (`crates/gameplay/foundation/src/scheduled_events.rs`), i.e. the wall clock.
+//! Berlin activation date (`crates/gameplay/durability/src/durability/world_event.rs`).
 //! 1. Admit the node-boot character and log out (proves the run can reach the world).
 //! 2. Outside both windows the mechanic is closed by content: SKIPPED with `content:`.
 //!    Inside a window the Cake extraction spot and the Santa NPC dialogue need scripted
 //!    placement that no player route provides in this run: FAIL with `needed:`.
 use super::*;
+use sqlx::Connection;
 
 /// Annual windows (month, day) start inclusive, end exclusive, from the committed schedule.
 const WINDOWS: [((u32, u32), (u32, u32)); 2] = [((2, 21), (2, 27)), ((12, 12), (12, 31))];
@@ -29,7 +30,7 @@ fn token(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join("-")
 }
 
-/// Civil (month, day) of a unix time in UTC (days-from-civil inverse).
+/// Civil (month, day) of seconds projected onto the reset's Berlin calendar.
 fn month_day(unix_secs: u64) -> (u32, u32) {
     let z = i64::try_from(unix_secs / 86_400).unwrap_or(0) + 719_468;
     let doe = z.rem_euclid(146_097);
@@ -55,10 +56,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<(&'static str, String)
     {
         return Err("step=logout;observed=refused".into());
     }
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)?
-        .as_secs();
-    let (month, day) = month_day(now);
+    let world = WorldId::decode(&clients.world)?;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let reset_date: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM e.activated_at AT TIME ZONE 'Europe/Berlin'))::bigint FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid")
+        .bind(world.as_bytes().as_slice())
+        .fetch_one(&mut database)
+        .await?;
+    let (month, day) = month_day(u64::try_from(reset_date)?);
     if in_window((month, day)) {
         Ok((
             "FAIL",
@@ -81,6 +85,17 @@ mod tests {
         assert_eq!(month_day(0), (1, 1));
         assert_eq!(month_day(1_773_000_000), (3, 8));
         assert_eq!(month_day(1_794_268_800), (11, 10));
+    }
+
+    #[test]
+    fn cake_window_stays_open_for_the_active_february_26_reset() {
+        // The February 26 06:00 Berlin reset, projected by the SQL query.
+        let active_reset_date = month_day(1_772_085_600);
+        assert_eq!(active_reset_date, (2, 26));
+        assert!(in_window(active_reset_date));
+        // UTC midnight on February 27 does not change that stored reset date.
+        assert_eq!(month_day(1_772_150_400), (2, 27));
+        assert!(!in_window(month_day(1_772_150_400)));
     }
 
     #[test]

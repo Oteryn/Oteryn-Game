@@ -15,8 +15,8 @@ client_status=0
 
 # Keep the fixture pass that node_boot composes before its real-world pass.
 # Neither database bootstrap nor node lifecycle is duplicated here.
-# Collect every registered batch before running capture-dependent replay tests.
-# A partial node-boot batch cannot supply the evidence required by the full matrix.
+# Keep all registered rows in one database: capture rows consume the durable
+# progression left by earlier journeys. Each node-boot invocation starts fresh.
 row_count="$(python3 - <<'PYROWS'
 from pathlib import Path
 import re
@@ -24,10 +24,8 @@ source = Path("apps/game-server/src/qualification/client_phases/world.rs").read_
 print(max(map(int, re.findall(r"e2e_row_selected\((\d+)\)", source))) + 1)
 PYROWS
 )" || exit 1
-for ((start = 0; start < row_count; start += 15)); do
-    OTERYN_E2E_ROW_BATCH="$start:15" NODE_BOOT_WORLD=1 NODE_BOOT_SPELLS=0 \
-        bash tools/qualification/node_boot/run.sh 2>&1 | tee -a "$RUN/node.log" || node_status=$?
-done
+OTERYN_E2E_ROW_BATCH="0:$row_count" NODE_BOOT_WORLD=1 NODE_BOOT_SPELLS=0 \
+    bash tools/qualification/node_boot/run.sh 2>&1 | tee "$RUN/node.log" || node_status=$?
 
 # Missing captures are an error. A failed boot cannot silently use unit fixtures.
 "$CARGO" test --offline --locked -p oteryn-client-runtime -p oteryn-client-domain -p oteryn-client-ui \

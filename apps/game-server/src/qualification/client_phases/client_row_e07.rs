@@ -42,11 +42,14 @@ async fn send(
             reply: reply.clone(),
         },
     );
+    if panel.rows != reply.rows {
+        return Err("stash panel rows differ from the wire reply".into());
+    }
     Ok((reply, result.payload))
 }
 
-fn total(panel: &ui::StashPanel) -> u64 {
-    panel.rows.iter().map(|row| u64::from(row.quantity)).sum()
+fn total(rows: &[stash::StashRow]) -> u64 {
+    rows.iter().map(|row| u64::from(row.quantity)).sum()
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -75,7 +78,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if opened.outcome != stash::StashOutcome::Opened {
         return Err(format!("stash open {:?}", opened.outcome).into());
     }
-    let before = total(&panel);
+    let before = total(&opened.rows);
     let item = client
         .inventory()
         .and_then(|inventory| {
@@ -99,7 +102,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("stow reply {stowed:?}").into());
     }
     let (browsed, browse_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
-    let after_stow = total(&panel);
+    let after_stow = total(&browsed.rows);
     if after_stow != before + u64::from(item.count.get()) {
         return Err("stash total differs from stowed quantity".into());
     }
@@ -117,8 +120,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if withdrawn.outcome != stash::StashOutcome::Committed {
         return Err(format!("withdraw outcome {:?}", withdrawn.outcome).into());
     }
-    let (_, after_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
-    let after_withdraw = total(&panel);
+    let (after, after_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
+    let after_withdraw = total(&after.rows);
     if after_withdraw != after_stow - 1 {
         return Err("one-unit withdrawal changed the wrong quantity".into());
     }
@@ -163,7 +166,7 @@ mod tests {
     #[test]
     fn stash_totals_use_wide_arithmetic() {
         let mut panel = ui::StashPanel::default();
-        assert_eq!(total(&panel), 0);
+        assert_eq!(total(&panel.rows), 0);
         let row = stash::StashRow {
             handle: [1; 16],
             definition_key: "item".into(),
@@ -172,6 +175,6 @@ mod tests {
             migration_required: false,
         };
         panel.rows = vec![row.clone(), row];
-        assert_eq!(total(&panel), 2 * u64::from(u32::MAX));
+        assert_eq!(total(&panel.rows), 2 * u64::from(u32::MAX));
     }
 }

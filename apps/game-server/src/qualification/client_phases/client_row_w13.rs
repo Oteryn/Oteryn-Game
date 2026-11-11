@@ -44,6 +44,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         if view.creature_key.is_empty() || view.boss_key.is_empty() {
             return Err(format!("boost view has an empty selection: {view:?}").into());
         }
+        let expected = decode_boost(&reply.payload)?;
+        if view.reset_epoch != expected.reset_epoch
+            || view.creature_key != expected.creature_key
+            || view.boss_key != expected.boss_key
+        {
+            return Err("boost panel differs from the wire reply".into());
+        }
         let refused = client
             .session_mut()
             .gated_command(
@@ -60,7 +67,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             "w13-expected.txt",
             format!(
                 "epoch={}\ncreature={}\nboss={}\n",
-                view.reset_epoch, view.creature_key, view.boss_key
+                expected.reset_epoch, expected.creature_key, expected.boss_key
             )
             .as_bytes(),
         )?;
@@ -85,5 +92,59 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=W13.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=W13.client status=FAIL evidence=timeout"),
+    }
+}
+
+// Decode the server wire contract, independently of the daily-boost UI projection.
+fn decode_boost(payload: &[u8]) -> TestResult<wire::DailyBoostView> {
+    let (epoch, mut rest) = payload.split_at_checked(8).ok_or("boost epoch truncated")?;
+    let reset_epoch = u64::from_be_bytes(epoch.try_into()?);
+    let creature_key = take_key(&mut rest)?;
+    let boss_key = take_key(&mut rest)?;
+    if !rest.is_empty() {
+        return Err("boost reply has trailing bytes".into());
+    }
+    Ok(wire::DailyBoostView {
+        reset_epoch,
+        creature_key,
+        boss_key,
+    })
+}
+
+fn take_key(bytes: &mut &[u8]) -> TestResult<String> {
+    let (&length, rest) = bytes.split_first().ok_or("boost key length absent")?;
+    let (key, rest) = rest
+        .split_at_checked(usize::from(length))
+        .ok_or("boost key truncated")?;
+    let key = std::str::from_utf8(key)?;
+    if key.is_empty() {
+        return Err("boost key empty".into());
+    }
+    *bytes = rest;
+    Ok(key.to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn full_row_boost_golden_decodes_epoch_and_distinct_keys() -> TestResult {
+        let payload = [
+            0, 0, 0, 0, 0, 0, 1, 2, 3, b'r', b'a', b't', 4, b'b', b'o', b's', b's',
+        ];
+        let view = decode_boost(&payload)?;
+        assert_eq!(view.reset_epoch, 258);
+        assert_eq!(view.creature_key, "rat");
+        assert_eq!(view.boss_key, "boss");
+        for end in 0..payload.len() {
+            assert!(decode_boost(&payload[..end]).is_err());
+        }
+        let mut trailing = payload.to_vec();
+        trailing.push(0);
+        assert!(decode_boost(&trailing).is_err());
+        let mut empty_key: &[u8] = &[0];
+        assert!(take_key(&mut empty_key).is_err());
+        Ok(())
     }
 }
