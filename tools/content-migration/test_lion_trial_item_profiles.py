@@ -367,12 +367,6 @@ class LionTrialItemProfiles(unittest.TestCase):
                           return_value=(keys, set(), [])), patch.object(
                               sys, 'path', [str(ROOT / 'tools/content-schema/reward-claim-authoring'),
                                             *sys.path]), appearance_input_scope():
-            first = cycle()
-            original = {row['production_definition']['production_key']: row
-                        for row in json.loads(first[profile])['records']}
-            for key in keys:
-                self.assertNotIn('always_on_top', original[key]['attributes'])
-                self.assertNotIn('always_on_top_order', original[key]['attributes'])
             overlay = json.loads((ROOT / house.PROFILES).read_bytes())
             house_appearance = {
                 'reference': 'canary',
@@ -394,6 +388,53 @@ class LionTrialItemProfiles(unittest.TestCase):
             self.assertEqual(orders, {item: 0 for item in profiles.SOURCE_RECORDS})
             self.assertEqual(orders, {item: overlay['always_on_top'][str(item)]
                                       for item in profiles.SOURCE_RECORDS})
+
+            # A published provider can already contain House's exact optional
+            # pair. Prove each complete Lion row from its pinned source, then
+            # supply the raw predecessor explicitly for the first cycle.
+            predecessor = json.loads((ROOT / profile).read_bytes())
+            prior_rows = {row['production_definition']['production_key']: row
+                          for row in predecessor['records']}
+            self.assertEqual(len(prior_rows), len(predecessor['records']))
+            self.assertTrue(keys <= prior_rows.keys())
+            taxonomy = json.loads((ROOT / 'content/items/taxonomy/items.json').read_bytes())
+            replacements = {}
+            for item_id in profiles.SOURCE_RECORDS:
+                key = f'oteryn:item.tibia.i{item_id}'
+                raw = profiles.qualify(*self.values(item_id))
+                current = prior_rows[key]
+                if 'taxonomy' in current['authoring']:
+                    matching = [row for row in taxonomy['records']
+                                if row['target'] == self.definitions[key]['identity']]
+                    self.assertEqual(len(matching), 1)
+                    raw['authoring']['taxonomy'] = copy.deepcopy(matching[0]['source_taxonomy'])
+                attributes = current['attributes']
+                top_fields = {'always_on_top', 'always_on_top_order'} & attributes.keys()
+                self.assertIn(top_fields, (set(), {'always_on_top', 'always_on_top_order'}))
+                expected = copy.deepcopy(raw)
+                if top_fields:
+                    self.assertIs(attributes['always_on_top'], orders[item_id] != 0)
+                    self.assertIs(type(attributes['always_on_top_order']), int)
+                    self.assertEqual(attributes['always_on_top_order'], orders[item_id])
+                    expected['attributes'].update(always_on_top=orders[item_id] != 0,
+                                                  always_on_top_order=orders[item_id])
+                self.assertEqual(current, expected)
+                replacements[key] = raw
+            outside_before = {key: copy.deepcopy(row) for key, row in prior_rows.items()
+                              if key not in keys}
+            predecessor['records'] = [
+                replacements.get(row['production_definition']['production_key'], row)
+                for row in predecessor['records']]
+            self.assertEqual({row['production_definition']['production_key']: row
+                              for row in predecessor['records']
+                              if row['production_definition']['production_key'] not in keys},
+                             outside_before)
+            first = cycle(json.dumps(predecessor).encode())
+            original = {row['production_definition']['production_key']: row
+                        for row in json.loads(first[profile])['records']}
+            for key in keys:
+                self.assertNotIn('always_on_top', original[key]['attributes'])
+                self.assertNotIn('always_on_top_order', original[key]['attributes'])
             house.admit(ROOT, first, profile, manifest, order, canonical)
             after_house = {row['production_definition']['production_key']: row
                            for row in json.loads(first[profile])['records']}

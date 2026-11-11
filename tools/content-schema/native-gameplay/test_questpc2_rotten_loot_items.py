@@ -7,25 +7,32 @@ from pathlib import Path
 import questpc2_rotten_loot_items as tool
 
 ROOT = Path(__file__).resolve().parents[3]
-CANONICAL_OUTSIDE = 'a36cccacd5536b476e508e0b1d2936657c80485d62c9f0df962c3865c2876130'
-NATIVE_OUTSIDE = 'a64f6741e8bf27700dab39a0545dbe0b524b34f65542bf8b58a4ce63dd44a3bc'
 
 
-def digest(records):
-    return hashlib.sha256(json.dumps(records, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+def outside_snapshot(records, keys):
+    # Compare every complete outside record, including JSON types, across this
+    # owner's call. Other qualified producers can advance the repository corpus.
+    return json.dumps({key: row for key, row in records.items() if key not in keys},
+                      sort_keys=True, separators=(',', ':')).encode()
 
 
 class RottenItemAdmissionTests(unittest.TestCase):
     def test_exact_six_canonical_and_native_admissions_preserve_other_records(self):
+        from qualification_inputs import appearance_input_scope
+
         keys = {f'oteryn:item.tibia.i{i}' for i in tool.selected()}
         self.assertEqual(len(keys), 6)
         definitions = {}
         for path in (ROOT / 'content/items/definitions').glob('items-*.json'):
             for row in json.loads(path.read_bytes())['records']:
                 definition = row['definition']
+                self.assertNotIn(definition['identity']['key'], definitions)
                 definitions[definition['identity']['key']] = definition
-        profiles = {r['production_definition']['production_key']: r for r in json.loads(
-            (ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())['records']}
+        profile_path = 'content/items/definitions/spell-native-profiles.json'
+        document = json.loads((ROOT / profile_path).read_bytes())
+        profiles = {r['production_definition']['production_key']: r
+                    for r in document['records']}
+        self.assertEqual(len(profiles), len(document['records']))
         for key in sorted(keys):
             with self.subTest(item=key):
                 self.assertTrue(definitions[key]['materializable'])
@@ -51,8 +58,34 @@ class RottenItemAdmissionTests(unittest.TestCase):
                         self.assertEqual(profiles[key]['semantics'][group], expected)
                         continue
                     self.assertEqual(definitions[key]['semantics'][group], profiles[key]['semantics'][group])
-        self.assertEqual(digest({k: v for k, v in definitions.items() if k not in keys}), CANONICAL_OUTSIDE)
-        self.assertEqual(digest({k: v for k, v in profiles.items() if k not in keys}), NATIVE_OUTSIDE)
+        canonical_outside = outside_snapshot(definitions, keys)
+        native_outside = outside_snapshot(profiles, keys)
+        accepted = {key: copy.deepcopy(definitions[key]) for key in keys}
+        native_selected = {key: copy.deepcopy(profiles[key]) for key in keys}
+        # Exercise the six actual admissions while retaining every accepted
+        # fact. The reset is only an in-memory pre-admission fixture.
+        for key in keys:
+            definitions[key]['materializable'] = False
+        manifest_path = 'manifest'
+        generated = {profile_path: json.dumps(document).encode(),
+                     manifest_path: b'{"item_profiles":{}}'}
+        canonical = lambda value: (json.dumps(value, sort_keys=True) + '\n').encode()
+        with appearance_input_scope():
+            tool.apply_admissions(list(definitions.values()), ROOT)
+            tool.admit_native(ROOT, generated, profile_path, manifest_path,
+                              lambda row: row['production_definition']['production_key'],
+                              canonical)
+        self.assertEqual({key: definitions[key] for key in keys}, accepted)
+        self.assertEqual(outside_snapshot(definitions, keys), canonical_outside)
+        actual_document = json.loads(generated[profile_path])
+        actual = {row['production_definition']['production_key']: row
+                  for row in actual_document['records']}
+        self.assertEqual(len(actual), len(actual_document['records']))
+        self.assertEqual(set(actual), set(profiles))
+        self.assertEqual({key: actual[key] for key in keys}, native_selected)
+        self.assertEqual(outside_snapshot(actual, keys), native_outside)
+        self.assertEqual(json.loads(generated[manifest_path])['item_profiles']['sha256'],
+                         hashlib.sha256(generated[profile_path]).hexdigest())
 
     def test_boss_yield_custody_survives_real_rotten_capture(self):
         import boss_reward_yield_profiles as boss
