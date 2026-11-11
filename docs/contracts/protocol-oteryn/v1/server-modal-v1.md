@@ -169,3 +169,34 @@ the map snapshot's static USE target, legacy refusal and opt-in, stale revision 
 invalid choice, Cancel/replay with zero sleep receipts, then a new selection and
 the acknowledged clean logout. Its existing transaction rollback, released claims,
 canonical bed head, saved rest and fresh-admission wake assertions remain in force.
+
+## Dialog input and answer value (capability 490)
+
+Capability 490 `SERVER_MODAL_INPUT_V1` requires 450. Sessions without it send
+and receive byte-identical V1 payloads.
+
+Every dialog descriptor sent to a selected connection is followed by an input
+block: `kind:u8` (0 none, 1 amount, 2 single-line text, 3 multi-line edit). For
+kinds 1–3 it continues with `minimum:u32le, maximum:u32le` and the initial
+value. A value is `0` (none), `1` followed by `amount:u64le`, or `2` followed by
+`len:u16le` and UTF-8 text. For an amount the limits bound the number; for text
+they bound its byte length, with `maximum` at most 1024
+(`MAX_INPUT_TEXT_BYTES`). Text never contains NUL, and single-line text never
+contains CR or LF. An initial value matches the kind and lies within the
+limits (an initial text may be shorter than `minimum`). Other replies (tags 0,
+2, 3) are unchanged.
+
+A selected connection's answer (command 737) is the V1 answer followed by a
+value as above and `dont_show_again:u8` (0 or 1); the payload is at most 1035
+bytes, the command 737 registry bound. The hub checks it against the pending
+dialog before the V1 answer reaches the dialog's owner: the declared cancel
+button carries no value, a dialog with input requires a value the input
+accepts, and a dialog without input takes none. An uncertain submission's
+retry must repeat the same value and choice. The owner receives the checked
+value and the "don't show again" choice with its selection. A connection
+without 490 is never offered an input dialog.
+
+Current coverage: the Bed and Hireling Store rule dialogs ask for no input, so
+no in-tree owner offers an input dialog yet; `offer_rule_with_input` is the
+owner entry point. `server_modal_input_value_reaches_the_owner_only_when_checked`
+covers the hub checks and the delivered value.

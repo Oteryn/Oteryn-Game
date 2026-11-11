@@ -8,7 +8,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     admitted: &AdmittedSession,
     command: ClientCommandView<'_>,
 ) -> Option<Dispatch> {
-    let request = Request::decode(command.command_type, command.payload)?;
+    let flagged = admitted
+        .continuity
+        .selected_capabilities
+        .contains(oteryn_protocol_oteryn::house_podium::CAPABILITY_HOUSE_PODIUM_FLAGS_V1);
+    let request = Request::decode_selected(command.command_type, command.payload, flagged)?;
     let reply = authority.house_podium(*admitted, request).await?;
     Some(Dispatch::Reply(CommandStatus::Accepted, reply))
 }

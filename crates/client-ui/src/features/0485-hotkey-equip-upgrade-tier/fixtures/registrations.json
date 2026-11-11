@@ -1,0 +1,17 @@
+[
+  {
+    "mechanic": "0485-hotkey-equip-upgrade-tier",
+    "kind": "handlers",
+    "id": "0485-hotkey-equip-upgrade-tier-command348-extension",
+    "status": "unsupported",
+    "reason": "WU26 package 2 server side only: the native client tiered hotkey binding lands in the client lane.",
+    "commands": [],
+    "not_applicable": {
+      "state": "The equip intent is stateless per press.",
+      "protocol": "The shared command348 codec in oteryn-protocol-oteryn carries the trailing upgrade_tier byte.",
+      "view": "The tiered hotkey label lands with client support.",
+      "input": "The tiered hotkey binding input lands with client support.",
+      "settings": "The per-hotkey tier setting lands with client support."
+    }
+  }
+]

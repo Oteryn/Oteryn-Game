@@ -105,3 +105,44 @@ fn podium_artwork_route_decodes_draft_and_returns_real_artwork_codec()
         .join()
         .map_err(|_| "podium artwork test thread")?
 }
+
+#[test]
+fn podium_set_requires_the_visibility_flags_exactly_when_489_is_selected() {
+    use crate::gameplay_transport::house_podium::Request;
+    use oteryn_protocol_oteryn::house_podium as wire;
+    let set = wire::SetRequest {
+        item: [7; 16],
+        expected_revision: 2,
+        display_kind: 1,
+        direction: 0,
+        key: "oteryn:content.outfit.citizen".into(),
+    };
+    let flags = wire::DisplayFlags {
+        show_platform: true,
+        show_outfit: false,
+        show_mount: true,
+    };
+    let plain = set.encode().unwrap_or_default();
+    let flagged = set.encode_flagged(flags).unwrap_or_default();
+    assert_eq!(
+        Request::decode_selected(wire::COMMAND_SET, &plain, false),
+        Some(Request::Set(set.clone()))
+    );
+    assert_eq!(
+        Request::decode_selected(wire::COMMAND_SET, &flagged, true),
+        Some(Request::FlaggedSet(set, flags))
+    );
+    assert_eq!(
+        Request::decode_selected(wire::COMMAND_SET, &plain, true),
+        None
+    );
+    assert_eq!(
+        Request::decode_selected(wire::COMMAND_SET, &flagged, false),
+        None
+    );
+    assert_eq!(
+        Request::decode_selected(wire::COMMAND_PROJECTION, &[4; 16], true),
+        Some(Request::Projection([4; 16])),
+        "projection requests are unchanged"
+    );
+}

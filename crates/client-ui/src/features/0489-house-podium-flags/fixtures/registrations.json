@@ -1,0 +1,17 @@
+[
+  {
+    "mechanic": "0489-house-podium-flags",
+    "kind": "handlers",
+    "id": "0489-house-podium-flags-commands174-176-extension",
+    "status": "unsupported",
+    "reason": "WU26 package 2 server side only: the native client podium visibility toggles land in the client lane.",
+    "commands": [],
+    "not_applicable": {
+      "state": "The existing 0150 house podium state holds the display.",
+      "protocol": "The shared house podium codec in oteryn-protocol-oteryn encodes the flags.",
+      "view": "The podium visibility toggles land with client support.",
+      "input": "The existing command 175 input carries the flags.",
+      "settings": "The flags are per podium display, not a client setting."
+    }
+  }
+]

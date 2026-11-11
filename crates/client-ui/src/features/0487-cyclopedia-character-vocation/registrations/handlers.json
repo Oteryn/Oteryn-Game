@@ -1,0 +1,15 @@
+{
+  "mechanic": "0487-cyclopedia-character-vocation",
+  "kind": "handlers",
+  "id": "0487-cyclopedia-character-vocation-command388-extension",
+  "status": "unsupported",
+  "reason": "WU26 package 2 server side only: the native client General Stats vocation display lands in the client lane.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The existing 0199 Cyclopedia character state holds the tab.",
+    "protocol": "The shared Cyclopedia character codec in oteryn-protocol-oteryn encodes the vocation byte.",
+    "view": "The vocation display lands with client support.",
+    "input": "The existing command 388 request is unchanged.",
+    "settings": "The vocation field has no client setting."
+  }
+}

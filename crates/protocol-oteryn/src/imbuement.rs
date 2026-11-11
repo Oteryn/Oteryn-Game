@@ -11,6 +11,8 @@ use crate::item_view::ItemHandle;
 pub const CAPABILITY_IMBUE_V1: u32 = 68;
 /// Extends family data without changing command 85 or legacy offer indices.
 pub const CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1: u32 = 470;
+/// Each query offer row carries field 5 `success_percent` (0-100).
+pub const CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1: u32 = 491;
 pub const COMMAND_TYPE_IMBUEMENT: u32 = 85;
 /// IMBUEWIRE1-RL-01.
 pub const MAX_REQUEST_BYTES: usize = 32;
@@ -55,7 +57,8 @@ pub struct AppliedImbuement {
 }
 
 /// One applicable family and tier. Success is always 100% and there is no protection
-/// charm (IMBUE_FORGE0 §3, ruling R2), so neither travels on the wire.
+/// charm (IMBUE_FORGE0 §3, ruling R2); only a session that selected capability 491 receives
+/// the success chance, as offer field 5.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ImbuementOffer {
     pub family: u8,
@@ -180,8 +183,25 @@ fn valid_window(w: &ImbuementWindow) -> bool {
 }
 
 pub fn encode_imbuement_reply(r: &ImbuementReply) -> Result<Vec<u8>, Error> {
+    encode_reply(r, None)
+}
+
+/// The reply for a session that selected capability 491: offer `i` carries field 5
+/// `success_percent = success[i]` (0-100). A reply without a window takes no percentages.
+pub fn encode_imbuement_reply_with_success(
+    r: &ImbuementReply,
+    success: &[u8],
+) -> Result<Vec<u8>, Error> {
+    encode_reply(r, Some(success))
+}
+
+fn encode_reply(r: &ImbuementReply, success: Option<&[u8]>) -> Result<Vec<u8>, Error> {
+    let offers = r.window.as_ref().map_or(0, |w| w.offers.len());
     if r.window.is_some() && r.result != ImbuementResult::Ok
         || r.window.as_ref().is_some_and(|w| !valid_window(w))
+        || success.is_some_and(|success| {
+            success.len() != offers || success.iter().any(|percent| *percent > 100)
+        })
     {
         return Err(Error::Malformed);
     }
@@ -201,7 +221,7 @@ pub fn encode_imbuement_reply(r: &ImbuementReply) -> Result<Vec<u8>, Error> {
             }
             push_message_field(&mut out, 3, &row);
         }
-        for o in &w.offers {
+        for (index, o) in w.offers.iter().enumerate() {
             let mut row = Vec::new();
             for (field, value) in [
                 (1, u64::from(o.family)),
@@ -210,6 +230,9 @@ pub fn encode_imbuement_reply(r: &ImbuementReply) -> Result<Vec<u8>, Error> {
                 (4, u64::from(o.requires_premium)),
             ] {
                 push_varint_field(&mut row, field, value);
+            }
+            if let Some(percent) = success.and_then(|success| success.get(index)) {
+                push_varint_field(&mut row, 5, u64::from(*percent));
             }
             push_message_field(&mut out, 4, &row);
         }
@@ -241,12 +264,24 @@ fn read_row<const N: usize>(bytes: &[u8]) -> Result<[u64; N], Error> {
 }
 
 pub fn decode_imbuement_reply(bytes: &[u8]) -> Result<ImbuementReply, Error> {
+    decode_reply(bytes, false).map(|(reply, _)| reply)
+}
+
+/// A reply as a session that selected capability 491 receives it, with each offer's success
+/// percentage in offer order.
+pub fn decode_imbuement_reply_with_success(
+    bytes: &[u8],
+) -> Result<(ImbuementReply, Vec<u8>), Error> {
+    decode_reply(bytes, true)
+}
+
+fn decode_reply(bytes: &[u8], with_success: bool) -> Result<(ImbuementReply, Vec<u8>), Error> {
     if bytes.len() > MAX_REPLY_BYTES {
         return Err(Error::LimitExceeded);
     }
     let narrow = |value: u64| u8::try_from(value).map_err(|_| Error::Malformed);
     let (mut result, mut slots, mut clear) = (None, None, None);
-    let (mut applied, mut offers) = (Vec::new(), Vec::new());
+    let (mut applied, mut offers, mut success) = (Vec::new(), Vec::new(), Vec::new());
     let mut at = 0;
     while at < bytes.len() {
         match read_varint(bytes, &mut at)? {
@@ -262,7 +297,14 @@ pub fn decode_imbuement_reply(bytes: &[u8]) -> Result<ImbuementReply, Error> {
                 });
             }
             34 if offers.len() < MAX_OFFERS => {
-                let [family, tier, gold, premium] = read_row::<4>(read_bytes(bytes, &mut at)?)?;
+                let row = read_bytes(bytes, &mut at)?;
+                let [family, tier, gold, premium] = if with_success {
+                    let [family, tier, gold, premium, percent] = read_row::<5>(row)?;
+                    success.push(narrow(percent)?);
+                    [family, tier, gold, premium]
+                } else {
+                    read_row::<4>(row)?
+                };
                 offers.push(ImbuementOffer {
                     family: narrow(family)?,
                     tier: narrow(tier)?,
@@ -292,10 +334,10 @@ pub fn decode_imbuement_reply(bytes: &[u8]) -> Result<ImbuementReply, Error> {
         result: result.and_then(result_of).ok_or(Error::Malformed)?,
         window,
     };
-    if encode_imbuement_reply(&r)? != bytes {
+    if encode_reply(&r, with_success.then_some(success.as_slice()))? != bytes {
         return Err(Error::Malformed);
     }
-    Ok(r)
+    Ok((r, success))
 }
 
 #[cfg(test)]

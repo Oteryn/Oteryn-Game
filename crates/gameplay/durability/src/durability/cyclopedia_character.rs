@@ -26,20 +26,29 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::CharacterId;
 use oteryn_protocol_oteryn::character_info::{HISTORY_WINDOW_MS, PageRequest};
 use oteryn_protocol_oteryn::cyclopedia_character::{
-    CharacterTab, EquippedItem, GeneralStats, KillStatus, StoreSummary, TabView, death_cause,
-    pvp_kill_description,
+    CharacterTab, DeathDetails, EquippedItem, GeneralStats, KillStatus, StoreSummary,
+    TabExtension, TabView, bounded_death_name, death_cause, pvp_kill_description, vocation_id,
 };
 use sqlx::Row;
 
 const VISIBLE_SQL: &str = "SELECT $1=$2 OR EXISTS(SELECT 1 FROM game_vip_consents c JOIN game_character_roots v ON v.account_id=c.account_id AND v.world_id=c.world_id WHERE v.character_id=encode($1,'hex')::uuid AND c.character_id=encode($2,'hex')::uuid AND c.consent=2)";
 
-const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level,b.fist_level,b.club_level,b.sword_level,b.axe_level,b.distance_level,b.shielding_level,b.fishing_level,b.stamina_minutes,b.offline_pool_s,l.health,l.mana \
+const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level,b.fist_level,b.club_level,b.sword_level,b.axe_level,b.distance_level,b.shielding_level,b.fishing_level,b.stamina_minutes,b.offline_pool_s,b.vocation,l.health,l.mana \
  FROM game_character_progression_state p JOIN game_character_build_state b ON b.character_id=p.character_id \
  LEFT JOIN game_character_last_positions l ON l.character_id=p.character_id WHERE p.character_id=encode($1,'hex')::uuid";
 
 /// Deaths in the history window, newest first, with the Character killers the PvP owners
-/// recorded for the same death (unjustified points and guild war frags).
-const DEATHS_SQL: &str = "SELECT d.committed_at,d.level_before,ARRAY(SELECT r.name FROM (SELECT u.character_id AS killer FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id \
+/// recorded for the same death (unjustified points and guild war frags). `killer` is the
+/// public final-blow killer (ordinal 0 when its kind matches the death classification), empty
+/// when the final blow is unknown; `unjustified` is true when the death awarded unjustified
+/// points to any killer.
+const DEATHS_SQL: &str = "SELECT d.committed_at,d.level_before, \
+ COALESCE((SELECT k.name FROM game_public_death_killers k JOIN game_public_death_classifications c ON c.death_occurrence_id=k.death_occurrence_id \
+   WHERE k.death_occurrence_id=d.death_occurrence_id AND k.ordinal=0 AND ((k.kind='creature' AND c.killer_key=k.creature_key) OR (k.kind='player' AND c.killer_key='player'))),'') AS killer, \
+ COALESCE((SELECT k.name FROM game_public_death_killers k JOIN game_public_death_classifications c ON c.death_occurrence_id=k.death_occurrence_id AND c.most_damage_ordinal=k.ordinal \
+   WHERE k.death_occurrence_id=d.death_occurrence_id),'') AS most_damage, \
+ EXISTS(SELECT 1 FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id) AS unjustified, \
+ ARRAY(SELECT r.name FROM (SELECT u.character_id AS killer FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id \
    UNION SELECT f.killer_character_id FROM game_guild_war_frags f WHERE f.death_occurrence_id=d.death_occurrence_id) k JOIN game_character_roots r ON r.character_id=k.killer ORDER BY r.name) AS killers \
  FROM game_character_death_receipts d WHERE d.character_id=encode($1,'hex')::uuid AND d.committed_at BETWEEN $2 AND $3 ORDER BY d.committed_at DESC,d.death_occurrence_id DESC OFFSET $4 LIMIT $5";
 
@@ -86,6 +95,36 @@ impl DurabilityRoot {
         page: PageRequest,
         now_unix_ms: i64,
     ) -> Result<TabView, CharacterAuthorityError> {
+        self.read_cyclopedia_character_tab_extended(
+            authority,
+            node,
+            viewer_fence,
+            target,
+            tab,
+            page,
+            now_unix_ms,
+        )
+        .await
+        .map(|(view, _)| view)
+    }
+
+    /// [`Self::read_cyclopedia_character_tab`] with every extension field the tab carries
+    /// (capability 487 vocation id, capability 488 death details); the caller keeps only the
+    /// fields its session selected.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the current viewer fence and target remain explicit at the durable privacy boundary"
+    )]
+    pub async fn read_cyclopedia_character_tab_extended(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        viewer_fence: CurrentCharacterItemFence,
+        target: CharacterId,
+        tab: CharacterTab,
+        page: PageRequest,
+        now_unix_ms: i64,
+    ) -> Result<(TabView, TabExtension), CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
         let viewer = viewer_fence.character_id;
@@ -102,6 +141,7 @@ impl DurabilityRoot {
             let id = target.as_bytes().to_vec();
             let window = now_unix_ms.saturating_sub(HISTORY_WINDOW_MS);
             let (offset, limit) = (i64::from(page.offset), i64::from(page.limit));
+            let mut extension = TabExtension::default();
             let view = match tab {
                 CharacterTab::GeneralStats => {
                     let Some(row) = sqlx::query(GENERAL_STATS_SQL).bind(&id).fetch_optional(&mut *tx).await? else {
@@ -115,6 +155,9 @@ impl DurabilityRoot {
                         (Some(health), Some(mana)) => Some((narrow(i64::from(health))?, narrow(i64::from(mana))?)),
                         _ => None,
                     };
+                    let vocation: String = row.try_get("vocation")?;
+                    extension.vocation_id = Some(vocation_id(&vocation)
+                        .ok_or_else(|| sqlx::Error::Decode("stored cyclopedia vocation".into()))?);
                     TabView::GeneralStats(GeneralStats {
                         experience: narrow(row.try_get::<i64, _>("total_experience")?)?,
                         level: narrow(row.try_get::<i64, _>("level")?)?,
@@ -128,11 +171,22 @@ impl DurabilityRoot {
                 CharacterTab::RecentDeaths => {
                     let rows = sqlx::query(DEATHS_SQL).bind(&id).bind(window).bind(now_unix_ms).bind(offset).bind(limit).fetch_all(&mut *tx).await?;
                     let mut entries = Vec::with_capacity(rows.len());
+                    let mut details = Vec::with_capacity(rows.len());
                     for row in rows {
                         let level: i64 = row.try_get("level_before")?;
                         let killers: Vec<String> = row.try_get("killers")?;
                         entries.push((row.try_get("committed_at")?, death_cause(narrow(level)?, &killers)));
+                        let killer: String = row.try_get("killer")?;
+                        // The death owner's captured most-damage row; empty when unknown.
+                        let most_damage: String = row.try_get("most_damage")?;
+                        details.push(DeathDetails {
+                            level: narrow(level)?,
+                            killer: bounded_death_name(&killer),
+                            most_damage: bounded_death_name(&most_damage),
+                            unjustified: row.try_get("unjustified")?,
+                        });
                     }
+                    extension.deaths = Some(details);
                     TabView::RecentDeaths(entries)
                 }
                 CharacterTab::RecentPvpKills => {
@@ -190,7 +244,7 @@ impl DurabilityRoot {
                 }
             };
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(view))
+            Ok(Ok((view, extension)))
         })).await?
     }
 }

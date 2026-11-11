@@ -1,0 +1,15 @@
+{
+  "mechanic": "0486-analyser-hit-attribution",
+  "kind": "handlers",
+  "id": "0486-analyser-hit-attribution-domain15-extension",
+  "status": "unsupported",
+  "reason": "WU26 package 2 server side only: the native client per-hit attacker display lands in the client lane.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The existing 0010 analyser stream holds the facts.",
+    "protocol": "The shared analyser codec in oteryn-protocol-oteryn decodes field 5 attacker.",
+    "view": "The per-hit attacker display lands with client support.",
+    "input": "The fact stream is server pushed and takes no input.",
+    "settings": "Hit attribution has no client setting."
+  }
+}

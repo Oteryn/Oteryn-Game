@@ -207,10 +207,16 @@ impl PublicDeathCause {
     }
 }
 
-pub(super) type PreparedPlayers = Vec<(u8, String, CharacterId)>;
+/// The player cohort in capture order (rank, frozen name, Character) and the player who
+/// dealt the most recorded damage, if any harm receipt names one.
+pub(super) struct PreparedPlayers {
+    players: Vec<(u8, String, CharacterId)>,
+    most_damage: Option<CharacterId>,
+}
 
 pub(super) async fn prepare_names(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    victim: CharacterId,
     contributors: &[PvpDeathContributor],
     cause: Option<PublicDeathCause>,
 ) -> std::result::Result<PreparedPlayers, DurabilityError> {
@@ -253,7 +259,56 @@ pub(super) async fn prepare_names(
     players.sort_by(|a, b| {
         (a.0, a.1.as_bytes(), a.2.as_bytes()).cmp(&(b.0, b.1.as_bytes(), b.2.as_bytes()))
     });
-    Ok(players)
+    let most_damage = most_damage_player(tx, victim, &players).await?;
+    Ok(PreparedPlayers {
+        players,
+        most_damage,
+    })
+}
+
+/// Crystal `Player::death` (`mostDamageCreature`): the attacker with the largest damage
+/// total. Only player damage has durable amounts (`game_character_pvp_harm`, the same
+/// five-minute window as the live contributors), so this is the cohort player with the
+/// largest total; a tie keeps the earlier capture position.
+async fn most_damage_player(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    victim: CharacterId,
+    players: &[(u8, String, CharacterId)],
+) -> std::result::Result<Option<CharacterId>, DurabilityError> {
+    if players.is_empty() {
+        return Ok(None);
+    }
+    let cohort: Vec<Vec<u8>> = players
+        .iter()
+        .map(|(_, _, character)| character.as_bytes().to_vec())
+        .collect();
+    let rows = sqlx::query("SELECT h.attacker::text AS attacker,sum(h.damage)::bigint AS total FROM game_character_pvp_harm h \
+        WHERE h.victim=encode($1,'hex')::uuid AND h.damage>0 AND h.created_at>=clock_timestamp()-interval '5 minutes' \
+          AND h.attacker IN (SELECT encode(c,'hex')::uuid FROM unnest($2::bytea[]) c) GROUP BY h.attacker LIMIT 81")
+        .bind(victim.as_bytes().as_slice())
+        .bind(&cohort)
+        .fetch_all(&mut **tx)
+        .await?;
+    let mut totals = Vec::with_capacity(rows.len());
+    for row in rows {
+        let attacker: String = row.try_get("attacker")?;
+        let total: i64 = row.try_get("total")?;
+        let attacker = CharacterId::from_bytes(
+            uuid_text(&attacker).map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+        totals.push((attacker, total));
+    }
+    let mut best: Option<(CharacterId, i64)> = None;
+    for (_, _, character) in players {
+        let Some(&(_, total)) = totals.iter().find(|(attacker, _)| attacker == character) else {
+            continue;
+        };
+        if best.is_none_or(|(_, top)| total > top) {
+            best = Some((*character, total));
+        }
+    }
+    Ok(best.map(|(character, _)| character))
 }
 
 pub(super) async fn capture(
@@ -264,6 +319,12 @@ pub(super) async fn capture(
     players: PreparedPlayers,
 ) -> std::result::Result<(), DurabilityError> {
     let mut ordinal: i16 = 0;
+    // Without player damage amounts the final blow, when captured at ordinal 0, is the only
+    // known damage dealer (a creature, or the final player ranked first).
+    let mut most_damage = match (&cause, players.players.first()) {
+        (Some(PublicDeathCause::Creature { .. }), _) | (_, Some((0, _, _))) => Some(0),
+        _ => None,
+    };
     // A native creature final blow is independent of any earlier player damage.
     if let Some(cause @ PublicDeathCause::Creature { .. }) = cause {
         let (key, name) = cause
@@ -273,13 +334,16 @@ pub(super) async fn capture(
             .bind(occurrence.as_bytes().as_slice()).bind(ordinal).bind(key).bind(name).execute(&mut **tx).await?;
         ordinal += 1;
     }
-    for (_, name, character) in players {
+    for (_, name, character) in players.players {
+        if players.most_damage == Some(character) {
+            most_damage = Some(ordinal);
+        }
         sqlx::query("INSERT INTO game_public_death_killers(death_occurrence_id,ordinal,kind,character_id,name) VALUES(encode($1,'hex')::uuid,$2,'player',encode($3,'hex')::uuid,$4)")
             .bind(occurrence.as_bytes().as_slice()).bind(ordinal).bind(character.as_bytes().as_slice()).bind(name).execute(&mut **tx).await?;
         ordinal += 1;
     }
-    sqlx::query("INSERT INTO game_public_death_classifications(death_occurrence_id,pvp,publishable,killer_key) VALUES(encode($1,'hex')::uuid,$2,$3,$4)")
-        .bind(occurrence.as_bytes().as_slice()).bind(pvp).bind(!matches!(cause,Some(PublicDeathCause::Unpublishable {..}))).bind(cause.as_ref().map_or(Some("unknown"),PublicDeathCause::killer_key)).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_public_death_classifications(death_occurrence_id,pvp,publishable,killer_key,most_damage_ordinal) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5)")
+        .bind(occurrence.as_bytes().as_slice()).bind(pvp).bind(!matches!(cause,Some(PublicDeathCause::Unpublishable {..}))).bind(cause.as_ref().map_or(Some("unknown"),PublicDeathCause::killer_key)).bind(most_damage).execute(&mut **tx).await?;
     Ok(())
 }
 

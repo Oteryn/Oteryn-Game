@@ -1,0 +1,15 @@
+{
+  "mechanic": "0488-cyclopedia-death-details",
+  "kind": "handlers",
+  "id": "0488-cyclopedia-death-details-command388-extension",
+  "status": "unsupported",
+  "reason": "WU26 package 2 server side only: the native client structured death table lands in the client lane.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The existing 0199 Cyclopedia character state holds the tab.",
+    "protocol": "The shared Cyclopedia character codec in oteryn-protocol-oteryn encodes the structured rows.",
+    "view": "The structured death table lands with client support.",
+    "input": "The existing command 388 request is unchanged.",
+    "settings": "The death details have no client setting."
+  }
+}
