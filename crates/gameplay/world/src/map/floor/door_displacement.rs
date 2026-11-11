@@ -156,7 +156,14 @@ pub fn prepare_quest_door_opening<'a>(
 }
 impl DoorOpening<'_> {
     fn check(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
+        qualify_origin(
+            runtime,
+            self.cells,
+            self.actor,
+            self.session,
+            self.expected,
+            None,
+        )?;
         if self.map.facts.doors().revision(self.key) != self.revision
             || !self
                 .map

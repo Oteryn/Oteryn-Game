@@ -138,7 +138,14 @@ impl SourceSceneRelocation<'_> {
                 return Err(MovementError::NotQualified);
             }
             if let SceneActorKind::Player(session) = entry.kind {
-                qualify_origin(runtime, self.cells, entry.actor, session, entry.position)?;
+                qualify_origin(
+                    runtime,
+                    self.cells,
+                    entry.actor,
+                    session,
+                    entry.position,
+                    None,
+                )?;
             }
             let to = change.destination;
             let cell = LogicalCell {
