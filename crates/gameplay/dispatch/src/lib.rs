@@ -119,6 +119,7 @@ use oteryn_gameplay_social::chat;
 use oteryn_gameplay_social::interaction_chest_use;
 #[allow(unused_imports)]
 use oteryn_gameplay_social::party;
+use oteryn_gameplay_social::platform_streams;
 #[allow(unused_imports)]
 use oteryn_gameplay_social::premium;
 #[allow(unused_imports)]
