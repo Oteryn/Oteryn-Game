@@ -115,7 +115,7 @@
  "Selected: {} ×{} (handle {}, subtype {})", "Selected: {}. Switch domain: {} gold. Dismantle: {}–{} {} fragments.", "Selection: {:?}; levels: {:?}",
  "Server refusal: {reason:?}", "Server refused depot search: {:?}", "Server refused field action: {:?}",
  "Server refused forge action: {:?}", "Server refused highscores: {:?}. Refresh to retry with the current snapshot.", "Server refused hotkey equip: {:?}",
- "Server refused store action: {:?}", "Settings transfer failed: {error}", "Shared experience: {status}\r\nEligible: {eligible}\r\n",
+ "Server refused store action: {:?}", "Session clock: {}\r\n", "Settings transfer failed: {error}", "Shared experience: {status}\r\nEligible: {eligible}\r\n",
  "Shop {} — {kind} {} / {} (addon {})\n  {} points — {status}", "Skip item {id}", "Slot {:02} · {} · {} / {}",
  "Slot {slot_id} · Loading…", "Slot {slot}: {definition} × {}", "Slot {} · Choose a creature",
  "Slot {} · Locked", "Slot {} · {}\r\n{} +{}% · grade {} · {} min", "Slot {} — empty",

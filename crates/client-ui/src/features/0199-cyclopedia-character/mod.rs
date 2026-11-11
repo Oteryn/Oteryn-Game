@@ -12,7 +12,10 @@ mod protection;
 pub use protection::Protection;
 #[path = "view/protection.rs"]
 mod protection_view;
-pub use protection_view::{PROTECTION_NOTE, protection_cards, protection_heading};
+pub use protection_view::{
+    PROTECTION_NOTE, PromotionView, promotion_text, promotion_view, protection_cards,
+    protection_heading,
+};
 #[path = "view/augments.rs"]
 mod augment_view;
 #[path = "protocol/augments.rs"]

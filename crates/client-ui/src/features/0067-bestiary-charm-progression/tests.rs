@@ -160,3 +160,86 @@ fn selected_bestiary_card_shows_confirmed_discovery_goal() -> Result<(), &'stati
     assert!(bestiary_text(&panel).contains("Select a confirmed creature"));
     Ok(())
 }
+
+#[test]
+fn t080_bestiary_illustrations_follow_the_selected_creature_category() {
+    use oteryn_client_runtime::charm_progression::catalogue::Card;
+    let card = |race, name: &str, category: &str| Card {
+        race,
+        name: name.into(),
+        category: category.into(),
+        ..Default::default()
+    };
+    let cards = vec![
+        card(1, "Bones", "Undead"),
+        card(2, "Wyrm", "Dragons"),
+        card(3, "Crawler", "Insects"),
+    ];
+    let mut shapes = Vec::new();
+    for selected in &cards {
+        let mut panel = Panel {
+            selected: true,
+            ..Default::default()
+        };
+        panel.catalogue.page.cards = cards.clone();
+        panel.fields[1] = selected.race.to_string();
+        let text = bestiary_text(&panel);
+        assert!(text.contains(&format!("{} — category illustration", selected.name)));
+        assert!(text.contains('█'));
+        shapes.push(
+            text.split("— category illustration")
+                .nth(1)
+                .map(|t| t.lines().nth(1).unwrap_or("").to_owned()),
+        );
+    }
+    shapes.sort();
+    shapes.dedup();
+    assert_eq!(shapes.len(), 3);
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    panel.catalogue.page.cards = cards;
+    panel.fields[1] = "99".into();
+    assert!(!bestiary_text(&panel).contains("category illustration"));
+}
+
+#[test]
+fn t081_charm_selector_lists_names_without_indices_and_shows_full_description() {
+    use oteryn_client_runtime::charm_progression::catalogue::Card;
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    panel.charm_browser.cards.insert(
+        41,
+        Card {
+            race: 41,
+            name: "Dodge".into(),
+            category: "Major".into(),
+            detail: "Avoid a qualifying creature attack.\r\nStage 1: 240 Charm Points".into(),
+            ..Default::default()
+        },
+    );
+    panel.charm_browser.cards.insert(
+        42,
+        Card {
+            race: 42,
+            name: "Gut".into(),
+            category: "Minor".into(),
+            detail: "Raises loot chance.".into(),
+            ..Default::default()
+        },
+    );
+    assert_eq!(
+        super::charm_browser::resolve(&panel, 0, " dodge ").as_deref(),
+        Some("41")
+    );
+    panel.fields[0] = "41".into();
+    assert_eq!(super::charm_browser::named_fields(&panel)[0], "Dodge");
+    let text = charms_text(&panel);
+    assert!(text.contains("> Dodge — Major"));
+    assert!(text.contains("Avoid a qualifying creature attack.\r\nStage 1: 240 Charm Points"));
+    assert!(!text.contains("Raises loot chance."));
+    assert!(!text.contains("41") && !text.contains("42"));
+}
