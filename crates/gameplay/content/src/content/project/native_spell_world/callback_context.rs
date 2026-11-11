@@ -180,8 +180,8 @@ fn source_attrs(expected: &super::SourceItem, family: bundle::Family) -> Option<
             _ => return None,
         }
     }
-    // Match the compiler's explicit adapter for legacy zero-count Items.
-    // Terrain attributes and positive counts retain their exact source value.
+    // Mirror the compiler's explicit Item materialization adapter; raw source bytes
+    // and the actual bundle attributes remain unchanged.
     Some(if family == bundle::Family::Item {
         attrs.with_legacy_default_item_count()
     } else {
@@ -331,38 +331,232 @@ pub fn qualify_bundle_source_bases(
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
-    fn callback_item_zero_count_matches_compiler_materialization()
+    fn captured_shulgrax_zero_counts_follow_only_item_materialization()
     -> Result<(), Box<dyn std::error::Error>> {
-        let item = super::super::SourceItem {
-            server_item_id: 3115,
-            depth: 0,
-            attributes: BTreeMap::from([("15".into(), serde_json::json!(0))]),
-        };
-        assert_eq!(
-            source_attrs(&item, bundle::Family::Item)
-                .ok_or("Item attributes")?
-                .count,
-            None
-        );
-        assert_eq!(
-            source_attrs(&item, bundle::Family::Terrain)
-                .ok_or("Terrain attributes")?
-                .count,
-            Some(0)
-        );
-        let item = super::super::SourceItem {
-            attributes: BTreeMap::from([("15".into(), serde_json::json!(1))]),
-            ..item
-        };
-        assert_eq!(
-            source_attrs(&item, bundle::Family::Item)
-                .ok_or("positive Item count")?
-                .count,
-            Some(1)
-        );
+        let document: SourceWorldDocument =
+            serde_json::from_slice(PinnedActivitySourceRoom::CallbackShulgrax.bytes())?;
+        let zero_items: Vec<_> = document
+            .tiles
+            .iter()
+            .flat_map(|tile| &tile.items)
+            .filter(|item| item.attributes.get("15") == Some(&serde_json::json!(0)))
+            .collect();
+        assert_eq!(zero_items.len(), 9, "complete captured legacy-zero cohort");
+        for item in zero_items {
+            let binding = document
+                .source_identity_bindings
+                .iter()
+                .find(|binding| binding.external_id == item.server_item_id.to_string())
+                .ok_or("captured Item binding")?;
+            assert_eq!(binding.target.family, super::super::ProjectV2Family::Item);
+            assert!(crate::content::qualified_static_surface(&binding.target.key).is_none());
+            assert_eq!(
+                item.attributes,
+                BTreeMap::from([("15".into(), serde_json::json!(0))]),
+                "raw captured zero remains explicit"
+            );
+            assert_eq!(
+                source_attrs(item, bundle::Family::Item),
+                Some(sector::Attrs::default())
+            );
+            assert_eq!(
+                source_attrs(item, bundle::Family::Terrain),
+                Some(sector::Attrs {
+                    count: Some(0),
+                    ..sector::Attrs::default()
+                }),
+                "a non-Item source keeps exact zero presence"
+            );
+        }
+        let explicit_one = document
+            .tiles
+            .iter()
+            .flat_map(|tile| &tile.items)
+            .find(|item| item.attributes.get("15") == Some(&serde_json::json!(1)))
+            .ok_or("captured explicit one")?;
+        assert_eq!(explicit_one.server_item_id, 10876);
+        for family in [bundle::Family::Item, bundle::Family::Terrain] {
+            assert_eq!(
+                source_attrs(explicit_one, family),
+                Some(sector::Attrs {
+                    count: Some(1),
+                    ..sector::Attrs::default()
+                })
+            );
+        }
         Ok(())
     }
+
+    #[test]
+    fn callback_item_count_adapter_preserves_other_attributes_and_refusals()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let document: SourceWorldDocument =
+            serde_json::from_slice(PinnedActivitySourceRoom::CallbackShulgrax.bytes())?;
+        let mut item = document
+            .tiles
+            .iter()
+            .flat_map(|tile| &tile.items)
+            .find(|item| item.attributes.get("15") == Some(&serde_json::json!(0)))
+            .ok_or("captured zero Item")?
+            .clone();
+        item.attributes.insert("22".into(), serde_json::json!(0));
+        item.attributes
+            .insert("dest".into(), serde_json::json!([33319, 32318, 13]));
+        let expected = sector::Attrs {
+            charges: Some(0),
+            teleport: Some((33319, 32318, (-13i8).to_ne_bytes()[0])),
+            ..sector::Attrs::default()
+        };
+        assert_eq!(
+            source_attrs(&item, bundle::Family::Item),
+            Some(expected.clone())
+        );
+        assert_eq!(
+            source_attrs(&item, bundle::Family::Terrain),
+            Some(sector::Attrs {
+                count: Some(0),
+                ..expected
+            })
+        );
+        for family in [bundle::Family::Item, bundle::Family::Terrain] {
+            for value in [
+                serde_json::json!(true),
+                serde_json::json!(-1),
+                serde_json::json!(256),
+                serde_json::json!("0"),
+            ] {
+                let mut changed = item.clone();
+                changed.attributes.insert("15".into(), value);
+                assert!(source_attrs(&changed, family).is_none());
+            }
+            let mut changed = item.clone();
+            changed
+                .attributes
+                .insert("unknown".into(), serde_json::json!(0));
+            assert!(source_attrs(&changed, family).is_none());
+            let mut changed = item.clone();
+            changed
+                .attributes
+                .insert("22".into(), serde_json::json!(65536));
+            assert!(source_attrs(&changed, family).is_none());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn materialized_shulgrax_tile_rejects_an_actual_typed_zero_count()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let document: SourceWorldDocument =
+            serde_json::from_slice(PinnedActivitySourceRoom::CallbackShulgrax.bytes())?;
+        let mut bindings = BTreeMap::new();
+        for binding in &document.source_identity_bindings {
+            bindings.insert(
+                binding.external_id.parse()?,
+                (binding.target.key.clone(), binding.target.revision.clone()),
+            );
+        }
+        let scene = ExpectedScene {
+            source: PinnedActivitySourceRoom::CallbackShulgrax,
+            document,
+            positions: BTreeMap::new(),
+            sectors: BTreeSet::new(),
+            bindings,
+        };
+        let expected = scene
+            .document
+            .tiles
+            .iter()
+            .find(|tile| tile.source_position == [33477, 32791, 13])
+            .ok_or("captured two-entry zero-count tile")?;
+        assert_eq!(expected.items.len(), 2);
+        assert_eq!(expected.items[0].server_item_id, 19277);
+        assert!(expected.items[0].attributes.is_empty());
+        assert_eq!(expected.items[1].server_item_id, 3115);
+        assert_eq!(
+            expected.items[1].attributes,
+            BTreeMap::from([("15".into(), serde_json::json!(0))])
+        );
+        let mut palette = Vec::new();
+        for (id, item) in expected.items.iter().enumerate() {
+            let (key, _) = scene.bindings.get(&item.server_item_id).ok_or("binding")?;
+            assert!(crate::content::qualified_static_surface(key).is_none());
+            palette.push(bundle::PaletteEntry {
+                key: key.clone(),
+                family: bundle::Family::Item,
+                id: u32::try_from(id)?,
+                terrain: None,
+            });
+        }
+        let manifest = bundle::Manifest {
+            subareas: Default::default(),
+            format: bundle::FORMAT.into(),
+            min_reader_version: bundle::VERSION,
+            projection_class: "server".into(),
+            compiler_version: "callback-tile-fixture".into(),
+            build_class: bundle::BuildClass::NonProduction,
+            identity: Default::default(),
+            world: bundle::Extent {
+                min_x: 33477,
+                min_y: 32791,
+                max_x: 33478,
+                max_y: 32792,
+                floors: vec![-13],
+            },
+            palette,
+            draft_areas: Vec::new(),
+            skipped_provisional_keys: Vec::new(),
+            dropped_teleports: Vec::new(),
+            spawns: Default::default(),
+            npcs: Default::default(),
+        };
+        let actual = sector::Tile {
+            x: 33477,
+            y: 32791,
+            flags: expected.otbm_flags,
+            house: expected.house_id.unwrap_or(0),
+            zones: expected.zones.clone(),
+            items: vec![
+                sector::Item {
+                    palette: 0,
+                    depth: 0,
+                    attrs: sector::Attrs::default(),
+                },
+                sector::Item {
+                    palette: 1,
+                    depth: 0,
+                    attrs: sector::Attrs::default(),
+                },
+            ],
+        };
+        assert!(matches_tile(
+            expected,
+            &actual,
+            &manifest,
+            &scene,
+            &mut BTreeSet::new()
+        ));
+        for count in [0, 1, 2] {
+            let mut changed = actual.clone();
+            changed.items[1].attrs.count = Some(count);
+            assert!(
+                !matches_tile(expected, &changed, &manifest, &scene, &mut BTreeSet::new()),
+                "actual typed count {count} must not be normalized or ignored"
+            );
+        }
+        let mut changed = actual.clone();
+        changed.items[1].attrs.charges = Some(0);
+        assert!(!matches_tile(
+            expected,
+            &changed,
+            &manifest,
+            &scene,
+            &mut BTreeSet::new()
+        ));
+        Ok(())
+    }
+
     #[test]
     fn default_built_bundle_qualifies_literal_callback_contexts()
     -> Result<(), Box<dyn std::error::Error>> {

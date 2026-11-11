@@ -3738,15 +3738,78 @@ mod tests {
         let bytes = serde_json::to_vec(&loot).unwrap();
         let (controller, _) = activated_with_custom_loot_tables(world, None, Some(&bytes));
         let native = controller.active().unwrap().native_gameplay().unwrap();
-        let rewards = native.reward_table();
+        let production_rewards = native.reward_table();
         use crate::content::creature_reward::NoSettlementReason;
         let (creature, item, private_refusal) = (
             "oteryn:creature.bakragore",
             "oteryn:item.tibia.i44012",
             NoSettlementReason::LootItemInadmissible,
         );
+        // The actual source now admits Bakragore's complete private table.
+        // Withhold one exact retained yield only in this independently pinned fixture.
+        let production_private = production_rewards.row(creature).unwrap();
+        let production_corpse = production_rewards.reward_boss_corpse(creature).unwrap();
+        let missing_key = "oteryn:item.tibia.i43946";
+        assert_eq!(production_private.loot_table.entries.len(), 26);
+        assert!(production_private.loot_table.entries.iter().any(|entry| {
+            entry.item
+                == oteryn_gameplay_domain::domain::loot_data::LootDefinitionRef::new(
+                    "Item",
+                    missing_key,
+                    "definition-r1",
+                )
+        }));
+        let supplied = NativeGameplayInput::from_manifest(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json"),
+        )
+        .unwrap();
+        let original: serde_json::Value =
+            serde_json::from_slice(&supplied.loot_tables.as_ref().unwrap().bytes).unwrap();
+        let mut missing = original.clone();
+        let facts = missing["items"].as_array_mut().unwrap();
+        assert_eq!(
+            facts
+                .iter()
+                .filter(|fact| fact["item"]["key"] == missing_key)
+                .count(),
+            1
+        );
+        let index = facts
+            .iter()
+            .position(|fact| fact["item"]["key"] == missing_key)
+            .unwrap();
+        assert_eq!(
+            facts[index]["item"],
+            serde_json::json!({
+                "family": "Item",
+                "key": missing_key,
+                "revision": "definition-r1"
+            })
+        );
+        assert_eq!(
+            facts[index]["materializable"],
+            serde_json::Value::Bool(true)
+        );
+        facts[index]["materializable"] = serde_json::Value::Bool(false);
+        let missing_bytes = serde_json::to_vec(&missing).unwrap();
+        let mut restored = missing.clone();
+        restored["items"][index]["materializable"] = serde_json::Value::Bool(true);
+        assert_eq!(
+            restored, original,
+            "all private recipes, tables, identities and unrelated facts stay exact"
+        );
+        let (refused_controller, _) =
+            activated_with_custom_loot_tables(world, None, Some(&missing_bytes));
+        let refused_native = refused_controller
+            .active()
+            .unwrap()
+            .native_gameplay()
+            .unwrap();
+        let rewards = refused_native.reward_table();
         assert_eq!(rewards.row(creature).err(), Some(private_refusal));
         let corpse = rewards.reward_boss_corpse(creature).unwrap();
+        assert_eq!(corpse, production_corpse);
         assert_eq!(
             corpse
                 .corpse_item
@@ -3771,11 +3834,6 @@ mod tests {
             "oteryn:item.tibia.i33867"
         );
         assert!(!spite.loot_table.entries.is_empty());
-        let supplied = NativeGameplayInput::from_manifest(
-            &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("../../../content/spells.manifest.json"),
-        )
-        .unwrap();
         let loot: crate::content::creature_reward::LootTablesSection =
             serde_json::from_slice(&supplied.loot_tables.as_ref().unwrap().bytes).unwrap();
         let body = loot

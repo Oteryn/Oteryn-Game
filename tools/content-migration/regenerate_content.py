@@ -73,6 +73,20 @@ EXTRA_DERIVED = (
     "content/quests/last-creep-native.json",
     "tools/content-schema/world-authoring/samples/world-base-capture-v1.json",
     "tools/content-schema/native-gameplay/prey-model-results.json",
+    "tools/content-schema/quest-authoring/samples/binding_packets/index.json",
+    "tools/content-schema/quest-authoring/samples/binding_packets/npc/authored68-npc-links.json",
+    "tools/content-schema/quest-authoring/samples/binding_packets/npc/quest-npc-dialogue-links.json",
+    "tools/content-schema/quest-authoring/samples/binding_packets/recipes/supplementary-index.json",
+    "tools/content-schema/quest-authoring/samples/binding_packets/rewards/chosen-reward-item-candidates.json",
+    "tools/content-schema/quest-authoring/samples/binding_packets/rewards/perquest-352.json",
+    "tools/content-schema/quest-authoring/samples/binding_packets/rewards/requirement-choices.json",
+    "tools/content-schema/quest-authoring/samples/binding_packets/rewards/reward-holds.json",
+    "tools/content-schema/quest-authoring/samples/binding_packets/rewards/reward-only-105.json",
+    "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json",
+    "tools/content-schema/quest-authoring/samples/rollout/quest-rollout.json",
+    "tools/content-schema/quest-authoring/samples/server-completion/collect-claim-candidates.json",
+    "tools/content-schema/quest-authoring/samples/server-completion/reward-only-completion/candidates.json",
+    "tools/content-schema/quest-authoring/samples/server-completion/use-trigger-candidates.json",
 )
 # Rewritten by the steps below but holding hand-maintained rows: the TibiaWiki import-only
 # sources and batches (read back by world_project_v2_to_tree), hand-captured import records, and
@@ -857,7 +871,9 @@ def main() -> int:
     refresh_world_metadata()
     # Variant evidence pins the final Claim, Item and Achievement inventories.
     run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
-    for name in ("quest_explore_area_candidates.py", "quest_talk_npc_candidates.py",
+    for name in ("quest_rollout_authoring.py", "quest_binding_authoring.py",
+                 "collect_claim_candidates.py", "use_trigger_candidates.py",
+                 "quest_explore_area_candidates.py", "quest_talk_npc_candidates.py",
                  "quest_reward_only_binding_candidates.py"):
         run(["python3", "tools/content-schema/quest-authoring/" + name])
     refresh_quest_donor_capture()
