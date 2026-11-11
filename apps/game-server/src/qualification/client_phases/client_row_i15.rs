@@ -38,7 +38,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let active = provisioning::item_reference(&provisioning::item_index()?, 3088)?;
     let mut client = connect_world(clients, 0xb2).await?;
-    let row_needs_logout_0 = true;
+    let mut row_needs_logout_0 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         let result: TestResult = async {
             let equipped = client
@@ -95,8 +95,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             }
         }
         .await;
-        let logout = client.session_mut().logout().await;
-        result.and(logout.map(|_| ()).map_err(Into::into))
+        let logout = row_logout(&mut client).await;
+        if logout.is_ok() {
+            row_needs_logout_0 = false;
+        }
+        result.and(logout)
     })
     .await
     .unwrap_or_else(|error| Err(error.into()));

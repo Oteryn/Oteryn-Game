@@ -19,13 +19,11 @@
 //!    result payload, then query again to prove that the connection and state survived.
 //! 7. Logout normally, make a fresh admission, query again, and require the discovery,
 //!    donation pool, epoch and improved-respawn state from the last accepted action to
-//!    be durable.  Movement-speed parity is not inferred from travel time: W12 needs a
-//!    server result/delta exposing the donated-area respawn speed before it can PASS.
+//!    be durable. Query routed command 6178 for the discovery speed contribution and
+//!    require the same contribution at the persisted position after fresh admission.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::cyclopedia as wire;
-
-const SOURCE_GAP: &str = "source:crates/gameplay/domain/src/domain/cyclopedia/basic.rs:6";
 
 #[derive(Debug)]
 struct Failure {
@@ -78,6 +76,21 @@ async fn query(client: &mut DevClientSession, step: u8) -> Result<wire::MapResul
     }
     wire::decode_result(&reply.payload)
         .map_err(|error| Failure::new(step, format!("result-decode={error:?};reply={reply:?}")))
+}
+
+async fn speed(client: &mut DevClientSession) -> Result<u16, Box<Failure>> {
+    let reply = exchange(client, wire::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY, &[])
+        .await
+        .map_err(|error| Failure::new(7, format!("speed-query={error}")))?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(Failure::new(7, format!("speed-reply={reply:?}")));
+    }
+    let bytes: [u8; 2] = reply
+        .payload
+        .as_slice()
+        .try_into()
+        .map_err(|_| Failure::new(7, format!("speed-payload={:?}", reply.payload)))?;
+    Ok(u16::from_le_bytes(bytes))
 }
 
 async fn action(
@@ -211,6 +224,8 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
         return Err(Failure::new(6, format!("malformed-reply={malformed:?}")));
     }
     let retained = query(&mut client, 6).await?;
+    let retained_speed = speed(&mut client).await?;
+    let retained_position = client.world_spatial().actor_position;
     logout(&mut client, 7).await?;
     drop(client);
 
@@ -221,6 +236,10 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
         return Err(Failure::new(7, "fresh-admission-reused-session"));
     }
     let after = query(&mut fresh, 7).await?;
+    let after_speed = speed(&mut fresh).await?;
+    if fresh.world_spatial().actor_position != retained_position || after_speed != retained_speed {
+        return Err(Failure::new(7, format!("speed-persistence before={retained_speed} after={after_speed};position={:?} expected={retained_position:?}", fresh.world_spatial().actor_position)));
+    }
     let cleanup = logout(&mut fresh, 7).await;
     if !stable(&retained, &after) {
         return Err(Failure::new(
@@ -239,12 +258,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     if goal.code != 0 {
         return Err(Failure::new(5, format!("goal-donation-refused={goal:?}")));
     }
-    // Reaching this point proves the playable discovery/donation lifecycle.  The owner
-    // still emits no speed result/delta, so the full row cannot honestly claim PASS.
-    Err(Failure::new(
-        7,
-        format!("movement-speed-delta-unavailable;{SOURCE_GAP}"),
-    ))
+    Ok(())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -256,20 +270,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             started.elapsed().as_secs_f64()
         )),
         Ok(Err(error)) => {
-            let missing = error.observed.contains(SOURCE_GAP);
             evidence(&format!(
                 "W12_CHECK step={} FAIL observed={}",
                 error.step, error.observed
             ));
             evidence(&format!(
-                "e2e_all scenario=W12.full status={} seconds={:.3}{}",
-                if missing { "MISSING-SERVER" } else { "FAIL" },
-                started.elapsed().as_secs_f64(),
-                if missing {
-                    format!(" evidence={SOURCE_GAP}")
-                } else {
-                    String::new()
-                }
+                "e2e_all scenario=W12.full status=FAIL seconds={:.3}",
+                started.elapsed().as_secs_f64()
             ));
         }
         Err(_) => evidence(&format!(

@@ -992,7 +992,7 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         client_row_c16b::run_packet(clients, world).await;
         release_row_characters(clients).await;
     }
-    if e2e_row_selected(231) || e2e_row_selected(103) || e2e_row_selected(104) {
+    if e2e_row_selected(231) {
         full_e2ef5::run(clients, world).await;
     }
     if e2e_row_selected(103) {
@@ -1027,7 +1027,7 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         client_row_c20a::run_packet(clients, world, &metadata.spawns).await;
         release_row_characters(clients).await;
     }
-    if e2e_row_selected(230) || e2e_row_selected(110) || e2e_row_selected(111) {
+    if e2e_row_selected(230) {
         include!("full_e2ef6_mount.rs");
         release_row_characters(clients).await;
     }
@@ -1810,6 +1810,11 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         full_row_g40::run_packet(clients).await;
         release_row_characters(clients).await;
     }
+    // The unindexed baseline (including character_core and full_e2ef3) belongs
+    // to the first batch; its assertions and verdicts run once per full sweep.
+    if !e2e_row_selected(0) {
+        return Ok(());
+    }
     let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
@@ -2273,7 +2278,8 @@ fn qualification_nbfix_fresh_grants_for_reconnects_and_colliding_tags() -> TestR
 
 // Every row uses the decoded logout result: InFight and Busy keep the session alive.
 async fn row_logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+    let reply =
+        tokio::time::timeout(Duration::from_secs(10), client.session_mut().logout()).await??;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("row logout refused: {:?}", reply.result).into());
     }
@@ -2378,12 +2384,7 @@ async fn row_complete<F: std::future::Future>(future: F) -> TestResult<F::Output
                 ROW_PENDING_LOGOUT.with(|pending| std::mem::take(&mut *pending.borrow_mut()));
             let mut cleanup = Ok(());
             for mut client in pending {
-                let ended =
-                    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await;
-                if let Err(error) = ended
-                    .map_err(|error| -> Box<dyn std::error::Error> { error.into() })
-                    .and_then(|result| result)
-                {
+                if let Err(error) = row_logout(&mut client).await {
                     cleanup = Err(error);
                 }
             }

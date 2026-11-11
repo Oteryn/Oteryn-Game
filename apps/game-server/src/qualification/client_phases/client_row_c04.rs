@@ -42,10 +42,9 @@ fn capture(path: &Path, name: &str, bytes: &[u8]) -> TestResult {
     Ok(())
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let Some(capture_dir) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(());
-    };
+async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let capture_dir = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("C04 client capture directory absent")?;
     let capture_dir = Path::new(&capture_dir);
     let book = spell_book()?;
     let ordinary = index(&book, "exura")?;
@@ -145,10 +144,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .as_bytes(),
     )?;
-    evidence(&format!(
+    Ok(format!(
         "e2e_all scenario=C04.client status=PASS evidence=cooldown-payload;spell={ordinary};remaining_ms={remaining}"
-    ));
-    Ok(())
+    ))
 
     }.await;
     let logout_result = row_logout(&mut client).await;
@@ -157,10 +155,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if let Err(error) = journey(clients).await {
-        evidence(&format!(
+    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
+        return;
+    }
+    match journey(clients).await {
+        Ok(verdict) => evidence(&verdict),
+        Err(error) => evidence(&format!(
             "e2e_all scenario=C04.client status=FAIL evidence={error}"
-        ));
+        )),
     }
 }
 

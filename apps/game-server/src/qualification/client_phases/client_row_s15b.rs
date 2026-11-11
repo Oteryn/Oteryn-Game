@@ -30,7 +30,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x64, 1).await?;
-    let row_needs_logout_0 = true;
+    let mut row_needs_logout_0 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         super::travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         let here = client.world_spatial().actor_position;
@@ -83,6 +83,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 _ => return Err(format!("step=logout-retry observed {reply:?}").into()),
             }
         };
+        row_needs_logout_0 = false;
         expected.push_str(&format!(
             "logout-accepted\tstatus={:?}\tresult=Accepted\n",
             accepted.status

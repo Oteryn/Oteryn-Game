@@ -24,7 +24,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xb2).await?;
-    let row_needs_logout_0 = true;
+    let mut row_needs_logout_0 = true;
     let row_result: TestResult<_> = async {
         let active =
             provisioning::item_reference(&provisioning::item_index()?, ACTIVE_ENERGY_RING)?;
@@ -90,6 +90,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err("i05-client-capture-logout-refused".into());
         }
+        row_needs_logout_0 = false;
         Ok(())
     }
     .await;

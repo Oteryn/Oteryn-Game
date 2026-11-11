@@ -14,14 +14,14 @@
 //! 6. Log out, obtain a fresh admission, walk back to the locker, and re-check My Offers and
 //!    History so the ended offer and refund outcome are shown to be durable.
 //! 7. Having driven the real settlement path, require independent scheduled expiry. The current
-//!    server exposes only command/query-driven advancement, so this step reports MISSING-SERVER
-//!    at the production owner rather than fabricating a 30-day clock advance or a PASS.
+//!    scheduler runs in node/market_scheduler.rs; an offer that has reached its real expiry
+//!    is required before the row can prove that path without changing the server clock.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::market::{self as wire, MarketReply, MarketRequest};
 use std::collections::BTreeSet;
 
-const GAP: &str = "source:crates/gameplay/durability/src/durability/market/settlement.rs:240";
+const EXPIRY_PRECONDITION: &str = "needed:offer-at-natural-expiry-for-scheduler-refund-proof";
 
 async fn command(client: &mut DevClientSession, request: MarketRequest) -> TestResult<MarketReply> {
     let payload =
@@ -181,7 +181,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
         return Err("E06 step 6: final logout refused".into());
     }
     evidence("E06_CHECK step=6 status=PASS durable-ended-offer");
-    Ok(GAP)
+    Ok(EXPIRY_PRECONDITION)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -189,7 +189,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = row_complete_with_timeout(Duration::from_secs(240), journey(clients)).await;
     match result {
         Ok(Ok(source)) => evidence(&format!(
-            "e2e_all scenario=E06.full status=MISSING-SERVER seconds={:.3} evidence={source}",
+            "e2e_all scenario=E06.full status=FAIL seconds={:.3} evidence={source}",
             started.elapsed().as_secs_f64()
         )),
         Ok(Err(error)) => evidence(&format!(

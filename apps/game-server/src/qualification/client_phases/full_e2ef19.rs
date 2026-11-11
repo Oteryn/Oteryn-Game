@@ -69,7 +69,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients))
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| Err("journey-timeout:no-further-reply-frame".into()));
     row.finish(&result);
@@ -93,8 +93,8 @@ async fn settle(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("logout:status={:?}:result={:?}", reply.status, reply.result).into());
     }
@@ -166,8 +166,8 @@ async fn channel_list(client: &mut DevClientSession, step: &str) -> TestResult<C
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut a = connect_character(clients, 0xe1, 0).await?;
-    let mut b = connect_character(clients, 0xe2, 1).await?;
+    let mut a = row_connect_character(clients, 0xe1, 0).await?;
+    let mut b = row_connect_character(clients, 0xe2, 1).await?;
     let result: TestResult = async {
         let a_name = own_name(&a)?;
         let b_name = own_name(&b)?;
@@ -252,7 +252,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         row.pass("channel-close");
 
         logout(&mut a).await?;
-        a = connect_character(clients, 0xe3, 0).await?;
+        a = row_connect_character(clients, 0xe3, 0).await?;
         if channel_list(&mut a, "relog-transient-list").await?.own_channel.is_some() { return Err("relog-transient:channel-replayed".into()); }
         row.pass("relog-transient");
         accepted(&mut a, ChatIntent::Private { recipient_name: b_name, text: "e2ef19-relog-pm".into() }, "relog-private-message").await?;

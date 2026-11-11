@@ -12,10 +12,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    if let Err(error) = journey(clients).await {
-        evidence(&format!(
+    match journey(clients).await {
+        Ok(verdict) => evidence(&verdict),
+        Err(error) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C17b.client status=FAIL evidence={error}"
-        ));
+        )),
     }
 }
 
@@ -69,7 +70,7 @@ fn write_capture(name: &str, bytes: &[u8]) -> TestResult {
     Ok(())
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
+async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -163,11 +164,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .as_bytes(),
     )?;
-    evidence(&format!(
+    Ok(format!(
         "SEAM_EVIDENCE e2e_all scenario=C17b.client status=PASS cast_sequence={} leave_sequence={}",
         cast.result_server_sequence, removed.server_sequence
-    ));
-    Ok(())
+    ))
 
     }.await;
         if row_needs_logout_1 {

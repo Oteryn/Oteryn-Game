@@ -28,10 +28,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         {
             return Err(format!("step=logout observed {outcome:?}").into());
         }
-        if row_needs_logout_0 {
-            row_logout(&mut client).await?;
-            row_needs_logout_0 = false;
-        }
+        row_needs_logout_0 = false;
         let mut fresh = connect_character(clients, 0x46, 0).await?;
         let mut row_needs_logout_1 = true;
         let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {

@@ -3,7 +3,7 @@
 //! `crates/session/src/account_achievements.rs`.
 use super::*;
 use oteryn_protocol_oteryn::account_achievements::{
-    self as wire, AccountAchievementsQuery, COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY,
+    self as wire, COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY,
 };
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
@@ -19,17 +19,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0x2f).await?;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
-    let query = wire::encode_account_achievements_query(AccountAchievementsQuery { page: 0 });
-    let reply = client
-        .session_mut()
-        .gated_command(0, COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, &query)
-        .await?;
-    if reply.status != CommandStatus::Accepted || reply.payload.is_empty() {
-        return Err(format!("page query observed={reply:?}").into());
+    let page = match client.session_mut().account_achievements(0).await? {
+        oteryn_dev_client::client_runtime::account_achievements::Response::Page(page) => page,
+        oteryn_dev_client::client_runtime::account_achievements::Response::Refused => {
+            return Err("page query was refused".into());
+        }
+    };
+    let payload = wire::encode_account_achievements_result(&page)
+        .map_err(|error| format!("page encode: {error:?}"))?;
+    if payload.is_empty() {
+        return Err("page query payload is empty".into());
     }
-    capture("p11-page.bin", &reply.payload)?;
-    let page = wire::decode_account_achievements_result(&reply.payload)
-        .map_err(|error| format!("page decode: {error:?}"))?;
+    capture("p11-page.bin", &payload)?;
     let refused = client
         .session_mut()
         .gated_command(0, COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, &[0x08])

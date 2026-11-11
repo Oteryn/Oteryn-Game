@@ -14,7 +14,7 @@ mod journey {
     use super::*;
 
     pub(super) async fn run_and_capture(clients: &SeamClients<'_>) -> TestResult {
-        let mut client = super::super::connect_character(clients, 0xcb, 0).await?;
+        let mut client = super::super::row_connect_character(clients, 0xcb, 0).await?;
         let row_result: TestResult<_> = async {
             // Re-encode the installed core store. Revision 1 below is the replay peer's
             // local baseline, not a revision invented for the live server.
@@ -36,7 +36,7 @@ mod journey {
             Ok(())
         }
         .await;
-        let logout_result = row_logout(&mut client).await;
+        let logout_result = row_finish(&mut client).await;
         logout_result?;
         row_result
     }
@@ -72,9 +72,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         return;
     }
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(480), journey::run_and_capture(clients))
+    let result = row_complete_with_timeout(Duration::from_secs(480), journey::run_and_capture(clients))
         .await
-        .map_err(|_| "C20b client capture timed out".into())
         .and_then(|result| result);
     evidence(&format!(
         "SEAM_EVIDENCE e2e_all scenario=C20b.client status={} seconds={:.3} evidence=real-C20b-actions-and-fresh-inventory-snapshot",

@@ -204,7 +204,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={logout:?} need=accepted").into());
     }
-    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
+    row_needs_logout_0 = false;
     let mut fresh = connect_world(clients, 0xd9).await?;
     let row_needs_logout_1 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {

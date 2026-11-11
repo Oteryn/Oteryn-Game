@@ -19,7 +19,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         })();
         if let Err(error) = written {
             evidence(&format!(
-                "e2e_all scenario=S13B.client status=FAIL evidence=capture-write:{error}"
+                "e2e_all scenario=S13b.client status=FAIL evidence=capture-write:{error}"
             ));
             return;
         }

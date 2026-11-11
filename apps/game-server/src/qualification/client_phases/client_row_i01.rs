@@ -47,7 +47,7 @@ fn capture(snapshot: &[u8], update: &[u8], revisions: &str, expected: &str) -> T
     Ok(())
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
+async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     let mut client = connect_world(clients, 0xc1).await?;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
@@ -102,11 +102,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             ),
             &expected,
         )?;
-        evidence(&format!(
+        Ok(format!(
             "e2e_all scenario=I01.client status=PASS evidence=domain-14-real-payload;{}",
             expected.replace([' ', '\n'], "_")
-        ));
-        Ok(())
+        ))
     })
     .await
     .unwrap_or_else(|error| Err(error.into()));
@@ -117,11 +116,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = row_complete(journey(clients)).await;
-    if let Err(error) = result.unwrap_or_else(|_| Err("I01 client capture timeout".into())) {
-        evidence(&format!(
+    match result.unwrap_or_else(|_| Err("I01 client capture timeout".into())) {
+        Ok(verdict) => evidence(&verdict),
+        Err(error) => evidence(&format!(
             "e2e_all scenario=I01.client status=FAIL evidence={}",
             error.to_string().replace([' ', '\n'], "_")
-        ));
+        )),
     }
 }
 

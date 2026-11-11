@@ -21,6 +21,17 @@ fn e2e_row_selected(index: usize) -> bool {
         evidence("e2e_row_batch invalid OTERYN_E2E_ROW_BATCH; running no rows");
         return false;
     };
+    e2e_row_in_batch(index, start, len)
+}
+
+fn e2e_row_in_batch(index: usize, start: usize, len: usize) -> bool {
+    // Captures need the shared journey's state in the same node boot. Assign
+    // them to its batch so neither the setup nor its verdicts are repeated.
+    let index = match index {
+        103 | 104 => 231,
+        110 | 111 => 230,
+        _ => index,
+    };
     index >= start && index - start < len
 }
 
@@ -45,5 +56,22 @@ mod e2e_row_batch_tests {
         assert_eq!(e2e_row_batch(Some("20:20")), Some((20, 20)));
         assert_eq!(e2e_row_batch(Some("20")), None);
         assert_eq!(e2e_row_batch(Some("x:1")), None);
+    }
+
+    #[test]
+    fn full_row_batches_run_every_index_once_with_its_shared_journey() {
+        for index in 0..308 {
+            let batches: Vec<_> = (0..308)
+                .step_by(15)
+                .filter(|start| e2e_row_in_batch(index, *start, 15))
+                .collect();
+            assert_eq!(batches.len(), 1, "row {index}");
+            let owner = match index {
+                103 | 104 => 231,
+                110 | 111 => 230,
+                _ => index,
+            };
+            assert!(e2e_row_in_batch(owner, batches[0], 15));
+        }
     }
 }

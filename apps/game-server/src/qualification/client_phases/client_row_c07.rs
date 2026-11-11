@@ -133,7 +133,7 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?; row_needs_logout_0 = false;
     if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xc8).await?;
-    let row_needs_logout_1 = true;
+    let mut row_needs_logout_1 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if fresh.join_snapshot().game_session_id == old_session
         || fresh.world_spatial().actor_position != retained_position
@@ -153,7 +153,9 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=fresh-admission observed=expired-field-present need=decay-remain-retired".into());
     }
     check("fresh-admission", fresh.last_server_sequence());
-    logout(&mut fresh).await
+    logout(&mut fresh).await?;
+    row_needs_logout_1 = false;
+    Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
     if row_needs_logout_1 { row_logout(&mut fresh).await?; }

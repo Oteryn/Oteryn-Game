@@ -66,7 +66,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("step=deadline observed=180s-timeout".into()),
@@ -283,7 +283,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let refs = coin_refs()?;
-    let mut client = connect_world(clients, 0xb0).await?;
+    let mut client = row_connect_world(clients, 0xb0).await?;
     let initial = earn_gold(&mut client, world, &metadata.npcs, refs).await?;
     row.pass("legitimate-gold", initial);
 
@@ -323,17 +323,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let withdrawal = exchange(&mut client, actor, &["withdraw 100", "yes"]).await?;
     wait_coins(&mut client, refs, [100, 0, 0], "withdraw-after-refusal").await?;
     let old_session = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    if client.row_logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("step=logout observed=refused".into());
     }
     drop(client);
-    let mut fresh = connect_world(clients, 0xb1).await?;
+    let mut fresh = row_connect_world(clients, 0xb1).await?;
     let persisted = backpack_coins(&fresh, refs)?;
     if fresh.join_snapshot().game_session_id == old_session || persisted != [100, 0, 0] {
         return Err(format!("step=fresh-admission-persistence observed=session-reused:{},coins:{persisted:?}", fresh.join_snapshot().game_session_id == old_session).into());
     }
     row.pass("fresh-admission-persistence", (withdrawal.lines, persisted));
-    if fresh.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    if fresh.row_logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("step=final-logout observed=refused".into());
     }
     Ok(())

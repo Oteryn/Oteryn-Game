@@ -58,7 +58,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
     let mut row_needs_logout_0 = true;
     let row_result: TestResult<_> = async {
         let mut attacker = connect_character(clients, 0x68, 1).await?;
-        let row_needs_logout_1 = true;
+        let mut row_needs_logout_1 = true;
         let row_result: TestResult<_> = async {
             let open = |at: TilePos| {
                 world
@@ -190,6 +190,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
                     && outcome.result
                         == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
                 {
+                    row_needs_logout_1 = false;
                     break;
                 }
             }

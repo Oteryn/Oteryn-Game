@@ -69,7 +69,7 @@ struct Progress {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(600), journey(&mut row, clients))
+    let result = row_complete_with_timeout(Duration::from_secs(600), journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| Err("step=journey observed=timeout-600s need=responsive-combat-progression".into()));
     row.finish(&result);
@@ -273,10 +273,10 @@ fn learned(
         .entries)
 }
 
-async fn ordinary_logout(client: &mut DevClientSession) -> TestResult {
+async fn ordinary_logout(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     loop {
-        let reply = client.session_mut().logout().await?;
+        let reply = client.row_logout().await?;
         match reply.result {
             Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) => return Ok(()),
             Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. })
@@ -293,7 +293,7 @@ async fn ordinary_logout(client: &mut DevClientSession) -> TestResult {
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = qualification_world(clients)?;
     let positions = rat_spawns()?;
-    let mut client = connect_character(clients, 0xe2, 0).await?;
+    let mut client = row_connect_character(clients, 0xe2, 0).await?;
     let old_session = client.join_snapshot().game_session_id;
     let baseline = progress(&mut client).await?;
     let spells_before = learned(&mut client)?;
@@ -376,7 +376,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     ordinary_logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_character(clients, 0xe3, 0).await?;
+    let mut fresh = row_connect_character(clients, 0xe3, 0).await?;
     let persisted = progress(&mut fresh).await?;
     if fresh.join_snapshot().game_session_id == old_session
         || persisted.stats.experience != reached.stats.experience
