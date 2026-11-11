@@ -401,6 +401,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(resume_read_refusal)
             })
             .await?;
+        // NBW0: `now` is sampled after the loss decision and the verification, so it is earlier
+        // than either only when the wall clock stepped back in between. The Foundation refuses
+        // such a time as stale authority; that is readiness, not a rejection of the credential.
+        // Nothing is written yet: the caller repeats the attempt from fresh reads.
+        if now < loss_decided_at || now < verified.verified_at() {
+            return Err(Unavailable);
+        }
         let budget = retry
             .retry_unavailable(async || recovery_budget_of(&store, session_id, epoch).await)
             .await?;
