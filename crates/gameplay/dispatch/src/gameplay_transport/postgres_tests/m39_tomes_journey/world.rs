@@ -78,7 +78,22 @@ pub(crate) fn build(
             .push(sector::Item {
                 palette: if *appearance == 2472 { 1 } else { 2 },
                 depth: 0,
-                attrs: Default::default(),
+                attrs: sector::Attrs {
+                    // Canonical reward-claims-00200-00230.json Crystal placements.
+                    unique: match (p.x, p.y, p.floor) {
+                        (33247, 31161, -6) => Some(6289),
+                        (33264, 31130, -7) => Some(6291),
+                        (33164, 31257, -10) => Some(6287),
+                        (33057, 31019, -2) => Some(6288),
+                        (33009, 31251, -8) => Some(6292),
+                        (32978, 31427, -2) => Some(6293),
+                        (33306, 31125, -9) => Some(6294),
+                        (33157, 31229, -15) => Some(6295),
+                        (33154, 31297, -3) => Some(6104),
+                        _ => None,
+                    },
+                    ..Default::default()
+                },
             });
         let next = books[(n + 1) % books.len()].0;
         cells
