@@ -279,7 +279,7 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
         );
         epoch(&harness, 1).await?;
         // A real Store delivery owns this row; seed its durable effect before the
-        // real daily dispatch so the claim must append rather than replace it.
+        // real daily dispatch so the claim must run beside it, never extend it.
         // The expiry pass advances this clock explicitly. A slow 30-day dispatch
         // loop must not consume the Store boost's five minutes of fixture time.
         sqlx::raw_sql("CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT TIMESTAMPTZ '2026-10-22 08:00:00+00' $$")
@@ -539,9 +539,15 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
         assert_eq!(flags, 30);
         let minutes: i32 = sqlx::query_scalar("SELECT max(extract(epoch FROM (effect_expires_at-effect_started_at))/60)::integer FROM game_character_daily_reward_lines WHERE kind='XP_BOOST'").fetch_one(&harness.pool).await?;
         assert_eq!(minutes, 60);
-        let appended: bool = sqlx::query_scalar("SELECT min(effect_started_at)=(SELECT max(expires_at) FROM game_character_store_xp_boosts) FROM game_character_daily_reward_lines WHERE kind='XP_BOOST'")
+        // Winter Update 2026: each daily boost starts at its claim, while the Store boost
+        // is still running, and the Store timer is untouched.
+        let beside: (bool, i64) = sqlx::query_as("SELECT bool_and(l.effect_started_at=s.starts_at AND l.effect_started_at<s.expires_at),(SELECT count(*) FROM game_character_store_xp_boosts) FROM game_character_daily_reward_lines l,game_character_store_xp_boosts s WHERE l.kind='XP_BOOST'")
             .fetch_one(&harness.pool).await?;
-        assert!(appended, "daily XP duration appends to the Store timer");
+        assert_eq!(
+            beside,
+            (true, 1),
+            "daily_xp_boost_no_longer_extends_store_timer"
+        );
         // New composed owners reload the saved grant; no in-memory boost flag is carried over.
         effects::kills_before_and_at_expiry(&harness, &authority, premium).await?;
         let state: (i16, i32) =

@@ -71,10 +71,12 @@ pub(super) async fn grant(
     }
     if reward.xp_boost_percent > 0 {
         let minutes = i32::from(reward.xp_boost_minutes);
-        // Crystal 201189f: data/modules/scripts/daily_reward/daily_reward.lua:518-527
-        // appends the daily duration to the Store timer instead of replacing it.
-        sqlx::query("WITH instant AS (SELECT public.game_daily_effect_now() AS at), endpoint AS (SELECT greatest(instant.at,coalesce((SELECT max(expires_at) FROM public.game_character_store_xp_boosts WHERE character_id=encode($5,'hex')::uuid AND world_id=encode($6,'hex')::uuid),instant.at),coalesce((SELECT max(effect_expires_at) FROM public.game_character_daily_reward_claims c JOIN public.game_character_daily_reward_lines l ON l.claim_id=c.transaction_id WHERE c.character_id=encode($5,'hex')::uuid AND c.world_id=encode($6,'hex')::uuid AND l.kind='XP_BOOST'),instant.at)) AS at FROM instant) INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) SELECT encode($1,'hex')::uuid,$3,'XP_BOOST',$2,'DELIVERED',encode($1,'hex')::uuid,at,at+make_interval(mins=>$2),$4 FROM endpoint")
-            .bind(claim).bind(minutes).bind(line).bind(i16::from(reward.xp_boost_percent)).bind(character).bind(world.as_bytes().as_slice()).execute(&mut ***tx).await?;
+        // Winter Update 2026 (thread 565): the daily boost starts now as its own line. It
+        // adds to a Store boost instead of extending it, and replaces the remainder of an
+        // earlier daily boost (readers count only the newest claim's line; lines stay
+        // immutable). Replaces Crystal 201189f daily_reward.lua:518-527 timer appending.
+        sqlx::query("WITH instant AS (SELECT public.game_daily_effect_now() AS at) INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) SELECT encode($1,'hex')::uuid,$3,'XP_BOOST',$2,'DELIVERED',encode($1,'hex')::uuid,at,at+make_interval(mins=>$2),$4 FROM instant")
+            .bind(claim).bind(minutes).bind(line).bind(i16::from(reward.xp_boost_percent)).execute(&mut ***tx).await?;
     }
     Ok(())
 }
